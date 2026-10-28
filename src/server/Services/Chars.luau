@@ -160,6 +160,34 @@ local function attach(char, partName, size, offset, color, material, name, shape
 	return p
 end
 
+-- gear from the Blender batch (ZR_Gear, M10) when it loaded: the mesh is fitted to `size` and tinted like the
+-- part it replaces (neutral grey vertex colours x Color); otherwise the part-built box
+local function attachMesh(char, partName, key, size, offset, color, material, name)
+	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local src = lib and lib:FindFirstChild(key)
+	local host = src and char:FindFirstChild(partName)
+	if not host then
+		return attach(char, partName, size, offset, color, material, name), false
+	end
+	local p = src:Clone()
+	p.Name = name or "Gear"
+	p.Size = size
+	p.Color = color
+	p.Material = material or Enum.Material.Fabric
+	p.Anchored = false
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.CFrame = host.CFrame * offset
+	local w = Instance.new("WeldConstraint")
+	w.Part0 = host
+	w.Part1 = p
+	w.Parent = p
+	p.Parent = char
+	return p, true
+end
+
 local function weldAll(parts, host, parent, name)
 	for _, p in parts do
 		p.Name = name
@@ -300,9 +328,9 @@ function Chars.dress(char, kind, gear)
 	if helmet then
 		local cls = helmet.armor and helmet.armor.class or 2
 		local grow = cls * 0.012
-		attach(char, "Head", Vector3.new(0.88 + grow, 0.52, 0.98 + grow), CFrame.new(0, 0.27, 0.03), Color3.fromHex(look.helmet), Enum.Material.SmoothPlastic, "Helmet")
+		attachMesh(char, "Head", "ZR_GEAR_Helmet", Vector3.new(0.9 + grow, 0.54, 1.0 + grow), CFrame.new(0, 0.26, 0.03), Color3.fromHex(look.helmet), Enum.Material.SmoothPlastic, "Helmet")
 		if helmet.armor and helmet.armor.face then
-			attach(char, "Head", Vector3.new(0.74, 0.56, 0.08), CFrame.new(0, -0.03, -0.47), Color3.fromHex("2A2D2B"), Enum.Material.Metal, "FacePlate")
+			attachMesh(char, "Head", "ZR_GEAR_FacePlate", Vector3.new(0.74, 0.56, 0.1), CFrame.new(0, -0.03, -0.47), Color3.fromHex("2A2D2B"), Enum.Material.Metal, "FacePlate")
 		else
 			attach(char, "Head", Vector3.new(0.7, 0.07, 0.06), CFrame.new(0, 0.12, -0.45), Color3.fromHex("161819"), Enum.Material.SmoothPlastic, "Visor")
 		end
@@ -317,7 +345,7 @@ function Chars.dress(char, kind, gear)
 	local front = -0.4
 	if armor then
 		local cls = armor.armor.class
-		attach(char, "UpperTorso", Vector3.new(1.4 + cls * 0.02, 1.08 + cls * 0.02, 0.92 + cls * 0.04), CFrame.new(0, -0.06, 0), gc, Enum.Material.Fabric, "Vest")
+		attachMesh(char, "UpperTorso", "ZR_GEAR_Vest", Vector3.new(1.4 + cls * 0.02, 1.08 + cls * 0.02, 0.92 + cls * 0.04), CFrame.new(0, -0.06, 0), gc, Enum.Material.Fabric, "Vest")
 		front = -(0.46 + cls * 0.02)
 		if armor.armor.zones and armor.armor.zones.arms then
 			for _, side in { "LeftUpperArm", "RightUpperArm" } do
@@ -327,19 +355,25 @@ function Chars.dress(char, kind, gear)
 	end
 	if rig then
 		if rig.armor ~= nil and not armor then
-			attach(char, "UpperTorso", Vector3.new(1.44, 1.1, 0.98), CFrame.new(0, -0.06, 0), gc, Enum.Material.Fabric, "Vest")
+			attachMesh(char, "UpperTorso", "ZR_GEAR_Vest", Vector3.new(1.44, 1.1, 0.98), CFrame.new(0, -0.06, 0), gc, Enum.Material.Fabric, "Vest")
 			front = -0.49
 		end
 		local n = math.min(rig.grid and rig.grid.w or 3, 4)
 		for i = 1, n do
 			local x = (i - (n + 1) / 2) * 0.3
-			attach(char, "UpperTorso", Vector3.new(0.27, 0.34, 0.18), CFrame.new(x, -0.24, front - 0.09), gc, Enum.Material.Fabric, "Pouch")
+			attachMesh(char, "UpperTorso", "ZR_GEAR_Pouch", Vector3.new(0.27, 0.34, 0.18), CFrame.new(x, -0.24, front - 0.09), gc, Enum.Material.Fabric, "Pouch")
 		end
 	end
 	if kind == "player" then
-		local cam = attach(char, "UpperTorso", Vector3.new(0.2, 0.26, 0.12), CFrame.new(-0.36, 0.3, math.min(front, -0.4) - 0.06), Color3.fromHex("1A1C1D"), Enum.Material.SmoothPlastic, "BodyCam")
+		local cam, isMesh = attachMesh(char, "UpperTorso", "ZR_GEAR_BodyCam", Vector3.new(0.2, 0.26, 0.12), CFrame.new(-0.36, 0.3, math.min(front, -0.4) - 0.06), Color3.new(1, 1, 1), Enum.Material.SmoothPlastic, "BodyCam")
+		if cam and not isMesh then
+			cam.Color = Color3.fromHex("1A1C1D")
+		end
 		if cam then
-			local lens = attach(char, "UpperTorso", Vector3.new(0.08, 0.08, 0.04), CFrame.new(-0.36, 0.34, math.min(front, -0.4) - 0.13), Color3.fromHex("C24A35"), Enum.Material.Neon, "CamLens")
+			-- recording light: the mesh has a lens of its own, so the glow becomes a small LED under it
+			local lens = isMesh
+				and attach(char, "UpperTorso", Vector3.new(0.035, 0.035, 0.02), CFrame.new(-0.42, 0.22, math.min(front, -0.4) - 0.115), Color3.fromHex("E0503C"), Enum.Material.Neon, "CamLens")
+				or attach(char, "UpperTorso", Vector3.new(0.08, 0.08, 0.04), CFrame.new(-0.36, 0.34, math.min(front, -0.4) - 0.13), Color3.fromHex("C24A35"), Enum.Material.Neon, "CamLens")
 			if lens then
 				lens.CastShadow = false
 			end
@@ -347,10 +381,10 @@ function Chars.dress(char, kind, gear)
 	end
 	if gear.back then
 		local size = PACK_SIZE[gear.back] or PACK_SIZE.CANVAS_BAG
-		attach(char, "UpperTorso", size, CFrame.new(0, 0.05 - (size.Y - 1.5) * 0.3, 0.42 + size.Z * 0.5), Color3.fromHex("6B6A4E"), Enum.Material.Fabric, "Pack")
+		attachMesh(char, "UpperTorso", "ZR_GEAR_Pack", size, CFrame.new(0, 0.05 - (size.Y - 1.5) * 0.3, 0.42 + size.Z * 0.5), Color3.fromHex("6B6A4E"), Enum.Material.Fabric, "Pack")
 	end
 	if gear.holster then
-		attach(char, "RightUpperLeg", Vector3.new(0.18, 0.42, 0.34), CFrame.new(0.34, 0.18, 0), Color3.fromHex("23262A"), Enum.Material.SmoothPlastic, "Holster")
+		attachMesh(char, "RightUpperLeg", "ZR_GEAR_Holster", Vector3.new(0.18, 0.42, 0.34), CFrame.new(0.34, 0.18, 0), Color3.fromHex("23262A"), Enum.Material.SmoothPlastic, "Holster")
 	end
 	if gear.holder then
 		Chars.setWeapon(char, gear.holder, gear.activeG)

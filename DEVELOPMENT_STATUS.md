@@ -1,6 +1,6 @@
 # Zero Return: Development Status
 
-Build `0.6.0-m9`. Last updated 2026-10-28.
+Build `0.7.0-m10`. Last updated 2026-10-28.
 
 Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. The map is **Quay 7**, an industrial coastal evacuation zone.
 
@@ -28,8 +28,9 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 | M7 Multiplayer raids | Done | One shared 25-min raid per server (queue → matching → raid, up to 12 operators), PMC late entry for 5 min, player scavs until 6 min left; squads (invite/accept/kick, shared insertion, armband colour, no friendly markers); spread spawns with per-side exfils; bodies that stay in the raid (KIA and disconnects); player-scav mode (free random kit, 10-min cooldown, loot to stash, PMC health untouched); exfil rules (open, paid, key, chance, scav-only); insurance with returns after the raid; larger lens HUD. |
 | M8 AI 2.0 | Done | AI scavs (random kits, wander and loiter, waves through the raid), Harbor Watch guards (posts and patrols), the Foreman with two crew at the freight depot (50% of raids, heavy armour, unique loot); awareness-based vision, hearing of footsteps and gunshots, suppression and call-outs; cover points generated from the map with peek-and-hide, crouching at range, strafing, suppressive fire, reloads from real magazines, healing with real meds, searching the last known position, fleeing when out of ammo; player scavs are left alone unless they attack scavs. |
 | M9 Economy | Done | Four traders (VOS weapons/ammo, HALE medical/food, TILDA gear, the FENCE) with loyalty levels 1–4 (level + money traded + standing), per-restock stock limits (30 min) and barters; selling to the best-paying trader (examined, empty items only); 13 trader tasks (eliminate, hand in found-in-raid items, extract, visit) with money/XP/standing/item rewards; XP and levels (kills, headshots, looting, examining, survival), the run-through rule, four skills that level with use (endurance, strength, vitality, metabolism); a hideout with five modules built over real time (generator, medstation, workbench, storage racks, water collector) and timed crafts; scav karma (fence prices, scav cooldown, hostile locals); dog tags on PMC bodies; a locked depot office opened with a key that wears out. |
-| M10 World | Next | New POIs and boss compound, doors, loose loot, time of day/weather, audio atlas, Blender weapon/gear art. |
-| M11 QA | Planned | Two-client test, device emulation, performance, exploit regression, docs, backup. |
+| M10 World | Mostly done | Raid time of day (7x clock, dawn/day/dusk/night) and weather (clear/overcast/fog/rain) with matching light, fog, rain, wind, lamps and night bodycam gain; AI senses follow light and weather and guards use weapon lights at night; a two-storey crew dormitory with locked rooms and a depot vault behind the office (keycard); 56 loose-loot spots; keys; doors that AI open; world and UI sound atlas; bodycam lens v2 (straight HUD, light vignette, soft edge haze, halved grain); rounded first-person arms with gloves; Blender gear meshes (helmet, plate carrier, pouch, pack, body camera, holster) built. Left: upload the gear meshes and check them in Studio (the PC's DNS was failing), Blender weapon meshes. |
+| M11 Combat extras | Next | Grenades (frag, stun, smoke; AI throw them), weapon durability and malfunctions with repairs. |
+| M12 QA | Planned | Two-client test, device emulation, performance, exploit regression, docs, backup. |
 
 ## How a raid works (M7)
 
@@ -50,6 +51,16 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 - **Scav karma:** killing local scavs as a player scav lowers karma; extracting as one raises it. High karma shortens the scav cooldown and improves the Fence's prices; below −1 the locals shoot your scav on sight.
 - **Dog tags:** a dead PMC's body carries their dog tag (name, level, killer); tags are worth more at higher levels.
 - **Keys:** the depot office is locked; the Harbor Office Key opens it for the rest of the raid; each unlock uses up one of its 25 uses.
+
+## Raid world (M10)
+
+- **Time and weather:** every raid rolls a start time and weather; in-world time runs at 7x, so a dusk raid ends in the dark. The deployment terminal shows the next raid's time and weather, and the REC stamp shows the raid clock.
+- **Night:** the bodycam's auto-gain lifts the picture with more grain; street lamps switch on; weapon lights matter (and give you away). Guards and the Foreman's crew use theirs at night.
+- **Weather:** fog shortens sight for everyone (AI included); rain dulls hearing, wets surfaces and lenses, and brings thunder with lightning in heavy storms.
+- **Crew dormitory (Block B):** two storeys of crew rooms off an exterior balcony and stairs. Rooms 104 and 203 are locked (keys from raids or the Fence) and hold better loot.
+- **Depot vault:** behind the locked harbor office; the Vault Keycard (10 uses) opens it at the card reader. Two safes, an arms crate and a shelf of valuables.
+- **Loose loot:** items lie on desks, shelves, pallets and floors around the map; look at one and press F to take it (found-in-raid if you extract). Unexamined items show as UNKNOWN ITEM.
+- **Doors:** AI open unlocked doors on their way; locked doors block AI paths until someone unlocks them; some doors start ajar.
 
 ## Definition of Done
 
@@ -106,6 +117,7 @@ Notes:
 - **Server (`src/server`)**
   - Main and Services share one `ctx` table.
   - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Health, Combat, Extract, AI, Raid, Match, Economy, Quests, Hideout, Doors, Dev.
+  - Match rolls each raid's environment (shared `Env`); Loot also owns loose loot (spawned per raid from World.looseSpots).
   - AI owns AI units (perception, tactics, weapons) plus the spawn director and the cover-point map; units use the same rig, ballistics, health and loot as players.
   - Match owns the raid cycle (queue, matching, shared clock, entry windows, end conditions), squads, spawn picking and insurance settlement; Raid owns per-player sessions, deploy/enter/finalize and inventory requests.
   - Economy owns traders, selling, XP, skills and karma; Quests owns task state and progress; Hideout owns modules and crafts; Doors owns locked doors and keys.
@@ -120,7 +132,7 @@ Notes:
   - Every request goes through token buckets, request-ID de-duplication, payload checks and strikes.
 - **Client (`src/client`)**
   - Scriptable first-person bodycam camera (eye from the rig pose), Movement (stance, lean, stamina, weight, vault), Weapon (viewmodel from the shared spec, IK arms, optics), Animator (RigMath full-body animation of every operator), IAS input with a CAS fallback.
-  - Look: Post (grain, lens, exposure, pain) and Lens (barrel-warped HUD text and icons) drive the recorder HUD.
+  - Look: Post (grain, vignette, edge haze, exposure, pain), Atmos (raid lighting, weather, rain, lamps, ambience) and Lens (HUD text and icons, straight by default) drive the recorder look.
   - Custom interaction prompts, grid inventory, deploy, summary, settings and exits screens, trader and hideout terminals (Trade), touch cluster.
 - **Shared (`src/shared`)**: Config, Items, Weapons, WeaponModels, RigSpec (generated by `tools/rig_def.py`), RigMath, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, SoundAtlas (generated), Textures, Version, TraderData, QuestData, HideoutData, Progress.
 - **Test bridges (Studio only)**

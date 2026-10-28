@@ -2,7 +2,7 @@
 -- Zero Return: tunable constants shared by server and client (read-only).
 local Config = {
 	GAME_NAME = "ZERO RETURN",
-	BUILD = "0.6.0-m9",
+	BUILD = "0.7.0-m10",
 	MAP_NAME = "QUAY 7",
 	RECORDER = "FIELD RECORDER M4",
 	CURRENCY = "MK",

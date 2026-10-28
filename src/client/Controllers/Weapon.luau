@@ -30,12 +30,14 @@ local cam = workspace.CurrentCamera
 local TUNE = {
 	vms = 0.55, -- viewmodel scale of the shared weapon spec
 	upper = 0.56, fore = 0.54, -- arm segment lengths (viewmodel studs)
-	upperW = 0.15, foreW = 0.13,
+	upperW = 0.21, foreW = 0.17, -- sleeve thickness (round, the forearm swells toward the elbow)
 	rShoulder = Vector3.new(0.4, -0.58, 0.02), lShoulder = Vector3.new(-0.42, -0.62, -0.32),
 	rPole = Vector3.new(0.7, -1, 0.3), lPole = Vector3.new(-1, -0.7, 0.1),
 }
 Weapon.TUNE = TUNE
-local SLEEVE, GLOVE = Color3.fromHex("3E4334"), Color3.fromHex("1F2120")
+local SLEEVE, GLOVE = Color3.fromHex("3E4334"), Color3.fromHex("2A2C2B")
+local GLOVE_PAD, GLOVE_SEAM = Color3.fromHex("3B3E3A"), Color3.fromHex("181A19")
+local ROT_Y90 = CFrame.Angles(0, math.rad(90), 0)
 local L_REST = CFrame.new(-0.34, -0.68, -0.36) * CFrame.Angles(math.rad(50), 0, math.rad(20)) -- knife: free hand low
 local POUCH = CFrame.new(-0.14, -0.98, -0.28) -- camera space, off-screen (rig pouches)
 local BELT = CFrame.new(0.06, -0.95, -0.3) -- camera space, off-screen (shells)
@@ -257,17 +259,37 @@ local function buildVm(it, d, g)
 	if ua and ua:IsA("BasePart") then
 		sleeve = ua.Color:Lerp(Color3.new(0, 0, 0), 0.18)
 	end
-	o.arms = {
-		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), sleeve, Enum.Material.Fabric),
-		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), sleeve, Enum.Material.Fabric),
-		vpart(model, Vector3.new(0.1, 0.15, 0.14), GLOVE),
-		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), sleeve, Enum.Material.Fabric),
-		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), sleeve, Enum.Material.Fabric),
-		vpart(model, Vector3.new(0.11, 0.09, 0.15), GLOVE),
-	}
-	for _, p in o.arms do
-		table.insert(o.all, p)
-		table.insert(o.cfs, p.CFrame)
+	-- each arm: round sleeve (upper arm, elbow, forearm with a fuller elbow end, darker cuff) and a gloved
+	-- hand (back of hand with a knuckle pad, curled fingers, thumb) - not sticks
+	local cuffC = sleeve:Lerp(Color3.new(0, 0, 0), 0.35)
+	local function round(size, color, mat, shape)
+		local p = vpart(model, size, color, mat)
+		p.Shape = shape or Enum.PartType.Cylinder
+		return p
+	end
+	local function arm()
+		return {
+			upper = round(Vector3.new(TUNE.upper, TUNE.upperW, TUNE.upperW), sleeve, Enum.Material.Fabric),
+			elbow = round(Vector3.new(TUNE.upperW * 0.98, TUNE.upperW * 0.98, TUNE.upperW * 0.98), sleeve, Enum.Material.Fabric, Enum.PartType.Ball),
+			fore = round(Vector3.new(TUNE.fore, TUNE.foreW, TUNE.foreW), sleeve, Enum.Material.Fabric),
+			bulk = round(Vector3.new(TUNE.fore * 0.5, TUNE.foreW * 1.16, TUNE.foreW * 1.16), sleeve, Enum.Material.Fabric),
+			cuff = round(Vector3.new(0.06, TUNE.foreW * 1.1, TUNE.foreW * 1.1), cuffC, Enum.Material.Fabric),
+			palm = vpart(model, Vector3.new(0.05, 0.14, 0.13), GLOVE, Enum.Material.Fabric),
+			pad = vpart(model, Vector3.new(0.022, 0.09, 0.1), GLOVE_PAD),
+			fingers = vpart(model, Vector3.new(0.045, 0.125, 0.085), GLOVE, Enum.Material.Fabric),
+			thumb = vpart(model, Vector3.new(0.034, 0.034, 0.08), GLOVE, Enum.Material.Fabric),
+			seam = vpart(model, Vector3.new(0.056, 0.02, 0.135), GLOVE_SEAM),
+		}
+	end
+	o.armR, o.armL = arm(), arm()
+	o.armOrder = { "upper", "elbow", "fore", "bulk", "cuff", "palm", "pad", "fingers", "thumb", "seam" }
+	o.arms = {}
+	for _, a in { o.armR, o.armL } do
+		for _, k in o.armOrder do
+			table.insert(o.arms, a[k])
+			table.insert(o.all, a[k])
+			table.insert(o.cfs, a[k].CFrame)
+		end
 	end
 	o.shell = vpart(model, Vector3.new(0.11, 0.042, 0.042), Color3.fromHex("8E2B22"))
 	o.shell.Shape = Enum.PartType.Cylinder
@@ -322,6 +344,43 @@ local function limb(part, from, to, thick)
 		part.Size = Vector3.new(thick, thick, math.max(0.05, len))
 	end
 	return CFrame.lookAt((from + to) / 2, to)
+end
+
+-- a round (cylinder) sleeve segment from `from` to `to`: the cylinder axis is the part's X
+local function seg(part, from, to)
+	local len = math.max(0.03, (to - from).Magnitude)
+	if math.abs(part.Size.X - len) > 0.01 then
+		part.Size = Vector3.new(len, part.Size.Y, part.Size.Z)
+	end
+	return CFrame.lookAt((from + to) / 2, to) * ROT_Y90
+end
+
+-- one arm's CFrames: shoulder S, elbow E, wrist W and the hand frame H; side = 1 right hand (pistol grip),
+-- -1 left hand (under the handguard)
+local function armCFrames(a, S, E, W, H, side, out, i)
+	local dir = (W - E)
+	dir = dir.Magnitude > 1e-4 and dir.Unit or Vector3.new(0, 0, -1)
+	out[i] = seg(a.upper, S, E)
+	out[i + 1] = CFrame.new(E)
+	out[i + 2] = seg(a.fore, E, W)
+	out[i + 3] = seg(a.bulk, E + dir * 0.02, E + (W - E) * 0.5)
+	out[i + 4] = seg(a.cuff, W - dir * 0.07, W - dir * 0.01)
+	if side > 0 then
+		-- wrapped around the pistol grip: back of the hand outside, fingers on the far side, thumb over the top
+		out[i + 5] = H * CFrame.new(0.032, 0, 0.012)
+		out[i + 6] = H * CFrame.new(0.06, 0.008, 0.012)
+		out[i + 7] = H * CFrame.new(-0.036, -0.006, -0.018)
+		out[i + 8] = H * CFrame.new(-0.022, 0.072, -0.036) * CFrame.Angles(math.rad(-25), math.rad(18), 0)
+		out[i + 9] = H * CFrame.new(0.032, -0.072, 0.012)
+	else
+		-- cupping the handguard from below: palm under it, fingers up the far side, thumb along the near side
+		out[i + 5] = H * CFrame.new(0, -0.05, 0) * CFrame.Angles(0, 0, math.rad(90))
+		out[i + 6] = H * CFrame.new(0, -0.08, 0.004) * CFrame.Angles(0, 0, math.rad(90))
+		out[i + 7] = H * CFrame.new(0.052, -0.006, -0.006)
+		out[i + 8] = H * CFrame.new(-0.05, 0.004, -0.02) * CFrame.Angles(math.rad(-10), 0, 0)
+		out[i + 9] = H * CFrame.new(0, -0.05, 0.066) * CFrame.Angles(0, 0, math.rad(90))
+	end
+	return i + 10
 end
 
 local function setMagHidden(o, hidden)
@@ -916,18 +975,13 @@ local function update(dt)
 	local lW = (lHand * CFrame.new(-0.02, -0.035, 0.08)).Position
 	local rE = solve(rS, rW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.rPole))
 	local lE = solve(lS, lW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.lPole))
-	local A = o.arms
 	local n = o.nFixed
-	cfs[n + 1] = limb(A[1], rS, rE, TUNE.upperW)
-	cfs[n + 2] = limb(A[2], rE, rW, TUNE.foreW)
-	cfs[n + 3] = rHand
-	cfs[n + 4] = limb(A[4], lS, lE, TUNE.upperW)
-	cfs[n + 5] = limb(A[5], lE, lW, TUNE.foreW)
-	cfs[n + 6] = lHand
+	local nxt = armCFrames(o.armR, rS, rE, rW, rHand, 1, cfs, n + 1)
+	nxt = armCFrames(o.armL, lS, lE, lW, lHand, -1, cfs, nxt)
 	if (o.shell.Transparency < 1) ~= shellOn then
 		o.shell.Transparency = shellOn and 0 or 1
 	end
-	cfs[n + 7] = lHand * CFrame.new(0, 0.045, -0.05)
+	cfs[nxt] = lHand * CFrame.new(0, 0.045, -0.05)
 	workspace:BulkMoveTo(o.all, cfs, Enum.BulkMoveMode.FireCFrameChanged)
 end
 

@@ -8,6 +8,19 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance numbers.
 
+## M10 World (2026-10-28, in progress)
+
+| Test | Method | Result |
+|---|---|---|
+| Logic suite | `ZR_Dev:Invoke("tests")` | **146/146 pass** (12 new: 7x raid clock and midnight wrap, daylight curve, valid environment rolls, AI sight day > fog > night and hearing dulled only by rain, crew weapon lights in valid kits, 56 loose spots with valid pools, every pool item exists, 8 dorm doors with real keys, vault keycard, key spots roll keys). |
+| Time and weather | `env` dev command, screenshots | Pass. Noon clear, overcast afternoon, dusk 18:10, rainy night 22:48 and clear night 22:30 all render; the REC stamp follows the raid clock; street lamps on at night. Night fill was retuned after the first test was near black (Roblox lights in linear space). |
+| Lens and HUD | Screenshots | Pass. HUD text straight; grain halved; vignette lighter and neutral (no colour); colour fringing tried and removed at the owner's request. |
+| Dormitory | Screenshots, real F key | Pass. Two storeys, rooms 101–204, balcony and stairs; a scav inside room 102 opened its closed door and walked out (AI door use). |
+| Loose loot | `loose` list, real F key | Pass. 17 items spawned around the map; MATCHES taken from a dorm desk went to the pockets as found-in-progress; the prompt reads TAKE · MATCHES. |
+| Vault | Real F key with office key then keycard | Pass. Office opens with the key; the vault prompt reads SWIPE CARD; the card reader LED turns from red to green, the door opens onto two safes and the arms crate; the prompt then reads CLOSE. |
+| First-person arms | Screenshots | Pass. Round sleeves, elbow, cuff and gloves instead of thin sticks. |
+| Not verified | – | Rain streaks, lens droplets, the new lens textures, the env sound atlas and the Blender gear meshes: the PC's DNS failed during testing, so Studio could not download them. |
+
 ## M9 Economy (2026-10-28)
 
 | Test | Method | Result |

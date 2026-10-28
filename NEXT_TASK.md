@@ -1,21 +1,24 @@
 # Next Task
 
-**Current focus:** improvement program milestone **M10 — World** (Tarkov map feel with original places and art).
+**Current focus:** finish M10 leftovers, then milestone **M11 — Combat extras** (Tarkov grenades, weapon wear).
 
-## M10 plan
+## M10 leftovers (need the dev PC online)
 
-1. **Time of day and weather.** Each raid rolls a time (day, dusk, night, dawn) and weather (clear, overcast, fog, rain). Lighting, fog and sky follow it; rain has particles, wet-surface tint, rain and wind ambience and muffled footsteps. Night raids are dark enough that weapon lights matter. The REC timestamp shows the raid's in-world time. AI sight range scales with light and fog.
-2. **Loose loot.** Items lying on shelves, tables and floors (not only in containers) from spawn tables with rarity per location; physical item models (procedural per item kind); picked up with F into the raid inventory as found-in-progress. Keys and the keycard spawn as loose loot in fixed rare spots.
-3. **New places.** A two-storey **crew dormitory** with several locked rooms (each with its own key found in the raid) and good loot, and a **vault** behind a keycard door (RUSTED_KEYCARD, few uses) with high-value loot. More ordinary doors across existing buildings.
-4. **Doors for everyone.** Unlocked doors can be opened and closed by players and AI (AI open doors on their path); doors block sight and muffle sound when closed.
-5. **Blender art.** Re-author weapon meshes against the `WeaponModels` anchors (first and third person) and the main gear pieces (plate carrier, chest rig, helmet, backpack) as Blender meshes uploaded through Open Cloud; record them in `ASSET_MANIFEST.md`.
-6. **Audio.** Atlas additions: rain, wind gusts, door creaks and locks, key jingle, loose-loot pickup, UI clicks; distant gunfire ambience during raids.
-7. Logic tests, Studio test (screenshots of each time of day and weather), docs, commit.
+1. Upload `assets/exports/ZR_Gear.fbx` (`zr_upload.upload_model(path, "ZR_Gear")`), add it to `AssetIds.luau`, check the helmet, plate carrier, pouches, pack, body camera and holster on players and AI in Studio.
+2. Check in Studio: rain streaks and splashes, lens droplets, the new vignette and edge haze, the environment sounds (rain, roof, wind, insects, gulls, thunder, doors, keys, pickup).
+3. Blender weapon meshes against the `WeaponModels` anchors (start with the R-17 and the P-9).
 
-Then M11 (QA: two-client test, device emulation, performance, exploit regression including vault speed checks, scrollable inventory gear column, docs, git bundle backup).
+## M11 plan
+
+1. **Grenades.** Frag, stun and smoke grenades as rig/pocket items. G throws the first grenade in your rig (overhand; underhand when crouched), 3.5 s fuse after release, server-simulated arc with bounces. Frag: fragments hit random body parts within ~9 studs behind no cover (armour applies, low penetration); stun: white-out and ringing when facing it nearby; smoke: a cloud that blocks sight for players and AI.
+2. **AI grenades.** Units with grenades throw them at a target that stays in cover, and run from grenades that land near them.
+3. **Weapon durability.** Every shot wears the weapon a little; worn weapons malfunction more (misfire, failure to feed, jam). A malfunction stops the weapon until you clear it (the reload key, longer for jams). Traders repair weapons for money; repair kits restore part of it in raid.
+4. Logic tests, Studio test, docs, commit.
+
+Then M12 (QA: two-client test, device emulation, performance, exploit regression including vault speed checks, scrollable inventory gear column, docs, git bundle backup).
 
 ## Resume steps
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
-2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; connect the Rojo plugin in Place3.
-3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **134/134**).
+2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open the place (now saved as `Zero Return.rbxl`) and connect the Rojo plugin.
+3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **146/146**).
