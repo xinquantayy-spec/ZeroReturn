@@ -196,7 +196,7 @@ local function animate(r, dt)
 	local L, W, rHand = RigMath.pose(rootCF, p)
 	if W and anchors and kind ~= "melee" and gesture and gesture ~= "draw" and gesture ~= "slash" and not nadeG then
 		local _, chest = RigMath.spine(rootCF, p)
-		local base = W * CF(anchors.hand) * (kind == "pistol" and RigMath.GRIP_LP or RigMath.GRIP_L)
+		local base = W * CF(RigMath.supportPoint(anchors, kind)) * (kind == "pistol" and RigMath.GRIP_LP or RigMath.GRIP_L)
 		local grab = anchors.magwell and (W * CF(anchors.magwell) * CF(-0.04, -0.2, 0) * ANG(0, 0, math.rad(90))) or base
 		local lh
 		if gesture == "reload" then
@@ -236,7 +236,7 @@ local function animate(r, dt)
 		local rh, lh
 		if gesture == "pin" then
 			rh = (ap < 0.3 and grip:Lerp(front, seg(ap, 0, 0.3))) or (ap < 0.75 and front) or front:Lerp(hold, seg(ap, 0.75, 1))
-			local base = anchors and (W * CF(anchors.hand) * (kind == "pistol" and RigMath.GRIP_LP or RigMath.GRIP_L)) or nil
+			local base = anchors and (W * CF(RigMath.supportPoint(anchors, kind)) * (kind == "pistol" and RigMath.GRIP_LP or RigMath.GRIP_L)) or nil
 			local reach = front * CF(-0.1, 0.2, -0.05)
 			if base then
 				lh = (ap < 0.35 and base) or (ap < 0.5 and base:Lerp(reach, seg(ap, 0.35, 0.5))) or (ap < 0.65 and reach:Lerp(chest * NADE_PULLED, seg(ap, 0.5, 0.65)))
@@ -340,14 +340,16 @@ function Animator.init(c)
 				consider(char, camPos)
 			end
 		end
-		local ai = workspace:FindFirstChild("ZR_AI")
-		if ai then
-			for _, model in ai:GetChildren() do
-				local r = rigs[model]
-				if r then
-					r.lastDt = dt
+		for _, folderName in { "ZR_AI", "ZR_Showroom" } do
+			local folder = workspace:FindFirstChild(folderName)
+			if folder then
+				for _, model in folder:GetChildren() do
+					local r = rigs[model]
+					if r then
+						r.lastDt = dt
+					end
+					consider(model, camPos)
 				end
-				consider(model, camPos)
 			end
 		end
 		if frame % 120 == 0 then

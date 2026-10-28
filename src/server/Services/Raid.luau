@@ -93,6 +93,7 @@ function Raid.state(player)
 		items = h.items,
 		grids = h.grids,
 		slots = h.slots,
+		erev = h.erev or 0, -- equipment revision (M16): equip requests carry it back
 		known = prof.known,
 		active = s and s.active or nil,
 		stats = prof.stats,
@@ -112,7 +113,7 @@ function Raid.state(player)
 	}
 end
 
-local GEAR_SLOTS = { "head", "armor", "rig", "back", "holster", "primary", "secondary", "melee" }
+local GEAR_SLOTS = { "head", "ears", "face", "armor", "rig", "back", "holster", "primary", "secondary", "melee" }
 local MOUNTS = { "rail", "muzzle", "under", "side" }
 local DRAW_ORDER = { "primary", "secondary", "holster", "melee" }
 
@@ -142,6 +143,9 @@ local function gearKey(h, active)
 end
 
 function Raid.push(player)
+	if typeof(player) ~= "Instance" then
+		return -- test double (CharTests)
+	end
 	local st = Raid.state(player)
 	if st then
 		ctx.Remotes.push(player, st)
@@ -496,7 +500,10 @@ local function resolve(player, ref, inRaid)
 	return nil, "BAD_INPUT"
 end
 
-local SLOT_FOR = { helmet = "head", armor = "armor", rig = "rig", backpack = "back", secure = "secure", pistol = "holster", melee = "melee" }
+local SLOT_FOR = {
+	helmet = "head", headwear = "head", headset = "ears", facecover = "face", armor = "armor", rig = "rig", backpack = "back", secure = "secure",
+	pistol = "holster", melee = "melee",
+}
 
 local function slotFor(h, d)
 	if d.kind == "weapon" then
@@ -584,6 +591,10 @@ function Raid.inv(player, p)
 			return fail("NOT_AUTHORIZED")
 		end
 	end
+	-- equipment revision (M16): a request made against an older equipment state is refused (the client refreshes)
+	if p.rev ~= nil and (type(p.rev) ~= "number" or p.rev ~= (me.erev or 0)) then
+		return fail("STALE_REVISION")
+	end
 	local opts = { inRaid = inRaid }
 	local src, sc = resolve(player, p.from, inRaid)
 	if not src then
@@ -596,7 +607,8 @@ function Raid.inv(player, p)
 	local done, err
 	if op == "move" or op == "quick" or op == "equip" then
 		local dst, dc = src, sc
-		if p.to ~= nil then
+		-- "stash" is not a holder ref: the quick-move branch below sends the item to the profile stash
+		if p.to ~= nil and not (op == "quick" and p.to == "stash") then
 			dst, dc = resolve(player, p.to, inRaid)
 			if not dst then
 				return fail(dc or "BAD_INPUT")
@@ -780,7 +792,7 @@ function Raid.inv(player, p)
 		ctx.Loot.changed(touched)
 	end
 	Raid.afterChange(player, inRaid)
-	return ok()
+	return ok({ erev = me.erev or 0 })
 end
 
 -- Keep the hands slot valid after inventory changes (moving the weapon in hands away draws the next one,
@@ -823,6 +835,11 @@ function Raid.afterChange(player, inRaid)
 		Raid.syncGear(player)
 	end
 	if not inRaid then
+		-- safehouse: the character wears the profile kit (preview of the next raid), diffed per slot
+		local char = player.Character
+		if h and char and char.Parent and not char:GetAttribute("InRaid") then
+			ctx.Appearance.apply(char, { holder = h, weapons = false })
+		end
 		local prof = ctx.Profiles.get(player)
 		if prof then
 			prof.rev += 1

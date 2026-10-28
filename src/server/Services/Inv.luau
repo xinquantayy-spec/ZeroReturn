@@ -4,6 +4,7 @@
 --   items = { [guid] = item },   item = { id, n, a?(rounds), at?(ammo id), mag?(guid), dur?, uses?, hp?, fir?, fip?, rk? }
 --   grids = { [cid] = { [guid] = { x, y, r } } },   cid = "stash" | "pockets" | "main" | <container item guid>
 --   slots = { [slot] = guid },   mainW?, mainH?  (world boxes / ground piles)
+--   erev?  equipment revision: bumped on every slot change (stale equip requests are refused, M16)
 -- }
 -- Invariant: every item has exactly one location: a grid placement, a slot, or a weapon's magazine well.
 local RS = game:GetService("ReplicatedStorage")
@@ -12,6 +13,7 @@ local Items = require(Shared.Items)
 local Grid = require(Shared.Grid)
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
+local Equipment = require(Shared.Equipment)
 
 local Inv = {}
 local defs = Items.defs
@@ -157,12 +159,20 @@ function Inv.descendants(h: any, g: string, out: { string }?): { string }
 	return list
 end
 
+-- every equipment slot write goes through here: the revision lets the server refuse requests made against an
+-- older equipment state and lets observers know the worn kit changed
+local function setSlot(h: any, slot: string, g: string?)
+	h.slots[slot] = g
+	h.erev = (h.erev or 0) + 1
+end
+Inv.setSlot = setSlot
+
 local function detach(h: any, g: string)
 	local k, a, b = Inv.locate(h, g)
 	if k == "grid" then
 		h.grids[a][g] = nil
 	elseif k == "slot" then
-		h.slots[a] = nil
+		setSlot(h, a, nil)
 	elseif k == "mag" then
 		h.items[a].mag = nil
 	elseif k == "mod" then
@@ -249,6 +259,18 @@ function Inv.canEquip(h: any, g: string, slot: string): (boolean, string?)
 	end
 	if slot == "rig" and d.armor and h.slots.armor then
 		return false, "ARMOR_CONFLICT"
+	end
+	-- visual compatibility (M16): a full-cut helmet or a hard hat leaves no room for a headset, etc.
+	local worn = {}
+	for s, sg in h.slots do
+		local wi = s ~= slot and sg ~= g and h.items[sg]
+		if wi then
+			worn[s] = wi.id
+		end
+	end
+	local code = Equipment.conflict(worn, slot, it.id)
+	if code then
+		return false, code
 	end
 	return true, nil
 end
@@ -350,7 +372,7 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 			return true, nil
 		end
 		detach(h, g)
-		h.slots[dest.slot] = g
+		setSlot(h, dest.slot, g)
 		return true, nil
 	end
 	local cid = dest.c
@@ -487,7 +509,7 @@ function Inv.placeSlot(h: any, g: string, it: any, slot: string): (boolean, stri
 		h.grids[g] = nil
 		return false, err
 	end
-	h.slots[slot] = g
+	setSlot(h, slot, g)
 	return true, nil
 end
 
@@ -546,7 +568,7 @@ function Inv.restore(h: any, b: any)
 	if f.k == "grid" and h.grids[f.a] then
 		h.grids[f.a][b.g] = { x = f.b.x, y = f.b.y, r = f.b.r }
 	elseif f.k == "slot" then
-		h.slots[f.a] = b.g
+		setSlot(h, f.a, b.g)
 	elseif f.k == "mag" and h.items[f.a] then
 		h.items[f.a].mag = b.g
 	elseif f.k == "mod" and h.items[f.a] then

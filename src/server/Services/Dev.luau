@@ -393,6 +393,12 @@ function C.place(name, pos, lookAt)
 	return "ok"
 end
 
+-- M16 character / equipment checks (C01-C12 server side)
+function C.chartests()
+	local CT = require(script.Parent.Parent.Tests.CharTests)
+	return (CT.run(ctx))
+end
+
 function C.tests()
 	local folder = script.Parent.Parent:FindFirstChild("Tests")
 	local report = {}
@@ -837,6 +843,167 @@ function C.weapon(name)
 		mods = mods, ms = wg and Inv.modStats(s.inv, wg), tpParts = tp, slingParts = sling, light = light,
 		lightAttr = char and char:GetAttribute("WeaponLight"), activeAttr = char and char:GetAttribute("ActiveWeapon"), kind = wd and wd.kind,
 	})
+end
+
+-- ── M16 character showroom ───────────────────────────────────────────────────
+-- A neutral grey stage away from the map with dummies built and dressed through the real rig/appearance path.
+-- list = { { name, kind (look) | preset ("operator", "scavenger", "guard", "bodyguard", "foreman"), seed (AI kit
+-- seed), variant, gear = { [slot] = "ITEM" | "ITEM:tint" } (explicit kit, overrides the preset's), x, z, yaw (deg,
+-- 180 = facing the stage front), stance, aim, sprint, speed (treadmill velocity for walk/sprint cycles), pitch,
+-- depth, active (slot in hands) } }
+local RigSpec = require(Shared.RigSpec)
+local Equipment = require(Shared.Equipment)
+local showKits = setmetatable({}, { __mode = "k" }) -- showroom dummy -> its kit holder
+local SHOW_ORIGIN = Vector3.new(0, 0, 1100)
+local function kitHolder(gear)
+	local h = { slots = {}, items = {}, grids = {} }
+	local n = 0
+	for slot, spec in gear or {} do
+		local id, tint = string.match(spec, "^([%w_]+):?(%w*)$")
+		if id and Items.defs[id] then
+			n += 1
+			h.items["sg" .. n] = { id = id, tint = (tint ~= "" and tint) or nil }
+			h.slots[slot] = "sg" .. n
+		end
+	end
+	return h
+end
+C.kitHolder = kitHolder
+function C.showroom(list)
+	local folder = workspace:FindFirstChild("ZR_Showroom")
+	if folder then
+		folder:Destroy()
+	end
+	folder = Instance.new("Folder")
+	folder.Name = "ZR_Showroom"
+	local stage = Instance.new("Model")
+	stage.Name = "Stage"
+	for _, s in {
+		{ Vector3.new(140, 1, 70), Vector3.new(0, -0.5, 0), Color3.fromRGB(148, 150, 152) },
+		{ Vector3.new(140, 40, 1), Vector3.new(0, 20, 26), Color3.fromRGB(166, 168, 171) },
+	} do
+		local p = Instance.new("Part")
+		p.Anchored = true
+		p.Size = s[1]
+		p.CFrame = CFrame.new(SHOW_ORIGIN + s[2])
+		p.Color = s[3]
+		p.Material = Enum.Material.SmoothPlastic
+		p.TopSurface = Enum.SurfaceType.Smooth
+		p.BottomSurface = Enum.SurfaceType.Smooth
+		p.Parent = stage
+	end
+	stage.Parent = folder
+	folder.Parent = workspace
+	local names = {}
+	for i, d in list or {} do
+		local preset = d.preset and Equipment.PRESETS[d.preset]
+		local kind = d.kind or (preset and preset.look) or "player"
+		local variant = d.variant or 1
+		local h
+		if d.gear then
+			h = kitHolder(d.gear)
+		elseif preset and preset.ai then
+			h = ctx.AI.loadoutFor(preset.ai, Random.new(d.seed or i))
+		elseif preset and preset.kit then
+			h = kitHolder(preset.kit)
+		else
+			h = kitHolder({})
+		end
+		local rig = ctx.Chars.buildRig(kind, variant)
+		rig.Name = d.name or ("Dummy" .. i)
+		local cf = CFrame.new(SHOW_ORIGIN + Vector3.new(d.x or (i - 1) * 6, RigSpec.hrp.center.Y, d.z or 0)) * CFrame.Angles(0, math.rad(d.yaw or 180), 0)
+		rig:PivotTo(cf)
+		rig.HumanoidRootPart.Anchored = true
+		rig:SetAttribute("Stance", d.stance or "s")
+		rig:SetAttribute("Depth", d.depth or 0.7)
+		rig:SetAttribute("Aim", d.aim == true)
+		rig:SetAttribute("Sprint", d.sprint == true)
+		rig:SetAttribute("Pitch", d.pitch or 0)
+		rig:SetAttribute("Showroom", true)
+		rig:SetAttribute("Preset", d.preset)
+		rig.Parent = folder
+		-- active = slot in the hands ("none": long guns slung, hands empty)
+		local gear = ctx.Chars.gearOf(h, d.active or "primary")
+		local activeG = (d.active ~= "none") and gear and gear.activeG or nil
+		ctx.Appearance.apply(rig, { look = kind, variant = variant, holder = h, active = activeG })
+		showKits[rig] = h
+		if d.speed then
+			rig.HumanoidRootPart.AssemblyLinearVelocity = cf.LookVector * d.speed
+		end
+		ctx.Chars.pose(rig)
+		table.insert(names, rig.Name)
+	end
+	return table.concat(names, ",")
+end
+
+-- what a showroom dummy (or a player's character) visibly wears: group -> mesh keys, plus revision and kit
+function C.appearance(name)
+	local folder = workspace:FindFirstChild("ZR_Showroom")
+	local m = (folder and folder:FindFirstChild(name)) or (Players:FindFirstChild(name) and Players[name].Character)
+	if not m then
+		return "no model " .. tostring(name)
+	end
+	local parts = {}
+	for g, keys in ctx.Appearance.describe(m) do
+		table.insert(parts, g .. "=" .. table.concat(keys, "+"))
+	end
+	table.sort(parts)
+	local gear = {}
+	for _, slot in Equipment.VISUAL_SLOTS do
+		local id = m:GetAttribute("Gear_" .. slot)
+		if id then
+			table.insert(gear, slot .. ":" .. id)
+		end
+	end
+	return string.format("%s rev=%s look=%s/%s gear={%s} pieces={%s}", m.Name, tostring(m:GetAttribute("AppearanceRev")), tostring(m:GetAttribute("Look")),
+		tostring(m:GetAttribute("LookVariant")), table.concat(gear, ","), table.concat(parts, "; "))
+end
+
+-- equip / unequip on a showroom dummy through Inv (the same rules as players), then re-apply its appearance
+function C.showEquip(name, slot, spec)
+	local folder = workspace:FindFirstChild("ZR_Showroom")
+	local m = folder and folder:FindFirstChild(name)
+	local h = m and showKits[m]
+	if not h then
+		return "no dummy " .. tostring(name)
+	end
+	local cur = h.slots[slot]
+	if cur then
+		h.slots[slot] = nil
+		h.items[cur] = nil
+		h.erev = (h.erev or 0) + 1
+	end
+	if spec and spec ~= "" then
+		local id, tint = string.match(spec, "^([%w_]+):?(%w*)$")
+		if not (id and Items.defs[id]) then
+			return "bad item " .. tostring(spec)
+		end
+		local g, it = ctx.Inv.newItem(id, 1, (tint ~= "" and { tint = tint }) or nil)
+		local ok, err = ctx.Inv.placeSlot(h, g, it, slot)
+		if not ok then
+			ctx.Appearance.apply(m, { holder = h, keepWeapons = true })
+			return "refused " .. tostring(err)
+		end
+	end
+	ctx.Appearance.apply(m, { holder = h, keepWeapons = true })
+	return C.appearance(name)
+end
+
+function C.showroomClear()
+	local folder = workspace:FindFirstChild("ZR_Showroom")
+	if folder then
+		folder:Destroy()
+	end
+	return "cleared"
+end
+
+-- teleport the player to the showroom stage (the client's orbit camera follows dummies by name)
+function C.showroomGo(name)
+	local p = plr(name)
+	if p.Character then
+		p.Character:PivotTo(CFrame.new(SHOW_ORIGIN + Vector3.new(0, RigSpec.hrp.center.Y, -14)))
+	end
+	return "ok"
 end
 
 function Dev.init(c)

@@ -3,18 +3,39 @@
 character faces -Z, origin at the ground between the feet, rest pose standing with arms hanging).
 Writes src/shared/RigSpec.luau (game) and assets/blender_scripts/rig_spec.json (Blender mesh build).
 Usage: python3 tools/rig_def.py
+
+Body version ZR_BLOCK_R15_V1 (2026-10-28, owner art direction): Roblox block proportions measured from the
+owner's reference (USER_BLOCK_BODY_REFERENCE.png: torso 2 wide x 1.95 tall, arms 0.97 x 1.93, legs 1.0 x 2.0,
+head 1.18 x 1.05, in torso-half-width units) scaled by K = 1.08 so the character keeps the world's 5.4-stud
+scale (doors, cover and eye height were built for it). Same 15 R15-named segments, Motor6D joints and RigMath
+procedural animation as the previous operator rig; only proportions and joint positions changed.
+Shoulder pivots sit at the inner top corner of each arm (like R15), which gives block arms the reach to
+hold a long gun; elbows, wrists, hips, knees and ankles sit on the limb centre lines.
 """
 import json, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BODY_VERSION = "ZR_BLOCK_R15_V1"
+K = 1.08
+
+# vertical layout (studs from the ground)
+FOOT_TOP = 0.28
+KNEE_Y = 1.18
+LEG_TOP = 2.16  # = K * 2.0
+WAIST_Y = 2.56  # LowerTorso band 0.40 (reference 0.36 * K)
+TORSO_TOP = 4.26  # torso 2.10 tall
+HEAD_BOTTOM, HEAD_TOP = 4.28, 5.44
+ARM_X = 1.62  # arm centre (torso half width 1.08 + gap 0.02 + half arm 0.52)
+LEG_X = 0.54
+ELBOW_Y, WRIST_Y = 3.30, 2.44
 
 # joints: name, parent part, child part, world position (rest)
-SHOULDER = (0.90, 4.30, 0.0)
-ELBOW = (0.92, 3.30, 0.0)
-WRIST = (0.93, 2.40, 0.0)
-HIP = (0.36, 2.66, 0.0)
-KNEE = (0.38, 1.44, 0.0)
-ANKLE = (0.40, 0.26, 0.0)
+SHOULDER = (1.12, 4.12, 0.0)  # inner top corner of the arm
+ELBOW = (ARM_X, 3.32, 0.0)
+WRIST = (ARM_X, 2.46, 0.0)
+HIP = (LEG_X, 2.06, 0.0)
+KNEE = (LEG_X, 1.20, 0.0)
+ANKLE = (LEG_X, 0.30, 0.0)
 
 
 def mirror(p):
@@ -22,9 +43,9 @@ def mirror(p):
 
 
 JOINTS = [
-    ("Root", "HumanoidRootPart", "LowerTorso", (0.0, 2.86, 0.0)),
-    ("Waist", "LowerTorso", "UpperTorso", (0.0, 3.17, 0.0)),
-    ("Neck", "UpperTorso", "Head", (0.0, 4.58, 0.0)),
+    ("Root", "HumanoidRootPart", "LowerTorso", (0.0, (LEG_TOP + WAIST_Y) / 2, 0.0)),
+    ("Waist", "LowerTorso", "UpperTorso", (0.0, WAIST_Y, 0.0)),
+    ("Neck", "UpperTorso", "Head", (0.0, TORSO_TOP + 0.01, 0.0)),
     ("RightShoulder", "UpperTorso", "RightUpperArm", SHOULDER),
     ("RightElbow", "RightUpperArm", "RightLowerArm", ELBOW),
     ("RightWrist", "RightLowerArm", "RightHand", WRIST),
@@ -42,41 +63,48 @@ JOINTS = [
 
 def seg(x, top, bottom, w, d, z=0.0):
     """vertical segment: centre x, top y, bottom y, width, depth"""
-    return {"size": [w, top - bottom, d], "center": [x, (top + bottom) / 2, z]}
+    return {"size": [round(w, 4), round(top - bottom, 4), round(d, 4)], "center": [x, round((top + bottom) / 2, 4), z]}
 
 
 PARTS = {
-    "LowerTorso": seg(0.0, 3.20, 2.52, 1.20, 0.70),
-    "UpperTorso": seg(0.0, 4.55, 3.12, 1.46, 0.76),
-    "Head": seg(0.0, 5.52, 4.56, 0.74, 0.84, -0.03),
-    "RightUpperArm": seg(0.91, 4.42, 3.24, 0.44, 0.46),
-    "RightLowerArm": seg(0.925, 3.36, 2.36, 0.38, 0.40),
-    "RightHand": seg(0.935, 2.44, 1.98, 0.24, 0.30),
-    "RightUpperLeg": seg(0.37, 2.80, 1.38, 0.58, 0.62),
-    "RightLowerLeg": seg(0.39, 1.50, 0.22, 0.48, 0.50),
-    "RightFoot": {"size": [0.40, 0.30, 0.98], "center": [0.40, 0.15, -0.17]},
+    "LowerTorso": seg(0.0, WAIST_Y, LEG_TOP, 2.16, 1.08),
+    "UpperTorso": seg(0.0, TORSO_TOP, WAIST_Y, 2.16, 1.08),
+    "Head": seg(0.0, HEAD_TOP, HEAD_BOTTOM, 1.26, 1.18),
+    "RightUpperArm": seg(ARM_X, TORSO_TOP, ELBOW_Y, 1.04, 1.04),
+    "RightLowerArm": seg(ARM_X, ELBOW_Y, WRIST_Y, 1.04, 1.04),
+    "RightHand": seg(ARM_X, WRIST_Y, LEG_TOP, 1.0, 1.0),
+    "RightUpperLeg": seg(LEG_X, LEG_TOP, KNEE_Y, 1.06, 1.06),
+    "RightLowerLeg": seg(LEG_X, KNEE_Y, FOOT_TOP, 1.06, 1.06),
+    "RightFoot": {"size": [1.08, FOOT_TOP, 1.18], "center": [LEG_X, FOOT_TOP / 2, -0.05]},
 }
 for name in list(PARTS):
     if name.startswith("Right"):
         p = PARTS[name]
         PARTS["Left" + name[5:]] = {"size": list(p["size"]), "center": [-p["center"][0], p["center"][1], p["center"][2]]}
 
-HRP = {"size": [1.5, 2.6, 1.0], "center": [0.0, 3.3, 0.0]}
+HRP = {"size": [2.0, 2.1, 1.0], "center": [0.0, LEG_TOP + 1.05, 0.0]}
 HIP_HEIGHT = HRP["center"][1] - HRP["size"][1] / 2  # HRP bottom above the floor
-EYE = (0.0, 5.12, -0.30)  # eye point (head front), world rest
+EYE = (0.0, 4.92, -0.45)  # eye point (head front), world rest
 
 SPEC = {
+    "bodyVersion": BODY_VERSION,
     "hrp": HRP,
     "hipHeight": round(HIP_HEIGHT, 4),
     "eye": EYE,
-    "height": 5.52,
+    "height": HEAD_TOP,
     "parts": PARTS,
     "joints": [{"name": n, "p0": a, "p1": b, "pos": list(p)} for n, a, b, p in JOINTS],
 }
 
 
+def num(x):
+    s = "%.4f" % x
+    s = s.rstrip("0").rstrip(".")
+    return "0" if s in ("-0", "") else s
+
+
 def lua_vec(v):
-    return "Vector3.new(%s, %s, %s)" % tuple(("%.4f" % x).rstrip("0").rstrip(".") if "." in "%.4f" % x else "%d" % x for x in v)
+    return "V(%s, %s, %s)" % tuple(num(x) for x in v)
 
 
 def write_lua(path):
@@ -84,12 +112,14 @@ def write_lua(path):
         "--!strict",
         "-- GENERATED by tools/rig_def.py (do not edit by hand): operator rig proportions in studs.",
         "-- Roblox space, y up, character faces -Z, origin on the ground; rest pose standing, arms hanging.",
+        "-- Body version %s: Roblox block proportions from the owner's reference, scaled x%s." % (BODY_VERSION, K),
         "local V = Vector3.new",
         "return {",
+        '\tbodyVersion = "%s",' % BODY_VERSION,
         "\thrp = { size = %s, center = %s }," % (lua_vec(HRP["size"]), lua_vec(HRP["center"])),
-        "\thipHeight = %s," % SPEC["hipHeight"],
+        "\thipHeight = %s," % num(SPEC["hipHeight"]),
         "\teye = %s," % lua_vec(EYE),
-        "\theight = %s," % SPEC["height"],
+        "\theight = %s," % num(SPEC["height"]),
         "\tparts = {",
     ]
     for name in sorted(PARTS):
@@ -101,14 +131,12 @@ def write_lua(path):
         lines.append('\t\t{ name = "%s", p0 = "%s", p1 = "%s", pos = %s },' % (n, a, b, lua_vec(p)))
     lines.append("\t},")
     lines.append("}")
-    text = "\n".join(lines).replace("Vector3.new", "V")
-    text = text.replace("local V = V(", "local V = Vector3.new(").replace("local V = V", "local V = Vector3.new")
     with open(path, "w") as f:
-        f.write(text + "\n")
+        f.write("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":
     write_lua(os.path.join(ROOT, "src", "shared", "RigSpec.luau"))
     with open(os.path.join(ROOT, "assets", "blender_scripts", "rig_spec.json"), "w") as f:
         json.dump(SPEC, f, indent=1)
-    print("hipHeight", SPEC["hipHeight"], "parts", len(PARTS), "joints", len(JOINTS))
+    print(BODY_VERSION, "hipHeight", SPEC["hipHeight"], "height", SPEC["height"], "parts", len(PARTS), "joints", len(JOINTS))

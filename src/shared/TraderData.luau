@@ -23,7 +23,7 @@ T.defs = {
 	tilda = {
 		name = "TILDA", title = "Outfitter", markup = 1.25,
 		desc = "Stitches, sells and fits armour, helmets, rigs and packs.",
-		buys = { armor = 0.55, helmet = 0.55, rig = 0.55, backpack = 0.55 },
+		buys = { armor = 0.55, helmet = 0.55, rig = 0.55, backpack = 0.55, headwear = 0.5, headset = 0.55, facecover = 0.5 },
 	},
 	fence = {
 		name = "FENCE", title = "Fence", markup = 1.7,
@@ -64,6 +64,7 @@ T.offers = {
 	},
 	tilda = {
 		o("RIG_BELT", 1, 3), o("BAG_SLING", 1, 3), o("ARMOR_C2", 1, 2), o("HELMET_C2", 1, 2),
+		o("CAP_FIELD", 1, 3), o("BEANIE", 1, 3), o("GAITER", 1, 3), o("HEADSET_GS1", 2, 1), o("HEADSET_COMM", 3, 1),
 		o("RIG_CHEST", 2, 2), o("CANVAS_BAG", 2, 2), o("ARMOR_C3", 2, 2), o("HELMET_C3", 2, 1),
 		o("BAG_PATROL", 3, 1), o("ARMOR_C4", 3, 1), o("HELMET_C4", 3, 1), o("RIG_PLATE", 3, 1),
 		o("BAG_RAID", 4, 1), o("ARMOR_C5", 4, 1),

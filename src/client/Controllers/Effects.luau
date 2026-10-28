@@ -186,6 +186,13 @@ function Effects.loop(name, parent, noGroup)
 	return s, r[3]
 end
 
+-- ── hearing protection (M16): the server sets Gear_ears on the character from the worn headset item ─────────
+local function headset()
+	local me = Players.LocalPlayer.Character
+	return me ~= nil and me:GetAttribute("Gear_ears") ~= nil
+end
+Effects.headset = headset
+
 -- ── deafness (blasts, stun charges): world sounds muffled and quieter, ears ringing ───────────────────────
 function Effects.deafLevel()
 	local left = deaf.untilT - os.clock()
@@ -196,7 +203,8 @@ function Effects.deafLevel()
 end
 
 function Effects.deafen(amount, dur)
-	amount = math.clamp(amount or 0, 0, 1)
+	-- an active headset clamps blast and stun-charge noise
+	amount = math.clamp((amount or 0) * (headset() and 0.55 or 1), 0, 1)
 	if amount <= 0.01 then
 		return
 	end
@@ -281,7 +289,9 @@ function Effects.footstep(pos, intensity, model, own)
 	if own then
 		Effects.sfx(name, SoundService, vol, speed)
 	else
-		Effects.sfx(name, hit and hit.Position or pos, vol, speed, 30 + intensity * 70)
+		-- an active headset lifts quiet sounds: other people's steps are louder and carry further
+		local hs = headset()
+		Effects.sfx(name, hit and hit.Position or pos, vol * (hs and 1.35 or 1), speed, (30 + intensity * 70) * (hs and 1.3 or 1))
 	end
 	if intensity > 0.9 and math.random() < 0.35 then
 		Effects.sfx("gear_rattle", own and SoundService or pos, vol * 0.5, 1, 40)

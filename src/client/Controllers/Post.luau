@@ -236,6 +236,9 @@ local function probeIndoor()
 end
 
 local function step(dt)
+	if Post.frozen then
+		return -- Studio capture mode (dev bridge "studio")
+	end
 	local S = ctx.Settings.data
 	-- grain: re-seed position at ~24 fps (film cadence)
 	grainClock += dt

@@ -87,11 +87,20 @@ add("HELMET_C3", { name = "Tac Helmet", short = "TAC III", kind = "helmet", w = 
 add("HELMET_C4", { name = "Ballistic Helmet B4", short = "B4", kind = "helmet", w = 2, h = 2, mass = 1.6, value = 78000, rarity = "uncommon", armor = { class = 4, dur = 45, coverage = 0.7, ricochet = 0.4, blunt = 0.24, destr = 0.5 }, desc = "Class 4 high-cut helmet.", color = c("#45493C") })
 add("HELMET_C5", { name = "Bulwark Faceplate Helmet", short = "FACEPLATE", kind = "helmet", w = 2, h = 2, mass = 3.5, value = 260000, rarity = "epic", armor = { class = 5, dur = 60, coverage = 1, ricochet = 0.3, blunt = 0.2, destr = 0.55, face = true }, desc = "Class 5 helmet with steel face plate.", color = c("#34372F") })
 
+add("HARDHAT_FOREMAN", { name = "Foreman's Hard Hat", short = "HARD HAT", kind = "helmet", w = 2, h = 2, mass = 0.6, value = 98000, rarity = "rare", armor = { class = 2, dur = 22, coverage = 0.5, ricochet = 0.45, blunt = 0.35, destr = 0.4 }, desc = "The Quay foreman's battered hard hat with a lamp bracket. Stops little; worth a lot to the right people.", color = c("#C9A23C") })
+
+-- ── headwear, headsets, face covers (M16 visible equipment; no protection) ─────────────────────────────
+add("CAP_FIELD", { name = "Field Cap", short = "CAP", kind = "headwear", w = 2, h = 1, mass = 0.1, value = 2500, desc = "Soft patrol cap. Keeps the sun out of your eyes; stops nothing.", color = c("#4A4A3E") })
+add("BEANIE", { name = "Knit Beanie", short = "BEANIE", kind = "headwear", w = 1, h = 1, mass = 0.1, value = 1800, desc = "Warm knit hat. No protection.", color = c("#3A3833") })
+add("HEADSET_GS1", { name = "GS-1 Active Headset", short = "GS-1", kind = "headset", w = 2, h = 1, mass = 0.35, value = 21000, rarity = "uncommon", desc = "Electronic hearing protection: quiet sounds carry further, blasts and stun charges deafen you less. Fits under cut helmets, caps and beanies, not full-cut shells or a hard hat.", color = c("#3A3D36") })
+add("HEADSET_COMM", { name = "Comms Headset", short = "COMMS", kind = "headset", w = 2, h = 1, mass = 0.4, value = 34000, rarity = "rare", desc = "Hearing protection with a boom microphone. Same hearing as the GS-1. Fits under cut helmets and caps.", color = c("#2A2C2E") })
+add("GAITER", { name = "Field Gaiter", short = "GAITER", kind = "facecover", w = 1, h = 1, mass = 0.08, value = 1500, desc = "Fabric neck gaiter worn over the mouth and nose. Cosmetic.", color = c("#6B6B5E") })
+
 -- ── rigs, backpacks, secure containers ───────────────────────────────────────
 add("RIG_BELT", { name = "Utility Belt", short = "BELT", kind = "rig", w = 2, h = 2, mass = 0.4, value = 6000, grid = { w = 4, h = 1 }, desc = "Four pouches on a belt.", color = c("#5E5A47") })
 add("RIG_CHEST", { name = "Chest Rig", short = "CHEST RIG", kind = "rig", w = 2, h = 2, mass = 0.8, value = 16000, grid = { w = 4, h = 2 }, desc = "Open chest rig, eight cells.", color = c("#5A5844") })
 add("RIG_PLATE", { name = "Assault Plate Rig", short = "PLATE RIG", kind = "rig", w = 3, h = 3, mass = 6.0, value = 95000, rarity = "uncommon", grid = { w = 4, h = 2 }, armor = { class = 4, dur = 50, zones = TS, blunt = 0.25, destr = 0.5 }, desc = "Armored rig, class 4 front plate. Cannot be worn with body armor.", color = c("#4F513F") })
-add("BAG_SLING", { name = "Sling Bag", short = "SLING", kind = "backpack", w = 2, h = 2, mass = 0.4, value = 7500, grid = { w = 3, h = 2 }, desc = "Small over-the-shoulder bag.", color = c("#6B6A4E") })
+add("BAG_SLING", { name = "Day Bag", short = "DAY BAG", kind = "backpack", w = 2, h = 2, mass = 0.4, value = 7500, grid = { w = 3, h = 2 }, desc = "Small two-strap day bag.", color = c("#6B6A4E") })
 add("CANVAS_BAG", { name = "Canvas Pack", short = "CANVAS", kind = "backpack", w = 3, h = 3, mass = 0.9, value = 18000, grid = { w = 4, h = 4 }, desc = "Worn canvas backpack with a 4x4 compartment.", color = c("#6B6A4E") })
 add("BAG_PATROL", { name = "Patrol Pack", short = "PATROL", kind = "backpack", w = 4, h = 4, mass = 1.3, value = 42000, rarity = "uncommon", grid = { w = 5, h = 5 }, desc = "Framed patrol pack.", color = c("#5C5B44") })
 add("BAG_RAID", { name = "Raid Pack", short = "RAID", kind = "backpack", w = 5, h = 5, mass = 2.1, value = 88000, rarity = "rare", grid = { w = 6, h = 6 }, desc = "Large expedition pack. Heavy when full.", color = c("#53523F") })
@@ -167,12 +176,13 @@ local Items = { defs = defs }
 
 -- equipment slots and the kinds each accepts
 Items.SLOTS = {
-	head = { helmet = true }, armor = { armor = true }, rig = { rig = true }, back = { backpack = true }, secure = { secure = true },
+	head = { helmet = true, headwear = true }, ears = { headset = true }, face = { facecover = true },
+	armor = { armor = true }, rig = { rig = true }, back = { backpack = true }, secure = { secure = true },
 	primary = { weapon = true }, secondary = { weapon = true }, holster = { pistol = true }, melee = { melee = true },
 }
-Items.SLOT_ORDER = { "head", "armor", "rig", "back", "secure", "primary", "secondary", "holster", "melee" }
+Items.SLOT_ORDER = { "head", "ears", "face", "armor", "rig", "back", "secure", "primary", "secondary", "holster", "melee" }
 Items.SLOT_NAMES = {
-	head = "HEADWEAR", armor = "BODY ARMOR", rig = "TACTICAL RIG", back = "BACKPACK", secure = "SECURE CONTAINER",
+	head = "HEADWEAR", ears = "EARS", face = "FACE", armor = "BODY ARMOR", rig = "TACTICAL RIG", back = "BACKPACK", secure = "SECURE CONTAINER",
 	primary = "PRIMARY", secondary = "ON BACK", holster = "HOLSTER", melee = "SCABBARD",
 }
 Items.RARITY = { common = 0, uncommon = 1, rare = 2, epic = 3, legendary = 4 }

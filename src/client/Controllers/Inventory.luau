@@ -43,7 +43,7 @@ local defs = Items.defs
 local MOUNTS = { "rail", "muzzle", "under", "side" }
 local MOUNT_NAMES = { rail = "OPTIC", muzzle = "MUZZLE", under = "FOREGRIP", side = "TACTICAL" }
 local SLOT_LAYOUT = {
-	{ "head", 0, 0, 2, 2 }, { "armor", 2, 0, 3, 3 }, { "rig", 5, 0, 3, 3 }, { "back", 8, 0, 3, 3 },
+	{ "head", 0, 0, 2, 2 }, { "ears", 0, 2, 1, 1 }, { "face", 1, 2, 1, 1 }, { "armor", 2, 0, 3, 3 }, { "rig", 5, 0, 3, 3 }, { "back", 8, 0, 3, 3 },
 	{ "primary", 0, 3, 5, 2 }, { "holster", 5, 3, 2, 2 }, { "melee", 7, 3, 1, 2 }, { "secure", 8, 3, 3, 2 },
 	{ "secondary", 0, 5, 5, 2 },
 }
@@ -73,8 +73,16 @@ local function req(payload)
 		return nil
 	end
 	busy = true
+	-- equipment changes carry the equipment revision they were made against (M16); a stale one is refused
+	local d = data()
+	if d and (payload.op == "equip" or (payload.op == "move" and type(payload.dest) == "table" and payload.dest.slot ~= nil)) then
+		payload.rev = d.erev or 0
+	end
 	local res = ctx.State.req("inv", payload)
 	busy = false
+	if res and res.ok and d and type(res.data) == "table" and type(res.data.erev) == "number" then
+		d.erev = res.data.erev
+	end
 	if res and not res.ok and not res.msg then
 		ctx.State.toast(string.gsub(res.code or "FAILED", "_", " "), "warn")
 	end
@@ -299,7 +307,7 @@ local function actionsFor(ref, g)
 		quick(ref, g)
 	end)
 	local k = locate(view, g)
-	if Items.SLOTS and (d.kind == "weapon" or d.kind == "pistol" or d.kind == "melee" or d.kind == "helmet" or d.kind == "armor" or d.kind == "rig" or d.kind == "backpack" or (d.kind == "secure" and not inRaid)) and k ~= "slot" then
+	if Items.SLOTS and (d.kind == "weapon" or d.kind == "pistol" or d.kind == "melee" or d.kind == "helmet" or d.kind == "headwear" or d.kind == "headset" or d.kind == "facecover" or d.kind == "armor" or d.kind == "rig" or d.kind == "backpack" or (d.kind == "secure" and not inRaid)) and k ~= "slot" then
 		add("EQUIP", function()
 			req({ op = "equip", g = g, from = ref, to = "me" })
 		end)

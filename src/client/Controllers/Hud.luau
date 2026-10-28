@@ -474,7 +474,7 @@ local function fastUpdate(dt)
 	swayY += (ty - swayY) * math.min(1, dt * 7)
 	L.root.Position = UDim2.fromOffset(swayX, swayY)
 	L:step(dt)
-	gui.Enabled = not (ctx.Inventory and ctx.Inventory.open)
+	gui.Enabled = not ctx.studio and not (ctx.Inventory and ctx.Inventory.open)
 end
 
 -- generic timed progress (mag loading, examining, unlocking...)

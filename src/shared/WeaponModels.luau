@@ -243,7 +243,10 @@ function M.build(items, it, origin: CFrame, scale: number)
 	return out
 end
 
--- third-person hold kind ("long" | "pistol" | "melee") and the hand anchors (spec units) for an item id
+-- third-person weapons are built at TP_SCALE so they read at block-body scale (ZR_BLOCK_R15_V1); hand anchors
+-- from holdOf are already scaled (third-person studs)
+M.TP_SCALE = 1.35
+-- third-person hold kind ("long" | "pistol" | "melee") and the hand anchors (third-person studs) for an item id
 local holdCache = {}
 function M.holdOf(id: string?)
 	if not id then
@@ -254,7 +257,11 @@ function M.holdOf(id: string?)
 		local d = Items.defs[id]
 		local w = d and d.weapon and Weapons[d.weapon]
 		local spec = w and M.weapons[w.viewmodel or d.weapon]
-		c = spec and { kind = spec.melee and "melee" or (spec.pistol and "pistol" or "long"), anchors = { grip = spec.anchors.grip, hand = spec.anchors.hand or spec.anchors.grip, magwell = spec.anchors.magwell, port = spec.anchors.port } } or false
+		local k = M.TP_SCALE
+		local function sc(v)
+			return v and v * k or nil
+		end
+		c = spec and { kind = spec.melee and "melee" or (spec.pistol and "pistol" or "long"), anchors = { grip = sc(spec.anchors.grip), hand = sc(spec.anchors.hand or spec.anchors.grip), magwell = sc(spec.anchors.magwell), port = sc(spec.anchors.port) } } or false
 		holdCache[id] = c
 	end
 	if not c then

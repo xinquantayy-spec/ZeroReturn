@@ -16,6 +16,7 @@ local Weapons = require(Shared.Weapons)
 local Sounds = require(Shared.Sounds)
 local Textures = require(Shared.Textures)
 local WeaponModels = require(Shared.WeaponModels)
+local Equipment = require(Shared.Equipment)
 
 local Weapon = {
 	aiming = false, reloading = false, healing = false, drawing = false, checking = false, light = false, scoped = false,
@@ -35,8 +36,7 @@ local TUNE = {
 	rPole = Vector3.new(0.7, -1, 0.3), lPole = Vector3.new(-1, -0.7, 0.1),
 }
 Weapon.TUNE = TUNE
-local SLEEVE, GLOVE = Color3.fromHex("3E4334"), Color3.fromHex("2A2C2B")
-local GLOVE_PAD, GLOVE_SEAM = Color3.fromHex("3B3E3A"), Color3.fromHex("181A19")
+local GLOVE_SEAM = Color3.fromHex("181A19") -- glove colours come from the look (Equipment.fpColors)
 local ROT_Y90 = CFrame.Angles(0, math.rad(90), 0)
 local L_REST = CFrame.new(-0.34, -0.68, -0.36) * CFrame.Angles(math.rad(50), 0, math.rad(20)) -- knife: free hand low
 local POUCH = CFrame.new(-0.14, -0.98, -0.28) -- camera space, off-screen (rig pouches)
@@ -180,8 +180,15 @@ local function ammoDefOf(it, d)
 end
 
 -- ── viewmodel ────────────────────────────────────────────────────────────────
+-- the local character's outfit (server-set Look / LookVariant attributes): first-person sleeves and gloves
+local function myLook()
+	local me = Players.LocalPlayer.Character
+	return (me and me:GetAttribute("Look")) or "player", (me and me:GetAttribute("LookVariant")) or 1
+end
+
 local function vmKey(it, g)
-	local k = { g, it.mag and "M" or "-" }
+	local look, variant = myLook()
+	local k = { g, it.mag and "M" or "-", look .. variant }
 	for _, mount in MOUNTS do
 		k[#k + 1] = (it.mods and it.mods[mount]) or "-"
 	end
@@ -250,34 +257,51 @@ local function buildVm(it, d, g)
 		table.insert(o.magParts, p)
 	end
 	o.nFixed = #o.all
-	-- arms (posed by two-bone IK every frame), then the shell used by tube reloads. Sleeves match the body's
-	-- jacket (PMC or scav clothes).
+	-- arms (posed by two-bone IK every frame), then the shell used by tube reloads. Sleeves and gloves come from
+	-- the same look definitions as the third-person body (Equipment.fpColors: operator, scav variants, ...); the
+	-- sleeves are the block-sleeve meshes of the gear batch (round parts until it loads).
 	o.vms = VMS
-	local sleeve = SLEEVE
-	local me = game:GetService("Players").LocalPlayer.Character
-	local ua = me and me:FindFirstChild("LeftUpperArm")
-	if ua and ua:IsA("BasePart") then
-		sleeve = ua.Color:Lerp(Color3.new(0, 0, 0), 0.18)
-	end
-	-- each arm: round sleeve (upper arm, elbow, forearm with a fuller elbow end, darker cuff) and a gloved
-	-- hand (back of hand with a knuckle pad, curled fingers, thumb) - not sticks
-	local cuffC = sleeve:Lerp(Color3.new(0, 0, 0), 0.35)
+	local look, variant = myLook()
+	local fp = Equipment.fpColors(look, variant)
+	local sleeve = fp.sleeve:Lerp(Color3.new(0, 0, 0), 0.12)
+	local cuffC = fp.cuff
+	local glove, gloveP = fp.glove, fp.pad
+	local lib = game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+	local sleeveMesh = lib and lib:FindFirstChild("ZR_FP_Sleeve")
+	local cuffMesh = lib and lib:FindFirstChild("ZR_FP_Cuff")
 	local function round(size, color, mat, shape)
 		local p = vpart(model, size, color, mat)
 		p.Shape = shape or Enum.PartType.Cylinder
 		return p
 	end
+	-- block sleeve segment (mesh stretched along X by seg()), or the round part
+	local function sleevePart(size, color, mesh)
+		if not mesh then
+			return round(size, color, Enum.Material.Fabric)
+		end
+		local p = mesh:Clone()
+		p.Size = size
+		p.Color = color
+		p.Material = Enum.Material.Fabric
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.Parent = model
+		return p
+	end
 	local function arm()
 		return {
-			upper = round(Vector3.new(TUNE.upper, TUNE.upperW, TUNE.upperW), sleeve, Enum.Material.Fabric),
+			upper = sleevePart(Vector3.new(TUNE.upper, TUNE.upperW, TUNE.upperW), sleeve, sleeveMesh),
 			elbow = round(Vector3.new(TUNE.upperW * 0.98, TUNE.upperW * 0.98, TUNE.upperW * 0.98), sleeve, Enum.Material.Fabric, Enum.PartType.Ball),
-			fore = round(Vector3.new(TUNE.fore, TUNE.foreW, TUNE.foreW), sleeve, Enum.Material.Fabric),
-			bulk = round(Vector3.new(TUNE.fore * 0.5, TUNE.foreW * 1.16, TUNE.foreW * 1.16), sleeve, Enum.Material.Fabric),
-			cuff = round(Vector3.new(0.06, TUNE.foreW * 1.1, TUNE.foreW * 1.1), cuffC, Enum.Material.Fabric),
-			palm = vpart(model, Vector3.new(0.05, 0.14, 0.13), GLOVE, Enum.Material.Fabric),
-			pad = vpart(model, Vector3.new(0.022, 0.09, 0.1), GLOVE_PAD),
-			fingers = vpart(model, Vector3.new(0.045, 0.125, 0.085), GLOVE, Enum.Material.Fabric),
-			thumb = vpart(model, Vector3.new(0.034, 0.034, 0.08), GLOVE, Enum.Material.Fabric),
+			fore = sleevePart(Vector3.new(TUNE.fore, TUNE.foreW, TUNE.foreW), sleeve, sleeveMesh),
+			bulk = sleevePart(Vector3.new(TUNE.fore * 0.5, TUNE.foreW * 1.16, TUNE.foreW * 1.16), sleeve, sleeveMesh),
+			cuff = sleevePart(Vector3.new(0.06, TUNE.foreW * 1.1, TUNE.foreW * 1.1), cuffC, cuffMesh),
+			palm = vpart(model, Vector3.new(0.05, 0.14, 0.13), glove, Enum.Material.Fabric),
+			pad = vpart(model, Vector3.new(0.022, 0.09, 0.1), gloveP),
+			fingers = vpart(model, Vector3.new(0.045, 0.125, 0.085), glove, Enum.Material.Fabric),
+			thumb = vpart(model, Vector3.new(0.034, 0.034, 0.08), glove, Enum.Material.Fabric),
 			seam = vpart(model, Vector3.new(0.056, 0.02, 0.135), GLOVE_SEAM),
 		}
 	end

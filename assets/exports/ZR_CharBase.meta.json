@@ -1,0 +1,223 @@
+{
+ "ZR_BLK_LowerTorso": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   2.16,
+   0.4,
+   1.08
+  ],
+  "tris": 240
+ },
+ "ZR_BLK_UpperTorso": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   2.16,
+   1.7,
+   1.08
+  ],
+  "tris": 572
+ },
+ "ZR_BLK_Head": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.26,
+   1.16,
+   1.18
+  ],
+  "tris": 404
+ },
+ "ZR_BLK_RightUpperArm": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.04,
+   0.96,
+   1.04
+  ],
+  "tris": 260
+ },
+ "ZR_BLK_RightLowerArm": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.04,
+   0.86,
+   1.04
+  ],
+  "tris": 196
+ },
+ "ZR_BLK_RightHand": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.0,
+   0.28,
+   1.0
+  ],
+  "tris": 240
+ },
+ "ZR_BLK_RightUpperLeg": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.06,
+   0.98,
+   1.06
+  ],
+  "tris": 208
+ },
+ "ZR_BLK_RightLowerLeg": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.06,
+   0.9,
+   1.06
+  ],
+  "tris": 196
+ },
+ "ZR_BLK_RightFoot": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.08,
+   0.28,
+   1.18
+  ],
+  "tris": 232
+ },
+ "ZR_BLK_LeftUpperArm": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.04,
+   0.96,
+   1.04
+  ],
+  "tris": 260
+ },
+ "ZR_BLK_LeftLowerArm": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.04,
+   0.86,
+   1.04
+  ],
+  "tris": 196
+ },
+ "ZR_BLK_LeftHand": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.0,
+   0.28,
+   1.0
+  ],
+  "tris": 240
+ },
+ "ZR_BLK_LeftUpperLeg": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.06,
+   0.98,
+   1.06
+  ],
+  "tris": 208
+ },
+ "ZR_BLK_LeftLowerLeg": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.06,
+   0.9,
+   1.06
+  ],
+  "tris": 196
+ },
+ "ZR_BLK_LeftFoot": {
+  "center": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "size": [
+   1.08,
+   0.28,
+   1.18
+  ],
+  "tris": 232
+ },
+ "ZR_EQ_HelmetA": {
+  "center": [
+   -0.0,
+   0.152,
+   0.0048
+  ],
+  "size": [
+   1.65,
+   1.3659,
+   1.6496
+  ],
+  "tris": 952
+ },
+ "ZR_CAL_Cube2": {
+  "center": [
+   0.05,
+   1.0,
+   -0.1
+  ],
+  "size": [
+   2.1,
+   2.0,
+   2.2
+  ],
+  "tris": 36
+ }
+}

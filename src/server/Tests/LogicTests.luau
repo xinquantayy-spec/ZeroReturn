@@ -301,8 +301,9 @@ function T.run(ctx)
 	-- operator rig math (shared by the server hitbox pose and every client's animator)
 	do
 		local RigMath = require(Shared.RigMath)
-		local root = CFrame.new(0, 3.3, 0)
-		local chest = CFrame.new(0, 3.835, 0)
+		local RigSpec = require(Shared.RigSpec)
+		local root = CFrame.new(RigSpec.hrp.center)
+		local chest = CFrame.new(RigSpec.parts.UpperTorso.center)
 		local c = RigMath.arm.R
 		local target = (chest * CFrame.new(0.3, 0, -0.9)).Position
 		local _, _, _, handCF = RigMath.solve(c, chest, target, CFrame.identity, Vector3.new(0.6, -0.7, 0.9))
@@ -320,7 +321,7 @@ function T.run(ctx)
 		local eyeL = RigMath.eye(root, { stance = "s", lean = 1 }).Position
 		check("lean right moves the eye right", eyeL.X > 0.6)
 		-- crouched legs keep the ankles on the floor
-		local crootY = 3.3 - (RigMath.STAND_HIP - RigMath.hipFor("c", 1))
+		local crootY = RigSpec.hrp.center.Y - (RigMath.STAND_HIP - RigMath.hipFor("c", 1))
 		local Lc = RigMath.pose(CFrame.new(0, crootY, 0), { stance = "c", depth = 1 })
 		local Jr, Jh = RigMath.joints.Root, RigMath.joints.RightHip
 		local pelvis = CFrame.new(0, crootY, 0) * CFrame.new(Jr.p0) * Lc.Root * CFrame.new(-Jr.p1)
@@ -328,7 +329,21 @@ function T.run(ctx)
 		local Jk, Ja = RigMath.joints.RightKnee, RigMath.joints.RightAnkle
 		local shin = thigh * CFrame.new(Jk.p0) * Lc.RightKnee * CFrame.new(-Jk.p1)
 		local ankle = (shin * CFrame.new(Ja.p0)).Position
-		check("crouch IK plants the ankle", math.abs(ankle.Y - 0.26) < 0.05)
+		check("crouch IK plants the ankle", math.abs(ankle.Y - RigMath.ANKLE_H) < 0.05)
+		-- M16 block body: proportions from the owner's reference (broad torso, arm and leg blocks, rounded head)
+		local P = RigSpec.parts
+		check("block body proportions", RigSpec.bodyVersion == "ZR_BLOCK_R15_V1" and math.abs(P.UpperTorso.size.X - 2 * P.LeftUpperLeg.size.X) < 0.05
+			and P.Head.size.X < P.UpperTorso.size.X * 0.65 and math.abs(P.LeftUpperArm.size.X - P.LeftUpperLeg.size.X) < 0.05 and RigSpec.height > 5.2 and RigSpec.height < 5.7)
+		-- the support hand reaches the long gun in the ready and aim holds (block arms are short for their width)
+		local _, wp = require(Shared.WeaponModels).holdOf("R17_RIFLE")
+		for _, mode in { "ready", "aim" } do
+			local _, Wm = RigMath.pose(root, { stance = "s", hold = "long", mode = mode, weapon = wp })
+			local _, chestM = RigMath.spine(root, { stance = "s" })
+			local lh = Wm * CFrame.new(RigMath.supportPoint(wp, "long")) * RigMath.GRIP_L
+			local wrist = (lh * CFrame.new(RigMath.arm.L.j3.p1)).Position
+			local sh = (chestM * CFrame.new(RigMath.arm.L.j1.p0)).Position
+			check("support hand reaches (" .. mode .. ")", (wrist - sh).Magnitude <= RigMath.arm.L.a + RigMath.arm.L.b + 0.02)
+		end
 	end
 
 	-- M7: player scav raids

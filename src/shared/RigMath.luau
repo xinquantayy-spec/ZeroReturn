@@ -20,9 +20,22 @@ for _, j in RigSpec.joints do
 end
 M.hrpHalf = RigSpec.hrp.size.Y / 2
 M.STAND_HIP = RigSpec.hipHeight
-M.CROUCH_DROP = 0.95 -- full-depth crouch lowers the hips this much
+M.BODY = RigSpec.bodyVersion or "ZR_OPERATOR_V1"
+M.CROUCH_DROP = 0.9 -- full-depth crouch lowers the hips this much
 M.PRONE_HIP = 0.45
-M.headEye = V3(0, 0.08, -0.34) -- eye point in head space
+M.headEye = RigSpec.eye - RigSpec.parts.Head.center -- eye point in head space
+-- prone: the pelvis lies on the ground (LowerTorso half depth) and the long block body is centred over the root
+M.PRONE_ROOT = CF(0, (RigSpec.parts.LowerTorso.size.Z / 2) - (M.PRONE_HIP + M.hrpHalf) - (RigSpec.joints[1].pos.Y - RigSpec.hrp.center.Y), 0.5)
+local function jointPos(name)
+	for _, j in RigSpec.joints do
+		if j.name == name then
+			return j.pos
+		end
+	end
+	return Vector3.zero
+end
+M.LEG_X = math.abs(jointPos("RightAnkle").X) -- feet under the hips
+M.ANKLE_H = jointPos("RightAnkle").Y -- ankle joint above the sole
 local NECK_IN_CHEST = M.joints.Neck.p0
 local PIVOT = (M.joints.RightShoulder.p0 + M.joints.LeftShoulder.p0) / 2 -- weapon pitch pivot (chest space)
 
@@ -90,39 +103,62 @@ function M.solve(c, parentCF, target, endRot, pole)
 end
 
 -- ── weapon holds (chest space) and hand grips (weapon space) ────────────────────
+-- Block body (ZR_BLOCK_R15_V1): wide shoulders and short block arms, so long guns ride close to the chest near
+-- the centre line (the stock tucks into the torso like a block character's) and the support hand takes the
+-- handguard just ahead of the magwell (SUPPORT = fraction of the way from the grip to the hand anchor).
 local R = math.rad
 M.HOLD = {
 	long = {
-		ready = CF(0.26, -0.08, -0.86) * ANG(R(-22), R(8), 0),
-		aim = CF(0.2, 0.42, -0.8),
-		sprint = CF(0.1, -0.12, -0.62) * ANG(0, R(55), 0) * ANG(R(-32), 0, R(22)),
-		low = CF(0.32, -0.5, -0.62) * ANG(R(-55), R(10), 0),
+		ready = CF(0.12, 0.2, -0.72) * ANG(R(-12), R(6), 0),
+		aim = CF(0.26, 0.78, -0.76),
+		sprint = CF(0.18, -0.12, -0.66) * ANG(0, R(55), 0) * ANG(R(-32), 0, R(22)),
+		low = CF(0.3, -0.45, -0.66) * ANG(R(-55), R(10), 0),
 	},
 	pistol = {
-		ready = CF(0.16, -0.2, -1.0) * ANG(R(-30), 0, 0),
-		aim = CF(0.06, 0.6, -1.5),
-		sprint = CF(0.42, -0.45, -0.5) * ANG(R(-70), 0, 0),
-		low = CF(0.42, -0.6, -0.55) * ANG(R(-75), 0, 0),
+		ready = CF(0.04, 0.05, -1.1) * ANG(R(-25), 0, 0),
+		aim = CF(0.0, 0.98, -1.25),
+		sprint = CF(0.62, -0.5, -0.58) * ANG(R(-70), 0, 0),
+		low = CF(0.62, -0.65, -0.55) * ANG(R(-75), 0, 0),
 	},
 	melee = {
-		ready = CF(0.55, -0.28, -0.78) * ANG(R(12), 0, R(-24)),
-		aim = CF(0.55, -0.28, -0.78) * ANG(R(12), 0, R(-24)),
-		sprint = CF(0.62, -0.62, -0.42) * ANG(R(-45), 0, 0),
-		low = CF(0.62, -0.68, -0.4) * ANG(R(-50), 0, 0),
+		ready = CF(0.95, -0.25, -0.8) * ANG(R(12), 0, R(-24)),
+		aim = CF(0.95, -0.25, -0.8) * ANG(R(12), 0, R(-24)),
+		sprint = CF(1.0, -0.6, -0.5) * ANG(R(-45), 0, 0),
+		low = CF(1.0, -0.66, -0.48) * ANG(R(-50), 0, 0),
 	},
 }
-M.GRIP_R = CF(0.05, 0.06, 0.02) * ANG(R(35), 0, 0) -- right hand relative to the weapon's grip anchor
-M.GRIP_L = CF(-0.03, -0.12, 0.0) * ANG(0, 0, R(90)) * ANG(R(-15), 0, 0) -- left hand under the handguard
-M.GRIP_LP = CF(-0.07, -0.02, 0.04) * ANG(0, 0, R(55)) * ANG(R(25), 0, 0) -- left hand cupping a pistol grip
-M.POUCH = CF(-0.45, -0.75, -0.42) -- chest space: rig pouch for magazines
+M.SUPPORT = { long = 0.45, pistol = 1, melee = 1 }
+-- a hand frame whose +Y (towards the wrist) points along `up` (block hands continue the forearm); `hint` picks
+-- the hand's X (knuckle side) around that axis
+local function handFrame(pos, up, hint)
+	local y = up.Unit
+	local x = hint - y * hint:Dot(y)
+	if x.Magnitude < 1e-3 then
+		x = Vector3.zAxis - y * y.Z
+	end
+	return CFrame.fromMatrix(pos, x.Unit, y)
+end
+M.handFrame = handFrame
+M.GRIP_R = handFrame(V3(0, -0.02, 0.06), V3(0.35, 0.25, 0.9), Vector3.xAxis) -- right hand on the pistol grip
+M.GRIP_L = handFrame(V3(0, -0.1, 0), V3(-0.6, 0.15, 0.78), Vector3.xAxis) -- left hand under the handguard
+M.GRIP_LP = handFrame(V3(-0.05, -0.12, 0.02), V3(-0.65, 0.2, 0.73), Vector3.xAxis) -- left hand cupping a pistol grip
+M.POUCH = CF(-0.55, -0.6, -0.62) -- chest space: rig pouch for magazines
 M.ARM_POLE = { R = V3(0.6, -0.7, 0.9), L = V3(-0.7, -0.8, 0.6) } -- chest space, elbows down/out/back
 M.KNEE_POLE = V3(0, 0, -1)
+M.PRONE_W = CF(0.25, -0.95, -2.3) -- root space: weapon grip when prone
+
+-- support-hand point on a weapon (spec units): part way from the grip to the handguard anchor
+function M.supportPoint(wp, hold)
+	local f = M.SUPPORT[hold or "long"] or 1
+	local g, h = wp.grip or Vector3.zero, wp.hand or wp.grip or Vector3.zero
+	return g:Lerp(h, f)
+end
 
 -- head CFrame for a stance (no arms/legs): the bodycam eye and third-person heads agree
 function M.spine(rootCF, p)
 	local rootL
 	if p.stance == "p" then
-		rootL = CF(0, -0.93, 0.55) * ANG(R(-88), 0, 0)
+		rootL = M.PRONE_ROOT * ANG(R(-88), 0, 0)
 	else
 		rootL = CF(0, -(p.bob or 0), 0) * ANG((p.fwd or 0), 0, (p.sway or 0))
 	end
@@ -167,7 +203,7 @@ function M.pose(rootCF, p)
 	if hold then
 		local h = p.holdCF or hold[p.mode or "ready"] or hold.ready
 		if p.stance == "p" then
-			W = yaw * CF(0.18, -1.0, -1.5) * ANG(math.clamp(p.pitch or 0, -0.35, 0.6), 0, 0)
+			W = yaw * M.PRONE_W * ANG(math.clamp(p.pitch or 0, -0.35, 0.6), 0, 0)
 			if p.hold == "pistol" then
 				W *= CF(0, 0.05, -0.4)
 			end
@@ -191,7 +227,7 @@ function M.pose(rootCF, p)
 		L.RightShoulder, L.RightElbow, L.RightWrist, rHandCF = l1, l2, l3, handCF
 		local lh = p.lHand
 		if not lh and p.hold ~= "melee" then
-			lh = W * CF(wp.hand) * (p.hold == "pistol" and M.GRIP_LP or M.GRIP_L)
+			lh = W * CF(M.supportPoint(wp, p.hold)) * (p.hold == "pistol" and M.GRIP_LP or M.GRIP_L)
 		end
 		if lh then
 			local b = M.arm.L
@@ -223,7 +259,7 @@ function M.pose(rootCF, p)
 		for _, side in { "R", "L" } do
 			local c = M.leg[side]
 			local sx = side == "R" and 1 or -1
-			local base = V3(sx * (0.4 + crouch * 0.1), 0, -crouch * 0.25)
+			local base = V3(sx * (M.LEG_X + crouch * 0.08), 0, -crouch * 0.25)
 			local lift, fp = 0, 0
 			if g and g.amp > 0.01 then
 				local ph = (g.phase + (side == "R" and 0 or math.pi)) % (2 * math.pi)
@@ -241,7 +277,7 @@ function M.pose(rootCF, p)
 				end
 			end
 			local ankleW = rootCF:PointToWorldSpace(base)
-			ankleW = V3(ankleW.X, floorY + 0.26 + lift, ankleW.Z)
+			ankleW = V3(ankleW.X, floorY + M.ANKLE_H + lift, ankleW.Z)
 			local footRot = yaw.Rotation * ANG(fp, 0, 0)
 			local h1, h2, h3 = M.solve(c, pelvis, ankleW, footRot, kneePole)
 			L[side == "R" and "RightHip" or "LeftHip"] = h1

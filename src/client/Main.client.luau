@@ -125,8 +125,9 @@ if RunService:IsStudio() then
 			if a and a.target then
 				local ai = workspace:FindFirstChild("ZR_AI")
 				local cp = workspace:FindFirstChild("ZR_Corpses")
+				local sr = workspace:FindFirstChild("ZR_Showroom")
 				local pl = Players:FindFirstChild(a.target)
-				a.model = (ai and ai:FindFirstChild(a.target)) or (cp and cp:FindFirstChild(a.target)) or (pl and pl.Character) or nil
+				a.model = (ai and ai:FindFirstChild(a.target)) or (cp and cp:FindFirstChild(a.target)) or (sr and sr:FindFirstChild(a.target)) or (pl and pl.Character) or nil
 			end
 			ctx.Camera.orbit = a
 			return "ok"
@@ -134,6 +135,42 @@ if RunService:IsStudio() then
 			ctx.Input.trigger("FireMode", true)
 			ctx.Input.trigger("FireMode", false)
 			return ctx.Weapon.modeName
+		elseif cmd == "studio" then
+			-- capture mode: no HUD or lens overlays, no post effects, neutral daylight (a = true / false)
+			local on = a ~= false
+			local Lighting = game:GetService("Lighting")
+			ctx.Atmos.frozen, ctx.Post.frozen, ctx.studio = on, on, on
+			local pg = Players.LocalPlayer:WaitForChild("PlayerGui")
+			for _, g in pg:GetChildren() do
+				if g:IsA("ScreenGui") then
+					if on then
+						if g:GetAttribute("StudioWas") == nil then
+							g:SetAttribute("StudioWas", g.Enabled)
+						end
+						g.Enabled = false
+					elseif g:GetAttribute("StudioWas") ~= nil then
+						g.Enabled = g:GetAttribute("StudioWas")
+						g:SetAttribute("StudioWas", nil)
+					end
+				end
+			end
+			for _, e in Lighting:GetChildren() do
+				if e:IsA("PostEffect") then
+					e.Enabled = not on
+				end
+			end
+			if on then
+				Lighting.ClockTime, Lighting.Brightness, Lighting.ExposureCompensation = 13.5, 2.2, 0
+				Lighting.Ambient, Lighting.OutdoorAmbient = Color3.fromRGB(110, 112, 114), Color3.fromRGB(140, 142, 144)
+				Lighting.FogEnd, Lighting.GlobalShadows = 100000, true
+				local atm = Lighting:FindFirstChildOfClass("Atmosphere")
+				if atm then
+					atm.Density, atm.Haze, atm.Glare = 0.05, 0, 0
+				end
+			else
+				ctx.Post.apply()
+			end
+			return "studio=" .. tostring(on)
 		elseif cmd == "look" then
 			ctx.Camera.yaw, ctx.Camera.pitch = math.rad(a and a.yaw or 0), math.rad(a and a.pitch or 0)
 			return "ok"

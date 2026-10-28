@@ -1,6 +1,7 @@
 --!nonstrict
--- Characters: the operator rig (our own R15-named Motor6D skeleton with human proportions and Blender body
--- meshes, part-built fallback) used by players (StarterCharacter) and AI; gear visuals; the weapon in hand
+-- Characters: the operator rig (our own R15-named Motor6D skeleton; body version ZR_BLOCK_R15_V1 = the owner's
+-- Roblox block proportions, Blender body meshes with a part-built fallback) used by players (StarterCharacter)
+-- and AI; worn gear through the Appearance service (Equipment definitions); the weapon in hand
 -- (WeaponRoot driven by a WeaponGrip motor on the right hand, posed by RigMath) and slung long guns; the
 -- server hitbox pose (stance, crouch depth, lean, aim pitch, weapon hold) written to Motor6D.C0; ragdoll.
 -- Clients animate on top through Motor6D.Transform (Animator.luau), using the same RigMath solver.
@@ -14,28 +15,20 @@ local WeaponModels = require(Shared.WeaponModels)
 local RigSpec = require(Shared.RigSpec)
 local RigMath = require(Shared.RigMath)
 
+local Equipment = require(Shared.Equipment)
+
 local Chars = {}
 local ctx
 
-local LOOKS = {
-	player = { jacket = "5A6047", pants = "40433A", gear = "5F5E46", helmet = "4E5240" },
-	guard = { jacket = "3B4652", pants = "2E343A", gear = "2B2F33", helmet = "1F2326" },
-	scav = { jacket = "5C554A", pants = "3D3B36", gear = "4A443A", helmet = "3A3833" },
-	boss = { jacket = "2F3330", pants = "262826", gear = "1E201F", helmet = "171918" },
-}
-Chars.LOOKS = LOOKS
-local CLOTH = {
-	UpperTorso = "jacket", LeftUpperArm = "jacket", RightUpperArm = "jacket", LeftLowerArm = "jacket", RightLowerArm = "jacket",
-	LowerTorso = "pants", LeftUpperLeg = "pants", RightUpperLeg = "pants", LeftLowerLeg = "pants", RightLowerLeg = "pants",
-}
-local FALLBACK = { Head = "25272A", LeftHand = "1D1E1D", RightHand = "1D1E1D", LeftFoot = "4A3F33", RightFoot = "4A3F33" }
+-- outfits live in Equipment.LOOKS (shared with the client's first-person sleeves); body part -> cloth key
+Chars.LOOKS = Equipment.LOOKS
+Chars.CLOTH = Equipment.CLOTH
 local COLLIDE = { UpperTorso = true, LowerTorso = true, Head = true }
-local GEAR_PARTS = { Helmet = true, FacePlate = true, Visor = true, Cap = true, Vest = true, ArmGuard = true, Pouch = true, BodyCam = true, CamLens = true, Pack = true, Holster = true }
 local WEAPON_PARTS = { TPWeapon = true, TPSling = true, TPRifle = true, WeaponRoot = true }
 
 -- ── rig ──────────────────────────────────────────────────────────────────────
-function Chars.buildRig(kind)
-	local look = LOOKS[kind] or LOOKS.player
+function Chars.buildRig(kind, variant)
+	local look = Equipment.lookOf(kind, variant)
 	local model = Instance.new("Model")
 	model.Name = "Operator"
 	local parts = {}
@@ -52,7 +45,7 @@ function Chars.buildRig(kind)
 	parts.HumanoidRootPart = hrp
 	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
 	for name, spec in RigSpec.parts do
-		local mesh = lib and lib:FindFirstChild("ZR_OP_" .. name)
+		local mesh = lib and lib:FindFirstChild("ZR_BLK_" .. name)
 		local p
 		if mesh then
 			p = mesh:Clone()
@@ -65,14 +58,9 @@ function Chars.buildRig(kind)
 		p.Anchored = false
 		p.Size = spec.size
 		p.CFrame = CFrame.new(spec.center)
-		local cloth = CLOTH[name]
-		if cloth then
-			p.Color = Color3.fromHex(look[cloth])
-			p.Material = Enum.Material.Fabric
-		else
-			p.Color = mesh and Color3.new(1, 1, 1) or Color3.fromHex(FALLBACK[name] or "333333")
-			p.Material = Enum.Material.SmoothPlastic
-		end
+		local cloth = Equipment.CLOTH[name]
+		p.Color = Color3.fromHex(look[cloth] or "808080")
+		p.Material = (cloth == "skin" or cloth == "boot") and Enum.Material.SmoothPlastic or Enum.Material.Fabric
 		p.CanCollide = COLLIDE[name] == true
 		p.CanTouch = false
 		p.Massless = name ~= "UpperTorso" and name ~= "LowerTorso"
@@ -96,6 +84,9 @@ function Chars.buildRig(kind)
 	hum.Parent = model
 	model.PrimaryPart = hrp
 	model:SetAttribute("ZR_Rig", 1)
+	model:SetAttribute("BodyVersion", RigSpec.bodyVersion)
+	model:SetAttribute("Look", Equipment.lookKey(kind))
+	model:SetAttribute("LookVariant", variant or 1)
 	return model
 end
 
@@ -132,60 +123,41 @@ function Chars.init(c)
 end
 
 -- ── gear ─────────────────────────────────────────────────────────────────────
-local function attach(char, partName, size, offset, color, material, name, shape)
+-- Worn equipment is built by the Appearance service from Equipment definitions (M16). The helper below only
+-- makes the squad armbands: the band mesh when the gear batch loaded, a plain band otherwise.
+local function band(char, partName, color)
 	local host = char:FindFirstChild(partName)
 	if not host then
 		return nil
 	end
-	local p = Instance.new("Part")
-	p.Name = name or "Gear"
-	p.Size = size
-	p.Color = color
-	p.Material = material or Enum.Material.Fabric
-	if shape then
-		p.Shape = shape
+	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local src = lib and lib:FindFirstChild("ZR_OV_Armband")
+	local p
+	if src then
+		p = src:Clone()
+	else
+		p = Instance.new("Part")
+		p.Size = Vector3.new(1.09, 0.22, 1.09)
+		p.TopSurface = Enum.SurfaceType.Smooth
+		p.BottomSurface = Enum.SurfaceType.Smooth
 	end
+	p.Name = "Armband"
+	p.Color = color
+	p.Material = Enum.Material.Fabric
+	p.Anchored = false
 	p.CanCollide = false
 	p.CanQuery = false
 	p.CanTouch = false
 	p.Massless = true
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.CFrame = host.CFrame * offset
+	p.CastShadow = false
+	-- squad bands sit on the lower half of the upper arm (a guard's faction band uses the upper half)
+	p.CFrame = host.CFrame * CFrame.new(0, -0.2, 0)
 	local w = Instance.new("WeldConstraint")
 	w.Part0 = host
 	w.Part1 = p
 	w.Parent = p
 	p.Parent = char
 	return p
-end
-
--- gear from the Blender batch (ZR_Gear, M10) when it loaded: the mesh is fitted to `size` and tinted like the
--- part it replaces (neutral grey vertex colours x Color); otherwise the part-built box
-local function attachMesh(char, partName, key, size, offset, color, material, name)
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
-	local src = lib and lib:FindFirstChild(key)
-	local host = src and char:FindFirstChild(partName)
-	if not host then
-		return attach(char, partName, size, offset, color, material, name), false
-	end
-	local p = src:Clone()
-	p.Name = name or "Gear"
-	p.Size = size
-	p.Color = color
-	p.Material = material or Enum.Material.Fabric
-	p.Anchored = false
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	p.Massless = true
-	p.CFrame = host.CFrame * offset
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = host
-	w.Part1 = p
-	w.Parent = p
-	p.Parent = char
-	return p, true
 end
 
 local function weldAll(parts, host, parent, name)
@@ -241,7 +213,7 @@ function Chars.setWeapon(char, holder, g)
 		m.C1 = CFrame.identity
 		m.Parent = root
 		root.Parent = char
-		local b = WeaponModels.build(holder.items, it, root.CFrame, 1)
+		local b = WeaponModels.build(holder.items, it, root.CFrame, WeaponModels.TP_SCALE)
 		if b then
 			local all = table.clone(b.parts)
 			for _, p in b.mag do
@@ -264,16 +236,25 @@ function Chars.setWeapon(char, holder, g)
 	else
 		char:SetAttribute("ActiveWeapon", nil)
 	end
+	if ctx and ctx.Appearance then
+		ctx.Appearance.noteWeapon(char, holder, g)
+	end
 	if holder then
-		-- long guns not in hand go on the back (two sling positions)
+		-- long guns not in hand go on the back (two sling positions), over whatever is worn there (pack, plates)
+		local backZ = Equipment.backExtent(Equipment.resolve(Equipment.stateOf(holder, char:GetAttribute("Look"), char:GetAttribute("LookVariant"))))
 		local n = 0
 		for _, slot in { "primary", "secondary" } do
 			local lg = holder.slots[slot]
 			local long = lg and lg ~= g and holder.items[lg]
 			if long then
 				n += 1
-				local back = torso.CFrame * CFrame.new(n == 1 and 0.12 or -0.16, 0.05, 0.52 + n * 0.08) * CFrame.Angles(0, math.rad(180), math.rad(n == 1 and -55 or 55))
-				local bb = WeaponModels.build(holder.items, long, back, 1)
+				-- flat across the back, muzzle up over one shoulder, stock toward the other hip (barrel = -Z of
+				-- the weapon spec, its top facing away from the back)
+				local sx = n == 1 and 1 or -1
+				local zAxis = -Vector3.new(sx * math.sin(math.rad(40)), math.cos(math.rad(40)), 0)
+				local yAxis = Vector3.zAxis
+				local back = torso.CFrame * CFrame.fromMatrix(Vector3.new(-sx * 0.1, -0.15, backZ + 0.12 + n * 0.1), yAxis:Cross(zAxis), yAxis, zAxis)
+				local bb = WeaponModels.build(holder.items, long, back, WeaponModels.TP_SCALE)
 				if bb then
 					local all = table.clone(bb.parts)
 					for _, p in bb.mag do
@@ -301,94 +282,18 @@ function Chars.gearOf(h, activeSlot)
 	return { head = id("head"), armor = id("armor"), rig = id("rig"), back = id("back"), primary = id("primary") or id("secondary"), holster = id("holster"), holder = h, activeG = active }
 end
 
--- refresh visible gear after mid-raid equipment changes
+-- refresh visible gear after mid-raid equipment changes (per-slot diff, see Appearance)
 function Chars.redress(char, holder, activeSlot, kind)
 	if not char then
 		return
 	end
-	for _, c in char:GetChildren() do
-		if GEAR_PARTS[c.Name] or WEAPON_PARTS[c.Name] then
-			c:Destroy()
-		end
-	end
-	Chars.dress(char, kind or (char:GetAttribute("Scav") and "scav") or "player", Chars.gearOf(holder, activeSlot))
+	local gear = Chars.gearOf(holder, activeSlot)
+	ctx.Appearance.apply(char, { look = kind or char:GetAttribute("Look"), holder = holder, active = gear and gear.activeG })
 end
 
-local PACK_SIZE = {
-	BAG_SLING = Vector3.new(0.9, 1.0, 0.45), CANVAS_BAG = Vector3.new(1.25, 1.5, 0.66),
-	BAG_PATROL = Vector3.new(1.45, 1.8, 0.82), BAG_RAID = Vector3.new(1.6, 2.15, 0.98),
-}
-
--- gear = Chars.gearOf(holder) or nil (safehouse: no kit visible). Sizes follow the operator rig.
+-- gear = Chars.gearOf(holder) or nil (no kit visible)
 function Chars.dress(char, kind, gear)
-	local look = LOOKS[kind] or LOOKS.player
-	local gc = Color3.fromHex(look.gear)
-	gear = gear or {}
-	local helmet = gear.head and Items.defs[gear.head]
-	if helmet then
-		local cls = helmet.armor and helmet.armor.class or 2
-		local grow = cls * 0.012
-		attachMesh(char, "Head", "ZR_GEAR_Helmet", Vector3.new(0.9 + grow, 0.54, 1.0 + grow), CFrame.new(0, 0.26, 0.03), Color3.fromHex(look.helmet), Enum.Material.SmoothPlastic, "Helmet")
-		if helmet.armor and helmet.armor.face then
-			attachMesh(char, "Head", "ZR_GEAR_FacePlate", Vector3.new(0.74, 0.56, 0.1), CFrame.new(0, -0.03, -0.47), Color3.fromHex("2A2D2B"), Enum.Material.Metal, "FacePlate")
-		else
-			attach(char, "Head", Vector3.new(0.7, 0.07, 0.06), CFrame.new(0, 0.12, -0.45), Color3.fromHex("161819"), Enum.Material.SmoothPlastic, "Visor")
-		end
-	elseif kind == "player" then
-		attach(char, "Head", Vector3.new(0.8, 0.2, 0.88), CFrame.new(0, 0.4, 0.01), Color3.fromHex("3E4236"), Enum.Material.Fabric, "Cap")
-		attach(char, "Head", Vector3.new(0.62, 0.05, 0.3), CFrame.new(0, 0.33, -0.52), Color3.fromHex("3E4236"), Enum.Material.Fabric, "Cap")
-	elseif kind == "scav" then
-		attach(char, "Head", Vector3.new(0.84, 0.32, 0.9), CFrame.new(0, 0.34, 0.02), Color3.fromHex("2E2C29"), Enum.Material.Fabric, "Cap")
-	end
-	local armor = gear.armor and Items.defs[gear.armor]
-	local rig = gear.rig and Items.defs[gear.rig]
-	local front = -0.4
-	if armor then
-		local cls = armor.armor.class
-		attachMesh(char, "UpperTorso", "ZR_GEAR_Vest", Vector3.new(1.4 + cls * 0.02, 1.08 + cls * 0.02, 0.92 + cls * 0.04), CFrame.new(0, -0.06, 0), gc, Enum.Material.Fabric, "Vest")
-		front = -(0.46 + cls * 0.02)
-		if armor.armor.zones and armor.armor.zones.arms then
-			for _, side in { "LeftUpperArm", "RightUpperArm" } do
-				attach(char, side, Vector3.new(0.52, 0.5, 0.54), CFrame.new(0, 0.28, 0), gc, Enum.Material.Fabric, "ArmGuard")
-			end
-		end
-	end
-	if rig then
-		if rig.armor ~= nil and not armor then
-			attachMesh(char, "UpperTorso", "ZR_GEAR_Vest", Vector3.new(1.44, 1.1, 0.98), CFrame.new(0, -0.06, 0), gc, Enum.Material.Fabric, "Vest")
-			front = -0.49
-		end
-		local n = math.min(rig.grid and rig.grid.w or 3, 4)
-		for i = 1, n do
-			local x = (i - (n + 1) / 2) * 0.3
-			attachMesh(char, "UpperTorso", "ZR_GEAR_Pouch", Vector3.new(0.27, 0.34, 0.18), CFrame.new(x, -0.24, front - 0.09), gc, Enum.Material.Fabric, "Pouch")
-		end
-	end
-	if kind == "player" then
-		local cam, isMesh = attachMesh(char, "UpperTorso", "ZR_GEAR_BodyCam", Vector3.new(0.2, 0.26, 0.12), CFrame.new(-0.36, 0.3, math.min(front, -0.4) - 0.06), Color3.new(1, 1, 1), Enum.Material.SmoothPlastic, "BodyCam")
-		if cam and not isMesh then
-			cam.Color = Color3.fromHex("1A1C1D")
-		end
-		if cam then
-			-- recording light: the mesh has a lens of its own, so the glow becomes a small LED under it
-			local lens = isMesh
-				and attach(char, "UpperTorso", Vector3.new(0.035, 0.035, 0.02), CFrame.new(-0.42, 0.22, math.min(front, -0.4) - 0.115), Color3.fromHex("E0503C"), Enum.Material.Neon, "CamLens")
-				or attach(char, "UpperTorso", Vector3.new(0.08, 0.08, 0.04), CFrame.new(-0.36, 0.34, math.min(front, -0.4) - 0.13), Color3.fromHex("C24A35"), Enum.Material.Neon, "CamLens")
-			if lens then
-				lens.CastShadow = false
-			end
-		end
-	end
-	if gear.back then
-		local size = PACK_SIZE[gear.back] or PACK_SIZE.CANVAS_BAG
-		attachMesh(char, "UpperTorso", "ZR_GEAR_Pack", size, CFrame.new(0, 0.05 - (size.Y - 1.5) * 0.3, 0.42 + size.Z * 0.5), Color3.fromHex("6B6A4E"), Enum.Material.Fabric, "Pack")
-	end
-	if gear.holster then
-		attachMesh(char, "RightUpperLeg", "ZR_GEAR_Holster", Vector3.new(0.18, 0.42, 0.34), CFrame.new(0.34, 0.18, 0), Color3.fromHex("23262A"), Enum.Material.SmoothPlastic, "Holster")
-	end
-	if gear.holder then
-		Chars.setWeapon(char, gear.holder, gear.activeG)
-	end
+	ctx.Appearance.apply(char, { look = kind, holder = gear and gear.holder, active = gear and gear.activeG })
 end
 
 -- Squad armband on both upper arms (Tarkov: coloured bands tell squadmates apart; no friendly markers).
@@ -406,17 +311,14 @@ function Chars.armband(char, color)
 		return
 	end
 	for _, side in { "LeftUpperArm", "RightUpperArm" } do
-		local b = attach(char, side, Vector3.new(0.5, 0.2, 0.52), CFrame.new(0, -0.1, 0), Color3.fromHex(color), Enum.Material.Fabric, "Armband")
-		if b then
-			b.CastShadow = false
-		end
+		band(char, side, Color3.fromHex(color))
 	end
 end
 
 -- clothing colours for a faction look (player scavs wear scav clothes)
 function Chars.recolor(char, kind)
-	local look = LOOKS[kind] or LOOKS.player
-	for name, cloth in CLOTH do
+	local look = Equipment.lookOf(kind, char:GetAttribute("LookVariant"))
+	for name, cloth in Equipment.CLOTH do
 		local p = char:FindFirstChild(name)
 		if p and p:IsA("BasePart") then
 			p.Color = Color3.fromHex(look[cloth])
@@ -679,10 +581,15 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: strin
 	char:SetAttribute("Pitch", 0)
 	local kind = opts.scav and "scav" or "player"
 	char:SetAttribute("Scav", opts.scav == true)
-	if opts.scav then
-		Chars.recolor(char, "scav")
+	local variant = opts.scav and math.random(1, Equipment.variants("scav")) or 1
+	if holder then
+		local gear = Chars.gearOf(holder, activeSlot)
+		ctx.Appearance.apply(char, { look = kind, variant = variant, holder = holder, active = gear and gear.activeG })
+	else
+		-- safehouse: the profile's worn kit (what the next raid will look like), no weapons
+		local h = ctx.Raid and ctx.Raid.holder(player)
+		ctx.Appearance.apply(char, { look = kind, variant = variant, holder = h, weapons = false })
 	end
-	Chars.dress(char, kind, Chars.gearOf(holder, activeSlot))
 	char:SetAttribute("InRaid", holder ~= nil)
 	local sq = ctx and ctx.Match and ctx.Match.squadOf(player)
 	if sq then

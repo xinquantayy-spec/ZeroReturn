@@ -58,7 +58,12 @@ local SKILL = {
 AI.SKILL = SKILL
 local LABEL = { scav = "Scav", watch = "Harbor Watch", follower = "Crew", boss = "Foreman" }
 local FACTION = { scav = "scav", watch = "watch", follower = "scav", boss = "scav" }
-local LOOK = { scav = "scav", watch = "guard", follower = "boss", boss = "boss" }
+-- AI kind -> look (Equipment.PRESETS: scav -> scav, watch -> guard, follower -> bodyguard, boss -> foreman)
+local Equipment = require(Shared.Equipment)
+local LOOK = {}
+for _, k in { "scav", "watch", "follower", "boss" } do
+	LOOK[k] = Equipment.lookForAi(k)
+end
 local FOV_COS = math.cos(math.rad(62))
 local CLOSE = 9
 local WALK, RUN, CROUCH = 8, 15, 5
@@ -1511,6 +1516,13 @@ local LOADOUT = {
 	end,
 }
 
+-- the kit an AI kind spawns with (seeded: showroom / tests reproduce a preset exactly)
+function AI.loadoutFor(kind, rand)
+	local f = LOADOUT[kind]
+	return f and f(rand or Random.new()) or nil
+end
+AI.LOOK = LOOK
+
 local function liveCount(kind)
 	local n = 0
 	for _, u in units do
@@ -1528,7 +1540,8 @@ function AI.spawn(kind, pos, opts)
 		return nil
 	end
 	local myGen = gen
-	local ok, model = pcall(ctx.Chars.buildRig, LOOK[kind])
+	local variant = math.random(1, Equipment.variants(LOOK[kind]))
+	local ok, model = pcall(ctx.Chars.buildRig, LOOK[kind], variant)
 	if not ok or not model or myGen ~= gen then
 		if not ok then
 			warn("[ZR] AI spawn failed", model)
@@ -1547,7 +1560,8 @@ function AI.spawn(kind, pos, opts)
 	hum.WalkSpeed = WALK
 	model:PivotTo(CFrame.new(pos + Vector3.new(0, 3.3, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 	local inv = LOADOUT[kind](Random.new())
-	ctx.Chars.dress(model, LOOK[kind], ctx.Chars.gearOf(inv))
+	local gear = ctx.Chars.gearOf(inv)
+	ctx.Appearance.apply(model, { look = LOOK[kind], variant = variant, holder = inv, active = gear and gear.activeG })
 	model:SetAttribute("ZR_AI", true)
 	model:SetAttribute("Kind", kind)
 	model:SetAttribute("Faction", FACTION[kind])

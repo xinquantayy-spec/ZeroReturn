@@ -324,6 +324,9 @@ local function serverNow()
 end
 
 local function step(dt)
+	if Atmos.frozen then
+		return -- Studio capture mode (dev bridge "studio"): neutral light, no weather
+	end
 	local raid = ctx.State.inRaid() and ctx.State.raid or nil
 	local e = raid and raid.env or nil
 	local mode = e and "raid" or "hideout"

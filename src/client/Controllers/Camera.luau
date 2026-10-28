@@ -23,7 +23,7 @@ local fov = Config.FOV
 local stick = Vector2.zero
 local lookAcc = Vector2.zero
 local touchLook, touchLast = nil, nil
-local hidden = {}
+local hidden = {} -- set of local character parts hidden in first person
 local eyeOffset = 1.6
 local smoothPos = nil
 
@@ -57,18 +57,37 @@ function Camera.shake(a)
 	landV -= math.clamp(a or 0.5, 0, 1) * 2.5 * k
 end
 
+-- first person: every part of the local character (body, worn gear, slung guns) is hidden for this client only
+-- (LocalTransparencyModifier); other clients keep seeing the gear. The set follows the character as appearance
+-- groups are rebuilt: removed parts leave it (no growth with equipment churn, C12).
+local trackConns = {}
+function Camera.hiddenCount()
+	local n = 0
+	for _ in hidden do
+		n += 1
+	end
+	return n
+end
+
 local function trackCharacter(char)
+	for _, c in trackConns do
+		c:Disconnect()
+	end
+	table.clear(trackConns)
 	table.clear(hidden)
 	smoothPos = nil
 	local function add(d)
 		if d:IsA("BasePart") then
-			table.insert(hidden, d)
+			hidden[d] = true
 		end
 	end
 	for _, d in char:GetDescendants() do
 		add(d)
 	end
-	char.DescendantAdded:Connect(add)
+	table.insert(trackConns, char.DescendantAdded:Connect(add))
+	table.insert(trackConns, char.DescendantRemoving:Connect(function(d)
+		hidden[d] = nil
+	end))
 	local root = char:WaitForChild("HumanoidRootPart", 5)
 	local head = char:WaitForChild("Head", 5)
 	local hum = char:WaitForChild("Humanoid", 5)
@@ -155,7 +174,7 @@ local function update(dt)
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	local orbit = Camera.orbit -- Studio inspection view of your own character (dev bridge "orbit")
-	for _, p in hidden do
+	for p in hidden do
 		p.LocalTransparencyModifier = orbit and 0 or 1
 	end
 	if not (hum and root) then

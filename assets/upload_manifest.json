@@ -11,6 +11,18 @@
   "sha1": "5399f60faf3de6e7834ff8963376bbbd3cc10f60",
   "uploaded": "2026-10-28 14:40:37"
  },
+ "ZR_CharBase": {
+  "assetId": "101424875475699",
+  "file": "assets\\exports\\ZR_CharBase.fbx",
+  "sha1": "d8b22a9bc6e3df8def0f604f291640e36535f9b5",
+  "uploaded": "2026-10-28 22:17:01"
+ },
+ "ZR_CharGear": {
+  "assetId": "111486052124640",
+  "file": "assets\\exports\\ZR_CharGear.fbx",
+  "sha1": "8d40be25040a9d1ef87b7beffd7184a7e2e96b0d",
+  "uploaded": "2026-10-28 23:00:46"
+ },
  "ZR_DEC_BaseDamp": {
   "assetId": "126035505407997",
   "file": "assets\\textures\\out\\wear\\ZR_DEC_BaseDamp.png",

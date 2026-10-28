@@ -42,6 +42,7 @@ local POOLS = {
 		{ id = "HARDTACK", w = 8 }, { id = "A9_PST", w = 10, n = { 10, 35 } }, { id = "P9_MAG", w = 5, a = { 0, 17 }, at = "A9_PST" },
 		{ id = "OLD_COIN", w = 5 }, { id = "KEY_OFFICE", w = 3 }, { id = "HELMET_C2", w = 3 }, { id = "RIG_BELT", w = 3 },
 		{ id = "BAG_SLING", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "CAPT_WATCH", w = 1 }, { id = "KEY_DORM_104", w = 2 },
+		{ id = "CAP_FIELD", w = 3 }, { id = "BEANIE", w = 3 }, { id = "GAITER", w = 3 }, { id = "HEADSET_GS1", w = 1 },
 		{ id = "GREN_RK5", w = 2 }, { id = "GREN_SMOKE", w = 2 },
 	},
 	drawer = {
@@ -815,12 +816,21 @@ end
 function Loot.guardLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
-	k.slot("rig", rand:NextNumber() < 0.6 and "RIG_CHEST" or "RIG_BELT")
+	-- coordinated Watch kit: black rigs, slate vests, full-cut shells or caps; some wear a headset (M16 visuals)
+	k.slot("rig", rand:NextNumber() < 0.6 and "RIG_CHEST" or "RIG_BELT", { tint = "black" })
 	if rand:NextNumber() < 0.7 then
 		k.slot("armor", rand:NextNumber() < 0.65 and "ARMOR_C2" or "ARMOR_C3", { dur = rand:NextInteger(18, 45) })
 	end
 	if rand:NextNumber() < 0.55 then
-		k.slot("head", rand:NextNumber() < 0.7 and "HELMET_C2" or "HELMET_C3", { dur = rand:NextInteger(10, 30) })
+		k.slot("head", rand:NextNumber() < 0.7 and "HELMET_C2" or "HELMET_C3", { dur = rand:NextInteger(10, 30), tint = "black" })
+	elseif rand:NextNumber() < 0.6 then
+		k.slot("head", "CAP_FIELD", { tint = "black" })
+	end
+	if rand:NextNumber() < 0.3 then
+		k.slot("ears", "HEADSET_GS1") -- refused under a full-cut shell (Equipment compatibility)
+	end
+	if rand:NextNumber() < 0.2 then
+		k.slot("face", "GAITER", { tint = "black" })
 	end
 	local pg
 	if rand:NextNumber() < 0.7 then
@@ -854,10 +864,11 @@ function Loot.bossLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
 	k.wear = { 88, 100 }
+	-- heavy armour worn under his padded work jacket (the Foreman look conceals it), his signature hard hat
 	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(55, 70) })
-	k.slot("head", "HELMET_C4", { dur = rand:NextInteger(35, 45) })
-	k.slot("rig", "RIG_CHEST")
-	k.slot("back", "BAG_PATROL")
+	k.slot("head", "HARDHAT_FOREMAN", { dur = rand:NextInteger(16, 22) })
+	k.slot("rig", "RIG_CHEST", { tint = "charcoal" })
+	k.slot("back", "BAG_PATROL", { tint = "charcoal" })
 	k.mod(k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3), "LIGHT_T")
 	local pg = k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1)
 	local _ = pg
@@ -888,9 +899,14 @@ function Loot.crewLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
 	k.wear = { 72, 98 }
-	k.slot("armor", rand:NextNumber() < 0.5 and "ARMOR_C3" or "ARMOR_C4", { dur = rand:NextInteger(35, 55) })
-	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 36) })
-	k.slot("rig", "RIG_CHEST")
+	-- better-coordinated black kit, comms headsets (the white shoulder markers come with the bodyguard look)
+	k.slot("armor", rand:NextNumber() < 0.5 and "ARMOR_C3" or "ARMOR_C4", { dur = rand:NextInteger(35, 55), tint = "black" })
+	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 36), tint = "black" })
+	k.slot("ears", "HEADSET_COMM")
+	k.slot("rig", "RIG_CHEST", { tint = "black" })
+	if rand:NextNumber() < 0.4 then
+		k.slot("back", "BAG_SLING", { tint = "black" })
+	end
 	local cg
 	if rand:NextNumber() < 0.5 then
 		cg = k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_PS", rand:NextInteger(2, 3))
@@ -962,8 +978,20 @@ function Loot.scavLoadout(rand)
 	if rand:NextNumber() < 0.15 then
 		slot("armor", "ARMOR_C2", { dur = rand:NextInteger(8, 30) })
 	end
-	if rand:NextNumber() < 0.2 then
+	-- mismatched headwear: an old shell now and then, otherwise a beanie or a cap; some cover their face
+	local hr = rand:NextNumber()
+	if hr < 0.2 then
 		slot("head", "HELMET_C2", { dur = rand:NextInteger(6, 20) })
+	elseif hr < 0.55 then
+		slot("head", "BEANIE", rand:NextNumber() < 0.5 and { tint = "olive" } or nil)
+	elseif hr < 0.85 then
+		slot("head", "CAP_FIELD", rand:NextNumber() < 0.5 and { tint = "tan" } or nil)
+	end
+	if rand:NextNumber() < 0.25 then
+		slot("face", "GAITER", rand:NextNumber() < 0.5 and { tint = "grey" } or nil)
+	end
+	if rand:NextNumber() < 0.06 then
+		slot("ears", "HEADSET_GS1")
 	end
 	if rand:NextNumber() < 0.3 then
 		local pg = slot("holster", "P9_PISTOL")

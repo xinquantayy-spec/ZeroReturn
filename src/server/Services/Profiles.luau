@@ -31,6 +31,16 @@ function Profiles.set(player: Player, data: any)
 	end
 end
 
+-- test doubles (CharTests): a fake player table with a fresh in-memory profile; never saved (autosave skips
+-- entries without a parented Player) and removed right after the test
+function Profiles.attachTest(fake: any, data: any)
+	live[fake] = { data = data, test = true }
+end
+
+function Profiles.detachTest(fake: any)
+	live[fake] = nil
+end
+
 function Profiles.markDirty(player: Player)
 	local e = live[player]
 	if e then

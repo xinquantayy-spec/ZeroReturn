@@ -338,6 +338,14 @@ function Match.queuedKind(player)
 	return q and q.kind or nil
 end
 
+-- test hook (CharTests): mark a test double as queued without starting a match (set and cleared synchronously)
+function Match.testQueue(player, kind)
+	if typeof(player) == "Instance" then
+		return
+	end
+	queue[player] = kind and { kind = kind, t = now() } or nil
+end
+
 local function startRaid()
 	local t = now()
 	Match.state = "RUNNING"
