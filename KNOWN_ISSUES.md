@@ -9,7 +9,7 @@
      2. Turn on *Game Settings → Security → Enable Studio Access to API Services*.
      3. Re-run the persistence probes: rejoin, failWrites, crash recovery.
    - Studio uses `DEV_ZR_Profiles_v1`, never the live store.
-2. **Multi-client is untested.** Squads (invites, shared insertion, armbands), player-vs-player hits and kill credit, two players contesting loot, late-join spawn distance and simultaneous extractions are implemented and covered by logic tests, but need a Studio *Clients and Servers* test (2–3 clients). The MCP tools can only drive one client.
+2. **Multi-client is untested** (also the M16 two-client checks, see 32). Squads (invites, shared insertion, armbands), player-vs-player hits and kill credit, two players contesting loot, late-join spawn distance and simultaneous extractions are implemented and covered by logic tests, but need a Studio *Clients and Servers* test (2–3 clients). The MCP tools can only drive one client.
 3. **No hardware testing.** Phone, tablet and console have not been tested on real devices or the emulator.
    - The touch layout, safe areas and gamepad UI navigation are implemented but **not verified**.
    - The gamepad X conflict (reload vs. prompt) was fixed in code but has not been tested on a real pad.
@@ -26,7 +26,7 @@
 11. **Weapons are part-built.** All weapons and attachments use the shared `WeaponModels` spec (consistent first and third person). The earlier R17 Blender viewmodel mesh is retired; M10 re-authors weapon meshes in Blender against the same anchors.
 12. **Inventory on short windows.** With a viewport shorter than about 600 px, the lower equipment slots (primary, holster, secondary) slide under the detail strip. Needs a scrollable gear column (M11).
 13. **Movement extras not yet verified on devices.** Lean, prone and crouch-depth have touch buttons and gamepad shoulder buttons only for lean; free look (Alt) and hold breath (Shift while aiming) are keyboard-only so far.
-14. **Third-person mesh art.** The operator body is a first Blender pass (segment meshes, vertex colours); gear (vests, helmets, packs) is still part-built and gets a Blender pass in M10.
+14. **Character materials are vertex colours only.** The M16 body and gear have no texture maps. Body segments and soft gear use Roblox's built-in Fabric, which looks coarse up close, and first-person sleeves use SmoothPlastic. A subtle custom fabric MaterialVariant is still to make.
 
 15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (834 points), so open yards have little cover.
 20. **AI lethality is tuned by feel.** Reaction times, aim error and zeroing penalties are in `AI.luau` (`SKILL`); a guard can still kill a player standing in the open within a few seconds, which matches Tarkov but may need tuning after playtests.
@@ -42,7 +42,15 @@
 29. **Grenade paths ignore people.** The server works out the whole path at release against the static world, so a grenade passes through characters, and a door that moves after the throw does not change it.
 30. **AI only react to where a grenade ends up.** Units near the landing point notice it once it lands; they do not dodge a grenade in flight.
 31. **No first-person arms for a throw without a weapon in hand.** With no weapon drawn, only the grenade shows in first person.
-32. **The soft cap looks flat.** PMCs without a helmet wear a box-built cap; it needs a Blender mesh.
+32. **Characters, multi-client (M16).** The two-client checks (C06: a second observer and late join; C08: the other player's view) are BLOCKED by the single-client MCP. Replication of the server-built gear is standard Roblox replication, but has not been observed from a second client.
+34. **Looking up with a raid pack is limited.** Tall packs cap the neck tilt (`NeckUp`); the waist bends further instead. The aim direction is unchanged, but the head looks stiffer under a raid pack.
+35. **Layer scaling stretches pouches.** A chest rig over a plate carrier is scaled about 1.3× deep to clear it, so its pouches look deeper than when worn alone.
+36. **Small overlaps by design.**
+    - Helmet chin straps run through the headset ear cups.
+    - The armour collar sits on top of the carrier's shoulder straps.
+    - The hard hat refuses headsets, because its brim would cut the ear cups.
+37. **Not built yet (M16 part B).** Eyewear and goggles, the marksman/scout and safehouse-worker presets, a stash character preview (viewport), and per-item first-person gloves (gloves follow the outfit).
+38. **Belt rig pouches are at the back.** They sit there to stay clear of the thighs when crouching and of the hands hanging at the sides.
 33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.
 18. **Late entry is a compromise.** Tarkov PMCs only spawn at raid start; here PMCs may join for the first 5 minutes so nobody waits a full 25-minute raid on a one-raid server. `Config.LATE_JOIN` controls it.
@@ -56,6 +64,12 @@
 - The Baseplate texture warning `rbxassetid://203785492` comes from the default template and is harmless.
 
 ## Fixed this session
+
+- M16:
+  - Long guns slung on the back pointed straight out behind the character; they now lie flat across the back, over the pack or plates.
+  - "Quick move to stash" in the safehouse was refused with BAD_INPUT, because the server tried to resolve "stash" as a container.
+  - The first-person hidden-part list kept destroyed parts, so it grew with every gear change.
+  - Showroom dummies floated when crouched or prone.
 
 - M9: the restock timer froze when the trader screen was reopened; long hideout requirement lines were cut off; door prompts kept their old text after the server changed them; run-through reports listed picked-up items as found-in-raid; a dead PMC's own dog tag showed up in their report.
 

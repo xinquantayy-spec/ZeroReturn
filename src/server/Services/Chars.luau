@@ -473,7 +473,7 @@ function Chars.pose(char, st)
 	local hold, anchors = Chars.holdOf(char:GetAttribute("ActiveWeapon"))
 	local p = {
 		stance = stance, depth = depth, lean = st.lean or char:GetAttribute("Lean") or 0,
-		pitch = math.rad(st.pitch or char:GetAttribute("Pitch") or 0), hold = hold, mode = mode, weapon = anchors,
+		pitch = math.rad(st.pitch or char:GetAttribute("Pitch") or 0), neckUp = char:GetAttribute("NeckUp"), hold = hold, mode = mode, weapon = anchors,
 		crouchFwd = stance == "c" and 0.15 * depth or 0,
 	}
 	local L, W, handCF = RigMath.pose(root.CFrame, p)

@@ -1,6 +1,6 @@
 # Zero Return: Development Status
 
-Build `0.8.0-m11a`. Last updated 2026-10-28.
+Build `0.9.0-m16a`. Last updated 2026-10-28.
 
 Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. The map is **Quay 7**, an original industrial port (not adapted from any Tarkov map). Three more original maps are planned: **Smelter** (factory-type), **Pinewatch** (woods-type) and **Border Yard** (customs-type).
 
@@ -30,7 +30,8 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 | M9 Economy | Done | Four traders (VOS weapons/ammo, HALE medical/food, TILDA gear, the FENCE) with loyalty levels 1–4 (level + money traded + standing), per-restock stock limits (30 min) and barters; selling to the best-paying trader (examined, empty items only); 13 trader tasks (eliminate, hand in found-in-raid items, extract, visit) with money/XP/standing/item rewards; XP and levels (kills, headshots, looting, examining, survival), the run-through rule, four skills that level with use (endurance, strength, vitality, metabolism); a hideout with five modules built over real time (generator, medstation, workbench, storage racks, water collector) and timed crafts; scav karma (fence prices, scav cooldown, hostile locals); dog tags on PMC bodies; a locked depot office opened with a key that wears out. |
 | M10 World | Done | Raid time of day (7x clock, dawn/day/dusk/night) and weather (clear/overcast/fog/rain) with matching light, fog, rain, wind, lamps and night bodycam gain; AI senses follow light and weather and guards use weapon lights at night; a two-storey crew dormitory with locked rooms and a depot vault behind the office (keycard); 56 loose-loot spots; keys; doors that AI open; world and UI sound atlas; bodycam lens v2 (straight HUD, light vignette, soft edge haze, halved grain); rounded first-person arms with gloves; Blender gear meshes (plate carrier, pouches, pack, body camera, holster; helmet and face plate) uploaded and worn by players and AI. Left to check: rain streaks, lens droplets and the environment sounds in a rainy raid. |
 | M11 Combat extras | Grenades done (part A) | **Grenades:** RK-5 and F-7 frags, ZS-3 stun charge, DS-2 smoke. G (hold) pulls the pin, release throws, hold aim while releasing for an underhand toss; only from the rig or pockets. The server simulates the whole bouncing, rolling path; frags send fragments at each body part in line of sight (armour applies) plus a close blast; stuns blind those facing them and deafen everyone close; smoke blocks sight for players and AI for about a minute. AI flush hidden targets with frags or stuns (never onto friends), smoke their retreats, run from grenades that land near them, and are blinded and deafened by stuns. First-person pin pull and throw, third-person throw, explosion/flash/smoke effects, blast shake, concussion, white-out, deafness with ringing ears, combat sound atlas. **Part B (after the map work):** weapon durability, malfunctions, repairs (the repair kit item and worn AI/loot guns are already in). |
-| M12 Look 2.0 | Next (owner request) | Blender wear kit (chipped concrete, rusted metal, peeling paint, broken glass, debris, cables), grime textures, a client-side detail layer matched to the graphics setting, **Potato mode** (opt-in), full wear pass on Quay 7. |
+| M12 Look 2.0 | Next, resumes after M16 (owner request) | Blender wear kit (chipped concrete, rusted metal, peeling paint, broken glass, debris, cables), grime textures, a client-side detail layer matched to the graphics setting, **Potato mode** (opt-in), full wear pass on Quay 7. |
+| M16 Characters | Done (part A) | Owner's character brief. The block body ZR_BLOCK_R15_V1 (the owner's Roblox proportions, R15 names, Motor6D + RigMath kept) and 33 original Blender equipment meshes: two helmets and a face plate, headsets, gaiter, cap, beanie, the Foreman's hard hat, carriers, vests, rigs, four packs, overlays, first-person sleeves. Appearance comes from the server's equipment state (per-slot diff, revisions, compatibility rules, covered regions, fallback and reconcile). New ears and face slots. Presets for operator, scavenger, guard, bodyguard and the Foreman. Tests C01–C12: `docs/character/TEST_REPORT.md`. |
 | M13 Maps | Planned (owner request) | Map vote in the raid queue; three new original maps: Smelter (factory-type), Pinewatch (woods-type), Border Yard (customs-type). |
 | M14 Weapon art | Planned | Blender gun meshes on the WeaponModels anchors (R-17 and P-9 first). |
 | M15 QA | Planned | Two-client test, device emulation, performance, exploit regression, docs, backup. |
@@ -64,6 +65,35 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 - **Depot vault:** behind the locked harbor office; the Vault Keycard (10 uses) opens it at the card reader. Two safes, an arms crate and a shelf of valuables.
 - **Loose loot:** items lie on desks, shelves, pallets and floors around the map; look at one and press F to take it (found-in-raid if you extract). Unexamined items show as UNKNOWN ITEM.
 - **Doors:** AI open unlocked doors on their way; locked doors block AI paths until someone unlocks them; some doors start ajar.
+
+## Characters and equipment (M16)
+
+The full description is in `docs/character/EQUIPMENT_SYSTEM.md`, with the tests in `docs/character/TEST_REPORT.md` and the per-mesh manifest in `docs/character/CHARACTER_ASSET_MANIFEST.csv`.
+
+- **One body for everyone.** The owner's block proportions (`ZR_BLOCK_R15_V1`): 15 Blender segments on the existing Motor6D skeleton and RigMath animation. Players, player scavs and all AI share it.
+- **Gear from equipment.** Equipping an item changes what everyone sees:
+  - helmet on, off or replaced; headset; face cover; armour, carrier or armoured rig; chest rig; backpack; weapon carry (in hand or slung over the pack).
+  - The server decides the visuals from the slots. Only the changed slot is rebuilt, and protection always comes from the item stats.
+- **Fit without clipping.** Layers scale over the ones underneath. Packs sit behind the armour, the body camera on top of it. Straps keep to separate lanes on the shoulders. A tall pack limits how far the head tips back.
+- **Compatibility.**
+  - Full-cut helmets and the hard hat leave no room for a headset.
+  - The armoured rig still excludes body armour.
+  - A headset band goes behind the neck under any helmet or cap.
+  - A backpack hides the chest rig's back straps and a hood worn down.
+- **New items.**
+  - Field cap and knit beanie (headwear).
+  - GS-1 and comms headsets (ears): quiet sounds carry further, and blasts and stun charges deafen you less.
+  - Field gaiter (face).
+  - The Foreman's hard hat (rare loot).
+  - TILDA sells and buys them. Inventory gains EARS and FACE slots.
+- **Roles.**
+  - Operator: field jacket, knee pads, body camera.
+  - Scavengers: four mixed work-clothes outfits, caps or beanies, light bags.
+  - Harbor Watch: slate uniform, black kit, mustard armband.
+  - The Foreman's crew: black kit, comms headsets, white shoulder markers.
+  - The Foreman: padded work jacket over hidden heavy armour, fleece collar, high-vis boot cuffs, hard hat.
+- **First person.** Block sleeves and gloves in your outfit's colours. Your own gear is hidden only on your own screen.
+- **Safehouse.** Your character wears your stash kit, a preview of the next raid.
 
 ## Definition of Done
 
@@ -120,7 +150,8 @@ Notes:
 
 - **Server (`src/server`)**
   - Main and Services share one `ctx` table.
-  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Health, Combat, Grenades, Extract, AI, Raid, Match, Economy, Quests, Hideout, Doors, Dev.
+  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Appearance, Loot, Health, Combat, Grenades, Extract, AI, Raid, Match, Economy, Quests, Hideout, Doors, Dev.
+  - Appearance builds every character's worn gear from the equipment slots and the look (`Equipment.resolve`), diffs it per slot, and reconciles fallbacks when a late asset batch arrives. Chars keeps the rig, weapon visuals and poses.
   - Grenades owns pin pulls and throws (validated acts), the authoritative path (shared `Grenades.simulate`), explosions (fragments through the health model, AI flashes) and smoke volumes that block AI sight.
   - Match rolls each raid's environment (shared `Env`); Loot also owns loose loot (spawned per raid from World.looseSpots).
   - AI owns AI units (perception, tactics, weapons) plus the spawn director and the cover-point map; units use the same rig, ballistics, health and loot as players.
@@ -140,10 +171,10 @@ Notes:
   - Look: Post (grain, vignette, edge haze, exposure, pain), Atmos (raid lighting, weather, rain, lamps, ambience) and Lens (HUD text and icons, straight by default) drive the recorder look.
   - Custom interaction prompts, grid inventory, deploy, summary, settings and exits screens, trader and hideout terminals (Trade), touch cluster.
   - Grenade: throw input and first-person hands (through Weapon), every grenade in flight, explosions, stun flashes, smoke clouds, and the local blast effects (shake, concussion, white-out, deafness, smoke veil).
-- **Shared (`src/shared`)**: Config, Items, Weapons, WeaponModels, RigSpec (generated by `tools/rig_def.py`), RigMath, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, SoundAtlas / EnvAtlas / CombatAtlas (generated), Textures, Version, TraderData, QuestData, HideoutData, Progress, Env, Grenades (grenade physics and rules).
+- **Shared (`src/shared`)**: Config, Items, Equipment (looks, item visuals, layering, compatibility, presets), Weapons, WeaponModels, RigSpec (generated by `tools/rig_def.py`), RigMath, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, SoundAtlas / EnvAtlas / CombatAtlas (generated), Textures, Version, TraderData, QuestData, HideoutData, Progress, Env, Grenades (grenade physics and rules).
 - **Test bridges (Studio only)**
-  - `ServerStorage.ZR_Dev` (deploy [pmc|scav, skips the matching countdown], match, endRaid, expire [shared clock], hold, setExtracts, claimNow, ai, spawnAI, boss [force on/off], god [Studio-only damage immunity], place, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, tests, abuse probes, hp, shootMe, wound, give [slot], weapon, dispatch [any request through the real dispatcher], xp, money, fir [found-in-raid items to the stash], hideoutNow, econ, contents [container/body], find [item guids], env, loose, takeLoose, door, aiGoto, nade [drop a live grenade], nadeThrow [real pull/throw], nades, nadeDrill [AI grenade drill], aiGive, aiThrow).
-  - `PlayerScripts.ZR_ClientDev` (state, move, fire, reload, inv, look, aim, switch, cycle, magcheck, light, slash, firemode, stance, lean, tune, pose, orbit [target], screens, nade [press/hold/release], nadeState, nadeTune [first-person grenade poses]).
+  - `ServerStorage.ZR_Dev` (deploy [pmc|scav, skips the matching countdown], match, endRaid, expire [shared clock], hold, setExtracts, claimNow, ai, spawnAI, boss [force on/off], god [Studio-only damage immunity], place, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, tests, abuse probes, hp, shootMe, wound, give [slot], weapon, dispatch [any request through the real dispatcher], xp, money, fir [found-in-raid items to the stash], hideoutNow, econ, contents [container/body], find [item guids], env, loose, takeLoose, door, aiGoto, nade [drop a live grenade], nadeThrow [real pull/throw], nades, nadeDrill [AI grenade drill], aiGive, aiThrow, chartests [C01–C12 server checks], showroom [presets / kits on a grey stage], showroomClear, showroomGo, appearance [what a model wears], showEquip [equip a showroom dummy through Inv]).
+  - `PlayerScripts.ZR_ClientDev` (state, move, fire, reload, inv, look, aim, switch, cycle, magcheck, light, slash, firemode, stance, lean, tune, pose, orbit [target], screens, nade [press/hold/release], nadeState, nadeTune [first-person grenade poses], studio [capture mode: no HUD or post effects, neutral light], hidden [first-person hidden set vs parts]).
   - Neither bridge exists on live servers.
 
 ## Key decisions
@@ -162,4 +193,9 @@ The full log is in `docs/kit/STATE/DECISIONS.md`.
 - **Bodies:** Roblox destroys a character on respawn, so a dead player's body is copied into `workspace.ZR_Corpses` and stays lootable until the raid ends.
 - **Economy scope:** traders, barters, tasks, hideout and skills follow Tarkov's rules with original names; no flea market yet (it needs cross-server trading). Trader stock limits are per player per 30-minute restock.
 - **Run-through:** 7 minutes / 200 XP (Tarkov uses similar values), so quick dev extractions show the rule.
+- **Characters (M16):**
+  - Block-proportioned R15 on the existing Motor6D/RigMath pipeline: no skinned meshes and no second rig.
+  - Gear is rigid Blender meshes welded to one body segment. Layers are fitted by scaling over the layers underneath, not with layered-clothing cages.
+  - Outfits are looks; protection and storage are items.
+  - The Foreman's armour is worn under his jacket and stays hidden (the brief allows internal plates).
 - **HUD size:** text is authored at 1080p and scales with screen height to the power 0.6 (minimum 0.5), so small windows and phones keep readable numerals; everything stays in the screen margins.

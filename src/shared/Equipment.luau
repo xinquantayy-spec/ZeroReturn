@@ -210,8 +210,9 @@ local VIS: { [string]: any } = {
 	RIG_PLATE = { layer = "armor", shell = "carrier", pieces = { P("ZR_EQ_CarrierA", "UpperTorso", "4F513F", "Fabric"), P("ZR_EQ_CarrierPouches", "UpperTorso", "4F513F", "Fabric") }, blocks = { armor = "ARMOR_CONFLICT" } },
 	BAG_SLING = { layer = "pack", pieces = { P("ZR_EQ_PackSmall", "UpperTorso", "6B6A4E", "Fabric") }, covers = { upperBack = true, hood = true } },
 	CANVAS_BAG = { layer = "pack", pieces = { P("ZR_EQ_PackCanvas", "UpperTorso", "7A7458", "Fabric") }, covers = { upperBack = true, hood = true } },
-	BAG_PATROL = { layer = "pack", pieces = { P("ZR_EQ_PackA", "UpperTorso", "5C5B44", "Fabric") }, covers = { upperBack = true, hood = true } },
-	BAG_RAID = { layer = "pack", pieces = { P("ZR_EQ_PackRaid", "UpperTorso", "53523F", "Fabric") }, covers = { upperBack = true, hood = true } },
+	-- neckUp: how far the head may tilt back under a tall pack before the waist takes over (radians)
+	BAG_PATROL = { layer = "pack", pieces = { P("ZR_EQ_PackA", "UpperTorso", "5C5B44", "Fabric") }, covers = { upperBack = true, hood = true }, neckUp = 0.42 },
+	BAG_RAID = { layer = "pack", pieces = { P("ZR_EQ_PackRaid", "UpperTorso", "53523F", "Fabric") }, covers = { upperBack = true, hood = true }, neckUp = 0.2 },
 }
 Equipment.VIS = VIS
 -- any pistol in the holster slot
@@ -458,6 +459,18 @@ function Equipment.resolve(state: any): { Entry }
 		add("bodycam", BODYCAM, nil, nil, Vector3.new(0, 0, -f))
 	end
 	return out
+end
+
+-- neck limit when looking up (tall backpacks), or nil
+function Equipment.neckUpOf(state: any): number?
+	local n: number? = nil
+	for slot, inst in state.items or {} do
+		local v = Equipment.visualOf(slot, inst.id)
+		if v and v.neckUp and (n == nil or v.neckUp < (n :: number)) then
+			n = v.neckUp
+		end
+	end
+	return n
 end
 
 -- how far worn torso gear reaches behind the torso centre (UpperTorso space, studs): slung long guns go over it

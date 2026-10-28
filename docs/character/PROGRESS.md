@@ -2,6 +2,36 @@
 
 Brief: kit `CLAUDE_CHARACTER_MODELING_PROMPT.md`. Body version **ZR_BLOCK_R15_V1**. Game name: Zero Return.
 
+## Checkpoint 3 — 2026-10-28 23:50 SGT: poses, first person, restart, docs (M16 part A complete)
+
+* **Verified in Studio:**
+  * poses with gear (crouch and prone grounded, look up with the raid pack under the new `NeckUp` limit, look
+    down, pistol, sprint);
+  * the in-raid kit change (helmet, headset behind the neck, gaiter);
+  * first person: 41 of 41 own parts hidden locally, block sleeves in the outfit colour, now SmoothPlastic;
+  * death (the corpse keeps its 11 pieces), respawn and profile reload;
+  * the safehouse kit preview through real requests;
+  * a play restart: the five presets look identical;
+  * the inventory's EARS and FACE slots;
+  * churn: 30 real requests leave the hidden set at 39 = 39 parts.
+* **Code:**
+  * the neck limit under tall packs (RigMath, Chars, Animator, Appearance);
+  * smooth first-person sleeves;
+  * showroom dummies grounded for crouch and prone, and a client `hidden` probe;
+  * the superseded ZR_Operator and ZR_Gear batches retired (no longer loaded);
+  * build 0.9.0-m16a.
+* **Docs:** `EQUIPMENT_SYSTEM.md`, `TEST_REPORT.md`, `CHARACTER_ASSET_MANIFEST.csv` (50 meshes, all STUDIO VERIFIED),
+  and updates to the root DEVELOPMENT_STATUS, TEST_RESULTS, KNOWN_ISSUES, NEXT_TASK and ASSET_MANIFEST.
+* **Tests:** LogicTests 167/167 and CharTests 38/38.
+* **Blockers:**
+  * two clients (C06 late join, C08 second observer): no multi-client MCP;
+  * touch and controller emulation (C11);
+  * physical devices;
+  * performance profiling;
+  * saving, closing and reopening the place file is an owner action.
+* **Next (M16 part B):** the items above plus a fabric MaterialVariant, eyewear, the scout and worker presets, and
+  a stash character preview. Otherwise resume M12.
+
 ## Checkpoint 2 — 2026-10-28 23:25 SGT: first gear set imported, appearance system, presets
 
 * **Blender:** `assets/blender_scripts/build_char_gear.py` (33 meshes, 13,242 tris for the whole batch) with

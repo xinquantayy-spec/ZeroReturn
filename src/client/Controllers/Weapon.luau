@@ -267,6 +267,8 @@ local function buildVm(it, d, g)
 	local cuffC = fp.cuff
 	local glove, gloveP = fp.glove, fp.pad
 	local lib = game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+	-- smooth material: world-scaled Fabric texture is coarse on viewmodel-scale sleeves (the mesh carries the seams)
+	local CLOTH = Enum.Material.SmoothPlastic
 	local sleeveMesh = lib and lib:FindFirstChild("ZR_FP_Sleeve")
 	local cuffMesh = lib and lib:FindFirstChild("ZR_FP_Cuff")
 	local function round(size, color, mat, shape)
@@ -277,12 +279,12 @@ local function buildVm(it, d, g)
 	-- block sleeve segment (mesh stretched along X by seg()), or the round part
 	local function sleevePart(size, color, mesh)
 		if not mesh then
-			return round(size, color, Enum.Material.Fabric)
+			return round(size, color, CLOTH)
 		end
 		local p = mesh:Clone()
 		p.Size = size
 		p.Color = color
-		p.Material = Enum.Material.Fabric
+		p.Material = CLOTH
 		p.Anchored = true
 		p.CanCollide = false
 		p.CanQuery = false
@@ -294,14 +296,14 @@ local function buildVm(it, d, g)
 	local function arm()
 		return {
 			upper = sleevePart(Vector3.new(TUNE.upper, TUNE.upperW, TUNE.upperW), sleeve, sleeveMesh),
-			elbow = round(Vector3.new(TUNE.upperW * 0.98, TUNE.upperW * 0.98, TUNE.upperW * 0.98), sleeve, Enum.Material.Fabric, Enum.PartType.Ball),
+			elbow = round(Vector3.new(TUNE.upperW * 0.98, TUNE.upperW * 0.98, TUNE.upperW * 0.98), sleeve, CLOTH, Enum.PartType.Ball),
 			fore = sleevePart(Vector3.new(TUNE.fore, TUNE.foreW, TUNE.foreW), sleeve, sleeveMesh),
 			bulk = sleevePart(Vector3.new(TUNE.fore * 0.5, TUNE.foreW * 1.16, TUNE.foreW * 1.16), sleeve, sleeveMesh),
 			cuff = sleevePart(Vector3.new(0.06, TUNE.foreW * 1.1, TUNE.foreW * 1.1), cuffC, cuffMesh),
-			palm = vpart(model, Vector3.new(0.05, 0.14, 0.13), glove, Enum.Material.Fabric),
+			palm = vpart(model, Vector3.new(0.05, 0.14, 0.13), glove, CLOTH),
 			pad = vpart(model, Vector3.new(0.022, 0.09, 0.1), gloveP),
-			fingers = vpart(model, Vector3.new(0.045, 0.125, 0.085), glove, Enum.Material.Fabric),
-			thumb = vpart(model, Vector3.new(0.034, 0.034, 0.08), glove, Enum.Material.Fabric),
+			fingers = vpart(model, Vector3.new(0.045, 0.125, 0.085), glove, CLOTH),
+			thumb = vpart(model, Vector3.new(0.034, 0.034, 0.08), glove, CLOTH),
 			seam = vpart(model, Vector3.new(0.056, 0.02, 0.135), GLOVE_SEAM),
 		}
 	end

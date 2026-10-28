@@ -171,8 +171,16 @@ function M.spine(rootCF, p)
 		waistL = ANG(math.clamp(pitch, -0.2, 0.4) * 0.25, 0, 0)
 		neckL = ANG(R(70) + math.clamp(pitch, -0.3, 0.6) * 0.6, 0, 0)
 	else
-		waistL = ANG(0, 0, -lean * 0.42) * ANG(pitch * 0.3 + (p.crouchFwd or 0), 0, 0)
-		neckL = ANG(pitch * 0.5, 0, lean * 0.18)
+		-- looking up: a tall backpack limits the neck (the helmet would meet the pack); the waist takes the rest,
+		-- so the head's direction is unchanged (p.neckUp from the character's NeckUp attribute, Equipment)
+		local neckP = pitch * 0.5
+		local extra = 0
+		if p.neckUp and neckP > p.neckUp then
+			extra = neckP - p.neckUp
+			neckP = p.neckUp
+		end
+		waistL = ANG(0, 0, -lean * 0.42) * ANG(pitch * 0.3 + extra + (p.crouchFwd or 0), 0, 0)
+		neckL = ANG(neckP, 0, lean * 0.18)
 	end
 	local Jw, Jn = M.joints.Waist, M.joints.Neck
 	local chest = pelvis * CF(Jw.p0) * waistL * CF(-Jw.p1)
@@ -187,7 +195,7 @@ function M.eye(rootCF, p)
 end
 
 -- Full-body pose.
--- p = { stance "s"|"c"|"p", depth, lean, pitch (rad), hold "long"|"pistol"|"melee"|nil, mode "ready"|"aim"|"sprint"|"low",
+-- p = { stance "s"|"c"|"p", depth, lean, pitch (rad), neckUp (rad, optional neck limit), hold "long"|"pistol"|"melee"|nil, mode "ready"|"aim"|"sprint"|"low",
 --       holdCF = CFrame? (chest-space hold, overrides mode), weapon = { grip, hand, magwell }?, floorY, airborne,
 --       gait = { phase, amp, dir (root-local), stride, lift }?, lHand / rHand = CFrame? (world overrides),
 --       weaponOverride = CFrame? (world) }

@@ -8,6 +8,23 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance numbers.
 
+## M16 Characters and equipment (2026-10-28)
+
+The full C01–C12 table with evidence levels and paths is in `docs/character/TEST_REPORT.md`.
+
+| Test | Method | Result |
+|---|---|---|
+| Logic suite | `ZR_Dev:Invoke("tests")` | **167/167 pass**, including the block-body proportion and support-hand reach checks with 1.35× third-person weapons. |
+| Character checks | `ZR_Dev:Invoke("chartests")` | **38/38 pass**: C01 import and sizes, C02 layering, C03 equip/replace/unequip and per-slot diff, C04 delayed-load fallback and reconcile, C05 invalid requests through the real dispatcher, C06 idempotency, C07 hits ignore gear, C09 presets and 480 seeded kits, C12 churn. |
+| Presets | Showroom captures (front, side, back, close-ups) and Blender renders | Pass: operator, scavenger, guard, bodyguard and Foreman are distinct and reuse one rig. Heavy kit (face-plate helmet, Bulwark armour with collar and arm guards, raid pack) and a hooded scav variant were also captured. |
+| Poses with gear | Showroom with the real animator | Pass. Covered: idle, aim, walk, sprint, crouch, crouch-aim, prone, look up with the raid pack (neck limit), look down, pistol. No detached gear. |
+| In raid | Deploy and give through the dev bridge | Pass. Helmet, headset (behind the neck) and gaiter appear on the character. First person hides all 41 own parts locally. Viewmodel sleeves are block meshes in the outfit colour. |
+| Death, respawn, reload | `kill`, `rejoin` | Pass. The corpse keeps all 11 gear pieces. The safehouse respawn wears the remaining profile kit with no duplicates. A profile reload keeps the appearance. |
+| Safehouse requests | Real `inv` dispatcher | Pass. Equipping a shell, patrol pack and carrier shows on the character. A headset under the shell is refused (HELMET COVERS EARS). Quick move to stash works again; it was always refused before. |
+| Restart | Play stop → start | Pass. The five presets look identical before and after. |
+| Inventory | Tab through MCP keyboard input | Pass (structure). EARS and FACE slots render and are selectable. |
+| Not verified | – | Two or more clients (C06 late join, a second observer for C08), touch and controller emulation (C11), devices and performance. |
+
 ## M10 World (2026-10-28, in progress)
 
 | Test | Method | Result |

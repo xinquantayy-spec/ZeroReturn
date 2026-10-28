@@ -177,6 +177,16 @@ if RunService:IsStudio() then
 		elseif cmd == "nade" then
 			-- a = { hold = seconds, under = bool }: press G, hold, release
 			return ctx.Grenade.testThrow(a and a.hold, a and a.under)
+		elseif cmd == "hidden" then
+			-- first-person hidden set vs the character's parts (C12: no growth with equipment churn)
+			local me = Players.LocalPlayer.Character
+			local parts = 0
+			for _, d in me and me:GetDescendants() or {} do
+				if d:IsA("BasePart") then
+					parts += 1
+				end
+			end
+			return string.format("hidden=%d parts=%d", ctx.Camera.hiddenCount(), parts)
 		elseif cmd == "nadeState" then
 			return tostring(ctx.Grenade.state)
 		elseif cmd == "nadeTune" then

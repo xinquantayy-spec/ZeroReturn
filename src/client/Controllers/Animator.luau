@@ -165,7 +165,7 @@ local function animate(r, dt)
 		mode = "low"
 	end
 	local p = {
-		stance = r.proneA > 0.5 and "p" or stance, depth = r.depth, lean = r.lean, pitch = r.pitch, hold = kind, weapon = anchors,
+		stance = r.proneA > 0.5 and "p" or stance, depth = r.depth, lean = r.lean, pitch = r.pitch, neckUp = m:GetAttribute("NeckUp"), hold = kind, weapon = anchors,
 		crouchFwd = stance == "c" and 0.15 * r.depth or 0, airborne = airborne,
 		gait = { phase = r.phase, amp = r.amp, dir = r.dir, stride = stride, lift = stance == "c" and 0.22 or 0.32 },
 		bob = (1 - math.abs(math.sin(r.phase))) * 0.07 * r.amp, sway = math.sin(r.phase) * 0.03 * r.amp,

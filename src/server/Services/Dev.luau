@@ -911,7 +911,10 @@ function C.showroom(list)
 		end
 		local rig = ctx.Chars.buildRig(kind, variant)
 		rig.Name = d.name or ("Dummy" .. i)
-		local cf = CFrame.new(SHOW_ORIGIN + Vector3.new(d.x or (i - 1) * 6, RigSpec.hrp.center.Y, d.z or 0)) * CFrame.Angles(0, math.rad(d.yaw or 180), 0)
+		-- the root sits lower when crouched / prone (the anchored dummy has no Humanoid hip height to do it)
+		local RigMath = require(Shared.RigMath)
+		local drop = RigMath.STAND_HIP - RigMath.hipFor(d.stance or "s", d.depth or 0.7)
+		local cf = CFrame.new(SHOW_ORIGIN + Vector3.new(d.x or (i - 1) * 6, RigSpec.hrp.center.Y - drop, d.z or 0)) * CFrame.Angles(0, math.rad(d.yaw or 180), 0)
 		rig:PivotTo(cf)
 		rig.HumanoidRootPart.Anchored = true
 		rig:SetAttribute("Stance", d.stance or "s")

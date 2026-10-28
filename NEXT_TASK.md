@@ -1,6 +1,15 @@
 # Next Task
 
-**Current focus (owner request, 2026-10-28):** milestone **M12 Look 2.0**, then **M13 Maps**. The owner wants Tarkov-level wear and imperfection on every building and model, at least four locations, and a game that still runs on phones, consoles and PCs (with an opt-in Potato mode; phones keep the full look by default).
+**M16 Characters (owner request, 2026-10-28) is done (part A).** Block body, Blender equipment set, server appearance system and role presets; see `docs/character/`. M16 part B is still to do:
+- the two-client checks (C06, C08), which need a Studio Clients-and-Servers run by the owner;
+- touch and controller emulation of the equipment screen (C11);
+- a subtle fabric MaterialVariant;
+- eyewear and goggles;
+- the marksman/scout and safehouse-worker presets;
+- a stash character preview;
+- a showroom profile with the expected character count, on real hardware.
+
+**Current focus (owner request, 2026-10-28):** milestone **M12 Look 2.0** (parked during M16, resumes now), then **M13 Maps**. The owner wants Tarkov-level wear and imperfection on every building and model, at least four locations, and a game that still runs on phones, consoles and PCs (with an opt-in Potato mode; phones keep the full look by default).
 
 Maps are original. They are the same kinds of places as Tarkov's (factory, forest, industrial outskirts) with their own layouts, landmarks and names; Battlestate's layouts are not copied.
 
@@ -33,4 +42,4 @@ Maps are original. They are the same kinds of places as Tarkov's (factory, fores
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open `Zero Return.rbxl` and connect the Rojo plugin.
-3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **164/164**).
+3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **167/167**) and `ZR_Dev:Invoke("chartests")` (baseline **38/38**).

@@ -209,6 +209,7 @@ function Appearance.apply(char, spec)
 	char:SetAttribute("Look", look)
 	char:SetAttribute("LookVariant", variant)
 	char:SetAttribute("BodyVersion", Equipment.BODY_VERSION)
+	char:SetAttribute("NeckUp", Equipment.neckUpOf(state))
 	for _, slot in Equipment.VISUAL_SLOTS do
 		local it = state.items[slot]
 		char:SetAttribute("Gear_" .. slot, it and it.id or nil)

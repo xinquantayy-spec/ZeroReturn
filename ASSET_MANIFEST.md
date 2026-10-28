@@ -6,14 +6,17 @@ The upload record, including hashes, is `assets/upload_manifest.json`. On the PC
 
 ## Meshes
 
-All meshes were built with Blender scripts. They are vertex-coloured, untextured and owned by user 5437527887.
+All meshes were built with Blender scripts. They are vertex-coloured, untextured and owned by user 5437527887. The M16 character batches also keep their `.blend` sources (`assets/blender_sources/`) and FBX exports (`assets/exports/`) in the repo; hashes are in the character manifest.
 
 | Upload key | Asset ID | Contents | Source script |
 |---|---|---|---|
 | ZR_BatchA | 125938077801710 | ZR_VM_R17 (680 tris), ZR_VM_R17_Mag, ZR_VM_Arms, ZR_WPN_R17_TP, ZR_ENV_Container20, ZR_PROP_Barrel, ZR_PROP_Pallet, ZR_PROP_Barrier, ZR_PROP_LightPole | `assets/blender_scripts/build_batch_a.py` |
 | EFB_CAL_Crate4 | 98627364621889 | Calibration crate. Renamed at runtime to `ZR_PROP_Crate`. | Calibration export (pre-rename) |
-| ZR_Operator | 89318251225515 | Operator body: 15 R15-named segments (`ZR_OP_*`) on the RigSpec sizes | `assets/blender_scripts/build_operator.py` |
-| ZR_Gear | 75319988582613 | ZR_GEAR_Helmet, FacePlate, Vest, Pouch, Pack, BodyCam, Holster (tinted per faction at runtime) | `assets/blender_scripts/build_gear.py` |
+| ZR_Operator | 89318251225515 | Retired in M16 (no longer loaded). The pre-M16 operator body (`ZR_OP_*`). | `assets/blender_scripts/build_operator.py` |
+| ZR_Gear | 75319988582613 | Retired in M16 (no longer loaded). Pre-M16 gear (`ZR_GEAR_*`). | `assets/blender_scripts/build_gear.py` |
+| ZR_WearKit | 122101191158248 | M12 wear kit: 29 cosmetic `ZR_WK_*` pieces and 9 `ZR_PROP_*` cover props (not placed in the world yet) | `assets/blender_scripts/build_wear_kit.py` |
+| ZR_CharBase | 101424875475699 | M16 block body ZR_BLOCK_R15_V1 (15 `ZR_BLK_*` segments, 3,880 tris), helmet A (952), calibration cube | `assets/blender_scripts/build_char_base.py` |
+| ZR_CharGear | 111486052124640 | M16 equipment, 33 meshes (13,242 tris for the whole batch): helmets, face plate, headsets, mic, gaiter, cap, beanie, hard hat, carrier, pouches, armour collar, soft vest, chest rig, packs, straps, body camera, belt rig, holster, arm guards, outfit overlays, first-person sleeve and cuff. Per-mesh rows: `docs/character/CHARACTER_ASSET_MANIFEST.csv`. | `assets/blender_scripts/build_char_gear.py` |
 
 How meshes load and are placed:
 
@@ -49,6 +52,6 @@ These are built from parts and terrain in `Services/World.luau`:
 
 - the map layout: Harbor Stack, Pump Annex, Freight Depot, pier, relay tower, rail cut, water tower, ferry tunnel
 - lighting and grading
-- gear fallbacks when a mesh cannot load, and the soft cap (`Services/Chars.luau`)
+- neutral gear stand-ins while an equipment mesh has not loaded (`Services/Appearance.luau`)
 - weapons: the shared part-built spec (`WeaponModels.luau`) for first and third person
 - grenades in hand and in flight, explosions, smoke (client `Grenade.luau`)
