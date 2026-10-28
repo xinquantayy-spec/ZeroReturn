@@ -22,6 +22,11 @@
 8. **The name "Zero Return" has not been checked** for collisions or trademarks before a public release.
 9. **The PC folder is still called `EscapeFromBloxov`.** Renaming it means restarting `rojo serve` from the new path.
 
+10. **Third-person animation is not running.** Roblox now rigs avatars (and HumanoidDescription models) with `AnimationConstraint` joints instead of `Motor6D`, so the client Animator finds no joints. M6 replaces the avatar with a custom Motor6D operator rig and teaches the Animator both joint types.
+11. **Weapons are part-built.** All weapons and attachments use the shared `WeaponModels` spec (consistent first and third person). The earlier R17 Blender viewmodel mesh is retired; M10 re-authors weapon meshes in Blender against the same anchors.
+12. **Inventory on short windows.** With a viewport shorter than about 600 px, the lower equipment slots (primary, holster, secondary) slide under the detail strip. Needs a scrollable gear column (M11).
+13. **Default R15 look.** Characters still use the stock R15 body and dynamic head (with face) until the M6 operator rig lands.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

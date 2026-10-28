@@ -263,6 +263,40 @@ function T.run(ctx)
 	hs3.painUntil = os.clock() + 60
 	check("painkillers allow sprint", Health.mods(hs3).sprint == true and not Health.inPain(hs3))
 
+	-- weapon modding (mounts, caliber-specific muzzle devices, swaps return the old part, slot drops)
+	do
+		local h = Settle.newProfile()
+		local rifle, pistol = h.slots.primary, h.slots.holster
+		local function stash(id)
+			local g, it = Inv.newItem(id)
+			local okP = Inv.place(h, g, it, { "stash" })
+			return okP and g or nil
+		end
+		local dot, scope, supp9, supp62, light = stash("RED_DOT"), stash("SCOPE_4X"), stash("SUPP_9"), stash("SUPP_62"), stash("LIGHT_T")
+		check("mods placed", dot and scope and supp9 and supp62 and light and true)
+		check("9mm suppressor refused on 6.2 rifle", select(2, Inv.attachMod(h, rifle, supp9, { "stash" })) == "WRONG_CALIBER")
+		check("rail optic refused on pistol", select(2, Inv.attachMod(h, pistol, dot, { "stash" })) == "NO_MOUNT")
+		check("suppressor installs", (Inv.attachMod(h, rifle, supp62, { "stash" })) and h.items[rifle].mods.muzzle == supp62 and Inv.locate(h, supp62) == "mod")
+		check("reflex installs", (Inv.attachMod(h, rifle, dot, { "stash" })) and inv(h))
+		check("scope swaps reflex back to stash", (Inv.attachMod(h, rifle, scope, { "stash" })) and h.items[rifle].mods.rail == scope and Inv.locate(h, dot) == "grid" and inv(h))
+		local ms = Inv.modStats(h, rifle)
+		check("mod stats", ms.suppressed and ms.zoom == 4 and ms.loud < 0.5 and ms.recoil < 1)
+		check("light via slot drop", (Inv.move(h, light, { slot = "primary" })) and h.items[rifle].mods.side == light and Inv.modStats(h, rifle).light)
+		local mass0 = Inv.weight(h)
+		check("mods count toward carried weight", mass0 > 0)
+		check("detach returns to grid", (Inv.detachMod(h, rifle, "muzzle", { "stash" })) and Inv.locate(h, supp62) == "grid" and Inv.weight(h) < mass0 and inv(h))
+		check("detach empty mount fails", select(2, Inv.detachMod(h, rifle, "under", { "stash" })) == "NO_MOD")
+		-- weapon with mods moves as one bundle (take/restore keeps attachments)
+		local b = Inv.take(h, rifle)
+		check("bundle carries mods", b ~= nil and #b.subs >= 3)
+		check("bundle restore", b ~= nil and (Inv.give(h, b, nil, { "stash" })) and h.items[rifle].mods.rail == scope and inv(h))
+		-- magazine dropped onto the equipped weapon's slot loads it
+		local spareMag = stash("P9_MAG")
+		local pw = h.items[pistol]
+		local oldMag = pw.mag
+		check("mag onto holster slot inserts", spareMag ~= nil and (Inv.move(h, spareMag, { slot = "holster" })) and h.items[pistol].mag == spareMag and Inv.locate(h, oldMag) == "grid" and inv(h))
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0

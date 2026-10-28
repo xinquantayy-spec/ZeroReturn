@@ -66,6 +66,29 @@ function Effects.sound(id, at, volume, speed)
 		end)
 	end
 	s:Play()
+	return s
+end
+
+-- per-weapon report: pitch/volume variants of the recorded rifle shot; suppressors muffle and shorten it
+local GUN = {
+	R17 = { s = 1.0, v = 0.9 }, KST = { s = 0.9, v = 0.95 }, SPARROW = { s = 1.16, v = 0.8 },
+	HARROW = { s = 0.68, v = 1.0 }, TUNDRA = { s = 0.78, v = 1.0 }, P9 = { s = 1.28, v = 0.72 },
+}
+function Effects.gunSound(weapon, at, suppressed, distant, volMul)
+	local g = GUN[weapon] or GUN.R17
+	local id = (distant and not suppressed and Sounds.R17_FIRE_FAR ~= "") and Sounds.R17_FIRE_FAR or Sounds.R17_FIRE
+	local vol = g.v * (suppressed and 0.32 or 1) * (volMul or 1)
+	local speed = g.s * (suppressed and 1.18 or 1) * (1 + (math.random() - 0.5) * 0.05)
+	local s = Effects.sound(id, at, vol, speed)
+	if s and suppressed then
+		s.RollOffMaxDistance = 220
+		local eq = Instance.new("EqualizerSoundEffect")
+		eq.HighGain = -20
+		eq.MidGain = -6
+		eq.LowGain = 2
+		eq.Parent = s
+	end
+	return s
 end
 
 function Effects.tracer(o, p)
@@ -132,12 +155,16 @@ function Effects.remoteShot(d)
 	if typeof(d.o) ~= "Vector3" or typeof(d.p) ~= "Vector3" then
 		return
 	end
-	Effects.flash(d.o)
-	Effects.tracer(d.o, d.p)
+	if not d.s then
+		Effects.flash(d.o)
+	end
+	if d.t then
+		Effects.tracer(d.o, d.p) -- tracer rounds only (Tarkov)
+	end
 	Effects.impact(d.p, d.n, d.h)
 	local cam = workspace.CurrentCamera
 	local dist = cam and (cam.CFrame.Position - d.o).Magnitude or 0
-	Effects.sound((dist > 160 and Sounds.R17_FIRE_FAR ~= "") and Sounds.R17_FIRE_FAR or Sounds.R17_FIRE, d.o, d.ai and 0.75 or 0.85, d.ai and 0.94 or 1)
+	Effects.gunSound(type(d.w) == "string" and d.w or "R17", d.o, d.s == true, dist > 160, d.ai and 0.85 or 0.95)
 end
 
 function Effects.init(c)

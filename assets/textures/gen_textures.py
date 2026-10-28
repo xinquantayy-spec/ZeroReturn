@@ -137,6 +137,34 @@ def glow(path):
     Image.fromarray(img, "RGBA").save(path)
 
 
+def scope(path):
+    n = 1024
+    y, x = np.mgrid[0:n, 0:n].astype(float)
+    cx = cy = (n - 1) / 2
+    r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2) / (n / 2)
+    alpha = np.clip((r - 0.86) / 0.04, 0, 1)  # black outside the eyepiece, soft edge
+    rim = np.exp(-((r - 0.87) / 0.025) ** 2) * 0.6  # dark rim shadow inside the tube
+    alpha = np.maximum(alpha, rim)
+    rgb = np.zeros((n, n, 3))
+    img = Image.fromarray(np.dstack([rgb, alpha * 255]).astype(np.uint8), "RGBA")
+    d = ImageDraw.Draw(img)
+    c = int(cx)
+    # fine crosshair with thicker outer posts and a small center gap
+    d.line([(c, int(n * 0.12)), (c, c - 18)], fill=(10, 10, 10, 230), width=2)
+    d.line([(c, c + 18), (c, int(n * 0.88))], fill=(10, 10, 10, 230), width=2)
+    d.line([(int(n * 0.12), c), (c - 18, c)], fill=(10, 10, 10, 230), width=2)
+    d.line([(c + 18, c), (int(n * 0.88), c)], fill=(10, 10, 10, 230), width=2)
+    for k in (1, -1):
+        d.rectangle([c - 4, c + k * 200, c + 4, c + k * 430][::1] if k > 0 else [c - 4, c - 430, c + 4, c - 200], fill=(10, 10, 10, 240))
+        d.rectangle([c + k * 200, c - 4, c + k * 430, c + 4] if k > 0 else [c - 430, c - 4, c - 200, c + 4], fill=(10, 10, 10, 240))
+    for i in range(1, 6):
+        for k in (1, -1):
+            yy = c + k * i * 34
+            d.line([(c - 7, yy), (c + 7, yy)], fill=(10, 10, 10, 220), width=2)
+    d.ellipse([c - 3, c - 3, c + 3, c + 3], fill=(200, 40, 30, 255))
+    img.save(path)
+
+
 if __name__ == "__main__":
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
@@ -144,5 +172,6 @@ if __name__ == "__main__":
     lens(os.path.join(out, "ZR_TEX_Lens.png"))
     icons(os.path.join(out, "ZR_TEX_Icons.png"))
     glow(os.path.join(out, "ZR_TEX_Glow.png"))
+    scope(os.path.join(out, "ZR_TEX_Scope.png"))
     for f in sorted(os.listdir(out)):
         print(f, os.path.getsize(os.path.join(out, f)))

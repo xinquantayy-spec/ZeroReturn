@@ -63,7 +63,7 @@ function Inv.dims(h: any, cid: string): (number, number)
 	return 0, 0
 end
 
--- where is g?  "grid", cid, placement | "slot", name | "mag", weaponGuid | nil
+-- where is g?  "grid", cid, placement | "slot", name | "mag", weaponGuid | "mod", weaponGuid, mount | nil
 function Inv.locate(h: any, g: string): (string?, any, any)
 	for cid, pl in h.grids do
 		local p = pl[g]
@@ -80,6 +80,13 @@ function Inv.locate(h: any, g: string): (string?, any, any)
 		if it.mag == g then
 			return "mag", wg, nil
 		end
+		if it.mods then
+			for mount, mg in it.mods do
+				if mg == g then
+					return "mod", wg, mount
+				end
+			end
+		end
 	end
 	return nil, nil, nil
 end
@@ -89,7 +96,7 @@ function Inv.parentOf(h: any, g: string): string?
 	local k, a = Inv.locate(h, g)
 	if k == "grid" and not BUILTIN[a] then
 		return a
-	elseif k == "mag" then
+	elseif k == "mag" or k == "mod" then
 		return a
 	end
 	return nil
@@ -133,6 +140,13 @@ function Inv.descendants(h: any, g: string, out: { string }?): { string }
 		table.insert(list, it.mag)
 		Inv.descendants(h, it.mag, list)
 	end
+	if it.mods then
+		for _, mg in it.mods do
+			if h.items[mg] then
+				table.insert(list, mg)
+			end
+		end
+	end
 	local pl = h.grids[g]
 	if pl then
 		for cg in pl do
@@ -144,13 +158,18 @@ function Inv.descendants(h: any, g: string, out: { string }?): { string }
 end
 
 local function detach(h: any, g: string)
-	local k, a = Inv.locate(h, g)
+	local k, a, b = Inv.locate(h, g)
 	if k == "grid" then
 		h.grids[a][g] = nil
 	elseif k == "slot" then
 		h.slots[a] = nil
 	elseif k == "mag" then
 		h.items[a].mag = nil
+	elseif k == "mod" then
+		h.items[a].mods[b] = nil
+		if next(h.items[a].mods) == nil then
+			h.items[a].mods = nil
+		end
 	end
 end
 Inv.detach = detach
@@ -312,6 +331,17 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 	local d = defs[it.id]
 	ensureGrid(h, g)
 	if dest.slot ~= nil then
+		-- dropping a magazine or attachment onto the weapon in a slot loads / installs it (Tarkov)
+		local occ = type(dest.slot) == "string" and h.slots[dest.slot] or nil
+		local oit = occ and occ ~= g and h.items[occ]
+		local od = oit and defs[oit.id]
+		if od and od.weapon then
+			if d.kind == "mag" and od.family and od.family == d.family then
+				return Inv.insertMag(h, g, occ)
+			elseif d.kind == "mod" then
+				return Inv.attachMod(h, occ, g, Inv.loadOrder(h))
+			end
+		end
 		local okE, errE = Inv.canEquip(h, g, dest.slot)
 		if not okE then
 			return false, errE
@@ -340,6 +370,9 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 		end
 		if d.kind == "mag" and td.family and td.family == d.family and td.kind ~= "mag" then
 			return Inv.insertMag(h, g, target)
+		end
+		if d.kind == "mod" and td.weapon then
+			return Inv.attachMod(h, target, g, Inv.loadOrder(h))
 		end
 		if td.grid and target ~= g then
 			return Inv.autoPlace(h, g, { target })
@@ -516,6 +549,9 @@ function Inv.restore(h: any, b: any)
 		h.slots[f.a] = b.g
 	elseif f.k == "mag" and h.items[f.a] then
 		h.items[f.a].mag = b.g
+	elseif f.k == "mod" and h.items[f.a] then
+		h.items[f.a].mods = h.items[f.a].mods or {}
+		h.items[f.a].mods[f.b] = b.g
 	end
 end
 
@@ -649,6 +685,90 @@ function Inv.weight(h: any, guids: { string }?): number
 		end
 	end
 	return m
+end
+
+-- ── weapon attachments ────────────────────────────────────────────────────────
+local Weapons = require(Shared.Weapons)
+
+function Inv.canMod(h: any, wg: string, mg: string): (boolean, string?)
+	local w, m = h.items[wg], h.items[mg]
+	local wd, md = w and defs[w.id], m and defs[m.id]
+	if not wd or not md or not md.mod or not wd.weapon then
+		return false, "INCOMPATIBLE"
+	end
+	local spec = Weapons[wd.weapon]
+	local slots = spec and spec.slots or {}
+	local slotOk = slots[md.mod.slot]
+	if not slotOk then
+		return false, "NO_MOUNT"
+	end
+	if md.mod.caliber and slotOk ~= true and slotOk ~= md.mod.caliber then
+		return false, "WRONG_CALIBER"
+	end
+	return true, nil
+end
+
+-- Install attachment mg on weapon wg (an occupied mount swaps: the old attachment is auto-placed).
+function Inv.attachMod(h: any, wg: string, mg: string, order: { string }): (boolean, string?)
+	local okM, err = Inv.canMod(h, wg, mg)
+	if not okM then
+		return false, err
+	end
+	local w = h.items[wg]
+	local mount = defs[h.items[mg].id].mod.slot
+	local k, cid, p = Inv.locate(h, mg)
+	if k ~= "grid" then
+		return false, "BAD_SOURCE"
+	end
+	local old = w.mods and w.mods[mount]
+	detach(h, mg)
+	w.mods = w.mods or {}
+	w.mods[mount] = mg
+	if old then
+		local placed = Inv.autoPlace(h, old, order)
+		if not placed then
+			w.mods[mount] = old
+			h.grids[cid][mg] = p
+			return false, "NO_SPACE"
+		end
+	end
+	return true, nil
+end
+
+function Inv.detachMod(h: any, wg: string, mount: string, order: { string }): (boolean, string?)
+	local w = h.items[wg]
+	local mg = w and w.mods and w.mods[mount]
+	if not mg then
+		return false, "NO_MOD"
+	end
+	detach(h, mg)
+	local okP, err = Inv.autoPlace(h, mg, order)
+	if not okP then
+		w.mods = w.mods or {}
+		w.mods[mount] = mg
+		return false, err
+	end
+	return true, nil
+end
+
+-- combined handling modifiers from installed attachments
+function Inv.modStats(h: any, wg: string): any
+	local w = h.items[wg]
+	local st = { ergo = 0, recoil = 1, loud = 1, zoom = nil, reflex = false, light = false, suppressed = false }
+	for _, mg in (w and w.mods) or {} do
+		local m = h.items[mg]
+		local md = m and defs[m.id] and defs[m.id].mod
+		if md then
+			st.ergo += md.ergo or 0
+			st.recoil *= md.recoil or 1
+			st.loud *= md.loud or 1
+			st.zoom = md.zoom or st.zoom
+			st.reflex = st.reflex or md.reflex == true
+			st.light = st.light or md.light == true
+			st.suppressed = st.suppressed or (md.loud or 1) < 0.6
+		end
+	end
+	return st
 end
 
 -- ── ammunition ─────────────────────────────────────────────────────────────────
@@ -872,6 +992,18 @@ function Inv.check(h: any): (boolean, string?)
 			local e = mark(it.mag, "weapon:" .. g)
 			if e then
 				return false, e
+			end
+		end
+		if it.mods then
+			for mount, mg in it.mods do
+				local e = mark(mg, "mod:" .. mount)
+				if e then
+					return false, e
+				end
+				local md = h.items[mg] and defs[h.items[mg].id]
+				if not md or not md.mod or md.mod.slot ~= mount then
+					return false, "bad mod mount " .. mount
+				end
 			end
 		end
 	end

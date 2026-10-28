@@ -31,7 +31,18 @@ add("SPARROW_SMG", { name = "Sparrow SMG-9", short = "SMG-9", kind = "weapon", w
 add("HARROW12", { name = "Harrow-12 Pump", short = "H-12", kind = "weapon", w = 5, h = 1, mass = 3.4, value = 19000, caliber = "12", weapon = "HARROW", capacity = 6, desc = "12-gauge pump with a 6-shell tube. Load shells directly.", color = c("#5A4B3C") })
 add("TUNDRA_BOLT", { name = "Tundra Bolt Rifle", short = "TUNDRA", kind = "weapon", w = 6, h = 1, mass = 4.1, value = 46000, caliber = "7.6L", weapon = "TUNDRA", capacity = 5, rarity = "uncommon", desc = "Long bolt-action in 7.6x54. Five-round internal magazine.", color = c("#4F4A3B") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.8, value = 9500, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
-add("FIELD_KNIFE", { name = "Field Knife", short = "KNIFE", kind = "melee", w = 1, h = 2, mass = 0.3, value = 4000, desc = "Fixed-blade utility knife.", color = c("#5E5E58") })
+add("FIELD_KNIFE", { name = "Field Knife", short = "KNIFE", kind = "melee", w = 1, h = 2, mass = 0.3, value = 4000, weapon = "KNIFE", desc = "Fixed-blade utility knife.", color = c("#5E5E58") })
+
+-- ── attachments (weapon mods) ────────────────────────────────────────────────
+-- mod = { slot = "rail"|"muzzle"|"under"|"side", caliber?, ergo?, recoil? (multiplier), loud? (multiplier), zoom?, reflex?, light? }
+local MODC = c("#33383A")
+add("RED_DOT", { name = "RS-1 Reflex Sight", short = "REFLEX", kind = "mod", w = 1, h = 1, mass = 0.2, value = 16000, mod = { slot = "rail", ergo = -1, reflex = true }, desc = "Open reflex sight with a red dot. Mounts on the top rail.", color = MODC })
+add("SCOPE_4X", { name = "C4 Combat Scope", short = "4X", kind = "mod", w = 2, h = 1, mass = 0.55, value = 48000, rarity = "uncommon", mod = { slot = "rail", ergo = -4, zoom = 4 }, desc = "Fixed 4x prism scope. Mounts on the top rail.", color = MODC })
+add("SUPP_62", { name = "6.2 Suppressor", short = "SUPP 6.2", kind = "mod", w = 2, h = 1, mass = 0.5, value = 36000, rarity = "uncommon", mod = { slot = "muzzle", caliber = "6.2", loud = 0.35, recoil = 0.93, ergo = -3 }, desc = "Sound suppressor for 6.2 rifles. Hides the muzzle flash.", color = MODC })
+add("SUPP_9", { name = "9mm Suppressor", short = "SUPP 9", kind = "mod", w = 2, h = 1, mass = 0.3, value = 24000, mod = { slot = "muzzle", caliber = "9", loud = 0.3, recoil = 0.95, ergo = -2 }, desc = "Sound suppressor for 9x19 weapons.", color = MODC })
+add("BRAKE_76", { name = "7.6 Muzzle Brake", short = "BRAKE", kind = "mod", w = 1, h = 1, mass = 0.2, value = 12000, mod = { slot = "muzzle", caliber = "7.6", loud = 1.15, recoil = 0.85 }, desc = "Muzzle brake for 7.6x39. Less recoil, more noise.", color = MODC })
+add("GRIP_V", { name = "Vertical Foregrip", short = "GRIP", kind = "mod", w = 1, h = 1, mass = 0.1, value = 9000, mod = { slot = "under", recoil = 0.9, ergo = 4 }, desc = "Vertical grip. Steadier bursts, faster handling.", color = MODC })
+add("LIGHT_T", { name = "WL-2 Weapon Light", short = "LIGHT", kind = "mod", w = 1, h = 1, mass = 0.15, value = 11000, mod = { slot = "side", light = true, ergo = -1 }, desc = "Weapon light. Toggle with L.", color = MODC })
 
 -- ── magazines ─────────────────────────────────────────────────────────────────
 add("R17_MAG", { name = "R-17 25-rd Magazine", short = "MAG 25", kind = "mag", w = 1, h = 2, mass = 0.3, value = 2800, capacity = 25, caliber = "6.2", family = "R17", desc = "25-round steel box magazine for the R-17.", color = c("#3E4440") })

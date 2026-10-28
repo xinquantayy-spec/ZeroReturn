@@ -20,6 +20,8 @@ local LAYOUT = {
 	{ "Inventory", "BAG", Vector2.new(0.955, 0.14), 52 },
 	{ "Extracts", "EXIT", Vector2.new(0.875, 0.14), 52 },
 	{ "Settings", "SET", Vector2.new(0.795, 0.14), 52 },
+	{ "CycleWeapon", "SWAP", Vector2.new(0.765, 0.62), 52 },
+	{ "MagCheck", "CHK", Vector2.new(0.955, 0.62), 46 },
 }
 
 local function refresh()
@@ -35,9 +37,9 @@ local function refresh()
 		if action == "Aim" then
 			b.BackgroundColor3 = ctx.Weapon.aiming and K.C.ochre or K.C.bg
 		elseif action == "Sprint" then
-			b.BackgroundColor3 = ctx.Weapon.sprinting and K.C.ochre or K.C.bg
+			b.BackgroundColor3 = ctx.Movement.sprinting and K.C.ochre or K.C.bg
 		elseif action == "Crouch" then
-			b.BackgroundColor3 = ctx.Weapon.crouching and K.C.ochre or K.C.bg
+			b.BackgroundColor3 = ctx.Movement.crouching and K.C.ochre or K.C.bg
 		end
 	end
 end

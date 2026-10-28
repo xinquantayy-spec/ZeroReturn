@@ -95,7 +95,7 @@ local function update(dt)
 	UIS.MouseIconEnabled = menu
 	local S = ctx.Settings.data
 	local aiming = ctx.Weapon.aiming
-	local sens = (S.sens or 1) * (aiming and 0.62 or 1)
+	local sens = (S.sens or 1) * (aiming and (ctx.Weapon.aimSens and ctx.Weapon.aimSens() or 0.62) or 1)
 	if not menu then
 		local md = UIS:GetMouseDelta()
 		Camera.yaw -= math.rad(md.X * 0.2 * sens)
@@ -125,10 +125,17 @@ local function update(dt)
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local orbit = Camera.orbit -- Studio inspection view of your own character (dev bridge "orbit")
 	for _, p in hidden do
-		p.LocalTransparencyModifier = 1
+		p.LocalTransparencyModifier = orbit and 0 or 1
 	end
 	if not (hum and root) then
+		return
+	end
+	if orbit then
+		local center = root.Position + Vector3.new(0, orbit.h or 1.2, 0)
+		cam.CFrame = CFrame.new(center) * CFrame.Angles(0, Camera.yaw + (orbit.yaw or 0), 0) * CFrame.Angles(orbit.pitch or -0.2, 0, 0) * CFrame.new(0, 0, orbit.dist or 8)
+		cam.FieldOfView = 50
 		return
 	end
 	if hum.Health <= 0 then

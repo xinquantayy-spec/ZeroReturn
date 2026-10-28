@@ -5,8 +5,8 @@ local StarterPlayer = game:GetService("StarterPlayer")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
-local AssetMeta = require(Shared.AssetMeta)
 local Items = require(Shared.Items)
+local WeaponModels = require(Shared.WeaponModels)
 
 local Chars = {}
 local ctx
@@ -79,56 +79,90 @@ local function attach(char, partName, size, offset, color, material, name, shape
 	return p
 end
 
--- Third-person rifle silhouette (mesh if uploaded, else parts) carried at low-ready on the torso.
-local function rifle(char, color)
+local function weldAll(parts, host, parent, name)
+	for _, p in parts do
+		p.Name = name
+		p.CastShadow = true
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = host
+		w.Part1 = p
+		w.Parent = p
+		p.Parent = parent
+	end
+end
+
+local WEAPON_PARTS = { TPWeapon = true, TPSling = true, TPRifle = true }
+
+local function buildInto(char, host, holder, it, cf, name)
+	local b = WeaponModels.build(holder.items, it, cf, 1)
+	if not b then
+		return nil
+	end
+	local all = table.clone(b.parts)
+	for _, p in b.mag do
+		table.insert(all, p)
+	end
+	weldAll(all, host, char, name)
+	return b
+end
+
+-- Third-person weapons: the active one in hand (low ready; M6 animator re-poses it with the arms), the other
+-- long guns slung on the back. A tactical light on the active weapon follows the "WeaponLight" attribute.
+function Chars.setWeapon(char, holder, g)
+	if not char then
+		return
+	end
+	for _, c in char:GetChildren() do
+		if WEAPON_PARTS[c.Name] then
+			c:Destroy()
+		end
+	end
 	local torso = char:FindFirstChild("UpperTorso")
+	local it = holder and g and holder.items[g]
 	if not torso then
 		return
 	end
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
-	local meshRifle = lib and lib:FindFirstChild("ZR_WPN_R17_TP")
-	local base = torso.CFrame * CFrame.new(0.45, -0.25, -1.05) * CFrame.Angles(math.rad(-8), math.rad(4), 0)
-	local parts = {}
-	if meshRifle then
-		local m = meshRifle:Clone()
-		local s = 0.7 -- uploaded at 1.15x viewmodel proportions; carbine ~2.8 studs on a ~5.5 stud operator
-		m.Size *= s
-		local grip = torso.CFrame * CFrame.new(0.38, -0.45, -0.5) * CFrame.Angles(math.rad(-10), math.rad(6), 0)
-		m.CFrame = grip * CFrame.new(AssetMeta.ZR_WPN_R17_TP * s)
-		table.insert(parts, m)
-	else
-		local function seg(sx, sy, sz, ox, oy, oz, col)
-			local p = Instance.new("Part")
-			p.Size = Vector3.new(sx, sy, sz)
-			p.CFrame = base * CFrame.new(ox, oy, oz)
-			p.Color = col
-			p.Material = Enum.Material.Metal
-			table.insert(parts, p)
+	if it then
+		local d = Items.defs[it.id]
+		char:SetAttribute("ActiveWeapon", it.id)
+		local grip = torso.CFrame * CFrame.new(0.38, -0.45, -0.55) * CFrame.Angles(math.rad(-10), math.rad(6), 0)
+		if d.kind == "pistol" or d.kind == "melee" then
+			grip = torso.CFrame * CFrame.new(0.55, -0.6, -0.55) * CFrame.Angles(math.rad(-35), 0, 0)
 		end
-		local dark, mid = Color3.fromHex("2B2F2D"), color or Color3.fromHex("55605A")
-		seg(0.32, 0.42, 1.6, 0, 0, 0, dark)
-		seg(0.18, 0.18, 1.3, 0, 0.05, -1.4, dark)
-		seg(0.3, 0.32, 0.9, 0, 0.02, -0.75, mid)
-		seg(0.22, 0.55, 0.28, 0, -0.42, 0.05, dark)
-		seg(0.24, 0.36, 0.9, 0, -0.05, 1.1, mid)
+		local b = buildInto(char, torso, holder, it, grip, "TPWeapon")
+		if b and b.lightPart then
+			local l = Instance.new("SpotLight")
+			l.Name = "WeaponLight"
+			l.Face = Enum.NormalId.Right
+			l.Range = 42
+			l.Angle = 42
+			l.Brightness = 3.2
+			l.Color = Color3.fromRGB(255, 244, 222)
+			l.Shadows = true
+			l.Enabled = char:GetAttribute("WeaponLight") == true
+			l.Parent = b.lightPart
+		end
+	else
+		char:SetAttribute("ActiveWeapon", nil)
 	end
-	for _, p in parts do
-		p.Name = "TPRifle"
-		p.Anchored = false
-		p.CanCollide = false
-		p.CanQuery = false
-		p.CanTouch = false
-		p.Massless = true
-		local w = Instance.new("WeldConstraint")
-		w.Part0 = torso
-		w.Part1 = p
-		w.Parent = p
-		p.Parent = char
+	if not holder then
+		return
+	end
+	-- long guns not in hand go on the back (two sling positions)
+	local n = 0
+	for _, slot in { "primary", "secondary" } do
+		local lg = holder.slots[slot]
+		local long = lg and lg ~= g and holder.items[lg]
+		if long then
+			n += 1
+			local back = torso.CFrame * CFrame.new(n == 1 and 0.15 or -0.2, 0.1, 0.75 + n * 0.08) * CFrame.Angles(0, math.rad(180), math.rad(n == 1 and -55 or 55))
+			buildInto(char, torso, holder, long, back, "TPSling")
+		end
 	end
 end
 
 -- visible gear derived from a holder's equipment slots
-function Chars.gearOf(h)
+function Chars.gearOf(h, activeSlot)
 	if not h then
 		return nil
 	end
@@ -137,7 +171,23 @@ function Chars.gearOf(h)
 		local it = g and h.items[g]
 		return it and it.id or nil
 	end
-	return { head = id("head"), armor = id("armor"), rig = id("rig"), back = id("back"), primary = id("primary") or id("secondary"), holster = id("holster") }
+	local active = (activeSlot and h.slots[activeSlot]) or h.slots.primary or h.slots.secondary or h.slots.holster or h.slots.melee
+	return { head = id("head"), armor = id("armor"), rig = id("rig"), back = id("back"), primary = id("primary") or id("secondary"), holster = id("holster"), holder = h, activeG = active }
+end
+
+local GEAR_PARTS = { Helmet = true, FacePlate = true, Visor = true, Cap = true, Vest = true, ArmGuard = true, Pouch = true, BodyCam = true, CamLens = true, Pack = true, Holster = true }
+
+-- refresh visible gear after mid-raid equipment changes
+function Chars.redress(char, holder, activeSlot)
+	if not char then
+		return
+	end
+	for _, c in char:GetChildren() do
+		if GEAR_PARTS[c.Name] or WEAPON_PARTS[c.Name] then
+			c:Destroy()
+		end
+	end
+	Chars.dress(char, "player", Chars.gearOf(holder, activeSlot))
 end
 
 local PACK_SIZE = {
@@ -198,8 +248,8 @@ function Chars.dress(char, kind, gear)
 		local size = PACK_SIZE[gear.back] or PACK_SIZE.CANVAS_BAG
 		attach(char, "UpperTorso", size, CFrame.new(0, 0.1 - (size.Y - 1.8) * 0.3, 0.62 + size.Z * 0.5), Color3.fromHex("6B6A4E"), Enum.Material.Fabric, "Pack")
 	end
-	if gear.primary then
-		rifle(char, nil)
+	if gear.holder then
+		Chars.setWeapon(char, gear.holder, gear.activeG)
 	end
 	if gear.holster then
 		attach(char, "LowerTorso", Vector3.new(0.22, 0.5, 0.42), CFrame.new(0.72, -0.1, 0), Color3.fromHex("23262A"), Enum.Material.SmoothPlastic, "Holster")
@@ -225,7 +275,7 @@ function Chars.setupHumanoid(hum: Humanoid)
 end
 
 -- Spawns (or respawns) a player's character at cf. holder: raid inventory (for gear visuals) or nil.
-function Chars.spawn(player: Player, cf: CFrame, holder: any?)
+function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: string?)
 	if not player.Parent then
 		return nil
 	end
@@ -261,7 +311,7 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?)
 		regen:Destroy()
 	end
 	char:PivotTo(cf)
-	Chars.dress(char, "player", Chars.gearOf(holder))
+	Chars.dress(char, "player", Chars.gearOf(holder, activeSlot))
 	char:SetAttribute("InRaid", holder ~= nil)
 	hum.Died:Connect(function()
 		Chars.ragdoll(char)

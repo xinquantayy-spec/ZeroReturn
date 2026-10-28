@@ -1,6 +1,6 @@
 # Zero Return: Development Status
 
-Build `0.1.0-m1`. Last updated 2026-10-28.
+Build `0.2.0-m5`. Last updated 2026-10-28.
 
 Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. The map is **Quay 7**, an industrial coastal evacuation zone.
 
@@ -12,7 +12,24 @@ Zero Return is an original extraction shooter for Roblox. The core loop is inspi
 | B: Pipeline smoke test | Done | Rojo 7.7.1 syncs into Studio. Blender builds meshes, which are uploaded through Open Cloud and load in-game. |
 | C: Vertical slice | Done | All Definition of Done steps were verified in a Studio playtest (single client, in-memory store). |
 | D: Polish | Partly done | Done: Blender meshes (viewmodel, third-person rifle, props), FIELD RECORDER HUD, original audio. Still to do: multi-client, device and performance passes. |
-| E: Expansion | Not started | See `NEXT_TASK.md`. |
+| E: Expansion (improvement program M2–M11) | In progress | See the milestone table below and `NEXT_TASK.md`. |
+
+## Improvement program (owner request, 2026-10-28)
+
+Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplayer raids with AI scavs, guards and bosses, and Tarkov rules for every mechanic (original names, items, maps and art).
+
+| Milestone | State | Summary |
+|---|---|---|
+| M2 Look | Done (e1a1686) | Bodycam FOV 85, motion, grain/lens overlays, auto-exposure, REC overlay, lens-warped HUD (Oswald, RGB split, glow, spring pop). |
+| M3 Inventory 2.0 | Done (42b1490) | Tarkov slots, nested rig/backpack/secure grids, 10x20 stash, search reveal, found-in-raid, drag and drop, context menu. |
+| M4 Health & ballistics | Done (79e505d) | 7 body parts (440 HP), bleeds, fractures, pain, energy/hydration, armor classes/durability/penetration, Tarkov-order meds. |
+| M5 Weapons 2.0 | Done | 7 weapons from one shared part-built spec (first and third person), IK arms, slot switching with draw times, auto/semi/pump/bolt, mag and shell-by-shell reloads, mag check, knife, attachments (reflex, 4x scope, suppressors, brake, grip, light), modding in the inventory. |
+| M6 Movement & animation | Next | Custom human rig (non-Roblox look), procedural full-body animation for players and AI, lean, prone, walk-speed control, stamina/weight/inertia, vault, free look. |
+| M7 Multiplayer raids | Planned | Raid matching on one server (12 players), squads, PvP bodies, player-scav mode, conditional extracts, insurance, longer raids. |
+| M8 AI 2.0 | Planned | Scavs, guards, a boss with followers, vision/hearing, cover, waves, friend-foe rules. |
+| M9 Economy | Planned | Traders, barter, loyalty, quests, XP/skills, hideout crafting, keys and locked rooms. |
+| M10 World | Planned | New POIs and boss compound, doors, loose loot, time of day/weather, audio atlas, Blender weapon/gear art. |
+| M11 QA | Planned | Two-client test, device emulation, performance, exploit regression, docs, backup. |
 
 ## Definition of Done
 
@@ -50,6 +67,9 @@ Notes:
 | Sprint / Crouch | Shift / C or Ctrl | L3 / B | RUN / CRCH |
 | Heal | H | D-pad Up | MED |
 | Fire mode | V | D-pad Right | – |
+| Primary / secondary / sidearm / knife | 1 / 2 / 3 / 4 | D-pad Left cycles | SWAP cycles |
+| Mag check | T | R3 | CHK |
+| Weapon light | L | – | – |
 | Exits list | O | D-pad Down | EXIT |
 | Inventory | Tab or I | Y | BAG |
 | Settings | P | Select | SET |
@@ -59,7 +79,7 @@ Notes:
 
 - **Server (`src/server`)**
   - Main and Services share one `ctx` table.
-  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Combat, Extract, AI, Raid, Dev.
+  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Health, Combat, Extract, AI, Raid, Dev.
   - Everything that matters is decided on the server: shots and damage, inventory, loot, extraction, currency and profiles.
 - **Persistence**
   - Session-locked profiles (UpdateAsync with a lock that expires after 150 s).
@@ -70,12 +90,13 @@ Notes:
   - One RemoteFunction (`Req`) plus Shoot, Act, State, Note and Fx.
   - Every request goes through token buckets, request-ID de-duplication, payload checks and strikes.
 - **Client (`src/client`)**
-  - Scriptable first-person camera, procedural viewmodel and animator, IAS input with a CAS fallback, recorder HUD.
+  - Scriptable first-person bodycam camera, Movement (stance/stamina), Weapon (viewmodel from the shared spec, IK arms, optics), Animator, IAS input with a CAS fallback.
+  - Look: Post (grain, lens, exposure, pain) and Lens (barrel-warped HUD text and icons) drive the recorder HUD.
   - Custom interaction prompts, grid inventory, deploy, summary, settings and exits screens, touch cluster.
-- **Shared (`src/shared`)**: Config, Items, Weapons, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, Version.
+- **Shared (`src/shared`)**: Config, Items, Weapons, WeaponModels, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, Textures, Version.
 - **Test bridges (Studio only)**
-  - `ServerStorage.ZR_Dev` (deploy, tp, loot, kill, extract, rejoin, crash, saveRetry, failWrites, expire, tests, abuse probes).
-  - `PlayerScripts.ZR_ClientDev` (fire, reload, inv, look, aim, screens).
+  - `ServerStorage.ZR_Dev` (deploy, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, expire, tests, abuse probes, hp, shootMe, wound, give [slot], weapon).
+  - `PlayerScripts.ZR_ClientDev` (state, fire, reload, inv, look, aim, switch, cycle, magcheck, light, slash, firemode, tune, pose, orbit, screens).
   - Neither bridge exists on live servers.
 
 ## Key decisions

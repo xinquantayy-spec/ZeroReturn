@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Weapon", "Animator", "Hud", "Post", "Interact", "Touch", "Inventory", "Screens" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Animator", "Hud", "Post", "Interact", "Touch", "Inventory", "Screens" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -42,10 +42,13 @@ if RunService:IsStudio() then
 	bf.Name = "ZR_ClientDev"
 	bf.OnInvoke = function(cmd, a)
 		if cmd == "state" then
-			local W = ctx.Weapon
+			local W, M = ctx.Weapon, ctx.Movement
+			local vmModel = workspace.CurrentCamera:FindFirstChild("ZR_Viewmodel")
 			return HttpService:JSONEncode({
 				phase = ctx.State.data and ctx.State.data.phase, ammo = W.ammo, spare = W.spare, hasWeapon = W.hasWeapon,
-				reloading = W.reloading, aiming = W.aiming, crouching = W.crouching, stamina = math.floor(W.stamina),
+				reloading = W.reloading, aiming = W.aiming, crouching = M.crouching, stamina = math.floor(M.stamina),
+				weapon = W.weaponName, slot = W.slot, mode = W.modeName, drawing = W.drawing, checking = W.checking,
+				light = W.light, scoped = W.scoped, melee = W.melee, vmParts = vmModel and #vmModel:GetChildren() or 0,
 				input = ctx.Input.backend, device = ctx.Input.device(), invOpen = ctx.Inventory.open,
 				modal = ctx.Screens.modal and ctx.Screens.modal:FindFirstChildOfClass("TextLabel").Text or nil,
 				prompt = ctx.Interact.current and ctx.Interact.current.ObjectText or nil,
@@ -68,8 +71,42 @@ if RunService:IsStudio() then
 			ctx.Screens.settings()
 			return "ok"
 		elseif cmd == "aim" then
-			ctx.Weapon.aiming = a == true
+			ctx.Weapon.setAim(a == true)
 			return "ok"
+		elseif cmd == "switch" then
+			ctx.Weapon.switchTo(a)
+			return "ok"
+		elseif cmd == "cycle" then
+			ctx.Weapon.cycleWeapon()
+			return "ok"
+		elseif cmd == "magcheck" then
+			ctx.Weapon.magCheck()
+			return "ok"
+		elseif cmd == "light" then
+			ctx.Weapon.toggleLight()
+			return tostring(ctx.Weapon.light)
+		elseif cmd == "slash" then
+			ctx.Weapon.slash()
+			return "ok"
+		elseif cmd == "tune" then
+			-- a = { key = value, ... } (viewmodel TUNE); rebuilds so sizes/scale apply
+			for k, v in a or {} do
+				ctx.Weapon.TUNE[k] = v
+			end
+			ctx.Weapon.rebuild()
+			return "ok"
+		elseif cmd == "pose" then
+			-- a = { kind = "long", name = "hip", cf = CFrame }
+			ctx.Weapon.POSE[a.kind][a.name] = a.cf
+			return "ok"
+		elseif cmd == "orbit" then
+			-- a = { dist, yaw, pitch, h } or nil to return to first person
+			ctx.Camera.orbit = a
+			return "ok"
+		elseif cmd == "firemode" then
+			ctx.Input.trigger("FireMode", true)
+			ctx.Input.trigger("FireMode", false)
+			return ctx.Weapon.modeName
 		elseif cmd == "look" then
 			ctx.Camera.yaw, ctx.Camera.pitch = math.rad(a and a.yaw or 0), math.rad(a and a.pitch or 0)
 			return "ok"

@@ -376,6 +376,59 @@ function C.shots()
 	return HttpService:JSONEncode(ctx.Combat.stats)
 end
 
+-- spawn an item into the player's raid kit (rig/pockets/backpack), an empty equipment slot, or the stash
+function C.give(name, id, n, slot)
+	local p = plr(name)
+	if not Items.defs[id] then
+		return "unknown item " .. tostring(id)
+	end
+	local h, inRaid = ctx.Raid.holder(p)
+	if not h then
+		return "no holder"
+	end
+	local g, it = Inv.newItem(id, n or 1)
+	local okP, err
+	if slot then
+		okP, err = Inv.placeSlot(h, g, it, slot)
+	else
+		okP, err = Inv.place(h, g, it, inRaid and Inv.loadOrder(h) or { "stash" })
+	end
+	if not okP then
+		return "ERR " .. tostring(err)
+	end
+	ctx.Raid.afterChange(p, inRaid)
+	return g
+end
+
+-- active weapon summary (server truth) + third-person visuals
+function C.weapon(name)
+	local p = plr(name)
+	local s = ctx.Raid.session(p)
+	if not s then
+		return "not in raid"
+	end
+	local wg, wit, wdef, wd, rounds = ctx.Combat.activeWeapon(s)
+	local mods = {}
+	for mount, mg in (wit and wit.mods) or {} do
+		mods[mount] = s.inv.items[mg] and s.inv.items[mg].id
+	end
+	local char = p.Character
+	local tp, sling, light = 0, 0, nil
+	for _, c in char and char:GetChildren() or {} do
+		if c.Name == "TPWeapon" then
+			tp += 1
+			light = light or (c:FindFirstChild("WeaponLight") and c.WeaponLight.Enabled)
+		elseif c.Name == "TPSling" then
+			sling += 1
+		end
+	end
+	return HttpService:JSONEncode({
+		active = s.active, g = wg, id = wit and wit.id, weapon = wdef and wdef.id, rounds = rounds and rounds.a, ammo = rounds and rounds.at,
+		mods = mods, ms = wg and Inv.modStats(s.inv, wg), tpParts = tp, slingParts = sling, light = light,
+		lightAttr = char and char:GetAttribute("WeaponLight"), activeAttr = char and char:GetAttribute("ActiveWeapon"), kind = wd and wd.kind,
+	})
+end
+
 function Dev.init(c)
 	ctx = c
 	if not RunService:IsStudio() then
@@ -387,12 +440,12 @@ function Dev.init(c)
 	end
 	local bf = Instance.new("BindableFunction")
 	bf.Name = "ZR_Dev"
-	bf.OnInvoke = function(cmd, a, b, d)
+	bf.OnInvoke = function(cmd, a, b, d, e)
 		local f = C[cmd]
 		if not f then
 			return "unknown cmd"
 		end
-		local ok, res = pcall(f, a, b, d)
+		local ok, res = pcall(f, a, b, d, e)
 		return ok and res or ("ERR " .. tostring(res))
 	end
 	bf.Parent = ServerStorage

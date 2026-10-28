@@ -35,14 +35,14 @@ Combat.filter = filter
 local function ws(player)
 	local w = W[player]
 	if not w then
-		w = { last = 0, seq = 0, reloadUntil = 0 }
+		w = { last = 0, seq = 0, reloadUntil = 0, drawUntil = 0 }
 		W[player] = w
 	end
 	return w
 end
 
 function Combat.reset(player)
-	W[player] = { last = 0, seq = 0, reloadUntil = 0 }
+	W[player] = { last = 0, seq = 0, reloadUntil = 0, drawUntil = 0 }
 end
 
 local function alive(player)
@@ -106,57 +106,6 @@ function Combat.damage(model, hum, amount, attacker, fromPos)
 	return res and res.killed or false
 end
 
--- active weapon of a raid session: guid, item, Weapons def, item def, rounds holder (mag or weapon tube)
-function Combat.activeWeapon(s)
-	local slot = s.active
-	local wg = slot and s.inv.slots[slot]
-	local wit = wg and s.inv.items[wg]
-	local d = wit and Items.defs[wit.id]
-	local wdef = d and d.weapon and Weapons[d.weapon]
-	if not wdef then
-		return nil
-	end
-	local rounds = (d.family and wit.mag and s.inv.items[wit.mag]) or ((not d.family) and wit) or nil
-	return wg, wit, wdef, d, rounds
-end
-
-local function reject(why, player)
-	Combat.stats.rejected += 1
-	if player then
-		ctx.Remotes.strike(player, why)
-	end
-end
-
--- attacker: Player or AI model; fromPos: where the damage came from (for the victim's indicator)
-function Combat.damage(model, hum, amount, attacker, fromPos)
-	if hum.Health <= 0 or amount <= 0 then
-		return false
-	end
-	local victim = Players:GetPlayerFromCharacter(model)
-	if victim then
-		if not ctx.Raid.session(victim) then
-			return false
-		end
-		local w = W[victim]
-		if w and w.healToken then
-			w.healToken = nil
-			ctx.Remotes.note(victim, "heal", { state = "cancel" })
-		end
-	end
-	hum.Health = math.max(0, hum.Health - amount)
-	local killed = hum.Health <= 0
-	if victim then
-		ctx.Remotes.note(victim, "dmg", { amt = math.floor(amount + 0.5), from = fromPos })
-	else
-		ctx.AI.onDamaged(model, attacker)
-	end
-	if killed and typeof(attacker) == "Instance" and attacker:IsA("Player") then
-		ctx.Raid.addKill(attacker)
-		ctx.Remotes.note(attacker, "kill", { name = victim and victim.DisplayName or "Harbor Watch" })
-	end
-	return killed
-end
-
 function Combat.shoot(player, seq, origin, dir)
 	if type(seq) ~= "number" or not Util.finite(seq) or not Util.vec(origin) or not Util.vec(dir) then
 		return reject("malformed shot", player)
@@ -176,11 +125,17 @@ function Combat.shoot(player, seq, origin, dir)
 	end
 	w.seq = seq
 	local t = os.clock()
+	if w.tube then
+		w.tube = nil -- firing interrupts shell-by-shell loading
+	end
 	if t < w.reloadUntil then
 		return reject("shot while reloading", nil)
 	end
+	if t < (w.drawUntil or 0) then
+		return reject("shot while drawing", nil)
+	end
 	local wg, wit, wdef, wd, mag = Combat.activeWeapon(s)
-	if not wdef then
+	if not wdef or wdef.melee then
 		return reject("no weapon", player)
 	end
 	if t - w.last < (60 / wdef.rpm) * 0.8 then
@@ -253,8 +208,56 @@ function Combat.shoot(player, seq, origin, dir)
 	if hit then
 		ctx.Remotes.note(player, "hit", { kill = killed })
 	end
-	ctx.AI.hearShot(origin, player)
-	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = hit, w = wd.weapon }, player)
+	local ms = Inv.modStats(s.inv, wg)
+	local loud = (wdef.loudness or 1) * ms.loud * ((ammoDef and ammoDef.ammo.subsonic and ms.suppressed) and 0.6 or 1)
+	ctx.AI.hearShot(origin, player, nil, loud)
+	local tracer = ammoDef and ammoDef.ammo and ammoDef.ammo.tracer or nil
+	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = hit, w = wd.weapon, s = ms.suppressed or nil, t = tracer }, player)
+end
+
+-- tube-fed weapons: shells go in one at a time from rig/pockets/backpack; firing interrupts
+local function tubeReload(player, s, w, wg, wit, wdef, wd)
+	local token = {}
+	w.tube = token
+	ctx.Remotes.note(player, "reload", { state = "tube", t = wdef.reload })
+	task.spawn(function()
+		while w.tube == token do
+			task.wait(wdef.reload)
+			if w.tube ~= token or W[player] ~= w or ctx.Raid.session(player) ~= s or s.done or not alive(player) or not s.inv.items[wg] then
+				break
+			end
+			if (wit.a or 0) >= (wd.capacity or 0) then
+				break
+			end
+			local ammoG
+			for _, cid in Inv.loadOrder(s.inv) do
+				for g in s.inv.grids[cid] or {} do
+					local it = s.inv.items[g]
+					local d = Items.defs[it.id]
+					if d.kind == "ammo" and d.caliber == wd.caliber and ((wit.a or 0) == 0 or wit.at == nil or wit.at == it.id) then
+						ammoG = g
+						break
+					end
+				end
+				if ammoG then
+					break
+				end
+			end
+			if not ammoG then
+				break
+			end
+			Inv.loadAmmo(s.inv, wg, ammoG, 1)
+			ctx.Remotes.note(player, "ammo", { a = wit.a or 0, tube = true })
+			if (wit.a or 0) >= (wd.capacity or 0) then
+				break -- tube full: done right away
+			end
+		end
+		if w.tube == token then
+			w.tube = nil
+		end
+		ctx.Remotes.note(player, "reload", { state = "done" })
+		ctx.Raid.push(player)
+	end)
 end
 
 function Combat.reload(player)
@@ -264,20 +267,25 @@ function Combat.reload(player)
 	end
 	local w = ws(player)
 	local t = os.clock()
-	if t < w.reloadUntil then
+	if t < w.reloadUntil or w.tube then
 		return
 	end
 	local wg, wit, wdef, wd, cur = Combat.activeWeapon(s)
-	if not wdef or not wd.family then
+	if not wdef or wdef.melee then
 		ctx.Remotes.note(player, "reload", { state = "none" })
 		return
+	end
+	if not wd.family then
+		return tubeReload(player, s, w, wg, wit, wdef, wd)
 	end
 	local best = Inv.bestMag(s.inv, wg)
 	if not best then
 		ctx.Remotes.note(player, "reload", { state = "none" })
 		return
 	end
-	local dur = (cur and (cur.a or 0) > 0) and wdef.reload or wdef.reloadEmpty
+	local hs = ctx.Health.of(player)
+	local slow = hs and ctx.Health.mods(hs).reload or 1
+	local dur = ((cur and (cur.a or 0) > 0) and wdef.reload or wdef.reloadEmpty) * slow
 	local token = {}
 	w.reloadToken = token
 	w.reloadUntil = t + dur
@@ -307,62 +315,149 @@ function Combat.reload(player)
 	end)
 end
 
--- interim medkit use (replaced by the body-part Health model)
-function Combat.startHeal(player, g)
+-- switch active weapon slot (draw time blocks firing)
+function Combat.draw(player, slot)
 	local s = ctx.Raid.session(player)
-	local char, hum = alive(player)
-	if not s or s.done or not hum then
-		return ctx.Remotes.fail("NOT_AUTHORIZED")
+	if not s or s.done or not alive(player) then
+		return
 	end
-	if hum.Health >= hum.MaxHealth then
-		return ctx.Remotes.fail("FULL_HEALTH", "Already at full health.")
+	if slot ~= "primary" and slot ~= "secondary" and slot ~= "holster" and slot ~= "melee" then
+		return
+	end
+	local g = s.inv.slots[slot]
+	local it = g and s.inv.items[g]
+	local d = it and Items.defs[it.id]
+	if not d or not d.weapon or s.active == slot then
+		return
+	end
+	s.active = slot
+	Combat.drawDelay(player, slot)
+	ctx.Raid.syncGear(player)
+	ctx.Raid.push(player)
+end
+
+-- a weapon came into the hands: cancel reloads/checks, block firing for its draw time, light off
+function Combat.drawDelay(player, slot)
+	local s = ctx.Raid.session(player)
+	local g = s and s.inv.slots[slot]
+	local it = g and s.inv.items[g]
+	local d = it and Items.defs[it.id]
+	if not d or not d.weapon then
+		return
 	end
 	local w = ws(player)
-	if w.healToken then
-		return ctx.Remotes.fail("BUSY")
+	w.tube = nil
+	w.reloadToken = nil
+	w.reloadUntil = 0
+	w.checking = nil
+	local t = Weapons[d.weapon].draw or 0.6
+	w.drawUntil = os.clock() + t
+	if player.Character then
+		player.Character:SetAttribute("WeaponLight", false)
 	end
-	if g == nil then
-		for _, cid in Inv.loadOrder(s.inv) do
-			for x in s.inv.grids[cid] or {} do
-				local d = Items.defs[s.inv.items[x].id]
-				if d.kind == "med" and d.med.hp then
-					g = x
-					break
-				end
-			end
-			if g then
-				break
+	ctx.Remotes.note(player, "draw", { slot = slot, t = t })
+end
+
+-- tactical light: only when the weapon in hands carries one; replicated via attribute + third-person SpotLight
+function Combat.setLight(player, on)
+	local s = ctx.Raid.session(player)
+	local char = player.Character
+	if not s or s.done or not char then
+		return
+	end
+	local wg = s.active and s.inv.slots[s.active]
+	on = on == true and wg ~= nil and Inv.modStats(s.inv, wg).light == true
+	char:SetAttribute("WeaponLight", on)
+	for _, c in char:GetChildren() do
+		if c.Name == "TPWeapon" then
+			local l = c:FindFirstChild("WeaponLight")
+			if l then
+				l.Enabled = on
 			end
 		end
 	end
-	local it = g and s.inv.items[g]
-	local def = it and Items.defs[it.id]
-	if not def or def.kind ~= "med" or not def.med.hp then
-		return ctx.Remotes.fail("NO_ITEM", "No medkit on you.")
+end
+
+-- Tarkov mag check: an estimate, not a number
+local function estimate(a, cap)
+	if a <= 0 then
+		return "EMPTY"
 	end
-	local token = {}
-	w.healToken = token
-	local t = def.med.time or 2.5
-	ctx.Remotes.note(player, "heal", { state = "start", t = t, label = "USING " .. string.upper(def.name) })
-	task.delay(t, function()
-		if w.healToken ~= token then
+	local f = a / cap
+	if f >= 1 then
+		return "FULL"
+	elseif f > 0.75 then
+		return "ALMOST FULL"
+	elseif f > 0.4 then
+		return "ABOUT HALF"
+	elseif f > 0.15 then
+		return "LESS THAN HALF"
+	end
+	return "ALMOST EMPTY"
+end
+
+function Combat.magCheck(player)
+	local s = ctx.Raid.session(player)
+	if not s or s.done or not alive(player) then
+		return
+	end
+	local w = ws(player)
+	if w.checking then
+		return
+	end
+	local wg, wit, wdef, wd, rounds = Combat.activeWeapon(s)
+	if not wdef or wdef.melee then
+		return
+	end
+	w.checking = true
+	ctx.Remotes.note(player, "magcheck", { state = "start", t = 1.1 })
+	task.delay(1.1, function()
+		w.checking = nil
+		local _, _, _, wd2, r2 = Combat.activeWeapon(s)
+		if not wd2 then
 			return
 		end
-		w.healToken = nil
-		local _, h2 = alive(player)
-		if not h2 or ctx.Raid.session(player) ~= s or s.done or not s.inv.items[g] then
-			return
-		end
-		local amount = math.min(h2.MaxHealth - h2.Health, it.hp or def.med.hp, 60)
-		h2.Health += amount
-		it.hp = (it.hp or def.med.hp) - amount
-		if it.hp <= 0 then
-			Inv.consume(s.inv, g)
-		end
-		ctx.Remotes.note(player, "heal", { state = "done" })
-		ctx.Raid.push(player)
+		local cap = (wd2.family and r2 and Items.defs[r2.id].capacity) or wd2.capacity or 1
+		local text = r2 and estimate(r2.a or 0, cap) or "NO MAGAZINE"
+		local ammo = r2 and r2.at and Items.defs[r2.at] and Items.defs[r2.at].short or nil
+		ctx.Remotes.note(player, "magcheck", { state = "done", text = text, ammo = ammo })
 	end)
-	return ctx.Remotes.ok()
+end
+
+-- knife: short server raycast from the head
+function Combat.melee(player, dir)
+	local s = ctx.Raid.session(player)
+	local char = alive(player)
+	if not s or s.done or not char or not Util.vec(dir) then
+		return
+	end
+	local _, _, wdef = Combat.activeWeapon(s)
+	if not wdef or not wdef.melee then
+		return
+	end
+	local w = ws(player)
+	local t = os.clock()
+	if t - w.last < 60 / wdef.rpm * 0.85 or t < (w.drawUntil or 0) then
+		return
+	end
+	w.last = t
+	local m = dir.Magnitude
+	if m < 0.5 or m > 1.5 then
+		return
+	end
+	local head = char:FindFirstChild("Head")
+	local res = workspace:Raycast(head.Position, dir / m * wdef.range, filter(char))
+	if res then
+		local model = res.Instance:FindFirstAncestorOfClass("Model")
+		local thum = model and model:FindFirstChildOfClass("Humanoid")
+		if thum and thum.Health > 0 then
+			local r = Combat.hitModel(model, { dmg = wdef.damage, pen = wdef.pen, armorDmg = 0.1, bleedL = 0.45, bleedH = 0.25, part = res.Instance, hitPos = res.Position, attacker = player, from = head.Position, weapon = "KNIFE", ammo = "BLADE" })
+			if r then
+				ctx.Remotes.note(player, "hit", { kill = r.killed })
+			end
+		end
+	end
+	ctx.AI.hearShot(head.Position, player, nil, 0.1)
 end
 
 function Combat.init(c)
@@ -371,6 +466,24 @@ function Combat.init(c)
 	ctx.Remotes.onAct("reload", function(player)
 		Combat.reload(player)
 	end, 2, 3)
+	ctx.Remotes.onAct("draw", function(player, p)
+		if type(p) == "table" and type(p.slot) == "string" then
+			Combat.draw(player, p.slot)
+		end
+	end, 4, 6)
+	ctx.Remotes.onAct("light", function(player, p)
+		if type(p) == "table" and type(p.on) == "boolean" then
+			Combat.setLight(player, p.on)
+		end
+	end, 3, 4)
+	ctx.Remotes.onAct("magcheck", function(player)
+		Combat.magCheck(player)
+	end, 1, 2)
+	ctx.Remotes.onAct("melee", function(player, p)
+		if type(p) == "table" and type(p.x) == "number" and type(p.y) == "number" and type(p.z) == "number" then
+			Combat.melee(player, Vector3.new(p.x, p.y, p.z))
+		end
+	end, 3, 4)
 	ctx.Remotes.onAct("stance", function(player, p)
 		local char = player.Character
 		if not char or type(p) ~= "table" then

@@ -9,6 +9,7 @@ local GuiService = game:GetService("GuiService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
+local Weapons = require(Shared.Weapons)
 local Grid = require(Shared.Grid)
 local Util = require(Shared.Util)
 
@@ -38,6 +39,8 @@ local function hoverOn(obj, target)
 end
 
 local defs = Items.defs
+local MOUNTS = { "rail", "muzzle", "under", "side" }
+local MOUNT_NAMES = { rail = "OPTIC", muzzle = "MUZZLE", under = "FOREGRIP", side = "TACTICAL" }
 local SLOT_LAYOUT = {
 	{ "head", 0, 0, 2, 2 }, { "armor", 2, 0, 3, 3 }, { "rig", 5, 0, 3, 3 }, { "back", 8, 0, 3, 3 },
 	{ "primary", 0, 3, 5, 2 }, { "holster", 5, 3, 2, 2 }, { "melee", 7, 3, 1, 2 }, { "secure", 8, 3, 3, 2 },
@@ -204,6 +207,17 @@ local function quick(ref, g)
 	return req({ op = "quick", g = g, from = ref, to = "me" })
 end
 
+-- client mirror of the server's Inv.canMod (mount present, muzzle devices match the caliber)
+local function modFits(wit, mit)
+	local wd, md = defs[wit.id], defs[mit.id]
+	local spec = wd and wd.weapon and Weapons[wd.weapon]
+	local slotOk = spec and spec.slots and md and md.mod and spec.slots[md.mod.slot]
+	if not slotOk then
+		return false
+	end
+	return not (md.mod.caliber and slotOk ~= true and slotOk ~= md.mod.caliber)
+end
+
 local function actionsFor(ref, g)
 	local view = viewOf(ref)
 	local it = view and view.items[g]
@@ -258,6 +272,28 @@ local function actionsFor(ref, g)
 		add("REMOVE MAGAZINE", function()
 			req({ op = "quick", g = it.mag, from = "me", to = (not inRaid) and "stash" or nil })
 		end)
+	end
+	-- weapon modding: detach installed attachments; install an attachment on any compatible weapon you carry
+	if mine and d.weapon then
+		for _, mount in MOUNTS do
+			local mg = it.mods and it.mods[mount]
+			local m = mg and view.items[mg]
+			if m then
+				add("REMOVE " .. defs[m.id].short, function()
+					req({ op = "unmod", g = g, mount = mount })
+				end)
+			end
+		end
+	end
+	if mine and d.kind == "mod" and locate(view, g) == "grid" then
+		for wg, w in view.items do
+			if w ~= it and defs[w.id].weapon and modFits(w, it) then
+				local occupied = w.mods and w.mods[d.mod.slot]
+				add((occupied and "SWAP ONTO " or "INSTALL ON ") .. defs[w.id].short, function()
+					req({ op = "mod", g = wg, mod = g })
+				end, "good")
+			end
+		end
 	end
 	if mine and d.stack > 1 and it.n > 1 then
 		add("SPLIT IN HALF", function()
@@ -601,6 +637,35 @@ local function detail(parent, w, h)
 		end
 		if d.grid then
 			table.insert(lines, string.format("CAPACITY %dx%d", d.grid.w, d.grid.h))
+		end
+		local wspec = d.weapon and Weapons[d.weapon]
+		if wspec and next(wspec.slots or {}) then
+			local mods = {}
+			for _, mount in MOUNTS do
+				if wspec.slots[mount] then
+					local mg = it.mods and it.mods[mount]
+					local m = mg and view.items[mg]
+					table.insert(mods, MOUNT_NAMES[mount] .. ": " .. (m and defs[m.id].short or "-"))
+				end
+			end
+			table.insert(lines, table.concat(mods, "   "))
+		end
+		if d.mod then
+			local fx = {}
+			if d.mod.recoil and d.mod.recoil ~= 1 then
+				table.insert(fx, string.format("RECOIL %+d%%", math.floor((d.mod.recoil - 1) * 100 + 0.5)))
+			end
+			if d.mod.ergo and d.mod.ergo ~= 0 then
+				table.insert(fx, string.format("ERGO %+d", d.mod.ergo))
+			end
+			if d.mod.loud and d.mod.loud ~= 1 then
+				table.insert(fx, string.format("LOUDNESS %+d%%", math.floor((d.mod.loud - 1) * 100 + 0.5)))
+			end
+			if d.mod.zoom then
+				table.insert(fx, string.format("%dx ZOOM", d.mod.zoom))
+			end
+			table.insert(fx, "MOUNT: " .. (MOUNT_NAMES[d.mod.slot] or "?") .. (d.mod.caliber and (" " .. d.mod.caliber) or ""))
+			table.insert(lines, table.concat(fx, "   "))
 		end
 		table.insert(lines, string.format("VALUE %s %s   ·   %.2f kg   ·   %dx%d%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), d.w, d.h, it.fir and "   ·   FOUND IN RAID" or ""))
 	else

@@ -81,6 +81,35 @@ function Raid.state(player)
 	}
 end
 
+local GEAR_SLOTS = { "head", "armor", "rig", "back", "holster", "primary", "secondary", "melee" }
+local MOUNTS = { "rail", "muzzle", "under", "side" }
+local DRAW_ORDER = { "primary", "secondary", "holster", "melee" }
+
+local function weaponAt(h, slot)
+	local g = slot and h.slots[slot]
+	local it = g and h.items[g]
+	local d = it and Items.defs[it.id]
+	return (d and d.weapon) and g or nil
+end
+
+local function gearKey(h, active)
+	local parts = { tostring(active) }
+	for _, slot in GEAR_SLOTS do
+		local g = h.slots[slot]
+		parts[#parts + 1] = (g and h.items[g]) and h.items[g].id or "-"
+	end
+	local ag = active and h.slots[active]
+	local a = ag and h.items[ag]
+	if a then
+		parts[#parts + 1] = a.mag and "M" or "-"
+		for _, mount in MOUNTS do
+			local mg = a.mods and a.mods[mount]
+			parts[#parts + 1] = (mg and h.items[mg]) and h.items[mg].id or "-"
+		end
+	end
+	return table.concat(parts, "|")
+end
+
 function Raid.push(player)
 	local st = Raid.state(player)
 	if st then
@@ -161,7 +190,7 @@ function Raid.deploy(player, p)
 	local s = {
 		id = raidId, inv = raidInv, state = "ACTIVE", started = t, endsAt = t + Config.RAID_DURATION,
 		spawn = spawn.id, extracts = spawn.extracts, kills = 0, risked = {}, found = {},
-		active = (raidInv.slots.primary and "primary") or (raidInv.slots.secondary and "secondary") or (raidInv.slots.holster and "holster") or nil,
+		active = (raidInv.slots.primary and "primary") or (raidInv.slots.secondary and "secondary") or (raidInv.slots.holster and "holster") or (raidInv.slots.melee and "melee") or nil,
 	}
 	for g in raidInv.items do
 		s.risked[g] = true
@@ -171,7 +200,8 @@ function Raid.deploy(player, p)
 	ctx.Combat.reset(player)
 	task.spawn(function()
 		local cf = spawn.cf * CFrame.new(math.random(-4, 4), 0, math.random(-4, 4))
-		ctx.Chars.spawn(player, cf, s.inv)
+		ctx.Chars.spawn(player, cf, s.inv, s.active)
+		s.gearKey = gearKey(s.inv, s.active)
 		Raid.push(player)
 		ctx.Remotes.note(player, "raid", Raid.raidInfo(s))
 	end)
@@ -512,16 +542,29 @@ function Raid.inv(player, p)
 		end
 		local n, e = Inv.unloadAmmo(src, g, inRaid and Inv.loadOrder(src) or { "stash" })
 		done, err = n > 0, e
+	elseif op == "mod" or op == "unmod" then
+		if sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		local order = inRaid and Inv.loadOrder(src) or { "stash" }
+		if op == "mod" then
+			if type(p.mod) ~= "string" then
+				return fail("BAD_INPUT")
+			end
+			done, err = Inv.attachMod(src, g, p.mod, order)
+		else
+			if type(p.mount) ~= "string" then
+				return fail("BAD_INPUT")
+			end
+			done, err = Inv.detachMod(src, g, p.mount, order)
+		end
 	elseif op == "examine" then
 		return examine(player, src, g, sc)
 	elseif op == "use" then
 		if sc then
 			return fail("NOT_AUTHORIZED")
 		end
-		if ctx.Health then
-			return ctx.Health.use(player, g, p.part)
-		end
-		return ctx.Combat.startHeal(player, g)
+		return ctx.Health.use(player, g, p.part)
 	elseif op == "drop" then
 		if not inRaid or sc then
 			return fail("NOT_IN_RAID")
@@ -584,6 +627,34 @@ function Raid.inv(player, p)
 	return ok()
 end
 
+-- Keep the hands slot valid after inventory changes (moving the weapon in hands away draws the next one,
+-- with its draw time) and refresh third-person gear/weapon visuals when the visible kit changed.
+function Raid.syncGear(player)
+	local s = sessions[player]
+	if not s or s.done then
+		return
+	end
+	local h = s.inv
+	if not weaponAt(h, s.active) then
+		s.active = nil
+		for _, slot in DRAW_ORDER do
+			if weaponAt(h, slot) then
+				s.active = slot
+				ctx.Combat.drawDelay(player, slot)
+				break
+			end
+		end
+	end
+	local key = gearKey(h, s.active)
+	if key ~= s.gearKey then
+		s.gearKey = key
+		local char = player.Character
+		if char and char.Parent then
+			ctx.Chars.redress(char, h, s.active)
+		end
+	end
+end
+
 function Raid.afterChange(player, inRaid)
 	local h = Raid.holder(player)
 	if h then
@@ -591,6 +662,9 @@ function Raid.afterChange(player, inRaid)
 		if not good then
 			warn("[ZR] INVARIANT", player.Name, msg)
 		end
+	end
+	if inRaid then
+		Raid.syncGear(player)
 	end
 	if not inRaid then
 		local prof = ctx.Profiles.get(player)

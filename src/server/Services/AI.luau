@@ -144,7 +144,10 @@ local function fire(g, char)
 			})
 		end
 	end
-	ctx.Remotes.fx("shot", { o = muzzle, p = hitPos, n = r and r.Normal or nil, ai = true })
+	local inv = g.inv
+	local wit = inv and inv.slots.primary and inv.items[inv.slots.primary]
+	local wd = wit and Items.defs[wit.id]
+	ctx.Remotes.fx("shot", { o = muzzle, p = hitPos, n = r and r.Normal or nil, ai = true, w = wd and wd.weapon or "R17" })
 	AI.hearShot(muzzle, nil, g)
 end
 
@@ -265,10 +268,11 @@ local function spawnGuard(routeName, myGen)
 	end)
 end
 
-function AI.hearShot(pos, _shooter, except)
+function AI.hearShot(pos, _shooter, except, loudness)
+	local radius = 170 * (loudness or 1)
 	for _, g in guards do
 		if g ~= except and g.alive and g.state ~= "ENGAGE" and g.root then
-			if (g.root.Position - pos).Magnitude < 170 then
+			if (g.root.Position - pos).Magnitude < radius then
 				g.state = "INVESTIGATE"
 				g.lastPos = pos + Vector3.new(math.random(-8, 8), 0, math.random(-8, 8))
 				g.searchUntil = os.clock() + 14

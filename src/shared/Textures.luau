@@ -5,6 +5,7 @@ local T = {
 	LENS = "rbxassetid://109016583283959", -- 16:9 vignette + edge fringe + dust
 	ICONS = "rbxassetid://105791720290643", -- 512x128 atlas, 64px cells
 	GLOW = "rbxassetid://132675918858502", -- soft radial glow
+	SCOPE = "rbxassetid://82967411651545", -- scope eyepiece overlay (transparent round view, reticle)
 }
 
 -- icon atlas cells (row-major, 8 per row)

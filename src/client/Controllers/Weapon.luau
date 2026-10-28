@@ -1,212 +1,107 @@
 --!nonstrict
--- Local weapon handling: custom viewmodel (Blender mesh if uploaded, part-built fallback), procedural
--- ADS/sprint/reload poses, sway, recoil, predicted ammo (server reconciles), stance/stamina/movement.
+-- Local weapon handling (Tarkov rules, original content). The viewmodel is the shared part-built weapon spec
+-- (WeaponModels, the same one the third-person weapon uses) at viewmodel scale, held by procedural two-bone arms.
+-- Slots 1-4 / cycle with draw times, per-weapon fire modes (auto/semi/pump/bolt), magazine and shell-by-shell
+-- reloads, mag check (estimate only), knife, optics (irons / reflex dot / 4x scope overlay with zoom-scaled
+-- sensitivity), suppressors, tactical light. The server owns ammo, cadence, reload/draw timing and damage;
+-- the client predicts the round count only for dry-fire feedback (Tarkov shows no ammo counter).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
-local Shared = ReplicatedStorage:WaitForChild("ZR")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local Sounds = require(Shared.Sounds)
-local AssetMeta = require(Shared.AssetMeta)
+local Textures = require(Shared.Textures)
+local WeaponModels = require(Shared.WeaponModels)
 
 local Weapon = {
-	aiming = false, crouching = false, sprinting = false, reloading = false, healing = false,
-	ammo = 0, spare = 0, stamina = Config.MAX_STAMINA, mode = 1, hasWeapon = false, lastShot = 0,
+	aiming = false, reloading = false, healing = false, drawing = false, checking = false, light = false, scoped = false,
+	ammo = 0, spare = 0, mode = 1, modeName = "SEMI", hasWeapon = false, melee = false, lastShot = 0,
+	weaponName = nil, slot = nil,
 }
 local ctx
 local player = Players.LocalPlayer
 local cam = workspace.CurrentCamera
-local vm, vmRoot, magPart
-local magOffset = CFrame.identity
-local VS = 0.55 -- viewmodel scale (part-built fallback is authored at 1.0)
-local function sc(cf)
-	return CFrame.new(cf.Position * VS) * cf.Rotation
-end
-local magHome = sc(CFrame.new(0, -0.4, -0.55) * CFrame.Angles(math.rad(12), 0, 0))
-local MUZZLE = sc(CFrame.new(0, 0.03, -2.5))
-local SIGHT = Vector3.new(0, 0.27, -0.1) * VS
-local HIP = CFrame.new(0.25, -0.27, -0.42)
-local AIM = CFrame.new(-SIGHT.X, -SIGHT.Y, -0.42 - SIGHT.Z)
-local SPRINT = HIP * CFrame.new(-0.12, -0.14, 0.08) * CFrame.Angles(math.rad(-20), math.rad(40), math.rad(14))
-local RELOAD = HIP * CFrame.new(-0.06, -0.08, 0.06) * CFrame.Angles(math.rad(14), math.rad(-10), math.rad(28))
+
+-- tunables (live-editable from the Studio dev bridge: "tune" / "pose")
+local TUNE = {
+	vms = 0.55, -- viewmodel scale of the shared weapon spec
+	upper = 0.56, fore = 0.54, -- arm segment lengths (viewmodel studs)
+	upperW = 0.15, foreW = 0.13,
+	rShoulder = Vector3.new(0.4, -0.58, 0.02), lShoulder = Vector3.new(-0.42, -0.62, -0.32),
+	rPole = Vector3.new(0.7, -1, 0.3), lPole = Vector3.new(-1, -0.7, 0.1),
+}
+Weapon.TUNE = TUNE
+local SLEEVE, GLOVE = Color3.fromHex("3E4334"), Color3.fromHex("1F2120")
+local L_REST = CFrame.new(-0.34, -0.68, -0.36) * CFrame.Angles(math.rad(50), 0, math.rad(20)) -- knife: free hand low
+local POUCH = CFrame.new(-0.14, -0.98, -0.28) -- camera space, off-screen (rig pouches)
+local BELT = CFrame.new(0.06, -0.95, -0.3) -- camera space, off-screen (shells)
+local SLOT_KEYS = { Primary = "primary", Secondary = "secondary", Sidearm = "holster", Knife = "melee" }
+local CYCLE = { "primary", "secondary", "holster", "melee" }
+local MOUNTS = { "rail", "muzzle", "under", "side" }
+local SLASH_TIME = 0.5
+
+-- camera-space grip poses per weapon kind
+local POSE = {
+	long = {
+		hip = CFrame.new(0.17, -0.25, -0.62) * CFrame.Angles(math.rad(1), math.rad(4), math.rad(-4)),
+		sprint = CFrame.new(0.08, -0.4, -0.42) * CFrame.Angles(math.rad(-25), math.rad(45), math.rad(15)),
+		reload = CFrame.new(0.15, -0.3, -0.46) * CFrame.Angles(math.rad(12), math.rad(-8), math.rad(30)),
+		check = CFrame.new(0.12, -0.25, -0.46) * CFrame.Angles(math.rad(8), math.rad(-20), math.rad(52)),
+		tube = CFrame.new(0.16, -0.27, -0.46) * CFrame.Angles(math.rad(10), math.rad(-6), math.rad(-55)),
+		low = CFrame.new(0.26, -0.85, -0.3) * CFrame.Angles(math.rad(-60), math.rad(12), 0),
+		eyeDist = 0.42,
+	},
+	pistol = {
+		hip = CFrame.new(0.11, -0.23, -0.6) * CFrame.Angles(math.rad(2), math.rad(3), 0),
+		sprint = CFrame.new(0.15, -0.48, -0.45) * CFrame.Angles(math.rad(-55), math.rad(5), 0),
+		reload = CFrame.new(0.08, -0.26, -0.55) * CFrame.Angles(math.rad(15), math.rad(-10), math.rad(25)),
+		check = CFrame.new(0.06, -0.22, -0.5) * CFrame.Angles(math.rad(10), math.rad(-15), math.rad(45)),
+		low = CFrame.new(0.2, -0.8, -0.35) * CFrame.Angles(math.rad(-70), 0, 0),
+		eyeDist = 0.48,
+	},
+	melee = {
+		hip = CFrame.new(0.32, -0.36, -0.55) * CFrame.Angles(math.rad(22), math.rad(12), math.rad(-28)),
+		sprint = CFrame.new(0.3, -0.5, -0.4) * CFrame.Angles(math.rad(-30), math.rad(10), math.rad(-20)),
+		low = CFrame.new(0.3, -0.85, -0.3) * CFrame.Angles(math.rad(-60), 0, 0),
+		windup = CFrame.new(0.48, -0.14, -0.38) * CFrame.Angles(math.rad(25), math.rad(45), math.rad(-70)),
+		follow = CFrame.new(-0.28, -0.46, -0.72) * CFrame.Angles(math.rad(-15), math.rad(-55), math.rad(-85)),
+	},
+}
+
+Weapon.POSE = POSE
+
+local vm = nil
 local seq = 0
-local semiLatch = false
-local aimA, sprintA, reloadA = 0, 0, 0
-local reloadT0, reloadDur = nil, 2.2
-local kickZ, kickRot = 0, 0
+local fireLatch, dryLatch = false, false
+local aimWanted = false
+local aimA, sprintA, reloadA, checkA, tubeA, raise = 0, 0, 0, 0, 0, 0
+local reloadT0, reloadDur, joltDone = nil, 2.2, false
+local tubeT0, tubePeriod = nil, 0.55
+local cycleT0, cycleDur, cycleKind = nil, 0, nil -- pump / bolt cycling after a shot
+local slashT0, slashSent = nil, false
+local checkT0, checkDur = nil, 1.1
+local drawT0, drawDur = -10, 0.6
+local switching = nil -- { slot, t0 } while the server swaps weapons
+local lastActiveG = nil
+local kickZ, kickRot, kickRoll = 0, 0, 0
 local sway = CFrame.identity
-local defaultHip = nil
-local lastStance = nil
-local lastStanceT = 0
-local dryLatch = false
+local scopeGui, scopeImg, scopeBars, reflexDot
+local tpLightT = 0
 
--- active weapon from the snapshot (server decides the active slot)
-local function activeItem()
-	local d = ctx.State.data
-	if not d or not d.slots then
-		return nil, nil
-	end
-	local slot = d.active or "primary"
-	local g = d.slots[slot]
-	return g and d.items[g], d
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+local function ease(x)
+	x = math.clamp(x, 0, 1)
+	return x * x * (3 - 2 * x)
 end
 
-local function wdef()
-	local it = activeItem()
-	local idef = it and Items.defs[it.id]
-	return idef and idef.weapon and Weapons[idef.weapon], it
-end
-
-local function computeAmmo()
-	local it, d = activeItem()
-	if not it then
-		return 0, 0, false
-	end
-	local idef = Items.defs[it.id]
-	local rounds = (idef.family and it.mag and d.items[it.mag]) or ((not idef.family) and it) or nil
-	local spare = 0
-	for _, cid in { d.slots.rig or "", "pockets" } do
-		for gg in (d.grids and d.grids[cid]) or {} do
-			local x = d.items[gg]
-			local xd = x and Items.defs[x.id]
-			if xd and xd.kind == "mag" and xd.family == idef.family then
-				spare += x.a or 0
-			end
-		end
-	end
-	Weapon.weaponName = string.upper(idef.name)
-	return rounds and rounds.a or 0, spare, idef.weapon ~= nil and Weapons[idef.weapon] ~= nil
-end
-Weapon.computeAmmo = computeAmmo
-
-local function newPart(parent, size, cf, color, mat, shape)
-	local p = Instance.new("Part")
-	p.Size = size * VS
-	p.CFrame = sc(cf)
-	p.Color = color
-	p.Material = mat or Enum.Material.Metal
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	p.CastShadow = false
-	p.Anchored = false
-	p.Massless = true
-	if shape then
-		p.Shape = shape
-	end
-	p.Parent = parent
-	if vmRoot then
-		local w = Instance.new("WeldConstraint")
-		w.Part0 = vmRoot
-		w.Part1 = p
-		w.Parent = p
-	end
-	return p
-end
-
-local function limb(parent, from, to, thick, color, mat)
-	local len = (to - from).Magnitude
-	return newPart(parent, Vector3.new(thick, thick, len), CFrame.lookAt((from + to) / 2, to), color, mat or Enum.Material.SmoothPlastic)
-end
-
-local function buildViewmodel()
-	if vm then
-		vm:Destroy()
-	end
-	vm = Instance.new("Model")
-	vm.Name = "ZR_Viewmodel"
-	vmRoot = Instance.new("Part")
-	vmRoot.Name = "Root"
-	vmRoot.Size = Vector3.new(0.1, 0.1, 0.1)
-	vmRoot.Transparency = 1
-	vmRoot.Anchored = true
-	vmRoot.CanCollide = false
-	vmRoot.CanQuery = false
-	vmRoot.CanTouch = false
-	vmRoot.CFrame = CFrame.identity
-	vmRoot.Parent = vm
-	vm.PrimaryPart = vmRoot
-	local o = CFrame.identity
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
-	local meshGun = lib and lib:FindFirstChild("ZR_VM_R17")
-	local meshArms = lib and lib:FindFirstChild("ZR_VM_Arms")
-	local dark, furn, metal = Color3.fromHex("2A2E2C"), Color3.fromHex("515B55"), Color3.fromHex("3B403D")
-	if meshGun then
-		local g = meshGun:Clone()
-		g.Anchored = false
-		g.Massless = true
-		g.CanCollide = false
-		g.CanQuery = false
-		g.CastShadow = false
-		g.CFrame = o * CFrame.new(AssetMeta.ZR_VM_R17) -- mesh authored with the grip at its origin
-		g.Parent = vm
-		local w = Instance.new("WeldConstraint")
-		w.Part0 = vmRoot
-		w.Part1 = g
-		w.Parent = g
-	else
-		newPart(vm, Vector3.new(0.24, 0.3, 1.15), o * CFrame.new(0, 0.02, -0.45), dark)
-		newPart(vm, Vector3.new(0.15, 0.05, 1.0), o * CFrame.new(0, 0.195, -0.5), metal)
-		newPart(vm, Vector3.new(0.27, 0.27, 0.85), o * CFrame.new(0, 0, -1.42), furn, Enum.Material.SmoothPlastic)
-		for k = 0, 3 do
-			newPart(vm, Vector3.new(0.28, 0.035, 0.08), o * CFrame.new(0, 0.06, -1.15 - k * 0.18), dark)
-		end
-		newPart(vm, Vector3.new(0.55, 0.075, 0.075), o * CFrame.new(0, 0.03, -2.1) * CFrame.Angles(0, math.rad(90), 0), metal, Enum.Material.Metal, Enum.PartType.Cylinder)
-		newPart(vm, Vector3.new(0.11, 0.11, 0.2), o * CFrame.new(0, 0.03, -2.42), dark)
-		newPart(vm, Vector3.new(0.035, 0.13, 0.035), o * CFrame.new(0, 0.2, -1.78), dark)
-		newPart(vm, Vector3.new(0.12, 0.06, 0.08), o * CFrame.new(0, 0.14, -1.78), dark)
-		newPart(vm, Vector3.new(0.13, 0.03, 0.09), o * CFrame.new(0, 0.225, -0.1), dark) -- rear sight base
-		newPart(vm, Vector3.new(0.025, 0.08, 0.06), o * CFrame.new(-0.05, 0.26, -0.1), dark) -- aperture ears
-		newPart(vm, Vector3.new(0.025, 0.08, 0.06), o * CFrame.new(0.05, 0.26, -0.1), dark)
-		newPart(vm, Vector3.new(0.16, 0.3, 0.7), o * CFrame.new(0, -0.06, 0.5), furn, Enum.Material.SmoothPlastic)
-		newPart(vm, Vector3.new(0.18, 0.36, 0.06), o * CFrame.new(0, -0.08, 0.87), dark, Enum.Material.Rubber)
-		newPart(vm, Vector3.new(0.12, 0.34, 0.16), o * CFrame.new(0, -0.3, 0.02) * CFrame.Angles(math.rad(-15), 0, 0), furn, Enum.Material.SmoothPlastic)
-		newPart(vm, Vector3.new(0.05, 0.05, 0.26), o * CFrame.new(0, -0.17, -0.2), dark)
-		newPart(vm, Vector3.new(0.05, 0.12, 0.05), o * CFrame.new(0.14, 0.06, -0.35), metal) -- charging handle
-	end
-	if meshArms then
-		local a = meshArms:Clone()
-		a.Anchored = false
-		a.Massless = true
-		a.CanCollide = false
-		a.CanQuery = false
-		a.CastShadow = false
-		a.CFrame = o * CFrame.new(AssetMeta.ZR_VM_Arms)
-		a.Parent = vm
-		local w = Instance.new("WeldConstraint")
-		w.Part0 = vmRoot
-		w.Part1 = a
-		w.Parent = a
-	else
-		local sleeve, glove = Color3.fromHex("5E6448"), Color3.fromHex("262827")
-		newPart(vm, Vector3.new(0.21, 0.23, 0.27), o * CFrame.new(0.05, -0.27, 0.0), glove, Enum.Material.SmoothPlastic)
-		limb(vm, Vector3.new(0.1, -0.34, 0.12), Vector3.new(0.42, -0.62, 0.95), 0.28, sleeve)
-		newPart(vm, Vector3.new(0.23, 0.2, 0.3), o * CFrame.new(-0.04, -0.15, -1.38), glove, Enum.Material.SmoothPlastic)
-		limb(vm, Vector3.new(-0.08, -0.22, -1.3), Vector3.new(-0.5, -0.62, -0.4), 0.27, sleeve)
-		newPart(vm, Vector3.new(0.3, 0.06, 0.3), o * CFrame.new(-0.27, -0.42, -0.85) * CFrame.Angles(math.rad(-30), math.rad(-40), 0), Color3.fromHex("6B6A4E"), Enum.Material.Fabric) -- cuff band
-	end
-	local meshMag = lib and lib:FindFirstChild("ZR_VM_R17_Mag")
-	magOffset = CFrame.identity
-	if meshMag then
-		magPart = meshMag:Clone()
-		magOffset = CFrame.new(AssetMeta.ZR_VM_R17_Mag)
-	else
-		magPart = Instance.new("Part")
-		magPart.Size = Vector3.new(0.13, 0.48, 0.24) * VS
-		magPart.Color = Color3.fromHex("33383B")
-		magPart.Material = Enum.Material.Metal
-	end
-	magPart.Name = "Mag"
-	magPart.Anchored = true
-	magPart.CanCollide = false
-	magPart.CanQuery = false
-	magPart.CanTouch = false
-	magPart.CastShadow = false
-	magPart.Parent = vm
+local function phase(p, a, b)
+	return ease((p - a) / (b - a))
 end
 
 local function alive()
@@ -215,15 +110,342 @@ local function alive()
 	return hum and hum.Health > 0 and hum or nil, char
 end
 
-local function canFire()
-	return ctx.State.inRaid() and Weapon.hasWeapon and not Weapon.reloading and not Weapon.healing
-		and not ctx.Input.isMenu() and sprintA < 0.35 and alive() ~= nil
+-- ── snapshot helpers ──────────────────────────────────────────────────────────
+local function activeItem()
+	local d = ctx.State.data
+	if not d or not d.slots or not d.active then
+		return nil, d, nil
+	end
+	local g = d.slots[d.active]
+	return g and d.items[g], d, g
 end
 
-local rayParams = RaycastParams.new()
-rayParams.FilterType = Enum.RaycastFilterType.Exclude
+local function weaponDef(it)
+	local idef = it and Items.defs[it.id]
+	return idef and idef.weapon and Weapons[idef.weapon], idef
+end
 
-local function fireOnce(def)
+local function weaponIn(slot)
+	local d = ctx.State.data
+	local g = d and d.slots and d.slots[slot]
+	local it = g and d.items[g]
+	return weaponDef(it) ~= nil
+end
+
+-- rounds in the weapon (magazine or tube), magazines a reload would take (rig, then pockets), has weapon, def.
+-- `predicted` overrides the snapshot's round count (shots are not echoed back in snapshots).
+local function computeAmmo(predicted)
+	local it, d = activeItem()
+	local def, idef = weaponDef(it)
+	if not def then
+		return 0, 0, false, nil
+	end
+	if def.melee then
+		return 0, 0, true, def
+	end
+	local rounds = (idef.family and it.mag and d.items[it.mag]) or ((not idef.family) and it) or nil
+	local cur = rounds and rounds.a or 0
+	if predicted and rounds then
+		cur = math.min(cur, predicted)
+	end
+	local better = 0
+	if idef.family then
+		local floor = it.mag and cur or -1
+		local cids = {}
+		if d.slots.rig then
+			table.insert(cids, d.slots.rig)
+		end
+		table.insert(cids, "pockets")
+		for _, cid in cids do
+			for gg in (d.grids and d.grids[cid]) or {} do
+				local x = d.items[gg]
+				local xd = x and Items.defs[x.id]
+				if xd and xd.kind == "mag" and xd.family == idef.family and (x.a or 0) > floor then
+					better += 1
+				end
+			end
+		end
+	end
+	return cur, better, true, def
+end
+Weapon.computeAmmo = computeAmmo
+
+local function ammoDefOf(it, d)
+	local idef = it and Items.defs[it.id]
+	local rounds = idef and ((idef.family and it.mag and d.items[it.mag]) or ((not idef.family) and it))
+	local ad = rounds and rounds.at and Items.defs[rounds.at]
+	return ad and ad.ammo
+end
+
+-- ── viewmodel ────────────────────────────────────────────────────────────────
+local function vmKey(it, g)
+	local k = { g, it.mag and "M" or "-" }
+	for _, mount in MOUNTS do
+		k[#k + 1] = (it.mods and it.mods[mount]) or "-"
+	end
+	return table.concat(k, "|")
+end
+
+local function vpart(model, size, color, mat)
+	local p = Instance.new("Part")
+	p.Size = size
+	p.Color = color
+	p.Material = mat or Enum.Material.SmoothPlastic
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = model
+	return p
+end
+
+local function destroyVm()
+	if vm then
+		vm.model:Destroy()
+		vm = nil
+	end
+end
+
+local function buildVm(it, d, g)
+	destroyVm()
+	local def = weaponDef(it)
+	local VMS = TUNE.vms
+	local b = def and WeaponModels.build(d.items, it, CFrame.identity, VMS)
+	if not b then
+		return
+	end
+	local model = Instance.new("Model")
+	model.Name = "ZR_Viewmodel"
+	local o = {
+		model = model, def = def, g = g, key = vmKey(it, g), all = {}, offs = {}, kinds = {}, cfs = {},
+		kind = def.melee and "melee" or (b.spec.pistol and "pistol" or "long"),
+		anchors = b.anchors, ms = WeaponModels.modStats(d.items, it), eye = b.eye * VMS, muzzle = b.muzzle * VMS,
+		zoom = b.zoom, reflex = b.reflex == true, magParts = {}, magHidden = false, grip = CFrame.identity,
+	}
+	local tag = {}
+	for name, list in b.moving do
+		for _, p in list do
+			tag[p] = name
+		end
+	end
+	local function add(p, kind)
+		p.Anchored = true
+		p.CastShadow = false
+		p.Parent = model
+		table.insert(o.all, p)
+		table.insert(o.offs, p.CFrame)
+		table.insert(o.kinds, kind)
+		table.insert(o.cfs, p.CFrame)
+	end
+	for _, p in b.parts do
+		add(p, tag[p] or "gun")
+	end
+	for _, p in b.mag do
+		add(p, "mag")
+		table.insert(o.magParts, p)
+	end
+	o.nFixed = #o.all
+	-- arms (posed by two-bone IK every frame), then the shell used by tube reloads
+	o.vms = VMS
+	o.arms = {
+		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), SLEEVE, Enum.Material.Fabric),
+		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), SLEEVE, Enum.Material.Fabric),
+		vpart(model, Vector3.new(0.1, 0.15, 0.14), GLOVE),
+		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), SLEEVE, Enum.Material.Fabric),
+		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), SLEEVE, Enum.Material.Fabric),
+		vpart(model, Vector3.new(0.11, 0.09, 0.15), GLOVE),
+	}
+	for _, p in o.arms do
+		table.insert(o.all, p)
+		table.insert(o.cfs, p.CFrame)
+	end
+	o.shell = vpart(model, Vector3.new(0.11, 0.042, 0.042), Color3.fromHex("8E2B22"))
+	o.shell.Shape = Enum.PartType.Cylinder
+	o.shell.Transparency = 1
+	table.insert(o.all, o.shell)
+	table.insert(o.cfs, o.shell.CFrame)
+	if b.lightPart then
+		local l = Instance.new("SpotLight")
+		l.Face = Enum.NormalId.Right
+		l.Range = 42
+		l.Angle = 42
+		l.Brightness = 3.2
+		l.Color = Color3.fromRGB(255, 244, 222)
+		l.Shadows = true
+		l.Enabled = Weapon.light
+		l.Parent = b.lightPart
+		o.lamp = l
+	end
+	local A = b.anchors
+	o.rHand = CFrame.new((A.grip or Vector3.zero) * VMS) * CFrame.Angles(math.rad(-16), 0, 0) * CFrame.new(0.012, 0, 0)
+	o.lHand = CFrame.new((A.hand or Vector3.zero) * VMS) * CFrame.new(-0.012, -0.03, 0) * CFrame.Angles(0, 0, math.rad(-20))
+	if A.magwell and #o.magParts > 0 then
+		o.magGrab = CFrame.new(A.magwell * VMS + Vector3.new(-0.02, -0.1, 0))
+	end
+	if A.port then
+		o.port = CFrame.new(A.port * VMS) * CFrame.new(-0.02, -0.04, 0.02)
+	end
+	if A.bolt then
+		o.bolt = CFrame.new(A.bolt * VMS) * CFrame.Angles(0, 0, math.rad(-70))
+	end
+	vm = o
+end
+
+-- two-bone IK: elbow position for shoulder S, wrist W, segment lengths a/b, pole direction
+local function solve(S, W, a, b, pole)
+	local d = W - S
+	local dist = d.Magnitude
+	local u = dist > 1e-4 and d / dist or Vector3.new(0, 0, -1)
+	dist = math.clamp(dist, math.abs(a - b) + 1e-3, a + b - 1e-3)
+	local cosA = (a * a + dist * dist - b * b) / (2 * a * dist)
+	local sinA = math.sqrt(math.max(0, 1 - cosA * cosA))
+	local p = pole - u * pole:Dot(u)
+	if p.Magnitude < 1e-4 then
+		p = Vector3.new(0, -1, 0)
+	end
+	return S + u * (a * cosA) + p.Unit * (a * sinA)
+end
+
+local function limb(part, from, to, thick)
+	local len = (to - from).Magnitude
+	if math.abs(part.Size.Z - len) > 0.01 then
+		part.Size = Vector3.new(thick, thick, math.max(0.05, len))
+	end
+	return CFrame.lookAt((from + to) / 2, to)
+end
+
+local function setMagHidden(o, hidden)
+	if o.magHidden ~= hidden then
+		o.magHidden = hidden
+		for _, p in o.magParts do
+			p.Transparency = hidden and 1 or 0
+		end
+	end
+end
+
+-- ── optics ───────────────────────────────────────────────────────────────────
+function Weapon.aimFov(base)
+	if vm and vm.zoom and aimA > 0.5 then
+		return math.deg(2 * math.atan(math.tan(math.rad(base) / 2) / vm.zoom))
+	end
+	return base * Config.AIM_FOV_MUL
+end
+
+-- look sensitivity multiplier while aiming (scaled with magnification)
+function Weapon.aimSens()
+	local base = (ctx.Settings.data.fov or Config.FOV)
+	return 0.62 * Weapon.aimFov(base) / (base * Config.AIM_FOV_MUL)
+end
+
+local function buildScope()
+	local pg = player:WaitForChild("PlayerGui")
+	local old = pg:FindFirstChild("ZR_Scope")
+	if old then
+		old:Destroy()
+	end
+	scopeGui = Instance.new("ScreenGui")
+	scopeGui.Name = "ZR_Scope"
+	scopeGui.IgnoreGuiInset = true
+	scopeGui.ScreenInsets = Enum.ScreenInsets.None
+	scopeGui.ResetOnSpawn = false
+	scopeGui.DisplayOrder = 1 -- under the grain/lens overlay (2) and the HUD (5)
+	scopeGui.Enabled = false
+	scopeImg = Instance.new("ImageLabel")
+	scopeImg.Name = "Eyepiece"
+	scopeImg.AnchorPoint = Vector2.new(0.5, 0.5)
+	scopeImg.Position = UDim2.fromScale(0.5, 0.5)
+	scopeImg.Size = UDim2.fromScale(1, 1)
+	scopeImg.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	scopeImg.BackgroundTransparency = 1
+	scopeImg.Image = Textures.SCOPE
+	scopeImg.Visible = false
+	scopeImg.Parent = scopeGui
+	scopeBars = {}
+	for side = 0, 1 do
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = Color3.new(0, 0, 0)
+		f.AnchorPoint = Vector2.new(side, 0)
+		f.Position = UDim2.fromScale(side, 0)
+		f.Size = UDim2.new(0, 0, 1, 0)
+		f.Visible = false
+		f.Parent = scopeGui
+		scopeBars[side + 1] = f
+	end
+	reflexDot = Instance.new("Frame")
+	reflexDot.Name = "ReflexDot"
+	reflexDot.AnchorPoint = Vector2.new(0.5, 0.5)
+	reflexDot.Position = UDim2.fromScale(0.5, 0.5)
+	reflexDot.Size = UDim2.fromOffset(5, 5)
+	reflexDot.BackgroundColor3 = Color3.fromRGB(255, 52, 40)
+	reflexDot.BorderSizePixel = 0
+	reflexDot.Visible = false
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(1, 0)
+	c.Parent = reflexDot
+	reflexDot.Parent = scopeGui
+	scopeGui.Parent = pg
+end
+
+local function updateOptics(show)
+	if not scopeGui then
+		return
+	end
+	local scoped = show and vm ~= nil and vm.zoom ~= nil and aimA > 0.85
+	local dotOn = show and vm ~= nil and vm.reflex and aimA > 0.8
+	Weapon.scoped = scoped
+	scopeGui.Enabled = scoped or dotOn
+	scopeImg.Visible = scoped
+	reflexDot.Visible = dotOn and not scoped
+	if scoped then
+		local v = cam.ViewportSize
+		local w = math.max(0, (v.X - v.Y) / 2 + 2)
+		for _, f in scopeBars do
+			f.Visible = true
+			f.Size = UDim2.new(0, w, 1, 0)
+		end
+	else
+		for _, f in scopeBars do
+			f.Visible = false
+		end
+	end
+end
+
+-- ── actions ──────────────────────────────────────────────────────────────────
+local function canAim()
+	return vm ~= nil and not Weapon.melee and not Weapon.reloading and not Weapon.checking and not Weapon.healing
+		and switching == nil and ctx.State.inRaid() and not ctx.Input.isMenu()
+end
+
+function Weapon.cancelAim()
+	aimWanted = false
+	Weapon.aiming = false
+end
+
+function Weapon.setAim(on)
+	aimWanted = on == true
+end
+
+local function canFire()
+	local M = ctx.Movement
+	if not (ctx.State.inRaid() and vm and Weapon.hasWeapon and not Weapon.melee) then
+		return false
+	end
+	if (Weapon.reloading and not tubeT0) or Weapon.healing or Weapon.drawing or Weapon.checking or switching or cycleT0 then
+		return false
+	end
+	if ctx.Input.isMenu() or (M and M.sprinting) or sprintA > 0.35 then
+		return false
+	end
+	return alive() ~= nil
+end
+
+local function fireOnce()
+	local o = vm
+	local def = o.def
 	local t = os.clock()
 	if t - Weapon.lastShot < 60 / def.rpm then
 		return
@@ -232,244 +454,514 @@ local function fireOnce(def)
 		if not dryLatch then
 			dryLatch = true
 			ctx.Effects.sound(Sounds.DRY_FIRE, SoundService, 0.6)
-			ctx.State.toast("EMPTY  ·  [" .. ctx.Input.label("Reload") .. "] RELOAD", "warn")
 		end
 		return
+	end
+	if tubeT0 then
+		tubeT0 = nil -- firing interrupts shell-by-shell loading (the server does the same)
+		Weapon.reloading = false
 	end
 	Weapon.lastShot = t
 	seq += 1
 	Weapon.ammo -= 1
+	local M = ctx.Movement
+	local crouch = M and M.crouching
 	local camCF = cam.CFrame
 	local spread = Weapon.aiming and def.aimSpread or def.hipSpread
 	if ctx.Camera.speed > 2 then
 		spread += def.moveSpread * (Weapon.aiming and 0.35 or 1)
 	end
-	if Weapon.crouching then
+	if crouch then
 		spread *= 0.8
 	end
 	local r = math.rad(spread) * 0.5
 	local dir = (camCF * CFrame.Angles((math.random() * 2 - 1) * r, (math.random() * 2 - 1) * r, 0)).LookVector
 	local origin = camCF.Position
 	ctx.State.shoot(seq, origin, dir)
-	rayParams.FilterDescendantsInstances = { player.Character, vm, workspace:FindFirstChild("ZR_Fx") }
+	rayParams.FilterDescendantsInstances = { player.Character, o.model, workspace:FindFirstChild("ZR_Fx") }
 	local res = workspace:Raycast(origin, dir * def.range, rayParams)
 	local hit = res and res.Position or (origin + dir * def.range)
-	local muzzle = (vmRoot.CFrame * MUZZLE).Position
-	ctx.Effects.flash(muzzle)
-	if ctx.Post then
-		ctx.Post.burst(0.22)
+	local muzzle = (o.grip * CFrame.new(o.muzzle)).Position
+	if not o.ms.suppressed and not Weapon.scoped then
+		ctx.Effects.flash(muzzle)
+		if ctx.Post then
+			ctx.Post.burst(0.22)
+		end
 	end
-	ctx.Effects.tracer(muzzle, hit)
+	local it, d = activeItem()
+	local ammo = it and ammoDefOf(it, d)
+	if ammo and ammo.tracer then
+		ctx.Effects.tracer(muzzle, hit) -- Tarkov: only tracer rounds leave a visible trace
+	end
 	if res then
 		local m = res.Instance:FindFirstAncestorOfClass("Model")
 		ctx.Effects.impact(res.Position, res.Normal, m and m:FindFirstChildOfClass("Humanoid") ~= nil)
 	end
-	ctx.Effects.sound(Sounds.R17_FIRE, SoundService, 0.9, 1 + math.random() * 0.06)
-	local k = (Weapon.aiming and 0.72 or 1) * (Weapon.crouching and 0.85 or 1)
-	ctx.Camera.kick(def.recoilV * k, (math.random() * 2 - 1) * def.recoilH)
-	kickZ += 0.045
-	kickRot += math.rad(2.2)
+	ctx.Effects.gunSound(def.id, SoundService, o.ms.suppressed, false)
+	local k = (Weapon.aiming and 0.72 or 1) * (crouch and 0.85 or 1) * o.ms.recoil
+	ctx.Camera.kick(def.recoilV * k, (math.random() * 2 - 1) * def.recoilH * k)
+	kickZ += 0.045 * k
+	kickRot += math.rad(2.2) * k
+	kickRoll += (math.random() * 2 - 1) * math.rad(1.2) * k
+	local mode = def.modes[Weapon.mode]
+	if mode == "PUMP" or mode == "BOLT" then
+		cycleKind = mode
+		cycleT0 = t + 0.08
+		cycleDur = mode == "PUMP" and 0.45 or 0.95
+		task.delay(0.12, function()
+			ctx.Effects.sound(Sounds.RELOAD, SoundService, 0.45, mode == "PUMP" and 1.7 or 1.35)
+		end)
+	end
 end
 
 function Weapon.startReload()
-	if Weapon.reloading or not Weapon.hasWeapon or not ctx.State.inRaid() then
+	local o = vm
+	if not o or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing then
 		return
 	end
-	local def = wdef()
-	if not def then
+	if o.def.internal then
+		ctx.State.act("reload") -- the server streams shells; its "tube" note starts the loop animation
 		return
 	end
-	local _, spare = computeAmmo()
-	if spare <= 0 then
+	local cur, better = computeAmmo(Weapon.ammo)
+	if better <= 0 then
 		ctx.State.toast("NO SPARE MAGAZINES", "warn")
 		return
 	end
-	if ctx.Interact and ctx.Interact.current then
-		return -- gamepad X is shared with interact prompts
-	end
+	local vit = ctx.State.vitals
+	local slow = (vit and vit.mods and vit.mods.reload) or 1
 	Weapon.reloading = true
-	Weapon.aiming = false
 	reloadT0 = os.clock()
-	reloadDur = def.reload
+	reloadDur = ((cur > 0) and o.def.reload or o.def.reloadEmpty) * slow
+	joltDone = false
 	ctx.State.act("reload")
 	ctx.Effects.sound(Sounds.RELOAD, SoundService, 0.7)
-	task.delay(def.reload + 0.8, function()
-		if Weapon.reloading and reloadT0 and os.clock() - reloadT0 >= def.reload + 0.7 then
-			Weapon.reloading = false -- server never confirmed; resync from snapshot
-			Weapon.ammo = computeAmmo()
+	local token = reloadT0
+	task.delay(reloadDur + 1.0, function()
+		if Weapon.reloading and reloadT0 == token then
+			Weapon.reloading = false -- the server never confirmed; resync from the snapshot
+			reloadT0 = nil
+			Weapon.ammo = (computeAmmo())
 		end
 	end)
 end
 
+function Weapon.magCheck()
+	if not vm or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing then
+		return
+	end
+	Weapon.checking = true
+	checkT0 = os.clock()
+	ctx.State.act("magcheck")
+	local token = checkT0
+	task.delay(checkDur + 1.4, function()
+		if checkT0 == token then
+			Weapon.checking = false
+			checkT0 = nil
+		end
+	end)
+end
+
+function Weapon.slash()
+	local o = vm
+	if not o or not Weapon.melee or not ctx.State.inRaid() or slashT0 or Weapon.drawing or switching or Weapon.healing or ctx.Input.isMenu() then
+		return
+	end
+	local t = os.clock()
+	if t - Weapon.lastShot < 60 / o.def.rpm then
+		return
+	end
+	Weapon.lastShot = t
+	slashT0 = t
+	slashSent = false
+	ctx.Effects.sound(Sounds.DRY_FIRE, SoundService, 0.35, 0.5)
+end
+
+function Weapon.switchTo(slot)
+	local d = ctx.State.data
+	if not ctx.State.inRaid() or not d or d.active == slot or not weaponIn(slot) or switching or Weapon.healing then
+		return
+	end
+	tubeT0, reloadT0, checkT0, slashT0, cycleT0 = nil, nil, nil, nil, nil
+	Weapon.reloading, Weapon.checking = false, false
+	Weapon.cancelAim()
+	switching = { slot = slot, t0 = os.clock() }
+	ctx.State.act("draw", { slot = slot })
+	task.delay(1.3, function()
+		if switching and switching.slot == slot and os.clock() - switching.t0 >= 1.2 then
+			switching = nil -- the server refused: bring the current weapon back up
+		end
+	end)
+end
+
+function Weapon.cycleWeapon()
+	local d = ctx.State.data
+	if not d then
+		return
+	end
+	local cur = 1
+	for i, s in CYCLE do
+		if s == d.active then
+			cur = i
+		end
+	end
+	for k = 1, #CYCLE - 1 do
+		local s = CYCLE[(cur + k - 1) % #CYCLE + 1]
+		if weaponIn(s) then
+			Weapon.switchTo(s)
+			return
+		end
+	end
+end
+
+function Weapon.toggleLight()
+	if not vm or not vm.ms.light or not ctx.State.inRaid() then
+		return
+	end
+	Weapon.light = not Weapon.light
+	if vm.lamp then
+		vm.lamp.Enabled = Weapon.light
+	end
+	ctx.Effects.sound(Sounds.UI_CLICK, SoundService, 0.35, 1.6)
+	ctx.State.act("light", { on = Weapon.light })
+end
+
+-- Studio tuning: rebuild the viewmodel (after changing TUNE.vms or arm sizes)
+function Weapon.rebuild()
+	local it, d, g = activeItem()
+	if it then
+		buildVm(it, d, g)
+	end
+end
+
 function Weapon.fireForTest(n)
-	local def = wdef()
-	if not def then
+	if not vm then
 		return "no weapon"
 	end
 	for _ = 1, n or 1 do
 		Weapon.lastShot = 0
 		if canFire() then
-			fireOnce(def)
+			fireOnce()
 		end
-		task.wait(60 / def.rpm + 0.01)
+		task.wait(math.max(60 / vm.def.rpm, cycleDur) + 0.05)
 	end
 	return Weapon.ammo
 end
 
-local function sendStance()
-	local pitch = math.deg(ctx.Camera.pitch)
-	local st = { c = Weapon.crouching, a = Weapon.aiming, s = Weapon.sprinting, p = pitch }
-	local t = os.clock()
-	if lastStance and lastStance.c == st.c and lastStance.a == st.a and lastStance.s == st.s and math.abs(lastStance.p - pitch) < 6 then
-		return
+-- ── frame update ─────────────────────────────────────────────────────────────
+local function handleFire()
+	local fireDown = ctx.Input.down("Fire")
+	if vm and fireDown and ctx.State.inRaid() then
+		if Weapon.melee then
+			if not fireLatch then
+				fireLatch = true
+				Weapon.slash()
+			end
+		else
+			local mode = vm.def.modes[Weapon.mode]
+			if mode == "AUTO" then
+				if canFire() then
+					fireOnce()
+				end
+			elseif not fireLatch then
+				fireLatch = true
+				if canFire() then
+					fireOnce()
+				end
+			end
+		end
 	end
-	if t - lastStanceT < 0.15 then
-		return
+	if not fireDown then
+		fireLatch = false
+		dryLatch = false
 	end
-	lastStance, lastStanceT = st, t
-	ctx.State.act("stance", st)
 end
 
 local function update(dt)
 	local hum, char = alive()
 	local inRaid = ctx.State.inRaid()
-	local def = wdef()
-	local show = inRaid and Weapon.hasWeapon and hum ~= nil and not ctx.Input.isMenu()
-	if vm then
-		vm.Parent = show and cam or nil
+	local now = os.clock()
+	Weapon.drawing = now - drawT0 < drawDur
+	if cycleT0 and now - cycleT0 >= cycleDur then
+		cycleT0 = nil
 	end
-	if hum then
-		if defaultHip == nil then
-			defaultHip = hum.HipHeight
+	if slashT0 then
+		local p = (now - slashT0) / SLASH_TIME
+		if p >= 0.3 and not slashSent then
+			slashSent = true
+			local lv = cam.CFrame.LookVector
+			ctx.State.act("melee", { x = lv.X, y = lv.Y, z = lv.Z })
 		end
-		local moving = ctx.Camera.speed > 1
-		local vit = ctx.State.vitals
-		local mods = vit and vit.mods or nil
-		ctx.Camera.tremor = mods and mods.tremor or 0
-		if Weapon.sprinting and (not moving or Weapon.stamina <= 0 or Weapon.crouching or (mods and not mods.sprint)) then
-			Weapon.sprinting = false
-		end
-		if Weapon.sprinting then
-			Weapon.stamina = math.max(0, Weapon.stamina - Config.SPRINT_DRAIN * dt)
-		else
-			Weapon.stamina = math.min(Config.MAX_STAMINA, Weapon.stamina + Config.STAMINA_REGEN * dt * (mods and mods.staminaRegen or 1))
-		end
-		local speed = Config.WALK_SPEED
-		if Weapon.sprinting then
-			speed = Config.SPRINT_SPEED
-		elseif Weapon.crouching then
-			speed = Config.CROUCH_SPEED
-		elseif Weapon.aiming then
-			speed = Config.AIM_SPEED
-		end
-		if Weapon.healing then
-			speed = math.min(speed, Config.CROUCH_SPEED)
-		end
-		hum.WalkSpeed = speed * (mods and mods.speed or 1)
-		hum.HipHeight = Weapon.crouching and (defaultHip - 1.0) or defaultHip
-		hum.UseJumpPower = false
-		hum.JumpHeight = (Weapon.crouching or Weapon.stamina < Config.JUMP_COST) and 0 or 3.6
-		sendStance()
-	end
-	-- firing
-	if def and ctx.Input.down("Fire") and canFire() then
-		if Weapon.mode == 1 then
-			fireOnce(def)
-		elseif not semiLatch then
-			semiLatch = true
-			fireOnce(def)
+		if p >= 1 then
+			slashT0 = nil
 		end
 	end
-	if not ctx.Input.down("Fire") then
-		semiLatch = false
-		dryLatch = false
+	handleFire()
+	Weapon.aiming = aimWanted and canAim()
+	local o = vm
+	local show = o ~= nil and inRaid and hum ~= nil and not ctx.Input.isMenu() and not ctx.Camera.orbit
+	-- local player's own third-person weapon light stays off (the viewmodel lamp lights the scene)
+	if now - tpLightT > 0.25 and char then
+		tpLightT = now
+		for _, c in char:GetChildren() do
+			if c.Name == "TPWeapon" then
+				local l = c:FindFirstChild("WeaponLight")
+				if l and l.Enabled then
+					l.Enabled = false
+				end
+			end
+		end
 	end
-	if not show or not vmRoot then
-		return
+	-- pose blends
+	local ergo = o and (o.def.ergo + o.ms.ergo) or 50
+	aimA += ((Weapon.aiming and 1 or 0) - aimA) * math.min(1, dt * (6 + ergo / 10))
+	local M = ctx.Movement
+	sprintA += (((M and M.sprinting) and 1 or 0) - sprintA) * math.min(1, dt * 9)
+	reloadA += (((Weapon.reloading and not tubeT0) and 1 or 0) - reloadA) * math.min(1, dt * 10)
+	tubeA += ((tubeT0 and 1 or 0) - tubeA) * math.min(1, dt * 10)
+	checkA += ((Weapon.checking and 1 or 0) - checkA) * math.min(1, dt * 10)
+	if Weapon.drawing and not switching then
+		raise = ease((now - drawT0) / math.max(0.05, drawDur))
+	else
+		local target = (switching and 0) or (Weapon.healing and 0.3) or 1
+		raise += (target - raise) * math.min(1, dt * 9)
 	end
-	-- pose blending
-	local a = math.min(1, dt * 14)
-	aimA += ((Weapon.aiming and not Weapon.reloading and 1 or 0) - aimA) * a
-	sprintA += ((Weapon.sprinting and 1 or 0) - sprintA) * math.min(1, dt * 9)
-	reloadA += ((Weapon.reloading and 1 or 0) - reloadA) * math.min(1, dt * 10)
 	kickZ -= kickZ * math.min(1, dt * 14)
 	kickRot -= kickRot * math.min(1, dt * 12)
-	local md = ctx.Input.isMenu() and Vector2.zero or UIS:GetMouseDelta()
+	kickRoll -= kickRoll * math.min(1, dt * 10)
+	updateOptics(show)
+	if o then
+		o.model.Parent = (show and not Weapon.scoped) and cam or nil
+	end
+	if not show or Weapon.scoped then
+		return
+	end
+	-- base pose
+	local P = POSE[o.kind]
+	local base = P.hip
+	if o.kind ~= "melee" then
+		local e = o.eye
+		base = base:Lerp(CFrame.new(-e.X, -e.Y, -(P.eyeDist or 0.34) - e.Z), aimA)
+	end
+	base = base:Lerp(P.sprint, sprintA * (1 - aimA))
+	if P.reload then
+		base = base:Lerp(P.reload, reloadA)
+	end
+	if P.tube then
+		base = base:Lerp(P.tube, tubeA)
+	end
+	if P.check then
+		base = base:Lerp(P.check, checkA)
+	end
+	if slashT0 then
+		local p = (now - slashT0) / SLASH_TIME
+		if p < 0.25 then
+			base = base:Lerp(P.windup, ease(p / 0.25))
+		elseif p < 0.5 then
+			base = P.windup:Lerp(P.follow, ease((p - 0.25) / 0.25))
+		else
+			base = P.follow:Lerp(base, ease((p - 0.5) / 0.5))
+		end
+	end
+	base = P.low:Lerp(base, raise)
+	-- sway (lags behind look input; less with good ergonomics and when aiming), bob, wall pullback
+	local md = UIS:GetMouseDelta()
 	local motion = ctx.Settings.data.reduceMotion and 0.3 or 1
-	local sx = math.clamp(-md.X * 0.0014, -0.08, 0.08) * motion * (1 - aimA * 0.7)
-	local sy = math.clamp(-md.Y * 0.0014, -0.08, 0.08) * motion * (1 - aimA * 0.7)
+	local swayK = motion * (1 - aimA * 0.7) * (1.5 - math.clamp(ergo, 0, 100) / 100)
+	local sx = math.clamp(-md.X * 0.0014, -0.08, 0.08) * swayK
+	local sy = math.clamp(-md.Y * 0.0014, -0.08, 0.08) * swayK
 	sway = sway:Lerp(CFrame.Angles(sy, sx, sx * 0.6), math.min(1, dt * 10))
 	local ph = ctx.Camera.bobPhase
 	local bobAmt = math.clamp(ctx.Camera.speed / 16, 0, 1.2) * (1 - aimA * 0.85) * motion
 	local bob = CFrame.new(math.cos(ph) * 0.03 * bobAmt, -math.abs(math.sin(ph)) * 0.025 * bobAmt, 0)
-	local base = HIP:Lerp(AIM, aimA):Lerp(SPRINT, sprintA):Lerp(RELOAD, reloadA * 0.85)
-	-- wall pullback
-	rayParams.FilterDescendantsInstances = { char, vm, workspace:FindFirstChild("ZR_Fx") }
-	local wallHit = workspace:Raycast(cam.CFrame.Position, cam.CFrame.LookVector * 1.7, rayParams)
+	rayParams.FilterDescendantsInstances = { char, o.model, workspace:FindFirstChild("ZR_Fx") }
+	local camCF = cam.CFrame
+	local wallHit = workspace:Raycast(camCF.Position, camCF.LookVector * 1.7, rayParams)
 	local push = wallHit and (1.7 - wallHit.Distance) or 0
 	local pull = CFrame.new(0, -push * 0.12, push * 0.75) * CFrame.Angles(push * 0.22, 0, 0)
-	vmRoot.CFrame = cam.CFrame * base * bob * sway * pull * CFrame.new(0, 0, kickZ) * CFrame.Angles(kickRot, 0, 0)
-	-- magazine (reload animation)
-	local magCF = magHome
-	if Weapon.reloading and reloadT0 then
-		local p = (os.clock() - reloadT0) / reloadDur
-		if p > 0.15 and p < 0.4 then
-			magCF = magHome * CFrame.new(0, -((p - 0.15) / 0.25) * 0.45, 0.05)
-		elseif p >= 0.4 and p < 0.55 then
-			magCF = magHome * CFrame.new(0, -3, 0)
-		elseif p >= 0.55 and p < 0.82 then
-			magCF = magHome * CFrame.new(0, -(1 - (p - 0.55) / 0.27) * 0.45, 0.03)
+	local grip = camCF * base * bob * sway * pull * CFrame.new(0, 0, kickZ) * CFrame.Angles(kickRot, 0, kickRoll)
+	o.grip = grip
+	-- hands, magazine, pump, bolt, shell
+	local lHand = (o.kind == "melee") and (camCF * L_REST) or (grip * o.lHand)
+	local rHand = grip * o.rHand
+	local magW = grip
+	local pumpD, boltD = CFrame.identity, CFrame.identity
+	local shellOn = false
+	local hidden = false
+	if reloadT0 and Weapon.reloading and not tubeT0 and o.magGrab then
+		local p = (now - reloadT0) / reloadDur
+		local grab = o.magGrab
+		local out = CFrame.new(0, -0.3, 0.06) * CFrame.Angles(math.rad(-25), 0, 0)
+		local pouch = camCF * POUCH
+		if p < 0.14 then
+			lHand = lHand:Lerp(grip * grab, phase(p, 0, 0.14))
+		elseif p < 0.3 then
+			magW = grip * CFrame.identity:Lerp(out, phase(p, 0.14, 0.3))
+			lHand = magW * grab
+		elseif p < 0.42 then
+			local k = phase(p, 0.3, 0.42)
+			lHand = (grip * out * grab):Lerp(pouch, k)
+			magW = lHand * grab:Inverse()
+			hidden = k > 0.85
+		elseif p < 0.6 then
+			lHand = pouch
+			hidden = true
+		elseif p < 0.72 then
+			lHand = pouch:Lerp(grip * out * grab, phase(p, 0.6, 0.72))
+			magW = lHand * grab:Inverse()
+		elseif p < 0.8 then
+			magW = grip * out:Lerp(CFrame.identity, phase(p, 0.72, 0.8))
+			lHand = magW * grab
+		else
+			if not joltDone then
+				joltDone = true
+				kickRot += math.rad(1.6)
+				kickZ += 0.02
+			end
+			lHand = (grip * grab):Lerp(grip * o.lHand, phase(p, 0.8, 1))
+		end
+	elseif checkT0 and Weapon.checking and o.magGrab then
+		local p = (now - checkT0) / checkDur
+		local grab = o.magGrab
+		local pulled = CFrame.new(0, -0.05, 0.012) * CFrame.Angles(math.rad(-6), 0, 0)
+		if p < 0.25 then
+			lHand = lHand:Lerp(grip * grab, phase(p, 0, 0.25))
+		elseif p < 0.75 then
+			magW = grip * CFrame.identity:Lerp(pulled, phase(p, 0.25, 0.45) - phase(p, 0.6, 0.75))
+			lHand = magW * grab
+		else
+			lHand = (grip * grab):Lerp(lHand, phase(p, 0.75, 1))
+		end
+	elseif tubeT0 and o.port then
+		local p = ((now - tubeT0) % tubePeriod) / tubePeriod
+		local belt = camCF * BELT
+		local port = grip * o.port
+		if p < 0.35 then
+			lHand = port:Lerp(belt, phase(p, 0, 0.35))
+		elseif p < 0.7 then
+			lHand = belt:Lerp(port * CFrame.new(0, -0.03, 0.04), phase(p, 0.35, 0.7))
+			shellOn = true
+		elseif p < 0.85 then
+			lHand = (port * CFrame.new(0, -0.03, 0.04)):Lerp(port, phase(p, 0.7, 0.85))
+			shellOn = p < 0.8
+		else
+			lHand = port
 		end
 	end
-	magPart.CFrame = vmRoot.CFrame * magCF * magOffset
+	if cycleT0 then
+		local p = math.clamp((now - cycleT0) / cycleDur, 0, 1)
+		if cycleKind == "PUMP" then
+			local z = 0.14 * o.vms * (p < 0.45 and phase(p, 0, 0.45) or (1 - phase(p, 0.45, 1)))
+			pumpD = CFrame.new(0, 0, z)
+			lHand = grip * pumpD * o.lHand
+		elseif cycleKind == "BOLT" and o.bolt then
+			local lift = 0.035 * o.vms * (phase(p, 0.18, 0.3) - phase(p, 0.68, 0.78))
+			local back = 0.22 * o.vms * (phase(p, 0.3, 0.5) - phase(p, 0.5, 0.68))
+			boltD = CFrame.new(0, lift, back)
+			local knob = grip * boltD * o.bolt
+			if p < 0.18 then
+				rHand = rHand:Lerp(knob, phase(p, 0, 0.18))
+			elseif p < 0.78 then
+				rHand = knob
+			else
+				rHand = knob:Lerp(rHand, phase(p, 0.78, 1))
+			end
+		end
+	end
+	setMagHidden(o, hidden)
+	-- write CFrames
+	local cfs, offs, kinds = o.cfs, o.offs, o.kinds
+	for i = 1, o.nFixed do
+		local kind = kinds[i]
+		if kind == "gun" then
+			cfs[i] = grip * offs[i]
+		elseif kind == "mag" then
+			cfs[i] = magW * offs[i]
+		elseif kind == "pump" then
+			cfs[i] = grip * pumpD * offs[i]
+		else
+			cfs[i] = grip * boltD * offs[i]
+		end
+	end
+	local rS, lS = camCF * TUNE.rShoulder, camCF * TUNE.lShoulder
+	local rW = (rHand * CFrame.new(0, -0.04, 0.08)).Position
+	local lW = (lHand * CFrame.new(-0.02, -0.035, 0.08)).Position
+	local rE = solve(rS, rW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.rPole))
+	local lE = solve(lS, lW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.lPole))
+	local A = o.arms
+	local n = o.nFixed
+	cfs[n + 1] = limb(A[1], rS, rE, TUNE.upperW)
+	cfs[n + 2] = limb(A[2], rE, rW, TUNE.foreW)
+	cfs[n + 3] = rHand
+	cfs[n + 4] = limb(A[4], lS, lE, TUNE.upperW)
+	cfs[n + 5] = limb(A[5], lE, lW, TUNE.foreW)
+	cfs[n + 6] = lHand
+	if (o.shell.Transparency < 1) ~= shellOn then
+		o.shell.Transparency = shellOn and 0 or 1
+	end
+	cfs[n + 7] = lHand * CFrame.new(0, 0.045, -0.05)
+	workspace:BulkMoveTo(o.all, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+end
+
+-- ── state sync ───────────────────────────────────────────────────────────────
+local function resetActions()
+	tubeT0, reloadT0, checkT0, slashT0, cycleT0, switching = nil, nil, nil, nil, nil, nil
+	Weapon.reloading, Weapon.checking, Weapon.healing = false, false, false
+	Weapon.cancelAim()
 end
 
 local function onSnapshot()
-	local ammo, spare, has = computeAmmo()
-	Weapon.spare = spare
-	Weapon.hasWeapon = has
-	if os.clock() - Weapon.lastShot > 0.6 and not Weapon.reloading then
-		Weapon.ammo = ammo
+	local it, d, g = activeItem()
+	local cur, better, has, def = computeAmmo()
+	Weapon.spare = better
+	if not ctx.State.inRaid() or not has then
+		Weapon.hasWeapon = false
+		destroyVm()
+		lastActiveG = nil
+		Weapon.light = false
+		resetActions()
+		return
 	end
-	if not ctx.State.inRaid() then
-		Weapon.reloading, Weapon.aiming, Weapon.sprinting, Weapon.healing = false, false, false, false
+	Weapon.hasWeapon = true
+	if not vm or vm.key ~= vmKey(it, g) then
+		buildVm(it, d, g)
 	end
+	if g ~= lastActiveG then
+		-- a different weapon came into the hands
+		lastActiveG = g
+		switching = nil
+		Weapon.mode = 1
+		Weapon.light = false
+		raise = 0
+		if os.clock() - drawT0 > 0.5 then
+			drawT0, drawDur = os.clock(), def.draw or 0.6
+		end
+		Weapon.ammo = cur
+		dryLatch = false
+	elseif os.clock() - Weapon.lastShot > 0.6 and not Weapon.reloading then
+		Weapon.ammo = cur
+	end
+	Weapon.melee = def.melee == true
+	Weapon.slot = d.active
+	Weapon.weaponName = string.upper(Items.defs[it.id].name)
+	Weapon.modeName = def.modes[Weapon.mode] or def.modes[1]
 end
 
 function Weapon.init(c)
 	ctx = c
-	buildViewmodel()
+	buildScope()
 	local Input = c.Input
 	Input.on("Aim", function(down)
 		local toggle = c.Settings.data.adsToggle or Input.device() == "Touch"
 		if toggle then
 			if down then
-				Weapon.aiming = not Weapon.aiming
+				aimWanted = not aimWanted
 			end
 		else
-			Weapon.aiming = down
+			aimWanted = down
 		end
-		if Weapon.aiming then
-			Weapon.sprinting = false
-		end
-	end)
-	Input.on("Sprint", function(down)
-		if Input.device() == "KBM" then
-			Weapon.sprinting = down
-		elseif down then
-			Weapon.sprinting = not Weapon.sprinting
-		end
-		if Weapon.sprinting then
-			Weapon.aiming = false
-			Weapon.crouching = false
-		end
-	end)
-	Input.on("Crouch", function(down)
-		if down then
-			Weapon.crouching = not Weapon.crouching
-			if Weapon.crouching then
-				Weapon.sprinting = false
-			end
+		if aimWanted and c.Movement then
+			c.Movement.stopSprint()
 		end
 	end)
 	Input.on("Reload", function(down)
@@ -484,59 +976,101 @@ function Weapon.init(c)
 		end
 	end)
 	Input.on("FireMode", function(down)
-		if down then
-			Weapon.mode = 3 - Weapon.mode
-			c.State.toast((Weapon.mode == 1) and "FIRE MODE: AUTO" or "FIRE MODE: SEMI")
+		if not down or not vm or Weapon.melee then
+			return
+		end
+		local modes = vm.def.modes
+		if #modes > 1 then
+			Weapon.mode = Weapon.mode % #modes + 1
+			Weapon.modeName = modes[Weapon.mode]
+			c.Effects.sound(Sounds.UI_CLICK, SoundService, 0.3, 1.8)
+			c.State.toast("FIRE MODE: " .. Weapon.modeName)
 		end
 	end)
 	Input.on("Fire", function(down)
-		if down and Weapon.sprinting then
-			Weapon.sprinting = false
+		if down and c.Movement and c.Movement.sprinting then
+			c.Movement.stopSprint()
 		end
 	end)
+	Input.on("MagCheck", function(down)
+		if down then
+			Weapon.magCheck()
+		end
+	end)
+	Input.on("Light", function(down)
+		if down then
+			Weapon.toggleLight()
+		end
+	end)
+	Input.on("CycleWeapon", function(down)
+		if down then
+			Weapon.cycleWeapon()
+		end
+	end)
+	for action, slot in SLOT_KEYS do
+		Input.on(action, function(down)
+			if down then
+				Weapon.switchTo(slot)
+			end
+		end)
+	end
 	c.State.changed:Connect(onSnapshot)
 	c.State.on("ammo", function(d)
-		if type(d) == "table" and type(d.a) == "number" then
-			Weapon.ammo = d.a
+		if type(d) ~= "table" or type(d.a) ~= "number" then
+			return
+		end
+		Weapon.ammo = d.a
+		if d.tube then
+			c.Effects.sound(Sounds.RELOAD, SoundService, 0.3, 2.1)
+		elseif Weapon.reloading and not tubeT0 then
 			Weapon.reloading = false
+			reloadT0 = nil
 		end
 	end)
 	c.State.on("reload", function(d)
-		if d and d.state == "none" then
+		if type(d) ~= "table" then
+			return
+		end
+		if d.state == "start" then
+			if not reloadT0 then
+				reloadT0 = os.clock()
+				joltDone = false
+			end
+			Weapon.reloading = true
+			reloadDur = d.t or reloadDur
+		elseif d.state == "tube" then
+			Weapon.reloading = true
+			tubeT0 = os.clock()
+			tubePeriod = d.t or 0.55
+		elseif d.state == "done" or d.state == "none" then
 			Weapon.reloading = false
+			tubeT0, reloadT0 = nil, nil
+		end
+	end)
+	c.State.on("draw", function(d)
+		if type(d) == "table" then
+			drawT0, drawDur = os.clock(), d.t or 0.6
+		end
+	end)
+	c.State.on("magcheck", function(d)
+		if type(d) == "table" and d.state == "done" then
+			Weapon.checking = false
+			checkT0 = nil
+		elseif type(d) == "table" and d.state == "start" then
+			checkDur = d.t or checkDur
 		end
 	end)
 	c.State.on("heal", function(d)
 		Weapon.healing = d and d.state == "start"
-	end)
-	player.CharacterAdded:Connect(function(char)
-		defaultHip = nil
-		Weapon.crouching, Weapon.sprinting, Weapon.aiming, Weapon.reloading, Weapon.healing = false, false, false, false, false
-		Weapon.stamina = Config.MAX_STAMINA
-		local hum = char:WaitForChild("Humanoid", 5)
-		if hum then
-			hum.StateChanged:Connect(function(_, new)
-				if new == Enum.HumanoidStateType.Jumping then
-					Weapon.stamina = math.max(0, Weapon.stamina - Config.JUMP_COST)
-				end
-			end)
+		if Weapon.healing then
+			Weapon.cancelAim()
 		end
+	end)
+	player.CharacterAdded:Connect(function()
+		resetActions()
+		lastActiveG = nil
 	end)
 	RunService:BindToRenderStep("ZR_Weapon", Enum.RenderPriority.Camera.Value + 2, update)
-	-- rebuild when meshes arrive later (non-blocking)
-	task.spawn(function()
-		local lib = ReplicatedStorage:WaitForChild("ZR_Assets", 15)
-		if lib then
-			lib.ChildAdded:Connect(function(ch)
-				if ch.Name == "ZR_VM_R17" or ch.Name == "ZR_VM_Arms" or ch.Name == "ZR_VM_R17_Mag" then
-					buildViewmodel()
-				end
-			end)
-			if lib:FindFirstChild("ZR_VM_R17") then
-				buildViewmodel()
-			end
-		end
-	end)
 end
 
 return Weapon

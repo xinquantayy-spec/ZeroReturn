@@ -13,4 +13,11 @@ return {
 	Inventory = { keys = { Enum.KeyCode.Tab, Enum.KeyCode.I }, pad = { Enum.KeyCode.ButtonY }, touch = "BAG", context = "global" },
 	Settings = { keys = { Enum.KeyCode.P }, pad = { Enum.KeyCode.ButtonSelect }, touch = "SET", context = "global" },
 	Back = { keys = { Enum.KeyCode.Backspace }, pad = { Enum.KeyCode.ButtonB }, context = "menu" },
+	Primary = { keys = { Enum.KeyCode.One }, pad = {}, context = "play" },
+	Secondary = { keys = { Enum.KeyCode.Two }, pad = {}, context = "play" },
+	Sidearm = { keys = { Enum.KeyCode.Three }, pad = {}, context = "play" },
+	Knife = { keys = { Enum.KeyCode.Four }, pad = {}, context = "play" },
+	CycleWeapon = { keys = {}, pad = { Enum.KeyCode.DPadLeft }, touch = "SWAP", context = "play" },
+	MagCheck = { keys = { Enum.KeyCode.T }, pad = { Enum.KeyCode.ButtonR3 }, context = "play" },
+	Light = { keys = { Enum.KeyCode.L }, pad = {}, context = "play" },
 }

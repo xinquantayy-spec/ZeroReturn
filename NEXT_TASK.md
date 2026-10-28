@@ -1,37 +1,21 @@
 # Next Task
 
-**Current focus:** Phase D, verification depth. Do these in order and stop at any step marked [owner].
+**Current focus:** improvement program milestone **M6 — Movement & realistic animation** (owner asked for real-player movement and Tarkov mechanics; work continues milestone to milestone without stopping).
 
-1. **Two-client test.** Use Studio's Test → Clients and Servers with 2 players.
-   - Both players deploy into the shared world.
-   - Contest the same container: exactly one copy should exist.
-   - Player-vs-player hit: damage validated and kill credited.
-   - Both players extract.
-   - Check that profiles stay separate.
-2. **Device emulator pass.**
-   - Phone (portrait-safe landscape) and tablet: touch cluster, HUD legibility, modal fit inside safe insets.
-   - Console 1080p: gamepad selection in the inventory, deploy and summary screens.
-   - Record screenshots.
-3. **Performance snapshot.**
-   - In a 2-minute raid, record part and instance counts, script activity (AI think time) and client effect caps.
-   - Log the numbers in `TEST_RESULTS.md`.
-4. **[owner] Real persistence.**
-   - The owner saves the place as a private Roblox place and enables Studio API access.
-   - Then re-run the rejoin, failWrites and crash-recovery probes against `DEV_ZR_Profiles_v1`.
-5. **Impact sound effect.**
-   - Synthesise `ZR_SFX_Impact` (concrete and metal).
-   - Upload it (1 of the remaining audio quota) and wire it into `Effects.impact`.
+## M6 plan
 
-**After that, Phase E** (one feature per session):
+1. **Custom operator rig (non-Roblox look).**
+   - Roblox now builds avatars with `AnimationConstraint` joints, and the default dynamic head shows a face.
+   - Build our own R15-named rig (Motor6D joints, human proportions, balaclava head, gloves, boots) as `StarterPlayer.StarterCharacter` at server start; AI uses the same rig.
+   - Blender: segment meshes for the body; part-built fallback when meshes are missing.
+2. **Procedural full-body animator** (players and AI): walk/run/crouch/prone cycles from velocity, aim pitch, lean, weapon held by two-bone arm IK at the shared weapon anchors, reload/draw/melee gestures from replicated attributes, distance LOD.
+3. **Movement (client Movement.luau + server validation):** lean Q/E (camera + hitbox), prone Z, walk-speed scroll, crouch depth, leg/arm stamina, weight and overweight penalties, inertia, vault/mantle, free look (Alt), fall damage (done in Health), footsteps.
+4. Verify with the `orbit` dev camera, two-character scenes and screenshots; commit M6.
 
-- armour and helmet protection classes
-- a second weapon (pistol)
-- traders and tasks in the safehouse
-- a second guard archetype
-- extending Quay 7
+Then M7 (multiplayer raids), M8 (AI), M9 (economy), M10 (world/art/audio), M11 (QA + docs).
 
-**Resume steps:**
+## Resume steps
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
-2. Start `rojo serve --port 34873`.
-3. Run `ZR_Dev:Invoke("tests")` to get the 38/38 baseline.
+2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; connect the Rojo plugin in Place3.
+3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **82/82**).

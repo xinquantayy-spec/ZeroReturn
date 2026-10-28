@@ -69,9 +69,8 @@ local function build()
 	-- progress: label + "|" bar (bends with the lens)
 	O.progLabel = txt("ProgLabel", Vector2.new(0.5, 0.735), 24, 0.5, { font = Lens.FONT_MED })
 	O.progBar = txt("ProgBar", Vector2.new(0.5, 0.775), 26, 0.5, { glow = 0.9, tracking = 0.12 })
-	-- weapon line (bottom centre) + mag check
+	-- weapon line (bottom centre)
 	O.weapon = txt("Weapon", Vector2.new(0.5, 0.935), 22, 0.5, { font = Lens.FONT_MED, glow = nil })
-	O.magcheck = txt("MagCheck", Vector2.new(0.5, 0.89), 26, 0.5)
 	-- squad (bottom-left)
 	O.squad = {}
 	for i = 1, 5 do
@@ -179,7 +178,11 @@ local function slowUpdate()
 	local W = ctx.Weapon
 	if inRaid and W.hasWeapon then
 		O.weapon:show(true)
-		O.weapon:set({ { t = (W.weaponName or "R-17 CARBINE") .. "  ·  " .. (W.mode == 1 and "AUTO" or "SEMI"), color = C.dim, alpha = 0.15 } })
+		local line = (W.weaponName or "WEAPON") .. "  ·  " .. (W.modeName or "SEMI")
+		if W.light then
+			line ..= "  ·  LIGHT"
+		end
+		O.weapon:set({ { t = line, color = C.dim, alpha = 0.15 } })
 	else
 		O.weapon:show(false)
 	end
@@ -217,7 +220,7 @@ local function fastUpdate(dt)
 	end
 	lastHp = hp
 	local stMax = v.stMax or Config.MAX_STAMINA
-	local st = v.st or ctx.Weapon.stamina or stMax
+	local st = v.st or (ctx.Movement and ctx.Movement.stamina) or stMax
 	local stCol = st < stMax * 0.2 and C.orange or C.yellow
 	O.st:set({ { icon = I.BOLT, color = stCol, size = 46 }, { t = " " .. math.floor(st), color = stCol }, { t = " /" .. math.floor(stMax), size = 26, color = C.yellowDim, top = true } })
 	-- needs + status effects (only when the health model provides them)
@@ -399,8 +402,16 @@ function Hud.init(c)
 	c.State.on("progress", function(p)
 		Hud.progress(p.label or "WORKING", p.t or 1)
 	end)
-	c.State.on("kill", function()
-		Hud.toast("TARGET DOWN", "good")
+	c.State.on("magcheck", function(d)
+		if type(d) ~= "table" then
+			return
+		end
+		if d.state == "start" then
+			Hud.progress("CHECKING MAGAZINE", d.t or 1.1)
+		elseif d.state == "done" then
+			Hud.progress(nil)
+			Hud.notice(d.text or "?", d.ammo and string.upper(d.ammo) or nil, C.white, 2.2)
+		end
 	end)
 	c.State.on("raid", function()
 		ex, search, heal = nil, nil, nil

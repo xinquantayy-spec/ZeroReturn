@@ -155,9 +155,15 @@ function Input.device()
 end
 
 local LABELS = {
-	KBM = { Fire = "LMB", Aim = "RMB", Reload = "R", Sprint = "SHIFT", Crouch = "C", Heal = "H", FireMode = "V", Extracts = "O", Inventory = "TAB", Settings = "P", Back = "BKSP", Interact = "E" },
-	Gamepad = { Fire = "RT", Aim = "LT", Reload = "X", Sprint = "L3", Crouch = "B", Heal = "D-UP", FireMode = "D-RIGHT", Extracts = "D-DOWN", Inventory = "Y", Settings = "VIEW", Back = "B", Interact = "X" },
-	Touch = { Interact = "TAP" },
+	KBM = {
+		Fire = "LMB", Aim = "RMB", Reload = "R", Sprint = "SHIFT", Crouch = "C", Heal = "H", FireMode = "V", Extracts = "O", Inventory = "TAB",
+		Settings = "P", Back = "BKSP", Interact = "E", Primary = "1", Secondary = "2", Sidearm = "3", Knife = "4", MagCheck = "T", Light = "L",
+	},
+	Gamepad = {
+		Fire = "RT", Aim = "LT", Reload = "X", Sprint = "L3", Crouch = "B", Heal = "D-UP", FireMode = "D-RIGHT", Extracts = "D-DOWN", Inventory = "Y",
+		Settings = "VIEW", Back = "B", Interact = "X", CycleWeapon = "D-LEFT", MagCheck = "R3",
+	},
+	Touch = { Interact = "TAP", CycleWeapon = "SWAP", MagCheck = "CHK" },
 }
 function Input.label(action)
 	local dev = Input.device()
