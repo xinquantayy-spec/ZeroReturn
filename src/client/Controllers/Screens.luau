@@ -153,93 +153,85 @@ function Screens.summary(s)
 	K.focus(b)
 end
 
+local SETTING_ROWS = {
+	{ "QUALITY PRESET", "quality", "enum", { "LOW", "MEDIUM", "HIGH" } },
+	{ "FIELD OF VIEW", "fov", "num", 65, 100, 5, "%d" },
+	{ "SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },
+	{ "SCREEN SHAKE", "shake", "num", 0, 1, 0.25, "pct" },
+	{ "FILM GRAIN", "grain", "num", 0, 1, 0.1, "pct" },
+	{ "HUD SCALE", "hudScale", "num", 0.7, 1.4, 0.1, "pct" },
+	{ "LENS EFFECTS", "lens", "bool" },
+	{ "HUD LENS WARP", "warp", "bool" },
+	{ "MOTION BLUR", "mblur", "bool" },
+	{ "RECORDER OVERLAY", "film", "bool" },
+	{ "REDUCE MOTION", "reduceMotion", "bool" },
+	{ "CENTER DOT", "reticle", "bool" },
+	{ "HIT FEEDBACK", "hitfx", "bool" },
+	{ "AIM MODE", "adsToggle", "bool", "TOGGLE", "HOLD" },
+}
+
 function Screens.settings()
-	local f, w, h = modal(520, 430, "RECORDER SETTINGS")
+	local f, w, h = modal(820, 470, "RECORDER SETTINGS")
 	local S = ctx.Settings
-	local y = 36
-	local function row(label, value, onMinus, onPlus)
-		local r = K.frame(f, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 34) })
-		K.label(r, label, 13, { Size = UDim2.new(0.5, 0, 1, 0) })
-		local v = K.label(r, value, 13, { Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0.2, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
-		local m = K.button(r, onPlus and "−" or "TOGGLE", { Position = UDim2.fromScale(0.72, 0), Size = UDim2.new(onPlus and 0.13 or 0.28, 0, 1, -4) })
-		m.Activated:Connect(function()
-			onMinus()
+	local d = S.data
+	local cols = w >= 600 and 2 or 1
+	local colW = (w - (cols - 1) * 16) / cols
+	local scroll = K.new("ScrollingFrame", {
+		BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 32), Size = UDim2.new(1, 0, 1, -76),
+		ScrollBarThickness = 4, CanvasSize = UDim2.fromOffset(0, math.ceil(#SETTING_ROWS / cols) * 40), ScrollingDirection = Enum.ScrollingDirection.Y,
+	}, f)
+	local first
+	for i, r in SETTING_ROWS do
+		local label, key, kind = r[1], r[2], r[3]
+		local col = (i - 1) % cols
+		local rowI = math.floor((i - 1) / cols)
+		local row = K.frame(scroll, { BackgroundTransparency = 1, Position = UDim2.fromOffset(col * (colW + 16), rowI * 40), Size = UDim2.fromOffset(colW, 34) })
+		K.label(row, label, 13, { Size = UDim2.new(0.5, 0, 1, 0) })
+		local value
+		local v = d[key]
+		if kind == "enum" then
+			value = r[4][v] or tostring(v)
+		elseif kind == "num" then
+			value = r[7] == "pct" and string.format("%d%%", math.floor((v or 0) * 100 + 0.5)) or string.format(r[7], v or 0)
+		else
+			value = v and (r[4] or "ON") or (r[5] or "OFF")
+		end
+		K.label(row, value, 13, { Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0.2, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
+		local function bump(dir)
+			if kind == "enum" then
+				S.set(key, math.clamp((v or 1) + dir, 1, #r[4]))
+			elseif kind == "num" then
+				local nv = math.clamp((v or 0) + dir * r[6], r[4], r[5])
+				S.set(key, math.floor(nv * 100 + 0.5) / 100)
+			else
+				S.set(key, not v)
+			end
 			Screens.settings()
+		end
+		local b1 = K.button(row, kind == "bool" and "TOGGLE" or "-", { Position = UDim2.fromScale(0.72, 0), Size = UDim2.new(kind == "bool" and 0.28 or 0.13, 0, 1, -4) })
+		b1.Name = "Btn_" .. string.upper(key) .. (kind == "bool" and "" or "_DOWN")
+		b1.Activated:Connect(function()
+			bump(-1)
 		end)
-		if onPlus then
-			local p = K.button(r, "+", { Position = UDim2.fromScale(0.87, 0), Size = UDim2.new(0.13, 0, 1, -4) })
-			p.Activated:Connect(function()
-				onPlus()
-				Screens.settings()
+		if kind ~= "bool" then
+			local b2 = K.button(row, "+", { Position = UDim2.fromScale(0.87, 0), Size = UDim2.new(0.13, 0, 1, -4) })
+			b2.Name = "Btn_" .. string.upper(key) .. "_UP"
+			b2.Activated:Connect(function()
+				bump(1)
 			end)
 		end
-		y += 40
-		return m
+		first = first or b1
 	end
-	local d = S.data
-	local q = { "LOW", "MEDIUM", "HIGH" }
-	local first = row("QUALITY PRESET", q[d.quality], function()
-		S.set("quality", math.max(1, d.quality - 1))
-	end, function()
-		S.set("quality", math.min(3, d.quality + 1))
-	end)
-	row("FIELD OF VIEW", tostring(d.fov), function()
-		S.set("fov", math.max(65, d.fov - 5))
-	end, function()
-		S.set("fov", math.min(90, d.fov + 5))
-	end)
-	row("SENSITIVITY", string.format("%.1f", d.sens), function()
-		S.set("sens", math.max(0.2, math.floor((d.sens - 0.1) * 10 + 0.5) / 10))
-	end, function()
-		S.set("sens", math.min(3, math.floor((d.sens + 0.1) * 10 + 0.5) / 10))
-	end)
-	row("SCREEN SHAKE", string.format("%d%%", d.shake * 100), function()
-		S.set("shake", math.max(0, d.shake - 0.25))
-	end, function()
-		S.set("shake", math.min(1, d.shake + 0.25))
-	end)
-	row("REDUCE MOTION", d.reduceMotion and "ON" or "OFF", function()
-		S.set("reduceMotion", not d.reduceMotion)
-	end)
-	row("RECORDER OVERLAY", d.film and "ON" or "OFF", function()
-		S.set("film", not d.film)
-	end)
-	row("CENTER DOT", d.reticle and "ON" or "OFF", function()
-		S.set("reticle", not d.reticle)
-	end)
-	row("AIM MODE", d.adsToggle and "TOGGLE" or "HOLD", function()
-		S.set("adsToggle", not d.adsToggle)
-	end)
 	local close = K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(closeModal)
 	K.focus(first)
 end
 
+-- Tarkov-style: the extract list is shown on the HUD (names + status), no distances or compass
 function Screens.exits()
-	local raid = ctx.State.raid
-	if not raid or not ctx.State.inRaid() then
-		return
+	if ctx.State.inRaid() then
+		ctx.Hud.showExits()
 	end
-	if exitGui then
-		exitGui:Destroy()
-	end
-	exitGui = K.frame(gui, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = UDim2.fromOffset(420, 30 + #raid.extracts * 24), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.2 })
-	K.stroke(exitGui, K.C.ochre, 0.4)
-	K.pad(exitGui, 8)
-	K.list(exitGui, nil, 2)
-	K.label(exitGui, "ASSIGNED EXFIL", 12, { FontFace = K.bold, TextColor3 = K.C.ochre, Size = UDim2.new(1, 0, 0, 16) })
-	local cam = workspace.CurrentCamera
-	for i, e in raid.extracts do
-		local v = e.pos - cam.CFrame.Position
-		K.label(exitGui, string.format("%s  %-12s  %s  %d m", e.id, e.name, ctx.Hud.compass(v), math.floor(v.Magnitude * 0.28)), 13, { LayoutOrder = i, Size = UDim2.new(1, 0, 0, 18) })
-	end
-	local mine = exitGui
-	task.delay(5, function()
-		if exitGui == mine then
-			exitGui:Destroy()
-			exitGui = nil
-		end
-	end)
 end
 
 function Screens.init(c)

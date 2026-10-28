@@ -212,14 +212,15 @@ local function setupLighting()
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.45
 	Lighting.ExposureCompensation = 0.1
+	Lighting:SetAttribute("BaseExposure", 0.1) -- clients run auto-exposure around this
 	for _, c in Lighting:GetChildren() do
 		if c:IsA("Atmosphere") or c:IsA("PostEffect") or c:IsA("Sky") or c:IsA("Clouds") then
 			c:Destroy()
 		end
 	end
 	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.42
-	atm.Offset = 0.12
+	atm.Density = 0.46
+	atm.Offset = 0.18
 	atm.Color = hex("A9B4B1")
 	atm.Decay = hex("5D6A69")
 	atm.Glare = 0

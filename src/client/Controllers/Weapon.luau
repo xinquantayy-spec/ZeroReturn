@@ -246,6 +246,9 @@ local function fireOnce(def)
 	local hit = res and res.Position or (origin + dir * def.range)
 	local muzzle = (vmRoot.CFrame * MUZZLE).Position
 	ctx.Effects.flash(muzzle)
+	if ctx.Post then
+		ctx.Post.burst(0.22)
+	end
 	ctx.Effects.tracer(muzzle, hit)
 	if res then
 		local m = res.Instance:FindFirstAncestorOfClass("Model")

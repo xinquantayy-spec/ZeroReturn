@@ -32,8 +32,9 @@ local Config = {
 	STAMINA_REGEN = 12,
 	JUMP_COST = 14,
 
-	FOV = 76,
+	FOV = 85, -- wide bodycam lens (vertical FOV)
 	AIM_FOV = 58,
+	AIM_FOV_MUL = 0.84, -- iron/red-dot ADS narrows the lens slightly
 
 	DATASTORE_LIVE = "ZR_Profiles_v1",
 	DATASTORE_DEV = "DEV_ZR_Profiles_v1",

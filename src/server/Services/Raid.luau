@@ -425,7 +425,8 @@ local function saveSettings(player, p)
 		end
 		return true
 	end
-	if not (num("fov", 65, 90) and num("sens", 0.2, 3) and num("quality", 1, 3) and num("shake", 0, 1) and bool("reduceMotion") and bool("film") and bool("reticle") and bool("adsToggle")) then
+	if not (num("fov", 65, 100) and num("sens", 0.2, 3) and num("quality", 1, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
+		and bool("reduceMotion") and bool("film") and bool("reticle") and bool("adsToggle") and bool("lens") and bool("mblur") and bool("warp") and bool("hitfx")) then
 		return fail("BAD_INPUT")
 	end
 	ctx.Profiles.markDirty(player)

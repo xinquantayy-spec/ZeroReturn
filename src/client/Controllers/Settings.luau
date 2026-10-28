@@ -5,7 +5,10 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local Settings = {
-	data = { fov = Config.FOV, sens = 1, quality = 2, shake = 1, reduceMotion = false, film = true, reticle = true, adsToggle = false },
+	data = {
+		fov = Config.FOV, sens = 1, quality = 2, shake = 1, reduceMotion = false, film = true, reticle = false, adsToggle = false,
+		grain = 0.6, lens = true, mblur = true, warp = true, hudScale = 1, hitfx = false,
+	},
 }
 local ctx
 local loadedFromServer = false
@@ -13,16 +16,7 @@ local changedEvent = Instance.new("BindableEvent")
 Settings.changed = changedEvent.Event
 
 function Settings.apply()
-	local d = Settings.data
-	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
-	if bloom then
-		bloom.Enabled = d.quality >= 2
-	end
-	local grade = Lighting:FindFirstChild("ZR_Grade")
-	if grade then
-		grade.Enabled = d.quality >= 2 or d.film
-	end
-	changedEvent:Fire(d)
+	changedEvent:Fire(Settings.data)
 end
 
 function Settings.set(key, value)
@@ -50,7 +44,7 @@ function Settings.init(c)
 	local UIS = game:GetService("UserInputService")
 	if UIS.TouchEnabled and not UIS.KeyboardEnabled then
 		Settings.data.quality = 1
-		Settings.data.film = false
+		Settings.data.grain = 0.35
 	end
 	task.defer(Settings.apply)
 end

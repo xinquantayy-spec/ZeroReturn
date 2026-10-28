@@ -1,110 +1,122 @@
 --!nonstrict
--- "FIELD RECORDER M4" HUD: REC/channel/timestamp, raid clock + exits, vitals, ammo, reticle, hitmarker,
--- progress (search/heal/extract), damage edge + direction, toasts, vignette. Event-driven + 10 Hz text.
+-- Bodycam HUD, R.E.P.O.-inspired presentation (original implementation): tall condensed numerals with
+-- RGB split + glow, spring "pop" on change, everything bent through the recorder lens (see Lens.luau).
+-- Tarkov rules: no ammo counter, no hit markers, no damage-direction arrows; extract list on demand.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
-local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local Sounds = require(Shared.Sounds)
-local SoundService = game:GetService("SoundService")
+local Textures = require(Shared.Textures)
+local Lens = require(script.Parent.Lens)
 
 local Hud = {}
-local ctx, K
+local ctx, K, L
 local player = Players.LocalPlayer
-local gui, vigGui, root, R = nil, nil, nil, {}
-local ex, search, heal = nil, nil, nil
-local dmgAlpha, dmgDir, hitT, hitKill = 0, nil, -1, false
-local toasts = {}
-local acc = 0
+local gui, deathFade
+local O = {}
+local I = Textures.ICON
+local ex, search, heal, progress = nil, nil, nil, nil
+local toasts, toastSlot = {}, 0
+local notice = { t = -10, dur = 0 }
+local exitsUntil = 0
+local acc, lastYaw, swayX, swayY = 0, 0, 0, 0
+local lastHp, lastMoney = nil, nil
+local hitT = -1
 
-local function mono(parent, text, size, props)
-	local l = K.label(parent, text, size, props)
-	l.TextStrokeTransparency = 0.75
-	l.TextStrokeColor3 = Color3.new(0, 0, 0)
-	return l
-end
+local C = {
+	green = Color3.fromRGB(95, 255, 112), greenDim = Color3.fromRGB(62, 178, 76),
+	yellow = Color3.fromRGB(255, 230, 62), yellowDim = Color3.fromRGB(196, 172, 48),
+	orange = Color3.fromRGB(255, 134, 52), orangeDim = Color3.fromRGB(196, 100, 42),
+	red = Color3.fromRGB(255, 56, 44), white = Color3.fromRGB(242, 244, 236), dim = Color3.fromRGB(168, 174, 166),
+	blue = Color3.fromRGB(96, 192, 255),
+}
+Hud.C = C
 
-local function bar(parent, pos, w, h, color)
-	local back = K.frame(parent, { Position = pos, Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.black, BackgroundTransparency = 0.55 })
-	K.stroke(back, K.C.line, 0.7)
-	local fill = K.frame(back, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color })
-	return back, fill
+local function txt(name, at, size, align, extra)
+	local o = { name = name, at = at, size = size, align = align or 0, glow = 0.86 }
+	for k, v in extra or {} do
+		o[k] = v
+	end
+	return L:text(o)
 end
 
 local function build()
 	gui = K.screen("ZR_HUD", 5)
-	vigGui = K.screen("ZR_Vignette", 1)
-	vigGui.ScreenInsets = Enum.ScreenInsets.None
-	-- vignette: four soft edges (gradients, no textures)
-	for i, spec in { { UDim2.new(1, 0, 0.22, 0), UDim2.fromScale(0, 0), 90 }, { UDim2.new(1, 0, 0.22, 0), UDim2.fromScale(0, 0.78), -90 }, { UDim2.new(0.16, 0, 1, 0), UDim2.fromScale(0, 0), 0 }, { UDim2.new(0.16, 0, 1, 0), UDim2.fromScale(0.84, 0), 180 } } do
-		local f = K.frame(vigGui, { Size = spec[1], Position = spec[2], BackgroundColor3 = K.C.black, BackgroundTransparency = 0 })
-		local g = K.new("UIGradient", { Rotation = spec[3], Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) }) }, f)
-		f.Name = "Vig" .. i
-		R["vig" .. i] = f
-		g.Name = "G"
+	gui.ScreenInsets = Enum.ScreenInsets.None
+	L = Lens.new(gui, { k = 0.11 })
+	Lens.prewarm(Lens.FONT, "0123456789:/+-.,%$ ABCDEFGHIJKLMNOPQRSTUVWXYZ·|()[]")
+	Lens.prewarm(Lens.FONT_MED, "0123456789:/+-.,% ABCDEFGHIJKLMNOPQRSTUVWXYZ·|")
+	-- vitals (top-left)
+	O.hp = txt("Health", Vector2.new(0.042, 0.118), 58)
+	O.st = txt("Stamina", Vector2.new(0.042, 0.186), 50)
+	O.needs = txt("Needs", Vector2.new(0.042, 0.243), 28, 0, { font = Lens.FONT_MED, glow = nil })
+	O.status = txt("Status", Vector2.new(0.042, 0.29), 26, 0, { font = Lens.FONT_MED, glow = nil })
+	-- recorder overlay (top-right)
+	O.rec = txt("Rec", Vector2.new(0.958, 0.072), 34, 1, { glow = 0.9 })
+	O.dev = txt("Device", Vector2.new(0.958, 0.116), 20, 1, { font = Lens.FONT_MED, glow = nil, ca = 0.6 })
+	O.clock = txt("Clock", Vector2.new(0.958, 0.18), 50, 1)
+	O.exits = {}
+	for i = 1, 4 do
+		O.exits[i] = txt("Exit" .. i, Vector2.new(0.958, 0.21 + i * 0.038), 22, 1, { font = Lens.FONT_MED, glow = nil })
 	end
-	R.dmg = K.frame(vigGui, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("6E1E14"), BackgroundTransparency = 1 })
-	K.new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.5, 1), NumberSequenceKeypoint.new(1, 0.2) }) }, R.dmg)
-
-	root = K.frame(gui, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1) })
-	R.scale = K.new("UIScale", { Scale = K.scale() }, root)
-	-- top-left recorder block
-	local tl = K.frame(root, { BackgroundTransparency = 1, Position = UDim2.fromOffset(14, 8), Size = UDim2.fromOffset(380, 76) })
-	R.rec = mono(tl, "", 15, { Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(380, 20), FontFace = K.bold })
-	R.time = mono(tl, "", 14, { Position = UDim2.fromOffset(0, 20), Size = UDim2.fromOffset(380, 18) })
-	R.sig = mono(tl, "", 12, { Position = UDim2.fromOffset(0, 38), Size = UDim2.fromOffset(380, 16), TextColor3 = K.C.dim })
-	R.dev = mono(tl, "", 11, { Position = UDim2.fromOffset(0, 54), Size = UDim2.fromOffset(380, 16), TextColor3 = K.C.ochre })
-	-- top-right status
-	local tr = K.frame(root, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 8), Size = UDim2.fromOffset(420, 80) })
-	R.status = mono(tr, "", 15, { Size = UDim2.fromOffset(420, 20), TextXAlignment = Enum.TextXAlignment.Right, FontFace = K.bold })
-	R.timer = mono(tr, "", 14, { Position = UDim2.fromOffset(0, 20), Size = UDim2.fromOffset(420, 18), TextXAlignment = Enum.TextXAlignment.Right })
-	R.exits = mono(tr, "", 11, { Position = UDim2.fromOffset(0, 38), Size = UDim2.fromOffset(420, 32), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = K.C.dim, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top })
-	-- bottom-left vitals
-	local bl = K.frame(root, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 14, 1, -12), Size = UDim2.fromOffset(300, 64) })
-	mono(bl, "HEALTH", 11, { Size = UDim2.fromOffset(80, 14), TextColor3 = K.C.dim })
-	R.hpText = mono(bl, "100", 13, { Position = UDim2.fromOffset(222, 0), Size = UDim2.fromOffset(60, 14), TextXAlignment = Enum.TextXAlignment.Right, FontFace = K.bold })
-	R.hpSeg = {}
-	for i = 1, 10 do
-		local seg = K.frame(bl, { Position = UDim2.fromOffset((i - 1) * 28, 18), Size = UDim2.fromOffset(25, 9), BackgroundColor3 = K.C.text })
-		R.hpSeg[i] = seg
+	-- centre notices (R.E.P.O.-style big value pop)
+	O.notice = txt("Notice", Vector2.new(0.5, 0.2), 64, 0.5, { glow = 0.8 })
+	O.noticeSub = txt("NoticeSub", Vector2.new(0.5, 0.262), 24, 0.5, { font = Lens.FONT_MED })
+	O.dot = L:icon({ name = "Dot", at = Vector2.new(0.5, 0.5), size = 9, align = 0.5, index = I.DOT, color = C.white, ca = 0, alpha = 0.25 })
+	-- progress: label + "|" bar (bends with the lens)
+	O.progLabel = txt("ProgLabel", Vector2.new(0.5, 0.735), 24, 0.5, { font = Lens.FONT_MED })
+	O.progBar = txt("ProgBar", Vector2.new(0.5, 0.775), 26, 0.5, { glow = 0.9, tracking = 0.12 })
+	-- weapon line (bottom centre) + mag check
+	O.weapon = txt("Weapon", Vector2.new(0.5, 0.935), 22, 0.5, { font = Lens.FONT_MED, glow = nil })
+	O.magcheck = txt("MagCheck", Vector2.new(0.5, 0.89), 26, 0.5)
+	-- squad (bottom-left)
+	O.squad = {}
+	for i = 1, 5 do
+		O.squad[i] = txt("Squad" .. i, Vector2.new(0.042, 0.74 + i * 0.04), i == 1 and 26 or 22, 0, { glow = nil, font = i == 1 and Lens.FONT or Lens.FONT_MED })
 	end
-	mono(bl, "STAMINA", 11, { Position = UDim2.fromOffset(0, 32), Size = UDim2.fromOffset(80, 14), TextColor3 = K.C.dim })
-	R.staBack, R.sta = bar(bl, UDim2.fromOffset(0, 48), 277, 4, K.C.ochre)
-	R.statusLine = mono(root, "", 13, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 14, 1, -82), Size = UDim2.fromOffset(300, 16), TextColor3 = K.C.orange, FontFace = K.bold })
-	-- bottom-right weapon
-	local br = K.frame(root, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -14, 1, -12), Size = UDim2.fromOffset(260, 60) })
-	R.weapon = mono(br, "", 12, { Size = UDim2.fromOffset(260, 14), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = K.C.dim })
-	R.ammo = mono(br, "", 30, { Position = UDim2.fromOffset(0, 14), Size = UDim2.fromOffset(260, 32), TextXAlignment = Enum.TextXAlignment.Right, FontFace = K.bold })
-	R.mode = mono(br, "", 11, { Position = UDim2.fromOffset(0, 46), Size = UDim2.fromOffset(260, 14), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = K.C.dim })
-	-- centre: reticle, hitmarker, damage direction
-	R.dot = K.frame(root, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(3, 3), BackgroundColor3 = K.C.text, BackgroundTransparency = 0.25 })
-	R.hit = K.frame(root, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(22, 22), BackgroundTransparency = 1, Visible = false })
-	for _, rot in { 45, -45 } do
-		K.frame(R.hit, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(22, 2), Rotation = rot, BackgroundColor3 = K.C.text })
+	-- toasts (left)
+	for i = 1, 5 do
+		toasts[i] = { o = txt("Toast" .. i, Vector2.new(0.042, 0.36), 22, 0, { font = Lens.FONT_MED, glow = nil }), t = -10 }
+		toasts[i].o:show(false)
 	end
-	R.dir = K.frame(root, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(220, 220), BackgroundTransparency = 1, Visible = false })
-	K.frame(R.dir, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(46, 4), BackgroundColor3 = K.C.red })
-	-- progress (search / heal / extract)
-	R.prog = K.frame(root, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -150), Size = UDim2.fromOffset(300, 38), BackgroundTransparency = 1, Visible = false })
-	R.progLabel = mono(R.prog, "", 13, { Size = UDim2.fromOffset(300, 18), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
-	R.progBack, R.progFill = bar(R.prog, UDim2.fromOffset(0, 22), 300, 6, K.C.ochre)
-	-- toasts
-	R.toasts = K.frame(root, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.42, 0), Size = UDim2.fromOffset(420, 120) })
-	K.list(R.toasts, nil, 2)
-	R.tag = mono(root, "", 11, { Position = UDim2.fromOffset(14, 84), Size = UDim2.fromOffset(380, 14), TextColor3 = K.C.orange })
-	-- death overlay
-	R.death = K.frame(gui, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = K.C.black, BackgroundTransparency = 1, Visible = false, ZIndex = 10 })
-	R.deathText = mono(R.death, "[ SIGNAL LOST ]", 28, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(600, 40), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold, ZIndex = 11 })
+	-- camcorder corner brackets
+	local a = 0.55
+	O.brackets = {}
+	for _, c in { { 0.024, 0.04, 1, 1 }, { 0.976, 0.04, -1, 1 }, { 0.024, 0.96, 1, -1 }, { 0.976, 0.96, -1, -1 } } do
+		local x, y, dx, dy = c[1], c[2], c[3], c[4]
+		table.insert(O.brackets, L:line({ a = Vector2.new(x, y), b = Vector2.new(x + dx * 0.045, y), thick = 2, color = C.white, alpha = a, segments = 3 }))
+		table.insert(O.brackets, L:line({ a = Vector2.new(x, y), b = Vector2.new(x, y + dy * 0.07), thick = 2, color = C.white, alpha = a, segments = 3 }))
+	end
+	-- death
+	deathFade = K.frame(gui, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Visible = false, ZIndex = 0 })
+	O.death = txt("Death", Vector2.new(0.5, 0.46), 72, 0.5, { glow = 0.75 })
+	O.deathSub = txt("DeathSub", Vector2.new(0.5, 0.53), 24, 0.5, { font = Lens.FONT_MED })
+	O.death:show(false)
+	O.deathSub:show(false)
 end
 
 function Hud.toast(text, tone)
-	local l = mono(R.toasts, text, 13, { Size = UDim2.fromOffset(420, 17), TextColor3 = (tone == "warn" and K.C.orange) or (tone == "good" and K.C.green) or K.C.text })
-	table.insert(toasts, { l = l, t = os.clock() })
-	if #toasts > 5 then
-		table.remove(toasts, 1).l:Destroy()
-	end
+	toastSlot = toastSlot % #toasts + 1
+	local slot = toasts[toastSlot]
+	slot.t = os.clock()
+	slot.o:set({ { t = string.upper(text), color = (tone == "warn" and C.orange) or (tone == "good" and C.green) or (tone == "bad" and C.red) or C.white } })
+	slot.o:show(true)
+	slot.o:pop(0.18)
+end
+
+-- big centre value, e.g. "+840 MK" when selling or "EXFIL 4.2"
+function Hud.notice(main, sub, color, dur)
+	notice = { t = os.clock(), dur = dur or 2.2, main = main, sub = sub, color = color or C.white }
+	O.notice:set({ { t = main, color = notice.color } })
+	O.noticeSub:set({ { t = sub or "", color = C.dim } })
+	O.notice:pop(0.35)
+end
+
+function Hud.showExits()
+	exitsUntil = os.clock() + 6
 end
 
 local function compass(v)
@@ -114,132 +126,238 @@ local function compass(v)
 end
 Hud.compass = compass
 
+-- vitals provider: M4 health model publishes richer data into State.vitals
+local function vitals()
+	local v = ctx.State.vitals
+	if v then
+		return v
+	end
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	return { hp = hum and hum.Health or 0, max = hum and hum.MaxHealth or 100 }
+end
+
 local function slowUpdate()
 	local d = ctx.State.data
 	local inRaid = ctx.State.inRaid()
 	local raid = ctx.State.raid
 	local now = workspace:GetServerTimeNow()
-	local blink = math.floor(os.clock() * 1.2) % 2 == 0
-	R.rec.Text = string.format('<font color="#C24A35">%s</font> REC   %s', blink and "●" or "○", "CH.04")
-	R.dev.Text = Config.RECORDER .. (inRaid and "  ·  QUAY 7 TELEMETRY" or "  ·  RELAY 7 STANDBY")
-	local clockBase = inRaid and raid and (7 * 3600 + 10 * 60 + (now - raid.started)) or (6 * 3600 + 40 * 60 + now % 3600)
-	R.time.Text = os.date("!%Y.%m.%d", math.floor(now)) .. "  " .. os.date("!%H:%M:%S", math.floor(clockBase))
-	local bars = inRaid and (3 + (math.floor(now / 7) % 2)) or 4
-	R.sig.Text = "SIG " .. string.rep("|", bars) .. '<font color="#4A504C">' .. string.rep("|", 4 - bars) .. "</font>   BAT 81%"
+	local S = ctx.Settings.data
+	-- recorder line
+	local blink = math.floor(os.clock() * 1.6) % 2 == 0
+	local clockBase = inRaid and raid and ((raid.tod or 7.2) * 3600 + (now - raid.started)) or (6 * 3600 + 40 * 60 + now % 3600)
+	local stamp = os.date("!%Y-%m-%d", math.floor(now)) .. "  " .. os.date("!%H:%M:%S", math.floor(clockBase))
+	O.rec:set({ { icon = I.DOT, color = C.red, alpha = blink and 0 or 0.85, size = 22 }, { t = "REC", color = C.red }, { t = "   " .. stamp, size = 26, color = C.white } })
+	O.dev:set({ { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Config.MAP_NAME or "RELAY 7"), color = C.dim, alpha = 0.2 } })
+	-- clock / money
 	if inRaid and raid then
-		local left = raid.endsAt - now
-		local st = (ex and "EXTRACTING") or "ACTIVE"
-		R.status.Text = Config.MAP_NAME .. " / " .. st
-		R.timer.Text = string.format('<font color="%s">%s</font> LEFT', left < 60 and "#C07946" or "#D6DBC9", Util.clock(left))
-		local names = {}
-		local cam = workspace.CurrentCamera
-		for _, e in raid.extracts or {} do
-			local v = e.pos - cam.CFrame.Position
-			table.insert(names, string.format("EXFIL %s %s %s %dm", e.id, e.name, compass(v), math.floor(v.Magnitude * 0.28)))
+		local left = math.max(0, raid.endsAt - now)
+		O.clock:set({ { t = Util.clock(left), color = left < 120 and C.red or C.orange }, { t = " LEFT", size = 22, color = C.orangeDim, top = true } })
+		if left < 60 and math.floor(left) % 10 == 0 then
+			O.clock:pop(0.12)
 		end
-		R.exits.Text = table.concat(names, "\n")
-		R.tag.Text = ""
 	else
-		R.status.Text = "SAFEHOUSE / RELAY 7"
-		R.timer.Text = d and (Util.commas(d.money or 0) .. " " .. Config.CURRENCY) or ""
-		R.exits.Text = "[E] map table to deploy · stash lockers to equip"
-		R.tag.Text = (d and d.persistence == "MEMORY") and "DEV STORE · MEMORY (not saved across sessions)" or ""
+		local money = d and d.money or 0
+		O.clock:set({ { t = Util.commas(money), color = C.green }, { t = " " .. Config.CURRENCY, size = 22, color = C.greenDim, top = true } })
+		if lastMoney and money ~= lastMoney then
+			O.clock:pop(0.3)
+			local diff = money - lastMoney
+			Hud.notice((diff > 0 and "+" or "") .. Util.commas(diff) .. " " .. Config.CURRENCY, nil, diff > 0 and C.green or C.red, 1.6)
+		end
+		lastMoney = money
 	end
-	-- weapon
+	-- extract list (Tarkov: names and status only, on demand)
+	local showEx = inRaid and raid and os.clock() < exitsUntil
+	for i, o in O.exits do
+		local e = showEx and raid.extracts and raid.extracts[i]
+		o:show(e ~= nil)
+		if e then
+			o:set({ { icon = I.EXIT, color = C.green, size = 18 }, { t = string.format(" EXFIL %s  ·  %s", e.id, string.upper(e.name)), color = C.white }, { t = e.status and ("  " .. e.status) or "", color = C.orange } })
+		end
+	end
+	-- weapon line
 	local W = ctx.Weapon
 	if inRaid and W.hasWeapon then
-		R.weapon.Text = "R-17 CARBINE"
-		R.ammo.Text = string.format('%d <font color="#8C948D" size="18">| %d</font>', W.ammo, W.spare)
-		R.mode.Text = (W.mode == 1 and "AUTO" or "SEMI") .. (W.reloading and "  ·  RELOADING" or "")
+		O.weapon:show(true)
+		O.weapon:set({ { t = (W.weaponName or "R-17 CARBINE") .. "  ·  " .. (W.mode == 1 and "AUTO" or "SEMI"), color = C.dim, alpha = 0.15 } })
 	else
-		R.weapon.Text, R.ammo.Text, R.mode.Text = "", "", ""
+		O.weapon:show(false)
+	end
+	O.dot:show(S.reticle == true and inRaid and not W.aiming)
+	-- squad (M7 publishes State.squad = { {name, hp = 0..1, alive}, ... })
+	local squad = ctx.State.squad
+	for i, o in O.squad do
+		if i == 1 then
+			o:show(squad ~= nil and #squad > 0)
+			o:set({ { t = "SQUAD:", color = C.yellow } })
+		else
+			local m = squad and squad[i - 1]
+			o:show(m ~= nil)
+			if m then
+				local col = (not m.alive and C.red) or (m.hp < 0.4 and C.orange) or C.green
+				o:set({ { icon = I.PERSON, color = col, size = 18 }, { t = " " .. string.upper(m.name), color = m.alive and C.white or C.dim } })
+			end
+		end
 	end
 end
 
 local function fastUpdate(dt)
-	local char = player.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	local hp = hum and hum.Health or 0
-	local segs = math.ceil(hp / 10)
-	for i, seg in R.hpSeg do
-		seg.BackgroundTransparency = (i <= segs) and 0.1 or 0.8
-		seg.BackgroundColor3 = (hp < 35) and K.C.orange or K.C.text
-	end
-	R.hpText.Text = tostring(math.floor(hp))
-	R.sta.Size = UDim2.fromScale(math.clamp(ctx.Weapon.stamina / Config.MAX_STAMINA, 0, 1), 1)
 	local S = ctx.Settings.data
-	local inRaid = ctx.State.inRaid()
-	R.dot.Visible = S.reticle and inRaid and not ctx.Weapon.aiming
-	local vig = S.film ~= false and S.quality >= 2
-	for i = 1, 4 do
-		R["vig" .. i].Visible = vig
+	local v = vitals()
+	local hp, max = math.max(0, v.hp or 0), math.max(1, v.max or 100)
+	local frac = hp / max
+	local hpCol = frac < 0.3 and C.red or (frac < 0.6 and C.orange or C.green)
+	local hpDim = frac < 0.3 and Color3.fromRGB(180, 40, 32) or (frac < 0.6 and C.orangeDim or C.greenDim)
+	O.hp:set({ { icon = I.PLUS, color = hpCol, size = 48 }, { t = " " .. math.ceil(hp), color = hpCol }, { t = " /" .. math.floor(max), size = 30, color = hpDim, top = true } })
+	if lastHp and hp < lastHp - 0.5 then
+		O.hp:pop(0.32)
+		O.hp:shake(4, 0.3)
+	elseif lastHp and hp > lastHp + 5 then
+		O.hp:pop(0.18)
 	end
-	-- progress priority: extract > search > heal
-	local label, frac = nil, 0
+	lastHp = hp
+	local stMax = v.stMax or Config.MAX_STAMINA
+	local st = v.st or ctx.Weapon.stamina or stMax
+	local stCol = st < stMax * 0.2 and C.orange or C.yellow
+	O.st:set({ { icon = I.BOLT, color = stCol, size = 46 }, { t = " " .. math.floor(st), color = stCol }, { t = " /" .. math.floor(stMax), size = 26, color = C.yellowDim, top = true } })
+	-- needs + status effects (only when the health model provides them)
+	if v.energy then
+		O.needs:show(true)
+		O.needs:set({ { icon = I.ENERGY, color = v.energy < 20 and C.red or C.orange, size = 20 }, { t = " " .. math.floor(v.energy) .. "    ", color = C.white }, { icon = I.WATER, color = v.water < 20 and C.red or C.blue, size = 20 }, { t = " " .. math.floor(v.water), color = C.white } })
+	else
+		O.needs:show(false)
+	end
+	local fx = v.effects
+	if fx and #fx > 0 then
+		O.status:show(true)
+		local segs = {}
+		for _, e in fx do
+			segs[#segs + 1] = { icon = e.icon, color = e.color or C.red, size = 22 }
+			segs[#segs + 1] = { t = " " .. e.label .. "   ", color = e.color or C.red }
+		end
+		O.status:set(segs)
+	else
+		O.status:show(false)
+	end
+	-- progress priority: extract > search > heal > generic (mag loading, examining...)
+	local label, pf, col = nil, 0, C.yellow
 	local now = os.clock()
 	if ex then
 		local left = ex.ends - workspace:GetServerTimeNow()
-		label = string.format("( o ) EXFIL %s  -  HOLD %.1fs", ex.name, math.max(0, left))
 		local sec = math.ceil(left)
 		if sec ~= ex.beep and sec >= 0 then
 			ex.beep = sec
 			ctx.Effects.sound(Sounds.EXTRACT_BEEP, SoundService, sec <= 1 and 0.55 or 0.4, sec <= 1 and 1.25 or 1)
+			O.notice:pop(0.2)
 		end
-		frac = 1 - math.clamp(left / Config.EXTRACT_HOLD, 0, 1)
+		label, pf, col = "EXTRACTING  ·  " .. string.upper(ex.name or ""), 1 - math.clamp(left / Config.EXTRACT_HOLD, 0, 1), C.green
+		O.notice:set({ { t = string.format("%.1f", math.max(0, left)), color = C.green } })
+		O.noticeSub:set({ { t = "HOLD POSITION", color = C.dim } })
+		notice.t, notice.dur = now, 0.3
 	elseif search then
-		frac = math.clamp((now - search.t0) / search.dur, 0, 1)
-		label = "SEARCHING  " .. string.upper(search.label or "")
-		if frac >= 1 and now - search.t0 > search.dur + 2 then
+		pf = math.clamp((now - search.t0) / search.dur, 0, 1)
+		label = "SEARCHING  ·  " .. string.upper(search.label or "")
+		if pf >= 1 and now - search.t0 > search.dur + 2 then
 			search = nil
 		end
 	elseif heal then
-		frac = math.clamp((now - heal.t0) / heal.dur, 0, 1)
-		label = "APPLYING DRESSING"
+		pf = math.clamp((now - heal.t0) / heal.dur, 0, 1)
+		label, col = string.upper(heal.label or "APPLYING DRESSING"), C.green
+	elseif progress then
+		pf = math.clamp((now - progress.t0) / progress.dur, 0, 1)
+		label, col = string.upper(progress.label), progress.color or C.yellow
+		if pf >= 1 then
+			progress = nil
+		end
 	end
-	R.prog.Visible = label ~= nil
+	O.progLabel:show(label ~= nil)
+	O.progBar:show(label ~= nil)
 	if label then
-		R.progLabel.Text = label
-		R.progFill.Size = UDim2.fromScale(frac, 1)
+		O.progLabel:set({ { t = label, color = C.white } })
+		local n = 24
+		local filled = math.floor(pf * n + 0.5)
+		O.progBar:set({ { t = string.rep("|", filled), color = col }, { t = string.rep("|", n - filled), color = col, alpha = 0.78 } })
 	end
-	R.statusLine.Text = (heal and "HEALING") or (ctx.Weapon.reloading and "RELOADING") or ((hp > 0 and hp < 35) and "CRITICAL") or ""
-	-- hitmarker / damage
-	R.hit.Visible = now - hitT < 0.12
-	if R.hit.Visible then
-		for _, c in R.hit:GetChildren() do
-			c.BackgroundColor3 = hitKill and K.C.red or K.C.text
+	-- notices fade
+	local age = now - notice.t
+	local showNotice = age < notice.dur + 0.4
+	O.notice:show(showNotice)
+	O.noticeSub:show(showNotice and notice.sub ~= nil or (ex ~= nil))
+	if showNotice then
+		local a = math.clamp((age - notice.dur) / 0.4, 0, 1)
+		O.notice:setAlpha(a)
+		O.noticeSub:setAlpha(a)
+	end
+	-- toasts: stack newest at top, fade out
+	local order = {}
+	for _, tslot in toasts do
+		if now - tslot.t < 4.5 then
+			table.insert(order, tslot)
+		else
+			tslot.o:show(false)
 		end
 	end
-	dmgAlpha = math.max(0, dmgAlpha - dt * 1.4)
-	R.dmg.BackgroundTransparency = 1 - dmgAlpha
-	R.dir.Visible = dmgAlpha > 0.05 and dmgDir ~= nil
-	if R.dir.Visible then
-		local cam = workspace.CurrentCamera
-		local v = cam.CFrame:VectorToObjectSpace(dmgDir - cam.CFrame.Position)
-		R.dir.Rotation = math.deg(math.atan2(v.X, -v.Z))
+	table.sort(order, function(a, b)
+		return a.t > b.t
+	end)
+	for i, tslot in order do
+		tslot.o:setAt(0.042, 0.33 + (i - 1) * 0.04)
+		local a2 = now - tslot.t
+		tslot.o:setAlpha(a2 > 3.5 and (a2 - 3.5) or 0)
 	end
-	for i = #toasts, 1, -1 do
-		local t = toasts[i]
-		local age = now - t.t
-		if age > 4 then
-			t.l:Destroy()
-			table.remove(toasts, i)
-		elseif age > 3 then
-			t.l.TextTransparency = (age - 3)
-		end
-	end
-	R.death.Visible = hum ~= nil and hum.Health <= 0
-	if R.death.Visible then
-		R.death.BackgroundTransparency = math.max(0.25, R.death.BackgroundTransparency - dt * 0.6)
+	-- death
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local dead = hum ~= nil and hum.Health <= 0
+	deathFade.Visible = dead
+	O.death:show(dead)
+	O.deathSub:show(dead)
+	if dead then
+		deathFade.BackgroundTransparency = math.max(0.3, deathFade.BackgroundTransparency - dt * 0.5)
+		O.death:set({ { icon = I.SKULL, color = C.red, size = 56 }, { t = " SIGNAL LOST", color = C.white } })
+		O.deathSub:set({ { t = ctx.State.deathInfo or "RECORDING TERMINATED", color = C.dim } })
 	else
-		R.death.BackgroundTransparency = 1
+		deathFade.BackgroundTransparency = 1
 	end
+	-- HUD sway: lags behind camera rotation a few pixels, like a visor overlay
+	local yaw = ctx.Camera.yaw or 0
+	local yawVel = dt > 0 and (yaw - lastYaw) / dt or 0
+	lastYaw = yaw
+	local tx = math.clamp(yawVel * 2.4, -8, 8) * L.unit
+	local ty = math.clamp((ctx.Camera.speed or 0) * 0.08, 0, 3) * math.sin(os.clock() * 9) * L.unit
+	swayX += (tx - swayX) * math.min(1, dt * 7)
+	swayY += (ty - swayY) * math.min(1, dt * 7)
+	L.root.Position = UDim2.fromOffset(swayX, swayY)
+	L:step(dt)
 	gui.Enabled = not (ctx.Inventory and ctx.Inventory.open)
+end
+
+-- generic timed progress (mag loading, examining, unlocking...)
+function Hud.progress(label, dur, color)
+	if dur and dur > 0 then
+		progress = { label = label, t0 = os.clock(), dur = dur, color = color }
+	else
+		progress = nil
+	end
+end
+
+local function applySettings()
+	local S = ctx.Settings.data
+	L:setOptions(S.warp ~= false, S.lens ~= false, S.hudScale or 1)
+	local rec = S.film ~= false
+	O.rec:show(rec)
+	O.dev:show(rec)
+	for _, b in O.brackets do
+		b:show(rec)
+	end
 end
 
 function Hud.init(c)
 	ctx = c
 	K = c.UiKit
 	build()
+	applySettings()
+	c.Settings.changed:Connect(applySettings)
 	c.State.on("toast", function(d)
 		Hud.toast(d.text, d.tone)
 	end)
@@ -264,29 +382,26 @@ function Hud.init(c)
 	end)
 	c.State.on("heal", function(d)
 		if d.state == "start" then
-			heal = { t0 = os.clock(), dur = d.t }
+			heal = { t0 = os.clock(), dur = d.t, label = d.label }
 		else
 			heal = nil
 			if d.state == "cancel" then
-				Hud.toast("DRESSING INTERRUPTED", "warn")
+				Hud.toast("TREATMENT INTERRUPTED", "warn")
 			end
 		end
 	end)
 	c.State.on("hit", function(d)
 		hitT = os.clock()
-		hitKill = d.kill == true
-		ctx.Effects.sound(Sounds.HIT, SoundService, hitKill and 0.7 or 0.5, hitKill and 0.8 or 1)
+		if ctx.Settings.data.hitfx then
+			ctx.Effects.sound(Sounds.HIT, SoundService, d.kill and 0.7 or 0.5, d.kill and 0.8 or 1)
+		end
 	end)
 	c.State.on("kill", function()
 		Hud.toast("TARGET DOWN", "good")
 	end)
-	c.State.on("dmg", function(d)
-		dmgAlpha = math.clamp((d.amt or 10) / 45, 0.12, 0.45)
-		dmgDir = typeof(d.from) == "Vector3" and d.from or nil
-	end)
-	c.State.on("raid", function(d)
+	c.State.on("raid", function()
 		ex, search, heal = nil, nil, nil
-		Hud.toast("INSERTION CONFIRMED  -  " .. Config.MAP_NAME, "good")
+		Hud.notice(Config.MAP_NAME, "INSERTION CONFIRMED", C.white, 3)
 	end)
 	c.State.on("summary", function()
 		ex, search, heal = nil, nil, nil
@@ -298,9 +413,6 @@ function Hud.init(c)
 			slowUpdate()
 		end
 		fastUpdate(dt)
-	end)
-	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-		R.scale.Scale = K.scale()
 	end)
 end
 
