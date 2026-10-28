@@ -1,0 +1,4 @@
+*.blend1
+build/
+*.rbxl.lock
+*.rbxlx.lock
