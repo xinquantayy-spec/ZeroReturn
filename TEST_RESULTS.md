@@ -158,3 +158,19 @@ All probes ran through the real dispatcher (`ZR_Dev dispatch` / `shotAbuse`). In
 - **Meshes:**
   - Batch A (9 meshes) and the crate load through InsertService ("9 meshes loaded, 0 batches failed").
   - The world dropped from 1,530 to 648 parts.
+
+## M11 part A: grenades (2026-10-28, Studio, single client, in-memory store)
+
+| Test | Result |
+|---|---|
+| Logic tests | **164/164 pass** (18 new: landing and rolling to rest, throw distances, wall bounce, path sampling and interpolation, lob/flat aiming, fragment falloff and counts, stun facing and walls, smoke growth and line-of-sight blocking, rig-before-pockets pick and no backpack, item/trader/loot/craft wiring, AI carry rates). |
+| Asset loading after the DNS fix | All 31 Blender meshes load ("0 batches failed"); the operator body uses the Blender model; players wear the gear meshes (vest, pouches, body camera, pack, holster are MeshParts); the new vignette and edge haze textures show. |
+| Pin pull and hold (client bridge `nade`) | The weapon drops out of view; the right hand brings up the RK-5 with its top above the glove; the HUD reads "RK-5 · RELEASE G TO THROW · HOLD RMB: UNDERHAND". |
+| Throw | The server took the grenade from the pockets, simulated the path and exploded it after the fuse (`nades`: thrown/exploded counters). |
+| Third person | Orbit view of your own character: right hand raised by the head holding the grenade (held grenade 0.18 studs from the hand), rifle lowered. |
+| Frag damage | An RK-5 at about 7 studs: one fragment struck the left arm for 23 (heavy bleed, fracture, pain), everything else untouched. Matches the expected 2-3 hits at that range. |
+| Stun | A ZS-3 at 8 studs in view: the picture washed out and blurred, then recovered. |
+| Smoke | A DS-2 filled the alley with a dense white screen that hides the far end. |
+| AI evasion | Two scavs next to a dropped RK-5 ran out of its radius before it went off (no damage). |
+| AI flush (`nadeDrill`) | Found by the Foreman or a Watch guard, then hidden behind full cover: the Foreman threw once about 4 s after losing sight; the Watch guard threw twice. Before the fix, units with grenades only in their backpack never threw ("noNade"); AI now use grenades from the backpack and pick a stun charge when the target is too close for a frag. |
+| Console | No new errors. The only warning is the Baseplate template texture (203785492). |

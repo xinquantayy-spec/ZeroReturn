@@ -24,6 +24,17 @@ local SLASH_WIND = CF(0.75, 0.15, -0.45) * ANG(math.rad(30), math.rad(40), math.
 local SLASH_FOLLOW = CF(-0.35, -0.45, -0.95) * ANG(math.rad(-20), math.rad(-50), math.rad(-80))
 local CHEST_HAND = CF(-0.15, -0.05, -0.62) * ANG(0, 0, math.rad(80))
 local BELT = CF(0.35, -0.8, -0.35)
+-- grenade throw (M11), chest-space right-hand frames (the hand's -Y runs from the wrist to the fingertips)
+local RAD = math.rad
+local NADE_FRONT = CF(0.15, 0.0, -0.75) * ANG(RAD(95), 0, 0)
+local NADE_HOLD = CF(0.75, 1.05, 0.2) * ANG(RAD(165), 0, RAD(-10))
+local NADE_BACK = CF(0.85, 1.0, 0.75) * ANG(RAD(200), 0, 0)
+local NADE_REL = CF(0.5, 0.9, -1.4) * ANG(RAD(80), 0, 0)
+local NADE_UBACK = CF(0.85, -1.1, 0.5) * ANG(RAD(-15), 0, 0)
+local NADE_UREL = CF(0.45, -0.6, -1.25) * ANG(RAD(60), 0, 0)
+local NADE_PULLED = CF(-0.75, 0.25, -0.7) * ANG(RAD(90), 0, RAD(30))
+local NADE_IN_HAND = CF(-0.08, -0.16, -0.04)
+local NADE_COLOR = { GREN_RK5 = Color3.fromHex("556048"), GREN_F7 = Color3.fromHex("4A5640"), GREN_STUN = Color3.fromHex("4D5257"), GREN_SMOKE = Color3.fromHex("6C7469") }
 local GESTURE_SFX = {
 	reload = { { 0.14, "mag_out", 0.7 }, { 0.76, "mag_in", 0.8 } },
 	tube = { { 0.6, "shell_insert", 0.7 } },
@@ -148,7 +159,9 @@ local function animate(r, dt)
 		end
 	end
 	local mode = (sprint and "sprint") or (aim and "aim") or "ready"
-	if gesture == "heal" then
+	local nadeHold = m:GetAttribute("Nade") == true
+	local nadeG = gesture == "pin" or gesture == "toss" or gesture == "tossu"
+	if gesture == "heal" or nadeHold or nadeG then
 		mode = "low"
 	end
 	local p = {
@@ -181,7 +194,7 @@ local function animate(r, dt)
 	end
 	-- first solve without hand overrides to know the weapon frame, then place the support hand for gestures
 	local L, W, rHand = RigMath.pose(rootCF, p)
-	if W and anchors and kind ~= "melee" and gesture and gesture ~= "draw" and gesture ~= "slash" then
+	if W and anchors and kind ~= "melee" and gesture and gesture ~= "draw" and gesture ~= "slash" and not nadeG then
 		local _, chest = RigMath.spine(rootCF, p)
 		local base = W * CF(anchors.hand) * (kind == "pistol" and RigMath.GRIP_LP or RigMath.GRIP_L)
 		local grab = anchors.magwell and (W * CF(anchors.magwell) * CF(-0.04, -0.2, 0) * ANG(0, 0, math.rad(90))) or base
@@ -212,6 +225,58 @@ local function animate(r, dt)
 		if lh then
 			p.lHand = lh
 			L, W, rHand = RigMath.pose(rootCF, p)
+		end
+	end
+	-- grenade: the right hand leaves the grip, pulls the pin with the left, winds up and throws
+	local inHand = false
+	if (nadeHold or nadeG) and W and rHand then
+		local _, chest = RigMath.spine(rootCF, p)
+		local grip = rHand
+		local front, hold = chest * NADE_FRONT, chest * NADE_HOLD
+		local rh, lh
+		if gesture == "pin" then
+			rh = (ap < 0.3 and grip:Lerp(front, seg(ap, 0, 0.3))) or (ap < 0.75 and front) or front:Lerp(hold, seg(ap, 0.75, 1))
+			local base = anchors and (W * CF(anchors.hand) * (kind == "pistol" and RigMath.GRIP_LP or RigMath.GRIP_L)) or nil
+			local reach = front * CF(-0.1, 0.2, -0.05)
+			if base then
+				lh = (ap < 0.35 and base) or (ap < 0.5 and base:Lerp(reach, seg(ap, 0.35, 0.5))) or (ap < 0.65 and reach:Lerp(chest * NADE_PULLED, seg(ap, 0.5, 0.65)))
+					or (chest * NADE_PULLED):Lerp(base, seg(ap, 0.65, 1))
+			end
+			inHand = ap > 0.2
+		elseif gesture == "toss" or gesture == "tossu" then
+			local back = chest * ((gesture == "toss") and NADE_BACK or NADE_UBACK)
+			local rel = chest * ((gesture == "toss") and NADE_REL or NADE_UREL)
+			rh = (ap < 0.25 and hold:Lerp(back, seg(ap, 0, 0.25))) or (ap < 0.45 and back:Lerp(rel, seg(ap, 0.25, 0.45))) or rel:Lerp(grip, seg(ap, 0.45, 1))
+			inHand = ap < 0.42
+		else
+			rh = hold
+			inHand = true
+		end
+		p.rHand = rh
+		p.lHand = lh
+		L, W, rHand = RigMath.pose(rootCF, p)
+	end
+	if inHand or r.nade then
+		local np = r.nade
+		if not np then
+			np = Instance.new("Part")
+			np.Name = "ZR_HeldNade"
+			np.Shape = Enum.PartType.Ball
+			np.Size = Vector3.new(0.3, 0.3, 0.3)
+			np.Material = Enum.Material.SmoothPlastic
+			np.Anchored = true
+			np.CanCollide = false
+			np.CanQuery = false
+			np.CanTouch = false
+			np.CastShadow = false
+			np.Parent = workspace:FindFirstChild("ZR_Fx") or workspace
+			r.nade = np
+		end
+		local show = inHand and rHand ~= nil
+		np.Transparency = show and 0 or 1
+		if show then
+			np.Color = NADE_COLOR[m:GetAttribute("NadeItem") or ""] or NADE_COLOR.GREN_RK5
+			np.CFrame = rHand * NADE_IN_HAND
 		end
 	end
 	-- prone transition: blend the standing/crouched and prone solutions
@@ -286,8 +351,11 @@ function Animator.init(c)
 			end
 		end
 		if frame % 120 == 0 then
-			for model in rigs do
+			for model, r in rigs do
 				if not model.Parent then
+					if r.nade then
+						r.nade:Destroy()
+					end
 					rigs[model] = nil
 				end
 			end

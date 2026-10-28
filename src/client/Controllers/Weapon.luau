@@ -487,7 +487,7 @@ local function canAim()
 		return false -- stance transitions, vaults; no ADS while crawling (Tarkov)
 	end
 	return vm ~= nil and not Weapon.melee and not Weapon.reloading and not Weapon.checking and not Weapon.healing
-		and switching == nil and ctx.State.inRaid() and not ctx.Input.isMenu()
+		and switching == nil and ctx.State.inRaid() and not ctx.Input.isMenu() and not (ctx.Grenade and ctx.Grenade.busy())
 end
 
 function Weapon.cancelAim()
@@ -505,6 +505,9 @@ local function canFire()
 		return false
 	end
 	if (Weapon.reloading and not tubeT0) or Weapon.healing or Weapon.drawing or Weapon.checking or switching or cycleT0 then
+		return false
+	end
+	if ctx.Grenade and ctx.Grenade.busy() then
 		return false
 	end
 	if ctx.Input.isMenu() or (M and (M.sprinting or M.busy())) or sprintA > 0.35 then
@@ -590,9 +593,13 @@ local function fireOnce()
 	end
 end
 
+local function nadeBusy()
+	return ctx.Grenade ~= nil and ctx.Grenade.busy()
+end
+
 function Weapon.startReload()
 	local o = vm
-	if not o or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing then
+	if not o or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing or nadeBusy() then
 		return
 	end
 	if o.def.internal then
@@ -632,7 +639,7 @@ function Weapon.startReload()
 end
 
 function Weapon.magCheck()
-	if not vm or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing then
+	if not vm or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing or nadeBusy() then
 		return
 	end
 	Weapon.checking = true
@@ -650,7 +657,7 @@ end
 
 function Weapon.slash()
 	local o = vm
-	if not o or not Weapon.melee or not ctx.State.inRaid() or slashT0 or Weapon.drawing or switching or Weapon.healing or ctx.Input.isMenu() then
+	if not o or not Weapon.melee or not ctx.State.inRaid() or slashT0 or Weapon.drawing or switching or Weapon.healing or ctx.Input.isMenu() or nadeBusy() then
 		return
 	end
 	local t = os.clock()
@@ -665,7 +672,7 @@ end
 
 function Weapon.switchTo(slot)
 	local d = ctx.State.data
-	if not ctx.State.inRaid() or not d or d.active == slot or not weaponIn(slot) or switching or Weapon.healing then
+	if not ctx.State.inRaid() or not d or d.active == slot or not weaponIn(slot) or switching or Weapon.healing or nadeBusy() then
 		return
 	end
 	tubeT0, reloadT0, checkT0, slashT0, cycleT0 = nil, nil, nil, nil, nil
@@ -810,7 +817,7 @@ local function update(dt)
 		raise = ease((now - drawT0) / math.max(0.05, drawDur))
 	else
 		local Mv = ctx.Movement
-		local target = (switching and 0) or (Weapon.healing and 0.3) or ((Mv and Mv.vaulting) and 0.2) or 1
+		local target = (switching and 0) or (nadeBusy() and 0) or (Weapon.healing and 0.3) or ((Mv and Mv.vaulting) and 0.2) or 1
 		raise += (target - raise) * math.min(1, dt * 9)
 	end
 	kickZ -= kickZ * math.min(1, dt * 14)
@@ -954,6 +961,12 @@ local function update(dt)
 				rHand = knob:Lerp(rHand, phase(p, 0.78, 1))
 			end
 		end
+	end
+	-- a grenade in hand (M11): the throwing hands take over, the weapon hangs low out of view
+	if ctx.Grenade and ctx.Grenade.state then
+		local rG, lG = ctx.Grenade.hands(now, camCF)
+		rHand = rG or rHand
+		lHand = lG or lHand
 	end
 	setMagHidden(o, hidden)
 	-- write CFrames

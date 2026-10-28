@@ -158,13 +158,14 @@ local LABELS = {
 	KBM = {
 		Fire = "LMB", Aim = "RMB", Reload = "R", Sprint = "SHIFT", Crouch = "C", Heal = "H", FireMode = "V", Extracts = "O", Inventory = "TAB",
 		Settings = "P", Back = "BKSP", Interact = "F", Primary = "1", Secondary = "2", Sidearm = "3", Knife = "4", MagCheck = "T", Light = "L",
-		LeanLeft = "Q", LeanRight = "E", Prone = "Z", FreeLook = "ALT",
+		LeanLeft = "Q", LeanRight = "E", Prone = "Z", FreeLook = "ALT", Grenade = "G",
 	},
 	Gamepad = {
 		Fire = "RT", Aim = "LT", Reload = "X", Sprint = "L3", Crouch = "B", Heal = "D-UP", FireMode = "D-RIGHT", Extracts = "D-DOWN", Inventory = "Y",
 		Settings = "VIEW", Back = "B", Interact = "X", CycleWeapon = "D-LEFT", MagCheck = "R3", LeanLeft = "LB", LeanRight = "RB",
+		Grenade = "HOLD D-DOWN",
 	},
-	Touch = { Interact = "TAP", CycleWeapon = "SWAP", MagCheck = "CHK" },
+	Touch = { Interact = "TAP", CycleWeapon = "SWAP", MagCheck = "CHK", Grenade = "NADE" },
 }
 function Input.label(action)
 	local dev = Input.device()

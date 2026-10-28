@@ -360,7 +360,7 @@ function C.ai()
 		table.insert(out, string.format("%s[%s] %s hp=%d pos=%s w=%s(%s) tgt=%s cover=%s st=%s", u.name, u.faction, u.state, u.hum and math.floor(u.hum.Health) or -1,
 			p and string.format("%d,%d,%d", p.X, p.Y, p.Z) or "?", u.w and u.w.def.id or "-", rounds, u.target and u.target.Name or "-", tostring(u.cover ~= nil), tostring(u.stance)))
 	end
-	return table.concat(out, "\n") .. string.format("\ncover points: %d (ready %s), waves %d, boss %s", ctx.AI.cover.n, tostring(ctx.AI.cover.ready), ctx.AI.director.waves, tostring(ctx.AI.bossThisRaid))
+	return table.concat(out, "\n") .. string.format("\ncover points: %d (ready %s), waves %d, boss %s, grenades %s", ctx.AI.cover.n, tostring(ctx.AI.cover.ready), ctx.AI.director.waves, tostring(ctx.AI.bossThisRaid), HttpService:JSONEncode(ctx.AI.nadeStats or {}))
 end
 
 -- spawn an AI near a position: spawnAI("scav"|"watch"|"boss"|"follower", Vector3)
@@ -648,6 +648,153 @@ function C.give(name, id, n, slot)
 	end
 	ctx.Raid.afterChange(p, inRaid)
 	return g
+end
+
+-- grenades (M11) ────────────────────────────────────────────────────────────
+-- drop a live grenade at pos with velocity vel (thrower = the player): nade(name, "GREN_RK5", pos, vel)
+function C.nade(name, id, pos, vel)
+	local p = plr(name)
+	local n = ctx.Grenades.throwFrom(p, pos, vel or Vector3.zero, id or "GREN_RK5")
+	if not n then
+		return "failed"
+	end
+	local f = n.path.final
+	return string.format("id %d end %.1f,%.1f,%.1f rest %s bounces %d samples %d endT %.2f", n.id, f.X, f.Y, f.Z, tostring(n.path.rest), #n.path.b, #n.path.t, n.path.endT)
+end
+
+-- the real pull -> throw path from the player's head: nadeThrow(name, under, Vector3 look?)
+function C.nadeThrow(name, under, look)
+	local p = plr(name)
+	local char = p.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return "no char"
+	end
+	local dir = look or root.CFrame.LookVector
+	local before = ctx.Grenades.stats.thrown
+	ctx.Grenades._pull(p)
+	if not ctx.Grenades.busy(p) then
+		return "pull refused (no grenade in rig/pockets?)"
+	end
+	task.wait(0.45)
+	ctx.Grenades._throw(p, { x = dir.X, y = dir.Y, z = dir.Z, u = under == true })
+	task.wait(0.1)
+	local n = ctx.Grenades.live[ctx.Grenades.stats.thrown > before and (function()
+		local best = nil
+		for id in ctx.Grenades.live do
+			best = math.max(best or 0, id)
+		end
+		return best
+	end)() or -1]
+	if not n then
+		return "thrown " .. tostring(ctx.Grenades.stats.thrown - before)
+	end
+	local f, o = n.path.final, n.path.p[1]
+	return string.format("thrown %s from %.1f,%.1f,%.1f to %.1f,%.1f,%.1f (%.1f studs) rest %s bounces %d", n.item, o.X, o.Y, o.Z, f.X, f.Y, f.Z, (f - o).Magnitude, tostring(n.path.rest), #n.path.b)
+end
+
+-- give an AI unit an item (rig/pockets first): aiGive("Scav_3", "GREN_RK5")
+function C.aiGive(unitName, id)
+	for _, u in ctx.AI.units do
+		if u.name == unitName then
+			local g, it = Inv.newItem(id, 1)
+			local okP = Inv.place(u.inv, g, it, Inv.loadOrder(u.inv))
+			return okP and g or "no space"
+		end
+	end
+	return "no unit"
+end
+
+-- make a unit throw a grenade at a point now: aiThrow("Watch_2", Vector3)
+function C.aiThrow(unitName, target)
+	for _, u in ctx.AI.units do
+		if u.name == unitName and u.alive then
+			return tostring(ctx.AI.devThrow(u, target))
+		end
+	end
+	return "no unit"
+end
+
+-- AI grenade drill: stand where an AI (kind, default the Foreman) sees you, then hide behind full cover and
+-- report the AI's grenade decisions: nadeDrill(name, kind, seconds)
+function C.nadeDrill(name, kind, seconds)
+	local p = plr(name)
+	local char = p.Character
+	if not char or not ctx.Raid.session(p) then
+		return "not in raid"
+	end
+	local wp = RaycastParams.new()
+	wp.FilterType = Enum.RaycastFilterType.Include
+	wp.FilterDescendantsInstances = { workspace.ZR_World, workspace.Terrain }
+	local function dry(pos)
+		local r = workspace:Raycast(pos + Vector3.new(0, 20, 0), Vector3.new(0, -40, 0), wp)
+		return r ~= nil and r.Material ~= Enum.Material.Water and math.abs(r.Position.Y - pos.Y) < 0.6 and r.Normal.Y > 0.8
+	end
+	local function clear(a, b)
+		return workspace:Raycast(a, b - a, wp) == nil
+	end
+	local found
+	for _, list in ctx.AI.cover.cells do
+		for _, c in list do
+			if c.full and dry(c.pos) and c.pos.Y > -1 and c.pos.Y < 2 then
+				for _, d in c.dirs do
+					local B = c.pos + d * 26
+					local side = Vector3.new(-d.Z, 0, d.X)
+					local O = c.pos + side * 7
+					if dry(B) and dry(O) and not clear(B + Vector3.new(0, 5, 0), c.pos + Vector3.new(0, 4, 0))
+						and clear(B + Vector3.new(0, 5, 0), O + Vector3.new(0, 4, 0)) and clear(c.pos + Vector3.new(0, 2, 0), O + Vector3.new(0, 2, 0)) then
+						found = { H = c.pos, B = B, O = O }
+						break
+					end
+				end
+			end
+			if found then
+				break
+			end
+		end
+		if found then
+			break
+		end
+	end
+	if not found then
+		return "no drill spot"
+	end
+	local stats0 = HttpService:JSONEncode(ctx.AI.nadeStats)
+	char:PivotTo(CFrame.new(found.O + Vector3.new(0, 3.3, 0)))
+	local u = ctx.AI.spawn(kind or "boss", found.B, {})
+	if not u then
+		return "spawn failed"
+	end
+	task.wait(1)
+	-- it has spotted us (awareness builds randomly; the drill is about what happens next)
+	local tor = char:FindFirstChild("UpperTorso")
+	u.aware[char] = 1.4
+	u.seen[char] = os.clock()
+	u.lastPos[char] = tor and tor.Position or found.O
+	u.target = char
+	u.state = "ENGAGE"
+	u.spottedAt = os.clock()
+	task.wait(4)
+	local engaged = u.state
+	char:PivotTo(CFrame.new(found.H + Vector3.new(0, 3.3, 0)))
+	local thrown0 = ctx.Grenades.stats.thrown
+	local log = {}
+	for i = 1, seconds or 20 do
+		task.wait(1)
+		table.insert(log, string.format("%d:%s/%d", i, u.state, ctx.Grenades.stats.thrown - thrown0))
+	end
+	return HttpService:JSONEncode({ spot = { H = tostring(found.H), B = tostring(found.B) }, engagedAfter5s = engaged, log = table.concat(log, " "), before = stats0, after = ctx.AI.nadeStats })
+end
+
+function C.nades()
+	local out = { stats = ctx.Grenades.stats, live = {}, smokes = {} }
+	for id, n in ctx.Grenades.live do
+		table.insert(out.live, { id = id, item = n.item, left = math.floor((n.at - os.clock()) * 10) / 10 })
+	end
+	for _, sm in ctx.Grenades.smokes do
+		table.insert(out.smokes, { age = math.floor(os.clock() - sm.t0), pos = tostring(sm.pos) })
+	end
+	return HttpService:JSONEncode(out)
 end
 
 -- active weapon summary (server truth) + third-person visuals

@@ -12,8 +12,8 @@ T.list = { "vos", "hale", "tilda", "fence" }
 T.defs = {
 	vos = {
 		name = "VOS", title = "Quartermaster", markup = 1.25,
-		desc = "Ex-harbour armourer. Sells weapons, magazines, ammunition and attachments.",
-		buys = { weapon = 0.55, pistol = 0.55, melee = 0.5, mod = 0.55, mag = 0.5, ammo = 0.5, key = 0.5 },
+		desc = "Ex-harbour armourer. Sells weapons, magazines, ammunition, attachments and grenades; repairs weapons.",
+		buys = { weapon = 0.55, pistol = 0.55, melee = 0.5, mod = 0.55, mag = 0.5, ammo = 0.5, key = 0.5, grenade = 0.5, repair = 0.5 },
 	},
 	hale = {
 		name = "HALE", title = "Field Medic", markup = 1.2,
@@ -49,9 +49,9 @@ T.offers = {
 		o("R17_RIFLE", 1, 2), o("P9_PISTOL", 1, 2), o("HARROW12", 1, 2), o("SPARROW_SMG", 1, 1), o("FIELD_KNIFE", 1, 3),
 		o("R17_MAG", 1, 10), o("P9_MAG", 1, 10), o("SPARROW_MAG", 1, 6),
 		o("A62_FMJ", 1, 10, 60), o("A9_PST", 1, 10, 50), o("A12_BUCK", 1, 8, 20),
-		o("RED_DOT", 1, 1), o("GRIP_V", 1, 2), o("LIGHT_T", 1, 2),
+		o("RED_DOT", 1, 1), o("GRIP_V", 1, 2), o("LIGHT_T", 1, 2), o("GREN_RK5", 1, 4), o("GREN_SMOKE", 1, 3),
 		o("KST_RIFLE", 2, 1), o("KST_MAG", 2, 6), o("A76_PS", 2, 8, 60), o("A62_HP", 2, 6, 60), o("R17_MAG40", 2, 3),
-		o("SUPP_9", 2, 1), o("BRAKE_76", 2, 1),
+		o("SUPP_9", 2, 1), o("BRAKE_76", 2, 1), o("GREN_STUN", 2, 3), o("GREN_F7", 2, 3), o("WEAPON_KIT", 2, 1),
 		o("TUNDRA_BOLT", 3, 1), o("A76L_LPS", 3, 4, 40), o("A62_AP", 3, 4, 60), o("A9_AP", 3, 4, 50), o("A12_SLUG", 3, 4, 20),
 		o("SUPP_62", 3, 1), o("SCOPE_4X", 3, 1),
 		o("A76_BP", 4, 3, 60), o("A76L_SNB", 4, 2, 40),
@@ -70,7 +70,7 @@ T.offers = {
 	},
 	fence = {
 		o("RIG_BELT", 1, 2), o("BAG_SLING", 1, 2), o("BANDAGE", 1, 4), o("R17_MAG", 1, 4), o("A62_FMJ", 1, 4, 60), o("KEY_OFFICE", 1, 1),
-		o("KEY_DORM_104", 1, 1), o("KEY_DORM_203", 2, 1),
+		o("KEY_DORM_104", 1, 1), o("KEY_DORM_203", 2, 1), o("GREN_RK5", 1, 2),
 	},
 }
 
@@ -84,6 +84,8 @@ T.barters = {
 		b("KST_RIFLE", 1, 1, { { "CAPACITOR", 1 }, { "LOGIC_BOARD", 1 } }),
 		b("SUPP_62", 2, 1, { { "SIGNAL_COIL", 2 }, { "CERAMIC_FUSE", 2 }, { "DUCT_TAPE", 1 } }),
 		b("SCOPE_4X", 2, 1, { { "CRACKED_LENS", 1 }, { "WIRES", 2 } }),
+		b("GREN_F7", 1, 2, { { "BOLTS", 1 }, { "MATCHES", 2 } }),
+		b("WEAPON_KIT", 1, 1, { { "DUCT_TAPE", 2 }, { "SPARK_PLUG", 1 }, { "WIRES", 1 } }),
 	},
 	hale = {
 		b("MEDKIT_M", 1, 3, { { "CIGARETTES", 2 }, { "MATCHES", 1 } }),

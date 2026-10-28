@@ -35,12 +35,14 @@ local POOLS = {
 		{ id = "SIGNAL_COIL", w = 10 }, { id = "CERAMIC_FUSE", w = 10 }, { id = "A62_FMJ", w = 10, n = { 20, 45 } },
 		{ id = "A76_PS", w = 6, n = { 15, 40 } }, { id = "CAPACITOR", w = 6 }, { id = "BATTERY", w = 4 },
 		{ id = "FUEL_CAN", w = 3 }, { id = "DECK_TRANSCEIVER", w = 3 }, { id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" },
+		{ id = "GREN_RK5", w = 3 }, { id = "GREN_SMOKE", w = 2 },
 	},
 	locker = {
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
 		{ id = "HARDTACK", w = 8 }, { id = "A9_PST", w = 10, n = { 10, 35 } }, { id = "P9_MAG", w = 5, a = { 0, 17 }, at = "A9_PST" },
 		{ id = "OLD_COIN", w = 5 }, { id = "KEY_OFFICE", w = 3 }, { id = "HELMET_C2", w = 3 }, { id = "RIG_BELT", w = 3 },
 		{ id = "BAG_SLING", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "CAPT_WATCH", w = 1 }, { id = "KEY_DORM_104", w = 2 },
+		{ id = "GREN_RK5", w = 2 }, { id = "GREN_SMOKE", w = 2 },
 	},
 	drawer = {
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 12 }, { id = "OLD_COIN", w = 8 }, { id = "FLASH_MODULE", w = 4 },
@@ -58,15 +60,16 @@ local POOLS = {
 		{ id = "A12_SLUG", w = 4, n = { 5, 15 } }, { id = "A76L_LPS", w = 4, n = { 10, 30 } }, { id = "R17_MAG", w = 8, a = { 0, 25 }, at = "A62_FMJ" },
 		{ id = "KST_MAG", w = 6, a = { 0, 30 }, at = "A76_PS" }, { id = "SPARROW_MAG", w = 5, a = { 0, 30 }, at = "A9_PST" },
 		{ id = "P9_PISTOL", w = 4 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "KST_RIFLE", w = 1 },
+		{ id = "GREN_RK5", w = 6 }, { id = "GREN_F7", w = 2 }, { id = "GREN_STUN", w = 3 }, { id = "GREN_SMOKE", w = 4 },
 	},
 	toolbox = {
 		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
-		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 },
+		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "WEAPON_KIT", w = 2 },
 	},
 	jacket = {
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
 		{ id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "PAINKILLERS", w = 4 }, { id = "RUSTED_KEYCARD", w = 1 },
-		{ id = "KEY_DORM_104", w = 3 }, { id = "KEY_DORM_203", w = 1 },
+		{ id = "KEY_DORM_104", w = 3 }, { id = "KEY_DORM_203", w = 1 }, { id = "GREN_RK5", w = 1 },
 	},
 	safe = {
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
@@ -85,7 +88,7 @@ local POOLS = {
 		{ id = "MEDKIT_S", w = 4 }, { id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "VOLT_DRINK", w = 2 },
 		{ id = "CAPT_WATCH", w = 2 }, { id = "GOLD_CHAIN", w = 2 }, { id = "FLASH_MODULE", w = 3 }, { id = "INTEL_FOLDER", w = 2 },
 		{ id = "LOGIC_BOARD", w = 2 }, { id = "P9_MAG", w = 3, a = { 0, 17 }, at = "A9_PST" }, { id = "A9_PST", w = 5, n = { 10, 30 } },
-		{ id = "BATTERY", w = 2 }, { id = "P9_PISTOL", w = 1 },
+		{ id = "BATTERY", w = 2 }, { id = "P9_PISTOL", w = 1 }, { id = "GREN_RK5", w = 2 }, { id = "GREN_STUN", w = 1 },
 	},
 	dorm_good = {
 		{ id = "GOLD_CHAIN", w = 8 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
@@ -99,7 +102,7 @@ local POOLS = {
 	vault = {
 		{ id = "GOLD_CHAIN", w = 8 }, { id = "BRASS_LION", w = 3 }, { id = "COLD_WALLET", w = 3 }, { id = "MIL_CIRCUIT", w = 4 },
 		{ id = "SEALED_DRIVE", w = 5 }, { id = "INTEL_FOLDER", w = 6 }, { id = "CAPT_WATCH", w = 6 }, { id = "LEDGER", w = 2 },
-		{ id = "FLASH_MODULE", w = 5 },
+		{ id = "FLASH_MODULE", w = 5 }, { id = "GREN_F7", w = 2 },
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
@@ -126,6 +129,11 @@ function Loot.rollEntry(rand, poolName)
 			if e.a then
 				local a = rand:NextInteger(e.a[1], e.a[2])
 				extra = { a = a, at = a > 0 and e.at or nil }
+			end
+			local d = Items.defs[e.id]
+			if d and d.weapon and d.kind ~= "melee" then
+				extra = extra or {}
+				extra.wear = math.floor(rand:NextNumber(45, 95) * 10) / 10 -- found weapons are used (M11)
 			end
 			return Inv.newItem(e.id, n, extra)
 		end
@@ -745,6 +753,10 @@ local function kit(rand)
 		if not wg then
 			return nil
 		end
+		if k.wear then
+			-- weapon durability (M11): AI guns are used, some badly
+			h.items[wg].wear = math.floor(rand:NextNumber(k.wear[1], k.wear[2]) * 10) / 10
+		end
 		if magId then
 			local cap = Items.defs[magId].capacity
 			local mg, mag = Inv.newItem(magId, 1, { a = math.max(1, math.floor(cap * (fill or 1))), at = ammoId })
@@ -795,6 +807,7 @@ local function kit(rand)
 		end
 	end
 	k.h = h
+	k.wear = { 60, 96 }
 	return k
 end
 
@@ -822,6 +835,16 @@ function Loot.guardLoadout(rand)
 	if rand:NextNumber() < 0.4 then
 		k.put("TOURNIQUET")
 	end
+	-- grenades (M11): the Watch flush raiders out of cover
+	if rand:NextNumber() < 0.55 then
+		k.put("GREN_RK5")
+	end
+	if rand:NextNumber() < 0.2 then
+		k.put("GREN_SMOKE")
+	end
+	if rand:NextNumber() < 0.15 then
+		k.put("GREN_STUN")
+	end
 	k.roll("jacket", rand:NextInteger(0, 2))
 	return k.h
 end
@@ -830,6 +853,7 @@ end
 function Loot.bossLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
+	k.wear = { 88, 100 }
 	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(55, 70) })
 	k.slot("head", "HELMET_C4", { dur = rand:NextInteger(35, 45) })
 	k.slot("rig", "RIG_CHEST")
@@ -840,6 +864,12 @@ function Loot.bossLoadout(rand)
 	k.put("MEDKIT_L")
 	k.put("HEMOSTAT")
 	k.put("PAINKILLERS")
+	k.put("GREN_F7")
+	k.put("GREN_F7")
+	k.put("GREN_SMOKE")
+	if rand:NextNumber() < 0.6 then
+		k.put("GREN_STUN")
+	end
 	if rand:NextNumber() < 0.4 then
 		k.put("LEDGER")
 	end
@@ -857,6 +887,7 @@ end
 function Loot.crewLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
+	k.wear = { 72, 98 }
 	k.slot("armor", rand:NextNumber() < 0.5 and "ARMOR_C3" or "ARMOR_C4", { dur = rand:NextInteger(35, 55) })
 	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 36) })
 	k.slot("rig", "RIG_CHEST")
@@ -871,6 +902,13 @@ function Loot.crewLoadout(rand)
 	end
 	k.put("MEDKIT_M")
 	k.put(rand:NextNumber() < 0.5 and "TOURNIQUET" or "BANDAGE")
+	k.put("GREN_RK5")
+	if rand:NextNumber() < 0.4 then
+		k.put("GREN_F7")
+	end
+	if rand:NextNumber() < 0.3 then
+		k.put("GREN_SMOKE")
+	end
 	k.roll("drawer", rand:NextInteger(0, 2))
 	return k.h
 end
@@ -909,6 +947,7 @@ function Loot.scavLoadout(rand)
 	local gun = pickWeighted(rand, SCAV_GUNS)
 	local wd = Items.defs[gun[1]]
 	local wg = slot("primary", gun[1])
+	h.items[wg].wear = math.floor(rand:NextNumber(32, 82) * 10) / 10 -- scav guns are worn (M11)
 	if gun[3] then
 		local cap = Items.defs[gun[3]].capacity
 		local mg, mag = Inv.newItem(gun[3], 1, { a = rand:NextInteger(math.floor(cap * 0.4), cap), at = gun[4] })
@@ -929,6 +968,7 @@ function Loot.scavLoadout(rand)
 	if rand:NextNumber() < 0.3 then
 		local pg = slot("holster", "P9_PISTOL")
 		if pg then
+			h.items[pg].wear = math.floor(rand:NextNumber(40, 90) * 10) / 10
 			local mg, mag = Inv.newItem("P9_MAG", 1, { a = rand:NextInteger(5, 17), at = "A9_PST" })
 			h.items[mg] = mag
 			h.items[pg].mag = mg
@@ -964,6 +1004,10 @@ function Loot.scavLoadout(rand)
 	end
 	if rand:NextNumber() < 0.6 then
 		local g, it = Inv.newItem(({ "WATER", "STEW", "HARDTACK" })[rand:NextInteger(1, 3)], 1)
+		Inv.place(h, g, it, order)
+	end
+	if rand:NextNumber() < 0.15 then
+		local g, it = Inv.newItem("GREN_RK5", 1)
 		Inv.place(h, g, it, order)
 	end
 	for _ = 1, rand:NextInteger(0, 2) do

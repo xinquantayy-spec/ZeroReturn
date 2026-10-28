@@ -25,6 +25,7 @@ local LAYOUT = {
 	{ "LeanLeft", "LN-L", Vector2.new(0.62, 0.74), 46 },
 	{ "LeanRight", "LN-R", Vector2.new(0.70, 0.80), 46 },
 	{ "Prone", "PRN", Vector2.new(0.62, 0.86), 46 },
+	{ "Grenade", "NADE", Vector2.new(0.885, 0.73), 50 },
 }
 
 local function refresh()

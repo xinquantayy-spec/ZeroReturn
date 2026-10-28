@@ -1,24 +1,36 @@
 # Next Task
 
-**Current focus:** finish M10 leftovers, then milestone **M11 — Combat extras** (Tarkov grenades, weapon wear).
+**Current focus (owner request, 2026-10-28):** milestone **M12 Look 2.0**, then **M13 Maps**. The owner wants Tarkov-level wear and imperfection on every building and model, at least four locations, and a game that still runs on phones, consoles and PCs (with an opt-in Potato mode; phones keep the full look by default).
 
-## M10 leftovers (need the dev PC online)
+Maps are original. They are the same kinds of places as Tarkov's (factory, forest, industrial outskirts) with their own layouts, landmarks and names; Battlestate's layouts are not copied.
 
-1. Upload `assets/exports/ZR_Gear.fbx` (`zr_upload.upload_model(path, "ZR_Gear")`), add it to `AssetIds.luau`, check the helmet, plate carrier, pouches, pack, body camera and holster on players and AI in Studio.
-2. Check in Studio: rain streaks and splashes, lens droplets, the new vignette and edge haze, the environment sounds (rain, roof, wind, insects, gulls, thunder, doors, keys, pickup).
-3. Blender weapon meshes against the `WeaponModels` anchors (start with the R-17 and the P-9).
+## M12 Look 2.0
 
-## M11 plan
+1. **Blender wear kit** (`assets/blender_scripts/build_wear_kit.py`): modular, vertex-coloured pieces with baked dirt and AO, slightly uneven and damaged.
+   - Building: chipped concrete wall caps and corners, cracked panels, spalled columns, patched repairs, broken window frames with glass shards, rusted corrugated sheets (dented, holed), bent railings, sagging cable runs, pipes with brackets, rusted downpipes, broken lamp heads.
+   - Ground: rubble piles, broken pallets, tyres, trash bags, paper, cans, oil drums (dented, rust bands), cinder blocks, rebar, cracked asphalt patches, puddles.
+   - Interior: broken chairs, desks with drawers out, filing cabinets (dented), lockers, mattresses, radiators, fallen ceiling tiles, wires hanging.
+2. **Grime textures** (`assets/textures/gen_wear.py`): tiling transparent overlays (water streaks, rust runs, soot, peeling paint, moss, cracks, oil stains, graffiti tags of the game's own factions) used as `Texture` objects on part faces.
+3. **Detail layer:** the server builds gameplay geometry only; each client adds cosmetic detail (clutter, debris, stains) from a seeded list, sized to the graphics setting.
+4. **Potato mode** (Settings → GRAPHICS: POTATO / LOW / MEDIUM / HIGH): no detail layer, no blur/DoF/sun rays/bloom, fewer particles, simpler fog, shadows off. Opt-in only.
+5. **Quay 7 pass:** wear, clutter and lighting imperfections across the whole map; screenshots for the owner.
 
-1. **Grenades.** Frag, stun and smoke grenades as rig/pocket items. G throws the first grenade in your rig (overhand; underhand when crouched), 3.5 s fuse after release, server-simulated arc with bounces. Frag: fragments hit random body parts within ~9 studs behind no cover (armour applies, low penetration); stun: white-out and ringing when facing it nearby; smoke: a cloud that blocks sight for players and AI.
-2. **AI grenades.** Units with grenades throw them at a target that stays in cover, and run from grenades that land near them.
-3. **Weapon durability.** Every shot wears the weapon a little; worn weapons malfunction more (misfire, failure to feed, jam). A malfunction stops the weapon until you clear it (the reload key, longer for jams). Traders repair weapons for money; repair kits restore part of it in raid.
-4. Logic tests, Studio test, docs, commit.
+## M13 Maps
 
-Then M12 (QA: two-client test, device emulation, performance, exploit regression including vault speed checks, scrollable inventory gear column, docs, git bundle backup).
+1. **Map system:** `World` builds one map per raid (gameplay geometry, spawns, exfils, loot, containers, doors, AI posts and patrols, cover). Queued players vote for the next raid's map; ties are random.
+2. **Smelter** (factory-type): furnace halls, catwalks, tunnels, offices; short raids, close fights.
+3. **Pinewatch** (woods-type): pine forest, a lumber yard, a lake, a bunker, a crashed convoy; big and open.
+4. **Border Yard** (customs-type): a checkpoint, two dorm blocks, a fuel depot, warehouses, a river.
+
+## After that
+
+- **M11 part B:** weapon durability, malfunctions (misfire, failure to feed, jam; cleared with R), trader repairs and the repair kit (hideout).
+- **M14 Weapon art:** Blender gun meshes on the WeaponModels anchors (R-17 and P-9 first).
+- **M15 QA:** two-client test, device emulation, performance, exploit regression (vault speed checks), scrollable inventory gear column, docs, git bundle backup.
+- Still to check from M10: rain streaks, lens droplets and environment sounds in a rainy raid.
 
 ## Resume steps
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
-2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open the place (now saved as `Zero Return.rbxl`) and connect the Rojo plugin.
-3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **146/146**).
+2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open `Zero Return.rbxl` and connect the Rojo plugin.
+3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **164/164**).

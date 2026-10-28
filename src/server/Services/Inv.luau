@@ -1034,6 +1034,9 @@ function Inv.newItem(id: string, n: number?, extra: any?): (string, any)
 	if d and d.key then
 		it.uses = d.key.uses
 	end
+	if d and d.repair then
+		it.pts = d.repair.points
+	end
 	if extra then
 		for k, v in extra do
 			it[k] = v

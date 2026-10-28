@@ -17,6 +17,7 @@ local player = Players.LocalPlayer
 local recoilP, recoilY, roll = 0, 0, 0
 local flinchP, flinchY, flinchR = 0, 0, 0
 local land, landV = 0, 0
+local shakeAmt = 0 -- blast shake (radians), decays
 local lastYaw = 0
 local fov = Config.FOV
 local stick = Vector2.zero
@@ -47,6 +48,13 @@ end
 
 function Camera.impact(a)
 	landV -= math.clamp(a or 0.5, 0, 1.5) * 4.5
+end
+
+-- explosion nearby: a short violent shake (0..1)
+function Camera.shake(a)
+	local k = (ctx.Settings.data.shake or 1) * (ctx.Settings.data.reduceMotion and 0.3 or 1)
+	shakeAmt = math.max(shakeAmt, math.clamp(a or 0.5, 0, 1) * 0.05 * k)
+	landV -= math.clamp(a or 0.5, 0, 1) * 2.5 * k
 end
 
 local function trackCharacter(char)
@@ -134,6 +142,14 @@ local function update(dt)
 	-- landing dip: critically damped spring
 	landV += (-120 * land - 18 * landV) * dt
 	land += landV * dt
+	shakeAmt -= shakeAmt * math.min(1, dt * 3.2)
+	local st = os.clock() * 31
+	local shP, shY, shR = 0, 0, 0
+	if shakeAmt > 1e-4 then
+		shP = math.noise(st, 0.3) * shakeAmt
+		shY = math.noise(st, 4.1) * shakeAmt
+		shR = math.noise(st, 8.7) * shakeAmt * 1.4
+	end
 
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -206,11 +222,11 @@ local function update(dt)
 		smoothPos = target
 	end
 	local leanRoll = -(M and M.lean or 0) * 0.2
-	local aimRot = CFrame.Angles(0, Camera.yaw + breathY + flinchY, 0) * CFrame.Angles(Camera.pitch + recoilP + breathP + flinchP + land * 0.02, recoilY, roll + stepRoll + flinchR + leanRoll)
+	local aimRot = CFrame.Angles(0, Camera.yaw + breathY + flinchY + shY, 0) * CFrame.Angles(Camera.pitch + recoilP + breathP + flinchP + shP + land * 0.02, recoilY, roll + stepRoll + flinchR + leanRoll + shR)
 	local offset = CFrame.new(bobX, bobY + land * 0.35, 0)
 	Camera.aimCFrame = CFrame.new(smoothPos) * aimRot * offset
 	if math.abs(Camera.freeYaw) + math.abs(Camera.freePitch) > 1e-3 then
-		local rot = CFrame.Angles(0, Camera.yaw + Camera.freeYaw + breathY + flinchY, 0) * CFrame.Angles(Camera.pitch + Camera.freePitch + recoilP + breathP + flinchP + land * 0.02, recoilY, roll + stepRoll + flinchR + leanRoll)
+		local rot = CFrame.Angles(0, Camera.yaw + Camera.freeYaw + breathY + flinchY + shY, 0) * CFrame.Angles(Camera.pitch + Camera.freePitch + recoilP + breathP + flinchP + shP + land * 0.02, recoilY, roll + stepRoll + flinchR + leanRoll + shR)
 		cam.CFrame = CFrame.new(smoothPos) * rot * offset
 	else
 		cam.CFrame = Camera.aimCFrame

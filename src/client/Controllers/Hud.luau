@@ -256,7 +256,13 @@ local function slowUpdate()
 	end
 	-- weapon line
 	local W = ctx.Weapon
-	if inRaid and W.hasWeapon then
+	local Gr = ctx.Grenade
+	if inRaid and Gr and Gr.state and Gr.state ~= "throw" then
+		-- grenade in hand: what it is and how to throw it
+		O.weapon:show(true)
+		local how = Gr.state == "ready" and ("RELEASE " .. ctx.Input.label("Grenade") .. " TO THROW  ·  HOLD " .. ctx.Input.label("Aim") .. ": UNDERHAND") or "PULLING THE PIN"
+		O.weapon:set({ { t = (Gr.itemName and Gr.itemName() or "GRENADE") .. "  ·  " .. how, color = C.yellow, alpha = 0.1 } })
+	elseif inRaid and W.hasWeapon then
 		O.weapon:show(true)
 		local line = (W.weaponName or "WEAPON") .. "  ·  " .. (W.modeName or "SEMI")
 		if W.light then

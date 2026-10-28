@@ -5,6 +5,8 @@
 -- footsteps and gunshots, suppression from near misses, call-outs to nearby allies.
 -- Tactics: cover points generated from the map, peek-and-hide, reload and heal in cover, strafe in the open,
 -- search the last known position, followers stay with the boss and flank.
+-- Grenades (M11): units with frags or stun charges flush targets that stay hidden behind cover, throw smoke to
+-- cover a retreat, run from grenades that land near them; smoke blocks their sight, flashes blind and deafen.
 -- Weapons are real: the rounds come from the AI's own magazines, reloads use its rig, every hit goes through the
 -- same ballistics/armour model as players, and the body drops everything it carried.
 -- A director spawns scavs at raid start, tops up as players join and sends waves through the raid.
@@ -19,6 +21,7 @@ local Weapons = require(Shared.Weapons)
 local RigMath = require(Shared.RigMath)
 local Inv = require(script.Parent.Inv)
 local Env = require(Shared.Env)
+local GR = require(Shared.Grenades)
 local KARMA_HOSTILE = require(Shared.Progress).KARMA.hostileBelow
 
 local AI = {}
@@ -343,9 +346,11 @@ end
 
 local function visiblePart(u, model, eye)
 	params.FilterDescendantsInstances = ignoreFor(u)
+	local G = ctx.Grenades
+	local smoke = G ~= nil and #G.smokes > 0
 	for _, name in { "Head", "UpperTorso", "LowerTorso" } do
 		local p = model:FindFirstChild(name)
-		if p then
+		if p and not (smoke and G.smokeBetween(eye, p.Position)) then
 			local r = workspace:Raycast(eye, p.Position - eye, params)
 			if r == nil or r.Instance:IsDescendantOf(model) then
 				return p
@@ -732,6 +737,9 @@ local function shoot(u, t)
 	if t < (u.suppressedUntil or 0) then
 		err += 1.3
 	end
+	if t < (u.blindUntil or 0) then
+		err += 7 -- flashed: spraying at where they last saw you
+	end
 	if u.stance == "c" and not u.moving then
 		err *= 0.85
 	end
@@ -896,7 +904,204 @@ local function idle(u, t)
 	end
 end
 
+-- ── grenades (M11) ───────────────────────────────────────────────────────────
+-- chance per check (every ~2 s) that a unit flushes a hidden target with a frag or stun charge
+local NADE_CHANCE = { scav = 0.16, watch = 0.3, follower = 0.38, boss = 0.42 }
+AI.nadeStats = { tries = 0, noNade = 0, range = 0, friend = 0, noPlan = 0, started = 0 }
+local FRAG = { frag = true }
+local STUN = { stun = true }
+local SMOKE = { smoke = true }
+
+-- a throw from this unit that ends near `target`: tries lobs and flat throws at a few strengths and keeps the
+-- one whose simulated end point (bounces included) is closest; nil when nothing lands close enough
+local function planThrow(u, target, fuse)
+	local G = ctx.Grenades
+	local look = flat(target - u.root.Position)
+	if look.Magnitude < 2 then
+		return nil
+	end
+	local eye = u.head.Position + Vector3.new(0, 0.12, 0)
+	local origin = G.releaseFrom(eye, look.Unit, false)
+	local best, bestErr = nil, math.huge
+	for _, speed in { 34, 46, GR.THROW.over.speed } do
+		for _, high in { true, false } do
+			local dir = GR.aim(origin, target, speed, high)
+			if dir then
+				local vel = dir * speed
+				local path = G.simulate(origin, vel, fuse)
+				if path then
+					local err = flat(path.final - target).Magnitude + math.abs(path.final.Y - target.Y) * 0.5
+					if err < bestErr then
+						best, bestErr = { origin = origin, vel = vel, final = path.final }, err
+					end
+				end
+			end
+		end
+		if bestErr < 2 then
+			break
+		end
+	end
+	return (bestErr < 6) and best or nil
+end
+
+-- start a throw: pin now, the grenade leaves the hand a moment later (think() finishes it)
+local function startThrow(u, t, g, plan, target)
+	u.nadePending = { at = t + rnd(0.6, 0.85), g = g, origin = plan.origin, vel = plan.vel, target = target }
+	u.model:SetAttribute("NadeItem", u.inv.items[g] and u.inv.items[g].id or "GREN_RK5")
+	u.model:SetAttribute("Nade", true)
+	ctx.Chars.gesture(u.model, "pin", 0.55)
+	ctx.Remotes.fx("sfx", { n = "nade_pin", p = u.head.Position, v = 0.55 })
+end
+
+-- flush a target hiding at `lp`: never onto friends, never close enough to catch your own fragments
+local function tryNade(u, t, lp)
+	local NS = AI.nadeStats
+	NS.tries += 1
+	local G = ctx.Grenades
+	local d = flat(lp - u.root.Position).Magnitude
+	-- a frag when the target is far enough not to catch your own fragments, else a stun charge
+	local g = G and G.pick(u.inv, FRAG, true)
+	local spec = g and Items.defs[u.inv.items[g].id].nade
+	if spec and d < math.max(10, spec.fragR * 0.55) then
+		g, spec = nil, nil
+	end
+	if not g then
+		g = G and G.pick(u.inv, STUN, true)
+		spec = g and Items.defs[u.inv.items[g].id].nade
+	end
+	if not g then
+		if G and not G.pick(u.inv, FRAG, true) then
+			NS.noNade += 1
+			u.nextNade = t + 40
+		else
+			NS.range += 1
+		end
+		return false
+	end
+	local minD = (spec.type == "frag") and math.max(10, spec.fragR * 0.55) or 8
+	if d < minD or d > 55 then
+		NS.range += 1
+		return false
+	end
+	for _, o in units do
+		if o ~= u and o.alive and o.root and o.faction == u.faction and (o.root.Position - lp).Magnitude < ((spec.type == "frag") and 11 or 7) then
+			NS.friend += 1
+			return false
+		end
+	end
+	local spread = (1.2 + d * 0.05) * ((u.kind == "scav") and 1.6 or 1)
+	local aimAt = lp + Vector3.new(rnd(-1, 1) * spread, 0, rnd(-1, 1) * spread)
+	local plan = planThrow(u, aimAt, spec.fuse)
+	if not plan or flat(plan.final - u.root.Position).Magnitude < minD * 0.8 then
+		NS.noPlan += 1
+		return false
+	end
+	NS.started += 1
+	startThrow(u, t, g, plan, lp)
+	u.nextNade = t + rnd(9, 16)
+	return true
+end
+
+-- cover a retreat: smoke between you and the threat
+local function throwSmoke(u, t, threat)
+	local G = ctx.Grenades
+	local g = G and G.pick(u.inv, SMOKE, true)
+	if not g or u.nadePending or t < (u.nextSmoke or 0) then
+		return false
+	end
+	local toward = flat(threat - u.root.Position)
+	if toward.Magnitude < 4 then
+		return false
+	end
+	local at = u.root.Position + toward.Unit * math.min(10, toward.Magnitude * 0.5)
+	local plan = planThrow(u, at, 2)
+	if not plan then
+		return false
+	end
+	u.nextSmoke = t + 30
+	startThrow(u, t, g, plan, at)
+	return true
+end
+
+-- finish a pending throw (the pin is out, the unit stands still and faces the target)
+local function nadeTick(u, t)
+	local np = u.nadePending
+	stop(u)
+	u.wantFire = false
+	face(u, np.target)
+	if t < np.at then
+		return
+	end
+	u.nadePending = nil
+	u.model:SetAttribute("Nade", false)
+	local it = u.inv.items[np.g]
+	if it and ctx.Grenades then
+		local id = it.id
+		Inv.consume(u.inv, np.g)
+		ctx.Chars.gesture(u.model, "toss", 0.55)
+		ctx.Grenades.throwFrom(u.model, np.origin, np.vel, id)
+		ctx.Remotes.fx("sfx", { n = "nade_throw", p = np.origin, v = 0.6 })
+	end
+end
+
+-- a grenade landed close: get out of its radius, behind something solid if possible, then get low
+local function evade(u, t)
+	local e = u.evade
+	if t >= e.stop then
+		u.evade = nil
+		return false
+	end
+	if t < e.start then
+		return false
+	end
+	u.wantFire = false
+	if not e.goal then
+		local me = u.root.Position
+		local best, bestD = nil, math.huge
+		for _, c in coverNear(me, 16) do
+			if flat(c.pos - e.from).Magnitude > 6 and hiddenFrom(c, e.from + Vector3.new(0, 0.8, 0)) then
+				local dm = flat(c.pos - me).Magnitude
+				if dm < bestD then
+					best, bestD = c.pos, dm
+				end
+			end
+		end
+		if not best then
+			local away = flat(me - e.from)
+			away = (away.Magnitude > 0.1) and away.Unit or u.root.CFrame.RightVector
+			local side = Vector3.new(-away.Z, 0, away.X)
+			for _, dir in { away, (away + side).Unit, (away - side).Unit } do
+				local goal = e.from + dir * (e.r + 4)
+				if worldClear(me + Vector3.new(0, 1.5, 0), goal + Vector3.new(0, 1.5, 0)) then
+					best = goal
+					break
+				end
+			end
+			best = best or (me + away * 12)
+		end
+		e.goal = best
+	end
+	if flat(e.goal - u.root.Position).Magnitude > 2 then
+		setStance(u, "s")
+		moveTo(u, e.goal, true)
+	else
+		stop(u)
+		setStance(u, "c", 1)
+	end
+	return true
+end
+
 local function investigate(u, t)
+	-- searching for someone who was just in a fight: a grenade at the last known position before pushing in
+	local tm = u.target
+	if u.state == "SEARCH" and tm and not u.nadePending and t >= (u.nextNade or 0) and alive(tm) then
+		u.nextNade = t + rnd(1.2, 2)
+		local lp = u.lastPos[tm]
+		local hid = t - (u.seen[tm] or 0)
+		if lp and hid > 1.2 and hid < 16 and math.random() < math.min(0.8, (NADE_CHANCE[u.kind] or 0.2) * 1.3) and tryNade(u, t, lp) then
+			return
+		end
+	end
 	setStance(u, "s")
 	if u.goal and flat(u.goal - u.root.Position).Magnitude > 4 and (u.stuck or 0) < 3 then
 		moveTo(u, u.goal, u.state == "SEARCH" and u.skill.aggression > 0.5)
@@ -946,6 +1151,15 @@ local function combat(u, t)
 		return
 	end
 	local sk = u.skill
+	-- flashed: crouch where you are and spray at the last place you saw them now and then
+	if t < (u.blindUntil or 0) then
+		u.visible = false
+		setStance(u, "c", 1)
+		stop(u)
+		u.wantFire = sk.suppress and math.random() < 0.35 and u.lastPos[tm] ~= nil
+		u.suppressPos = u.wantFire and (u.lastPos[tm] + Vector3.new(rnd(-3, 3), rnd(0, 2), rnd(-3, 3))) or nil
+		return
+	end
 	u.visible = u.seen[tm] ~= nil and (t - u.seen[tm]) < 0.3
 	local tor = tm:FindFirstChild("UpperTorso") or tm:FindFirstChild("HumanoidRootPart")
 	local tpos = (u.visible and tor and tor.Position) or u.lastPos[tm] or (tor and tor.Position)
@@ -958,6 +1172,7 @@ local function combat(u, t)
 	-- out of ammo: reload, switch to the sidearm, or break off
 	if roundsOf(u) <= 0 and not u.reloadUntil then
 		if not startReload(u, t) and not rearm(u) then
+			throwSmoke(u, t, tpos)
 			u.state = "FLEE"
 			u.goal = nil
 			u.fleeUntil = t + 25
@@ -1062,6 +1277,15 @@ local function combat(u, t)
 	if u.wantFire and not u.visible then
 		u.suppressPos = tpos + Vector3.new(rnd(-1.5, 1.5), rnd(0, 1.5), rnd(-1.5, 1.5))
 	end
+	-- grenades: flush a target that stays hidden behind cover (Tarkov AI)
+	if not u.visible and not busy and not u.nadePending and t >= (u.nextNade or 0) then
+		u.nextNade = t + rnd(0.8, 1.4)
+		local hid = t - (u.seen[tm] or 0)
+		local lp = u.lastPos[tm]
+		if lp and hid > 0.8 and hid < 14 and math.random() < (NADE_CHANCE[u.kind] or 0.2) then
+			tryNade(u, t, lp)
+		end
+	end
 	-- lost contact: push the last known position (aggressive) or hold a little longer
 	local lost = t - (u.seen[tm] or 0)
 	if lost > (sk.aggression > 0.5 and 3.5 or 7) then
@@ -1150,7 +1374,7 @@ local function perceive(u, t, dt)
 				range = math.max(range, sk.sight * ((envView.dark > 0.5) and 1.4 or 1.05))
 			end
 			local vis = nil
-			if dist < range then
+			if dist < range and t >= (u.blindUntil or 0) then
 				local inFov = dist < CLOSE or look:Dot(d.Unit) >= FOV_COS or (a >= 1 and dist < 45)
 				if inFov then
 					vis = visiblePart(u, model, eye)
@@ -1174,7 +1398,7 @@ local function perceive(u, t, dt)
 			end
 			-- footsteps
 			local nz = noiseOf(model)
-			if nz > 0 and dist < 60 * nz * sk.hearing * envView.hear then
+			if nz > 0 and t >= (u.deafUntil or 0) and dist < 60 * nz * sk.hearing * envView.hear then
 				u.heard = { pos = tor.Position + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)), t = t }
 				a = math.max(a, 0.4)
 			end
@@ -1232,6 +1456,16 @@ local function think(u)
 		u.heard = nil
 	end
 	reloadTick(u, t)
+	-- grenades: finish a throw in progress, or get away from one that landed close
+	if u.nadePending then
+		nadeTick(u, t)
+		updatePose(u)
+		return
+	end
+	if u.evade and evade(u, t) then
+		updatePose(u)
+		return
+	end
 	if u.state == "ENGAGE" then
 		combat(u, t)
 	elseif u.state == "INVESTIGATE" or u.state == "SEARCH" then
@@ -1456,7 +1690,8 @@ function AI.hearShot(pos, shooter, except, loudness)
 	for _, u in units do
 		if u ~= except and u.alive and u.root then
 			local d = (u.root.Position - pos).Magnitude
-			if d < radius * u.skill.hearing then
+			local deaf = (t < (u.deafUntil or 0)) and 0.2 or 1
+			if d < radius * u.skill.hearing * deaf then
 				u.alert = t + 25
 				if u.state ~= "ENGAGE" and u.state ~= "FLEE" and d < radius * 0.55 * u.skill.hearing then
 					u.state = "INVESTIGATE"
@@ -1505,6 +1740,68 @@ function AI.bulletPassed(a, b, shooterModel)
 						end
 					end
 				end
+			end
+		end
+	end
+end
+
+-- Studio test bridge: make a unit throw its first grenade at `target` now (returns false if it cannot)
+function AI.devThrow(u, target)
+	local g = ctx.Grenades and ctx.Grenades.pick(u.inv, nil, true)
+	if not g or u.nadePending then
+		return false
+	end
+	local spec = Items.defs[u.inv.items[g].id].nade
+	local plan = planThrow(u, target, spec.fuse)
+	if not plan then
+		return false
+	end
+	startThrow(u, now(), g, plan, target)
+	return true
+end
+
+-- a grenade is on its way (Grenades.throwFrom): units near where it ends up notice it land and run
+function AI.grenadeIncoming(info)
+	if not info.radius or info.radius <= 0 then
+		return
+	end
+	local t = now()
+	for _, u in units do
+		if u.alive and u.root then
+			local d = flat(u.root.Position - info.pos).Magnitude
+			if d < info.radius + 3 and math.abs(u.root.Position.Y - info.pos.Y) < 10 then
+				local own = u.model == info.thrower
+				if own or d < 7 or math.random() < 0.75 then
+					local react = own and 0 or rnd(0.25, 0.7)
+					u.evade = { from = info.pos, start = math.max(t, info.land or t) + react, stop = (info.boom or t + 3) + 0.35, r = info.radius }
+					u.alert = math.max(u.alert or 0, t + 20)
+				end
+			end
+		end
+	end
+end
+
+-- a stun charge went off at pos: blind those facing it with line of sight, deafen everyone close
+function AI.flashed(pos, spec)
+	local t = now()
+	for _, u in units do
+		if u.alive and u.head and u.root then
+			local to = pos - u.head.Position
+			local d = to.Magnitude
+			if d < math.max(spec.blindR, spec.deafR) then
+				local los = worldClear(u.head.Position, pos)
+				local fl = flat(to)
+				local facing = (fl.Magnitude > 0.1) and u.root.CFrame.LookVector:Dot(fl.Unit) or 1
+				local b = GR.blind(spec, d, facing, los)
+				local f = GR.deaf(spec, d, los)
+				if b > 0.05 then
+					u.blindUntil = math.max(u.blindUntil or 0, t + 1 + 6 * b)
+					u.suppressedUntil = math.max(u.suppressedUntil or 0, t + 2 + 4 * b)
+				end
+				if f > 0.05 then
+					u.deafUntil = math.max(u.deafUntil or 0, t + 1.5 + 6 * f)
+				end
+				u.alert = math.max(u.alert or 0, t + 25)
 			end
 		end
 	end

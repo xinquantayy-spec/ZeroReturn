@@ -1061,6 +1061,8 @@ end
 function Inventory.toggle()
 	if Inventory.open then
 		Inventory.close()
+	elseif ctx.Grenade and ctx.Grenade.busy() then
+		return -- a grenade in hand: throw it first
 	elseif not (ctx.Screens and ctx.Screens.modal) then
 		Inventory.show()
 	end

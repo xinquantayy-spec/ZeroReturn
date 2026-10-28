@@ -13,14 +13,17 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Textures = require(Shared.Textures)
 
 -- envExposure / grainMul are driven by Atmos (night: brighter auto-gain and heavier sensor noise)
+-- smoke (0..1) is set by the Grenade controller while the camera is inside a cloud
 local Post = {
-	dmg = 0, pain = 0, burstAmt = 0, low = 0, envExposure = 0, grainMul = 1, flash = 0,
+	dmg = 0, pain = 0, burstAmt = 0, low = 0, envExposure = 0, grainMul = 1, flash = 0, smoke = 0,
 	lum = 1, hazeTint = Color3.fromRGB(64, 70, 68), -- set by Atmos from the light and fog
 }
 local ctx
 local player = Players.LocalPlayer
 local cam = workspace.CurrentCamera
-local gui, grainA, grainB, lens, red, tunnel, haze
+local gui, grainA, grainB, lens, red, tunnel, haze, white, veil
+local whiteOut = { amt = 0, t0 = 0, dur = 1 }
+local concussion = { amt = 0, untilT = 0, span = 1 }
 local lensMotion, lensAim = 0, 0
 local fx = {}
 local exposure, indoor, indoorTarget = 0.1, 0, 0
@@ -81,6 +84,24 @@ local function build()
 	else
 		lens.ImageTransparency = 0 -- the new vignette texture is authored at the intended (lighter) strength
 	end
+	-- smoke veil (3): inside a smoke cloud the picture greys out
+	veil = Instance.new("Frame")
+	veil.Name = "SmokeVeil"
+	veil.BorderSizePixel = 0
+	veil.Size = UDim2.fromScale(1, 1)
+	veil.BackgroundColor3 = Color3.fromRGB(150, 154, 150)
+	veil.BackgroundTransparency = 1
+	veil.ZIndex = 3
+	veil.Parent = gui
+	-- stun charge white-out (9, over the grain): the sensor saturates
+	white = Instance.new("Frame")
+	white.Name = "WhiteOut"
+	white.BorderSizePixel = 0
+	white.Size = UDim2.fromScale(1, 1)
+	white.BackgroundColor3 = Color3.fromRGB(255, 255, 252)
+	white.BackgroundTransparency = 1
+	white.ZIndex = 9
+	white.Parent = gui
 	red = overlay("Hurt", Textures.LENS, 6)
 	red.ImageColor3 = Color3.fromRGB(150, 12, 8)
 	red.ImageTransparency = 1
@@ -154,6 +175,49 @@ function Post.hurt(amount)
 	Post.dmg = math.clamp(math.max(Post.dmg, amount or 0.5), 0, 1)
 end
 
+-- stun charge: full white that holds, then fades (strength 0..1, seconds)
+function Post.whiteout(amount, dur)
+	if amount <= 0.02 then
+		return
+	end
+	local cur = Post.whiteLevel()
+	if amount >= cur then
+		whiteOut.amt, whiteOut.t0, whiteOut.dur = amount, os.clock(), math.max(0.3, dur)
+	end
+	Post.flash = math.max(Post.flash, amount)
+end
+
+function Post.whiteLevel()
+	local p = (os.clock() - whiteOut.t0) / whiteOut.dur
+	if p >= 1 or p < 0 then
+		return 0
+	end
+	local hold = 0.35
+	if p < hold then
+		return whiteOut.amt
+	end
+	local k = 1 - (p - hold) / (1 - hold)
+	return whiteOut.amt * k * k
+end
+
+-- blast concussion (Tarkov contusion): blur, washed-out colour, a darker picture
+function Post.concuss(amount, dur)
+	amount = math.clamp(amount or 0, 0, 1)
+	local left = concussion.untilT - os.clock()
+	local cur = left > 0 and concussion.amt * math.clamp(left / concussion.span, 0, 1) or 0
+	if amount > cur then
+		concussion.amt, concussion.untilT, concussion.span = amount, os.clock() + dur, math.min(dur, 3)
+	end
+end
+
+local function concussLevel()
+	local left = concussion.untilT - os.clock()
+	if left <= 0 then
+		return 0
+	end
+	return concussion.amt * math.clamp(left / concussion.span, 0, 1)
+end
+
 local function probeIndoor()
 	local char = player.Character
 	local fxFolder = workspace:FindFirstChild("ZR_Fx")
@@ -220,11 +284,19 @@ local function step(dt)
 	red.ImageTransparency = 1 - Post.dmg * 0.85
 	local low = Post.low
 	tunnel.ImageTransparency = 1 - math.clamp(Post.pain * 0.55 + low * 0.45, 0, 0.8)
-	fx.grade.Saturation = -0.1 - low * 0.45 - Post.pain * 0.15
-	fx.grade.Contrast = 0.14 + Post.pain * 0.08
+	local cz = concussLevel()
+	local wl = Post.whiteLevel()
+	white.BackgroundTransparency = 1 - math.clamp(wl, 0, 1)
+	local sm = math.clamp(Post.smoke, 0, 1)
+	veil.BackgroundTransparency = 1 - sm * 0.82
+	if sm > 0.01 then
+		veil.BackgroundColor3 = Color3.fromRGB(150, 154, 150):Lerp(Post.hazeTint, 0.35):Lerp(Color3.new(0, 0, 0), math.clamp(1 - Post.lum, 0, 0.8))
+	end
+	fx.grade.Saturation = -0.1 - low * 0.45 - Post.pain * 0.15 - cz * 0.45
+	fx.grade.Contrast = 0.14 + Post.pain * 0.08 - cz * 0.1
 	fx.grade.TintColor = Color3.fromRGB(236, 243, 235):Lerp(Color3.fromRGB(255, 214, 205), Post.dmg * 0.6)
-	fx.grade.Brightness = -0.015
-	fx.blur.Size = math.max(turnBlur, Post.dmg * 6, Post.pain * 2)
+	fx.grade.Brightness = -0.015 - cz * 0.06
+	fx.blur.Size = math.max(turnBlur, Post.dmg * 6, Post.pain * 2, cz * 14, wl * 10)
 	-- lens: the soft edge grows with motion and eases off while aiming down sights
 	local M, W = ctx.Movement, ctx.Weapon
 	local moving = math.clamp(turnBlur / 3 + ((M and M.sprinting) and 0.45 or 0), 0, 1)

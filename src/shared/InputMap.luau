@@ -1,6 +1,7 @@
 --!strict
 -- Single source of truth for action bindings (PC keys, gamepad, touch label). Movement/jump/look stay
 -- with Roblox's PlayerModule + our camera. Interact uses ProximityPrompts (F / ButtonX / tap); Q/E lean (Tarkov).
+-- Gamepad D-down is shared: a tap shows the extracts, a hold readies a grenade (Grenade controller).
 return {
 	Fire = { keys = { Enum.KeyCode.MouseLeftButton }, pad = { Enum.KeyCode.ButtonR2 }, touch = "FIRE", context = "play" },
 	Aim = { keys = { Enum.KeyCode.MouseRightButton }, pad = { Enum.KeyCode.ButtonL2 }, touch = "ADS", context = "play" },
@@ -24,4 +25,6 @@ return {
 	LeanRight = { keys = { Enum.KeyCode.E }, pad = { Enum.KeyCode.ButtonR1 }, touch = "LN-R", context = "play" },
 	Prone = { keys = { Enum.KeyCode.Z }, pad = {}, touch = "PRN", context = "play" },
 	FreeLook = { keys = { Enum.KeyCode.LeftAlt }, pad = {}, context = "play" },
+	-- G: hold to pull the pin, release to throw (hold aim for underhand). Gamepad: hold D-down (a tap is Extracts).
+	Grenade = { keys = { Enum.KeyCode.G }, pad = { Enum.KeyCode.DPadDown }, touch = "NADE", context = "play" },
 }

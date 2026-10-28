@@ -35,10 +35,15 @@
 21. **Dog tags need space.** The tag goes into the dead PMC's pockets, rig or backpack; if all of them are completely full, no tag is added.
 22. **Trader stock is per player.** Each player has their own purchase limits per 30-minute restock (Tarkov shares some stock between players).
 23. **Economy balance is first-pass.** Prices, XP values, task rewards, build times (5–40 min) and craft times (15–45 min) are tuned by feel and need playtests.
-25. **Unverified M10 assets.** The rain/splash/droplet/lens textures, the environment sound atlas and the gear meshes were built (and all but the gear uploaded) while the dev PC's DNS kept failing; Studio could not download them, so they still need a look in Studio. The gear batch (`ZR_Gear`) still has to be uploaded and added to `AssetIds.luau`.
+25. **Rain and environment sounds not yet checked.** The DNS problem is fixed and the meshes and lens textures load, but the rain streaks, splashes, lens droplets and the environment sound atlas still need a look in a rainy raid.
 26. **Weather is per raid.** Rain, fog and cloud cover are fixed for a whole raid (no changes mid-raid); the sun follows Roblox's fixed-season sky (sunrise about 6:00, sunset about 18:00).
 27. **Loose loot models are simple.** Non-weapon items lying in the world are blocks in the item's colour and size; weapons use the real weapon model.
 28. **Doors swing one way.** Doors always open inward by 100° around the hinge; a player standing in the swing is not pushed. Closed doors do not muffle sound yet.
+29. **Grenade paths ignore people.** The server works out the whole path at release against the static world, so a grenade passes through characters, and a door that moves after the throw does not change it.
+30. **AI only react to where a grenade ends up.** Units near the landing point notice it once it lands; they do not dodge a grenade in flight.
+31. **No first-person arms for a throw without a weapon in hand.** With no weapon drawn, only the grenade shows in first person.
+32. **The soft cap looks flat.** PMCs without a helmet wear a box-built cap; it needs a Blender mesh.
+33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.
 18. **Late entry is a compromise.** Tarkov PMCs only spawn at raid start; here PMCs may join for the first 5 minutes so nobody waits a full 25-minute raid on a one-raid server. `Config.LATE_JOIN` controls it.
 19. **Insurance timing** is 15 real minutes (`Config.INSURANCE_DELAY`). Returns reach the stash automatically when there is space; otherwise use COLLECT INSURANCE in the stash. Items mailed to offline owners need the real DataStore.

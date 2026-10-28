@@ -163,6 +163,9 @@ end
 
 -- raid over (Match settled insurance first): AI, bodies, corpses and dropped gear go away
 function Raid.clearWorld()
+	if ctx.Grenades then
+		ctx.Grenades.clear()
+	end
 	ctx.AI.clear()
 	ctx.Loot.clearTemp()
 	ctx.Chars.clearCorpses()

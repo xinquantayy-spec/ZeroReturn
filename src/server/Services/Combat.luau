@@ -100,7 +100,7 @@ function Combat.hitModel(model, info)
 		ctx.AI.onDamaged(model, info.attacker)
 	end
 	local attacker = info.attacker
-	if res.killed and typeof(attacker) == "Instance" and attacker:IsA("Player") then
+	if res.killed and typeof(attacker) == "Instance" and attacker:IsA("Player") and attacker ~= victim then
 		ctx.Raid.addKill(attacker, victim, model, res.part == "head")
 		ctx.Remotes.note(attacker, "kill", { name = victim and victim.DisplayName or (model:GetAttribute("Label") or "UNKNOWN") })
 	end
@@ -152,6 +152,9 @@ function Combat.shoot(player, seq, origin, dir)
 	local hs = ctx.Health.of(player)
 	if hs and hs.using then
 		return reject("shot while treating", nil)
+	end
+	if ctx.Grenades and ctx.Grenades.busy(player) then
+		return reject("shot while throwing", nil)
 	end
 	if not mag or (mag.a or 0) <= 0 then
 		ctx.Remotes.note(player, "ammo", { a = 0 })
@@ -338,7 +341,7 @@ function Combat.draw(player, slot)
 	local g = s.inv.slots[slot]
 	local it = g and s.inv.items[g]
 	local d = it and Items.defs[it.id]
-	if not d or not d.weapon or s.active == slot then
+	if not d or not d.weapon or s.active == slot or (ctx.Grenades and ctx.Grenades.busy(player)) then
 		return
 	end
 	s.active = slot

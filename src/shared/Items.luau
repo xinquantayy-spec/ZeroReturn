@@ -1,6 +1,7 @@
 --!strict
 -- Item definitions (read-only, original names). Instances/ownership are server truth (server Services/Inv).
 -- kinds: weapon | pistol | melee | mag | ammo | helmet | armor | rig | backpack | secure | med | food | key | loot | quest
+--        | grenade | repair
 -- Values are in MK (Tarkov-like magnitudes). Optional blocks by kind:
 --   caliber (weapon/pistol/mag/ammo), weapon (Weapons key), family (mag compatibility), capacity (mag / internal tube)
 --   ammo = { dmg, pen, armorDmg, pellets, bleedL, bleedH, frag, subsonic }
@@ -9,6 +10,9 @@
 --   med = { light, heavy, fracture, pain, surgery, hp, uses, time, duration }
 --   food = { energy, water, time, stamina }
 --   key = { door, uses }
+--   nade = { type = "frag"|"stun"|"smoke", fuse, frag: frags, fragR, fragDmg {lo,hi}, fragPen {lo,hi}, blastR, blastDmg;
+--            stun: blindR, deafR; smoke: smokeR, smokeT }
+--   repair = { points, uses }   (weapon repair kits)
 local function c(hex: string): Color3
 	return Color3.fromHex(hex)
 end
@@ -112,6 +116,16 @@ add("STEW", { name = "Canned Stew", short = "STEW", kind = "food", w = 1, h = 1,
 add("HARDTACK", { name = "Hardtack", short = "HARDTACK", kind = "food", w = 1, h = 1, mass = 0.15, value = 3000, food = { energy = 30, water = -12, time = 3 }, desc = "Energy +30, dries you out.", color = c("#A48C64") })
 add("VOLT_DRINK", { name = "Volt Energy Drink", short = "VOLT", kind = "food", w = 1, h = 2, mass = 0.4, value = 11000, rarity = "uncommon", food = { energy = 20, water = 35, stamina = 60, time = 3 }, desc = "Energy +20, hydration +35, stamina boost.", color = c("#6E8F3C") })
 
+-- ── grenades (M11) ───────────────────────────────────────────────────────────
+-- thrown with G from the rig or pockets (Tarkov: never from the backpack); the fuse starts on release
+add("GREN_RK5", { name = "RK-5 Frag Grenade", short = "RK-5", kind = "grenade", w = 1, h = 1, mass = 0.31, value = 11000, nade = { type = "frag", fuse = 3.5, frags = 190, fragR = 17, fragDmg = { 24, 38 }, fragPen = { 10, 17 }, blastR = 4, blastDmg = 55 }, desc = "Offensive fragmentation grenade with a thin steel body. 3.5 s fuse.", color = c("#556048") })
+add("GREN_F7", { name = "F-7 Defensive Grenade", short = "F-7", kind = "grenade", w = 1, h = 1, mass = 0.6, value = 16500, rarity = "uncommon", nade = { type = "frag", fuse = 3.8, frags = 330, fragR = 26, fragDmg = { 26, 40 }, fragPen = { 12, 22 }, blastR = 4.5, blastDmg = 65 }, desc = "Heavy cast-iron fragmentation grenade. Throw it from cover: the fragments carry further than you can throw.", color = c("#4A5640") })
+add("GREN_STUN", { name = "ZS-3 Stun Charge", short = "STUN", kind = "grenade", w = 1, h = 1, mass = 0.35, value = 9000, nade = { type = "stun", fuse = 2.5, blindR = 26, deafR = 22 }, desc = "Flash-bang. Blinds anyone facing it and deafens everyone close by. 2.5 s fuse.", color = c("#4D5257") })
+add("GREN_SMOKE", { name = "DS-2 Smoke Grenade", short = "SMOKE", kind = "grenade", w = 1, h = 1, mass = 0.5, value = 7000, nade = { type = "smoke", fuse = 2, smokeR = 15, smokeT = 55 }, desc = "White smoke screen for about a minute. Blocks sight for people and AI alike.", color = c("#6C7469") })
+
+-- ── weapon maintenance (M11) ─────────────────────────────────────────────────
+add("WEAPON_KIT", { name = "Gunsmith Repair Kit", short = "GUN KIT", kind = "repair", w = 2, h = 1, mass = 1.1, value = 34000, rarity = "uncommon", repair = { points = 150 }, desc = "Springs, pins and a cleaning set. Restores weapon durability out of raid (150 points), with less wear than a trader repair.", color = c("#5B5E52") })
+
 -- ── keys, quest items ─────────────────────────────────────────────────────────
 add("KEY_OFFICE", { name = "Harbor Office Key", short = "OFFICE KEY", kind = "key", w = 1, h = 1, mass = 0.02, value = 22000, rarity = "uncommon", key = { door = "office", uses = 25 }, desc = "Opens the harbor office.", color = c("#8C7A4E") })
 add("RUSTED_KEYCARD", { name = "Vault Keycard", short = "VAULT", kind = "key", w = 1, h = 1, mass = 0.02, value = 95000, rarity = "rare", key = { door = "vault", uses = 10, card = true }, desc = "Quay authority keycard. Opens the depot vault behind the harbor office. 10 uses.", color = c("#8A6252") })
@@ -183,6 +197,13 @@ function Items.valueOf(it: any): number
 	end
 	if d.med and d.med.hp and it.hp then
 		v = math.floor(v * math.clamp(it.hp / d.med.hp, 0.1, 1))
+	end
+	if d.repair and it.pts then
+		v = math.floor(v * math.clamp(it.pts / d.repair.points, 0.1, 1))
+	end
+	if d.weapon and it.wear then
+		-- worn weapons sell for less (Tarkov: price follows durability)
+		v = math.floor(v * (0.35 + 0.65 * math.clamp(it.wear / 100, 0, 1)))
 	end
 	if it.tag and type(it.tag.lvl) == "number" then
 		v = math.floor(v * (1 + 0.15 * it.tag.lvl))

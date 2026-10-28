@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Animator", "Hud", "Post", "Atmos", "Interact", "Touch", "Inventory", "Screens", "Trade" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "Atmos", "Interact", "Touch", "Inventory", "Screens", "Trade" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -136,6 +136,17 @@ if RunService:IsStudio() then
 			return ctx.Weapon.modeName
 		elseif cmd == "look" then
 			ctx.Camera.yaw, ctx.Camera.pitch = math.rad(a and a.yaw or 0), math.rad(a and a.pitch or 0)
+			return "ok"
+		elseif cmd == "nade" then
+			-- a = { hold = seconds, under = bool }: press G, hold, release
+			return ctx.Grenade.testThrow(a and a.hold, a and a.under)
+		elseif cmd == "nadeState" then
+			return tostring(ctx.Grenade.state)
+		elseif cmd == "nadeTune" then
+			-- a = { key = CFrame | number }: first-person grenade hand poses (Grenade.POSE)
+			for k, v in a or {} do
+				ctx.Grenade.POSE[k] = v
+			end
 			return "ok"
 		end
 		return "unknown"

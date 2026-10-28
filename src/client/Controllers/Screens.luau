@@ -627,8 +627,18 @@ function Screens.init(c)
 			end
 		end
 	end)
+	-- gamepad D-down also readies a grenade when held: there the list opens on a short tap (on release)
+	local exDown = 0
 	c.Input.on("Extracts", function(down)
+		if c.Input.device() ~= "Gamepad" then
+			if down then
+				Screens.exits()
+			end
+			return
+		end
 		if down then
+			exDown = os.clock()
+		elseif os.clock() - exDown < 0.3 and not (c.Grenade and c.Grenade.busy()) then
 			Screens.exits()
 		end
 	end)

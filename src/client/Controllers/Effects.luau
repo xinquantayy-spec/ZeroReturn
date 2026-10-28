@@ -1,5 +1,6 @@
 --!nonstrict
 -- Cosmetic-only effects: tracers, muzzle flashes, impacts, bullet marks, positional sounds. Bounded counts.
+-- World sounds run through one SoundGroup so a blast or a stun charge can muffle them (deafness, M11).
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
@@ -7,12 +8,25 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Sounds = require(Shared.Sounds)
 local Atlas = require(Shared.SoundAtlas)
 local EnvAtlas = require(Shared.EnvAtlas)
+local CombatAtlas = require(Shared.CombatAtlas)
 
 local Effects = {}
 local ctx
 local fx
 local marks = {}
 local live = {}
+local world, deafEq, tinnitus, tinnitusGain
+local deaf = { amt = 0, untilT = 0, span = 1 }
+
+-- the combat atlas (grenades, malfunctions) is uploaded separately: until it is, these play stand-ins from the
+-- main atlas (name, speed, volume) or from the recorded gunshot
+local COMBAT_FALLBACK = {
+	nade_pin = { "bolt_up", 1.5, 0.9 }, nade_spoon = { "selector", 0.55, 1 }, nade_throw = { "knife_whoosh", 0.7, 0.9 },
+	nade_bounce_1 = { "impact_metal_1", 1.7, 0.4 }, nade_bounce_2 = { "impact_metal_2", 1.8, 0.4 }, nade_bounce_3 = { "impact_metal_1", 1.5, 0.4 },
+	explosion_debris = { "impact_dirt_1", 0.6, 0.6 }, smoke_pop = { "mag_out", 0.45, 0.9 }, malf_click = { "selector", 0.8, 1 },
+	malf_clear = { "bolt_back", 0.9, 1 }, malf_jam = { "bolt_back", 0.75, 1 }, repair_kit = { "rummage", 1, 1 },
+}
+local BIG_FALLBACK = { explosion_near = { "R17_FIRE", 0.42, 1.7 }, explosion_far = { "R17_FIRE_FAR", 0.5, 1.4 }, flashbang = { "R17_FIRE", 0.8, 1.5 } }
 
 local function quality()
 	return ctx and ctx.Settings.data.quality or 2
@@ -48,6 +62,7 @@ function Effects.sound(id, at, volume, speed)
 	s.PlaybackSpeed = speed or 1
 	s.RollOffMaxDistance = 600
 	s.RollOffMinDistance = 12
+	s.SoundGroup = world
 	if typeof(at) == "Vector3" then
 		local a = Instance.new("Attachment")
 		a.WorldPosition = at
@@ -71,14 +86,43 @@ function Effects.sound(id, at, volume, speed)
 	return s
 end
 
+local function region(name)
+	local r = Atlas[name]
+	if r then
+		return r, Sounds.ATLAS
+	end
+	r = EnvAtlas[name] -- world/UI one-shots (M10)
+	if r then
+		return r, Sounds.ENV_ATLAS
+	end
+	r = CombatAtlas[name] -- grenades, malfunctions (M11)
+	if r and (Sounds.COMBAT_ATLAS or "") ~= "" then
+		return r, Sounds.COMBAT_ATLAS
+	end
+	return nil, nil
+end
+
 -- play one region of the sound atlas (2D when `at` is an Instance, positional for a Vector3)
 local live3d = 0
 function Effects.sfx(name, at, volume, speed, maxDist)
-	local r, id = Atlas[name], Sounds.ATLAS
+	local r, id = region(name)
 	if not r then
-		r, id = EnvAtlas[name], Sounds.ENV_ATLAS -- world/UI one-shots (M10)
+		local fb = COMBAT_FALLBACK[name]
+		if fb then
+			return Effects.sfx(fb[1], at, (volume or 0.6) * fb[3], (speed or 1) * fb[2], maxDist)
+		end
+		local big = BIG_FALLBACK[name]
+		if big and Sounds[big[1]] ~= "" then
+			local s = Effects.sound(Sounds[big[1]], at, (volume or 0.6) * big[3], (speed or 1) * big[2])
+			if s then
+				s.RollOffMaxDistance = maxDist or 600
+				s.RollOffMinDistance = 30
+			end
+			return s
+		end
+		return nil
 	end
-	if not r or not id or id == "" then
+	if not id or id == "" then
 		return nil
 	end
 	local positional = typeof(at) == "Vector3"
@@ -92,8 +136,9 @@ function Effects.sfx(name, at, volume, speed, maxDist)
 	s.Volume = (volume or 0.6) * r[3]
 	s.PlaybackSpeed = speed or 1
 	s.RollOffMode = Enum.RollOffMode.InverseTapered
-	s.RollOffMinDistance = 5
+	s.RollOffMinDistance = (maxDist and maxDist > 300) and 30 or 5
 	s.RollOffMaxDistance = maxDist or 120
+	s.SoundGroup = world
 	local life = r[2] / (speed or 1) + 0.25
 	if positional then
 		live3d += 1
@@ -115,23 +160,96 @@ function Effects.sfx(name, at, volume, speed, maxDist)
 	return s
 end
 
--- a seamless looping region of the environment atlas (rain, wind, insects); starts silent, returns sound, gain
-function Effects.loop(name, parent)
-	local r = EnvAtlas[name]
-	if not r or Sounds.ENV_ATLAS == "" then
+-- a seamless looping region of the environment or combat atlas (rain, wind, insects, smoke hiss, tinnitus);
+-- starts silent, returns sound, gain. noGroup: keep it out of the world mix (tinnitus is in your head).
+function Effects.loop(name, parent, noGroup)
+	local r, id = EnvAtlas[name], Sounds.ENV_ATLAS
+	if not r then
+		r, id = CombatAtlas[name], Sounds.COMBAT_ATLAS or ""
+	end
+	if not r or id == "" then
 		return nil, 0
 	end
 	local s = Instance.new("Sound")
 	s.Name = "ZR_Loop_" .. name
-	s.SoundId = Sounds.ENV_ATLAS
+	s.SoundId = id
 	s.PlaybackRegionsEnabled = true
 	s.PlaybackRegion = NumberRange.new(r[1], r[1] + r[2])
 	s.LoopRegion = NumberRange.new(r[1], r[1] + r[2])
 	s.Looped = true
 	s.Volume = 0
+	if not noGroup then
+		s.SoundGroup = world
+	end
 	s.Parent = parent or SoundService
 	s:Play()
 	return s, r[3]
+end
+
+-- ── deafness (blasts, stun charges): world sounds muffled and quieter, ears ringing ───────────────────────
+function Effects.deafLevel()
+	local left = deaf.untilT - os.clock()
+	if left <= 0 then
+		return 0
+	end
+	return deaf.amt * math.clamp(left / deaf.span, 0, 1)
+end
+
+function Effects.deafen(amount, dur)
+	amount = math.clamp(amount or 0, 0, 1)
+	if amount <= 0.01 then
+		return
+	end
+	if amount >= Effects.deafLevel() then
+		deaf.amt = amount
+		deaf.untilT = os.clock() + dur
+		deaf.span = math.min(dur, 3)
+	else
+		deaf.untilT = math.max(deaf.untilT, os.clock() + dur * 0.5)
+	end
+	if not tinnitus then
+		tinnitus, tinnitusGain = Effects.loop("tinnitus_loop", SoundService, true)
+	end
+end
+
+local function updateDeaf()
+	local k = Effects.deafLevel()
+	if deafEq then
+		deafEq.Enabled = k > 0.01
+		deafEq.HighGain = -40 * k
+		deafEq.MidGain = -24 * k
+		deafEq.LowGain = -6 * k
+	end
+	if world then
+		world.Volume = 1 - 0.5 * k
+	end
+	if tinnitus then
+		tinnitus.Volume = (tinnitusGain or 0.5) * 1.2 * k
+	end
+end
+
+-- a blast at pos: the close crack and debris, or the low boom from far away
+function Effects.explosion(pos, kind)
+	local cam = workspace.CurrentCamera
+	local d = cam and (cam.CFrame.Position - pos).Magnitude or 0
+	if kind == "stun" then
+		Effects.sfx("flashbang", pos, 1, 1, 700)
+		return
+	end
+	if kind == "smoke" then
+		Effects.sfx("smoke_pop", pos, 0.8, 1, 90)
+		return
+	end
+	if d < 150 then
+		Effects.sfx("explosion_near", pos, 1, 0.97 + math.random() * 0.06, 900)
+		if d < 70 then
+			task.delay(0.25, function()
+				Effects.sfx("explosion_debris", pos, 0.8, 1, 80)
+			end)
+		end
+	else
+		Effects.sfx("explosion_far", pos, 1, 0.97 + math.random() * 0.06, 1500)
+	end
 end
 
 local function variant(prefix, n)
@@ -311,6 +429,17 @@ function Effects.init(c)
 	fx = Instance.new("Folder")
 	fx.Name = "ZR_Fx"
 	fx.Parent = workspace
+	world = SoundService:FindFirstChild("ZR_World")
+	if not world then
+		world = Instance.new("SoundGroup")
+		world.Name = "ZR_World"
+		world.Volume = 1
+		world.Parent = SoundService
+	end
+	deafEq = world:FindFirstChild("Deafen") or Instance.new("EqualizerSoundEffect")
+	deafEq.Name = "Deafen"
+	deafEq.Enabled = false
+	deafEq.Parent = world
 	if c.State.fx then
 		c.State.fx.OnClientEvent:Connect(function(kind, d)
 			if kind == "shot" and type(d) == "table" then
@@ -321,6 +450,7 @@ function Effects.init(c)
 		end)
 	end
 	RunService.Heartbeat:Connect(function()
+		updateDeaf()
 		local t = os.clock()
 		for i = #live, 1, -1 do
 			local e = live[i]
@@ -338,6 +468,7 @@ function Effects.init(c)
 		amb.SoundId = Sounds.AMBIENCE
 		amb.Looped = true
 		amb.Volume = 0.35
+		amb.SoundGroup = world
 		amb.Parent = SoundService
 		amb:Play()
 		Effects.ambience = amb -- Atmos mixes it with weather and time of day

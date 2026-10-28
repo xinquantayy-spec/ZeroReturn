@@ -604,6 +604,137 @@ function T.run(ctx)
 		check("key spots roll keys", sawKey)
 	end
 
+	-- M11 grenades: physics, aiming, fragments, flash, smoke, picking, items and sources
+	do
+		local GR = require(Shared.Grenades)
+		-- flat floor at y = 0 and a 6-stud wall at x = 30 (normal -x)
+		local function ray(o, d)
+			local best, bp, bn = math.huge, nil, nil
+			local L = d.Magnitude
+			local u = d / L
+			if u.Y < -1e-6 then
+				local sdist = -o.Y / u.Y
+				if sdist >= 0 and sdist <= L and sdist < best then
+					best, bp, bn = sdist, o + u * sdist, Vector3.yAxis
+				end
+			end
+			if u.X > 1e-6 then
+				local sdist = (30 - o.X) / u.X
+				local hp = o + u * sdist
+				if sdist >= 0 and sdist <= L and sdist < best and hp.Y < 6 then
+					best, bp, bn = sdist, hp, -Vector3.xAxis
+				end
+			end
+			return bp, bn
+		end
+		local level = GR.simulate(Vector3.new(0, 5.3, 0), GR.launch(Vector3.new(0, 0, -1), false), 3.5, ray)
+		check("grenade lands, rolls and comes to rest on the floor", level.rest and math.abs(level.final.Y - GR.RADIUS) < 0.05 and level.land ~= nil and level.endT < 3.5)
+		check("level overhand throw carries 25-60 studs", (level.final * Vector3.new(1, 0, 1)).Magnitude > 25 and (level.final * Vector3.new(1, 0, 1)).Magnitude < 60)
+		local under = GR.simulate(Vector3.new(0, 3.7, 0), GR.launch(Vector3.new(0, 0, -1), true), 3.5, ray)
+		check("underhand throw is short", (under.final * Vector3.new(1, 0, 1)).Magnitude < level.final.Magnitude * 0.6 and under.rest)
+		local wall = GR.simulate(Vector3.new(0, 3, 0), Vector3.new(50, 2, 0), 3.5, ray)
+		check("a throw into a wall bounces back", wall.final.X < 30 - GR.RADIUS and #wall.b >= 1)
+		local okMono = true
+		for i = 2, #level.t do
+			okMono = okMono and level.t[i] >= level.t[i - 1]
+		end
+		check("path samples ordered and bounded", okMono and #level.t <= GR.MAX_SAMPLES + 1)
+		local mid = GR.at(level, level.t[3] * 0.5 + level.t[2] * 0.5)
+		check("path interpolation between samples", (mid - level.p[2]:Lerp(level.p[3], 0.5)).Magnitude < 1e-3 and GR.at(level, 99) == level.final)
+		local from, to = Vector3.new(0, 5, 0), Vector3.new(0, 0.2, -40)
+		local okAim = true
+		for _, high in { false, true } do
+			local dir = GR.aim(from, to, 60, high)
+			if not dir then
+				okAim = false
+			else
+				local pth = GR.simulate(from, dir * 60, 8, function(o, d)
+					local L = d.Magnitude
+					local u = d / L
+					if u.Y < -1e-6 then
+						local sd = -o.Y / u.Y
+						if sd >= 0 and sd <= L then
+							return o + u * sd, Vector3.yAxis
+						end
+					end
+					return nil, nil
+				end)
+				okAim = okAim and pth.land ~= nil and (GR.at(pth, pth.land) - to).Magnitude < 2.5
+			end
+		end
+		check("lob and flat solutions both land on the target", okAim and GR.aim(from, Vector3.new(0, 0, -900), 60, false) == nil)
+		local near = GR.fragLambda(190, 2, 4)
+		check("fragment hits fall off with distance", near > GR.fragLambda(190, 2, 8) * 3.5 and GR.fragLambda(190, 2, 0.1) == GR.fragLambda(190, 2, 1.2))
+		local prng, sum = Random.new(11), 0
+		for _ = 1, 4000 do
+			sum += GR.poisson(prng, 1.7)
+		end
+		check("fragment counts average the expected value", math.abs(sum / 4000 - 1.7) < 0.12)
+		local stunSpec = Items.defs.GREN_STUN.nade
+		check("stun: facing it blinds more than looking away, walls stop it", GR.blind(stunSpec, 8, 0.9, true) > GR.blind(stunSpec, 8, -0.9, true) * 3 and GR.blind(stunSpec, 8, 0.9, false) == 0 and GR.blind(stunSpec, 30, 1, true) == 0)
+		local sm = Items.defs.GREN_SMOKE.nade
+		local r0 = GR.cloud(sm, 0.5)
+		local r1, d1 = GR.cloud(sm, 10)
+		local _, dEnd = GR.cloud(sm, sm.smokeT + 9)
+		check("smoke cloud grows, holds and clears", r1 > r0 and d1 == 1 and dEnd == 0)
+		local c = Vector3.new(0, 4, 0)
+		check("smoke blocks sight through it, not past it", GR.segmentInCloud(Vector3.new(-40, 4, 0), Vector3.new(40, 4, 0), c, r1, 1)
+			and not GR.segmentInCloud(Vector3.new(-40, 4, 30), Vector3.new(40, 4, 30), c, r1, 1)
+			and GR.segmentInCloud(Vector3.new(0, 4, 0), Vector3.new(40, 4, 0), c, r1, 1))
+		-- quick throw takes the rig first, then pockets, never the backpack
+		local h = Inv.newHolder("raid")
+		local function slot(name, id)
+			local g, it = Inv.newItem(id, 1)
+			Inv.placeSlot(h, g, it, name)
+			return g
+		end
+		local rig = slot("rig", "RIG_CHEST")
+		local back = slot("back", "BAG_PATROL")
+		local gb, ib = Inv.newItem("GREN_F7", 1)
+		Inv.place(h, gb, ib, { back })
+		check("no grenade outside the backpack: nothing to throw", GR.pick(h, Items.defs) == nil)
+		local gp, ip = Inv.newItem("GREN_SMOKE", 1)
+		Inv.place(h, gp, ip, { "pockets" })
+		local gr, ir = Inv.newItem("GREN_RK5", 1)
+		Inv.place(h, gr, ir, { rig })
+		check("quick throw picks the rig before the pockets", GR.pick(h, Items.defs) == gr and GR.pick(h, Items.defs, { smoke = true }) == gp)
+		local okDefs, sold, inLoot = true, {}, {}
+		for id, d in Items.defs do
+			if d.kind == "grenade" then
+				okDefs = okDefs and d.nade and (d.nade.fuse or 0) > 0 and (d.nade.type ~= "frag" or (d.nade.frags > 0 and d.nade.fragR > d.nade.blastR))
+			end
+		end
+		local TD = require(Shared.TraderData)
+		for _, o in TD.offers.vos do
+			sold[o.id] = true
+		end
+		for _, pool in Loot.POOLS do
+			for _, e in pool do
+				inLoot[e.id] = true
+			end
+		end
+		check("grenades defined, sold by VOS and found in loot", okDefs and sold.GREN_RK5 and sold.GREN_F7 and sold.GREN_STUN and sold.GREN_SMOKE and inLoot.GREN_RK5 and inLoot.GREN_F7 and inLoot.GREN_SMOKE)
+		check("VOS buys grenades and repair kits", TD.sellPrice("vos", { id = "GREN_RK5", n = 1 }) ~= nil and TD.sellPrice("vos", { id = "WEAPON_KIT", n = 1, pts = 150 }) ~= nil)
+		local bossNades, guardNades = 0, 0
+		for i = 1, 20 do
+			local bh = Loot.bossLoadout(Random.new(i))
+			local gh = Loot.guardLoadout(Random.new(100 + i))
+			for _, it in bh.items do
+				if Items.defs[it.id].kind == "grenade" then
+					bossNades += 1
+				end
+			end
+			for _, it in gh.items do
+				if Items.defs[it.id].kind == "grenade" then
+					guardNades += 1
+				end
+			end
+		end
+		check("the Foreman always carries grenades, guards often", bossNades >= 60 and guardNades >= 6)
+		local HD = require(Shared.HideoutData)
+		check("grenade and repair kit crafts", HD.byRecipe.NADE_RK5 ~= nil and HD.byRecipe.GUN_KIT ~= nil and Items.defs[HD.byRecipe.GUN_KIT.get[1]].kind == "repair")
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0
