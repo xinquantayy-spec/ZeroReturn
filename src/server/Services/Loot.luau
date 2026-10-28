@@ -378,6 +378,18 @@ function Loot.reset(seed)
 	end
 end
 
+-- raid over: bodies and dropped gear disappear (Match settles insurance from them first)
+function Loot.clearTemp()
+	for cid, c in containers do
+		if c.temp then
+			if c.part and c.part.Parent then
+				c.part:Destroy()
+			end
+			containers[cid] = nil
+		end
+	end
+end
+
 local function lootFolder()
 	local folder = workspace:FindFirstChild("ZR_Loot")
 	if not folder then
@@ -520,6 +532,106 @@ function Loot.guardLoadout(rand)
 		local g, it = Loot.rollEntry(rand, "jacket")
 		if g then
 			Inv.place(h, g, it, { "pockets", rig })
+		end
+	end
+	return h
+end
+
+-- Random scav kit (player scavs now, AI scavs in M8): a cheap weapon with some ammo, maybe a rig/pack,
+-- a few meds and junk. None of it is found-in-raid.
+local SCAV_GUNS = {
+	{ "KST_RIFLE", 30, "KST_MAG", "A76_PS" }, { "SPARROW_SMG", 25, "SPARROW_MAG", "A9_PST" }, { "HARROW12", 25, nil, "A12_BUCK" },
+	{ "TUNDRA_BOLT", 8, nil, "A76L_LPS" }, { "R17_RIFLE", 12, "R17_MAG", "A62_FMJ" },
+}
+local function pickWeighted(rand, list)
+	local total = 0
+	for _, e in list do
+		total += e[2]
+	end
+	local r = rand:NextNumber() * total
+	for _, e in list do
+		r -= e[2]
+		if r <= 0 then
+			return e
+		end
+	end
+	return list[1]
+end
+
+function Loot.scavLoadout(rand)
+	rand = rand or Random.new()
+	local h = Inv.newHolder("raid")
+	local function slot(slotName, id, extra)
+		local g, it = Inv.newItem(id, 1, extra)
+		if Inv.placeSlot(h, g, it, slotName) then
+			return g
+		end
+		return nil
+	end
+	local gun = pickWeighted(rand, SCAV_GUNS)
+	local wd = Items.defs[gun[1]]
+	local wg = slot("primary", gun[1])
+	if gun[3] then
+		local cap = Items.defs[gun[3]].capacity
+		local mg, mag = Inv.newItem(gun[3], 1, { a = rand:NextInteger(math.floor(cap * 0.4), cap), at = gun[4] })
+		h.items[mg] = mag
+		h.items[wg].mag = mg
+	else
+		h.items[wg].a = rand:NextInteger(math.max(1, (wd.capacity or 5) - 3), wd.capacity or 5)
+		h.items[wg].at = gun[4]
+	end
+	local rig = rand:NextNumber() < 0.7 and slot("rig", rand:NextNumber() < 0.6 and "RIG_BELT" or "RIG_CHEST") or nil
+	local back = rand:NextNumber() < 0.5 and slot("back", rand:NextNumber() < 0.6 and "BAG_SLING" or "CANVAS_BAG") or nil
+	if rand:NextNumber() < 0.15 then
+		slot("armor", "ARMOR_C2", { dur = rand:NextInteger(8, 30) })
+	end
+	if rand:NextNumber() < 0.2 then
+		slot("head", "HELMET_C2", { dur = rand:NextInteger(6, 20) })
+	end
+	if rand:NextNumber() < 0.3 then
+		local pg = slot("holster", "P9_PISTOL")
+		if pg then
+			local mg, mag = Inv.newItem("P9_MAG", 1, { a = rand:NextInteger(5, 17), at = "A9_PST" })
+			h.items[mg] = mag
+			h.items[pg].mag = mg
+		end
+	end
+	if rand:NextNumber() < 0.7 then
+		slot("melee", "FIELD_KNIFE")
+	end
+	local order = { "pockets" }
+	if rig then
+		table.insert(order, 1, rig)
+	end
+	if back then
+		table.insert(order, back)
+	end
+	if gun[3] then
+		for _ = 1, rand:NextInteger(0, 2) do
+			local cap = Items.defs[gun[3]].capacity
+			local g, it = Inv.newItem(gun[3], 1, { a = rand:NextInteger(0, cap), at = gun[4] })
+			if it.a == 0 then
+				it.at = nil
+			end
+			Inv.place(h, g, it, order)
+		end
+	else
+		local g, it = Inv.newItem(gun[4], rand:NextInteger(4, 12))
+		Inv.place(h, g, it, order)
+	end
+	for _ = 1, rand:NextInteger(1, 2) do
+		local med = ({ "BANDAGE", "BANDAGE", "MEDKIT_S", "PAINKILLERS", "TOURNIQUET" })[rand:NextInteger(1, 5)]
+		local g, it = Inv.newItem(med, 1)
+		Inv.place(h, g, it, order)
+	end
+	if rand:NextNumber() < 0.6 then
+		local g, it = Inv.newItem(({ "WATER", "STEW", "HARDTACK" })[rand:NextInteger(1, 3)], 1)
+		Inv.place(h, g, it, order)
+	end
+	for _ = 1, rand:NextInteger(0, 2) do
+		local g, it = Loot.rollEntry(rand, "jacket")
+		if g then
+			Inv.place(h, g, it, order)
 		end
 	end
 	return h

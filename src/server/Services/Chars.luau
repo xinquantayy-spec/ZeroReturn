@@ -283,7 +283,7 @@ function Chars.redress(char, holder, activeSlot, kind)
 			c:Destroy()
 		end
 	end
-	Chars.dress(char, kind or "player", Chars.gearOf(holder, activeSlot))
+	Chars.dress(char, kind or (char:GetAttribute("Scav") and "scav") or "player", Chars.gearOf(holder, activeSlot))
 end
 
 local PACK_SIZE = {
@@ -309,6 +309,8 @@ function Chars.dress(char, kind, gear)
 	elseif kind == "player" then
 		attach(char, "Head", Vector3.new(0.8, 0.2, 0.88), CFrame.new(0, 0.4, 0.01), Color3.fromHex("3E4236"), Enum.Material.Fabric, "Cap")
 		attach(char, "Head", Vector3.new(0.62, 0.05, 0.3), CFrame.new(0, 0.33, -0.52), Color3.fromHex("3E4236"), Enum.Material.Fabric, "Cap")
+	elseif kind == "scav" then
+		attach(char, "Head", Vector3.new(0.84, 0.32, 0.9), CFrame.new(0, 0.34, 0.02), Color3.fromHex("2E2C29"), Enum.Material.Fabric, "Cap")
 	end
 	local armor = gear.armor and Items.defs[gear.armor]
 	local rig = gear.rig and Items.defs[gear.rig]
@@ -352,6 +354,128 @@ function Chars.dress(char, kind, gear)
 	end
 	if gear.holder then
 		Chars.setWeapon(char, gear.holder, gear.activeG)
+	end
+end
+
+-- Squad armband on both upper arms (Tarkov: coloured bands tell squadmates apart; no friendly markers).
+function Chars.armband(char, color)
+	if not char then
+		return
+	end
+	for _, c in char:GetChildren() do
+		if c.Name == "Armband" then
+			c:Destroy()
+		end
+	end
+	char:SetAttribute("Squad", color)
+	if not color then
+		return
+	end
+	for _, side in { "LeftUpperArm", "RightUpperArm" } do
+		local b = attach(char, side, Vector3.new(0.5, 0.2, 0.52), CFrame.new(0, -0.1, 0), Color3.fromHex(color), Enum.Material.Fabric, "Armband")
+		if b then
+			b.CastShadow = false
+		end
+	end
+end
+
+-- clothing colours for a faction look (player scavs wear scav clothes)
+function Chars.recolor(char, kind)
+	local look = LOOKS[kind] or LOOKS.player
+	for name, cloth in CLOTH do
+		local p = char:FindFirstChild(name)
+		if p and p:IsA("BasePart") then
+			p.Color = Color3.fromHex(look[cloth])
+		end
+	end
+end
+
+-- ── corpses ──────────────────────────────────────────────────────────────────
+-- Bodies stay in the raid (lootable through Loot.spawnBody) after their owner respawns in the hideout or leaves.
+-- Player:LoadCharacter() destroys the old character even when it was detached, so the body is a copy: the
+-- engine-owned character goes, a static (or settling, then frozen) clone stays until the raid ends.
+local corpses
+local function corpseFolder()
+	if not corpses or not corpses.Parent then
+		corpses = workspace:FindFirstChild("ZR_Corpses") or Instance.new("Folder")
+		corpses.Name = "ZR_Corpses"
+		corpses.Parent = workspace
+	end
+	return corpses
+end
+
+function Chars.freeze(model)
+	if not model or not model.Parent then
+		return
+	end
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.AssemblyLinearVelocity = Vector3.zero
+			p.AssemblyAngularVelocity = Vector3.zero
+			p.Anchored = true
+		end
+	end
+end
+
+function Chars.freezeLater(model, delay)
+	task.delay(delay or 8, Chars.freeze, model)
+end
+
+-- copy a character into a corpse; fall = true ragdolls the copy (it was still standing), else it is frozen as is
+function Chars.keepCorpse(char, fall)
+	if not char or not char.Parent then
+		return nil
+	end
+	char:SetAttribute("KeepCorpse", nil)
+	char.Archivable = true
+	local ok, corpse = pcall(char.Clone, char)
+	if not ok or not corpse then
+		return nil
+	end
+	for _, d in corpse:GetDescendants() do
+		if d:IsA("Humanoid") or d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ProximityPrompt") or d:IsA("Light") then
+			d:Destroy()
+		elseif d:IsA("BasePart") then
+			d.CanTouch = false
+			d.Anchored = not fall
+		end
+	end
+	corpse.Name = "Corpse"
+	corpse:SetAttribute("Corpse", true)
+	corpse.Parent = corpseFolder()
+	if fall then
+		Chars.ragdoll(corpse)
+		for _, p in corpse:GetDescendants() do
+			if p:IsA("BasePart") and not p.Anchored then
+				pcall(p.SetNetworkOwner, p, nil)
+			end
+		end
+		Chars.freezeLater(corpse, 8)
+	end
+	return corpse
+end
+
+-- a disconnecting raider drops where they stood (their character is removed with them)
+function Chars.dropBody(char)
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum and hum.Health > 0 then
+		local hs = ctx and ctx.Health and ctx.Health.get(char)
+		if hs then
+			ctx.Health.kill(hs, "SIGNAL LOST")
+		end
+	end
+	local corpse = Chars.keepCorpse(char, true)
+	for _, p in char:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.Transparency = 1
+		end
+	end
+	return corpse
+end
+
+function Chars.clearCorpses()
+	if corpses then
+		corpses:ClearAllChildren()
 	end
 end
 
@@ -474,9 +598,14 @@ end
 
 -- ── spawning ─────────────────────────────────────────────────────────────────
 -- Spawns (or respawns) a player's character at cf. holder: raid inventory (for gear visuals) or nil.
-function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: string?)
+function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: string?, opts: any?)
 	if not player.Parent then
 		return nil
+	end
+	opts = opts or {}
+	local old = player.Character
+	if old and old:GetAttribute("KeepCorpse") then
+		Chars.keepCorpse(old, false)
 	end
 	local ok, err = pcall(function()
 		player:LoadCharacter()
@@ -499,7 +628,8 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: strin
 	if ctx and ctx.Health then
 		local prof = ctx.Profiles.get(player)
 		ctx.Health.attach(char, {
-			player = player, kind = "player", inRaid = holder ~= nil, saved = prof and prof.health,
+			-- a player scav is a fresh body: the PMC's wounds stay with the PMC
+			player = player, kind = "player", inRaid = holder ~= nil, saved = (not opts.scav) and prof and prof.health or nil,
 			holder = function()
 				return (ctx.Raid.holder(player))
 			end,
@@ -513,8 +643,17 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: strin
 	char:SetAttribute("Stance", "s")
 	char:SetAttribute("Lean", 0)
 	char:SetAttribute("Pitch", 0)
-	Chars.dress(char, "player", Chars.gearOf(holder, activeSlot))
+	local kind = opts.scav and "scav" or "player"
+	char:SetAttribute("Scav", opts.scav == true)
+	if opts.scav then
+		Chars.recolor(char, "scav")
+	end
+	Chars.dress(char, kind, Chars.gearOf(holder, activeSlot))
 	char:SetAttribute("InRaid", holder ~= nil)
+	local sq = ctx and ctx.Match and ctx.Match.squadOf(player)
+	if sq then
+		Chars.armband(char, sq.color)
+	end
 	hum.Died:Connect(function()
 		Chars.ragdoll(char)
 		if ctx and ctx.Raid then

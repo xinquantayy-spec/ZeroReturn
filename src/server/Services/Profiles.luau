@@ -50,6 +50,12 @@ function Profiles.load(player: Player): (any?, any)
 	if data.pendingRaid then
 		recovered = Settle.finalize(data, data.pendingRaid.id, "DISCONNECTED", nil, os.time())
 	end
+	-- insurance returns mailed by other servers
+	for _, entry in Store.drainMail(player.UserId) do
+		if type(entry) == "table" and type(entry.bundles) == "table" then
+			table.insert(data.claims, entry)
+		end
+	end
 	local ok, msg = Inv.check(data)
 	if not ok then
 		warn("[ZR] profile invariant failure on load", player.Name, msg)

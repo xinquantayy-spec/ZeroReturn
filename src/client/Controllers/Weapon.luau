@@ -248,14 +248,21 @@ local function buildVm(it, d, g)
 		table.insert(o.magParts, p)
 	end
 	o.nFixed = #o.all
-	-- arms (posed by two-bone IK every frame), then the shell used by tube reloads
+	-- arms (posed by two-bone IK every frame), then the shell used by tube reloads. Sleeves match the body's
+	-- jacket (PMC or scav clothes).
 	o.vms = VMS
+	local sleeve = SLEEVE
+	local me = game:GetService("Players").LocalPlayer.Character
+	local ua = me and me:FindFirstChild("LeftUpperArm")
+	if ua and ua:IsA("BasePart") then
+		sleeve = ua.Color:Lerp(Color3.new(0, 0, 0), 0.18)
+	end
 	o.arms = {
-		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), SLEEVE, Enum.Material.Fabric),
-		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), SLEEVE, Enum.Material.Fabric),
+		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), sleeve, Enum.Material.Fabric),
+		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), sleeve, Enum.Material.Fabric),
 		vpart(model, Vector3.new(0.1, 0.15, 0.14), GLOVE),
-		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), SLEEVE, Enum.Material.Fabric),
-		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), SLEEVE, Enum.Material.Fabric),
+		vpart(model, Vector3.new(TUNE.upperW, TUNE.upperW, TUNE.upper), sleeve, Enum.Material.Fabric),
+		vpart(model, Vector3.new(TUNE.foreW, TUNE.foreW, TUNE.fore), sleeve, Enum.Material.Fabric),
 		vpart(model, Vector3.new(0.11, 0.09, 0.15), GLOVE),
 	}
 	for _, p in o.arms do

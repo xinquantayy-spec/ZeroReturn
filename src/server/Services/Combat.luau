@@ -89,6 +89,10 @@ function Combat.hitModel(model, info)
 	if victim then
 		ctx.Remotes.note(victim, "dmg", { amt = math.floor(res.dmg + 0.5), from = info.from, part = res.part, blocked = not res.penetrated })
 	else
+		local as = typeof(info.attacker) == "Instance" and info.attacker:IsA("Player") and ctx.Raid.session(info.attacker)
+		if as and as.scav then
+			as.hostile = true -- a scav who shoots the guards is treated as an enemy for the rest of the raid
+		end
 		ctx.AI.onDamaged(model, info.attacker)
 	end
 	local attacker = info.attacker

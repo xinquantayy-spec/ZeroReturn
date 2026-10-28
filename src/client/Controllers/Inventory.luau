@@ -218,6 +218,64 @@ local function modFits(wit, mit)
 	return not (md.mod.caliber and slotOk ~= true and slotOk ~= md.mod.caliber)
 end
 
+-- client mirror of Settle.insurable: no ammo, quest items, recovery-kit items or secure-container contents
+local function holderOf(view, g)
+	local k, cid = locate(view, g)
+	if k == "grid" then
+		return (cid ~= "stash" and cid ~= "pockets" and cid ~= "main") and cid or nil
+	elseif k == "slot" then
+		return nil
+	end
+	for wg, w in view.items do
+		if w.mag == g then
+			return wg
+		end
+		for _, mg in w.mods or {} do
+			if mg == g then
+				return wg
+			end
+		end
+	end
+	return nil
+end
+
+local function insurable(view, g)
+	local it = view.items[g]
+	local d = it and defs[it.id]
+	if not d or it.rk or d.kind == "secure" or d.kind == "quest" or d.kind == "ammo" then
+		return false
+	end
+	local sg = view.slots and view.slots.secure
+	local cur = g
+	for _ = 1, 10 do
+		if cur == sg then
+			return false
+		end
+		cur = holderOf(view, cur)
+		if not cur then
+			return true
+		end
+	end
+	return true
+end
+
+local function insureCost(view, g)
+	local uid = game:GetService("Players").LocalPlayer.UserId
+	local it = view.items[g]
+	local cost = 0
+	local list = { g, it.mag }
+	for _, mg in it.mods or {} do
+		table.insert(list, mg)
+	end
+	for _, x in list do
+		local xi = x and view.items[x]
+		if xi and xi.ins ~= uid and insurable(view, x) then
+			cost += math.max(150, math.floor(Items.valueOf(xi) * Config.INSURANCE_RATE))
+		end
+	end
+	return cost
+end
+
 local function actionsFor(ref, g)
 	local view = viewOf(ref)
 	local it = view and view.items[g]
@@ -311,6 +369,14 @@ local function actionsFor(ref, g)
 			req({ op = "drop", g = g })
 		end, "warn")
 	end
+	if mine and not inRaid and insurable(view, g) then
+		local cost = insureCost(view, g)
+		if cost > 0 then
+			add(string.format("INSURE  -%s %s", Util.commas(cost), Config.CURRENCY), function()
+				req({ op = "insure", g = g })
+			end, "good")
+		end
+	end
 	if mine and not inRaid and view.slots.secure ~= g then
 		if known(it.id) and d.value > 0 and not it.rk then
 			add(string.format("SELL  +%s %s", Util.commas(math.floor(Items.valueOf(it) * Config.SELL_RATE)), Config.CURRENCY), function()
@@ -403,10 +469,17 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 		local col = ({ K.C.ochre, K.C.orange, Color3.fromHex("B05CC8"), K.C.red })[Items.RARITY[d.rarity]] or K.C.ochre
 		K.frame(t, { Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = col, ZIndex = 5 })
 	end
+	local tags = {}
 	if it.fir then
-		K.label(t, "FIR", 9, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 3, 1, -1), Size = UDim2.fromOffset(22, 11), TextColor3 = K.C.green, ZIndex = 5 })
+		table.insert(tags, '<font color="#93A57C">FIR</font>')
 	elseif it.rk then
-		K.label(t, "RK", 9, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 3, 1, -1), Size = UDim2.fromOffset(22, 11), TextColor3 = K.C.dim, ZIndex = 5 })
+		table.insert(tags, '<font color="#8C948D">RK</font>')
+	end
+	if it.ins then
+		table.insert(tags, '<font color="#7FB2D9">INS</font>')
+	end
+	if #tags > 0 then
+		K.label(t, table.concat(tags, " "), 9, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 3, 1, -1), Size = UDim2.fromOffset(44, 11), ZIndex = 5 })
 	end
 	if d.armor and it.dur then
 		local f = math.clamp(it.dur / d.armor.dur, 0, 1)
@@ -667,7 +740,7 @@ local function detail(parent, w, h)
 			table.insert(fx, "MOUNT: " .. (MOUNT_NAMES[d.mod.slot] or "?") .. (d.mod.caliber and (" " .. d.mod.caliber) or ""))
 			table.insert(lines, table.concat(fx, "   "))
 		end
-		table.insert(lines, string.format("VALUE %s %s   ·   %.2f kg   ·   %dx%d%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), d.w, d.h, it.fir and "   ·   FOUND IN RAID" or ""))
+		table.insert(lines, string.format("VALUE %s %s   ·   %.2f kg   ·   %dx%d%s%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), d.w, d.h, it.fir and "   ·   FOUND IN RAID" or "", it.ins and "   ·   INSURED" or ""))
 	else
 		table.insert(lines, "Examine this item to identify it.")
 	end
@@ -800,6 +873,14 @@ function Inventory.render()
 			K.button(row, "CLAIM RECOVERY KIT", { Size = UDim2.fromOffset(200, 30), TextSize = 13, TextColor3 = K.C.ochre }, function()
 				req({ op = "recovery" })
 			end)
+		end
+		local cl = d.claims
+		if cl and cl.ready > 0 then
+			K.button(row, string.format("COLLECT INSURANCE (%d)", cl.ready), { Size = UDim2.fromOffset(230, 30), TextSize = 13, TextColor3 = K.C.green }, function()
+				req({ op = "claim" })
+			end)
+		elseif cl and cl.waiting > 0 then
+			K.label(row, string.format("INSURANCE: %d ITEM(S) RETURNING IN %s", cl.waiting, Util.clock(math.max(0, cl.nextIn or 0))), 12, { Size = UDim2.fromOffset(330, 30), TextColor3 = K.C.green })
 		end
 	else
 		K.label(right, "Open a container or body to loot it.\nPress " .. ctx.Input.label("Inventory") .. " to close.", 13, { Size = UDim2.new(1, 0, 0, 40), TextColor3 = K.C.dim, TextWrapped = true })

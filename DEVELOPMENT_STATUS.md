@@ -1,6 +1,6 @@
 # Zero Return: Development Status
 
-Build `0.3.0-m6`. Last updated 2026-10-28.
+Build `0.4.0-m7`. Last updated 2026-10-28.
 
 Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. The map is **Quay 7**, an industrial coastal evacuation zone.
 
@@ -11,7 +11,7 @@ Zero Return is an original extraction shooter for Roblox. The core loop is inspi
 | A: Audit | Done | Tools probed. The original kit is preserved at `reference/COLD_SIGNAL_original_kit.zip`. The kit docs are renamed under `docs/kit/`. |
 | B: Pipeline smoke test | Done | Rojo 7.7.1 syncs into Studio. Blender builds meshes, which are uploaded through Open Cloud and load in-game. |
 | C: Vertical slice | Done | All Definition of Done steps were verified in a Studio playtest (single client, in-memory store). |
-| D: Polish | Partly done | Done: Blender meshes (viewmodel, third-person rifle, props), FIELD RECORDER HUD, original audio. Still to do: multi-client, device and performance passes. |
+| D: Polish | Partly done | Done: Blender meshes (viewmodel, third-person rifle, props), FIELD RECORDER HUD, original audio. Still to do: two-client test, device and performance passes. |
 | E: Expansion (improvement program M2–M11) | In progress | See the milestone table below and `NEXT_TASK.md`. |
 
 ## Improvement program (owner request, 2026-10-28)
@@ -25,11 +25,19 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 | M4 Health & ballistics | Done (79e505d) | 7 body parts (440 HP), bleeds, fractures, pain, energy/hydration, armor classes/durability/penetration, Tarkov-order meds. |
 | M5 Weapons 2.0 | Done | 7 weapons from one shared part-built spec (first and third person), IK arms, slot switching with draw times, auto/semi/pump/bolt, mag and shell-by-shell reloads, mag check, knife, attachments (reflex, 4x scope, suppressors, brake, grip, light), modding in the inventory. |
 | M6 Movement & animation | Done | Own operator rig (Blender body, Motor6D skeleton) for players and AI; shared RigMath IK solver drives server hitboxes and client animation (gait, crouch depth, prone, lean, aim pitch, two-hand weapon holds, gestures, ragdoll); Tarkov movement (lean Q/E, prone Z, walk-speed wheel, leg/arm stamina, hold breath, weight, inertia, vault/mantle, free look Alt); procedural sound atlas (footsteps by surface, handling, impacts, bullet cracks). |
-| M7 Multiplayer raids | Next | Raid matching on one server (12 players), squads, PvP bodies, player-scav mode, conditional extracts, insurance, longer raids. |
-| M8 AI 2.0 | Planned | Scavs, guards, a boss with followers, vision/hearing, cover, waves, friend-foe rules. |
+| M7 Multiplayer raids | Done | One shared 25-min raid per server (queue → matching → raid, up to 12 operators), PMC late entry for 5 min, player scavs until 6 min left; squads (invite/accept/kick, shared insertion, armband colour, no friendly markers); spread spawns with per-side exfils; bodies that stay in the raid (KIA and disconnects); player-scav mode (free random kit, 10-min cooldown, loot to stash, PMC health untouched); exfil rules (open, paid, key, chance, scav-only); insurance with returns after the raid; larger lens HUD. |
+| M8 AI 2.0 | Next | Scavs, guards, a boss with followers, vision/hearing, cover, waves, friend-foe rules. |
 | M9 Economy | Planned | Traders, barter, loyalty, quests, XP/skills, hideout crafting, keys and locked rooms. |
 | M10 World | Planned | New POIs and boss compound, doors, loose loot, time of day/weather, audio atlas, Blender weapon/gear art. |
 | M11 QA | Planned | Two-client test, device emulation, performance, exploit regression, docs, backup. |
+
+## How a raid works (M7)
+
+1. **Deploy** at the hideout terminal as a **PMC** (your gear) or a **player scav** (free random kit, 10-minute cooldown).
+2. If no raid is running, the first deploy starts a **12-second matching** countdown; everyone who deploys meanwhile goes in together. Squad members insert at the same point.
+3. The raid lasts **25 minutes** for everyone. PMCs can still join during the **first 5 minutes**, scavs until **6 minutes are left**; otherwise you queue for the next raid.
+4. Exfils depend on your insertion side. Some cost money (PIER 3 BOAT, 8,000 MK), need a key (SERVICE SHAFT, office key), may be closed for the whole raid (CRANE YARD LIFT), or are scav-only (STORM CULVERT). Press **O** to see yours.
+5. When the clock runs out, anyone still inside is **missing in action**. The raid also ends once nobody is left inside. Bodies and dropped gear are cleared, and **insured** items that nobody extracted come back to their owner 15 minutes later.
 
 ## Definition of Done
 
@@ -85,7 +93,8 @@ Notes:
 
 - **Server (`src/server`)**
   - Main and Services share one `ctx` table.
-  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Health, Combat, Extract, AI, Raid, Dev.
+  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Health, Combat, Extract, AI, Raid, Match, Dev.
+  - Match owns the raid cycle (queue, matching, shared clock, entry windows, end conditions), squads, spawn picking and insurance settlement; Raid owns per-player sessions, deploy/enter/finalize and inventory requests.
   - Everything that matters is decided on the server: shots and damage, inventory, loot, extraction, currency and profiles.
 - **Persistence**
   - Session-locked profiles (UpdateAsync with a lock that expires after 150 s).
@@ -101,7 +110,7 @@ Notes:
   - Custom interaction prompts, grid inventory, deploy, summary, settings and exits screens, touch cluster.
 - **Shared (`src/shared`)**: Config, Items, Weapons, WeaponModels, RigSpec (generated by `tools/rig_def.py`), RigMath, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, SoundAtlas (generated), Textures, Version.
 - **Test bridges (Studio only)**
-  - `ServerStorage.ZR_Dev` (deploy, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, expire, tests, abuse probes, hp, shootMe, wound, give [slot], weapon).
+  - `ServerStorage.ZR_Dev` (deploy [pmc|scav, skips the matching countdown], match, endRaid, expire [shared clock], hold, setExtracts, claimNow, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, tests, abuse probes, hp, shootMe, wound, give [slot], weapon).
   - `PlayerScripts.ZR_ClientDev` (state, move, fire, reload, inv, look, aim, switch, cycle, magcheck, light, slash, firemode, stance, lean, tune, pose, orbit [target], screens).
   - Neither bridge exists on live servers.
 
@@ -113,4 +122,8 @@ The full log is in `docs/kit/STATE/DECISIONS.md`.
 - **Rojo port:** 34873. Port 34872 belongs to another project.
 - **Art:** procedural Blender scripts with vertex colours and no textures, uploaded through Open Cloud. The API key stays in the owner's home folder.
 - **Audio:** original synthesised sound effects, plus one ambience track from Roblox's licensed library.
-- **Map:** one shared raid world per server. Each player has their own raid session.
+- **Map:** one shared raid world per server, one raid at a time (Match). Each player has their own raid session inside it.
+- **Raid cycle:** 12 s matching, 25 min raids, PMC late entry 5 min (a compromise so nobody waits a full raid), scavs until 6 min left, early end when empty.
+- **Squads:** no friendly markers or teammate health (Tarkov); squads wear one armband colour on both arms. The roster shows in the hideout and briefly at insertion or with O.
+- **Bodies:** Roblox destroys a character on respawn, so a dead player's body is copied into `workspace.ZR_Corpses` and stays lootable until the raid ends.
+- **HUD size:** text is authored at 1080p and scales with screen height to the power 0.6 (minimum 0.5), so small windows and phones keep readable numerals; everything stays in the screen margins.

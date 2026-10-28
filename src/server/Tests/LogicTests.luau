@@ -4,6 +4,7 @@ local Services = script.Parent.Parent:WaitForChild("Services")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Grid = require(Shared.Grid)
 local Items = require(Shared.Items)
+local Config = require(Shared.Config)
 local Inv = require(Services.Inv)
 local Settle = require(Services.Settle)
 local Loot = require(Services.Loot)
@@ -328,6 +329,78 @@ function T.run(ctx)
 		local shin = thigh * CFrame.new(Jk.p0) * Lc.RightKnee * CFrame.new(-Jk.p1)
 		local ankle = (shin * CFrame.new(Ja.p0)).Position
 		check("crouch IK plants the ankle", math.abs(ankle.Y - 0.26) < 0.05)
+	end
+
+	-- M7: player scav raids
+	do
+		local function n(h)
+			local c = 0
+			for _ in h.items do
+				c += 1
+			end
+			return c
+		end
+		local pr = Settle.newProfile()
+		local kit = Loot.scavLoadout(Random.new(7))
+		check("scav kit has a primary", kit.slots.primary ~= nil and inv(kit))
+		local raidKit = Settle.deployScav(pr, "SCAV1", 1000, kit)
+		check("scav deploy keeps the PMC loadout home", raidKit == kit and pr.slots.primary ~= nil and pr.pendingRaid ~= nil and pr.pendingRaid.scav == true)
+		check("scav cooldown set", pr.scavReadyAt == 1000 + Config.SCAV_COOLDOWN)
+		check("scav cannot double deploy", Settle.deployScav(pr, "SCAV2", 1001, kit) == nil)
+		local lg, lit = Inv.newItem("GOLD_CHAIN", 1)
+		lit.fip = true
+		local placed = Inv.place(kit, lg, lit, Inv.loadOrder(kit))
+		local rc = Settle.finalize(pr, "SCAV1", "SUCCESS", kit, 1100)
+		check("scav extract settles", placed and rc ~= nil and rc.scav == true and pr.pendingRaid == nil and inv(pr))
+		check("scav loot lands in the stash as FIR", pr.items[lg] ~= nil and pr.items[lg].fir == true and Inv.locate(pr, lg) == "grid")
+		check("scav stats", pr.stats.scavRaids == 1 and pr.stats.scavSurvived == 1)
+		local blocked, why = Settle.deployScav(pr, "SCAV3", 1200, Loot.scavLoadout(Random.new(8)))
+		check("scav cooldown blocks", blocked == nil and why == "SCAV_COOLDOWN")
+		local pr2 = Settle.newProfile()
+		local before = n(pr2)
+		local kit2 = Loot.scavLoadout(Random.new(9))
+		Settle.deployScav(pr2, "SCAV4", 1000, kit2)
+		local rk = Settle.finalize(pr2, "SCAV4", "KIA", kit2, 1100)
+		check("scav death leaves the PMC untouched", rk ~= nil and n(pr2) == before and pr2.pendingRaid == nil and pr2.slots.primary ~= nil and inv(pr2))
+	end
+
+	-- M7: insurance (insure, lose the kit on a body, settle at raid end, claim after the delay)
+	if ctx and ctx.Match then
+		local pr = Settle.newProfile()
+		pr.money = 1000000
+		local wg = pr.slots.primary
+		local magG = pr.items[wg].mag
+		local cost = Settle.insure(pr, wg, 42)
+		check("insure weapon + mag", cost ~= nil and cost > 0 and pr.items[wg].ins == 42 and pr.items[magG].ins == 42)
+		check("insure twice refused", select(2, Settle.insure(pr, wg, 42)) == "ALREADY_INSURED")
+		check("secure container not insurable", select(2, Settle.insure(pr, pr.slots.secure, 42)) == "NOT_INSURABLE")
+		local q = Settle.insureQuote(pr, 42)
+		local all = Settle.insureAll(pr, 42)
+		check("insure all", q.n > 0 and all == q.cost and Settle.insureQuote(pr, 42).n == 0)
+		local raid = Settle.deploy(pr, "INS1", 2000)
+		local bp = raid.slots.back
+		local xg, xit = Inv.newItem("BOLTS", 1)
+		local placedX = Inv.place(raid, xg, xit, { bp })
+		Settle.finalize(pr, "INS1", "KIA", raid, 2100)
+		local returns = {}
+		local nb = ctx.Match.collectInsured(raid, returns)
+		local bundles = returns[42] or {}
+		local allIns, hasBolts, hasWeapon, hasMag = true, false, false, false
+		for _, b in bundles do
+			for _, x in { b, table.unpack(b.subs) } do
+				allIns = allIns and x.it.ins == 42
+				hasBolts = hasBolts or x.g == xg
+				hasWeapon = hasWeapon or x.g == wg
+				hasMag = hasMag or x.g == magG
+			end
+		end
+		check("insured gear collected from the body", placedX and nb > 0 and #bundles == nb and hasWeapon and hasMag)
+		check("only insured parts come back", allIns and not hasBolts)
+		pr.claims = { { readyAt = 5000, bundles = bundles } }
+		local d0, w0 = Settle.claim(pr, 4000)
+		check("insurance return waits for the delay", d0 == 0 and w0 == #bundles)
+		local d1, w1 = Settle.claim(pr, 6000)
+		check("insurance return delivered to the stash", d1 == #bundles and w1 == 0 and pr.items[wg] ~= nil and pr.items[wg].ins == nil and pr.items[wg].mag == magG and inv(pr))
 	end
 
 	-- remote de-dupe

@@ -1,7 +1,11 @@
 --!nonstrict
 -- Extraction zones: server checks position at 5 Hz; 6 s hold; leaving, dying or timer expiry cancels.
+-- Tarkov extract rules: open, paid (MK on exit), key (carry the key), chance (open or closed for the whole
+-- raid, unknown until you get there) and scav-only. PMCs get their side's list, scavs every extract.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
+local Items = require(Shared.Items)
+local Util = require(Shared.Util)
 
 local Extract = {}
 local ctx
@@ -13,6 +17,48 @@ end
 function Extract.inside(e, p)
 	local lp = e.cf:PointToObjectSpace(p)
 	return math.abs(lp.X) <= e.size.X / 2 and math.abs(lp.Y) <= e.size.Y / 2 + 2 and math.abs(lp.Z) <= e.size.Z / 2
+end
+
+local function carries(h, id)
+	for _, it in h.items do
+		if it.id == id then
+			return true
+		end
+	end
+	return false
+end
+
+-- nil when the extract can be used right now, else (reason code, text for the player)
+function Extract.blocked(player, s, e)
+	local r = e.rule or {}
+	if r.kind == "chance" and not ctx.Match.extractOpen[e.id] then
+		return "CLOSED", "NOT AVAILABLE THIS RAID"
+	elseif r.kind == "scav" and not s.scav then
+		return "SCAV_ONLY", "SCAVS ONLY"
+	elseif r.kind == "key" and r.key and not carries(s.inv, r.key) then
+		local d = Items.defs[r.key]
+		return "KEY", "REQUIRES " .. string.upper(d and d.name or r.key)
+	elseif r.kind == "paid" then
+		local prof = ctx.Profiles.get(player)
+		if not prof or prof.money < (r.cost or 0) then
+			return "MONEY", "REQUIRES " .. Util.commas(r.cost or 0) .. " " .. Config.CURRENCY
+		end
+	end
+	return nil
+end
+
+local function complete(player, s, e)
+	local r = e.rule or {}
+	if r.kind == "paid" then
+		local prof = ctx.Profiles.get(player)
+		if not prof or prof.money < (r.cost or 0) then
+			return false
+		end
+		prof.money -= r.cost or 0
+		ctx.Profiles.markDirty(player)
+	end
+	ctx.Raid.finalize(player, "SUCCESS")
+	return true
 end
 
 function Extract.tick()
@@ -32,11 +78,24 @@ function Extract.tick()
 					end
 				end
 			end
-			if s.state == "ACTIVE" and zone then
-				s.state = "EXTRACTING"
-				s.exZone = zone
-				s.exEnds = t + Config.EXTRACT_HOLD
-				ctx.Remotes.note(player, "extract", { state = "start", zone = zone, name = ctx.World.extracts[zone].name, ends = s.exEnds })
+			if s.state == "ACTIVE" then
+				if zone then
+					local e = ctx.World.extracts[zone]
+					local why, text = Extract.blocked(player, s, e)
+					if why then
+						if s.exDenied ~= zone then
+							s.exDenied = zone
+							ctx.Remotes.note(player, "extract", { state = "denied", zone = zone, reason = why, text = text })
+						end
+					else
+						s.state = "EXTRACTING"
+						s.exZone = zone
+						s.exEnds = t + Config.EXTRACT_HOLD
+						ctx.Remotes.note(player, "extract", { state = "start", zone = zone, name = e.name, ends = s.exEnds, cost = e.rule.kind == "paid" and e.rule.cost or nil })
+					end
+				else
+					s.exDenied = nil
+				end
 			elseif s.state == "EXTRACTING" then
 				if zone ~= s.exZone then
 					s.state = "ACTIVE"
@@ -44,7 +103,13 @@ function Extract.tick()
 					s.exEnds = nil
 					ctx.Remotes.note(player, "extract", { state = "cancel" })
 				elseif t >= s.exEnds then
-					ctx.Raid.finalize(player, "SUCCESS")
+					if not complete(player, s, ctx.World.extracts[zone]) then
+						s.state = "ACTIVE"
+						s.exZone = nil
+						s.exEnds = nil
+						s.exDenied = zone
+						ctx.Remotes.note(player, "extract", { state = "denied", zone = zone, reason = "MONEY", text = "NOT ENOUGH MONEY" })
+					end
 				end
 			end
 		end

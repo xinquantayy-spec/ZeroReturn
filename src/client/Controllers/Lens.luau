@@ -102,7 +102,9 @@ function Lens:resize()
 	if s.X > 0 and s.Y > 0 then
 		self.W, self.H = s.X, s.Y
 	end
-	self.unit = math.max(self.H / 1080, 0.42) * self.scale
+	-- sizes are authored at 1080p; smaller screens (laptops, Studio, phones) shrink less than linearly so the
+	-- numerals stay readable, while everything stays in the margins
+	self.unit = math.max((self.H / 1080) ^ 0.6, 0.5) * self.scale
 	for _, o in self.objs do
 		o.dirty = true
 	end

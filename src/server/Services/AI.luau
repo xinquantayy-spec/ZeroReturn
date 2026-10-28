@@ -55,7 +55,8 @@ end
 local function findTarget(g)
 	local best, bestD = nil, math.huge
 	for player, s in ctx.Raid.sessions() do
-		if not s.done and not (DEV and player:GetAttribute("DevIgnore")) then
+		-- player scavs pass as locals unless they turned on the guards (M8 brings real AI factions)
+		if not s.done and not (DEV and player:GetAttribute("DevIgnore")) and (not s.scav or s.hostile) then
 			local char = player.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 then
@@ -324,11 +325,8 @@ function AI.onKilled(model, _attacker)
 	g.state = "DEAD"
 	model:SetAttribute("State", "DEAD")
 	ctx.Loot.spawnBody(model, g.inv or ctx.Loot.guardLoadout(Random.new()), "Harbor Watch")
-	task.delay(90, function()
-		if model.Parent then
-			model:Destroy()
-		end
-	end)
+	-- the body stays until the raid ends (frozen once the ragdoll settles)
+	ctx.Chars.freezeLater(model, 8)
 end
 
 function AI.clear()

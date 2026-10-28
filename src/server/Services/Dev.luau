@@ -43,16 +43,66 @@ function C.state(name)
 		stats = prof and prof.stats, profileItems = prof and brief(prof), invariant = prof and select(2, Inv.check(prof)) or "ok",
 		raid = s and { id = s.id, state = s.state, left = math.floor(s.endsAt - workspace:GetServerTimeNow()), extracts = s.extracts, kills = s.kills, items = brief(s.inv), invariant = select(2, Inv.check(s.inv)) or "ok" } or nil,
 		health = hum and hum.Health, pos = root and tostring(Vector3.new(math.floor(root.Position.X), math.floor(root.Position.Y), math.floor(root.Position.Z))),
-		persistence = ctx.Store.mode, world = ctx.Raid.world.status,
+		persistence = ctx.Store.mode, world = ctx.Raid.world.status, match = ctx.Match.state,
+		scav = s and s.scav or nil, claims = prof and #prof.claims, scavReadyIn = prof and math.max(0, (prof.scavReadyAt or 0) - os.time()),
 	})
 end
 
-function C.deploy(name)
+-- deploy through the real request path; if it queued, start the raid now (skips the matching countdown)
+function C.deploy(name, kind)
 	local p = plr(name)
 	local prof = ctx.Profiles.get(p)
-	local res = ctx.Raid.deploy(p, { rev = prof.rev })
-	task.wait(1.5)
-	return HttpService:JSONEncode(res)
+	local res = ctx.Remotes.dispatch(p, "deploy", { rev = prof.rev, kind = kind, rid = "dev" .. os.clock() })
+	if res.ok and res.data and res.data.queued then
+		ctx.Match.startsAt = workspace:GetServerTimeNow()
+	end
+	local t0 = os.clock()
+	while res.ok and not ctx.Raid.session(p) and os.clock() - t0 < 8 do
+		task.wait(0.2)
+	end
+	task.wait(1)
+	return HttpService:JSONEncode({ res = res, inRaid = ctx.Raid.session(p) ~= nil, match = ctx.Match.state })
+end
+
+function C.match(name)
+	local p = plr(name)
+	local st = ctx.Match.status(p)
+	st.now = workspace:GetServerTimeNow()
+	st.extractOpen = ctx.Match.extractOpen
+	st.raids = ctx.Match.raids
+	st.endedReason = ctx.Match.endedReason
+	return HttpService:JSONEncode(st)
+end
+
+function C.endRaid()
+	ctx.Match.endRaid("DEV")
+	return "ended"
+end
+
+-- keep a raid running with nobody inside (to inspect bodies after a death)
+function C.hold(on)
+	ctx.Match.holdOpen = on ~= false
+	return "holdOpen=" .. tostring(ctx.Match.holdOpen)
+end
+
+-- override a session's extract list: setExtracts(name, "A,B")
+function C.setExtracts(name, csv)
+	local s = ctx.Raid.session(plr(name))
+	if not s then
+		return "not in raid"
+	end
+	s.extracts = string.split(csv, ",")
+	ctx.Remotes.note(plr(name), "raid", ctx.Raid.raidInfo(s))
+	return table.concat(s.extracts, ",")
+end
+
+-- every insurance claim becomes ready now (the delivery loop runs every 10 s)
+function C.claimNow(name)
+	local prof = ctx.Profiles.get(plr(name))
+	for _, c in prof.claims do
+		c.readyAt = 0
+	end
+	return #prof.claims .. " claim(s) ready"
 end
 
 function C.tp(name, where)
@@ -210,13 +260,13 @@ function C.rejoin(name)
 	return HttpService:JSONEncode({ loaded = prof ~= nil, recovered = rec ~= nil, items = prof and brief(prof) })
 end
 
-function C.expire(name)
-	local s = ctx.Raid.session(plr(name))
-	if not s then
-		return "not in raid"
+-- the shared raid clock runs out (everyone inside goes MIA)
+function C.expire()
+	if ctx.Match.state ~= "RUNNING" then
+		return "no raid"
 	end
-	s.endsAt = workspace:GetServerTimeNow() - 1
-	task.wait(1.5)
+	ctx.Match.endsAt = workspace:GetServerTimeNow() - 1
+	task.wait(1.6)
 	return "expired"
 end
 

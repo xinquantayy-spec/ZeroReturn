@@ -105,6 +105,31 @@ function Store.write(key: string, data: any, release: boolean?): (boolean, strin
 	return true, nil
 end
 
+-- Cross-server mailbox (insurance returns): append under UpdateAsync, drained by the owner's server.
+function Store.mail(userId: number, entry: any): boolean
+	local ok = update("mail_" .. tostring(userId), function(old)
+		local box = type(old) == "table" and old or {}
+		table.insert(box, entry)
+		while #box > 40 do
+			table.remove(box, 1)
+		end
+		return box
+	end)
+	return ok
+end
+
+function Store.drainMail(userId: number): { any }
+	local got = nil
+	local ok = update("mail_" .. tostring(userId), function(old)
+		got = old
+		if type(old) == "table" and #old > 0 then
+			return {}
+		end
+		return nil
+	end)
+	return (ok and type(got) == "table") and got or {}
+end
+
 -- Studio test helper: raw read of memory/DataStore value (no lock change).
 function Store.peek(key: string): any
 	if Store.mode == "MEMORY" then

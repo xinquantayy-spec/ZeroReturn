@@ -13,8 +13,8 @@ local function render()
 	if p then
 		local key = ctx.Input.label("Interact")
 		btn.Text = string.format("[%s]  %s  ·  %s", key, string.upper(p.ActionText), string.upper(p.ObjectText))
-		local w = math.max(220, #btn.Text * 8 + 24)
-		btn.Size = UDim2.fromOffset(w, 34)
+		local w = math.max(260, #btn.Text * 10 + 32)
+		btn.Size = UDim2.fromOffset(w, 42)
 	end
 end
 
@@ -29,7 +29,7 @@ function Interact.init(c)
 	gui = K.screen("ZR_Prompt", 7)
 	btn = K.button(gui, "", {
 		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -196), Size = UDim2.fromOffset(260, 34),
-		BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.25, TextSize = 14, Visible = false, Selectable = false,
+		BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.25, TextSize = 18, Visible = false, Selectable = false,
 	})
 	btn.Activated:Connect(function()
 		local p = Interact.current

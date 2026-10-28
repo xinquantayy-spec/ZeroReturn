@@ -43,7 +43,9 @@ function Settle.newProfile(): any
 	p.rev = 0
 	p.money = Config.START_MONEY
 	p.finalized = {}
-	p.stats = { raids = 0, survived = 0, kia = 0, mia = 0, lost = 0, kills = 0, extractedValue = 0, pmcKills = 0, scavKills = 0 }
+	p.stats = { raids = 0, survived = 0, kia = 0, mia = 0, lost = 0, kills = 0, extractedValue = 0, pmcKills = 0, scavKills = 0, scavRaids = 0, scavSurvived = 0 }
+	p.claims = {}
+	p.scavReadyAt = 0
 	p.settings = {}
 	p.known = {}
 	-- worn kit
@@ -97,9 +99,11 @@ function Settle.migrate(p: any): any
 	p.slots = p.slots or {}
 	p.finalized = p.finalized or {}
 	p.stats = p.stats or {}
-	for _, k in { "raids", "survived", "kia", "mia", "lost", "kills", "extractedValue", "pmcKills", "scavKills" } do
+	for _, k in { "raids", "survived", "kia", "mia", "lost", "kills", "extractedValue", "pmcKills", "scavKills", "scavRaids", "scavSurvived" } do
 		p.stats[k] = p.stats[k] or 0
 	end
+	p.claims = p.claims or {}
+	p.scavReadyAt = p.scavReadyAt or 0
 	p.settings = p.settings or {}
 	p.known = p.known or {}
 	return p
@@ -154,6 +158,142 @@ function Settle.deploy(p: any, raidId: string, now: number): (any?, string?)
 	return Util.copy(raid), nil
 end
 
+-- Player-scav raid: the PMC kit stays home; a generated scav kit goes in. Cooldown starts now.
+function Settle.deployScav(p: any, raidId: string, now: number, kit: any): (any?, string?)
+	if p.pendingRaid then
+		return nil, "ALREADY_IN_RAID"
+	end
+	if (p.scavReadyAt or 0) > now then
+		return nil, "SCAV_COOLDOWN"
+	end
+	p.pendingRaid = { id = raidId, t = now, risked = {}, value = 0, scav = true }
+	p.scavReadyAt = now + Config.SCAV_COOLDOWN
+	p.stats.scavRaids += 1
+	p.rev += 1
+	return kit, nil
+end
+
+-- Tarkov insurance rules: weapons, gear, mags, attachments and loot can be insured; ammo, quest items, the
+-- secure container (and what is inside it - it always comes home) and free recovery-kit items cannot.
+local function insurable(p: any, g: string): boolean
+	local it = p.items[g]
+	local d = it and Items.defs[it.id]
+	if not d or it.rk or d.kind == "secure" or d.kind == "quest" or d.kind == "ammo" then
+		return false
+	end
+	local sg = p.slots.secure
+	return not (sg and (g == sg or Inv.isInside(p, sg, g)))
+end
+Settle.insurable = insurable
+
+local function insureCost(it: any): number
+	return math.max(150, math.floor(Items.valueOf(it) * Config.INSURANCE_RATE))
+end
+
+-- cost and item count to insure everything not yet insured in `list`
+local function quote(p: any, list: { string }, userId: number): (number, { string })
+	local cost, todo = 0, {}
+	for _, x in list do
+		local xi = p.items[x]
+		if xi and xi.ins ~= userId and insurable(p, x) then
+			cost += insureCost(xi)
+			table.insert(todo, x)
+		end
+	end
+	return cost, todo
+end
+
+local function insureList(p: any, list: { string }, userId: number): (number?, string?)
+	if p.pendingRaid then
+		return nil, "IN_RAID"
+	end
+	local cost, todo = quote(p, list, userId)
+	if #todo == 0 then
+		return nil, "ALREADY_INSURED"
+	end
+	if p.money < cost then
+		return nil, "NOT_ENOUGH_MONEY"
+	end
+	p.money -= cost
+	for _, x in todo do
+		p.items[x].ins = userId
+	end
+	p.rev += 1
+	return cost, nil
+end
+
+-- Insure one item (and the parts attached to it: magazine, attachments) for the next raid.
+function Settle.insure(p: any, g: string, userId: number): (number?, string?)
+	local it = p.items[g]
+	if not it then
+		return nil, "NO_ITEM"
+	end
+	if not insurable(p, g) then
+		return nil, "NOT_INSURABLE"
+	end
+	local list = { g }
+	if it.mag then
+		table.insert(list, it.mag)
+	end
+	for _, mg in it.mods or {} do
+		table.insert(list, mg)
+	end
+	return insureList(p, list, userId)
+end
+
+-- "Insure all" on the deploy screen: everything worn and carried that can be insured.
+function Settle.insureAll(p: any, userId: number): (number?, string?)
+	return insureList(p, Inv.equippedGuids(p), userId)
+end
+
+function Settle.insureQuote(p: any, userId: number): any
+	local list = Inv.equippedGuids(p)
+	local cost, todo = quote(p, list, userId)
+	local insured = 0
+	for _, g in list do
+		local it = p.items[g]
+		if it and it.ins == userId then
+			insured += 1
+		end
+	end
+	return { cost = cost, n = #todo, insured = insured }
+end
+
+-- Deliver ready insurance returns into the stash; returns items delivered and claims still waiting.
+function Settle.claim(p: any, now: number): (number, number)
+	local delivered, waiting = 0, 0
+	local keep = {}
+	for _, c in p.claims or {} do
+		if (c.readyAt or 0) <= now then
+			local rest = {}
+			for _, b in c.bundles or {} do
+				b.it.ins = nil
+				for _, sub in b.subs or {} do
+					sub.it.ins = nil
+				end
+				if Inv.give(p, b, nil, { "stash" }) then
+					delivered += 1
+				else
+					table.insert(rest, b)
+				end
+			end
+			if #rest > 0 then
+				c.bundles = rest
+				table.insert(keep, c)
+				waiting += #rest
+			end
+		else
+			table.insert(keep, c)
+			waiting += #(c.bundles or {})
+		end
+	end
+	p.claims = keep
+	if delivered > 0 then
+		p.rev += 1
+	end
+	return delivered, waiting
+end
+
 local function summarize(h: any, guids: { string }?): { any }
 	local out = {}
 	local list = guids
@@ -184,7 +324,52 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 	if not pr or pr.id ~= raidId then
 		return nil, "NO_PENDING_RAID"
 	end
-	local receipt = { raidId = raidId, outcome = outcome, retained = {}, lost = {}, kept = {}, value = 0, at = now }
+	local receipt = { raidId = raidId, outcome = outcome, retained = {}, lost = {}, kept = {}, value = 0, at = now, scav = pr.scav }
+	if pr.scav then
+		-- player scav: everything carried out goes to the stash (overflow is sold); nothing at stake otherwise
+		if outcome == "SUCCESS" and raid then
+			local tops = {}
+			for _, g in raid.slots do
+				table.insert(tops, g)
+			end
+			for g in raid.grids.pockets or {} do
+				table.insert(tops, g)
+			end
+			local sold = 0
+			for _, g in tops do
+				if raid.items[g] then
+					local b = Inv.take(raid, g)
+					if b then
+						for _, x in { b, table.unpack(b.subs) } do
+							local it = x.it
+							if it.fip then
+								it.fip = nil
+								it.fir = true
+							end
+							it.ins = nil
+						end
+						receipt.value += Items.valueOf(b.it)
+						table.insert(receipt.retained, { id = b.it.id, n = b.it.n, a = b.it.a })
+						if not Inv.give(p, b, nil, { "stash" }) then
+							local v = Items.valueOf(b.it)
+							for _, sub in b.subs do
+								v += Items.valueOf(sub.it)
+							end
+							sold += math.floor(v * Config.SELL_RATE)
+						end
+					end
+				end
+			end
+			p.money += sold
+			receipt.sold = sold
+			p.stats.scavSurvived += 1
+			p.stats.extractedValue += receipt.value
+		end
+		p.pendingRaid = nil
+		p.finalized[raidId] = { o = outcome, t = now }
+		p.rev += 1
+		return receipt, nil
+	end
 	if outcome == "SUCCESS" and raid then
 		if next(p.grids.pockets) or next(p.slots) then
 			return nil, "LOADOUT_NOT_EMPTY"
@@ -199,6 +384,7 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 				it.fip = nil
 				it.fir = true
 			end
+			it.ins = nil -- insurance covers one raid (and loot from other bodies is now yours)
 			p.items[g] = it
 		end
 		for cid, pl in raid.grids do

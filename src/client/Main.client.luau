@@ -118,8 +118,9 @@ if RunService:IsStudio() then
 			-- a = { dist, yaw, pitch, h, target = model name (AI or player) } or nil to return to first person
 			if a and a.target then
 				local ai = workspace:FindFirstChild("ZR_AI")
+				local cp = workspace:FindFirstChild("ZR_Corpses")
 				local pl = Players:FindFirstChild(a.target)
-				a.model = (ai and ai:FindFirstChild(a.target)) or (pl and pl.Character) or nil
+				a.model = (ai and ai:FindFirstChild(a.target)) or (cp and cp:FindFirstChild(a.target)) or (pl and pl.Character) or nil
 			end
 			ctx.Camera.orbit = a
 			return "ok"

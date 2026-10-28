@@ -362,7 +362,7 @@ local function addContainerSpot(parent, id, kind, label, cf)
 	table.insert(World.containers, { id = id, kind = kind, label = label, part = anchor, prompt = pp })
 end
 
-local function addExtract(parent, id, name, pos, size)
+local function addExtract(parent, id, name, pos, size, rule)
 	local m = model("Exfil_" .. id, parent)
 	-- beacon: pole + radio box + light + sign
 	local px, pz = pos.X + size.X / 2 - 1.5, pos.Z - size.Z / 2 + 1.5
@@ -387,7 +387,7 @@ local function addExtract(parent, id, name, pos, size)
 	mark.Transparency = 0.82
 	mark.CanCollide = false
 	mark.CanQuery = false
-	World.extracts[id] = { id = id, name = name, cf = zone.CFrame, size = size, pos = pos, beacon = lamp }
+	World.extracts[id] = { id = id, name = name, cf = zone.CFrame, size = size, pos = pos, beacon = lamp, rule = rule or { kind = "open" } }
 end
 
 local function buildGround(map)
@@ -716,13 +716,29 @@ function World.build()
 	buildPumpAnnex(map)
 	buildFreightDepot(map)
 	buildLandmarksAndRoutes(map)
-	addExtract(map, "A", "RELAY GATE", Vector3.new(184, 0, -184), Vector3.new(18, 12, 16))
-	addExtract(map, "B", "PIER 3 BOAT", Vector3.new(236, 0, 150), Vector3.new(16, 12, 14))
-	addExtract(map, "C", "RAIL CUT", Vector3.new(-180, 0, -188), Vector3.new(16, 12, 14))
+	-- extract rules (Tarkov): open, paid (MK on exit), key (carry the key), chance (rolled per raid), scav-only
+	addExtract(map, "A", "RELAY GATE", Vector3.new(184, 0, -184), Vector3.new(18, 12, 16), { kind = "open" })
+	addExtract(map, "B", "PIER 3 BOAT", Vector3.new(236, 0, 150), Vector3.new(16, 12, 14), { kind = "paid", cost = 8000 })
+	addExtract(map, "C", "RAIL CUT", Vector3.new(-180, 0, -188), Vector3.new(16, 12, 14), { kind = "open" })
+	addExtract(map, "D", "STORM CULVERT", Vector3.new(-186, 0, 132), Vector3.new(12, 10, 12), { kind = "scav" })
+	addExtract(map, "E", "SERVICE SHAFT", Vector3.new(92, 0, -186), Vector3.new(12, 10, 12), { kind = "key", key = "KEY_OFFICE" })
+	addExtract(map, "F", "CRANE YARD LIFT", Vector3.new(-122, 0, 184), Vector3.new(14, 12, 12), { kind = "chance", chance = 0.6 })
+	-- PMC spawns per side; each side exits on the far side of the quay (scavs may use every extract)
+	local function sp(id, name, x, z, yaw, side)
+		return { id = id, name = name, cf = CFrame.new(x, 3.4, z) * CFrame.Angles(0, math.rad(yaw), 0), side = side }
+	end
 	World.spawns = {
-		{ id = "WEST", name = "FERRY TUNNEL", cf = CFrame.new(-192, 3.2, 10) * CFrame.Angles(0, math.rad(-90), 0), extracts = { "A", "B" } },
-		{ id = "SOUTH", name = "SOUTH YARD", cf = CFrame.new(-50, 3.2, 186), extracts = { "A", "C" } },
+		sp("W1", "FERRY TUNNEL", -190, 10, -90, "west"), sp("W2", "WEST FENCE", -188, -110, -90, "west"), sp("W3", "PUMP LANE", -186, 80, -90, "west"),
+		sp("S1", "SOUTH YARD", -50, 186, 0, "south"), sp("S2", "COLD STORE", 60, 184, 0, "south"), sp("S3", "BERTH 9", 150, 182, 20, "south"),
+		sp("E1", "EAST APRON", 186, -70, 90, "east"), sp("E2", "BOLLARD ROW", 184, 40, 90, "east"),
+		sp("N1", "NORTH LOT", 0, -188, 180, "north"), sp("N2", "SCRAP GATE", -100, -186, 180, "north"),
 	}
+	World.sideExtracts = {
+		west = { "A", "B", "E", "F" }, south = { "A", "C", "E" }, east = { "C", "F", "E" }, north = { "B", "F", "C" },
+	}
+	for _, s in World.spawns do
+		s.extracts = World.sideExtracts[s.side]
+	end
 	root.Parent = workspace
 	local n = 0
 	for _, d in root:GetDescendants() do

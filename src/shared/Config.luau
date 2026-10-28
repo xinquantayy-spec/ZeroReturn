@@ -2,12 +2,21 @@
 -- Zero Return: tunable constants shared by server and client (read-only).
 local Config = {
 	GAME_NAME = "ZERO RETURN",
-	BUILD = "0.3.0-m6",
+	BUILD = "0.4.0-m7",
 	MAP_NAME = "QUAY 7",
 	RECORDER = "FIELD RECORDER M4",
 	CURRENCY = "MK",
 
-	RAID_DURATION = 420, -- seconds (7 min test raids)
+	RAID_DURATION = 1500, -- seconds: one shared 25-minute raid per cycle (Tarkov-length)
+	MATCH_TIME = 12, -- countdown after the first player queues (others can join the queue)
+	LATE_JOIN = 300, -- PMCs may still deploy into a running raid this long after it starts
+	SCAV_CUTOFF = 360, -- player scavs can join until this many seconds remain
+	SCAV_COOLDOWN = 600,
+	MAX_PLAYERS = 12,
+	MAX_SQUAD = 5,
+	INSURANCE_RATE = 0.07, -- fee as a share of item value
+	INSURANCE_DELAY = 900, -- seconds until unlooted insured gear comes back
+	BODY_TIME = 600, -- player bodies stay lootable this long (or until the raid ends)
 	EXTRACT_HOLD = 6,
 	SEARCH_TIME = 1.2,
 	INTERACT_RANGE = 10,

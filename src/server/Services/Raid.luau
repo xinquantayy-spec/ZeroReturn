@@ -1,5 +1,6 @@
 --!nonstrict
--- Raid orchestration: player lifecycle, deploy reservation, raid sessions/timers, settlement, inventory requests.
+-- Raid orchestration: player lifecycle, deploy reservation (PMC or player scav), raid sessions, settlement,
+-- inventory requests. The shared raid clock, queue, squads and insurance settlement live in Match.luau.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,7 +16,6 @@ local Raid = {}
 local ctx
 local sessions = {} -- [Player] = session
 local deploying = {}
-local spawnTurn = 0
 Raid.world = { status = "IDLE", seed = 0, resets = 0 }
 
 local function now()
@@ -53,9 +53,29 @@ function Raid.raidInfo(s)
 	local ex = {}
 	for _, id in s.extracts do
 		local e = ctx.World.extracts[id]
-		table.insert(ex, { id = id, name = e.name, pos = e.pos })
+		local r = e.rule or {}
+		table.insert(ex, { id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key })
 	end
-	return { id = s.id, started = s.started, endsAt = s.endsAt, spawn = s.spawn, extracts = ex, state = s.state, exEnds = s.exEnds, exZone = s.exZone }
+	return {
+		id = s.id, started = s.raidStart or s.started, endsAt = s.endsAt, spawn = s.spawn, extracts = ex, state = s.state,
+		exEnds = s.exEnds, exZone = s.exZone, scav = s.scav,
+	}
+end
+
+-- insurance returns waiting for this profile (ready ones are delivered to the stash automatically)
+local function claimsInfo(prof)
+	local ready, waiting, nextAt = 0, 0, nil
+	local t = os.time()
+	for _, c in prof.claims or {} do
+		local n = #(c.bundles or {})
+		if (c.readyAt or 0) <= t then
+			ready += n
+		else
+			waiting += n
+			nextAt = math.min(nextAt or math.huge, c.readyAt)
+		end
+	end
+	return { ready = ready, waiting = waiting, nextIn = nextAt and (nextAt - t) or nil }
 end
 
 function Raid.state(player)
@@ -78,6 +98,11 @@ function Raid.state(player)
 		settings = prof.settings,
 		persistence = ctx.Store.mode,
 		raid = s and Raid.raidInfo(s) or nil,
+		claims = claimsInfo(prof),
+		insureAll = (not s) and Settle.insureQuote(prof, player.UserId) or nil,
+		scavReadyAt = prof.scavReadyAt or 0,
+		serverTime = os.time(),
+		queued = ctx.Match.queuedKind(player),
 	}
 end
 
@@ -121,12 +146,6 @@ function Raid.safeSpawnCF()
 	return ctx.World.safehouse.spawn * CFrame.new(math.random(-2, 2), 0, math.random(-2, 2))
 end
 
-function Raid.pickSpawn()
-	spawnTurn += 1
-	local list = ctx.World.spawns
-	return list[(spawnTurn % #list) + 1]
-end
-
 function Raid.resetWorld()
 	Raid.world.seed = math.random(1, 1e9)
 	Raid.world.resets += 1
@@ -135,14 +154,17 @@ function Raid.resetWorld()
 	Raid.world.status = "RUNNING"
 end
 
-local function checkIdle()
-	if next(sessions) == nil and Raid.world.status == "RUNNING" then
-		Raid.world.status = "IDLE"
-		ctx.AI.clear()
-	end
+-- raid over (Match settled insurance first): AI, bodies, corpses and dropped gear go away
+function Raid.clearWorld()
+	ctx.AI.clear()
+	ctx.Loot.clearTemp()
+	ctx.Chars.clearCorpses()
+	Raid.world.status = "IDLE"
 end
 
--- ── deploy / finalize ─────────────────────────────────────────────────────────
+-- ── deploy / enter / finalize ─────────────────────────────────────────────────
+-- Deploy request from the hideout terminal. Validates, then joins the server's raid cycle: straight into the
+-- running raid while its entry window is open (PMC: first minutes, scav: until late), otherwise the queue.
 function Raid.deploy(player, p)
 	local prof = ctx.Profiles.get(player)
 	if not prof then
@@ -154,9 +176,16 @@ function Raid.deploy(player, p)
 	if deploying[player] then
 		return fail("BUSY")
 	end
-	if p.rev ~= prof.rev then
+	if ctx.Match.isQueued(player) then
+		return fail("QUEUED", "Already waiting for insertion.")
+	end
+	local kind = (p.kind == "scav") and "scav" or "pmc"
+	if kind == "pmc" and p.rev ~= prof.rev then
 		Raid.push(player)
 		return fail("STALE_REVISION", "Inventory changed - review and deploy again.")
+	end
+	if kind == "scav" and (prof.scavReadyAt or 0) > os.time() then
+		return fail("SCAV_COOLDOWN", "Scav ready in " .. Util.clock(prof.scavReadyAt - os.time()) .. ".")
 	end
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -167,29 +196,64 @@ function Raid.deploy(player, p)
 	if (root.Position - Config.SAFEHOUSE_ORIGIN).Magnitude > 80 then
 		return fail("NOT_AUTHORIZED")
 	end
+	if ctx.Match.request(player, kind) == "enter" then
+		local spawn, idx = ctx.Match.spawnFor(player, kind)
+		local okE, err = Raid.enter(player, kind, spawn, idx)
+		if not okE then
+			return fail(err or "FAILED")
+		end
+		local s = sessions[player]
+		return ok({ entered = true, raidId = s and s.id })
+	end
+	Raid.push(player)
+	return ok({ queued = true, status = ctx.Match.status(player) })
+end
+
+-- Insert a player into the running raid (Match: queue at raid start; deploy: late entry). PMCs bring their
+-- loadout (escrowed in the profile first); player scavs get a generated kit and start the scav cooldown.
+function Raid.enter(player, kind, spawn, idx)
+	local prof = ctx.Profiles.get(player)
+	if not prof or not player.Parent then
+		return false, "NOT_READY"
+	end
+	if sessions[player] or prof.pendingRaid or deploying[player] then
+		return false, "ALREADY_IN_RAID"
+	end
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 then
+		ctx.Remotes.note(player, "toast", { text = "INSERTION CANCELLED", tone = "warn" })
+		return false, "NOT_AUTHORIZED"
+	end
+	local scav = kind == "scav"
 	deploying[player] = true
 	local backup = Util.copy(prof)
 	local raidId = Util.guid()
-	local raidInv, err = Settle.deploy(prof, raidId, os.time())
+	local raidInv, err
+	if scav then
+		raidInv, err = Settle.deployScav(prof, raidId, os.time(), ctx.Loot.scavLoadout(Random.new()))
+	else
+		raidInv, err = Settle.deploy(prof, raidId, os.time())
+	end
 	if not raidInv then
 		deploying[player] = nil
-		return fail(err)
+		ctx.Remotes.note(player, "toast", { text = "INSERTION FAILED: " .. tostring(err), tone = "warn" })
+		Raid.push(player)
+		return false, err
 	end
 	local saved = ctx.Profiles.save(player, true)
 	if not saved then
 		ctx.Profiles.set(player, backup)
 		deploying[player] = nil
 		Raid.push(player)
-		return fail("STORE_UNAVAILABLE", "Could not reserve your gear. Nothing was lost - try again.")
+		ctx.Remotes.note(player, "toast", { text = "COULD NOT RESERVE YOUR GEAR - NOTHING WAS LOST", tone = "warn" })
+		return false, "STORE_UNAVAILABLE"
 	end
-	if Raid.world.status ~= "RUNNING" then
-		Raid.resetWorld()
-	end
-	local spawn = Raid.pickSpawn()
 	local t = now()
 	local s = {
-		id = raidId, inv = raidInv, state = "ACTIVE", started = t, endsAt = t + Config.RAID_DURATION,
-		spawn = spawn.id, extracts = spawn.extracts, kills = 0, risked = {}, found = {},
+		id = raidId, inv = raidInv, state = "ACTIVE", started = t, raidStart = ctx.Match.startedAt, endsAt = ctx.Match.endsAt,
+		match = ctx.Match.id, spawn = spawn.id, extracts = ctx.Match.extractsFor(spawn, scav), kills = 0, risked = {}, found = {},
+		scav = scav,
 		active = (raidInv.slots.primary and "primary") or (raidInv.slots.secondary and "secondary") or (raidInv.slots.holster and "holster") or (raidInv.slots.melee and "melee") or nil,
 	}
 	for g in raidInv.items do
@@ -197,15 +261,21 @@ function Raid.deploy(player, p)
 	end
 	sessions[player] = s
 	deploying[player] = nil
+	if not player.Parent then
+		-- left while the reservation was saving: settle as a disconnect
+		Raid.finalize(player, "DISCONNECTED")
+		return false, "LEFT"
+	end
 	ctx.Combat.reset(player)
-	task.spawn(function()
-		local cf = spawn.cf * CFrame.new(math.random(-4, 4), 0, math.random(-4, 4))
-		ctx.Chars.spawn(player, cf, s.inv, s.active)
-		s.gearKey = gearKey(s.inv, s.active)
-		Raid.push(player)
-		ctx.Remotes.note(player, "raid", Raid.raidInfo(s))
-	end)
-	return ok({ raidId = raidId })
+	-- squad members fan out around the insertion point
+	local i = (idx or 1) - 1
+	local cf = spawn.cf * CFrame.new((i % 3 - 1) * 4 + math.random() * 1.5, 0, math.floor(i / 3) * 4 + math.random() * 1.5)
+	ctx.Chars.spawn(player, cf, s.inv, s.active, { scav = scav })
+	s.gearKey = gearKey(s.inv, s.active)
+	Raid.push(player)
+	ctx.Remotes.note(player, "raid", Raid.raidInfo(s))
+	ctx.Match.touch(player)
+	return true
 end
 
 local function itemsList(h, filter)
@@ -230,8 +300,9 @@ function Raid.finalize(player, outcome)
 	local char0 = player.Character
 	local hs0 = char0 and ctx.Health and ctx.Health.get(char0)
 	local death = (outcome == "KIA" and char0) and Raid.deathInfo(char0) or nil
-	if prof then
-		-- Tarkov: survivors keep their wounds (recovering in the hideout); death resets health
+	if prof and not s.scav then
+		-- Tarkov: survivors keep their wounds (recovering in the hideout); death resets health.
+		-- A player-scav raid never touches the PMC's health.
 		prof.health = (outcome == "SUCCESS" and hs0 and not hs0.dead) and ctx.Health.save(hs0) or nil
 		if outcome ~= "SUCCESS" and hs0 then
 			prof.health = { energy = math.max(40, math.floor(hs0.energy)), water = math.max(40, math.floor(hs0.water)) }
@@ -242,6 +313,7 @@ function Raid.finalize(player, outcome)
 		receipt, err = Settle.finalize(prof, s.id, outcome, s.inv, os.time())
 		if receipt then
 			prof.stats.kills += s.kills
+			prof.stats.pmcKills += s.pmcKills or 0
 			local good, msg = Inv.check(prof)
 			if not good then
 				warn("[ZR] INVARIANT after settlement", player.Name, msg)
@@ -257,6 +329,8 @@ function Raid.finalize(player, outcome)
 		time = now() - s.started,
 		kills = s.kills,
 		death = death,
+		scav = s.scav,
+		sold = receipt and receipt.sold or 0,
 		retained = receipt and receipt.retained or {},
 		lost = receipt and receipt.lost or {},
 		kept = receipt and receipt.kept or {},
@@ -266,11 +340,26 @@ function Raid.finalize(player, outcome)
 		end),
 	}
 	ctx.Combat.reset(player)
-	-- what was lost stays in the world as a lootable body (KIA) for whoever finds it
-	if outcome == "KIA" and receipt and next(s.inv.items) ~= nil then
-		local char = player.Character
-		if char then
-			ctx.Loot.spawnBody(char, s.inv, player.DisplayName)
+	local char = player.Character
+	if (outcome == "KIA" or outcome == "DISCONNECTED") and char and char.Parent then
+		-- the body stays in the raid with everything that was lost, for whoever finds it
+		local bodyModel = char
+		if outcome == "DISCONNECTED" then
+			bodyModel = ctx.Chars.dropBody(char) or char
+		else
+			char:SetAttribute("KeepCorpse", true) -- copied into a corpse when the player respawns in the hideout
+		end
+		if receipt and next(s.inv.items) ~= nil then
+			ctx.Loot.spawnBody(bodyModel, s.inv, "Body")
+		end
+	elseif outcome == "MIA" then
+		-- an MIA kit is gone for everyone: insured items go straight back to their owners
+		local returns = {}
+		if ctx.Match.collectInsured(s.inv, returns) > 0 then
+			ctx.Match.deliverInsured(returns)
+		end
+		if char and char.Parent then
+			char:SetAttribute("InRaid", false)
 		end
 	end
 	if player.Parent and outcome ~= "DISCONNECTED" then
@@ -282,7 +371,7 @@ function Raid.finalize(player, outcome)
 			end
 		end)
 	end
-	checkIdle()
+	ctx.Match.touch(player)
 	return receipt, summary
 end
 
@@ -451,6 +540,10 @@ function Raid.inv(player, p)
 	if g ~= nil and (type(g) ~= "string" or #g > 40) then
 		return fail("BAD_INPUT")
 	end
+	-- a queued PMC's loadout is committed: no gear changes until insertion (or leaving the queue)
+	if not inRaid and ctx.Match.queuedKind(player) == "pmc" and op ~= "examine" and op ~= "insure" and op ~= "claim" then
+		return fail("QUEUED", "Leave the queue to change your loadout.")
+	end
 	local s = sessions[player]
 	if inRaid then
 		local char = player.Character
@@ -609,6 +702,36 @@ function Raid.inv(player, p)
 			me.money += math.floor(value * Config.SELL_RATE)
 		end
 		done = true
+	elseif op == "insure" then
+		-- Tarkov insurance: pay a share of the value; if the item is lost and nobody extracts with it, it comes back
+		if inRaid or sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		local cost, e
+		if p.all == true then
+			cost, e = Settle.insureAll(me, player.UserId)
+		else
+			if not g then
+				return fail("BAD_INPUT")
+			end
+			cost, e = Settle.insure(me, g, player.UserId)
+		end
+		if not cost then
+			local msgs = { NOT_ENOUGH_MONEY = "Not enough money.", ALREADY_INSURED = "Already insured.", NOT_INSURABLE = "That can't be insured." }
+			return fail(e or "FAILED", msgs[e or ""])
+		end
+		done = true
+		ctx.Remotes.note(player, "toast", { text = string.format("INSURED  -%s %s", Util.commas(cost), Config.CURRENCY), tone = "good" })
+	elseif op == "claim" then
+		if inRaid then
+			return fail("NOT_AUTHORIZED")
+		end
+		local n, waiting = Settle.claim(me, os.time())
+		if n == 0 then
+			return fail("NOTHING_READY", waiting > 0 and "Insurance returns are not ready yet." or "Nothing to collect.")
+		end
+		done = true
+		ctx.Remotes.note(player, "toast", { text = string.format("INSURANCE RETURN: %d ITEM(S) IN YOUR STASH", n), tone = "good" })
 	elseif op == "recovery" then
 		if inRaid then
 			return fail("NOT_AUTHORIZED")
@@ -719,6 +842,7 @@ local function onPlayerAdded(player)
 	end
 	ctx.Chars.spawn(player, Raid.safeSpawnCF(), nil)
 	Raid.push(player)
+	ctx.Remotes.note(player, "match", ctx.Match.status(player))
 	if type(recovered) == "table" then
 		ctx.Remotes.note(player, "summary", {
 			outcome = "DISCONNECTED", raidId = recovered.raidId, time = 0, kills = 0,
@@ -753,6 +877,7 @@ function Raid.start()
 		for player in sessions do
 			Raid.finalize(player, "DISCONNECTED")
 		end
+		pcall(ctx.Match.settleInsurance)
 		local pending = 0
 		for player in ctx.Profiles.all() do
 			pending += 1
@@ -766,18 +891,29 @@ function Raid.start()
 			task.wait(0.2)
 		end
 	end)
-	-- raid clock (1 Hz): timer expiry => MIA
+	-- insurance returns land in the stash once they are ready (hideout only)
 	task.spawn(function()
 		while true do
-			task.wait(1)
-			local t = now()
-			for player, s in sessions do
-				if not s.done and t >= s.endsAt then
-					local char = player.Character
-					local hum = char and char:FindFirstChildOfClass("Humanoid")
-					Raid.finalize(player, "MIA")
-					if hum and hum.Health > 0 then
-						char:SetAttribute("InRaid", false)
+			task.wait(10)
+			local t = os.time()
+			for player in ctx.Profiles.all() do
+				local prof = ctx.Profiles.get(player)
+				if prof and player.Parent and not sessions[player] and not deploying[player] and prof.claims and #prof.claims > 0 then
+					local ready = false
+					for _, c in prof.claims do
+						if (c.readyAt or 0) <= t then
+							ready = true
+							break
+						end
+					end
+					if ready then
+						local n, waiting = Settle.claim(prof, t)
+						if n > 0 then
+							ctx.Remotes.note(player, "toast", { text = string.format("INSURANCE RETURN: %d ITEM(S) IN YOUR STASH", n), tone = "good" })
+							Raid.afterChange(player, false)
+						elseif waiting > 0 then
+							ctx.Remotes.note(player, "toast", { text = "INSURANCE RETURN WAITING - FREE UP STASH SPACE", tone = "warn" })
+						end
 					end
 				end
 			end

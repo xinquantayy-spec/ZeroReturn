@@ -59,6 +59,19 @@ function State.inRaid()
 	return State.data ~= nil and State.data.phase == "RAID"
 end
 
+-- seconds until the player scav is ready (server os.time based, corrected for time since the snapshot)
+function State.scavCooldown()
+	local d = State.data
+	if d and d.scavReadyAt and d.serverTime then
+		return math.max(0, d.scavReadyAt - d.serverTime - (os.clock() - (State.dataClock or os.clock())))
+	end
+	local m = State.match
+	if not m or not m.scavReadyAt then
+		return 0
+	end
+	return math.max(0, m.scavReadyAt - m.serverTime - (os.clock() - (State.matchClock or os.clock())))
+end
+
 function State.init(_ctx)
 	req = Net.get(Net.Req)
 	act = Net.get(Net.Act)
@@ -71,6 +84,7 @@ function State.init(_ctx)
 	end
 	st.OnClientEvent:Connect(function(snap)
 		State.data = snap
+		State.dataClock = os.clock()
 		State.raid = snap.raid
 		State.ready = true
 		changed:Fire(snap)
@@ -80,6 +94,12 @@ function State.init(_ctx)
 			State.raid = data
 		elseif kind == "vitals" then
 			State.vitals = data
+		elseif kind == "match" then
+			-- server raid cycle; serverTime is os.time() on the server (scav cooldown), clock marks arrival
+			State.match = data
+			State.matchClock = os.clock()
+		elseif kind == "squad" then
+			State.squad = (type(data) == "table" and data.members and #data.members > 0) and data or nil
 		end
 		State.emit(kind, data)
 	end)
