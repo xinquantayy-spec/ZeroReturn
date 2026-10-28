@@ -1,0 +1,66 @@
+--!nonstrict
+-- Custom-styled ProximityPrompts: our own prompt UI (device-aware key label, tappable on touch).
+-- Terminal prompts (attribute Screen) open local screens; loot prompts are handled by the server.
+local PPS = game:GetService("ProximityPromptService")
+
+local Interact = { current = nil }
+local ctx, K
+local gui, btn
+
+local function render()
+	local p = Interact.current
+	btn.Visible = p ~= nil and not ctx.Input.isMenu()
+	if p then
+		local key = ctx.Input.label("Interact")
+		btn.Text = string.format("[%s]  %s  ·  %s", key, string.upper(p.ActionText), string.upper(p.ObjectText))
+		local w = math.max(220, #btn.Text * 8 + 24)
+		btn.Size = UDim2.fromOffset(w, 34)
+	end
+end
+
+function Interact.setEnabled(on)
+	PPS.Enabled = on
+	render()
+end
+
+function Interact.init(c)
+	ctx = c
+	K = c.UiKit
+	gui = K.screen("EFB_Prompt", 7)
+	btn = K.button(gui, "", {
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -196), Size = UDim2.fromOffset(260, 34),
+		BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.25, TextSize = 14, Visible = false, Selectable = false,
+	})
+	btn.Activated:Connect(function()
+		local p = Interact.current
+		if p then
+			p:InputHoldBegin()
+			task.delay(0.05, function()
+				p:InputHoldEnd()
+			end)
+		end
+	end)
+	PPS.PromptShown:Connect(function(prompt)
+		if prompt.Style == Enum.ProximityPromptStyle.Custom then
+			Interact.current = prompt
+			render()
+		end
+	end)
+	PPS.PromptHidden:Connect(function(prompt)
+		if prompt == Interact.current then
+			Interact.current = nil
+			render()
+		end
+	end)
+	PPS.PromptTriggered:Connect(function(prompt)
+		local screen = prompt:GetAttribute("Screen")
+		if screen == "stash" then
+			c.Inventory.show("stash")
+		elseif screen == "deploy" then
+			c.Screens.deploy()
+		end
+	end)
+	c.Input.deviceChanged:Connect(render)
+end
+
+return Interact

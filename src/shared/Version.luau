@@ -1,1 +1,1 @@
-return { name = "Escape From Bloxov", build = "0.0.1-rojo-smoke" }
+return { name = "Escape From Bloxov", build = "0.1.0-m1" }
