@@ -106,8 +106,127 @@ class Builder:
     def scale(self, s):
         bmesh.ops.scale(self.bm, vec=(s, s, s), verts=self.bm.verts)
 
+    # ── M12 wear-kit helpers ────────────────────────────────────────────────
+    def chunk(self, center, size, color, seed=0, rough=0.28, rot=None, subdiv=1):
+        """irregular rock / concrete chunk (jittered icosphere, flat shaded)"""
+        rnd = random.Random(seed)
+        before = set(self.bm.faces)
+        res = bmesh.ops.create_icosphere(self.bm, subdivisions=subdiv, radius=0.5, matrix=Matrix.Identity(4), calc_uvs=False)
+        rot = rot if rot is not None else (rnd.uniform(0, 6.283), rnd.uniform(0, 6.283), rnd.uniform(0, 6.283))
+        q = Euler(rot).to_quaternion()
+        c = Vector(center)
+        for v in res["verts"]:
+            k = 1 + rnd.uniform(-rough, rough)
+            p = Vector((v.co.x * k * size[0], v.co.y * k * size[1], v.co.z * k * size[2]))
+            v.co = c + q @ p
+        self._paint(self._new(before), color)
+
+    def tube(self, pts, r, color, seg=6, smooth=True, caps=False, r_end=None):
+        """swept circle along a polyline (cables, bent pipes, rebar)"""
+        pts = [Vector(p) for p in pts]
+        n = len(pts)
+        rings, prev = [], None
+        for i, p in enumerate(pts):
+            if i == 0:
+                t = (pts[1] - pts[0]).normalized()
+            elif i == n - 1:
+                t = (pts[-1] - pts[-2]).normalized()
+            else:
+                t = ((pts[i + 1] - pts[i]).normalized() + (pts[i] - pts[i - 1]).normalized()).normalized()
+            if prev is None:
+                up = Vector((0, 0, 1)) if abs(t.z) < 0.9 else Vector((1, 0, 0))
+                nrm = t.cross(up).normalized()
+            else:
+                nrm = (prev - t * prev.dot(t)).normalized()
+            bnm = t.cross(nrm).normalized()
+            prev = nrm
+            rr = r if r_end is None else r + (r_end - r) * i / max(1, n - 1)
+            rings.append([self.bm.verts.new(p + (nrm * math.cos(2 * math.pi * k / seg) + bnm * math.sin(2 * math.pi * k / seg)) * rr) for k in range(seg)])
+        faces = []
+        for i in range(n - 1):
+            A, B = rings[i], rings[i + 1]
+            for k in range(seg):
+                k2 = (k + 1) % seg
+                faces.append(self.bm.faces.new((A[k], A[k2], B[k2], B[k])))
+        if caps:
+            faces.append(self.bm.faces.new(list(reversed(rings[0]))))
+            faces.append(self.bm.faces.new(rings[-1]))
+        self._paint(faces, color, smooth)
+
+    def torus(self, center, R, r, color, segU=16, segV=6, rot=(0, 0, 0), smooth=True):
+        m = Matrix.LocRotScale(Vector(center), Euler(rot).to_quaternion(), Vector((1, 1, 1)))
+        rings = []
+        for i in range(segU):
+            u = 2 * math.pi * i / segU
+            cu, su = math.cos(u), math.sin(u)
+            rings.append([self.bm.verts.new(m @ Vector(((R + r * math.cos(2 * math.pi * j / segV)) * cu,
+                                                         (R + r * math.cos(2 * math.pi * j / segV)) * su,
+                                                         r * math.sin(2 * math.pi * j / segV)))) for j in range(segV)])
+        faces = []
+        for i in range(segU):
+            A, B = rings[i], rings[(i + 1) % segU]
+            for j in range(segV):
+                j2 = (j + 1) % segV
+                faces.append(self.bm.faces.new((A[j], B[j], B[j2], A[j2])))
+        self._paint(faces, color, smooth)
+
+    def sheet(self, center, size, color, nx=4, ny=4, disp=None, rot=(0, 0, 0), double=False, thick=0.0):
+        """displaced grid in local XY (normal +Z); disp(u, v) -> z offset; optional back face / thickness"""
+        m = Matrix.LocRotScale(Vector(center), Euler(rot).to_quaternion(), Vector((1, 1, 1)))
+        faces = []
+
+        def layer(zoff, flip):
+            grid = []
+            for j in range(ny + 1):
+                row = []
+                for i in range(nx + 1):
+                    u, v = i / nx, j / ny
+                    z = (disp(u, v) if disp else 0.0) + zoff
+                    row.append(self.bm.verts.new(m @ Vector(((u - 0.5) * size[0], (v - 0.5) * size[1], z))))
+                grid.append(row)
+            for j in range(ny):
+                for i in range(nx):
+                    q = (grid[j][i], grid[j][i + 1], grid[j + 1][i + 1], grid[j + 1][i])
+                    faces.append(self.bm.faces.new(tuple(reversed(q)) if flip else q))
+            return grid
+
+        top = layer(0.0, False)
+        if double or thick > 0:
+            bot = layer(-max(thick, 0.004), True)
+            if thick > 0:  # close the rim
+                ring_t = [top[0][i] for i in range(nx + 1)] + [top[j][nx] for j in range(1, ny + 1)] + [top[ny][i] for i in range(nx - 1, -1, -1)] + [top[j][0] for j in range(ny - 1, 0, -1)]
+                ring_b = [bot[0][i] for i in range(nx + 1)] + [bot[j][nx] for j in range(1, ny + 1)] + [bot[ny][i] for i in range(nx - 1, -1, -1)] + [bot[j][0] for j in range(ny - 1, 0, -1)]
+                for k in range(len(ring_t)):
+                    k2 = (k + 1) % len(ring_t)
+                    faces.append(self.bm.faces.new((ring_t[k], ring_b[k], ring_b[k2], ring_t[k2])))
+        self._paint(faces, color)
+
+    def face(self, pts, color, double=False):
+        """flat polygon (glass shards, puddles, blades); double adds an offset back face"""
+        pts = [Vector(p) for p in pts]
+        vs = [self.bm.verts.new(p) for p in pts]
+        fs = [self.bm.faces.new(vs)]
+        if double:
+            fs[0].normal_update()
+            nrm = fs[0].normal.copy()
+            vs2 = [self.bm.verts.new(p - nrm * 0.004) for p in reversed(pts)]
+            fs.append(self.bm.faces.new(vs2))
+        self._paint(fs, color)
+
+    def paint_fn(self, fn):
+        """recolour every corner: fn(position Vector, (r, g, b, a)) -> (r, g, b, a)"""
+        for f in self.bm.faces:
+            for l in f.loops:
+                l[self.col] = fn(l.vert.co, l[self.col])
+
+    def transform(self, matrix):
+        bmesh.ops.transform(self.bm, matrix=matrix, verts=self.bm.verts)
+
     def finish(self, collection):
         bmesh.ops.remove_doubles(self.bm, verts=self.bm.verts, dist=1e-5)
+        ngons = [f for f in self.bm.faces if len(f.verts) > 4]
+        if ngons:  # importers can mis-triangulate concave n-gons
+            bmesh.ops.triangulate(self.bm, faces=ngons, quad_method='BEAUTY', ngon_method='EAR_CLIP')
         old = bpy.data.objects.get(self.name)
         if old:
             bpy.data.objects.remove(old)
@@ -117,10 +236,24 @@ class Builder:
         me = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(me)
         self.bm.free()
+        try:  # make "Col" the active/render colour attribute (viewport, Workbench preview, FBX)
+            ca = me.color_attributes.get("Col")
+            if ca:
+                me.color_attributes.active_color = ca
+                me.color_attributes.render_color_index = me.color_attributes.active_color_index
+        except Exception:
+            pass
         obj = bpy.data.objects.new(self.name, me)
         collection.objects.link(obj)
         me.materials.append(vertex_material())
         return obj
+
+
+def vnoise(p, s=1.0, seed=0):
+    """cheap smooth 3D value noise in [-1, 1] from sines (deterministic, no textures)"""
+    x, y, z = p.x * s + seed * 1.7, p.y * s - seed * 0.9, p.z * s + seed * 0.4
+    return (math.sin(x * 1.7 + math.sin(y * 1.3)) * math.cos(y * 1.1 + math.sin(z * 1.9)) * 0.6
+            + math.sin(z * 2.3 + x * 0.7) * 0.25 + math.sin((x + y + z) * 3.1) * 0.15)
 
 
 def vertex_material():

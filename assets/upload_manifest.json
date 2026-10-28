@@ -11,6 +11,318 @@
   "sha1": "5399f60faf3de6e7834ff8963376bbbd3cc10f60",
   "uploaded": "2026-10-28 14:40:37"
  },
+ "ZR_DEC_BaseDamp": {
+  "assetId": "126035505407997",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_BaseDamp.png",
+  "sha1": "63c270406045c249452f481b0c5486efd4fb9745",
+  "uploaded": "2026-10-28 21:39:10"
+ },
+ "ZR_DEC_BaseGrime": {
+  "assetId": "106907929576833",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_BaseGrime.png",
+  "sha1": "71e257eae1498bc452a8877d11d59a4ca0f83fdd",
+  "uploaded": "2026-10-28 21:39:14"
+ },
+ "ZR_DEC_ChainLink": {
+  "assetId": "100391601734503",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_ChainLink.png",
+  "sha1": "85085335de2146c0851f6f2421a9122744126104",
+  "uploaded": "2026-10-28 21:39:17"
+ },
+ "ZR_DEC_CornerCrack": {
+  "assetId": "81070927152851",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_CornerCrack.png",
+  "sha1": "2b44507ea77125f70bbadacad8835093e268ada0",
+  "uploaded": "2026-10-28 21:39:19"
+ },
+ "ZR_DEC_Crack": {
+  "assetId": "137052153580434",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Crack.png",
+  "sha1": "18a4456266d964043b1b776d9718ae4fa644031d",
+  "uploaded": "2026-10-28 21:39:21"
+ },
+ "ZR_DEC_Debris": {
+  "assetId": "85606300502989",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Debris.png",
+  "sha1": "5a6bc0698abe6063875dbf7a3e284948c9265552",
+  "uploaded": "2026-10-28 21:39:25"
+ },
+ "ZR_DEC_FloorDust": {
+  "assetId": "88385881718577",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_FloorDust.png",
+  "sha1": "5794868a9b650f8ae7c00d995e22611e00f29466",
+  "uploaded": "2026-10-28 21:39:30"
+ },
+ "ZR_DEC_Grime": {
+  "assetId": "138932005084369",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Grime.png",
+  "sha1": "030c53e3b0a008bda81945d183d7eaddb4c127f5",
+  "uploaded": "2026-10-28 21:39:35"
+ },
+ "ZR_DEC_GroundCrack": {
+  "assetId": "79833040250213",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_GroundCrack.png",
+  "sha1": "c3059ac5b2ec172cd627a6090f0b3e0e8f21534a",
+  "uploaded": "2026-10-28 21:39:39"
+ },
+ "ZR_DEC_Holes": {
+  "assetId": "75107303703900",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Holes.png",
+  "sha1": "619bba54b1e0f960f2a4e5c45b91502dd42e4fc2",
+  "uploaded": "2026-10-28 21:39:41"
+ },
+ "ZR_DEC_Leak": {
+  "assetId": "84738467900566",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Leak.png",
+  "sha1": "de323f6b917557fd96c2240114140faac39b7bc3",
+  "uploaded": "2026-10-28 21:39:44"
+ },
+ "ZR_DEC_Leaves": {
+  "assetId": "133469270898337",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Leaves.png",
+  "sha1": "3ac2ade7d7d1e86193a0193fd7b9316456e40fe8",
+  "uploaded": "2026-10-28 21:39:49"
+ },
+ "ZR_DEC_Manhole": {
+  "assetId": "135873834125956",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Manhole.png",
+  "sha1": "1564cf6596954b1ad6b6e449475946e75259046d",
+  "uploaded": "2026-10-28 21:39:53"
+ },
+ "ZR_DEC_Oil": {
+  "assetId": "99796013448220",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Oil.png",
+  "sha1": "eb6b590a1293522b6f1aae73dae40b9ddd21ecaf",
+  "uploaded": "2026-10-28 21:39:58"
+ },
+ "ZR_DEC_Papers": {
+  "assetId": "92976969273314",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Papers.png",
+  "sha1": "43553676619de516b309b141fa19b17527bd466a",
+  "uploaded": "2026-10-28 21:40:00"
+ },
+ "ZR_DEC_Peel": {
+  "assetId": "114675730974474",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Peel.png",
+  "sha1": "bdcf7d9986d9d26ab8b20067cd9621b86216064c",
+  "uploaded": "2026-10-28 21:40:05"
+ },
+ "ZR_DEC_RustRun": {
+  "assetId": "101649298257656",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_RustRun.png",
+  "sha1": "69bb39d986c0a59f7001d0b15f45c4038b2639c4",
+  "uploaded": "2026-10-28 21:40:09"
+ },
+ "ZR_DEC_Skid": {
+  "assetId": "111298658666551",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Skid.png",
+  "sha1": "dac51cffabe725fab08820668484450bf20a3d89",
+  "uploaded": "2026-10-28 21:40:14"
+ },
+ "ZR_DEC_Soot": {
+  "assetId": "70889185826603",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Soot.png",
+  "sha1": "7edf33f083a1ff8016754eaf7341e04f8d667432",
+  "uploaded": "2026-10-28 21:40:18"
+ },
+ "ZR_DEC_Spall": {
+  "assetId": "133134218013831",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Spall.png",
+  "sha1": "3a53fc136ed18b7b6ee760245957db947bebc512",
+  "uploaded": "2026-10-28 21:40:23"
+ },
+ "ZR_DEC_Stencil": {
+  "assetId": "116413608097230",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Stencil.png",
+  "sha1": "8eca55ddc748f4fa62edb1bc576138550cbb0f32",
+  "uploaded": "2026-10-28 21:40:27"
+ },
+ "ZR_DEC_Streaks": {
+  "assetId": "77484651652225",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Streaks.png",
+  "sha1": "551fbf5f6a5d7d60481a4a9496afa2a11c7d85f5",
+  "uploaded": "2026-10-28 21:40:32"
+ },
+ "ZR_DEC_Tag1": {
+  "assetId": "118451091143254",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Tag1.png",
+  "sha1": "25050dba8d5e3f9c5aebd101ffddb6d3e7f76d24",
+  "uploaded": "2026-10-28 21:40:35"
+ },
+ "ZR_DEC_Tag2": {
+  "assetId": "130640866206168",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Tag2.png",
+  "sha1": "9bc1c908eaa3fa5d0084cc9e6c801d947b40cff9",
+  "uploaded": "2026-10-28 21:40:39"
+ },
+ "ZR_DEC_Tag3": {
+  "assetId": "140349795993958",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Tag3.png",
+  "sha1": "52d81d4607a5cc4d1a6f31d6bba1f104164eb6ac",
+  "uploaded": "2026-10-28 21:40:41"
+ },
+ "ZR_DEC_Wet": {
+  "assetId": "91361220131226",
+  "file": "assets\\textures\\out\\wear\\ZR_DEC_Wet.png",
+  "sha1": "f78047a6088f0d4962ad9013a7b6a96993bd009c",
+  "uploaded": "2026-10-28 21:40:45"
+ },
+ "ZR_Gear": {
+  "assetId": "75319988582613",
+  "file": "assets\\exports\\ZR_Gear.fbx",
+  "sha1": "9040920f519210c4ca9b42361e1ddffbf32c84d2",
+  "uploaded": "2026-10-28 20:30:45"
+ },
+ "ZR_MAT_AsphaltCracked_Color": {
+  "assetId": "84880060906023",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_AsphaltCracked_Color.png",
+  "sha1": "ef89b35acb83e70fba917ed6afc17f094b606195",
+  "uploaded": "2026-10-28 21:08:49"
+ },
+ "ZR_MAT_AsphaltCracked_Normal": {
+  "assetId": "99122098546152",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_AsphaltCracked_Normal.png",
+  "sha1": "abcae1ded2abdccdeb46110c8b715f015d90a030",
+  "uploaded": "2026-10-28 21:08:53"
+ },
+ "ZR_MAT_AsphaltCracked_Rough": {
+  "assetId": "107381630061408",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_AsphaltCracked_Rough.png",
+  "sha1": "fa250fb2c895b5213ff008d562c74a35f623dd40",
+  "uploaded": "2026-10-28 21:08:57"
+ },
+ "ZR_MAT_ConcretePanel_Color": {
+  "assetId": "102384221885944",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_ConcretePanel_Color.png",
+  "sha1": "4117f46492e410006972931b891746c16dcdbcff",
+  "uploaded": "2026-10-28 21:09:01"
+ },
+ "ZR_MAT_ConcretePanel_Normal": {
+  "assetId": "113846809225186",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_ConcretePanel_Normal.png",
+  "sha1": "e5efbf648b0b7aef3e3e6352a957673b770a1d29",
+  "uploaded": "2026-10-28 21:09:04"
+ },
+ "ZR_MAT_ConcretePanel_Rough": {
+  "assetId": "120737945445998",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_ConcretePanel_Rough.png",
+  "sha1": "83490fe59a297f32fc2402b3cc1fae3a7a9c6fce",
+  "uploaded": "2026-10-28 21:09:08"
+ },
+ "ZR_MAT_ConcreteWorn_Color": {
+  "assetId": "116559758022256",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_ConcreteWorn_Color.png",
+  "sha1": "24482f9f2acd3f023d7d18d8c51a2ab012a7cdb9",
+  "uploaded": "2026-10-28 21:09:12"
+ },
+ "ZR_MAT_ConcreteWorn_Normal": {
+  "assetId": "111833544098631",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_ConcreteWorn_Normal.png",
+  "sha1": "ab0e2e7ace40b811ccd98e160968ba0aa438de36",
+  "uploaded": "2026-10-28 21:09:16"
+ },
+ "ZR_MAT_ConcreteWorn_Rough": {
+  "assetId": "71518993761455",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_ConcreteWorn_Rough.png",
+  "sha1": "c13082519ab2d0bde92a6b7c3493b2a6345bc236",
+  "uploaded": "2026-10-28 21:09:20"
+ },
+ "ZR_MAT_Corrugated_Color": {
+  "assetId": "135762824233023",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_Corrugated_Color.png",
+  "sha1": "049f789b20e347431611c9572e1d120894225be2",
+  "uploaded": "2026-10-28 21:09:24"
+ },
+ "ZR_MAT_Corrugated_Normal": {
+  "assetId": "76353444812558",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_Corrugated_Normal.png",
+  "sha1": "ec6da7eee743f3ccbd9b2880ad6109ca7be21d03",
+  "uploaded": "2026-10-28 21:09:28"
+ },
+ "ZR_MAT_Corrugated_Rough": {
+  "assetId": "114896036872797",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_Corrugated_Rough.png",
+  "sha1": "36067924bdc6a7758c52bf3de0284b38fb4bd810",
+  "uploaded": "2026-10-28 21:09:32"
+ },
+ "ZR_MAT_FloorConcrete_Color": {
+  "assetId": "105918994481753",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_FloorConcrete_Color.png",
+  "sha1": "d3869efa628e47636c0d9169cf0c345cdcbd3ec5",
+  "uploaded": "2026-10-28 21:09:35"
+ },
+ "ZR_MAT_FloorConcrete_Normal": {
+  "assetId": "125387470133739",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_FloorConcrete_Normal.png",
+  "sha1": "05d3b0de243c5a17fbdae9a354305b81a1064f8a",
+  "uploaded": "2026-10-28 21:09:39"
+ },
+ "ZR_MAT_FloorConcrete_Rough": {
+  "assetId": "92989749868351",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_FloorConcrete_Rough.png",
+  "sha1": "7b3aa8fae5cfd9d2d58728bddeb416841841a140",
+  "uploaded": "2026-10-28 21:09:43"
+ },
+ "ZR_MAT_MetalPaint_Color": {
+  "assetId": "115907861579677",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_MetalPaint_Color.png",
+  "sha1": "832bebdb6994b86cfc7c4b9f60b105b877e3d5b0",
+  "uploaded": "2026-10-28 21:09:48"
+ },
+ "ZR_MAT_MetalPaint_Metal": {
+  "assetId": "115730307981343",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_MetalPaint_Metal.png",
+  "sha1": "d239aefbca4edfe017f3c3c958fac8ee18799a5e",
+  "uploaded": "2026-10-28 21:09:51"
+ },
+ "ZR_MAT_MetalPaint_Normal": {
+  "assetId": "91677542212215",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_MetalPaint_Normal.png",
+  "sha1": "696db1c58f2317391b3d60f45e950ce85e7264a2",
+  "uploaded": "2026-10-28 21:09:55"
+ },
+ "ZR_MAT_MetalPaint_Rough": {
+  "assetId": "100676937195315",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_MetalPaint_Rough.png",
+  "sha1": "2c0c5dd8f57d8a1d675d66e47205751f874f8483",
+  "uploaded": "2026-10-28 21:09:59"
+ },
+ "ZR_MAT_PlasterPeel_Color": {
+  "assetId": "80119792102810",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_PlasterPeel_Color.png",
+  "sha1": "c95b929aa2364657aac90c04962e29d1a7dc4792",
+  "uploaded": "2026-10-28 21:10:03"
+ },
+ "ZR_MAT_PlasterPeel_Normal": {
+  "assetId": "78133992050149",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_PlasterPeel_Normal.png",
+  "sha1": "d61ae0575742266b95e0ff9377a5697d3e1ab054",
+  "uploaded": "2026-10-28 21:10:06"
+ },
+ "ZR_MAT_PlasterPeel_Rough": {
+  "assetId": "105379658421338",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_PlasterPeel_Rough.png",
+  "sha1": "393d53b966ed82899c6bcdea9a747b58a409df53",
+  "uploaded": "2026-10-28 21:10:10"
+ },
+ "ZR_MAT_WoodWeathered_Color": {
+  "assetId": "93244541264980",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WoodWeathered_Color.png",
+  "sha1": "eee4232b95a5928c4428eea3163dbef1a0c17635",
+  "uploaded": "2026-10-28 21:10:14"
+ },
+ "ZR_MAT_WoodWeathered_Normal": {
+  "assetId": "111384513074753",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WoodWeathered_Normal.png",
+  "sha1": "5d090753173b792bf0e13077c862c56c2915a2ff",
+  "uploaded": "2026-10-28 21:10:18"
+ },
+ "ZR_MAT_WoodWeathered_Rough": {
+  "assetId": "107045662885477",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WoodWeathered_Rough.png",
+  "sha1": "4d9fc32721aa343a7ecad565a85e7254a5e4eb1c",
+  "uploaded": "2026-10-28 21:10:22"
+ },
  "ZR_Operator": {
   "assetId": "89318251225515",
   "file": "assets\\exports\\ZR_Operator.fbx",
@@ -23,11 +335,23 @@
   "sha1": "73d6cf730fe520721fa0a22b4eb34a076ed493ff",
   "uploaded": "2026-10-28 17:18:17"
  },
+ "ZR_SFX_Combat": {
+  "assetId": "129340593261177",
+  "file": "assets\\audio\\out\\ZR_SFX_Combat.ogg",
+  "sha1": "aa52f165925d34e4bdc70a3129c752e9350251f5",
+  "uploaded": "2026-10-28 20:30:48"
+ },
  "ZR_SFX_DryFire": {
   "assetId": "119000594646513",
   "file": "assets\\audio\\out\\ZR_SFX_DryFire.ogg",
   "sha1": "ee1bf36b7da06033a869507dd0a292485803b63c",
   "uploaded": "2026-10-28 14:51:15"
+ },
+ "ZR_SFX_Env": {
+  "assetId": "111806710801040",
+  "file": "assets\\audio\\out\\ZR_SFX_Env.ogg",
+  "sha1": "bbe48574adc54e8d116b849d8420039f32ce421b",
+  "uploaded": "2026-10-28 19:11:53"
  },
  "ZR_SFX_ExtractBeep": {
   "assetId": "120970680447327",
@@ -59,6 +383,18 @@
   "sha1": "48f4c794b1fef54be283f25ccb366921270a13fa",
   "uploaded": "2026-10-28 14:51:33"
  },
+ "ZR_TEX_Drops": {
+  "assetId": "106817814250743",
+  "file": "assets\\textures\\out\\ZR_TEX_Drops.png",
+  "sha1": "1371bf7cb5550446438622431c0d53b3b98f3e44",
+  "uploaded": "2026-10-28 19:11:40"
+ },
+ "ZR_TEX_EdgeHaze": {
+  "assetId": "129832056468405",
+  "file": "assets\\textures\\out\\ZR_TEX_EdgeHaze.png",
+  "sha1": "67de8875b1f4298a928fcf15ee138dab8f24d459",
+  "uploaded": "2026-10-28 19:48:51"
+ },
  "ZR_TEX_Glow": {
   "assetId": "117277289641878",
   "file": "assets\\textures\\out\\ZR_TEX_Glow.png",
@@ -83,10 +419,34 @@
   "sha1": "71c8108b10ad1556985baaf384cf4eed35a58ddb",
   "uploaded": "2026-10-28 15:38:09"
  },
+ "ZR_TEX_Rain": {
+  "assetId": "113154700227546",
+  "file": "assets\\textures\\out\\ZR_TEX_Rain.png",
+  "sha1": "22fd30753c63e8d5b3e717db02c9d70ec0acf76f",
+  "uploaded": "2026-10-28 19:11:35"
+ },
  "ZR_TEX_Scope": {
   "assetId": "74080954502988",
   "file": "assets\\textures\\out\\ZR_TEX_Scope.png",
   "sha1": "76e365b52ca9631b10964fe67d78cc61ac01a29b",
   "uploaded": "2026-10-28 16:20:21"
+ },
+ "ZR_TEX_Splash": {
+  "assetId": "95152083254903",
+  "file": "assets\\textures\\out\\ZR_TEX_Splash.png",
+  "sha1": "d4ee484a154f00bdb29704dcecaad4a54d9ae003",
+  "uploaded": "2026-10-28 19:11:37"
+ },
+ "ZR_TEX_Vignette": {
+  "assetId": "102205556504643",
+  "file": "assets\\textures\\out\\ZR_TEX_Vignette.png",
+  "sha1": "9741569b26df157e2d0dd392221b59cc616d36bb",
+  "uploaded": "2026-10-28 19:48:48"
+ },
+ "ZR_WearKit": {
+  "assetId": "122101191158248",
+  "file": "assets\\exports\\ZR_WearKit.fbx",
+  "sha1": "92736b9f4ba0d3a7196e6a5e57efce81d8726b74",
+  "uploaded": "2026-10-28 21:49:43"
  }
 }

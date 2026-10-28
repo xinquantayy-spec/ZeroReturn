@@ -786,6 +786,19 @@ function C.nadeDrill(name, kind, seconds)
 	return HttpService:JSONEncode({ spot = { H = tostring(found.H), B = tostring(found.B) }, engagedAfter5s = engaged, log = table.concat(log, " "), before = stats0, after = ctx.AI.nadeStats })
 end
 
+-- can a game script create a MaterialVariant with texture maps at runtime? (M12 material pipeline probe)
+function C.mvProbe(id)
+	local ok, err = pcall(function()
+		local mv = Instance.new("MaterialVariant")
+		mv.Name = "ZR_Probe"
+		mv.BaseMaterial = Enum.Material.Concrete
+		mv.ColorMap = id or "rbxassetid://111813157927046"
+		mv.StudsPerTile = 8
+		mv.Parent = game:GetService("MaterialService")
+	end)
+	return "runtime MaterialVariant: ok=" .. tostring(ok) .. " " .. tostring(err)
+end
+
 function C.nades()
 	local out = { stats = ctx.Grenades.stats, live = {}, smokes = {} }
 	for id, n in ctx.Grenades.live do

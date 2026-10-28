@@ -7,4 +7,5 @@ return {
 	{ key = "ZR_BatchA", id = 125938077801710 }, -- R-17 viewmodel/mag/arms, TP rifle, container, barrel, pallet, barrier, light pole
 	{ key = "ZR_Operator", id = 89318251225515 }, -- operator body: 15 R15-named segments (build_operator.py, RigSpec sizes)
 	{ key = "ZR_Gear", id = 75319988582613 }, -- helmet, face plate, plate carrier, pouch, pack, body camera, holster (build_gear.py)
+	{ key = "ZR_WearKit", id = 122101191158248 }, -- M12 wear kit: 29 cosmetic ZR_WK_* pieces, 9 ZR_PROP_* cover props (build_wear_kit.py)
 }

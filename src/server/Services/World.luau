@@ -921,6 +921,54 @@ local function buildLandmarksAndRoutes(map)
 	end
 end
 
+-- ── wear (M12): worn PBR materials from MaterialService (Rojo src/materials, procedural textures) ──────────────
+-- Part-built geometry gets a MaterialVariant by material and shape: cast concrete walls stained and cracked,
+-- long perimeter walls as precast panels, slabs and floors scuffed, roads cracked and patched, plaster peeling,
+-- painted steel chipped and rusting, corrugated sheet with rust runs, weathered planks. A part can ask for a
+-- specific variant with the attribute "Wear" ("" = keep the plain material). Meshes keep their vertex colours.
+local WEAR_BY_MATERIAL = {
+	[M.Asphalt] = "ZR_AsphaltCracked", [M.Plaster] = "ZR_PlasterPeel", [M.Metal] = "ZR_MetalPaint",
+	[M.CorrodedMetal] = "ZR_Corrugated", [M.WoodPlanks] = "ZR_WoodWeathered",
+}
+function World.applyWear(folder)
+	local MS = game:GetService("MaterialService")
+	local have = {}
+	for _, v in MS:GetChildren() do
+		if v:IsA("MaterialVariant") then
+			have[v.Name] = true
+		end
+	end
+	local n = 0
+	for _, p in folder:GetDescendants() do
+		if p:IsA("Part") and p.Transparency < 1 then
+			local want = p:GetAttribute("Wear")
+			if want == nil then
+				local s = p.Size
+				local thin = math.min(s.X, s.Y, s.Z)
+				local big = math.max(s.X, s.Y, s.Z)
+				if p.Material == M.Concrete then
+					if s.Y <= math.min(s.X, s.Z) and s.Y < 9 and math.max(s.X, s.Z) > 6 then
+						want = "ZR_FloorConcrete" -- slabs, floors, roofs seen from below
+					elseif big > 60 and thin <= 2.5 then
+						want = "ZR_ConcretePanel" -- long perimeter walls
+					elseif big > 3 then
+						want = "ZR_ConcreteWorn"
+					end
+				elseif p.Material == M.CorrodedMetal then
+					want = big > 6 and "ZR_Corrugated" or nil
+				elseif WEAR_BY_MATERIAL[p.Material] and big > 1.5 then
+					want = WEAR_BY_MATERIAL[p.Material]
+				end
+			end
+			if want and want ~= "" and have[want] then
+				p.MaterialVariant = want
+				n += 1
+			end
+		end
+	end
+	return n
+end
+
 function World.build()
 	for _, n in { "Baseplate", "SpawnLocation" } do
 		local inst = workspace:FindFirstChild(n)
@@ -1042,6 +1090,7 @@ function World.build()
 		route = { v(116, 4, -128), v(84, 4, -126), v(62, 4, -110), v(100, 4, -112), v(140, 4, -112), v(142, 4, -128) },
 		crew = { v(112, 4, -130), v(80, 4, -122) },
 	}
+	local worn = World.applyWear(root)
 	root.Parent = workspace
 	local n = 0
 	for _, d in root:GetDescendants() do
@@ -1049,7 +1098,7 @@ function World.build()
 			n += 1
 		end
 	end
-	print(string.format("[ZR] World built: %d parts, %d containers, %d spawns", n, #World.containers, #World.spawns))
+	print(string.format("[ZR] World built: %d parts (%d worn), %d containers, %d spawns", n, worn, #World.containers, #World.spawns))
 end
 
 function World.init(_ctx) end

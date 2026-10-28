@@ -5,18 +5,28 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$ignoreUnknownInstances": true,
-      "ZR": { "$path": "src/shared" }
+      "ZR": {
+        "$path": "src/shared"
+      }
     },
     "ServerScriptService": {
       "$ignoreUnknownInstances": true,
-      "ZRServer": { "$path": "src/server" }
+      "ZRServer": {
+        "$path": "src/server"
+      }
     },
     "StarterPlayer": {
       "$ignoreUnknownInstances": true,
       "StarterPlayerScripts": {
         "$ignoreUnknownInstances": true,
-        "ZRClient": { "$path": "src/client" }
+        "ZRClient": {
+          "$path": "src/client"
+        }
       }
+    },
+    "MaterialService": {
+      "$ignoreUnknownInstances": true,
+      "$path": "src/materials"
     }
   }
 }
