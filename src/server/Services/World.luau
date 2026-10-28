@@ -320,6 +320,7 @@ local function buildSafehouse()
 	}
 	for _, spec in { { stashAnchor, "Open stash", "Stash lockers", "stash" }, { deployAnchor, "Plan deployment", "Quay 7 map", "deploy" } } do
 		local pp = Instance.new("ProximityPrompt")
+		pp.KeyboardKeyCode = Enum.KeyCode.F -- Tarkov interact key (Q/E lean)
 		pp.ActionText = spec[2]
 		pp.ObjectText = spec[3]
 		pp.HoldDuration = 0
@@ -349,6 +350,7 @@ local function addContainerSpot(parent, id, kind, label, cf)
 	end
 	anchor.Name = "Loot_" .. id
 	local pp = Instance.new("ProximityPrompt")
+	pp.KeyboardKeyCode = Enum.KeyCode.F -- Tarkov interact key (Q/E lean)
 	pp.ActionText = "Search"
 	pp.ObjectText = label
 	pp.HoldDuration = 0

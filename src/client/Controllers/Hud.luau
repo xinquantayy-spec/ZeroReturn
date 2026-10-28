@@ -220,9 +220,16 @@ local function fastUpdate(dt)
 	end
 	lastHp = hp
 	local stMax = v.stMax or Config.MAX_STAMINA
-	local st = v.st or (ctx.Movement and ctx.Movement.stamina) or stMax
+	local M = ctx.Movement
+	local st = v.st or (M and M.stamina) or stMax
 	local stCol = st < stMax * 0.2 and C.orange or C.yellow
-	O.st:set({ { icon = I.BOLT, color = stCol, size = 46 }, { t = " " .. math.floor(st), color = stCol }, { t = " /" .. math.floor(stMax), size = 26, color = C.yellowDim, top = true } })
+	local segs = { { icon = I.BOLT, color = stCol, size = 46 }, { t = " " .. math.floor(st), color = stCol }, { t = " /" .. math.floor(stMax), size = 26, color = C.yellowDim, top = true } }
+	local arms = M and M.arms or Config.MAX_ARMS
+	if arms < Config.MAX_ARMS - 0.5 then
+		local ac = arms < 20 and C.orange or C.yellowDim
+		segs[#segs + 1] = { t = "   ARMS " .. math.floor(arms), size = 26, color = ac, top = true }
+	end
+	O.st:set(segs)
 	-- needs + status effects (only when the health model provides them)
 	if v.energy then
 		O.needs:show(true)
@@ -401,6 +408,9 @@ function Hud.init(c)
 	end)
 	c.State.on("progress", function(p)
 		Hud.progress(p.label or "WORKING", p.t or 1)
+	end)
+	c.State.on("movenote", function(d)
+		Hud.toast(d.text or "")
 	end)
 	c.State.on("magcheck", function(d)
 		if type(d) ~= "table" then

@@ -1,0 +1,355 @@
+{
+ "hrp": {
+  "size": [
+   1.5,
+   2.6,
+   1.0
+  ],
+  "center": [
+   0.0,
+   3.3,
+   0.0
+  ]
+ },
+ "hipHeight": 2.0,
+ "eye": [
+  0.0,
+  5.12,
+  -0.3
+ ],
+ "height": 5.52,
+ "parts": {
+  "LowerTorso": {
+   "size": [
+    1.2,
+    0.6800000000000002,
+    0.7
+   ],
+   "center": [
+    0.0,
+    2.8600000000000003,
+    0.0
+   ]
+  },
+  "UpperTorso": {
+   "size": [
+    1.46,
+    1.4299999999999997,
+    0.76
+   ],
+   "center": [
+    0.0,
+    3.835,
+    0.0
+   ]
+  },
+  "Head": {
+   "size": [
+    0.74,
+    0.96,
+    0.84
+   ],
+   "center": [
+    0.0,
+    5.039999999999999,
+    -0.03
+   ]
+  },
+  "RightUpperArm": {
+   "size": [
+    0.44,
+    1.1799999999999997,
+    0.46
+   ],
+   "center": [
+    0.91,
+    3.83,
+    0.0
+   ]
+  },
+  "RightLowerArm": {
+   "size": [
+    0.38,
+    1.0,
+    0.4
+   ],
+   "center": [
+    0.925,
+    2.86,
+    0.0
+   ]
+  },
+  "RightHand": {
+   "size": [
+    0.24,
+    0.45999999999999996,
+    0.3
+   ],
+   "center": [
+    0.935,
+    2.21,
+    0.0
+   ]
+  },
+  "RightUpperLeg": {
+   "size": [
+    0.58,
+    1.42,
+    0.62
+   ],
+   "center": [
+    0.37,
+    2.09,
+    0.0
+   ]
+  },
+  "RightLowerLeg": {
+   "size": [
+    0.48,
+    1.28,
+    0.5
+   ],
+   "center": [
+    0.39,
+    0.86,
+    0.0
+   ]
+  },
+  "RightFoot": {
+   "size": [
+    0.4,
+    0.3,
+    0.98
+   ],
+   "center": [
+    0.4,
+    0.15,
+    -0.17
+   ]
+  },
+  "LeftUpperArm": {
+   "size": [
+    0.44,
+    1.1799999999999997,
+    0.46
+   ],
+   "center": [
+    -0.91,
+    3.83,
+    0.0
+   ]
+  },
+  "LeftLowerArm": {
+   "size": [
+    0.38,
+    1.0,
+    0.4
+   ],
+   "center": [
+    -0.925,
+    2.86,
+    0.0
+   ]
+  },
+  "LeftHand": {
+   "size": [
+    0.24,
+    0.45999999999999996,
+    0.3
+   ],
+   "center": [
+    -0.935,
+    2.21,
+    0.0
+   ]
+  },
+  "LeftUpperLeg": {
+   "size": [
+    0.58,
+    1.42,
+    0.62
+   ],
+   "center": [
+    -0.37,
+    2.09,
+    0.0
+   ]
+  },
+  "LeftLowerLeg": {
+   "size": [
+    0.48,
+    1.28,
+    0.5
+   ],
+   "center": [
+    -0.39,
+    0.86,
+    0.0
+   ]
+  },
+  "LeftFoot": {
+   "size": [
+    0.4,
+    0.3,
+    0.98
+   ],
+   "center": [
+    -0.4,
+    0.15,
+    -0.17
+   ]
+  }
+ },
+ "joints": [
+  {
+   "name": "Root",
+   "p0": "HumanoidRootPart",
+   "p1": "LowerTorso",
+   "pos": [
+    0.0,
+    2.86,
+    0.0
+   ]
+  },
+  {
+   "name": "Waist",
+   "p0": "LowerTorso",
+   "p1": "UpperTorso",
+   "pos": [
+    0.0,
+    3.17,
+    0.0
+   ]
+  },
+  {
+   "name": "Neck",
+   "p0": "UpperTorso",
+   "p1": "Head",
+   "pos": [
+    0.0,
+    4.58,
+    0.0
+   ]
+  },
+  {
+   "name": "RightShoulder",
+   "p0": "UpperTorso",
+   "p1": "RightUpperArm",
+   "pos": [
+    0.9,
+    4.3,
+    0.0
+   ]
+  },
+  {
+   "name": "RightElbow",
+   "p0": "RightUpperArm",
+   "p1": "RightLowerArm",
+   "pos": [
+    0.92,
+    3.3,
+    0.0
+   ]
+  },
+  {
+   "name": "RightWrist",
+   "p0": "RightLowerArm",
+   "p1": "RightHand",
+   "pos": [
+    0.93,
+    2.4,
+    0.0
+   ]
+  },
+  {
+   "name": "LeftShoulder",
+   "p0": "UpperTorso",
+   "p1": "LeftUpperArm",
+   "pos": [
+    -0.9,
+    4.3,
+    0.0
+   ]
+  },
+  {
+   "name": "LeftElbow",
+   "p0": "LeftUpperArm",
+   "p1": "LeftLowerArm",
+   "pos": [
+    -0.92,
+    3.3,
+    0.0
+   ]
+  },
+  {
+   "name": "LeftWrist",
+   "p0": "LeftLowerArm",
+   "p1": "LeftHand",
+   "pos": [
+    -0.93,
+    2.4,
+    0.0
+   ]
+  },
+  {
+   "name": "RightHip",
+   "p0": "LowerTorso",
+   "p1": "RightUpperLeg",
+   "pos": [
+    0.36,
+    2.66,
+    0.0
+   ]
+  },
+  {
+   "name": "RightKnee",
+   "p0": "RightUpperLeg",
+   "p1": "RightLowerLeg",
+   "pos": [
+    0.38,
+    1.44,
+    0.0
+   ]
+  },
+  {
+   "name": "RightAnkle",
+   "p0": "RightLowerLeg",
+   "p1": "RightFoot",
+   "pos": [
+    0.4,
+    0.26,
+    0.0
+   ]
+  },
+  {
+   "name": "LeftHip",
+   "p0": "LowerTorso",
+   "p1": "LeftUpperLeg",
+   "pos": [
+    -0.36,
+    2.66,
+    0.0
+   ]
+  },
+  {
+   "name": "LeftKnee",
+   "p0": "LeftUpperLeg",
+   "p1": "LeftLowerLeg",
+   "pos": [
+    -0.38,
+    1.44,
+    0.0
+   ]
+  },
+  {
+   "name": "LeftAnkle",
+   "p0": "LeftLowerLeg",
+   "p1": "LeftFoot",
+   "pos": [
+    -0.4,
+    0.26,
+    0.0
+   ]
+  }
+ ]
+}

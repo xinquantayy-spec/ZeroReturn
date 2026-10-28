@@ -416,6 +416,10 @@ end
 
 -- ── actions ──────────────────────────────────────────────────────────────────
 local function canAim()
+	local M = ctx.Movement
+	if M and (M.busy() or (M.prone and ctx.Camera.speed > 0.6)) then
+		return false -- stance transitions, vaults; no ADS while crawling (Tarkov)
+	end
 	return vm ~= nil and not Weapon.melee and not Weapon.reloading and not Weapon.checking and not Weapon.healing
 		and switching == nil and ctx.State.inRaid() and not ctx.Input.isMenu()
 end
@@ -437,7 +441,7 @@ local function canFire()
 	if (Weapon.reloading and not tubeT0) or Weapon.healing or Weapon.drawing or Weapon.checking or switching or cycleT0 then
 		return false
 	end
-	if ctx.Input.isMenu() or (M and M.sprinting) or sprintA > 0.35 then
+	if ctx.Input.isMenu() or (M and (M.sprinting or M.busy())) or sprintA > 0.35 then
 		return false
 	end
 	return alive() ~= nil
@@ -466,7 +470,7 @@ local function fireOnce()
 	Weapon.ammo -= 1
 	local M = ctx.Movement
 	local crouch = M and M.crouching
-	local camCF = cam.CFrame
+	local camCF = ctx.Camera.aimCFrame or cam.CFrame -- free look does not move the weapon
 	local spread = Weapon.aiming and def.aimSpread or def.hipSpread
 	if ctx.Camera.speed > 2 then
 		spread += def.moveSpread * (Weapon.aiming and 0.35 or 1)
@@ -495,7 +499,9 @@ local function fireOnce()
 	end
 	if res then
 		local m = res.Instance:FindFirstAncestorOfClass("Model")
-		ctx.Effects.impact(res.Position, res.Normal, m and m:FindFirstChildOfClass("Humanoid") ~= nil)
+		local body = m and m:FindFirstChildOfClass("Humanoid") ~= nil
+		ctx.Effects.impact(res.Position, res.Normal, body)
+		ctx.Effects.impactSound(res.Position, body, res.Material)
 	end
 	ctx.Effects.gunSound(def.id, SoundService, o.ms.suppressed, false)
 	local k = (Weapon.aiming and 0.72 or 1) * (crouch and 0.85 or 1) * o.ms.recoil
@@ -508,9 +514,13 @@ local function fireOnce()
 		cycleKind = mode
 		cycleT0 = t + 0.08
 		cycleDur = mode == "PUMP" and 0.45 or 0.95
-		task.delay(0.12, function()
-			ctx.Effects.sound(Sounds.RELOAD, SoundService, 0.45, mode == "PUMP" and 1.7 or 1.35)
-		end)
+		local seq = mode == "PUMP" and { { 0.12, "pump_back" }, { 0.32, "pump_fwd" } }
+			or { { 0.2, "bolt_up" }, { 0.32, "bolt_back" }, { 0.55, "bolt_fwd" }, { 0.75, "bolt_down" } }
+		for _, e in seq do
+			task.delay(e[1] + 0.08, function()
+				ctx.Effects.sfx(e[2], SoundService, 0.5)
+			end)
+		end
 	end
 end
 
@@ -535,8 +545,17 @@ function Weapon.startReload()
 	reloadDur = ((cur > 0) and o.def.reload or o.def.reloadEmpty) * slow
 	joltDone = false
 	ctx.State.act("reload")
-	ctx.Effects.sound(Sounds.RELOAD, SoundService, 0.7)
 	local token = reloadT0
+	local empty = cur <= 0
+	for _, e in { { 0.14, "mag_out" }, { 0.45, "cloth_1" }, { 0.76, "mag_in" }, { 0.93, empty and "bolt_fwd" or nil } } do
+		if e[2] then
+			task.delay(reloadDur * e[1], function()
+				if reloadT0 == token then
+					ctx.Effects.sfx(e[2], SoundService, 0.55)
+				end
+			end)
+		end
+	end
 	task.delay(reloadDur + 1.0, function()
 		if Weapon.reloading and reloadT0 == token then
 			Weapon.reloading = false -- the server never confirmed; resync from the snapshot
@@ -553,6 +572,7 @@ function Weapon.magCheck()
 	Weapon.checking = true
 	checkT0 = os.clock()
 	ctx.State.act("magcheck")
+	ctx.Effects.sfx("mag_out", SoundService, 0.25, 1.15)
 	local token = checkT0
 	task.delay(checkDur + 1.4, function()
 		if checkT0 == token then
@@ -574,7 +594,7 @@ function Weapon.slash()
 	Weapon.lastShot = t
 	slashT0 = t
 	slashSent = false
-	ctx.Effects.sound(Sounds.DRY_FIRE, SoundService, 0.35, 0.5)
+	ctx.Effects.sfx("knife_whoosh", SoundService, 0.55, 0.95 + math.random() * 0.1)
 end
 
 function Weapon.switchTo(slot)
@@ -622,7 +642,7 @@ function Weapon.toggleLight()
 	if vm.lamp then
 		vm.lamp.Enabled = Weapon.light
 	end
-	ctx.Effects.sound(Sounds.UI_CLICK, SoundService, 0.35, 1.6)
+	ctx.Effects.sfx("selector", SoundService, 0.5, 1.3)
 	ctx.State.act("light", { on = Weapon.light })
 end
 
@@ -689,7 +709,7 @@ local function update(dt)
 		local p = (now - slashT0) / SLASH_TIME
 		if p >= 0.3 and not slashSent then
 			slashSent = true
-			local lv = cam.CFrame.LookVector
+			local lv = (ctx.Camera.aimCFrame or cam.CFrame).LookVector
 			ctx.State.act("melee", { x = lv.X, y = lv.Y, z = lv.Z })
 		end
 		if p >= 1 then
@@ -723,7 +743,8 @@ local function update(dt)
 	if Weapon.drawing and not switching then
 		raise = ease((now - drawT0) / math.max(0.05, drawDur))
 	else
-		local target = (switching and 0) or (Weapon.healing and 0.3) or 1
+		local Mv = ctx.Movement
+		local target = (switching and 0) or (Weapon.healing and 0.3) or ((Mv and Mv.vaulting) and 0.2) or 1
 		raise += (target - raise) * math.min(1, dt * 9)
 	end
 	kickZ -= kickZ * math.min(1, dt * 14)
@@ -775,7 +796,7 @@ local function update(dt)
 	local bobAmt = math.clamp(ctx.Camera.speed / 16, 0, 1.2) * (1 - aimA * 0.85) * motion
 	local bob = CFrame.new(math.cos(ph) * 0.03 * bobAmt, -math.abs(math.sin(ph)) * 0.025 * bobAmt, 0)
 	rayParams.FilterDescendantsInstances = { char, o.model, workspace:FindFirstChild("ZR_Fx") }
-	local camCF = cam.CFrame
+	local camCF = ctx.Camera.aimCFrame or cam.CFrame
 	local wallHit = workspace:Raycast(camCF.Position, camCF.LookVector * 1.7, rayParams)
 	local push = wallHit and (1.7 - wallHit.Distance) or 0
 	local pull = CFrame.new(0, -push * 0.12, push * 0.75) * CFrame.Angles(push * 0.22, 0, 0)
@@ -943,6 +964,12 @@ local function onSnapshot()
 	end
 	Weapon.melee = def.melee == true
 	Weapon.slot = d.active
+	local mass = Items.defs[it.id].mass or 3
+	for _, mg in it.mods or {} do
+		local mi = d.items[mg]
+		mass += mi and Items.defs[mi.id] and Items.defs[mi.id].mass or 0
+	end
+	Weapon.mass = mass
 	Weapon.weaponName = string.upper(Items.defs[it.id].name)
 	Weapon.modeName = def.modes[Weapon.mode] or def.modes[1]
 end
@@ -983,7 +1010,7 @@ function Weapon.init(c)
 		if #modes > 1 then
 			Weapon.mode = Weapon.mode % #modes + 1
 			Weapon.modeName = modes[Weapon.mode]
-			c.Effects.sound(Sounds.UI_CLICK, SoundService, 0.3, 1.8)
+			c.Effects.sfx("selector", SoundService, 0.5)
 			c.State.toast("FIRE MODE: " .. Weapon.modeName)
 		end
 	end)
@@ -1021,7 +1048,7 @@ function Weapon.init(c)
 		end
 		Weapon.ammo = d.a
 		if d.tube then
-			c.Effects.sound(Sounds.RELOAD, SoundService, 0.3, 2.1)
+			c.Effects.sfx("shell_insert", SoundService, 0.55, 0.95 + math.random() * 0.1)
 		elseif Weapon.reloading and not tubeT0 then
 			Weapon.reloading = false
 			reloadT0 = nil

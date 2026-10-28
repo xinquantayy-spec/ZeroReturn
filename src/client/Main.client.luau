@@ -99,8 +99,28 @@ if RunService:IsStudio() then
 			-- a = { kind = "long", name = "hip", cf = CFrame }
 			ctx.Weapon.POSE[a.kind][a.name] = a.cf
 			return "ok"
+		elseif cmd == "stance" then
+			-- a = "s" | "c" | "p"
+			ctx.Movement.setStance(a)
+			return "ok"
+		elseif cmd == "lean" then
+			ctx.Movement.leanTarget = a or 0
+			return "ok"
+		elseif cmd == "move" then
+			local M = ctx.Movement
+			return HttpService:JSONEncode({
+				stance = M.stance, depth = M.depth, lean = M.lean, speedStep = M.speedStep, stamina = math.floor(M.stamina), arms = math.floor(M.arms),
+				weight = math.floor(M.weight * 10) / 10, vaulting = M.vaulting, busy = M.busy(), breath = M.breath,
+				walkSpeed = (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") or {}).WalkSpeed,
+				hip = (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") or {}).HipHeight,
+			})
 		elseif cmd == "orbit" then
-			-- a = { dist, yaw, pitch, h } or nil to return to first person
+			-- a = { dist, yaw, pitch, h, target = model name (AI or player) } or nil to return to first person
+			if a and a.target then
+				local ai = workspace:FindFirstChild("ZR_AI")
+				local pl = Players:FindFirstChild(a.target)
+				a.model = (ai and ai:FindFirstChild(a.target)) or (pl and pl.Character) or nil
+			end
 			ctx.Camera.orbit = a
 			return "ok"
 		elseif cmd == "firemode" then

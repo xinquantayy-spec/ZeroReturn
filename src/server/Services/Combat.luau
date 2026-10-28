@@ -170,7 +170,7 @@ function Combat.shoot(player, seq, origin, dir)
 	local ballistic = ammoDef and ammoDef.ammo or { dmg = 40, pen = 20 }
 	local pellets = ballistic.pellets or 1
 	local hit, killed = false, false
-	local firstPos, firstNormal
+	local firstPos, firstNormal, firstMat
 	for i = 1, pellets do
 		local d2 = dir
 		if pellets > 1 then
@@ -180,7 +180,7 @@ function Combat.shoot(player, seq, origin, dir)
 		local res = workspace:Raycast(origin, d2 * wdef.range, filter(char))
 		local hitPos = res and res.Position or (origin + d2 * wdef.range)
 		if i == 1 then
-			firstPos, firstNormal = hitPos, res and res.Normal or nil
+			firstPos, firstNormal, firstMat = hitPos, res and res.Normal or nil, res and res.Material or nil
 		end
 		if res then
 			local model = res.Instance:FindFirstAncestorOfClass("Model")
@@ -212,7 +212,7 @@ function Combat.shoot(player, seq, origin, dir)
 	local loud = (wdef.loudness or 1) * ms.loud * ((ammoDef and ammoDef.ammo.subsonic and ms.suppressed) and 0.6 or 1)
 	ctx.AI.hearShot(origin, player, nil, loud)
 	local tracer = ammoDef and ammoDef.ammo and ammoDef.ammo.tracer or nil
-	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = hit, w = wd.weapon, s = ms.suppressed or nil, t = tracer }, player)
+	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = hit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat }, player)
 end
 
 -- tube-fed weapons: shells go in one at a time from rig/pockets/backpack; firing interrupts
@@ -220,6 +220,7 @@ local function tubeReload(player, s, w, wg, wit, wdef, wd)
 	local token = {}
 	w.tube = token
 	ctx.Remotes.note(player, "reload", { state = "tube", t = wdef.reload })
+	ctx.Chars.gesture(player.Character, "tube", wdef.reload)
 	task.spawn(function()
 		while w.tube == token do
 			task.wait(wdef.reload)
@@ -290,6 +291,7 @@ function Combat.reload(player)
 	w.reloadToken = token
 	w.reloadUntil = t + dur
 	ctx.Remotes.note(player, "reload", { state = "start", t = dur })
+	ctx.Chars.gesture(player.Character, "reload", dur)
 	task.delay(dur, function()
 		if W[player] ~= w or w.reloadToken ~= token then
 			return
@@ -354,6 +356,7 @@ function Combat.drawDelay(player, slot)
 	w.drawUntil = os.clock() + t
 	if player.Character then
 		player.Character:SetAttribute("WeaponLight", false)
+		ctx.Chars.gesture(player.Character, "draw", t)
 	end
 	ctx.Remotes.note(player, "draw", { slot = slot, t = t })
 end
@@ -411,6 +414,7 @@ function Combat.magCheck(player)
 	end
 	w.checking = true
 	ctx.Remotes.note(player, "magcheck", { state = "start", t = 1.1 })
+	ctx.Chars.gesture(player.Character, "check", 1.1)
 	task.delay(1.1, function()
 		w.checking = nil
 		local _, _, _, wd2, r2 = Combat.activeWeapon(s)
@@ -445,6 +449,7 @@ function Combat.melee(player, dir)
 	if m < 0.5 or m > 1.5 then
 		return
 	end
+	ctx.Chars.gesture(char, "slash", 0.5)
 	local head = char:FindFirstChild("Head")
 	local res = workspace:Raycast(head.Position, dir / m * wdef.range, filter(char))
 	if res then
@@ -485,16 +490,7 @@ function Combat.init(c)
 		end
 	end, 3, 4)
 	ctx.Remotes.onAct("stance", function(player, p)
-		local char = player.Character
-		if not char or type(p) ~= "table" then
-			return
-		end
-		char:SetAttribute("Crouch", p.c == true)
-		char:SetAttribute("Aim", p.a == true)
-		char:SetAttribute("Sprint", p.s == true)
-		if type(p.p) == "number" and Util.finite(p.p) then
-			char:SetAttribute("Pitch", math.clamp(math.floor(p.p), -80, 80))
-		end
+		ctx.Chars.applyStance(player, p)
 	end, 12, 14)
 	Players.PlayerRemoving:Connect(function(p)
 		W[p] = nil

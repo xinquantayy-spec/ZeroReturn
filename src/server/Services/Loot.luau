@@ -390,6 +390,7 @@ end
 
 local function prompt(part, label, action)
 	local pp = Instance.new("ProximityPrompt")
+	pp.KeyboardKeyCode = Enum.KeyCode.F -- Tarkov interact key (Q/E lean)
 	pp.ActionText = action or "Search"
 	pp.ObjectText = label
 	pp.HoldDuration = 0

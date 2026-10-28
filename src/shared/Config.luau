@@ -2,7 +2,7 @@
 -- Zero Return: tunable constants shared by server and client (read-only).
 local Config = {
 	GAME_NAME = "ZERO RETURN",
-	BUILD = "0.1.0-m1",
+	BUILD = "0.3.0-m6",
 	MAP_NAME = "QUAY 7",
 	RECORDER = "FIELD RECORDER M4",
 	CURRENCY = "MK",
@@ -26,10 +26,22 @@ local Config = {
 	WALK_SPEED = 11,
 	SPRINT_SPEED = 17,
 	CROUCH_SPEED = 6,
+	PRONE_SPEED = 2.6,
 	AIM_SPEED = 7,
-	SPRINT_DRAIN = 16,
-	STAMINA_REGEN = 12,
-	JUMP_COST = 14,
+	LEAN_SPEED = 6,
+	SPRINT_DRAIN = 9, -- leg stamina per second (a full bar is ~11 s of sprint)
+	STAMINA_REGEN = 6,
+	JUMP_COST = 12,
+	MAX_ARMS = 100, -- arm stamina: aiming and holding breath
+	ADS_DRAIN = 0.8, -- per second, plus 0.25 per kg of weapon (a light carbine holds ~1 min)
+	BREATH_DRAIN = 14,
+	ARMS_REGEN = 9,
+	WEIGHT_OVER = 26, -- kg: Tarkov-style overweight thresholds
+	WEIGHT_CRIT = 46,
+	WEIGHT_MAX = 66,
+	PRONE_TIME = 0.9, -- stance transition to/from prone (no firing)
+	VAULT_LOW = 0.55,
+	VAULT_HIGH = 0.95,
 
 	FOV = 85, -- wide bodycam lens (vertical FOV)
 	AIM_FOV = 58,

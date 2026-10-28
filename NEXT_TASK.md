@@ -1,21 +1,22 @@
 # Next Task
 
-**Current focus:** improvement program milestone **M6 — Movement & realistic animation** (owner asked for real-player movement and Tarkov mechanics; work continues milestone to milestone without stopping).
+**Current focus:** improvement program milestone **M7 — Multiplayer raids** (owner: real players fight each other, co-op squads, Tarkov rules).
 
-## M6 plan
+## M7 plan
 
-1. **Custom operator rig (non-Roblox look).**
-   - Roblox now builds avatars with `AnimationConstraint` joints, and the default dynamic head shows a face.
-   - Build our own R15-named rig (Motor6D joints, human proportions, balaclava head, gloves, boots) as `StarterPlayer.StarterCharacter` at server start; AI uses the same rig.
-   - Blender: segment meshes for the body; part-built fallback when meshes are missing.
-2. **Procedural full-body animator** (players and AI): walk/run/crouch/prone cycles from velocity, aim pitch, lean, weapon held by two-bone arm IK at the shared weapon anchors, reload/draw/melee gestures from replicated attributes, distance LOD.
-3. **Movement (client Movement.luau + server validation):** lean Q/E (camera + hitbox), prone Z, walk-speed scroll, crouch depth, leg/arm stamina, weight and overweight penalties, inertia, vault/mantle, free look (Alt), fall damage (done in Health), footsteps.
-4. Verify with the `orbit` dev camera, two-character scenes and screenshots; commit M6.
+1. **Raid lifecycle on one server (up to 12 players).** Shared raid instance with a start window: players deploy into the running raid until a cut-off, then a new raid cycles once everyone is out; Tarkov-length raid timer (Config.RAID_DURATION ~25 min) with MIA on expiry.
+2. **Spawns.** Spread spawn points per raid, never near another player; each spawn has its own extract list.
+3. **PvP.** Player bodies become lootable containers with the full kit (secure container excluded); kill credit and death screen (killer weapon/ammo/distance, body part); combat-log bodies when a player leaves mid-raid.
+4. **Squads.** Invite/accept in the hideout, deploy together, shared spawn, squad HUD list (State.squad), friendly identification (armband attribute), no squad-mate kill credit.
+5. **Player-scav mode.** Random scav kit, own cooldown, no gear risk, separate stash transfer on extract.
+6. **Conditional extracts.** Paid (MK), key-locked, co-op (needs a scav), always-open; timer gates.
+7. **Insurance.** Insure gear in the hideout; uncollected insured items return after a delay if not looted by others.
+8. Two-client Studio test for PvP/loot races (Test → Clients and Servers), then commit.
 
-Then M7 (multiplayer raids), M8 (AI), M9 (economy), M10 (world/art/audio), M11 (QA + docs).
+Then M8 (AI 2.0), M9 (economy), M10 (world/art/audio), M11 (QA + docs).
 
 ## Resume steps
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; connect the Rojo plugin in Place3.
-3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **82/82**).
+3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **88/88**).

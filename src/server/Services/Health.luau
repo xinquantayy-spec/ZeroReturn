@@ -587,6 +587,9 @@ function Health.use(player, g, part)
 	hs.using = token
 	hs.dirty = true
 	ctx.Remotes.note(player, "heal", { state = "start", t = pl.time, label = pl.label })
+	if ctx.Chars and ctx.Chars.gesture then
+		ctx.Chars.gesture(player.Character, "heal", pl.time)
+	end
 	task.delay(pl.time, function()
 		if hs.using ~= token then
 			return

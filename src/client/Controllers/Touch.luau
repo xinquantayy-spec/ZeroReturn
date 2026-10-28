@@ -22,6 +22,9 @@ local LAYOUT = {
 	{ "Settings", "SET", Vector2.new(0.795, 0.14), 52 },
 	{ "CycleWeapon", "SWAP", Vector2.new(0.765, 0.62), 52 },
 	{ "MagCheck", "CHK", Vector2.new(0.955, 0.62), 46 },
+	{ "LeanLeft", "LN-L", Vector2.new(0.62, 0.74), 46 },
+	{ "LeanRight", "LN-R", Vector2.new(0.70, 0.80), 46 },
+	{ "Prone", "PRN", Vector2.new(0.62, 0.86), 46 },
 }
 
 local function refresh()
@@ -40,6 +43,12 @@ local function refresh()
 			b.BackgroundColor3 = ctx.Movement.sprinting and K.C.ochre or K.C.bg
 		elseif action == "Crouch" then
 			b.BackgroundColor3 = ctx.Movement.crouching and K.C.ochre or K.C.bg
+		elseif action == "Prone" then
+			b.BackgroundColor3 = ctx.Movement.prone and K.C.ochre or K.C.bg
+		elseif action == "LeanLeft" then
+			b.BackgroundColor3 = ctx.Movement.leanTarget < 0 and K.C.ochre or K.C.bg
+		elseif action == "LeanRight" then
+			b.BackgroundColor3 = ctx.Movement.leanTarget > 0 and K.C.ochre or K.C.bg
 		end
 	end
 end

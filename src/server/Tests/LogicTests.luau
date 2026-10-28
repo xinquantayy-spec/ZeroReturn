@@ -297,6 +297,39 @@ function T.run(ctx)
 		check("mag onto holster slot inserts", spareMag ~= nil and (Inv.move(h, spareMag, { slot = "holster" })) and h.items[pistol].mag == spareMag and Inv.locate(h, oldMag) == "grid" and inv(h))
 	end
 
+	-- operator rig math (shared by the server hitbox pose and every client's animator)
+	do
+		local RigMath = require(Shared.RigMath)
+		local root = CFrame.new(0, 3.3, 0)
+		local chest = CFrame.new(0, 3.835, 0)
+		local c = RigMath.arm.R
+		local target = (chest * CFrame.new(0.3, 0, -0.9)).Position
+		local _, _, _, handCF = RigMath.solve(c, chest, target, CFrame.identity, Vector3.new(0.6, -0.7, 0.9))
+		check("arm IK reaches its target", ((handCF * CFrame.new(c.j3.p1)).Position - target).Magnitude < 0.02)
+		local L, W = RigMath.pose(root, { stance = "s", hold = "long", mode = "ready", weapon = { grip = Vector3.new(0, -0.12, 0.05), hand = Vector3.new(0, -0.04, -1.02) } })
+		local n = 0
+		for _ in L do
+			n += 1
+		end
+		check("pose solves all 15 joints and the weapon", n == 15 and W ~= nil)
+		check("stance hip heights", RigMath.hipFor("c", 1) < RigMath.hipFor("s") and RigMath.hipFor("p") < RigMath.hipFor("c", 1))
+		local eyeS = RigMath.eye(root, { stance = "s" }).Position.Y
+		local eyeP = RigMath.eye(root * CFrame.new(0, RigMath.hipFor("p") - RigMath.STAND_HIP, 0), { stance = "p" }).Position.Y
+		check("eye heights stand/prone", eyeS > 4.8 and eyeS < 5.6 and eyeP < 1.4)
+		local eyeL = RigMath.eye(root, { stance = "s", lean = 1 }).Position
+		check("lean right moves the eye right", eyeL.X > 0.6)
+		-- crouched legs keep the ankles on the floor
+		local crootY = 3.3 - (RigMath.STAND_HIP - RigMath.hipFor("c", 1))
+		local Lc = RigMath.pose(CFrame.new(0, crootY, 0), { stance = "c", depth = 1 })
+		local Jr, Jh = RigMath.joints.Root, RigMath.joints.RightHip
+		local pelvis = CFrame.new(0, crootY, 0) * CFrame.new(Jr.p0) * Lc.Root * CFrame.new(-Jr.p1)
+		local thigh = pelvis * CFrame.new(Jh.p0) * Lc.RightHip * CFrame.new(-Jh.p1)
+		local Jk, Ja = RigMath.joints.RightKnee, RigMath.joints.RightAnkle
+		local shin = thigh * CFrame.new(Jk.p0) * Lc.RightKnee * CFrame.new(-Jk.p1)
+		local ankle = (shin * CFrame.new(Ja.p0)).Position
+		check("crouch IK plants the ankle", math.abs(ankle.Y - 0.26) < 0.05)
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0

@@ -17,15 +17,16 @@
 5. **Asset ownership.**
    - The meshes and audio belong to the owner's user account (5437527887).
    - If the game is ever published under a group, they must be re-uploaded to the group and `AssetIds.luau` / `Sounds.luau` updated. InsertService and private audio need matching owners.
-6. **Audio upload quota.** Accounts without ID verification can upload about 10 audio assets per month; 6 were used on 2026-10-28.
-7. **Missing sound effects.** `Sounds.IMPACT` is empty, so there is no surface-impact sound. `UI_CLICK` reuses the hit tick, pitched up.
+6. **Audio upload quota.** Accounts without ID verification can upload about 10 audio assets per month; 7 were used by 2026-10-28 (the sound atlas packs 52 effects into one upload, so short effects no longer cost quota).
+7. **Synthesised sound.** Footsteps, handling, impacts and cracks come from the procedural atlas (`synth_atlas.py`); they are functional placeholders until recorded or licensed sounds replace them.
 8. **The name "Zero Return" has not been checked** for collisions or trademarks before a public release.
 9. **The PC folder is still called `EscapeFromBloxov`.** Renaming it means restarting `rojo serve` from the new path.
 
-10. **Third-person animation is not running.** Roblox now rigs avatars (and HumanoidDescription models) with `AnimationConstraint` joints instead of `Motor6D`, so the client Animator finds no joints. M6 replaces the avatar with a custom Motor6D operator rig and teaches the Animator both joint types.
+10. **Prone keeps the upright collision box.** The humanoid root stays upright when prone (the body lies flat visually and as a hitbox), so you cannot crawl under objects lower than about 3 studs.
 11. **Weapons are part-built.** All weapons and attachments use the shared `WeaponModels` spec (consistent first and third person). The earlier R17 Blender viewmodel mesh is retired; M10 re-authors weapon meshes in Blender against the same anchors.
 12. **Inventory on short windows.** With a viewport shorter than about 600 px, the lower equipment slots (primary, holster, secondary) slide under the detail strip. Needs a scrollable gear column (M11).
-13. **Default R15 look.** Characters still use the stock R15 body and dynamic head (with face) until the M6 operator rig lands.
+13. **Movement extras not yet verified on devices.** Lean, prone and crouch-depth have touch buttons and gamepad shoulder buttons only for lean; free look (Alt) and hold breath (Shift while aiming) are keyboard-only so far.
+14. **Third-person mesh art.** The operator body is a first Blender pass (segment meshes, vertex colours); gear (vests, helmets, packs) is still part-built and gets a Blender pass in M10.
 
 ## Tool limitations (not game bugs)
 

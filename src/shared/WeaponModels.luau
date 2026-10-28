@@ -243,6 +243,26 @@ function M.build(items, it, origin: CFrame, scale: number)
 	return out
 end
 
+-- third-person hold kind ("long" | "pistol" | "melee") and the hand anchors (spec units) for an item id
+local holdCache = {}
+function M.holdOf(id: string?)
+	if not id then
+		return nil, nil
+	end
+	local c = holdCache[id]
+	if c == nil then
+		local d = Items.defs[id]
+		local w = d and d.weapon and Weapons[d.weapon]
+		local spec = w and M.weapons[w.viewmodel or d.weapon]
+		c = spec and { kind = spec.melee and "melee" or (spec.pistol and "pistol" or "long"), anchors = { grip = spec.anchors.grip, hand = spec.anchors.hand or spec.anchors.grip, magwell = spec.anchors.magwell, port = spec.anchors.port } } or false
+		holdCache[id] = c
+	end
+	if not c then
+		return nil, nil
+	end
+	return c.kind, c.anchors
+end
+
 -- handling modifiers from attachments (mirror of server Inv.modStats)
 function M.modStats(items, it)
 	local st = { ergo = 0, recoil = 1, loud = 1, zoom = nil, reflex = false, light = false, suppressed = false }

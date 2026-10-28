@@ -5,4 +5,5 @@
 return {
 	{ key = "ZR_CAL_Crate4", id = 98627364621889, rename = { EFB_CAL_Crate4 = "ZR_PROP_Crate" } }, -- uploaded before the rename
 	{ key = "ZR_BatchA", id = 125938077801710 }, -- R-17 viewmodel/mag/arms, TP rifle, container, barrel, pallet, barrier, light pole
+	{ key = "ZR_Operator", id = 89318251225515 }, -- operator body: 15 R15-named segments (build_operator.py, RigSpec sizes)
 }

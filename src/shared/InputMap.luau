@@ -1,6 +1,6 @@
 --!strict
 -- Single source of truth for action bindings (PC keys, gamepad, touch label). Movement/jump/look stay
--- with Roblox's PlayerModule + our camera. Interact uses ProximityPrompts (E / ButtonX / tap).
+-- with Roblox's PlayerModule + our camera. Interact uses ProximityPrompts (F / ButtonX / tap); Q/E lean (Tarkov).
 return {
 	Fire = { keys = { Enum.KeyCode.MouseLeftButton }, pad = { Enum.KeyCode.ButtonR2 }, touch = "FIRE", context = "play" },
 	Aim = { keys = { Enum.KeyCode.MouseRightButton }, pad = { Enum.KeyCode.ButtonL2 }, touch = "ADS", context = "play" },
@@ -20,4 +20,8 @@ return {
 	CycleWeapon = { keys = {}, pad = { Enum.KeyCode.DPadLeft }, touch = "SWAP", context = "play" },
 	MagCheck = { keys = { Enum.KeyCode.T }, pad = { Enum.KeyCode.ButtonR3 }, context = "play" },
 	Light = { keys = { Enum.KeyCode.L }, pad = {}, context = "play" },
+	LeanLeft = { keys = { Enum.KeyCode.Q }, pad = { Enum.KeyCode.ButtonL1 }, touch = "LN-L", context = "play" },
+	LeanRight = { keys = { Enum.KeyCode.E }, pad = { Enum.KeyCode.ButtonR1 }, touch = "LN-R", context = "play" },
+	Prone = { keys = { Enum.KeyCode.Z }, pad = {}, touch = "PRN", context = "play" },
+	FreeLook = { keys = { Enum.KeyCode.LeftAlt }, pad = {}, context = "play" },
 }

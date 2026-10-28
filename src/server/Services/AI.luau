@@ -1,7 +1,6 @@
 --!nonstrict
 -- "Harbor Watch" guards: PATROL -> INVESTIGATE (gunfire) -> ENGAGE (sight/damage) -> SEARCH -> RETURN.
 -- Perception at 5 Hz per guard, throttled pathfinding, server raycast LOS for sight and shots.
-local Players = game:GetService("Players")
 local DEV = game:GetService("RunService"):IsStudio()
 local PathfindingService = game:GetService("PathfindingService")
 local Items = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR").Items)
@@ -147,7 +146,7 @@ local function fire(g, char)
 	local inv = g.inv
 	local wit = inv and inv.slots.primary and inv.items[inv.slots.primary]
 	local wd = wit and Items.defs[wit.id]
-	ctx.Remotes.fx("shot", { o = muzzle, p = hitPos, n = r and r.Normal or nil, ai = true, w = wd and wd.weapon or "R17" })
+	ctx.Remotes.fx("shot", { o = muzzle, p = hitPos, n = r and r.Normal or nil, ai = true, w = wd and wd.weapon or "R17", m = r and r.Material or nil, h = r ~= nil and r.Instance:FindFirstAncestorOfClass("Model") ~= nil and r.Instance:FindFirstAncestorOfClass("Model"):FindFirstChildOfClass("Humanoid") ~= nil })
 	AI.hearShot(muzzle, nil, g)
 end
 
@@ -207,8 +206,24 @@ local function think(g)
 		end
 		moveTo(g, wp, false)
 	end
-	g.model:SetAttribute("Aim", g.state == "ENGAGE")
-	g.model:SetAttribute("State", g.state)
+	-- third-person: aim pitch toward the target, run when searching; server hitbox pose on change
+	local aim = g.state == "ENGAGE"
+	local pitch = 0
+	local tchar = aim and g.target and g.target.Character
+	local thead = tchar and tchar:FindFirstChild("Head")
+	if thead and g.head then
+		local d = thead.Position - g.head.Position
+		pitch = math.floor(math.deg(math.atan2(d.Y, Vector3.new(d.X, 0, d.Z).Magnitude)))
+	end
+	local sprint = g.hum.WalkSpeed >= RUN and g.root.AssemblyLinearVelocity.Magnitude > 8
+	local m = g.model
+	if m:GetAttribute("Aim") ~= aim or m:GetAttribute("Sprint") ~= sprint or math.abs((m:GetAttribute("Pitch") or 0) - pitch) >= 5 then
+		m:SetAttribute("Aim", aim)
+		m:SetAttribute("Sprint", sprint)
+		m:SetAttribute("Pitch", pitch)
+		ctx.Chars.pose(m)
+	end
+	m:SetAttribute("State", g.state)
 end
 
 local function spawnGuard(routeName, myGen)
@@ -217,7 +232,7 @@ local function spawnGuard(routeName, myGen)
 		return
 	end
 	local ok, model = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(ctx.Chars.description("guard"), Enum.HumanoidRigType.R15)
+		return ctx.Chars.buildRig("guard")
 	end)
 	if not ok or not model or myGen ~= gen then
 		if not ok then
@@ -239,6 +254,7 @@ local function spawnGuard(routeName, myGen)
 	local loadout = ctx.Loot.guardLoadout(Random.new())
 	ctx.Chars.dress(model, "guard", ctx.Chars.gearOf(loadout))
 	model:SetAttribute("ZR_AI", true)
+	model:SetAttribute("Stance", "s")
 	model.Parent = folder
 	local root = model:FindFirstChild("HumanoidRootPart")
 	pcall(function()

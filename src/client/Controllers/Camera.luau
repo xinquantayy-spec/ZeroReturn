@@ -7,8 +7,10 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
+local RigMath = require(Shared.RigMath)
 
-local Camera = { yaw = 0, pitch = 0, bobPhase = 0, speed = 0 }
+-- freeYaw / freePitch: Alt free look (the body and weapon keep their aim); aimCFrame = camera without free look
+local Camera = { yaw = 0, pitch = 0, bobPhase = 0, speed = 0, freeYaw = 0, freePitch = 0, aimCFrame = nil }
 local ctx
 local cam = workspace.CurrentCamera
 local player = Players.LocalPlayer
@@ -96,8 +98,14 @@ local function update(dt)
 	local S = ctx.Settings.data
 	local aiming = ctx.Weapon.aiming
 	local sens = (S.sens or 1) * (aiming and (ctx.Weapon.aimSens and ctx.Weapon.aimSens() or 0.62) or 1)
+	local free = not menu and ctx.Input.down("FreeLook") and not aiming
 	if not menu then
 		local md = UIS:GetMouseDelta()
+		if free then
+			Camera.freeYaw = math.clamp(Camera.freeYaw - math.rad(md.X * 0.2 * sens), math.rad(-100), math.rad(100))
+			Camera.freePitch = math.clamp(Camera.freePitch - math.rad(md.Y * 0.2 * sens), math.rad(-60), math.rad(60))
+			md = Vector2.zero
+		end
 		Camera.yaw -= math.rad(md.X * 0.2 * sens)
 		Camera.pitch -= math.rad(md.Y * 0.2 * sens)
 		if stick.Magnitude > 0.14 then
@@ -111,6 +119,11 @@ local function update(dt)
 	end
 	lookAcc = Vector2.zero
 	Camera.pitch = math.clamp(Camera.pitch, math.rad(-80), math.rad(80))
+	if not free then
+		local kr = math.min(1, dt * 10)
+		Camera.freeYaw -= Camera.freeYaw * kr
+		Camera.freePitch -= Camera.freePitch * kr
+	end
 	local k = math.min(1, dt * 10)
 	recoilP -= recoilP * k
 	recoilY -= recoilY * k
@@ -133,8 +146,11 @@ local function update(dt)
 		return
 	end
 	if orbit then
-		local center = root.Position + Vector3.new(0, orbit.h or 1.2, 0)
-		cam.CFrame = CFrame.new(center) * CFrame.Angles(0, Camera.yaw + (orbit.yaw or 0), 0) * CFrame.Angles(orbit.pitch or -0.2, 0, 0) * CFrame.new(0, 0, orbit.dist or 8)
+		local tm = orbit.model
+		local troot = tm and tm.Parent and tm:FindFirstChild("HumanoidRootPart")
+		local center = (troot and troot.Position or root.Position) + Vector3.new(0, orbit.h or 1.2, 0)
+		local baseYaw = troot and select(2, troot.CFrame:ToEulerAnglesYXZ()) or Camera.yaw
+		cam.CFrame = CFrame.new(center) * CFrame.Angles(0, baseYaw + (orbit.yaw or 0), 0) * CFrame.Angles(orbit.pitch or -0.2, 0, 0) * CFrame.new(0, 0, orbit.dist or 8)
 		cam.FieldOfView = 50
 		return
 	end
@@ -166,25 +182,39 @@ local function update(dt)
 	roll += ((-localVel.X * 0.0045 + turnRoll) * motion - roll) * math.min(1, dt * 6)
 	-- idle breathing (affects aim slightly, as a body-worn camera would)
 	local t = os.clock()
-	local breathe = (aiming and 0.5 or 1) * motion
+	local M = ctx.Movement
+	local held = M and M.breath
+	local fatigue = M and M.armFatigue or 0
+	local breathe = (aiming and (held and 0.12 or 0.5 + fatigue * 1.6) or 1) * motion
 	local breathP = math.sin(t * 1.65) * 0.0026 * breathe
 	local breathY = math.sin(t * 0.83 + 1.3) * 0.0019 * breathe
-	local tr = (Camera.tremor or 0) * (aiming and 1 or 0.35)
+	local tr = ((Camera.tremor or 0) + (aiming and fatigue * 0.7 or 0)) * (aiming and 1 or 0.35) * (held and 0.3 or 1)
 	if tr > 0 then
 		breathP += (math.noise(t * 7, 1.7) * 0.006 + math.sin(t * 23) * 0.0012) * tr
 		breathY += (math.noise(t * 7, 9.1) * 0.006) * tr
 	end
-	local target = root.Position + Vector3.new(0, eyeOffset, 0)
+	-- eye from the rig pose: crouch depth, prone and lean move the camera exactly like the third-person head
+	local yawCF = CFrame.new(root.Position) * CFrame.Angles(0, Camera.yaw, 0)
+	local target = M and M.poseParams and RigMath.eye(yawCF, M.poseParams()).Position or (root.Position + Vector3.new(0, eyeOffset, 0))
 	if smoothPos then
-		smoothPos = smoothPos:Lerp(target, math.min(1, dt * 22))
-		if (smoothPos - target).Magnitude > 3 then
+		local busy = M and M.busy and M.busy()
+		smoothPos = smoothPos:Lerp(target, math.min(1, dt * (busy and 7 or 20)))
+		if (smoothPos - target).Magnitude > 4 then
 			smoothPos = target
 		end
 	else
 		smoothPos = target
 	end
-	local rot = CFrame.Angles(0, Camera.yaw + breathY + flinchY, 0) * CFrame.Angles(Camera.pitch + recoilP + breathP + flinchP + land * 0.02, recoilY, roll + stepRoll + flinchR)
-	cam.CFrame = CFrame.new(smoothPos) * rot * CFrame.new(bobX, bobY + land * 0.35, -0.3)
+	local leanRoll = -(M and M.lean or 0) * 0.2
+	local aimRot = CFrame.Angles(0, Camera.yaw + breathY + flinchY, 0) * CFrame.Angles(Camera.pitch + recoilP + breathP + flinchP + land * 0.02, recoilY, roll + stepRoll + flinchR + leanRoll)
+	local offset = CFrame.new(bobX, bobY + land * 0.35, 0)
+	Camera.aimCFrame = CFrame.new(smoothPos) * aimRot * offset
+	if math.abs(Camera.freeYaw) + math.abs(Camera.freePitch) > 1e-3 then
+		local rot = CFrame.Angles(0, Camera.yaw + Camera.freeYaw + breathY + flinchY, 0) * CFrame.Angles(Camera.pitch + Camera.freePitch + recoilP + breathP + flinchP + land * 0.02, recoilY, roll + stepRoll + flinchR + leanRoll)
+		cam.CFrame = CFrame.new(smoothPos) * rot * offset
+	else
+		cam.CFrame = Camera.aimCFrame
+	end
 	local baseFov = S.fov or Config.FOV
 	local fovTarget = aiming and (ctx.Weapon.aimFov and ctx.Weapon.aimFov(baseFov) or baseFov * Config.AIM_FOV_MUL) or baseFov
 	fov += (fovTarget - fov) * math.min(1, dt * 12)
