@@ -603,7 +603,7 @@ function T.run(ctx)
 			if string.sub(id, 1, 4) == "DORM" then
 				dorm += 1
 			end
-			if d.key then
+			if d.key and (d.map == nil or d.map == "quay7") then
 				keyed += 1
 				okKeys = okKeys and Items.defs[d.key] ~= nil and Items.defs[d.key].kind == "key"
 			end

@@ -185,55 +185,62 @@ end
 -- a point is cover when something solid sits within reach at crouched-chest height in some directions but it
 -- is not boxed in; "full" cover also hides a standing body.
 local function buildCover()
-	local map = workspace:WaitForChild("ZR_World", 30)
-	map = map and map:FindFirstChild("Quay7")
-	if not map then
+	workspace:WaitForChild("ZR_World", 30)
+	local models = ctx.World.mapModels()
+	if #models == 0 then
 		warn("[ZR] AI: no map for cover")
 		return
 	end
-	worldParams.FilterDescendantsInstances = { map }
+	worldParams.FilterDescendantsInstances = models
 	local op = OverlapParams.new()
 	op.FilterType = Enum.RaycastFilterType.Include
-	op.FilterDescendantsInstances = { map }
+	op.FilterDescendantsInstances = models
 	local count = 0
-	for x = -192, 192, 3 do
-		for z = -192, 192, 3 do
-			-- every walkable level at this spot (yard, building floors under roofs, the mezzanine)
-			local floors = {}
-			local y = 60
-			for _ = 1, 5 do
-				local hit = workspace:Raycast(Vector3.new(x, y, z), Vector3.new(0, -(y + 10), 0), worldParams)
-				if not hit then
-					break
+	-- every map has its own area and floor range (Quay 7: yard to mezzanine; Smelter: tunnels to catwalks)
+	for _, m in ctx.World.maps do
+		local b = m.bounds
+		if not b then
+			continue
+		end
+		for x = b.x0, b.x1, 3 do
+			for z = b.z0, b.z1, 3 do
+				-- every walkable level at this spot (yard, building floors under roofs, catwalks, tunnels)
+				local floors = {}
+				local y = 60
+				for _ = 1, 6 do
+					local hit = workspace:Raycast(Vector3.new(x, y, z), Vector3.new(0, -(y - b.yMin + 10), 0), worldParams)
+					if not hit then
+						break
+					end
+					if hit.Position.Y < b.yMax and hit.Normal.Y > 0.8 then
+						table.insert(floors, hit.Position)
+					end
+					y = hit.Position.Y - 1.6
+					if y < b.yMin then
+						break
+					end
 				end
-				if hit.Position.Y < 16 and hit.Normal.Y > 0.8 then
-					table.insert(floors, hit.Position)
-				end
-				y = hit.Position.Y - 1.6
-				if y < -2 then
-					break
-				end
-			end
-			for _, p in floors do
-				local blocked = workspace:GetPartBoundsInBox(CFrame.new(p + Vector3.new(0, 3.3, 0)), Vector3.new(2, 5.4, 2), op)
-				if #blocked == 0 then
-					local dirs, full = {}, false
-					for _, d in DIRS do
-						if workspace:Raycast(p + Vector3.new(0, 2.4, 0), d * 3.2, worldParams) then
-							table.insert(dirs, d)
-							if workspace:Raycast(p + Vector3.new(0, 5.4, 0), d * 3.4, worldParams) then
-								full = true
+				for _, p in floors do
+					local blocked = workspace:GetPartBoundsInBox(CFrame.new(p + Vector3.new(0, 3.3, 0)), Vector3.new(2, 5.4, 2), op)
+					if #blocked == 0 then
+						local dirs, full = {}, false
+						for _, d in DIRS do
+							if workspace:Raycast(p + Vector3.new(0, 2.4, 0), d * 3.2, worldParams) then
+								table.insert(dirs, d)
+								if workspace:Raycast(p + Vector3.new(0, 5.4, 0), d * 3.4, worldParams) then
+									full = true
+								end
 							end
 						end
-					end
-					if #dirs > 0 and #dirs <= 5 then
-						addCover({ pos = p, dirs = dirs, full = full })
+						if #dirs > 0 and #dirs <= 5 then
+							addCover({ pos = p, dirs = dirs, full = full })
+						end
 					end
 				end
-			end
-			count += 1
-			if count % 150 == 0 then
-				task.wait()
+				count += 1
+				if count % 150 == 0 then
+					task.wait()
+				end
 			end
 		end
 	end
@@ -1911,7 +1918,7 @@ function AI.reset()
 	director.nextTopUp = t + 6
 	task.spawn(function()
 		local W = ctx.World
-		local bossRaid = (AI.forceBoss ~= nil) and AI.forceBoss or (math.random() < Config.BOSS_CHANCE)
+		local bossRaid = W.boss ~= nil and ((AI.forceBoss ~= nil) and AI.forceBoss or (math.random() < Config.BOSS_CHANCE))
 		AI.bossThisRaid = bossRaid
 		for _, wp in W.watchPosts or {} do
 			if myGen ~= gen then

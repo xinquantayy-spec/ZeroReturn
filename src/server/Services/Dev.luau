@@ -49,10 +49,10 @@ function C.state(name)
 end
 
 -- deploy through the real request path; if it queued, start the raid now (skips the matching countdown)
-function C.deploy(name, kind)
+function C.deploy(name, kind, map)
 	local p = plr(name)
 	local prof = ctx.Profiles.get(p)
-	local res = ctx.Remotes.dispatch(p, "deploy", { rev = prof.rev, kind = kind, rid = "dev" .. os.clock() })
+	local res = ctx.Remotes.dispatch(p, "deploy", { rev = prof.rev, kind = kind, rid = "dev" .. os.clock(), map = map })
 	if res.ok and res.data and res.data.queued then
 		ctx.Match.startsAt = workspace:GetServerTimeNow()
 	end
@@ -490,6 +490,12 @@ function C.env(hour, weather, rain)
 		ctx.Match.nextEnv = table.clone(e)
 	end
 	return HttpService:JSONEncode(ctx.Match.env or e)
+end
+
+-- M13: force the next raids onto a map ("quay7", "smelter"), or back to the vote (nil)
+function C.map(id)
+	ctx.Match.forceMap = id
+	return "forceMap=" .. tostring(id) .. " active=" .. tostring(ctx.World.activeMap)
 end
 
 -- force the Foreman on (true), off (false) or back to chance (nil) for the next raids

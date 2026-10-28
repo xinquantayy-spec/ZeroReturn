@@ -1,7 +1,7 @@
 --!nonstrict
 -- M12 detail plan. After a map is built the server reads its geometry once (walls and their faces, openings,
 -- floors and slabs, wall caps) and writes a seeded list of cosmetic details, grouped in 64-stud cells, to
--- ReplicatedStorage.ZR_DetailPlan (one JSON StringValue per cell). Each client builds the cells near its camera at
+-- ReplicatedStorage.ZR_DetailPlan (one JSON StringValue per cell; underground cells end in "u"). Each client builds the cells near its camera at
 -- its graphics level (client Detail controller). Details never collide, block sight or take bullets, and they are
 -- kept low or flat against surfaces, so they never become cover; gameplay props stay in World.
 --
@@ -38,8 +38,11 @@ end
 local function stat(k)
 	Plan.stats[k] = (Plan.stats[k] or 0) + 1
 end
+local UNDER = -2.5 -- entries below this height (tunnels) go into separate "u" cells
 local function add(e, pos, kind)
-	local k = math.floor(pos.X / CELL) .. "_" .. math.floor(pos.Z / CELL)
+	-- the cell comes from the stored (rounded) position, so an entry on a cell edge stays in its own cell;
+	-- underground detail gets its own cells, which clients build only while the camera is underground
+	local k = math.floor(e[3] / CELL) .. "_" .. math.floor(e[5] / CELL) .. ((e[4] < UNDER) and "u" or "")
 	local c = cells[k]
 	if not c then
 		c = {}

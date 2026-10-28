@@ -72,7 +72,7 @@ function T.run(ctx)
 			for _, sv in pf:GetChildren() do
 				bytes += #sv.Value
 				local ok, list = pcall(HttpService.JSONDecode, HttpService, sv.Value)
-				local cx, cz = string.match(sv.Name, "^(-?%d+)_(-?%d+)$")
+				local cx, cz = string.match(sv.Name, "^(-?%d+)_(-?%d+)u?$")
 				if not ok or not cx then
 					badCell += 1
 					continue

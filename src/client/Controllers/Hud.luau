@@ -9,6 +9,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
 local Env = require(Shared.Env)
+local Maps = require(Shared.Maps)
 local Sounds = require(Shared.Sounds)
 local Textures = require(Shared.Textures)
 local Lens = require(script.Parent.Lens)
@@ -218,7 +219,7 @@ local function slowUpdate()
 		stamp = os.date("%Y-%m-%d  %H:%M:%S", math.floor(os.time()))
 	end
 	O.rec:set({ { icon = I.DOT, color = C.red, alpha = blink and 0 or 0.85, size = SZ.rec * 0.66 }, { t = "REC", color = C.red }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
-	O.dev:set({ { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Config.MAP_NAME or "RELAY 7"), color = C.dim, alpha = 0.2 } })
+	O.dev:set({ { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Maps.nameOf(raid and raid.map) or "RELAY 7"), color = C.dim, alpha = 0.2 } })
 	-- clock / money
 	if inRaid and raid then
 		local left = math.max(0, raid.endsAt - now)
@@ -573,7 +574,7 @@ function Hud.init(c)
 	c.State.on("raid", function(r)
 		ex, search, heal = nil, nil, nil
 		squadUntil = os.clock() + 8
-		Hud.notice(Config.MAP_NAME, (r and r.scav) and "INSERTION CONFIRMED  ·  SCAV" or "INSERTION CONFIRMED", C.white, 3)
+		Hud.notice(Maps.nameOf(r and r.map), (r and r.scav) and "INSERTION CONFIRMED  ·  SCAV" or "INSERTION CONFIRMED", C.white, 3)
 	end)
 	c.State.on("summary", function()
 		ex, search, heal = nil, nil, nil

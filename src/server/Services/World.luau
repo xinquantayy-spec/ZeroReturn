@@ -1,5 +1,7 @@
 --!nonstrict
--- Builds the safehouse and the Quay 7 raid map at server start (deterministic, no saved place data needed).
+-- Builds the safehouse and every raid map at server start (deterministic, no saved place data needed). Each map
+-- sits at its own origin; Match picks one per raid (map vote) and World.activate points the per-raid tables
+-- (spawns, extracts, patrols, loose spots, AI zones, boss) at it. Containers and doors of every map stay live.
 -- Uploaded Blender meshes (ReplicatedStorage.ZR_Assets) replace part-built fallbacks when available.
 local Lighting = game:GetService("Lighting")
 local CollectionService = game:GetService("CollectionService")
@@ -17,6 +19,51 @@ World.doors = {}
 World.safehouse = {}
 
 local root: Folder
+
+-- M13 map registry: per-map tables live in World.maps[id]; World.activate copies them onto the World fields
+-- every service reads (ctx.World.spawns, ctx.World.extracts, ...).
+World.maps = {}
+World.activeMap = nil
+local PER_MAP = { "spawns", "sideExtracts", "extracts", "patrols", "looseSpots", "scavZones", "watchPosts", "visitZones", "boss", "bounds" }
+local currentMap = nil
+local function beginMap(id)
+	currentMap = id
+	World.spawns, World.extracts, World.patrols, World.looseSpots = {}, {}, {}, {}
+	World.sideExtracts, World.scavZones, World.watchPosts, World.visitZones = {}, {}, {}, {}
+	World.boss, World.bounds = nil, nil
+end
+local function endMap(id, mapModel)
+	local m = { id = id, model = mapModel }
+	for _, k in PER_MAP do
+		m[k] = World[k]
+	end
+	for _, d in World.doors do
+		d.map = d.map or id
+	end
+	World.maps[id] = m
+	currentMap = nil
+	return m
+end
+function World.activate(id)
+	local m = World.maps[id]
+	if not m then
+		return false
+	end
+	for _, k in PER_MAP do
+		World[k] = m[k]
+	end
+	World.activeMap = id
+	World.map = m.model
+	return true
+end
+-- every map model (AI sight and cover, detail plan)
+function World.mapModels()
+	local out = {}
+	for _, m in World.maps do
+		table.insert(out, m.model)
+	end
+	return out
+end
 local rng = Random.new(707)
 local M = Enum.Material
 local function hex(h)
@@ -443,35 +490,37 @@ local function addContainerSpot(parent, id, kind, label, cf)
 	pp.Style = Enum.ProximityPromptStyle.Custom
 	pp.Parent = anchor
 	CollectionService:AddTag(anchor, "ZR_Container")
-	table.insert(World.containers, { id = id, kind = kind, label = label, part = anchor, prompt = pp })
+	table.insert(World.containers, { id = id, kind = kind, label = label, part = anchor, prompt = pp, map = currentMap })
 end
 
-local function addExtract(parent, id, name, pos, size, rule)
+local function addExtract(parent, id, name, pos, size, rule, opts)
 	local m = model("Exfil_" .. id, parent)
-	-- beacon: pole + radio box + light + sign
+	-- beacon: pole + radio box + light + sign (compact under a low ceiling, e.g. a tunnel)
+	local y0 = pos.Y
+	local poleH = (opts and opts.compact) and 6.4 or 9
 	local px, pz = pos.X + size.X / 2 - 1.5, pos.Z - size.Z / 2 + 1.5
-	vcyl(m, 9, 0.5, px, 0, pz, C.metalDark, M.Metal)
-	local radio = box(m, 1.6, 1.2, 1, px, 6.4, pz, C.olive, M.Metal)
-	local lamp = box(m, 0.7, 0.7, 0.7, px, 9.3, pz, C.orange, M.Neon)
+	vcyl(m, poleH, 0.5, px, y0, pz, C.metalDark, M.Metal)
+	local radio = box(m, 1.6, 1.2, 1, px, y0 + poleH - 2.6, pz, C.olive, M.Metal)
+	local lamp = box(m, 0.7, 0.7, 0.7, px, y0 + poleH + 0.3, pz, C.orange, M.Neon)
 	lamp.CastShadow = false
 	lamp.Name = "BeaconLamp"
 	light(lamp, C.orange, 18, 1.2, false)
-	local plate = box(m, 5, 1.4, 0.2, px, 4.4, pz - 0.4, C.metalDark, M.Metal)
+	local plate = box(m, 5, 1.4, 0.2, px, y0 + poleH - 4.6, pz - 0.4, C.metalDark, M.Metal)
 	sign(plate, Enum.NormalId.Front, "EXFIL " .. id .. " — " .. name, C.orange)
 	sign(plate, Enum.NormalId.Back, "EXFIL " .. id .. " — " .. name, C.orange)
 	radio.Name = "Radio"
-	local zone = box(root.Triggers, size.X, size.Y, size.Z, pos.X, size.Y / 2, pos.Z, C.orange, M.ForceField)
+	local zone = box(root.Triggers, size.X, size.Y, size.Z, pos.X, y0 + size.Y / 2, pos.Z, C.orange, M.ForceField)
 	zone.Transparency = 1
 	zone.CanCollide = false
 	zone.CanQuery = false
 	zone.CanTouch = false
 	zone.Name = "ExfilZone_" .. id
 	-- painted ground marking (thin, no collision)
-	local mark = box(m, size.X, 0.06, size.Z, pos.X, 0.04, pos.Z, C.orange, M.SmoothPlastic)
+	local mark = box(m, size.X, 0.06, size.Z, pos.X, y0 + 0.04, pos.Z, C.orange, M.SmoothPlastic)
 	mark.Transparency = 0.82
 	mark.CanCollide = false
 	mark.CanQuery = false
-	World.extracts[id] = { id = id, name = name, cf = zone.CFrame, size = size, pos = pos, beacon = lamp, rule = rule or { kind = "open" } }
+	World.extracts[id] = { id = id, name = name, cf = zone.CFrame, size = size, pos = pos, beacon = lamp, rule = rule or { kind = "open" }, map = currentMap }
 end
 
 local function buildGround(map)
@@ -1026,6 +1075,17 @@ function World.applyWear(folder)
 	return n
 end
 
+-- building kit handed to map modules (src/server/Maps/*): the same primitives, props and registration helpers
+-- Quay 7 uses. Coordinates are world coordinates; each map module adds its own origin.
+function World.kit()
+	return {
+		World = World, root = root, C = C, M = M, hex = hex, rng = rng, Props = Props,
+		part = part, box = box, boxCF = boxCF, cyl = cyl, vcyl = vcyl, model = model, jitter = jitter, light = light,
+		sign = sign, mesh = mesh, wall = wall, wallHoles = wallHoles, loose = loose,
+		container = addContainerSpot, extract = addExtract,
+	}
+end
+
 function World.build()
 	for _, n in { "Baseplate", "SpawnLocation" } do
 		local inst = workspace:FindFirstChild(n)
@@ -1044,6 +1104,7 @@ function World.build()
 	trig.Parent = root
 	setupLighting()
 	buildSafehouse()
+	beginMap("quay7")
 	local map = model("Quay7", root)
 	buildGround(map)
 	buildHarborStack(map)
@@ -1098,6 +1159,18 @@ function World.build()
 		{ route = "HS" },
 	}
 	World.visitZones = { PIER3 = { pos = v(236, 0, 150), r = 18 }, RELAY = { pos = v(190, 0, -190), r = 14 } }
+	World.boss = {
+		name = "THE FOREMAN", home = v(116, 4, -128),
+		route = { v(116, 4, -128), v(84, 4, -126), v(62, 4, -110), v(100, 4, -112), v(140, 4, -112), v(142, 4, -128) },
+		crew = { v(112, 4, -130), v(80, 4, -122) },
+	}
+	-- the area the AI samples for cover points, and the floor heights it keeps
+	World.bounds = { x0 = -192, x1 = 192, z0 = -192, z1 = 192, yMin = -2, yMax = 16 }
+	endMap("quay7", map)
+	-- M13: Smelter (factory-type), built at its own origin by its own module
+	beginMap("smelter")
+	local smelter = require(script.Parent.Parent.Maps.Smelter)(World.kit(), root)
+	endMap("smelter", smelter)
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
 	for _, d in World.doors do
 		local slab = Instance.new("Part")
@@ -1143,11 +1216,7 @@ function World.build()
 		d.part, d.handle, d.prompt = slab, handle, pp
 		d.parent = nil
 	end
-	World.boss = {
-		name = "THE FOREMAN", home = v(116, 4, -128),
-		route = { v(116, 4, -128), v(84, 4, -126), v(62, 4, -110), v(100, 4, -112), v(140, 4, -112), v(142, 4, -128) },
-		crew = { v(112, 4, -130), v(80, 4, -122) },
-	}
+	World.activate("quay7")
 	local worn = World.applyWear(root)
 	root.Parent = workspace
 	local n = 0
@@ -1156,18 +1225,37 @@ function World.build()
 			n += 1
 		end
 	end
-	print(string.format("[ZR] World built: %d parts (%d worn), %d containers, %d spawns", n, worn, #World.containers, #World.spawns))
+	local names = {}
+	for id in World.maps do
+		table.insert(names, id)
+	end
+	table.sort(names)
+	print(string.format("[ZR] World built: %d parts (%d worn), maps %s, %d containers, %d doors", n, worn, table.concat(names, "+"), #World.containers, (function()
+		local k = 0
+		for _ in World.doors do
+			k += 1
+		end
+		return k
+	end)()))
 end
 
 -- places the cosmetic detail plan keeps its ground clutter away from (M12): loot spots, containers, doors (and
--- their swing), exfil zones and spawns, so clutter never hides loot or a prompt and never fills a doorway
+-- their swing), exfil zones and spawns of every map, so clutter never hides loot or a prompt and never fills a doorway
 function World.detailAvoid()
 	local out = {}
 	local function add(pos, r)
 		table.insert(out, { pos = pos, r = r })
 	end
-	for _, s in World.looseSpots do
-		add(s.pos, 1.8)
+	for _, m in World.maps do
+		for _, s in m.looseSpots do
+			add(s.pos, 1.8)
+		end
+		for _, e in m.extracts do
+			add(e.pos, math.max(e.size.X, e.size.Z) / 2 + 1)
+		end
+		for _, sp in m.spawns do
+			add(sp.cf.Position, 4)
+		end
 	end
 	for _, c in World.containers do
 		if c.part then
@@ -1179,12 +1267,6 @@ function World.detailAvoid()
 		if cf and d.size then
 			add(cf.Position, d.size.X + 0.6)
 		end
-	end
-	for _, e in World.extracts do
-		add(e.pos, math.max(e.size.X, e.size.Z) / 2 + 1)
-	end
-	for _, sp in World.spawns do
-		add(sp.cf.Position, 4)
 	end
 	return out
 end

@@ -6,11 +6,14 @@
 --   Insurance is settled at the end of every raid and the world is cleared for the next one.
 -- Squads: invite / accept / leave in the hideout; queued squad members spawn together and wear one armband
 -- colour (no friendly markers, Tarkov-style). Spawns are picked far from anyone already in the raid.
+-- Maps (M13): queued players vote for the map of the next raid; the most votes win and a tie (or no votes) is
+-- settled at random. The raid length comes from the map.
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
 local Env = require(Shared.Env)
+local Maps = require(Shared.Maps)
 local Inv = require(script.Parent.Inv)
 
 local Match = {
@@ -18,10 +21,12 @@ local Match = {
 	extractOpen = {}, usedSpawns = {}, squadSpawn = {}, raids = 0,
 	env = nil, -- this raid's time of day and weather (Env.State, t0 = raid start)
 	nextEnv = nil, -- rolled when matching starts, so the deploy screen can show it
+	map = nil, -- map of the running (or last) raid
+	forceMap = nil, -- dev: next raids on this map
 }
 local envRng = Random.new()
 local ctx
-local queue = {} -- [Player] = { kind = "pmc" | "scav", t }
+local queue = {} -- [Player] = { kind = "pmc" | "scav", t, vote = map id or nil }
 local squads = {} -- [sid] = { id, leader = Player, members = { Player }, color }
 local squadOf = {} -- [Player] = sid
 local invites = {} -- [Player target] = { from = Player, t }
@@ -222,7 +227,43 @@ function Match.status(player)
 		scavUntil = Match.endsAt - Config.SCAV_CUTOFF, queued = q and q.kind or nil, inQueue = count(queue),
 		inRaid = liveSessions(), maxPlayers = Config.MAX_PLAYERS, scavReadyAt = prof and prof.scavReadyAt or 0, serverTime = os.time(),
 		env = (Match.state == "RUNNING") and Match.env or Match.nextEnv,
+		map = (Match.state == "RUNNING") and Match.map or nil, votes = Match.tally(), vote = q and q.vote or nil,
 	}
+end
+
+-- ── map vote ─────────────────────────────────────────────────────────────────
+function Match.tally()
+	local t = {}
+	for _, q in queue do
+		if q.vote then
+			t[q.vote] = (t[q.vote] or 0) + 1
+		end
+	end
+	return t
+end
+
+-- change your vote while waiting in the queue (nil = any map)
+function Match.vote(player, id)
+	local q = queue[player]
+	if not q then
+		return false, "NOT_QUEUED"
+	end
+	if id ~= nil and not Maps.valid(id) then
+		return false, "BAD_INPUT"
+	end
+	q.vote = id
+	Match.broadcast()
+	return true
+end
+
+-- the map for the raid that is about to start
+function Match.pickMap()
+	if Match.forceMap and Maps.valid(Match.forceMap) then
+		return Match.forceMap
+	end
+	return Maps.winner(Match.tally(), function(n)
+		return math.random(1, n)
+	end)
 end
 
 function Match.broadcast()
@@ -303,11 +344,11 @@ local function beginMatching()
 end
 
 -- returns "enter" (deploy now) or "queued"
-function Match.request(player, kind)
+function Match.request(player, kind, vote)
 	if Match.canEnter(kind) then
 		return "enter"
 	end
-	queue[player] = { kind = kind, t = now() }
+	queue[player] = { kind = kind, t = now(), vote = Maps.valid(vote) and vote or nil }
 	if Match.state == "IDLE" then
 		beginMatching()
 	end
@@ -348,11 +389,13 @@ end
 
 local function startRaid()
 	local t = now()
+	Match.map = Match.pickMap()
+	ctx.World.activate(Match.map)
 	Match.state = "RUNNING"
 	Match.id = Util.guid()
 	Match.raids += 1
 	Match.startedAt = t
-	Match.endsAt = t + Config.RAID_DURATION
+	Match.endsAt = t + (Maps.defs[Match.map] and Maps.defs[Match.map].raidTime or Config.RAID_DURATION)
 	Match.lateUntil = t + Config.LATE_JOIN
 	Match.emptySince = nil
 	Match.env = Match.nextEnv or (Match.forceEnv and table.clone(Match.forceEnv)) or Env.roll(envRng)
@@ -551,6 +594,12 @@ function Match.init(c)
 	ctx.Remotes.onReq("queue", function(player, p)
 		if p.op == "cancel" then
 			Match.cancel(player)
+		elseif p.op == "vote" then
+			-- p.map: a map id, or nil for "any map"
+			local ok, err = Match.vote(player, p.map)
+			if not ok then
+				return ctx.Remotes.fail(err)
+			end
 		end
 		return ctx.Remotes.ok(Match.status(player))
 	end, 4, 6)

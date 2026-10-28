@@ -59,7 +59,7 @@ function Raid.raidInfo(s)
 	end
 	return {
 		id = s.id, started = s.raidStart or s.started, endsAt = s.endsAt, spawn = s.spawn, extracts = ex, state = s.state,
-		exEnds = s.exEnds, exZone = s.exZone, scav = s.scav, env = ctx.Match.env,
+		exEnds = s.exEnds, exZone = s.exZone, scav = s.scav, env = ctx.Match.env, map = ctx.Match.map,
 	}
 end
 
@@ -210,7 +210,8 @@ function Raid.deploy(player, p)
 	if (root.Position - Config.SAFEHOUSE_ORIGIN).Magnitude > 80 then
 		return fail("NOT_AUTHORIZED")
 	end
-	if ctx.Match.request(player, kind) == "enter" then
+	-- p.map: the map this player votes for if the request queues (ignored when joining a running raid)
+	if ctx.Match.request(player, kind, p.map) == "enter" then
 		local spawn, idx = ctx.Match.spawnFor(player, kind)
 		local okE, err = Raid.enter(player, kind, spawn, idx)
 		if not okE then

@@ -121,11 +121,11 @@ local function loadCell(sv)
 	if not ok or type(list) ~= "table" then
 		return
 	end
-	local cx, cz = string.match(sv.Name, "^(-?%d+)_(-?%d+)$")
+	local cx, cz, u = string.match(sv.Name, "^(-?%d+)_(-?%d+)(u?)$")
 	if not cx then
 		return
 	end
-	local cell = { key = sv.Name, center = Vector3.new(tonumber(cx) * Wear.CELL + HALF, 0, tonumber(cz) * Wear.CELL + HALF), byLod = { {}, {}, {} }, built = {}, y0 = math.huge, y1 = -math.huge }
+	local cell = { key = sv.Name, center = Vector3.new(tonumber(cx) * Wear.CELL + HALF, 0, tonumber(cz) * Wear.CELL + HALF), byLod = { {}, {}, {} }, built = {}, y0 = math.huge, y1 = -math.huge, under = u == "u" }
 	for _, e in list do
 		local l = math.clamp(lodOf(e) or 2, 1, 3)
 		table.insert(cell.byLod[l], e)
@@ -177,8 +177,14 @@ local function refresh()
 	local camPos = cam.CFrame.Position
 	local rings = RINGS[Detail.level]
 	local built = 0
+	-- tunnels and the surface hide each other: underground cells only while the camera is underground, and only
+	-- the surface right around a stairwell while it is
+	local camUnder = camPos.Y < -1
 	for _, cell in cells do
 		local d = cellDist(cell, camPos)
+		if cell.under ~= camUnder then
+			d = (cell.under or d > 40) and math.huge or d
+		end
 		for lod = 1, 3 do
 			local r = rings and rings[lod]
 			local have = cell.built[lod] ~= nil

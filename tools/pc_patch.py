@@ -9,6 +9,7 @@ Shares the sync state with tools/stage_sync.py, so either route can be used next
 
 Usage:
   python3 tools/pc_patch.py [paths...]  -> writes <scratchpad>/pc_patch.py (run it with the Blender MCP), prints a summary
+  python3 tools/pc_patch.py --plain [paths...] -> the same as a readable snippet (small syncs, pasted directly)
   python3 tools/pc_patch.py --done      -> the snippet reported every file ok: mark them synced
 Default paths: the same roots as stage_sync.py.
 """
@@ -29,9 +30,14 @@ def sha(b):
 
 
 def synced_content(rel, want):
-    """bytes of the version the PC has (sha1 = want), from git history or the Studio base copies"""
+    """bytes of the version the PC has (sha1 = want): the copy kept at the last sync, else git history"""
     if want is None:
         return None
+    kept = PAD / "pc_base" / rel
+    if kept.exists():
+        b = kept.read_bytes()
+        if sha(b) == want:
+            return b
     r = subprocess.run(["git", "log", "--format=%H", "-n", "30", "--", rel], cwd=ROOT, capture_output=True, text=True)
     for rev in ["HEAD"] + r.stdout.split():
         b = subprocess.run(["git", "show", f"{rev}:{rel}"], cwd=ROOT, capture_output=True).stdout
@@ -67,7 +73,7 @@ def hunks(old, new):
 
 RUNNER = r'''import base64, hashlib, json, os, zlib
 ROOT = os.path.join(os.path.expanduser("~"), "Documents", "EscapeFromBloxov")
-PAY = json.loads(zlib.decompress(base64.b64decode(DATA)).decode("utf-8"))
+PAY = PAY if "PAY" in globals() else json.loads(zlib.decompress(base64.b64decode(DATA)).decode("utf-8"))
 res = []
 for e in PAY:
     rel = e["rel"]
@@ -114,6 +120,11 @@ def main():
         state.update(pend)
         PEND.unlink()
         STATE.write_text(json.dumps(state))
+        # keep what the PC now has, so the next sync can send only the changes
+        for rel in pend:
+            dst = PAD / "pc_base" / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes((ROOT / rel).read_bytes())
         # Rojo carries src/ from the PC into Studio, so Studio now has these too (tools/studio_patch.py base)
         for rel in pend:
             if rel.startswith("src/"):
@@ -122,6 +133,8 @@ def main():
                 dst.write_bytes((ROOT / rel).read_bytes())
         print("synced entries:", len(state))
         return
+    plain = "--plain" in args  # small syncs: hunks as a readable Python literal (pasted into the Blender call)
+    args = [a for a in args if a != "--plain"]
     roots = args or ROOTS
     pay, pend = [], {}
     for r in roots:
@@ -152,8 +165,11 @@ def main():
             pay.append(entry)
             pend[rel] = hv
             print(f"{rel}: {entry['mode']}" + (f" ({len(hs)} hunks)" if hs is not None else f" ({len(new)} bytes)"))
-    blob = base64.b64encode(zlib.compress(json.dumps(pay).encode("utf-8"), 9)).decode()
-    OUT.write_text("DATA = " + repr(blob) + "\n" + RUNNER)
+    if plain:
+        OUT.write_text("PAY = " + repr(pay) + "\n" + RUNNER)
+    else:
+        blob = base64.b64encode(zlib.compress(json.dumps(pay).encode("utf-8"), 9)).decode()
+        OUT.write_text("DATA = " + repr(blob) + "\n" + RUNNER)
     PEND.write_text(json.dumps(pend))
     print(f"{len(pay)} files -> {OUT} ({OUT.stat().st_size} bytes); after it reports all ok: python3 tools/pc_patch.py --done")
 

@@ -12,6 +12,7 @@ local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local Grid = require(Shared.Grid)
 local Util = require(Shared.Util)
+local Maps = require(Shared.Maps)
 local TD = require(Shared.TraderData)
 
 local Inventory = { open = false }
@@ -821,7 +822,7 @@ function Inventory.render()
 	K.stroke(panel, K.C.line, 0.45)
 	-- header
 	local weight = gearWeight(d)
-	local head = inRaid and ("FIELD KIT  //  " .. Config.MAP_NAME) or "HIDEOUT  //  STASH & GEAR"
+	local head = inRaid and ("FIELD KIT  //  " .. Maps.nameOf(ctx.State.raid and ctx.State.raid.map)) or "HIDEOUT  //  STASH & GEAR"
 	K.label(panel, head, 16, { Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(W - 220, 22), FontFace = K.bold })
 	local info = string.format("WEIGHT %.1f kg", weight)
 	if not inRaid then

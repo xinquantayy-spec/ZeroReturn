@@ -7,6 +7,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local Env = require(Shared.Env)
+local Maps = require(Shared.Maps)
 
 local Screens = { modal = nil }
 local ctx, K
@@ -68,7 +69,7 @@ local function matchText(m)
 			local w = Env.WEATHER[e.w] or Env.WEATHER.clear
 			return string.format("\nINSERTION AT %02d:%02d LOCAL  ·  %s", math.floor(e.clock0), math.floor((e.clock0 % 1) * 60), w.name)
 		end
-		return "\nQUAY 7 LOCAL TIME " .. Env.label(e, now)
+		return "\n" .. Maps.nameOf(m.map) .. " LOCAL TIME " .. Env.label(e, now)
 	end
 	if m.state == "MATCHING" then
 		return string.format("%s  ·  INSERTION IN %s  ·  %d QUEUED", m.queued and "YOU ARE QUEUED" or "RAID FORMING", t(m.startsAt - now), m.inQueue or 0) .. conditions(), K.C.ochre
@@ -91,6 +92,7 @@ end
 Screens.matchText = matchText
 
 local deployMode = "pmc"
+local deployVote = nil -- map this player votes for (nil = any map)
 
 local function scroller(parent, x, y, w, h)
 	local sf = K.new("ScrollingFrame", {
@@ -116,7 +118,7 @@ function Screens.deploy()
 	if not d or ctx.State.inRaid() then
 		return
 	end
-	local f, w, h = modal(820, 500, "DEPLOYMENT TERMINAL  //  " .. Config.MAP_NAME)
+	local f, w, h = modal(820, 500, "DEPLOYMENT TERMINAL")
 	local me = Players.LocalPlayer
 	local mode = deployMode
 	-- mode tabs
@@ -233,9 +235,69 @@ function Screens.deploy()
 		rn += 1
 		return para(right, rn, text, color, size, bold)
 	end
+	-- map vote (M13): queued players vote for the next raid's map; most votes win, a tie is random
+	R("MAP", K.C.ochre, 13, true)
+	rn += 1
+	local mapBox = K.frame(right, { Name = "Maps", LayoutOrder = rn, BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.new(1, -8, 0, 0) })
+	K.list(mapBox, nil, 4)
+	local mapSig = nil
+	local function mapSignature()
+		local m = ctx.State.match or {}
+		local parts = { tostring(m.state), tostring(m.map), tostring(m.vote), tostring(deployVote), tostring(m.queued) }
+		for _, id in Maps.order do
+			table.insert(parts, tostring((m.votes or {})[id]))
+		end
+		return table.concat(parts, "|")
+	end
+	local function drawMaps()
+		for _, c in mapBox:GetChildren() do
+			if not c:IsA("UIListLayout") then
+				c:Destroy()
+			end
+		end
+		local m = ctx.State.match or {}
+		local k = 0
+		local function info(text, color)
+			k += 1
+			K.label(mapBox, text, 12, { LayoutOrder = k, TextColor3 = color or K.C.dim, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.new(1, 0, 0, 16) })
+		end
+		if m.state == "RUNNING" then
+			info("RAID IN PROGRESS ON " .. Maps.nameOf(m.map) .. ". Joining now goes there; queueing votes for the next raid.", K.C.text)
+		end
+		local mine = m.queued and m.vote or deployVote
+		local votes = m.votes or {}
+		local function choice(id, label)
+			k += 1
+			local sel = mine == id
+			local b = K.button(mapBox, label, {
+				LayoutOrder = k, Size = UDim2.new(1, 0, 0, 28), TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
+				BackgroundColor3 = sel and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = sel and K.C.ochre or K.C.text,
+			})
+			b.Name = "Map_" .. string.upper(id or "ANY")
+			b.Activated:Connect(function()
+				deployVote = id
+				if (ctx.State.match or {}).queued then
+					local res = ctx.State.req("queue", { op = "vote", map = id })
+					if res and res.ok and res.data then
+						ctx.State.match = res.data
+						ctx.State.matchClock = os.clock()
+					end
+				end
+				mapSig = nil
+			end)
+		end
+		for _, id in Maps.order do
+			local def = Maps.defs[id]
+			local n = votes[id] or 0
+			choice(id, string.format("  %s  ·  %s  ·  %d MIN%s", def.name, def.kind, math.floor(def.raidTime / 60), n > 0 and string.format("  ·  %d VOTE%s", n, n == 1 and "" or "S") or ""))
+		end
+		choice(nil, "  ANY MAP")
+		local def = mine and Maps.defs[mine]
+		info(def and def.desc or "No vote: the queue's votes decide, a tie is settled at random.")
+	end
 	R("RAID ON THIS SERVER", K.C.ochre, 13, true)
 	live.match = R("", K.C.text, 12)
-	R(string.format("%d-min raids · up to %d operators · PMCs, player scavs and the Harbor Watch share one map.", math.floor(Config.RAID_DURATION / 60), Config.MAX_PLAYERS), K.C.dim, 11)
+	R(string.format("Up to %d operators · PMCs, player scavs and the locals share one map per raid.", Config.MAX_PLAYERS), K.C.dim, 11)
 	rn += 1
 	local squadBox = K.frame(right, { Name = "Squad", LayoutOrder = rn, BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.new(1, -8, 0, 0) })
 	K.list(squadBox, nil, 4)
@@ -353,7 +415,7 @@ function Screens.deploy()
 		end
 		deploy.Text = "COMMITTING..."
 		local cur = ctx.State.data
-		local res = ctx.State.req("deploy", { rev = cur and cur.rev, kind = mode })
+		local res = ctx.State.req("deploy", { rev = cur and cur.rev, kind = mode, map = deployVote })
 		busyDeploy = false
 		if res and res.ok then
 			if res.data and res.data.entered then
@@ -412,6 +474,11 @@ function Screens.deploy()
 			if sig ~= squadSig then
 				squadSig = sig
 				drawSquad()
+			end
+			local ms = mapSignature()
+			if ms ~= mapSig then
+				mapSig = ms
+				drawMaps()
 			end
 			task.wait(0.25)
 		end
