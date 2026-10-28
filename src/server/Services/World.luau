@@ -739,6 +739,32 @@ function World.build()
 	for _, s in World.spawns do
 		s.extracts = World.sideExtracts[s.side]
 	end
+	-- AI (M8): scav wander/spawn points around the points of interest, Harbor Watch posts, the Foreman's depot
+	local function v(x, y, z)
+		return Vector3.new(x, y, z)
+	end
+	World.scavZones = {
+		-- Harbor Stack alleys
+		v(-96, 0, -140), v(-40, 0, -140), v(-40, 0, -76), v(-96, 0, -76), v(-150, 0, -108), v(-96, 0, -108),
+		-- around the Pump Annex
+		v(30, 0, 85), v(126, 0, 100), v(126, 0, 48), v(70, 0, 48), v(60, 0.4, 88),
+		-- south yard, water tower, culvert side
+		v(-90, 0, 78), v(-30, 0, 132), v(0, 0, 110), v(60, 0, 150), v(120, 0, 140), v(-130, 0, 98), v(-160, 0, 150),
+		-- roads, east apron, pier approach, rail cut
+		v(-20, 0, 18), v(-60, 0, 32), v(60, 0, 32), v(100, 0, 12), v(160, 0, -70), v(170, 0, 100), v(-170, 0, -150),
+		-- depot dock
+		v(36, 0, -94), v(36, 0, -130),
+	}
+	World.watchPosts = {
+		{ route = "PA", post = v(70, 10, 106) }, -- mezzanine overwatch in the turbine room
+		{ route = "PA" },
+		{ route = "HS" },
+	}
+	World.boss = {
+		name = "THE FOREMAN", home = v(136, 4, -150),
+		route = { v(136, 4, -150), v(116, 4, -128), v(84, 4, -126), v(62, 4, -110), v(100, 4, -112), v(130, 4, -112) },
+		crew = { v(112, 4, -130), v(80, 4, -122) },
+	}
 	root.Parent = workspace
 	local n = 0
 	for _, d in root:GetDescendants() do

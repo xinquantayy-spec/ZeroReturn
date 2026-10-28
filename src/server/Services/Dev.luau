@@ -277,10 +277,34 @@ end
 
 function C.ai()
 	local out = {}
-	for _, g in ctx.AI.guards do
-		table.insert(out, string.format("%s %s hp=%d pos=%s", g.name, g.state, g.hum and g.hum.Health or -1, g.root and tostring(Vector3.new(math.floor(g.root.Position.X), math.floor(g.root.Position.Y), math.floor(g.root.Position.Z))) or "?"))
+	for _, u in ctx.AI.units do
+		local p = u.root and u.root.Position
+		local rounds = "-"
+		if u.w and u.inv.items[u.w.g] then
+			local it = u.inv.items[u.w.g]
+			local m = it.mag and u.inv.items[it.mag] or it
+			rounds = tostring(m.a or 0)
+		end
+		table.insert(out, string.format("%s[%s] %s hp=%d pos=%s w=%s(%s) tgt=%s cover=%s st=%s", u.name, u.faction, u.state, u.hum and math.floor(u.hum.Health) or -1,
+			p and string.format("%d,%d,%d", p.X, p.Y, p.Z) or "?", u.w and u.w.def.id or "-", rounds, u.target and u.target.Name or "-", tostring(u.cover ~= nil), tostring(u.stance)))
 	end
-	return table.concat(out, " | ")
+	return table.concat(out, "\n") .. string.format("\ncover points: %d (ready %s), waves %d, boss %s", ctx.AI.cover.n, tostring(ctx.AI.cover.ready), ctx.AI.director.waves, tostring(ctx.AI.bossThisRaid))
+end
+
+-- spawn an AI near a position: spawnAI("scav"|"watch"|"boss"|"follower", Vector3)
+function C.spawnAI(kind, pos)
+	local u = ctx.AI.spawn(kind, pos or Vector3.new(0, 0, 0))
+	return u and u.name or "failed"
+end
+
+-- put the player at a spot facing a direction: face(name, Vector3 pos, Vector3 lookAt)
+function C.place(name, pos, lookAt)
+	local char = plr(name).Character
+	if not char then
+		return "no char"
+	end
+	char:PivotTo(CFrame.lookAt(pos, Vector3.new(lookAt.X, pos.Y, lookAt.Z)))
+	return "ok"
 end
 
 function C.tests()
@@ -295,6 +319,17 @@ function C.tests()
 		end
 	end
 	return table.concat(report, "\n")
+end
+
+-- force the Foreman on (true), off (false) or back to chance (nil) for the next raids
+function C.boss(on)
+	ctx.AI.forceBoss = on
+	return "forceBoss=" .. tostring(on)
+end
+
+function C.god(name, on)
+	plr(name):SetAttribute("DevGod", on ~= false)
+	return "DevGod=" .. tostring(on ~= false)
 end
 
 function C.ignore(name, on)

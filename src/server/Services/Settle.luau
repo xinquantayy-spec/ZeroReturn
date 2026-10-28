@@ -43,7 +43,7 @@ function Settle.newProfile(): any
 	p.rev = 0
 	p.money = Config.START_MONEY
 	p.finalized = {}
-	p.stats = { raids = 0, survived = 0, kia = 0, mia = 0, lost = 0, kills = 0, extractedValue = 0, pmcKills = 0, scavKills = 0, scavRaids = 0, scavSurvived = 0 }
+	p.stats = { raids = 0, survived = 0, kia = 0, mia = 0, lost = 0, kills = 0, extractedValue = 0, pmcKills = 0, scavKills = 0, bossKills = 0, scavRaids = 0, scavSurvived = 0 }
 	p.claims = {}
 	p.scavReadyAt = 0
 	p.settings = {}
@@ -99,7 +99,7 @@ function Settle.migrate(p: any): any
 	p.slots = p.slots or {}
 	p.finalized = p.finalized or {}
 	p.stats = p.stats or {}
-	for _, k in { "raids", "survived", "kia", "mia", "lost", "kills", "extractedValue", "pmcKills", "scavKills", "scavRaids", "scavSurvived" } do
+	for _, k in { "raids", "survived", "kia", "mia", "lost", "kills", "extractedValue", "pmcKills", "scavKills", "bossKills", "scavRaids", "scavSurvived" } do
 		p.stats[k] = p.stats[k] or 0
 	end
 	p.claims = p.claims or {}

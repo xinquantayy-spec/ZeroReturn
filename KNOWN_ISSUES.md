@@ -28,7 +28,8 @@
 13. **Movement extras not yet verified on devices.** Lean, prone and crouch-depth have touch buttons and gamepad shoulder buttons only for lean; free look (Alt) and hold breath (Shift while aiming) are keyboard-only so far.
 14. **Third-person mesh art.** The operator body is a first Blender pass (segment meshes, vertex colours); gear (vests, helmets, packs) is still part-built and gets a Blender pass in M10.
 
-15. **AI factions are temporary.** Until M8, the Harbor Watch guards ignore player scavs unless a scav shoots them (then they treat that scav as hostile for the raid).
+15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (834 points), so open yards have little cover.
+20. **AI lethality is tuned by feel.** Reaction times, aim error and zeroing penalties are in `AI.luau` (`SKILL`); a guard can still kill a player standing in the open within a few seconds, which matches Tarkov but may need tuning after playtests.
 16. **Paid exfils use stash money.** There is no physical cash item yet, so PIER 3 BOAT charges the profile balance on exit.
 17. **Not yet in (planned M9):** dog tags on PMC bodies, the run-through status (needs XP), fence karma for scavs, co-op exfils.
 18. **Late entry is a compromise.** Tarkov PMCs only spawn at raid start; here PMCs may join for the first 5 minutes so nobody waits a full 25-minute raid on a one-raid server. `Config.LATE_JOIN` controls it.

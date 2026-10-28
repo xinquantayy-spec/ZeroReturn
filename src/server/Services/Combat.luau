@@ -2,6 +2,7 @@
 -- Server-authoritative combat. Clients send shot intent only (seq, origin hint, direction).
 -- Server validates state/ammo/cadence/origin, raycasts, applies damage. Reload/heal are server timed.
 local Players = game:GetService("Players")
+local STUDIO = game:GetService("RunService"):IsStudio()
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
@@ -82,6 +83,9 @@ function Combat.hitModel(model, info)
 	if victim and not ctx.Raid.session(victim) then
 		return nil
 	end
+	if victim and STUDIO and victim:GetAttribute("DevGod") then
+		return nil -- Studio test harness: watch AI fight a target that cannot die
+	end
 	local res = ctx.Health.hit(model, info)
 	if not res then
 		return nil
@@ -97,8 +101,8 @@ function Combat.hitModel(model, info)
 	end
 	local attacker = info.attacker
 	if res.killed and typeof(attacker) == "Instance" and attacker:IsA("Player") then
-		ctx.Raid.addKill(attacker, victim)
-		ctx.Remotes.note(attacker, "kill", { name = victim and victim.DisplayName or "Harbor Watch" })
+		ctx.Raid.addKill(attacker, victim, model)
+		ctx.Remotes.note(attacker, "kill", { name = victim and victim.DisplayName or (model:GetAttribute("Label") or "UNKNOWN") })
 	end
 	return res
 end
@@ -215,6 +219,7 @@ function Combat.shoot(player, seq, origin, dir)
 	local ms = Inv.modStats(s.inv, wg)
 	local loud = (wdef.loudness or 1) * ms.loud * ((ammoDef and ammoDef.ammo.subsonic and ms.suppressed) and 0.6 or 1)
 	ctx.AI.hearShot(origin, player, nil, loud)
+	ctx.AI.bulletPassed(origin, hitPos, char)
 	local tracer = ammoDef and ammoDef.ammo and ammoDef.ammo.tracer or nil
 	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = hit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat }, player)
 end

@@ -1,22 +1,22 @@
 # Next Task
 
-**Current focus:** improvement program milestone **M8 — AI 2.0** (owner: NPC scavengers, guards and bosses alongside real players, Tarkov rules).
+**Current focus:** improvement program milestone **M9 — Economy** (Tarkov progression with original names).
 
-## M8 plan
+## M9 plan
 
-1. **Factions and friend-foe rules.** AI scavs (friendly to player scavs unless provoked), guards/raiders (hostile to everyone), boss + followers. Player scavs who shoot scavs become hostile for the raid. PMCs are hostile to all AI.
-2. **Spawning.** Scav waves over the raid (timed, near POIs, never in view of a player), guards at fixed posts, a boss with 2–3 followers at a compound (chance per raid). Cap total AI by player count.
-3. **Perception.** Vision cone with light/stance/distance and foliage-free LOS, hearing (footsteps by surface and speed, gunshots by loudness/suppressor), memory of the last known position, flashlight visibility.
-4. **Behaviour.** Patrol routes, investigate, take cover (cover point search), peek and suppress, push or hold, retreat to heal, search after losing contact; boss followers protect the boss.
-5. **Combat model.** Weapons and ammo from the real item defs (AI loadouts through Loot), recoil/spread by distance and stance, real reloads with mag counts, server-side shots through the same Combat path as players.
-6. **Animation.** AI use the shared rig + RigMath poses (aim pitch, crouch, lean around cover), footstep sounds through the atlas.
-7. **Loot.** AI bodies carry their real loadout (scav kits, guard kits, boss items).
-8. Logic tests for faction rules and loadouts; Studio test with screenshots; docs; commit.
+1. **Traders.** 3–4 original traders (gear, weapons/ammo, medical, fence) with buy/sell lists, loyalty levels (spend + reputation), restock timers and limited stock; currency MK.
+2. **Barter trades.** Items for items (e.g. gold chain + wires → plate carrier), shown with "have/need" counts.
+3. **Quests.** Trader tasks: find-in-raid hand-ins, eliminate (scavs/PMCs/the Foreman), visit/mark locations, extract from a given exfil; rewards (MK, items, loyalty, unlocks).
+4. **XP and skills.** XP from kills, extracts, looting, quests; run-through status (low XP + short raid = no FIR); a few skills (endurance, strength, health, vitality) that level with use.
+5. **Hideout.** Upgradable modules (generator, medstation, workbench, lavatory) built with items/money; crafting with timers (ammo, meds, barters).
+6. **Keys and locked rooms.** Locked doors (office, vault) opened with keys that have limited uses; locked loot behind them.
+7. **Fence karma.** Scav karma from kills of AI scavs / player scavs; affects scav cooldown and fence prices; dog tags on PMC bodies.
+8. Logic tests, Studio test, docs, commit.
 
-Then M9 (economy: traders, barter, loyalty, quests, XP/skills, hideout, keys, fence karma, dog tags, run-through), M10 (world/art/audio), M11 (QA: two-client test, devices, performance, docs).
+Then M10 (world: POIs, boss compound, doors, loose loot, time of day/weather, Blender gear/weapon art, audio), M11 (QA: two-client test, devices, performance, docs).
 
 ## Resume steps
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; connect the Rojo plugin in Place3.
-3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **105/105**).
+3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **115/115**).

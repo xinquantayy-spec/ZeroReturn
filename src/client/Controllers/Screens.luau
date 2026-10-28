@@ -467,18 +467,19 @@ function Screens.summary(s)
 		line(f, 44, "THE RAID CLOCK RAN OUT BEFORE YOU REACHED AN EXFIL. INSURED GEAR WILL BE RETURNED.", K.C.orange, 12)
 	end
 	local colW = math.floor((w - 12) / 2)
-	local listH = h - 140
+	local top = (s.outcome == "KIA" or s.outcome == "MIA") and 68 or 56 -- room for the death / MIA line
+	local listH = h - 140 - (top - 56)
 	local retained = s.retained or {}
 	local lost = s.lost or {}
 	local kept = s.kept or {}
 	if s.scav and s.outcome ~= "SUCCESS" then
 		line(f, 70, "The scav kit is gone. Your PMC, stash and health were never at risk.", K.C.dim, 13)
 	elseif s.outcome == "SUCCESS" then
-		itemList(f, 0, 56, colW, listH, (s.scav and "TO YOUR STASH  (" or "CARRIED OUT  (") .. #retained .. ")", retained, K.C.green)
-		itemList(f, colW + 12, 56, colW, listH, "FOUND IN RAID  (" .. #(s.found or {}) .. ")", s.found or {}, K.C.ochre)
+		itemList(f, 0, top, colW, listH, (s.scav and "TO YOUR STASH  (" or "CARRIED OUT  (") .. #retained .. ")", retained, K.C.green)
+		itemList(f, colW + 12, top, colW, listH, "FOUND IN RAID  (" .. #(s.found or {}) .. ")", s.found or {}, K.C.ochre)
 	else
-		itemList(f, 0, 56, colW, listH, "SECURE CONTAINER KEPT  (" .. #kept .. ")", kept, K.C.green)
-		itemList(f, colW + 12, 56, colW, listH, "LOST  (" .. #lost .. ")", lost, K.C.red)
+		itemList(f, 0, top, colW, listH, "SECURE CONTAINER KEPT  (" .. #kept .. ")", kept, K.C.green)
+		itemList(f, colW + 12, top, colW, listH, "LOST  (" .. #lost .. ")", lost, K.C.red)
 	end
 	local net = s.outcome == "SUCCESS" and ("+" .. Util.commas(s.value or 0)) or ("-" .. Util.commas(s.value or 0))
 	local sold = (s.sold or 0) > 0 and string.format("   ·   NO STASH SPACE: SOLD +%s %s", Util.commas(s.sold), Config.CURRENCY) or ""

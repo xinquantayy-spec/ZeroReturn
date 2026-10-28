@@ -501,40 +501,127 @@ function Loot.spawnBody(model, holder, label)
 	return c
 end
 
--- temporary guard loadout until the AI loadout generator (M8) owns this
+-- AI loadouts (M8). Everything an AI carries is real inventory: it fires the rounds in its magazines, reloads
+-- from its rig and drops all of it as a lootable body.
+local function kit(rand)
+	local h = Inv.newHolder("raid")
+	local k = {}
+	function k.slot(slotName, id, extra)
+		local g, it = Inv.newItem(id, 1, extra)
+		if Inv.placeSlot(h, g, it, slotName) then
+			return g
+		end
+		return nil
+	end
+	-- weapon with a loaded magazine (or loaded tube) plus `spares` magazines into the rig/pockets
+	function k.gun(slotName, id, magId, ammoId, spares, fill)
+		local wg = k.slot(slotName, id)
+		if not wg then
+			return nil
+		end
+		if magId then
+			local cap = Items.defs[magId].capacity
+			local mg, mag = Inv.newItem(magId, 1, { a = math.max(1, math.floor(cap * (fill or 1))), at = ammoId })
+			h.items[mg] = mag
+			h.items[wg].mag = mg
+			for _ = 1, spares or 0 do
+				local g, it = Inv.newItem(magId, 1, { a = cap, at = ammoId })
+				Inv.place(h, g, it, Inv.loadOrder(h))
+			end
+		else
+			local d = Items.defs[id]
+			h.items[wg].a = d.capacity or 5
+			h.items[wg].at = ammoId
+			if (spares or 0) > 0 then
+				local g, it = Inv.newItem(ammoId, math.min(Items.defs[ammoId].stack, (d.capacity or 5) * spares))
+				Inv.place(h, g, it, Inv.loadOrder(h))
+			end
+		end
+		return wg
+	end
+	function k.put(id, n, extra)
+		local g, it = Inv.newItem(id, n or 1, extra)
+		return Inv.place(h, g, it, Inv.loadOrder(h)) and g or nil
+	end
+	function k.roll(pool, count)
+		for _ = 1, count do
+			local g, it = Loot.rollEntry(rand, pool)
+			if g then
+				Inv.place(h, g, it, Inv.loadOrder(h))
+			end
+		end
+	end
+	k.h = h
+	return k
+end
+
+-- Harbor Watch (raider-type guards): service rifles or SMGs with decent ammo, armour, a few spare magazines
 function Loot.guardLoadout(rand)
 	rand = rand or Random.new()
-	local h = Inv.newHolder("raid")
-	local function slot(slotName, id, extra)
-		local g, it = Inv.newItem(id, 1, extra)
-		Inv.placeSlot(h, g, it, slotName)
-		return g
+	local k = kit(rand)
+	k.slot("rig", rand:NextNumber() < 0.6 and "RIG_CHEST" or "RIG_BELT")
+	if rand:NextNumber() < 0.7 then
+		k.slot("armor", rand:NextNumber() < 0.65 and "ARMOR_C2" or "ARMOR_C3", { dur = rand:NextInteger(18, 45) })
 	end
-	local wg = slot("primary", "R17_RIFLE")
-	local mg, mag = Inv.newItem("R17_MAG", 1, { a = rand:NextInteger(4, 25), at = "A62_FMJ" })
-	h.items[mg] = mag
-	h.items[wg].mag = mg
-	local rig = slot("rig", rand:NextNumber() < 0.5 and "RIG_CHEST" or "RIG_BELT")
-	if rand:NextNumber() < 0.45 then
-		slot("armor", rand:NextNumber() < 0.7 and "ARMOR_C2" or "ARMOR_C3", { dur = rand:NextInteger(18, 45) })
+	if rand:NextNumber() < 0.55 then
+		k.slot("head", rand:NextNumber() < 0.7 and "HELMET_C2" or "HELMET_C3", { dur = rand:NextInteger(10, 30) })
 	end
+	if rand:NextNumber() < 0.7 then
+		k.gun("primary", "R17_RIFLE", "R17_MAG", rand:NextNumber() < 0.25 and "A62_AP" or "A62_FMJ", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
+	else
+		k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", rand:NextNumber() < 0.3 and "A9_AP" or "A9_PST", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
+	end
+	k.put(rand:NextNumber() < 0.5 and "BANDAGE" or "MEDKIT_S")
 	if rand:NextNumber() < 0.4 then
-		slot("head", "HELMET_C2", { dur = rand:NextInteger(10, 30) })
+		k.put("TOURNIQUET")
 	end
-	for _ = 1, rand:NextInteger(1, 2) do
-		local g, it = Inv.newItem("R17_MAG", 1, { a = rand:NextInteger(0, 25), at = "A62_FMJ" })
-		if it.a == 0 then
-			it.at = nil
-		end
-		Inv.place(h, g, it, { rig })
+	k.roll("jacket", rand:NextInteger(0, 2))
+	return k.h
+end
+
+-- the Foreman: heavy armour, a 7.6 rifle with armour-piercing rounds, good meds, and the harbour's best loot
+function Loot.bossLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(55, 70) })
+	k.slot("head", "HELMET_C4", { dur = rand:NextInteger(35, 45) })
+	k.slot("rig", "RIG_CHEST")
+	k.slot("back", "BAG_PATROL")
+	k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3)
+	local pg = k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1)
+	local _ = pg
+	k.put("MEDKIT_L")
+	k.put("HEMOSTAT")
+	k.put("PAINKILLERS")
+	if rand:NextNumber() < 0.4 then
+		k.put("LEDGER")
 	end
-	for _ = 1, rand:NextInteger(0, 3) do
-		local g, it = Loot.rollEntry(rand, "jacket")
-		if g then
-			Inv.place(h, g, it, { "pockets", rig })
-		end
+	if rand:NextNumber() < 0.35 then
+		k.put("BRASS_LION")
 	end
-	return h
+	if rand:NextNumber() < 0.5 then
+		k.put("KEY_OFFICE")
+	end
+	k.roll("safe", rand:NextInteger(1, 3))
+	return k.h
+end
+
+-- the Foreman's crew: plate carriers, AP or PS rounds, plenty of magazines
+function Loot.crewLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.slot("armor", rand:NextNumber() < 0.5 and "ARMOR_C3" or "ARMOR_C4", { dur = rand:NextInteger(35, 55) })
+	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 36) })
+	k.slot("rig", "RIG_CHEST")
+	if rand:NextNumber() < 0.5 then
+		k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_PS", rand:NextInteger(2, 3))
+	else
+		k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", rand:NextInteger(2, 3))
+	end
+	k.put("MEDKIT_M")
+	k.put(rand:NextNumber() < 0.5 and "TOURNIQUET" or "BANDAGE")
+	k.roll("drawer", rand:NextInteger(0, 2))
+	return k.h
 end
 
 -- Random scav kit (player scavs now, AI scavs in M8): a cheap weapon with some ammo, maybe a rig/pack,

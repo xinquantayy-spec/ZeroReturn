@@ -314,6 +314,8 @@ function Raid.finalize(player, outcome)
 		if receipt then
 			prof.stats.kills += s.kills
 			prof.stats.pmcKills += s.pmcKills or 0
+			prof.stats.scavKills += s.scavKills or 0
+			prof.stats.bossKills = (prof.stats.bossKills or 0) + (s.bossKills or 0)
 			local good, msg = Inv.check(prof)
 			if not good then
 				warn("[ZR] INVARIANT after settlement", player.Name, msg)
@@ -392,12 +394,16 @@ function Raid.onDied(player, char)
 	end
 end
 
-function Raid.addKill(player, victimPlayer)
+function Raid.addKill(player, victimPlayer, victimModel)
 	local s = sessions[player]
 	if s then
 		s.kills += 1
 		if victimPlayer then
 			s.pmcKills = (s.pmcKills or 0) + 1
+		elseif victimModel and victimModel:GetAttribute("Kind") == "scav" then
+			s.scavKills = (s.scavKills or 0) + 1
+		elseif victimModel and victimModel:GetAttribute("Kind") == "boss" then
+			s.bossKills = (s.bossKills or 0) + 1
 		end
 	end
 end
@@ -417,7 +423,7 @@ function Raid.deathInfo(char)
 			if a:IsA("Player") then
 				name = a.DisplayName
 			elseif a:IsA("Model") then
-				name = "HARBOR WATCH"
+				name = string.upper(a:GetAttribute("Label") or "UNKNOWN")
 			end
 		end
 		local root = char:FindFirstChild("HumanoidRootPart")

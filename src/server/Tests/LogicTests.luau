@@ -403,6 +403,42 @@ function T.run(ctx)
 		check("insurance return delivered to the stash", d1 == #bundles and w1 == 0 and pr.items[wg] ~= nil and pr.items[wg].ins == nil and pr.items[wg].mag == magG and inv(pr))
 	end
 
+	-- M8: AI factions and loadouts
+	if ctx and ctx.AI then
+		local H = ctx.AI.hostileTo
+		check("AI scavs ignore player scavs", H("scav", { s = { scav = true } }) == false)
+		check("AI scavs fight a scav who turned on them", H("scav", { s = { scav = true, hostile = true } }) == true)
+		check("AI scavs fight PMCs", H("scav", { s = { scav = false } }) == true)
+		check("Harbor Watch fights player scavs", H("watch", { s = { scav = true } }) == true)
+		check("same-faction AI are friends", H("scav", { unit = { faction = "scav" } }) == false and H("watch", { unit = { faction = "watch" } }) == false)
+		check("AI never fight each other (Watch/scav truce)", H("watch", { unit = { faction = "scav" } }) == false and H("scav", { unit = { faction = "watch" } }) == false)
+		local function loaded(h)
+			local wg = h.slots.primary or h.slots.holster
+			local w = wg and h.items[wg]
+			local m = w and (w.mag and h.items[w.mag] or w)
+			return m ~= nil and (m.a or 0) > 0 and m.at ~= nil
+		end
+		local function spareMags(h)
+			local wg = h.slots.primary
+			local w = wg and h.items[wg]
+			local n = 0
+			for g, it in h.items do
+				local d = Items.defs[it.id]
+				if d.kind == "mag" and w and g ~= w.mag and d.family == Items.defs[w.id].family then
+					n += 1
+				end
+			end
+			return n
+		end
+		local g = Loot.guardLoadout(Random.new(3))
+		local b = Loot.bossLoadout(Random.new(4))
+		local c = Loot.crewLoadout(Random.new(5))
+		check("guard loadout valid and loaded", inv(g) and loaded(g) and spareMags(g) >= 1)
+		check("boss loadout valid, loaded, heavy armour", inv(b) and loaded(b) and spareMags(b) == 3 and b.items[b.slots.armor].id == "ARMOR_C5" and b.slots.holster ~= nil)
+		check("crew loadout valid and loaded", inv(c) and loaded(c) and spareMags(c) >= 2)
+		check("ai skills defined", ctx.AI.SKILL.scav.spread > ctx.AI.SKILL.watch.spread and ctx.AI.SKILL.watch.spread > ctx.AI.SKILL.boss.spread)
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0

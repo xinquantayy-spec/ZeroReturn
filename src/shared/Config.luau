@@ -2,7 +2,7 @@
 -- Zero Return: tunable constants shared by server and client (read-only).
 local Config = {
 	GAME_NAME = "ZERO RETURN",
-	BUILD = "0.4.0-m7",
+	BUILD = "0.5.0-m8",
 	MAP_NAME = "QUAY 7",
 	RECORDER = "FIELD RECORDER M4",
 	CURRENCY = "MK",
@@ -17,6 +17,12 @@ local Config = {
 	INSURANCE_RATE = 0.07, -- fee as a share of item value
 	INSURANCE_DELAY = 900, -- seconds until unlooted insured gear comes back
 	BODY_TIME = 600, -- player bodies stay lootable this long (or until the raid ends)
+	AI_MAX = 18, -- live AI cap per raid
+	SCAV_START = 4, -- AI scavs at raid start (+ SCAV_PER_PLAYER per raider, up to SCAV_CAP)
+	SCAV_PER_PLAYER = 0.5,
+	SCAV_CAP = 10,
+	SCAV_WAVE_EVERY = 240, -- seconds between scav waves (2-3 each) while more than 5 minutes remain
+	BOSS_CHANCE = 0.5, -- the Foreman and his crew hold the freight depot in this share of raids
 	EXTRACT_HOLD = 6,
 	SEARCH_TIME = 1.2,
 	INTERACT_RANGE = 10,

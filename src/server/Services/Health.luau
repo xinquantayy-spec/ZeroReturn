@@ -628,6 +628,52 @@ function Health.cancelUse(player)
 	end
 end
 
+-- AI treatment (M8): same rules and items as players, picked automatically from the AI's own kit.
+-- Returns the treatment time, or nil when there is nothing to treat or nothing to treat it with.
+function Health.aiUse(model, h)
+	local hs = states[model]
+	if not hs or hs.dead or hs.using or not h then
+		return nil
+	end
+	local g = smartPick(hs, h)
+	local it = g and h.items[g]
+	if not it then
+		return nil
+	end
+	local d = Items.defs[it.id]
+	local pl = plan(hs, d, it, nil)
+	if not pl then
+		return nil
+	end
+	local token = { label = pl.label, t0 = os.clock(), dur = pl.time }
+	hs.using = token
+	if ctx.Chars and ctx.Chars.gesture then
+		ctx.Chars.gesture(model, "heal", pl.time)
+	end
+	task.delay(pl.time, function()
+		if hs.using ~= token then
+			return
+		end
+		hs.using = nil
+		if hs.dead or not h.items[g] then
+			return
+		end
+		local used = pl.apply()
+		if d.med and d.med.hp then
+			it.hp = (it.hp or d.med.hp) - (used or 0)
+			if it.hp <= 0 then
+				Inv.consume(h, g)
+			end
+		elseif it.uses and it.uses > 1 then
+			it.uses -= 1
+		else
+			Inv.consume(h, g)
+		end
+		syncHumanoid(hs)
+	end)
+	return pl.time
+end
+
 -- ── loops ──────────────────────────────────────────────────────────────────────
 function Health.init(c)
 	ctx = c
