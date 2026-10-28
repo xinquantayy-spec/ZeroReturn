@@ -1,6 +1,6 @@
 # Zero Return: Development Status
 
-Build `0.9.0-m16a`. Last updated 2026-10-28.
+Build `0.9.1-m12`. Last updated 2026-10-29.
 
 Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. The map is **Quay 7**, an original industrial port (not adapted from any Tarkov map). Three more original maps are planned: **Smelter** (factory-type), **Pinewatch** (woods-type) and **Border Yard** (customs-type).
 
@@ -30,7 +30,7 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 | M9 Economy | Done | Four traders (VOS weapons/ammo, HALE medical/food, TILDA gear, the FENCE) with loyalty levels 1–4 (level + money traded + standing), per-restock stock limits (30 min) and barters; selling to the best-paying trader (examined, empty items only); 13 trader tasks (eliminate, hand in found-in-raid items, extract, visit) with money/XP/standing/item rewards; XP and levels (kills, headshots, looting, examining, survival), the run-through rule, four skills that level with use (endurance, strength, vitality, metabolism); a hideout with five modules built over real time (generator, medstation, workbench, storage racks, water collector) and timed crafts; scav karma (fence prices, scav cooldown, hostile locals); dog tags on PMC bodies; a locked depot office opened with a key that wears out. |
 | M10 World | Done | Raid time of day (7x clock, dawn/day/dusk/night) and weather (clear/overcast/fog/rain) with matching light, fog, rain, wind, lamps and night bodycam gain; AI senses follow light and weather and guards use weapon lights at night; a two-storey crew dormitory with locked rooms and a depot vault behind the office (keycard); 56 loose-loot spots; keys; doors that AI open; world and UI sound atlas; bodycam lens v2 (straight HUD, light vignette, soft edge haze, halved grain); rounded first-person arms with gloves; Blender gear meshes (plate carrier, pouches, pack, body camera, holster; helmet and face plate) uploaded and worn by players and AI. Left to check: rain streaks, lens droplets and the environment sounds in a rainy raid. |
 | M11 Combat extras | Grenades done (part A) | **Grenades:** RK-5 and F-7 frags, ZS-3 stun charge, DS-2 smoke. G (hold) pulls the pin, release throws, hold aim while releasing for an underhand toss; only from the rig or pockets. The server simulates the whole bouncing, rolling path; frags send fragments at each body part in line of sight (armour applies) plus a close blast; stuns blind those facing them and deafen everyone close; smoke blocks sight for players and AI for about a minute. AI flush hidden targets with frags or stuns (never onto friends), smoke their retreats, run from grenades that land near them, and are blinded and deafened by stuns. First-person pin pull and throw, third-person throw, explosion/flash/smoke effects, blast shake, concussion, white-out, deafness with ringing ears, combat sound atlas. **Part B (after the map work):** weapon durability, malfunctions, repairs (the repair kit item and worn AI/loot guns are already in). |
-| M12 Look 2.0 | Next, resumes after M16 (owner request) | Blender wear kit (chipped concrete, rusted metal, peeling paint, broken glass, debris, cables), grime textures, a client-side detail layer matched to the graphics setting, **Potato mode** (opt-in), full wear pass on Quay 7. |
+| M12 Look 2.0 | Done (2026-10-29) | Worn PBR materials on every part-built surface (8 MaterialVariants; five that rendered black fixed); 28 Blender cover props on Quay 7 (car wrecks, dumpsters, stacks, drums, reels, broken barriers, sandbags); a client detail layer built from a server plan (about 2,000 decals and wear-kit meshes: streaks, grime, cracks, rust, graffiti, puddles, rubble, litter, wall fittings, container rust); a GRAPHICS setting POTATO / LOW / MEDIUM / HIGH with **HIGH the default on every platform** and POTATO opt-in; flickering and dead street lamps. `docs/look/LOOK_2_0.md`. Left for later: chain-link fences, denser interiors. |
 | M16 Characters | Done (part A) | Owner's character brief. The block body ZR_BLOCK_R15_V1 (the owner's Roblox proportions, R15 names, Motor6D + RigMath kept) and 33 original Blender equipment meshes: two helmets and a face plate, headsets, gaiter, cap, beanie, the Foreman's hard hat, carriers, vests, rigs, four packs, overlays, first-person sleeves. Appearance comes from the server's equipment state (per-slot diff, revisions, compatibility rules, covered regions, fallback and reconcile). New ears and face slots. Presets for operator, scavenger, guard, bodyguard and the Foreman. Tests C01–C12: `docs/character/TEST_REPORT.md`. |
 | M13 Maps | Planned (owner request) | Map vote in the raid queue; three new original maps: Smelter (factory-type), Pinewatch (woods-type), Border Yard (customs-type). |
 | M14 Weapon art | Planned | Blender gun meshes on the WeaponModels anchors (R-17 and P-9 first). |
@@ -65,6 +65,16 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 - **Depot vault:** behind the locked harbor office; the Vault Keycard (10 uses) opens it at the card reader. Two safes, an arms crate and a shelf of valuables.
 - **Loose loot:** items lie on desks, shelves, pallets and floors around the map; look at one and press F to take it (found-in-raid if you extract). Unexamined items show as UNKNOWN ITEM.
 - **Doors:** AI open unlocked doors on their way; locked doors block AI paths until someone unlocks them; some doors start ajar.
+
+## Look 2.0 (M12)
+
+The full description, the graphics table and the measurements are in `docs/look/LOOK_2_0.md`. Screenshots are in `docs/look/evidence/`.
+
+- **Worn surfaces:** concrete with water streaks and tie holes, precast panel walls, scuffed floors, cracked and patched roads, peeling plaster, chipped paint, rusted corrugated sheet and weathered planks, all from original procedural textures.
+- **Clutter and grime:** each client dresses the map near the camera with decals and small Blender pieces: rubble, litter, trash bags, tyres, weeds, puddles, graffiti, rust runs on the containers, downpipes, AC units and cables on the walls, broken windows. They are cosmetic only: they never block, take bullets or hide loot.
+- **Cover:** burnt-out cars, dumpsters, tyre and block stacks, drums, cable reels, broken barriers and sandbags break up the open yards and the roads. They are real cover for players and AI.
+- **Graphics setting:** Settings → GRAPHICS. HIGH by default everywhere, including phones. MEDIUM and LOW draw less detail and fewer effects. POTATO turns off the detail, the worn materials, shadows and the cloud layer. Fog, light and geometry are the same at every level.
+- **Lamps:** some street lamps flicker at night, and the one by the relay gate is dead.
 
 ## Characters and equipment (M16)
 
@@ -150,7 +160,7 @@ Notes:
 
 - **Server (`src/server`)**
   - Main and Services share one `ctx` table.
-  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Appearance, Loot, Health, Combat, Grenades, Extract, AI, Raid, Match, Economy, Quests, Hideout, Doors, Dev.
+  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, DetailPlan, Chars, Appearance, Loot, Health, Combat, Grenades, Extract, AI, Raid, Match, Economy, Quests, Hideout, Doors, Dev.
   - Appearance builds every character's worn gear from the equipment slots and the look (`Equipment.resolve`), diffs it per slot, and reconciles fallbacks when a late asset batch arrives. Chars keeps the rig, weapon visuals and poses.
   - Grenades owns pin pulls and throws (validated acts), the authoritative path (shared `Grenades.simulate`), explosions (fragments through the health model, AI flashes) and smoke volumes that block AI sight.
   - Match rolls each raid's environment (shared `Env`); Loot also owns loose loot (spawned per raid from World.looseSpots).
@@ -169,12 +179,13 @@ Notes:
 - **Client (`src/client`)**
   - Scriptable first-person bodycam camera (eye from the rig pose), Movement (stance, lean, stamina, weight, vault), Weapon (viewmodel from the shared spec, IK arms, optics), Animator (RigMath full-body animation of every operator), IAS input with a CAS fallback.
   - Look: Post (grain, vignette, edge haze, exposure, pain), Atmos (raid lighting, weather, rain, lamps, ambience) and Lens (HUD text and icons, straight by default) drive the recorder look.
+  - Detail (M12) builds the cosmetic detail plan around the camera at the player's graphics level and handles POTATO (plain materials, no shadows).
   - Custom interaction prompts, grid inventory, deploy, summary, settings and exits screens, trader and hideout terminals (Trade), touch cluster.
   - Grenade: throw input and first-person hands (through Weapon), every grenade in flight, explosions, stun flashes, smoke clouds, and the local blast effects (shake, concussion, white-out, deafness, smoke veil).
 - **Shared (`src/shared`)**: Config, Items, Equipment (looks, item visuals, layering, compatibility, presets), Weapons, WeaponModels, RigSpec (generated by `tools/rig_def.py`), RigMath, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, SoundAtlas / EnvAtlas / CombatAtlas (generated), Textures, Version, TraderData, QuestData, HideoutData, Progress, Env, Grenades (grenade physics and rules).
 - **Test bridges (Studio only)**
-  - `ServerStorage.ZR_Dev` (deploy [pmc|scav, skips the matching countdown], match, endRaid, expire [shared clock], hold, setExtracts, claimNow, ai, spawnAI, boss [force on/off], god [Studio-only damage immunity], place, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, tests, abuse probes, hp, shootMe, wound, give [slot], weapon, dispatch [any request through the real dispatcher], xp, money, fir [found-in-raid items to the stash], hideoutNow, econ, contents [container/body], find [item guids], env, loose, takeLoose, door, aiGoto, nade [drop a live grenade], nadeThrow [real pull/throw], nades, nadeDrill [AI grenade drill], aiGive, aiThrow, chartests [C01–C12 server checks], showroom [presets / kits on a grey stage], showroomClear, showroomGo, appearance [what a model wears], showEquip [equip a showroom dummy through Inv]).
-  - `PlayerScripts.ZR_ClientDev` (state, move, fire, reload, inv, look, aim, switch, cycle, magcheck, light, slash, firemode, stance, lean, tune, pose, orbit [target], screens, nade [press/hold/release], nadeState, nadeTune [first-person grenade poses], studio [capture mode: no HUD or post effects, neutral light], hidden [first-person hidden set vs parts]).
+  - `ServerStorage.ZR_Dev` (deploy [pmc|scav, skips the matching countdown], match, endRaid, expire [shared clock], hold, setExtracts, claimNow, ai, spawnAI, boss [force on/off], god [Studio-only damage immunity], place, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, tests, abuse probes, hp, shootMe, wound, give [slot], weapon, dispatch [any request through the real dispatcher], xp, money, fir [found-in-raid items to the stash], hideoutNow, econ, contents [container/body], find [item guids], env, loose, takeLoose, door, aiGoto, nade [drop a live grenade], nadeThrow [real pull/throw], nades, nadeDrill [AI grenade drill], aiGive, aiThrow, chartests [C01–C12 server checks; `tests` also runs LookTests], showroom [presets / kits on a grey stage], showroomClear, showroomGo, appearance [what a model wears], showEquip [equip a showroom dummy through Inv]).
+  - `PlayerScripts.ZR_ClientDev` (state, move, fire, reload, inv, look, aim, switch, cycle, magcheck, light, slash, firemode, stance, lean, tune, pose, orbit [target], screens, nade [press/hold/release], nadeState, nadeTune [first-person grenade poses], studio [capture mode: no HUD or post effects, neutral light], hidden [first-person hidden set vs parts], detail [graphics level and detail-layer counts]).
   - Neither bridge exists on live servers.
 
 ## Key decisions
@@ -184,6 +195,7 @@ The full log is in `docs/kit/STATE/DECISIONS.md`.
 - **Name:** Zero Return. It was formerly "Escape From Bloxov"; the PC folder name is unchanged.
 - **Rojo port:** 34873. Port 34872 belongs to another project.
 - **Art:** procedural Blender scripts with vertex colours and no textures, uploaded through Open Cloud. The API key stays in the owner's home folder.
+- **Look 2.0:** worn surfaces are MaterialVariants on the server-built map (everyone sees them); clutter and grime are a client-side detail layer from a server plan, sized by the graphics setting, and never affect gameplay. HIGH is the default on every platform (owner decision); POTATO is opt-in.
 - **Audio:** original synthesised sound effects, plus one ambience track from Roblox's licensed library.
 - **Map:** one shared raid world per server, one raid at a time (Match). Each player has their own raid session inside it.
 - **AI factions:** AI never fight each other (the Watch and the scavs keep a truce, so the map does not empty itself); AI scavs and the Foreman's group ignore player scavs unless provoked; everyone else is a target.

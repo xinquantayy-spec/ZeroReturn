@@ -364,6 +364,46 @@ local function opening(p, f)
 	end
 end
 
+-- shipping containers (Blender mesh, long axis = local X): rust runs under the roof rail, dirt streaks and
+-- grime at the foot on every long side that is not pressed against a neighbour
+local function container(p)
+	local cf, s = p.CFrame, p.Size
+	if cf.UpVector.Y < 0.985 then
+		return
+	end
+	local len, hgt = s.X, s.Y
+	local bottom, top = p.Position.Y - hgt / 2, p.Position.Y + hgt / 2
+	for _, sign in { 1, -1 } do
+		local n = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z).Unit * sign
+		local fc = Vector3.new(p.Position.X, (bottom + top) / 2, p.Position.Z) + n * (s.Z / 2)
+		if cast(fc + n * 0.05, n * 0.9) then
+			continue -- the next container in the row
+		end
+		local right = rightOf(n)
+		local function at(u, y, off)
+			return Vector3.new(fc.X, y, fc.Z) + right * u + n * off
+		end
+		local u0 = fc:Dot(right) - len / 2
+		if rng:NextNumber() < 0.75 then
+			decal(D.Streaks, at(0, (bottom + top) / 2, 0.03), n, len * 0.98, hgt * 0.96, 2, 0, rng:NextNumber(6, 9), hgt, rng:NextNumber(0.3, 0.55), u0)
+		end
+		for _ = 1, rng:NextInteger(1, 3) do
+			local w, h = rng:NextNumber(0.9, 1.6), rng:NextNumber(2.4, 4.2)
+			decal(D.RustRun, at(rng:NextNumber(-len / 2 + 1, len / 2 - 1), top - h / 2 - rng:NextNumber(0.2, 0.8), 0.04), n, w, h, 2, 0)
+		end
+		if rng:NextNumber() < 0.25 then
+			local w = rng:NextNumber(3, 5)
+			local tag = pick({ { D.Tag1, 3 }, { D.Tag3, 2 }, { D.Stencil, 2 } })
+			decal(tag, at(rng:NextNumber(-len / 2 + w / 2, len / 2 - w / 2), bottom + rng:NextNumber(2.4, 4.4), 0.05), n, w, w / 2, 3, 0, nil, nil, rng:NextNumber(0.1, 0.35))
+		end
+		local fh = floorAt(at(0, bottom + 0.6, 1.4), 1.2)
+		if fh then
+			local hb = rng:NextNumber(1.6, 2.6)
+			decal(D.BaseGrime, at(0, bottom + hb / 2, 0.035), n, len * 0.98, hb, 2, 0, rng:NextNumber(7, 10), hb, rng:NextNumber(0.1, 0.35), u0)
+		end
+	end
+end
+
 -- wall caps and the top of long boundary walls: barbed wire
 local function capWire(p)
 	local s = p.Size
@@ -507,6 +547,10 @@ function Plan.generate(list, seed, avoidList)
 	end)
 	for i, p in parts do
 		if p:GetAttribute("NoDetail") then
+			continue
+		end
+		if p:IsA("MeshPart") and p.Name == "ZR_ENV_Container20" then
+			container(p)
 			continue
 		end
 		local f = slabFaces(p)

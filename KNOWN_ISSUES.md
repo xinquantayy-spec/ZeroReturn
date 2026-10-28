@@ -28,7 +28,7 @@
 13. **Movement extras not yet verified on devices.** Lean, prone and crouch-depth have touch buttons and gamepad shoulder buttons only for lean; free look (Alt) and hold breath (Shift while aiming) are keyboard-only so far.
 14. **Character materials are vertex colours only.** The M16 body and gear have no texture maps. Body segments and soft gear use Roblox's built-in Fabric, which looks coarse up close, and first-person sleeves use SmoothPlastic. A subtle custom fabric MaterialVariant is still to make.
 
-15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (834 points), so open yards have little cover.
+15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (1,018 points since the M12 cover props).
 20. **AI lethality is tuned by feel.** Reaction times, aim error and zeroing penalties are in `AI.luau` (`SKILL`); a guard can still kill a player standing in the open within a few seconds, which matches Tarkov but may need tuning after playtests.
 16. **Paid exfils use stash money.** There is no physical cash item yet, so PIER 3 BOAT charges the profile balance on exit.
 17. **Not yet in:** co-op exfils (scav + PMC), a flea market (player-to-player trading across servers), the scav case and other hideout modules (lavatory, intelligence centre, shooting range).
@@ -51,6 +51,15 @@
     - The hard hat refuses headsets, because its brim would cut the ear cups.
 37. **Not built yet (M16 part B).** Eyewear and goggles, the marksman/scout and safehouse-worker presets, a stash character preview (viewport), and per-item first-person gloves (gloves follow the outfit).
 38. **Belt rig pouches are at the back.** They sit there to stay clear of the thighs when crouching and of the hands hanging at the sides.
+39. **Worn materials can render black after a fresh upload (Studio).** If a material's textures fail to load once (for example while new images are still processing), Studio keeps rendering that exact set of textures black for the session. Restart Studio, or upload one of the maps again so the set gets a new ID (done for five materials on 2026-10-29).
+40. **Client-side clutter is not identical for everyone.** HIGH draws low clutter (trash bags, cardboard, tipped bins) that POTATO does not, so a player lying prone right beside clutter is slightly easier to see on POTATO. Clutter is kept low and mostly along walls, and fog, light and cover are identical at every level.
+41. **Performance on devices is unknown.** HIGH (the owner's default everywhere, phones included) adds depth of field, sun rays, bloom and the full detail layer. On the T490 laptop in Studio it runs at about 34–37 fps against 58 on POTATO. Phones and consoles have not been measured.
+42. **Container decals float slightly.** Rust and grime on shipping containers sit on a flat plane just outside the corrugation, which shows at grazing angles.
+43. **Not built yet (M12 leftovers):**
+    - chain-link fences: they need to block movement but not bullets or sight;
+    - denser interiors: desks with drawers out, filing cabinets, lockers;
+    - wear on the older Blender props (containers, pallets, barrels have only their baked colours plus the decals).
+44. **Syncing to the laptop without the shell tool.** When the laptop's shell tool is unavailable, files reach the PC as one bundle (`tools/pc_patch.py`) run through Blender's Python. Each sync shows up as a file card in the chat. Rojo then updates Studio as usual.
 33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.
 18. **Late entry is a compromise.** Tarkov PMCs only spawn at raid start; here PMCs may join for the first 5 minutes so nobody waits a full 25-minute raid on a one-raid server. `Config.LATE_JOIN` controls it.
@@ -65,6 +74,10 @@
 
 ## Fixed this session
 
+- M12:
+  - Five worn materials (worn concrete, precast panels, plaster, painted metal, asphalt) rendered almost black; they now have fresh roughness maps.
+  - Leaving POTATO did not restore the worn materials: the table of stripped parts had weak keys, so it lost them.
+  - The safehouse built map detail 300 studs above it (distance ignored height).
 - M16:
   - Long guns slung on the back pointed straight out behind the character; they now lie flat across the back, over the pack or plates.
   - "Quick move to stash" in the safehouse was refused with BAD_INPUT, because the server tried to resolve "stash" as a container.

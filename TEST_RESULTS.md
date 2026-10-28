@@ -6,7 +6,23 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 - an unpublished place, so the in-memory profile store was used
 - the `ZR_Dev` and `ZR_ClientDev` bridges plus real mouse and keyboard input through Studio MCP
 
-**NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance numbers.
+**NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
+
+## M12 Look 2.0 (2026-10-29)
+
+Studio on the owner's T490 laptop. Details and screenshots: `docs/look/LOOK_2_0.md`, `docs/look/evidence/L01`–`L11`.
+
+| Test | Method | Result |
+|---|---|---|
+| Suites | `ZR_Dev:Invoke("tests")` | **LogicTests 167/167, CharTests 38/38, LookTests 19/19.** LookTests: the graphics level through the real dispatcher (0 and 3 accepted, 1.4 rounds to 1, 9 clamps to 3, −4 to 0, a string refused); the published detail plan (count, cells, known images, library meshes, clutter clear of loot, containers, doors, exfils and spawns, 164 KB < 400 KB); no server-side detail; 28 solid cover props using the meshes, clear of spawns and exfils; a shot at a car wreck stops at the wreck. |
+| Detail plan | Server log | Pass. 2,024 entries in 63 cells, 164 KB, 1.24 s at server start. AI cover points 834 → 1,018 with the new props. |
+| Detail layer | Client `detail` probe, captures | Pass. HIGH builds about 1,000–1,700 details near the camera and none from the safehouse under the map. Streaks, grime, cracks, puddles, rubble, graffiti, wall fittings and container rust render (`L01`, `L02`, `L04`, `L05`). |
+| Graphics setting | Real settings screen (mouse clicks), captures | Pass. GRAPHICS shows HIGH by default; four clicks on − reach POTATO (clamped); + returns to HIGH. POTATO removes the detail, the worn materials (681 parts), shadows and clouds; leaving it restores all 681 (`L03`, `L07`). |
+| Worn materials | Test wall of every variant | **Bug found and fixed.** Five of the eight variants rendered almost black although each texture loaded on its own. New roughness maps fixed them (`L08` before, `L09` after). |
+| Cover props | Top-down and ground captures | Pass. 28 meshes placed and tinted; no overlaps with map parts; clear of spawns, exfils, AI paths, loot spots, containers and doors (`L10`). |
+| Lamps | Night raid (22:30), light-state sampling | Pass. The relay gate lamp stays dark; a flickering lamp dipped twice in 8 s (0.24 s dark), the others burn steady (`L06`). |
+| Frame rate | RenderStepped count, Studio on the T490 (client and server in one process) | South yard: HIGH 36.8, MEDIUM 43.1, LOW 45.4, POTATO 58.9 fps. Harbor Stack: 33.5 / 39.4 / 42.6 / 58.2. The detail layer itself costs about 3 fps there. Indicative only; no device numbers. |
+| Not verified | – | Phones, tablets and consoles at HIGH (the owner's default); two clients seeing the same detail. |
 
 ## M16 Characters and equipment (2026-10-28)
 

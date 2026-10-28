@@ -9,20 +9,14 @@
 - a stash character preview;
 - a showroom profile with the expected character count, on real hardware.
 
-**Current focus (owner request, 2026-10-28):** milestone **M12 Look 2.0** (parked during M16, resumes now), then **M13 Maps**. The owner wants Tarkov-level wear and imperfection on every building and model, at least four locations, and a game that still runs on phones, consoles and PCs (with an opt-in Potato mode; phones keep the full look by default).
+**M12 Look 2.0 is done (2026-10-29).** Worn materials, cover props, the client detail layer, the GRAPHICS setting (HIGH by default everywhere, POTATO opt-in) and flickering or dead lamps. See `docs/look/LOOK_2_0.md`. Leftovers (KNOWN_ISSUES 43):
+- chain-link fences (block movement, not bullets or sight);
+- denser interiors;
+- wear on the older Blender props.
+
+**Current focus (owner request, 2026-10-28):** milestone **M13 Maps**. The owner wants at least four locations. Each new map gets the M12 treatment from the start: worn materials, cover props and the detail plan (`DetailPlan.generate` after the build).
 
 Maps are original. They are the same kinds of places as Tarkov's (factory, forest, industrial outskirts) with their own layouts, landmarks and names; Battlestate's layouts are not copied.
-
-## M12 Look 2.0
-
-1. **Blender wear kit** (`assets/blender_scripts/build_wear_kit.py`): modular, vertex-coloured pieces with baked dirt and AO, slightly uneven and damaged.
-   - Building: chipped concrete wall caps and corners, cracked panels, spalled columns, patched repairs, broken window frames with glass shards, rusted corrugated sheets (dented, holed), bent railings, sagging cable runs, pipes with brackets, rusted downpipes, broken lamp heads.
-   - Ground: rubble piles, broken pallets, tyres, trash bags, paper, cans, oil drums (dented, rust bands), cinder blocks, rebar, cracked asphalt patches, puddles.
-   - Interior: broken chairs, desks with drawers out, filing cabinets (dented), lockers, mattresses, radiators, fallen ceiling tiles, wires hanging.
-2. **Grime textures** (`assets/textures/gen_wear.py`): tiling transparent overlays (water streaks, rust runs, soot, peeling paint, moss, cracks, oil stains, graffiti tags of the game's own factions) used as `Texture` objects on part faces.
-3. **Detail layer:** the server builds gameplay geometry only; each client adds cosmetic detail (clutter, debris, stains) from a seeded list, sized to the graphics setting.
-4. **Potato mode** (Settings → GRAPHICS: POTATO / LOW / MEDIUM / HIGH): no detail layer, no blur/DoF/sun rays/bloom, fewer particles, simpler fog, shadows off. Opt-in only.
-5. **Quay 7 pass:** wear, clutter and lighting imperfections across the whole map; screenshots for the owner.
 
 ## M13 Maps
 
@@ -42,4 +36,5 @@ Maps are original. They are the same kinds of places as Tarkov's (factory, fores
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open `Zero Return.rbxl` and connect the Rojo plugin.
-3. Play, then run `ZR_Dev:Invoke("tests")` (baseline **167/167**) and `ZR_Dev:Invoke("chartests")` (baseline **38/38**).
+3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **167/167**, CharTests **38/38**, LookTests **19/19**.
+4. If the laptop's shell tool is missing, sync files with `tools/pc_patch.py` (a bundle run through Blender's Python). Rojo then carries `src/` into Studio. `tools/studio_patch.py` can patch Studio directly for quick tests; sync the PC afterwards.

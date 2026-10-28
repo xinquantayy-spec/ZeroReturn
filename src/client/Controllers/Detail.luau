@@ -353,6 +353,8 @@ function Detail.init(c)
 	end)
 	Detail.setLevel(c.Settings.data.quality)
 	local acc = 0
+	-- HIGH is everyone's default (phones too); if a device keeps struggling, say once where to turn it down
+	local frames, window, lowFor, hinted = 0, 0, 0, false
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
 		if acc >= 0.4 then
@@ -361,6 +363,23 @@ function Detail.init(c)
 		end
 		if #queue > 0 then
 			work()
+		end
+		frames += 1
+		window += dt
+		if window >= 1 then
+			local fps = frames / window
+			frames, window = 0, 0
+			if not hinted and Detail.level > 0 and fps < 24 then
+				lowFor += 1
+				if lowFor >= 20 then
+					hinted = true
+					if ctx.Hud and ctx.Hud.toast then
+						ctx.Hud.toast("Low frame rate - a lower GRAPHICS level in Settings may help", "warn")
+					end
+				end
+			else
+				lowFor = 0
+			end
 		end
 	end)
 end

@@ -14,7 +14,7 @@ All meshes were built with Blender scripts. They are vertex-coloured, untextured
 | EFB_CAL_Crate4 | 98627364621889 | Calibration crate. Renamed at runtime to `ZR_PROP_Crate`. | Calibration export (pre-rename) |
 | ZR_Operator | 89318251225515 | Retired in M16 (no longer loaded). The pre-M16 operator body (`ZR_OP_*`). | `assets/blender_scripts/build_operator.py` |
 | ZR_Gear | 75319988582613 | Retired in M16 (no longer loaded). Pre-M16 gear (`ZR_GEAR_*`). | `assets/blender_scripts/build_gear.py` |
-| ZR_WearKit | 122101191158248 | M12 wear kit: 29 cosmetic `ZR_WK_*` pieces and 9 `ZR_PROP_*` cover props (not placed in the world yet) | `assets/blender_scripts/build_wear_kit.py` |
+| ZR_WearKit | 122101191158248 | M12 wear kit: 29 cosmetic `ZR_WK_*` pieces (client detail layer) and 9 `ZR_PROP_*` cover props (28 placed on Quay 7 since 2026-10-29) | `assets/blender_scripts/build_wear_kit.py` |
 | ZR_CharBase | 101424875475699 | M16 block body ZR_BLOCK_R15_V1 (15 `ZR_BLK_*` segments, 3,880 tris), helmet A (952), calibration cube | `assets/blender_scripts/build_char_base.py` |
 | ZR_CharGear | 111486052124640 | M16 equipment, 33 meshes (13,242 tris for the whole batch): helmets, face plate, headsets, mic, gaiter, cap, beanie, hard hat, carrier, pouches, armour collar, soft vest, chest rig, packs, straps, body camera, belt rig, holster, arm guards, outfit overlays, first-person sleeve and cuff. Per-mesh rows: `docs/character/CHARACTER_ASSET_MANIFEST.csv`. | `assets/blender_scripts/build_char_gear.py` |
 
@@ -45,6 +45,13 @@ Sound effects from the Creator Store that turned out to be rips of commercial ga
 ## Textures
 
 Original images from `assets/textures/gen_textures.py`, uploaded as decals; `Textures.luau` holds the image IDs: film grain, lens (old), HUD icon atlas, glow, scope eyepiece, rain streak, splash, lens droplets, vignette v2, edge haze.
+
+M12 (all original and procedural, uploaded as decals; image IDs in code):
+
+- **Worn materials:** `assets/textures/gen_materials.py` makes colour, normal and roughness maps (plus metalness for painted metal) for eight MaterialVariants. Their IDs are in `src/materials/*.model.json`.
+  - The roughness maps of worn concrete, concrete panels, plaster, painted metal and asphalt were uploaded again on 2026-10-29, because the first set rendered black in Studio. The new image IDs are 120779423170065, 118230642067713, 109208062124239, 87686061059520 and 109437077250813.
+  - The PC's `assets/upload_manifest.json` records the decal assets.
+- **Wear decals:** `assets/textures/gen_wear.py` makes 26 overlays: streaks, grime and damp, rust runs, cracks, spalls, peeling paint, soot, oil, ground cracks, wet patches, three graffiti tags of the game's own factions, a stencil, papers, debris, leaves, skid marks, a manhole, chain-link, leaks, floor dust, glass grime and bullet holes. Their IDs are in `src/shared/Wear.luau`.
 
 ## Built in code (no asset)
 

@@ -217,7 +217,7 @@ function Props.barrier(parent, cf)
 	boxCF(parent, 8, 1.4, 2.4, cf * CFrame.new(0, 0.7, 0), C.concreteLight, M.Concrete)
 	boxCF(parent, 8, 2, 1.2, cf * CFrame.new(0, 2.4, 0), C.concreteLight, M.Concrete)
 end
-function Props.lamp(parent, cf)
+function Props.lamp(parent, cf, state)
 	if not mesh("ZR_PROP_LightPole", parent, cf) then
 		vcyl(parent, 18, 0.6, cf.X, cf.Y, cf.Z, C.metalDark, M.Metal)
 		boxCF(parent, 3, 0.4, 0.8, cf * CFrame.new(1.2, 18, 0), C.metalDark, M.Metal)
@@ -225,6 +225,9 @@ function Props.lamp(parent, cf)
 	local head = boxCF(parent, 1.2, 0.3, 0.8, cf * CFrame.new(2.4, 17.7, 0), hex("FFD9A0"), M.Neon)
 	head.CastShadow = false
 	light(head, hex("FFC98A"), 34, 1.4, false)
+	if state then
+		head:SetAttribute("Lamp", state) -- M12: "flicker" or "dead" (client Atmos)
+	end
 	CollectionService:AddTag(head, "ZR_Lamp") -- clients switch street lamps on in the dark (Atmos)
 end
 -- M12 cover props from the wear kit (build_wear_kit.py -> ZR_WearKit): gameplay geometry, they collide and stop
@@ -240,7 +243,8 @@ local COVER_FALLBACK = {
 	Sandbags = { Vector3.new(5.7, 2.2, 1.2), C.sand, M.Fabric },
 	PalletStack = { Vector3.new(5.4, 2.6, 4.7), C.wood, M.WoodPlanks },
 }
-local COVER_TINT = { BarrierBroken = C.concreteLight, Sandbags = hex("A39A80") }
+-- default tints for meshes whose baked colours are near white (the tint multiplies them)
+local COVER_TINT = { BarrierBroken = C.concreteLight, Sandbags = hex("A39A80"), CinderStack = C.concreteLight, DrumDented = C.blue }
 function Props.cover(parent, kind, cf, color)
 	color = color or COVER_TINT[kind]
 	local m = mesh("ZR_PROP_" .. kind, parent, cf, color)
@@ -942,15 +946,15 @@ local function buildLandmarksAndRoutes(map)
 		{ "CarWreck", 172, 72, 5 }, { "CableReel", 186, 96, 0 }, { "Sandbags", 166, 52, 90 }, { "BarrierBroken", 100, -8, 0 },
 		-- south yard
 		{ "CarWreck", -100, 140, 70 }, { "TyreStack", -160, 165, 25 }, { "Dumpster", -60, 118, 0 }, { "CinderStack", -15, 105, 40 },
-		{ "CarWreck", 125, 158, -15 }, { "DrumDented", 40, 140, 0 }, { "DrumDented", 43.6, 141.5, 0 }, { "PalletStack", 150, 135, 30 },
+		{ "CarWreck", 125, 158, -15 }, { "DrumDented", 40, 140, 0, C.blue }, { "DrumDented", 43.6, 141.5, 0, C.red }, { "PalletStack", 150, 135, 30 },
 		-- between the dormitory and the road, around the annex
-		{ "BarrierBroken", -5, 40, 90 }, { "DrumDented", 10, 95, 0 }, { "Dumpster", 128, 80, 90 }, { "PalletStack", 95, 42, 10 },
+		{ "BarrierBroken", -5, 40, 90 }, { "DrumDented", 10, 95, 0, C.olive }, { "Dumpster", 128, 80, 90 }, { "PalletStack", 95, 42, 10 },
 		-- west side and the main road
 		{ "Dumpster", -170, -40, 90 }, { "CarWreck", -140, -22, 80 }, { "TyreStack", -165, 95, 0 }, { "CarWreck", -110, 5, 92 },
 	}
 	local nd = 0
 	for _, c in kit do
-		local col
+		local col = c[5]
 		if c[1] == "Dumpster" then
 			nd += 1
 			col = DUMPSTER[(nd - 1) % #DUMPSTER + 1]
@@ -968,8 +972,9 @@ local function buildLandmarksAndRoutes(map)
 	Props.container(misc, CFrame.new(-30, 0, 150), C.rust)
 	Props.container(misc, CFrame.new(90, 0, 160) * CFrame.Angles(0, math.rad(20), 0), C.olive)
 	Props.container(misc, CFrame.new(150, 0, -20) * CFrame.Angles(0, math.rad(90), 0), C.teal)
-	for _, lp in { { -150, 14 }, { -60, 14 }, { 34, 30 }, { 34, -60 }, { 120, 14 }, { 34, 150 }, { 180, -120 } } do
-		Props.lamp(misc, CFrame.new(lp[1], 0, lp[2]))
+	-- street lamps; at night one by the depot stutters, one on the west road flickers, the one by the relay gate is dead
+	for _, lp in { { -150, 14, "flicker" }, { -60, 14 }, { 34, 30 }, { 34, -60, "flicker" }, { 120, 14 }, { 34, 150 }, { 180, -120, "dead" } } do
+		Props.lamp(misc, CFrame.new(lp[1], 0, lp[2]), lp[3])
 	end
 end
 

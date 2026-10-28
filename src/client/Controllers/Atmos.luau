@@ -279,14 +279,50 @@ local function buildDrops()
 end
 
 -- ── lamps ────────────────────────────────────────────────────────────────────
+-- M12 imperfection: the map marks some lamps (attribute "Lamp"): "flicker" ones stutter in short bursts,
+-- "dead" ones never light. The same lamps on every client.
 local lampsOn = true -- the server builds them lit
+local flick = {} -- flickering lamp head -> { nxt, dipUntil, dim }
 local function lamp(head, on)
 	if head:IsA("BasePart") then
+		local kind = head:GetAttribute("Lamp")
+		if kind == "dead" then
+			on = false
+		elseif kind == "flicker" and not flick[head] then
+			flick[head] = { nxt = os.clock() + math.random() * 6, dipUntil = 0, dim = false }
+		end
 		head.Material = on and Enum.Material.Neon or Enum.Material.SmoothPlastic
 		head.Color = on and rgb(255, 217, 160) or rgb(150, 146, 136)
 		for _, l in head:GetChildren() do
 			if l:IsA("Light") then
 				l.Enabled = on
+			end
+		end
+	end
+end
+-- bursts of quick dips, then a pause of a few seconds; only while the lamps are lit
+local function flickerStep()
+	if not lampsOn then
+		return
+	end
+	local t = os.clock()
+	for head, f in flick do
+		if not head.Parent then
+			flick[head] = nil
+			continue
+		end
+		if t >= f.nxt then
+			f.dipUntil = t + 0.04 + math.random() * 0.14
+			f.nxt = t + ((math.random() < 0.55) and (0.08 + math.random() * 0.22) or (2 + math.random() * 7))
+		end
+		local dim = t < f.dipUntil
+		if dim ~= f.dim then
+			f.dim = dim
+			head.Material = dim and Enum.Material.SmoothPlastic or Enum.Material.Neon
+			for _, l in head:GetChildren() do
+				if l:IsA("Light") then
+					l.Enabled = not dim
+				end
 			end
 		end
 	end
@@ -394,6 +430,7 @@ local function step(dt)
 	-- lamps: on in the dark, fog or heavy cloud
 	if inRaid then
 		setLamps(Atmos.dark > 0.45 or (e.w == "fog") or (e.w == "rain" and Atmos.dark > 0.2))
+		flickerStep()
 	end
 	-- occasional one-shots: thunder with lightning in heavy rain, gulls by day, a distant horn, creaking metal
 	if inRaid then
