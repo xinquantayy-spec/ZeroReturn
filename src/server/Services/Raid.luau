@@ -194,9 +194,7 @@ function Raid.finalize(player, outcome)
 	if prof then
 		receipt, err = Settle.finalize(prof, s.id, outcome, s.inv, os.time())
 		if receipt then
-			if outcome == "SUCCESS" then
-				prof.stats.kills += s.kills
-			end
+			prof.stats.kills += s.kills
 			local good, msg = Inv.check(prof)
 			if not good then
 				warn("[EFB] INVARIANT after settlement", player.Name, msg)

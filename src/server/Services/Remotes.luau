@@ -145,7 +145,6 @@ function Remotes.init(_ctx: any)
 	state = make("RemoteEvent", Net.State)
 	note = make("RemoteEvent", Net.Note)
 	fx = make("UnreliableRemoteEvent", Net.Fx)
-	folder.Parent = ReplicatedStorage
 
 	req.OnServerInvoke = function(player: Player, action: any, payload: any)
 		return Remotes.dispatch(player, action, payload)
@@ -183,6 +182,11 @@ function Remotes.init(_ctx: any)
 		results[p] = nil
 		Remotes.strikes[p] = nil
 	end)
+end
+
+-- Expose remotes to clients only after every service registered its handlers.
+function Remotes.open()
+	folder.Parent = ReplicatedStorage
 end
 
 function Remotes.push(player: Player, snapshot: any)

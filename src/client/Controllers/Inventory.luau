@@ -106,7 +106,7 @@ local function drawGrid(parent, d, c, title, w, h, cell, x0, y0)
 	local g = K.frame(holder, { Position = UDim2.fromOffset(0, 18), Size = UDim2.fromOffset(w * cell, h * cell), BackgroundColor3 = K.C.panel })
 	K.stroke(g, K.C.line, 0.75)
 	if w == 0 or h == 0 then
-		K.label(holder, "  — none —", 12, { Position = UDim2.fromOffset(0, 18), TextColor3 = K.C.dim })
+		K.label(holder, "   -  none —", 12, { Position = UDim2.fromOffset(0, 18), TextColor3 = K.C.dim })
 		return holder
 	end
 	for yy = 1, h do
@@ -274,10 +274,10 @@ function Inventory.render()
 	end
 	table.clear(tiles)
 	firstFocus = nil
-	local vp = K.viewport()
-	local W = math.floor(math.min(vp.X * 0.96, 1200))
-	local H = math.floor(math.min(vp.Y * 0.9, 700))
-	panel = K.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.04 })
+	local vp = K.viewport(gui)
+	local W = math.floor(math.min(vp.X - 16, 1200))
+	local H = math.floor(math.min(vp.Y - 10, 700))
+	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.04 })
 	K.stroke(panel, K.C.line, 0.45)
 	-- header
 	local title = (mode == "stash") and "STASH & LOADOUT  //  RELAY 7" or "FIELD KIT  //  " .. Config.MAP_NAME
@@ -328,7 +328,7 @@ function Inventory.render()
 		drawGrid(panel, d, "bag", "PACK COMPARTMENT", bw, bh, cell, 12, top + cell * 2 + 58)
 		if loot then
 			local lx = 12 + invW
-			local lf = K.frame(panel, { Position = UDim2.fromOffset(lx, top), Size = UDim2.fromOffset(lootW - 12, bodyH - 10), BackgroundColor3 = K.C.panel })
+			local lf = K.frame(panel, { Name = "LootPanel", Position = UDim2.fromOffset(lx, top), Size = UDim2.fromOffset(lootW - 12, bodyH - 10), BackgroundColor3 = K.C.panel })
 			K.stroke(lf, K.C.ochre, 0.4)
 			K.label(lf, "  " .. string.upper(loot.label), 13, { Size = UDim2.new(1, 0, 0, 22), FontFace = K.bold, TextColor3 = K.C.ochre })
 			local list = K.new("ScrollingFrame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(6, 28), Size = UDim2.new(1, -12, 1, -76), CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4, BorderSizePixel = 0, Selectable = false }, lf)
@@ -343,7 +343,7 @@ function Inventory.render()
 					extra = string.format(" %d/%d", li.a or 0, def.capacity)
 				end
 				local b = K.button(list, "", { Size = UDim2.new(1, -6, 0, 34), LayoutOrder = i, TextXAlignment = Enum.TextXAlignment.Left })
-				b.Text = string.format("  TAKE ▸ %s%s", def and def.name or li.id, extra)
+				b.Text = string.format("  TAKE  %s%s", def and def.name or li.id, extra)
 				b.TextSize = 13
 				if def and def.rarity ~= "common" then
 					b.TextColor3 = (def.rarity == "rare") and K.C.orange or K.C.ochre
@@ -380,7 +380,7 @@ function Inventory.render()
 		actionButtons(det, d, 100)
 	else
 		K.label(det, "SELECT AN ITEM", 13, { FontFace = K.bold, TextColor3 = K.C.dim })
-		K.label(det, "Tap or press " .. ((ctx.Input.device() == "Gamepad") and "A" or "click") .. " on an item, then a free cell, slot or action.", 12, { Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, 60), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
+		K.label(det, ((ctx.Input.device() == "Gamepad") and "Press A on" or "Click or tap") .. " an item, then a free cell, a slot or an action.", 12, { Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, 60), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
 	end
 	if mode == "stash" then
 		local gb = K.frame(det, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 112) })

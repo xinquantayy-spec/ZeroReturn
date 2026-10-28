@@ -17,6 +17,7 @@ ctx.World.build()
 for _, name in { "Chars", "Loot", "Combat", "Extract", "AI", "Raid", "Dev" } do
 	ctx[name].init(ctx)
 end
+ctx.Remotes.open()
 ctx.Profiles.start()
 ctx.Extract.start()
 ctx.Raid.start()

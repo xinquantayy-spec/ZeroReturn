@@ -34,7 +34,7 @@ function K.stroke(parent, color, transparency, thickness)
 end
 
 function K.frame(parent, props)
-	local f = K.new("Frame", { BackgroundColor3 = K.C.panel, BorderSizePixel = 0 }, parent)
+	local f = K.new("Frame", { BackgroundColor3 = K.C.panel, BorderSizePixel = 0, Name = "Panel" }, parent)
 	for k, v in props or {} do
 		f[k] = v
 	end
@@ -69,6 +69,7 @@ function K.button(parent, text, props, onClick)
 		SelectionImageObject = K.selection(),
 	}, parent)
 	K.stroke(b, K.C.line, 0.6)
+	b.Name = "Btn_" .. string.gsub(string.upper(text or ""), "[^%w]", "")
 	for k, v in props or {} do
 		b[k] = v
 	end
@@ -111,9 +112,13 @@ function K.focus(obj)
 	end
 end
 
-function K.viewport()
+function K.viewport(gui)
+	if gui and gui.AbsoluteSize.Y > 0 then
+		return gui.AbsoluteSize -- safe area (excludes Roblox top bar / notches)
+	end
 	local cam = workspace.CurrentCamera
-	return cam and cam.ViewportSize or Vector2.new(1280, 720)
+	local v = cam and cam.ViewportSize or Vector2.new(1280, 720)
+	return Vector2.new(v.X, v.Y - 58)
 end
 
 -- uniform scale for HUD-like text based on screen height (720p reference)

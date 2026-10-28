@@ -20,11 +20,15 @@ local ctx
 local player = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 local vm, vmRoot, magPart
-local magHome = CFrame.new(0, -0.4, -0.55) * CFrame.Angles(math.rad(12), 0, 0)
-local MUZZLE = CFrame.new(0, 0.03, -2.5)
-local SIGHT = Vector3.new(0, 0.27, -0.1)
-local HIP = CFrame.new(0.4, -0.44, -0.62)
-local AIM = CFrame.new(-SIGHT.X, -SIGHT.Y, -0.5 - SIGHT.Z)
+local VS = 0.55 -- viewmodel scale (part-built fallback is authored at 1.0)
+local function sc(cf)
+	return CFrame.new(cf.Position * VS) * cf.Rotation
+end
+local magHome = sc(CFrame.new(0, -0.4, -0.55) * CFrame.Angles(math.rad(12), 0, 0))
+local MUZZLE = sc(CFrame.new(0, 0.03, -2.5))
+local SIGHT = Vector3.new(0, 0.27, -0.1) * VS
+local HIP = CFrame.new(0.25, -0.27, -0.42)
+local AIM = CFrame.new(-SIGHT.X, -SIGHT.Y, -0.42 - SIGHT.Z)
 local SPRINT = HIP * CFrame.new(-0.12, -0.14, 0.08) * CFrame.Angles(math.rad(-20), math.rad(40), math.rad(14))
 local RELOAD = HIP * CFrame.new(-0.06, -0.08, 0.06) * CFrame.Angles(math.rad(14), math.rad(-10), math.rad(28))
 local seq = 0
@@ -69,8 +73,8 @@ Weapon.computeAmmo = computeAmmo
 
 local function newPart(parent, size, cf, color, mat, shape)
 	local p = Instance.new("Part")
-	p.Size = size
-	p.CFrame = cf
+	p.Size = size * VS
+	p.CFrame = sc(cf)
 	p.Color = color
 	p.Material = mat or Enum.Material.Metal
 	p.CanCollide = false
@@ -94,7 +98,7 @@ end
 
 local function limb(parent, from, to, thick, color, mat)
 	local len = (to - from).Magnitude
-	return newPart(parent, Vector3.new(thick, thick, len), CFrame.lookAt((from + to) / 2, to), color, mat or Enum.Material.Fabric)
+	return newPart(parent, Vector3.new(thick, thick, len), CFrame.lookAt((from + to) / 2, to), color, mat or Enum.Material.SmoothPlastic)
 end
 
 local function buildViewmodel()
@@ -143,7 +147,9 @@ local function buildViewmodel()
 		newPart(vm, Vector3.new(0.11, 0.11, 0.2), o * CFrame.new(0, 0.03, -2.42), dark)
 		newPart(vm, Vector3.new(0.035, 0.13, 0.035), o * CFrame.new(0, 0.2, -1.78), dark)
 		newPart(vm, Vector3.new(0.12, 0.06, 0.08), o * CFrame.new(0, 0.14, -1.78), dark)
-		newPart(vm, Vector3.new(0.13, 0.07, 0.09), o * CFrame.new(0, 0.245, -0.1), dark)
+		newPart(vm, Vector3.new(0.13, 0.03, 0.09), o * CFrame.new(0, 0.225, -0.1), dark) -- rear sight base
+		newPart(vm, Vector3.new(0.025, 0.08, 0.06), o * CFrame.new(-0.05, 0.26, -0.1), dark) -- aperture ears
+		newPart(vm, Vector3.new(0.025, 0.08, 0.06), o * CFrame.new(0.05, 0.26, -0.1), dark)
 		newPart(vm, Vector3.new(0.16, 0.3, 0.7), o * CFrame.new(0, -0.06, 0.5), furn, Enum.Material.SmoothPlastic)
 		newPart(vm, Vector3.new(0.18, 0.36, 0.06), o * CFrame.new(0, -0.08, 0.87), dark, Enum.Material.Rubber)
 		newPart(vm, Vector3.new(0.12, 0.34, 0.16), o * CFrame.new(0, -0.3, 0.02) * CFrame.Angles(math.rad(-15), 0, 0), furn, Enum.Material.SmoothPlastic)
@@ -165,15 +171,15 @@ local function buildViewmodel()
 		w.Parent = a
 	else
 		local sleeve, glove = Color3.fromHex("5E6448"), Color3.fromHex("262827")
-		newPart(vm, Vector3.new(0.21, 0.23, 0.27), o * CFrame.new(0.05, -0.27, 0.0), glove, Enum.Material.Fabric)
+		newPart(vm, Vector3.new(0.21, 0.23, 0.27), o * CFrame.new(0.05, -0.27, 0.0), glove, Enum.Material.SmoothPlastic)
 		limb(vm, Vector3.new(0.1, -0.34, 0.12), Vector3.new(0.42, -0.62, 0.95), 0.28, sleeve)
-		newPart(vm, Vector3.new(0.23, 0.2, 0.3), o * CFrame.new(-0.04, -0.15, -1.38), glove, Enum.Material.Fabric)
+		newPart(vm, Vector3.new(0.23, 0.2, 0.3), o * CFrame.new(-0.04, -0.15, -1.38), glove, Enum.Material.SmoothPlastic)
 		limb(vm, Vector3.new(-0.08, -0.22, -1.3), Vector3.new(-0.5, -0.62, -0.4), 0.27, sleeve)
 		newPart(vm, Vector3.new(0.3, 0.06, 0.3), o * CFrame.new(-0.27, -0.42, -0.85) * CFrame.Angles(math.rad(-30), math.rad(-40), 0), Color3.fromHex("6B6A4E"), Enum.Material.Fabric) -- cuff band
 	end
 	magPart = Instance.new("Part")
 	magPart.Name = "Mag"
-	magPart.Size = Vector3.new(0.13, 0.48, 0.24)
+	magPart.Size = Vector3.new(0.13, 0.48, 0.24) * VS
 	magPart.Color = Color3.fromHex("33383B")
 	magPart.Material = Enum.Material.Metal
 	magPart.Anchored = true
@@ -239,7 +245,7 @@ local function fireOnce(def)
 	ctx.Effects.sound(Sounds.R17_FIRE, SoundService, 0.9, 1 + math.random() * 0.06)
 	local k = (Weapon.aiming and 0.72 or 1) * (Weapon.crouching and 0.85 or 1)
 	ctx.Camera.kick(def.recoilPitch * k, (math.random() * 2 - 1) * def.recoilYaw)
-	kickZ += 0.075
+	kickZ += 0.045
 	kickRot += math.rad(2.2)
 end
 
@@ -374,8 +380,8 @@ local function update(dt)
 	local base = HIP:Lerp(AIM, aimA):Lerp(SPRINT, sprintA):Lerp(RELOAD, reloadA * 0.85)
 	-- wall pullback
 	rayParams.FilterDescendantsInstances = { char, vm, workspace:FindFirstChild("EFB_Fx") }
-	local wallHit = workspace:Raycast(cam.CFrame.Position, cam.CFrame.LookVector * 2.6, rayParams)
-	local push = wallHit and (2.6 - wallHit.Distance) or 0
+	local wallHit = workspace:Raycast(cam.CFrame.Position, cam.CFrame.LookVector * 1.7, rayParams)
+	local push = wallHit and (1.7 - wallHit.Distance) or 0
 	local pull = CFrame.new(0, -push * 0.12, push * 0.75) * CFrame.Angles(push * 0.22, 0, 0)
 	vmRoot.CFrame = cam.CFrame * base * bob * sway * pull * CFrame.new(0, 0, kickZ) * CFrame.Angles(kickRot, 0, 0)
 	-- magazine (reload animation)
@@ -383,11 +389,11 @@ local function update(dt)
 	if Weapon.reloading and reloadT0 then
 		local p = (os.clock() - reloadT0) / reloadDur
 		if p > 0.15 and p < 0.4 then
-			magCF = magHome * CFrame.new(0, -((p - 0.15) / 0.25) * 0.8, 0.1)
+			magCF = magHome * CFrame.new(0, -((p - 0.15) / 0.25) * 0.45, 0.05)
 		elseif p >= 0.4 and p < 0.55 then
 			magCF = magHome * CFrame.new(0, -3, 0)
 		elseif p >= 0.55 and p < 0.82 then
-			magCF = magHome * CFrame.new(0, -(1 - (p - 0.55) / 0.27) * 0.8, 0.05)
+			magCF = magHome * CFrame.new(0, -(1 - (p - 0.55) / 0.27) * 0.45, 0.03)
 		end
 	end
 	magPart.CFrame = vmRoot.CFrame * magCF

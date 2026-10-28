@@ -48,10 +48,6 @@ local function build()
 
 	root = K.frame(gui, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1) })
 	R.scale = K.new("UIScale", { Scale = K.scale() }, root)
-	local inv = 1 / K.scale()
-	local function S(x)
-		return x
-	end
 	-- top-left recorder block
 	local tl = K.frame(root, { BackgroundTransparency = 1, Position = UDim2.fromOffset(14, 8), Size = UDim2.fromOffset(380, 76) })
 	R.rec = mono(tl, "", 15, { Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(380, 20), FontFace = K.bold })
@@ -98,7 +94,7 @@ local function build()
 	R.tag = mono(root, "", 11, { Position = UDim2.fromOffset(14, 84), Size = UDim2.fromOffset(380, 14), TextColor3 = K.C.orange })
 	-- death overlay
 	R.death = K.frame(gui, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = K.C.black, BackgroundTransparency = 1, Visible = false, ZIndex = 10 })
-	R.deathText = mono(R.death, "■ SIGNAL LOST", 28, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(600, 40), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold, ZIndex = 11 })
+	R.deathText = mono(R.death, "[ SIGNAL LOST ]", 28, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(600, 40), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold, ZIndex = 11 })
 end
 
 function Hud.toast(text, tone)
@@ -127,7 +123,7 @@ local function slowUpdate()
 	local clockBase = inRaid and raid and (7 * 3600 + 10 * 60 + (now - raid.started)) or (6 * 3600 + 40 * 60 + now % 3600)
 	R.time.Text = os.date("!%Y.%m.%d", math.floor(now)) .. "  " .. os.date("!%H:%M:%S", math.floor(clockBase))
 	local bars = inRaid and (3 + (math.floor(now / 7) % 2)) or 4
-	R.sig.Text = string.rep("▮", bars) .. string.rep("▯", 4 - bars) .. "  SIG   BAT 81%"
+	R.sig.Text = "SIG " .. string.rep("|", bars) .. '<font color="#4A504C">' .. string.rep("|", 4 - bars) .. "</font>   BAT 81%"
 	if inRaid and raid then
 		local left = raid.endsAt - now
 		local st = (ex and "EXTRACTING") or "ACTIVE"
@@ -181,7 +177,7 @@ local function fastUpdate(dt)
 	local now = os.clock()
 	if ex then
 		local left = ex.ends - workspace:GetServerTimeNow()
-		label = string.format("◉ EXFIL %s — HOLD %.1fs", ex.name, math.max(0, left))
+		label = string.format("( o ) EXFIL %s  -  HOLD %.1fs", ex.name, math.max(0, left))
 		frac = 1 - math.clamp(left / Config.EXTRACT_HOLD, 0, 1)
 	elseif search then
 		frac = math.clamp((now - search.t0) / search.dur, 0, 1)
@@ -243,7 +239,7 @@ function Hud.init(c)
 	c.State.on("extract", function(d)
 		if d.state == "start" then
 			ex = { name = d.name, ends = d.ends }
-			Hud.toast("EXFIL " .. tostring(d.zone) .. " — HOLD POSITION", "good")
+			Hud.toast("EXFIL " .. tostring(d.zone) .. "  -  HOLD POSITION", "good")
 		else
 			ex = nil
 			Hud.toast("EXTRACTION INTERRUPTED", "warn")
@@ -282,7 +278,7 @@ function Hud.init(c)
 	end)
 	c.State.on("raid", function(d)
 		ex, search, heal = nil, nil, nil
-		Hud.toast("INSERTION CONFIRMED — " .. Config.MAP_NAME, "good")
+		Hud.toast("INSERTION CONFIRMED  -  " .. Config.MAP_NAME, "good")
 	end)
 	c.State.on("summary", function()
 		ex, search, heal = nil, nil, nil

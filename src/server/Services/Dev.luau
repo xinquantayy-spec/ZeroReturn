@@ -145,6 +145,16 @@ function C.rejoin(name)
 	return HttpService:JSONEncode({ loaded = prof ~= nil, recovered = rec ~= nil, items = prof and brief(prof) })
 end
 
+function C.expire(name)
+	local s = ctx.Raid.session(plr(name))
+	if not s then
+		return "not in raid"
+	end
+	s.endsAt = workspace:GetServerTimeNow() - 1
+	task.wait(1.5)
+	return "expired"
+end
+
 function C.failWrites(n)
 	ctx.Store.failNext = n or 1
 	return "next writes fail: " .. tostring(ctx.Store.failNext)
@@ -170,6 +180,15 @@ function C.tests()
 		end
 	end
 	return table.concat(report, "\n")
+end
+
+function C.ignore(name, on)
+	plr(name):SetAttribute("DevIgnore", on ~= false)
+	return "DevIgnore=" .. tostring(on ~= false)
+end
+
+function C.recovery(name)
+	return HttpService:JSONEncode(ctx.Raid.inv(plr(name), { op = "recovery" }))
 end
 
 function C.shots()

@@ -2,6 +2,7 @@
 -- "Harbor Watch" guards: PATROL -> INVESTIGATE (gunfire) -> ENGAGE (sight/damage) -> SEARCH -> RETURN.
 -- Perception at 5 Hz per guard, throttled pathfinding, server raycast LOS for sight and shots.
 local Players = game:GetService("Players")
+local DEV = game:GetService("RunService"):IsStudio()
 local PathfindingService = game:GetService("PathfindingService")
 
 local AI = {}
@@ -54,7 +55,7 @@ end
 local function findTarget(g)
 	local best, bestD = nil, math.huge
 	for player, s in ctx.Raid.sessions() do
-		if not s.done then
+		if not s.done and not (DEV and player:GetAttribute("DevIgnore")) then
 			local char = player.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 then

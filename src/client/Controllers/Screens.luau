@@ -28,13 +28,14 @@ local function modal(w, h, title)
 	if ctx.Inventory.open then
 		ctx.Inventory.close()
 	end
-	local vp = K.viewport()
-	w = math.min(w, vp.X - 24)
-	h = math.min(h, vp.Y - 24)
+	local vp = K.viewport(gui)
+	w = math.min(w, vp.X - 16)
+	h = math.min(h, vp.Y - 12)
 	local f = K.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(f, K.C.line, 0.4)
 	K.pad(f, 14)
 	K.label(f, title, 17, { FontFace = K.bold, Size = UDim2.new(1, 0, 0, 24) })
+	f.Name = "Modal"
 	Screens.modal = f
 	ctx.Input.setMenu(true)
 	ctx.Interact.setEnabled(false)
@@ -79,13 +80,13 @@ function Screens.deploy()
 	end
 	line(f, 34, "RAID WINDOW  " .. Util.clock(Config.RAID_DURATION) .. "    INSERTION  randomized (Ferry Tunnel / South Yard)", K.C.dim, 12)
 	line(f, 52, "EXFIL  assigned on insertion · hold position " .. Config.EXTRACT_HOLD .. " s at the radio beacon", K.C.dim, 12)
-	line(f, 84, "PRIMARY   " .. (w8 and string.format("R-17 Carbine  %d/25", mag and mag.a or 0) or "NONE — you will deploy unarmed"), w8 and K.C.text or K.C.orange, 14)
+	line(f, 84, "PRIMARY   " .. (w8 and string.format("R-17 Carbine  %d/25", mag and mag.a or 0) or "NONE  -  you will deploy unarmed"), w8 and K.C.text or K.C.orange, 14)
 	line(f, 106, string.format("SPARE     %d magazines · %d rounds", mags, rounds), K.C.text, 14)
 	line(f, 128, string.format("MEDICAL   %d field dressings", meds), K.C.text, 14)
 	line(f, 150, string.format("OTHER     %d items   ·   PACK %s", other, d.slots.bag and "worn" or "none"), K.C.text, 14)
 	line(f, 182, string.format("AT RISK   %s %s", Util.commas(value), Config.CURRENCY), K.C.ochre, 15)
 	line(f, 206, "Everything in your loadout is lost if you are killed or miss extraction. Your stash stays safe.", K.C.dim, 12)
-	local row = K.frame(f, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 0, 40) })
+	local row = K.frame(f, { Name = "Row", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 0, 40) })
 	K.list(row, Enum.FillDirection.Horizontal, 10)
 	local deploy = K.button(row, "DEPLOY", { Size = UDim2.fromOffset(180, 40), BackgroundColor3 = Color3.fromHex("3A3524"), TextColor3 = K.C.ochre, TextSize = 16 })
 	local edit = K.button(row, "EDIT LOADOUT", { Size = UDim2.fromOffset(170, 40) })
@@ -115,7 +116,7 @@ end
 
 local OUTCOME = {
 	SUCCESS = { "EXTRACTED", "green" }, KIA = { "KILLED IN ACTION", "red" }, MIA = { "MISSING IN ACTION", "orange" },
-	DISCONNECTED = { "SIGNAL LOST — RAID FORFEITED", "orange" },
+	DISCONNECTED = { "SIGNAL LOST  -  RAID FORFEITED", "orange" },
 }
 
 local function itemList(parent, x, y, w, h, title, list, color)
@@ -246,6 +247,7 @@ function Screens.init(c)
 	K = c.UiKit
 	gui = K.screen("EFB_Screens", 30)
 	c.State.on("summary", function(s)
+		print("[EFB] summary received:", s.outcome)
 		task.wait(s.outcome == "KIA" and 2.5 or 0.4)
 		Screens.summary(s)
 	end)
