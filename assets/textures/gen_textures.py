@@ -5,6 +5,15 @@ Usage: python3 assets/textures/gen_textures.py <out_dir>
   ZR_TEX_Lens.png   1024x576 bodycam lens: vignette, chromatic edge fringe, faint dust/smudges
   ZR_TEX_Icons.png  512x128  16 white icons (64px) tinted at runtime via ImageColor3
   ZR_TEX_Glow.png   128x128  soft radial glow (bloom imitation behind HUD numerals)
+  ZR_TEX_Scope.png  1024x1024 scope eyepiece overlay
+  M10 (python3 gen_textures.py <out_dir> m10):
+  ZR_TEX_Rain.png   128x128  one thin rain streak (particles, VelocityParallel)
+  ZR_TEX_Splash.png 64x64    small splash crown (rain hitting the ground)
+  ZR_TEX_Drops.png  1024x576 water droplets on the bodycam lens (rain overlay)
+  Bodycam lens v2 (python3 gen_textures.py <out_dir> lens2):
+  ZR_TEX_Vignette.png 1024x576 black corner/edge falloff (wide-angle lens)
+  ZR_TEX_EdgeHaze.png 1024x576 white ring, tinted at runtime: soft, low-contrast edges (fake edge blur)
+  ZR_TEX_Fringe.png   1024x576 chromatic fringe: magenta-red outer edge, cyan just inside (lateral CA)
 """
 import math, os, sys
 import numpy as np
@@ -165,9 +174,146 @@ def scope(path):
     img.save(path)
 
 
+def rain_streak(path):
+    n = 128
+    y, x = np.mgrid[0:n, 0:n].astype(float)
+    cx = (n - 1) / 2
+    core = np.exp(-((x - cx) / 1.1) ** 2)
+    along = np.clip(np.sin(np.pi * y / (n - 1)), 0, 1) ** 0.6
+    a = core * along * (0.55 + 0.45 * (y / n))  # brighter toward the leading (lower) end
+    img = np.dstack([np.full((n, n), 225), np.full((n, n), 232), np.full((n, n), 240), np.clip(a * 255, 0, 255)]).astype(np.uint8)
+    Image.fromarray(img, "RGBA").save(path)
+
+
+def splash(path):
+    n = 64
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c = n / 2
+    for k in range(9):
+        ang = math.pi * (0.1 + 0.8 * k / 8)
+        r0, r1 = 6, 18 + rng.uniform(0, 10)
+        x0, y0 = c + math.cos(ang) * r0, c + 10 - math.sin(ang) * r0
+        x1, y1 = c + math.cos(ang) * r1, c + 10 - math.sin(ang) * r1
+        d.line([(x0, y0), (x1, y1)], fill=(230, 236, 242, 150), width=1)
+        d.ellipse([x1 - 1.2, y1 - 1.2, x1 + 1.2, y1 + 1.2], fill=(235, 240, 245, 170))
+    d.ellipse([c - 14, c + 7, c + 14, c + 13], outline=(220, 228, 236, 110), width=1)
+    img = img.filter(ImageFilter.GaussianBlur(0.9))
+    img.save(path)
+
+
+def drops(path):
+    w, h = 1024, 576
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    for _ in range(70):
+        r = rng.uniform(4, 16) * (1.6 if rng.uniform() < 0.12 else 1)
+        cx, cy = rng.uniform(0, w), rng.uniform(0, h)
+        # keep the middle of the frame mostly clear (droplets sit toward the lens edge)
+        if abs(cx - w / 2) < w * 0.22 and abs(cy - h / 2) < h * 0.25 and rng.uniform() < 0.8:
+            continue
+        sz = int(r * 4)
+        yy, xx = np.mgrid[0:sz, 0:sz].astype(float)
+        dx, dy = (xx - sz / 2) / r, (yy - sz / 2) / (r * rng.uniform(1.0, 1.35))
+        rr = np.sqrt(dx ** 2 + dy ** 2)
+        body = np.clip(1 - rr, 0, 1)
+        rim = np.exp(-((rr - 0.92) / 0.12) ** 2)
+        hl = np.exp(-(((dx + 0.35) ** 2 + (dy + 0.4) ** 2) / 0.05))
+        shade = np.clip(dy * 0.5 + 0.5, 0, 1)
+        a = np.clip(body * 0.26 + rim * 0.3 + hl * 0.75, 0, 1) * (rr < 1.15) * rng.uniform(0.6, 1.0)
+        lum = np.clip(150 + 90 * hl - 60 * shade * body, 0, 255)
+        blob = np.dstack([lum, lum + 4, lum + 10, a * 200]).clip(0, 255).astype(np.uint8)
+        im = Image.fromarray(blob, "RGBA")
+        img.alpha_composite(im, (int(cx - sz / 2) % w, int(cy - sz / 2) % h))
+        # larger drops slid down the lens: a tapered, wavy wet trail ABOVE them
+        if r > 9 and rng.uniform() < 0.45:
+            length = rng.uniform(30, 90)
+            steps = 24
+            trail = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            d = ImageDraw.Draw(trail)
+            px, py = cx, cy - r * 0.8
+            for i in range(steps):
+                t = (i + 1) / steps
+                nx_ = cx + math.sin(t * 5 + rng.uniform(0, 0.3)) * 2.5
+                ny_ = cy - r * 0.8 - t * length
+                wdt = max(1, int(r * 0.55 * (1 - t) + 1))
+                d.line([(px, py), (nx_, ny_)], fill=(205, 212, 220, int(70 * (1 - t) + 15)), width=wdt)
+                px, py = nx_, ny_
+            img.alpha_composite(trail.filter(ImageFilter.GaussianBlur(1.2)))
+    img = img.filter(ImageFilter.GaussianBlur(0.8))
+    img.save(path)
+
+
+def _lens_grid(w=1024, h=576):
+    y, x = np.mgrid[0:h, 0:w].astype(float)
+    nx, ny = (x / w - 0.5) * 2, (y / h - 0.5) * 2
+    r = np.sqrt(nx ** 2 + (ny * 0.92) ** 2)
+    return nx, ny, r
+
+
+def _smooth(lo, hi, v):
+    t = np.clip((v - lo) / (hi - lo), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def _save_rgba(path, rgb, alpha):
+    img = np.dstack([np.clip(rgb, 0, 1) * 255, np.clip(alpha, 0, 1) * 255]).astype(np.uint8)
+    Image.fromarray(img, "RGBA").save(path)
+
+
+def vignette2(path):
+    # v3 (owner: weaker): a feathered crop at the frame edge, like a bodycam lens rim - not a heavy tunnel
+    nx, ny, r = _lens_grid()
+    a = 0.5 * _smooth(0.74, 1.22, r) ** 1.5
+    _save_rgba(path, np.zeros(a.shape + (3,)), a)
+
+
+def edge_haze(path):
+    # soft, low-contrast periphery ("blur around the vignette"); tinted to the scene at runtime
+    nx, ny, r = _lens_grid()
+    ang = np.arctan2(ny, nx)
+    streak = 0.9 + 0.1 * np.cos(ang * 23 + np.sin(ang * 7) * 2)  # faint radial smear
+    a = 0.45 * _smooth(0.62, 1.1, r) * streak
+    _save_rgba(path, np.ones(a.shape + (3,)), a)
+
+
+def fringe(path):
+    # v3 (owner: "closer to a thin line because of refraction"): thin chromatic lines where the soft edge
+    # begins - magenta-red outside, blue-cyan a hair inside - only toward the left/right sides (lateral CA
+    # grows with distance from the centre), fading out before the top and bottom, slightly uneven
+    nx, ny, r = _lens_grid()
+    ang = np.arctan2(ny, nx)
+    lat = np.clip(np.abs(nx) * 1.08, 0, 1) ** 2.6
+    wob = 0.7 + 0.3 * np.sin(ang * 9 + 1.3) * np.sin(ang * 4 - 0.4)
+    r0 = 0.94 + 0.005 * np.sin(ang * 6)
+    red_line = np.exp(-((r - (r0 + 0.011)) / 0.0038) ** 2)
+    blue_line = np.exp(-((r - r0) / 0.0032) ** 2)
+    red_soft = np.exp(-((r - (r0 + 0.03)) / 0.028) ** 2) * 0.1
+    blue_soft = np.exp(-((r - (r0 - 0.02)) / 0.028) ** 2) * 0.07
+    w_r = (red_line * 0.48 + red_soft) * lat * wob
+    w_b = (blue_line * 0.42 + blue_soft) * lat * wob
+    red = np.array([1.0, 0.2, 0.5])
+    blue = np.array([0.25, 0.65, 1.0])
+    a = np.clip(w_r + w_b, 0, 1)
+    rgb = (red * w_r[..., None] + blue * w_b[..., None]) / np.maximum((w_r + w_b)[..., None], 1e-4)
+    _save_rgba(path, rgb, a)
+
 if __name__ == "__main__":
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
+    if len(sys.argv) > 2 and sys.argv[2] == "lens2":
+        vignette2(os.path.join(out, "ZR_TEX_Vignette.png"))
+        edge_haze(os.path.join(out, "ZR_TEX_EdgeHaze.png"))
+        fringe(os.path.join(out, "ZR_TEX_Fringe.png"))
+        for f in ("ZR_TEX_Vignette.png", "ZR_TEX_EdgeHaze.png", "ZR_TEX_Fringe.png"):
+            print(f, os.path.getsize(os.path.join(out, f)))
+        sys.exit(0)
+    if len(sys.argv) > 2 and sys.argv[2] == "m10":
+        rain_streak(os.path.join(out, "ZR_TEX_Rain.png"))
+        splash(os.path.join(out, "ZR_TEX_Splash.png"))
+        drops(os.path.join(out, "ZR_TEX_Drops.png"))
+        for f in ("ZR_TEX_Rain.png", "ZR_TEX_Splash.png", "ZR_TEX_Drops.png"):
+            print(f, os.path.getsize(os.path.join(out, f)))
+        sys.exit(0)
     grain(os.path.join(out, "ZR_TEX_Grain.png"))
     lens(os.path.join(out, "ZR_TEX_Lens.png"))
     icons(os.path.join(out, "ZR_TEX_Icons.png"))

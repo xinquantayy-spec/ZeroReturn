@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Animator", "Hud", "Post", "Interact", "Touch", "Inventory", "Screens", "Trade" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Animator", "Hud", "Post", "Atmos", "Interact", "Touch", "Inventory", "Screens", "Trade" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))

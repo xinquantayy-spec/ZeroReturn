@@ -70,6 +70,7 @@ T.offers = {
 	},
 	fence = {
 		o("RIG_BELT", 1, 2), o("BAG_SLING", 1, 2), o("BANDAGE", 1, 4), o("R17_MAG", 1, 4), o("A62_FMJ", 1, 4, 60), o("KEY_OFFICE", 1, 1),
+		o("KEY_DORM_104", 1, 1), o("KEY_DORM_203", 2, 1),
 	},
 }
 

@@ -2,22 +2,32 @@
 -- Bodycam post-processing (client-only, never replicated): camera grade, bloom, sun rays, depth haze,
 -- turn blur, auto-exposure (indoor/outdoor adaptation with overshoot), film grain + lens overlays,
 -- damage/pain flashes and muzzle exposure bursts. Settings-aware and quality-gated.
+-- Bodycam lens (owner request): Roblox has no custom shaders, so the wide-angle lens is layered textures:
+-- a light feathered vignette and a soft low-contrast edge haze tinted to the scene (reads as edge blur). The
+-- haze grows when the camera turns or sprints (real BlurEffect joins in on fast turns) and eases off while
+-- aiming. No colour fringing (the owner tried it and asked for it to be removed). Cheap full-screen images.
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Textures = require(Shared.Textures)
 
-local Post = { dmg = 0, pain = 0, burstAmt = 0, low = 0 }
+-- envExposure / grainMul are driven by Atmos (night: brighter auto-gain and heavier sensor noise)
+local Post = {
+	dmg = 0, pain = 0, burstAmt = 0, low = 0, envExposure = 0, grainMul = 1, flash = 0,
+	lum = 1, hazeTint = Color3.fromRGB(64, 70, 68), -- set by Atmos from the light and fog
+}
 local ctx
 local player = Players.LocalPlayer
 local cam = workspace.CurrentCamera
-local gui, grainA, grainB, lens, red, tunnel
+local gui, grainA, grainB, lens, red, tunnel, haze
+local lensMotion, lensAim = 0, 0
 local fx = {}
 local exposure, indoor, indoorTarget = 0.1, 0, 0
 local lastLook, turnBlur = nil, 0
 local grainClock, probeClock = 0, 0
 local baseExposure = 0.1
+local grainBase, grainShown = 0.5, -1
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
@@ -56,15 +66,26 @@ local function build()
 	gui.DisplayOrder = 2
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = pg
+	Post.gui = gui
 	tunnel = overlay("Tunnel", Textures.LENS, 1)
 	tunnel.ImageColor3 = Color3.new(0, 0, 0)
 	tunnel.ImageTransparency = 1
-	lens = overlay("Lens", Textures.LENS, 2)
-	red = overlay("Hurt", Textures.LENS, 3)
+	-- lens stack: edge haze (2) -> [rain drops 4, Atmos] -> vignette (5)
+	if Textures.EDGE_HAZE ~= "" then
+		haze = overlay("LensHaze", Textures.EDGE_HAZE, 2)
+	end
+	lens = overlay("Lens", Textures.VIGNETTE ~= "" and Textures.VIGNETTE or Textures.LENS, 5)
+	lens.ImageColor3 = Color3.new(0, 0, 0) -- darkening only: no colour at the edges
+	if Textures.VIGNETTE == "" then
+		lens.ImageTransparency = 0.35 -- fallback: the older lens texture is a heavy tunnel, keep it lighter
+	else
+		lens.ImageTransparency = 0 -- the new vignette texture is authored at the intended (lighter) strength
+	end
+	red = overlay("Hurt", Textures.LENS, 6)
 	red.ImageColor3 = Color3.fromRGB(150, 12, 8)
 	red.ImageTransparency = 1
 	for i, name in { "GrainA", "GrainB" } do
-		local g = overlay(name, Textures.GRAIN, 4 + i)
+		local g = overlay(name, Textures.GRAIN, 6 + i)
 		g.ScaleType = Enum.ScaleType.Tile
 		if i == 1 then
 			grainA = g
@@ -99,14 +120,28 @@ function Post.apply()
 		bloom.Threshold = 1.2
 	end
 	lens.Visible = S.lens ~= false
-	local g = math.clamp(S.grain or 0.6, 0, 1)
+	if haze then
+		haze.Visible = S.lens ~= false
+	end
+	local g = math.clamp(S.grain or 0.5, 0, 1)
 	grainA.Visible = g > 0.01
 	grainB.Visible = g > 0.01 and q >= 2
 	local tile = math.floor(300 * math.max(gui.AbsoluteSize.Y / 1080, 0.5))
 	for _, l in { grainA, grainB } do
 		l.TileSize = UDim2.fromOffset(tile, tile)
 		l.Size = UDim2.new(1, tile, 1, tile)
-		l.ImageTransparency = 1 - g * 0.5
+	end
+	grainBase = g
+	grainShown = -1
+end
+
+local function updateGrain()
+	-- grain halved on owner request (setting 0.5 -> ~15% opacity by day, ~21% at night)
+	local a = math.clamp(grainBase * 0.3 * Post.grainMul, 0, 0.6)
+	if math.abs(a - grainShown) > 0.004 then
+		grainShown = a
+		grainA.ImageTransparency = 1 - a
+		grainB.ImageTransparency = 1 - a
 	end
 end
 
@@ -162,9 +197,12 @@ local function step(dt)
 		probeIndoor()
 	end
 	indoor += (indoorTarget - indoor) * math.min(1, dt * 0.9)
+	Post.indoor = indoor
 	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
 	Post.burstAmt = math.max(0, Post.burstAmt - dt * 4)
-	exposure = baseExposure + indoor * 0.55 + Post.burstAmt * 0.6
+	Post.flash = math.max(0, Post.flash - dt * 5)
+	updateGrain()
+	exposure = baseExposure + Post.envExposure + indoor * 0.55 + Post.burstAmt * 0.6 + Post.flash * 2.2
 	Lighting.ExposureCompensation = exposure
 	if bloom and bloom.Enabled then
 		bloom.Intensity = 0.55 + Post.burstAmt * 1.2
@@ -187,6 +225,15 @@ local function step(dt)
 	fx.grade.TintColor = Color3.fromRGB(236, 243, 235):Lerp(Color3.fromRGB(255, 214, 205), Post.dmg * 0.6)
 	fx.grade.Brightness = -0.015
 	fx.blur.Size = math.max(turnBlur, Post.dmg * 6, Post.pain * 2)
+	-- lens: the soft edge grows with motion and eases off while aiming down sights
+	local M, W = ctx.Movement, ctx.Weapon
+	local moving = math.clamp(turnBlur / 3 + ((M and M.sprinting) and 0.45 or 0), 0, 1)
+	lensMotion += (moving - lensMotion) * math.min(1, dt * 5)
+	lensAim += (((W and W.aiming) and 1 or 0) - lensAim) * math.min(1, dt * 7)
+	if haze then
+		haze.ImageColor3 = Post.hazeTint
+		haze.ImageTransparency = 1 - math.clamp(0.82 + 0.3 * lensMotion - 0.35 * lensAim + Post.dmg * 0.2, 0, 1)
+	end
 end
 
 function Post.init(c)

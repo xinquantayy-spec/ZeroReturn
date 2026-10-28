@@ -2,17 +2,30 @@
 -- Custom-styled ProximityPrompts: our own prompt UI (device-aware key label, tappable on touch).
 -- Terminal prompts (attribute Screen) open local screens; loot prompts are handled by the server.
 local PPS = game:GetService("ProximityPromptService")
+local Items = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR").Items)
 
 local Interact = { current = nil }
 local ctx, K
 local gui, btn
+
+-- loose items carry their id: show the name only once this player has examined that kind of item (Tarkov)
+local function objectText(p)
+	local id = p:GetAttribute("ItemId")
+	if id then
+		local d = ctx.State.data
+		if not ((d and d.known and d.known[id]) or Items.knownByDefault(id)) then
+			return "UNKNOWN ITEM"
+		end
+	end
+	return string.upper(p.ObjectText)
+end
 
 local function render()
 	local p = Interact.current
 	btn.Visible = p ~= nil and not ctx.Input.isMenu()
 	if p then
 		local key = ctx.Input.label("Interact")
-		btn.Text = string.format("[%s]  %s  ·  %s", key, string.upper(p.ActionText), string.upper(p.ObjectText))
+		btn.Text = string.format("[%s]  %s  ·  %s", key, string.upper(p.ActionText), objectText(p))
 		local w = math.max(260, #btn.Text * 10 + 32)
 		btn.Size = UDim2.fromOffset(w, 42)
 	end

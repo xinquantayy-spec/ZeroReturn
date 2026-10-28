@@ -114,7 +114,9 @@ add("VOLT_DRINK", { name = "Volt Energy Drink", short = "VOLT", kind = "food", w
 
 -- ── keys, quest items ─────────────────────────────────────────────────────────
 add("KEY_OFFICE", { name = "Harbor Office Key", short = "OFFICE KEY", kind = "key", w = 1, h = 1, mass = 0.02, value = 22000, rarity = "uncommon", key = { door = "office", uses = 25 }, desc = "Opens the harbor office.", color = c("#8C7A4E") })
-add("RUSTED_KEYCARD", { name = "Vault Keycard", short = "VAULT", kind = "key", w = 1, h = 1, mass = 0.02, value = 95000, rarity = "rare", key = { door = "vault", uses = 10 }, desc = "Quay authority keycard. Opens the depot vault. 10 uses.", color = c("#8A6252") })
+add("RUSTED_KEYCARD", { name = "Vault Keycard", short = "VAULT", kind = "key", w = 1, h = 1, mass = 0.02, value = 95000, rarity = "rare", key = { door = "vault", uses = 10, card = true }, desc = "Quay authority keycard. Opens the depot vault behind the harbor office. 10 uses.", color = c("#8A6252") })
+add("KEY_DORM_104", { name = "Dorm Room 104 Key", short = "DORM 104", kind = "key", w = 1, h = 1, mass = 0.02, value = 16000, rarity = "uncommon", key = { door = "dorm104", uses = 30 }, desc = "Crew dormitory, ground floor, room 104.", color = c("#7E8A6B") })
+add("KEY_DORM_203", { name = "Dorm Room 203 Key", short = "DORM 203", kind = "key", w = 1, h = 1, mass = 0.02, value = 34000, rarity = "uncommon", key = { door = "dorm203", uses = 20 }, desc = "Crew dormitory, upper floor, room 203. The foreman's quarters.", color = c("#6B7E8A") })
 add("SEALED_DRIVE", { name = "Sealed Drive", short = "DRIVE", kind = "quest", w = 1, h = 1, mass = 0.1, value = 120000, rarity = "rare", desc = "Evacuation office data drive in a sealed sleeve.", color = c("#C07946") })
 add("LEDGER", { name = "Harbormaster's Ledger", short = "LEDGER", kind = "quest", w = 1, h = 1, mass = 0.3, value = 450000, rarity = "legendary", desc = "Leather ledger of every shipment that left Quay 7.", color = c("#7A4A2E") })
 

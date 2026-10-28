@@ -6,6 +6,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
+local Env = require(Shared.Env)
 
 local Screens = { modal = nil }
 local ctx, K
@@ -57,13 +58,25 @@ local function matchText(m)
 	local function t(sec)
 		return Util.clock(math.max(0, sec))
 	end
+	-- the raid's local time and weather (Tarkov shows both before you go in)
+	local function conditions()
+		local e = m.env
+		if not e then
+			return ""
+		end
+		if m.state == "MATCHING" then
+			local w = Env.WEATHER[e.w] or Env.WEATHER.clear
+			return string.format("\nINSERTION AT %02d:%02d LOCAL  ·  %s", math.floor(e.clock0), math.floor((e.clock0 % 1) * 60), w.name)
+		end
+		return "\nQUAY 7 LOCAL TIME " .. Env.label(e, now)
+	end
 	if m.state == "MATCHING" then
-		return string.format("%s  ·  INSERTION IN %s  ·  %d QUEUED", m.queued and "YOU ARE QUEUED" or "RAID FORMING", t(m.startsAt - now), m.inQueue or 0), K.C.ochre
+		return string.format("%s  ·  INSERTION IN %s  ·  %d QUEUED", m.queued and "YOU ARE QUEUED" or "RAID FORMING", t(m.startsAt - now), m.inQueue or 0) .. conditions(), K.C.ochre
 	elseif m.state == "RUNNING" then
 		if m.queued then
 			return "QUEUED FOR THE NEXT RAID  ·  CURRENT RAID ENDS IN " .. t(m.endsAt - now), K.C.ochre
 		end
-		local s = string.format("RAID IN PROGRESS  ·  %s LEFT  ·  %d/%d INSIDE", t(m.endsAt - now), m.inRaid or 0, m.maxPlayers or Config.MAX_PLAYERS)
+		local s = string.format("RAID IN PROGRESS  ·  %s LEFT  ·  %d/%d INSIDE", t(m.endsAt - now), m.inRaid or 0, m.maxPlayers or Config.MAX_PLAYERS) .. conditions()
 		if now < (m.lateUntil or 0) then
 			s ..= "\nPMC ENTRY OPEN FOR " .. t(m.lateUntil - now) .. "  ·  SCAV ENTRY " .. t((m.scavUntil or 0) - now)
 		elseif now < (m.scavUntil or 0) then
@@ -502,7 +515,7 @@ local SETTING_ROWS = {
 	{ "FILM GRAIN", "grain", "num", 0, 1, 0.1, "pct" },
 	{ "HUD SCALE", "hudScale", "num", 0.7, 1.4, 0.1, "pct" },
 	{ "LENS EFFECTS", "lens", "bool" },
-	{ "HUD LENS WARP", "warp", "bool" },
+	{ "CURVED HUD", "curve", "bool" },
 	{ "MOTION BLUR", "mblur", "bool" },
 	{ "RECORDER OVERLAY", "film", "bool" },
 	{ "REDUCE MOTION", "reduceMotion", "bool" },

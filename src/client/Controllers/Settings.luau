@@ -7,7 +7,7 @@ local Config = require(Shared.Config)
 local Settings = {
 	data = {
 		fov = Config.FOV, sens = 1, quality = 2, shake = 1, reduceMotion = false, film = true, reticle = false, adsToggle = false,
-		grain = 0.6, lens = true, mblur = true, warp = true, hudScale = 1, hitfx = false,
+		grain = 0.5, lens = true, mblur = true, curve = false, hudScale = 1, hitfx = false,
 	},
 }
 local ctx

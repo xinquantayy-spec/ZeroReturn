@@ -1,7 +1,8 @@
 --!nonstrict
--- Doors (M9): hinged doors in the raid world. Locked doors open with the right key from the raid inventory
--- (keys have limited uses, Tarkov-style); once unlocked a door stays unlocked for the rest of the raid.
--- Every raid starts with doors closed and locked.
+-- Doors (M9, M10): hinged doors in the raid world. Locked doors open with the right key or keycard from the
+-- raid inventory (limited uses, Tarkov-style); once unlocked a door stays unlocked for the rest of the raid.
+-- Every raid starts with doors closed and locked (some ordinary doors are left ajar). AI open unlocked doors on
+-- their way (AI.luau); pathfinding treats unlocked doors as passable and locked ones as walls.
 local TweenService = game:GetService("TweenService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
@@ -9,6 +10,7 @@ local Inv = require(script.Parent.Inv)
 
 local Doors = {}
 local ctx
+local LED_LOCKED, LED_OPEN = Color3.fromHex("C24A35"), Color3.fromHex("6CC27A")
 
 local function keyName(d)
 	local def = d.key and Items.defs[d.key]
@@ -16,12 +18,18 @@ local function keyName(d)
 end
 
 local function refresh(d)
+	if d.modifier then
+		d.modifier.PassThrough = not d.locked
+	end
+	if d.led then
+		d.led.Color = d.locked and LED_LOCKED or LED_OPEN
+	end
 	local pp = d.prompt
 	if not pp then
 		return
 	end
 	if d.locked then
-		pp.ActionText = "Unlock"
+		pp.ActionText = d.card and "Swipe card" or "Unlock"
 		pp.ObjectText = d.label .. "  ·  " .. keyName(d)
 	else
 		pp.ActionText = d.open and "Close" or "Open"
@@ -29,13 +37,28 @@ local function refresh(d)
 	end
 end
 
-local function set(d, open)
+local function set(d, open, instant)
 	d.open = open
+	d.changedAt = os.clock()
 	local hinge = d.cf * CFrame.new(-d.size.X / 2, 0, 0)
 	local target = open and (hinge * CFrame.Angles(0, math.rad(100), 0) * CFrame.new(d.size.X / 2, 0, 0)) or d.cf
-	TweenService:Create(d.part, TweenInfo.new(0.55, Enum.EasingStyle.Quad), { CFrame = target }):Play()
+	if instant then
+		d.part.CFrame = target
+	else
+		TweenService:Create(d.part, TweenInfo.new(d.card and 1.1 or 0.55, Enum.EasingStyle.Quad), { CFrame = target }):Play()
+		ctx.Remotes.fx("sfx", { n = open and "door_open" or "door_close", p = d.cf.Position })
+	end
 	refresh(d)
-	ctx.Remotes.fx("sfx", { n = open and "door_open" or "door_close", p = d.cf.Position })
+end
+
+-- the key (or keycard) for this door anywhere in the raid inventory
+local function findKey(s, d)
+	for g, it in s.inv.items do
+		if it.id == d.key then
+			return g, it
+		end
+	end
+	return nil
 end
 
 local function use(player, d)
@@ -48,14 +71,9 @@ local function use(player, d)
 		return
 	end
 	if d.locked then
-		local kg, kit = nil, nil
-		for g, it in s.inv.items do
-			if it.id == d.key then
-				kg, kit = g, it
-				break
-			end
-		end
+		local kg, kit = findKey(s, d)
 		if not kg then
+			ctx.Remotes.fx("sfx", { n = "door_locked", p = d.cf.Position, v = 0.8 })
 			ctx.Remotes.note(player, "toast", { text = "LOCKED  ·  REQUIRES " .. keyName(d), tone = "warn" })
 			return
 		end
@@ -66,23 +84,44 @@ local function use(player, d)
 			ctx.Remotes.note(player, "toast", { text = keyName(d) .. " IS WORN OUT", tone = "warn" })
 		end
 		d.locked = false
+		ctx.Remotes.fx("sfx", { n = d.card and "keycard" or "key_unlock", p = d.cf.Position, v = 0.9 })
 		ctx.Remotes.note(player, "toast", { text = "UNLOCKED  ·  " .. string.upper(d.label), tone = "good" })
 		ctx.Raid.push(player)
-		set(d, true)
+		task.delay(d.card and 0.5 or 0.25, function()
+			set(d, true)
+		end)
 		return
 	end
 	set(d, not d.open)
 end
 
--- raid start: every door closed and locked again
+-- AI: open a closed, unlocked door they are walking through (returns true if it started opening)
+function Doors.aiOpen(d)
+	if d.locked or d.open or (os.clock() - (d.changedAt or 0)) < 0.8 then
+		return false
+	end
+	set(d, true)
+	return true
+end
+
+-- closed doors within r studs of pos (AI uses this while moving)
+function Doors.near(pos, r)
+	local out = {}
+	for _, d in ctx.World.doors do
+		if d.part and not d.open and (d.cf.Position - pos).Magnitude <= r then
+			table.insert(out, d)
+		end
+	end
+	return out
+end
+
+-- raid start: every door closed and locked again; some ordinary doors are left ajar
 function Doors.reset()
 	for _, d in ctx.World.doors do
 		d.locked = d.key ~= nil
-		d.open = false
 		if d.part then
-			d.part.CFrame = d.cf
+			set(d, (not d.locked) and math.random() < (d.openChance or 0), true)
 		end
-		refresh(d)
 	end
 end
 

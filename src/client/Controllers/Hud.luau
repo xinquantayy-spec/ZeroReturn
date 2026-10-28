@@ -8,6 +8,7 @@ local SoundService = game:GetService("SoundService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
+local Env = require(Shared.Env)
 local Sounds = require(Shared.Sounds)
 local Textures = require(Shared.Textures)
 local Lens = require(script.Parent.Lens)
@@ -209,8 +210,13 @@ local function slowUpdate()
 	local S = ctx.Settings.data
 	-- recorder line
 	local blink = math.floor(os.clock() * 1.6) % 2 == 0
-	local clockBase = inRaid and raid and ((raid.tod or 7.2) * 3600 + (now - raid.started)) or (6 * 3600 + 40 * 60 + now % 3600)
-	local stamp = os.date("!%Y-%m-%d", math.floor(now)) .. "  " .. os.date("!%H:%M:%S", math.floor(clockBase))
+	-- in a raid the recorder shows the raid's in-world time (7x real time); in the hideout, local time
+	local stamp
+	if inRaid and raid and raid.env then
+		stamp = os.date("!%Y-%m-%d", math.floor(now)) .. "  " .. os.date("!%H:%M:%S", math.floor(Env.clock(raid.env, now) * 3600))
+	else
+		stamp = os.date("%Y-%m-%d  %H:%M:%S", math.floor(os.time()))
+	end
 	O.rec:set({ { icon = I.DOT, color = C.red, alpha = blink and 0 or 0.85, size = SZ.rec * 0.66 }, { t = "REC", color = C.red }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
 	O.dev:set({ { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Config.MAP_NAME or "RELAY 7"), color = C.dim, alpha = 0.2 } })
 	-- clock / money
@@ -476,7 +482,8 @@ end
 
 local function applySettings()
 	local S = ctx.Settings.data
-	L:setOptions(S.warp ~= false, S.lens ~= false, S.hudScale or 1)
+	-- HUD text is straight by default (owner request); "CURVED HUD" bends it with the lens again
+	L:setOptions(S.curve == true, S.lens ~= false, S.hudScale or 1)
 	layout()
 	local rec = S.film ~= false
 	O.rec:show(rec)

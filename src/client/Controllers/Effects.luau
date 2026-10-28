@@ -6,6 +6,7 @@ local SoundService = game:GetService("SoundService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Sounds = require(Shared.Sounds)
 local Atlas = require(Shared.SoundAtlas)
+local EnvAtlas = require(Shared.EnvAtlas)
 
 local Effects = {}
 local ctx
@@ -73,8 +74,11 @@ end
 -- play one region of the sound atlas (2D when `at` is an Instance, positional for a Vector3)
 local live3d = 0
 function Effects.sfx(name, at, volume, speed, maxDist)
-	local r = Atlas[name]
-	if not r or Sounds.ATLAS == "" then
+	local r, id = Atlas[name], Sounds.ATLAS
+	if not r then
+		r, id = EnvAtlas[name], Sounds.ENV_ATLAS -- world/UI one-shots (M10)
+	end
+	if not r or not id or id == "" then
 		return nil
 	end
 	local positional = typeof(at) == "Vector3"
@@ -82,7 +86,7 @@ function Effects.sfx(name, at, volume, speed, maxDist)
 		return nil -- cap concurrent world sounds
 	end
 	local s = Instance.new("Sound")
-	s.SoundId = Sounds.ATLAS
+	s.SoundId = id
 	s.PlaybackRegionsEnabled = true
 	s.PlaybackRegion = NumberRange.new(r[1], r[1] + r[2])
 	s.Volume = (volume or 0.6) * r[3]
@@ -109,6 +113,25 @@ function Effects.sfx(name, at, volume, speed, maxDist)
 	end
 	s:Play()
 	return s
+end
+
+-- a seamless looping region of the environment atlas (rain, wind, insects); starts silent, returns sound, gain
+function Effects.loop(name, parent)
+	local r = EnvAtlas[name]
+	if not r or Sounds.ENV_ATLAS == "" then
+		return nil, 0
+	end
+	local s = Instance.new("Sound")
+	s.Name = "ZR_Loop_" .. name
+	s.SoundId = Sounds.ENV_ATLAS
+	s.PlaybackRegionsEnabled = true
+	s.PlaybackRegion = NumberRange.new(r[1], r[1] + r[2])
+	s.LoopRegion = NumberRange.new(r[1], r[1] + r[2])
+	s.Looped = true
+	s.Volume = 0
+	s.Parent = parent or SoundService
+	s:Play()
+	return s, r[3]
 end
 
 local function variant(prefix, n)
@@ -317,6 +340,7 @@ function Effects.init(c)
 		amb.Volume = 0.35
 		amb.Parent = SoundService
 		amb:Play()
+		Effects.ambience = amb -- Atmos mixes it with weather and time of day
 	end
 end
 

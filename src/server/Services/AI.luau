@@ -18,6 +18,7 @@ local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local RigMath = require(Shared.RigMath)
 local Inv = require(script.Parent.Inv)
+local Env = require(Shared.Env)
 local KARMA_HOSTILE = require(Shared.Progress).KARMA.hostileBelow
 
 local AI = {}
@@ -32,6 +33,16 @@ local cover = { cells = {}, n = 0, ready = false }
 AI.cover = cover
 local director = { nextWave = math.huge, topUpUntil = 0, waves = 0, nextTopUp = 0 }
 AI.director = director
+-- the raid's light and weather (M10): darkness and fog shorten sight, rain masks footsteps; refreshed each second
+local envView = { sight = 1, hear = 1, dark = 0 }
+AI.envView = envView
+local function refreshEnv()
+	local e = ctx.Match and ctx.Match.env
+	local t = workspace:GetServerTimeNow()
+	envView.sight = Env.sight(e, t)
+	envView.hear = Env.hearing(e)
+	envView.dark = e and (1 - Env.daylight(Env.clock(e, t))) or 0
+end
 
 -- skill per kind: sight range, awareness build-up, hearing, reaction (s), aim error (deg + deg/stud),
 -- head-shot share, cover use, aggression, reload speed, health scale
@@ -303,7 +314,7 @@ local function exposure(model)
 	local v = root and flat(root.AssemblyLinearVelocity).Magnitude or 0
 	f *= (v > 2) and 1.25 or 0.85
 	if model:GetAttribute("WeaponLight") then
-		f *= 1.8
+		f *= (envView.dark > 0.5) and 3 or 1.3
 	end
 	return f
 end
@@ -455,6 +466,20 @@ local function moveTo(u, goal, run, keepFacing)
 			wp = u.path[u.pathI] and u.path[u.pathI].Position or goal
 		end
 	end
+	-- doors on the way: open unlocked ones (checked a couple of times a second)
+	if t >= (u.nextDoorCheck or 0) and ctx.Doors then
+		u.nextDoorCheck = t + 0.4
+		local dir = flat(wp - u.root.Position)
+		if dir.Magnitude > 0.1 then
+			dir = dir.Unit
+			for _, d in ctx.Doors.near(u.root.Position, 6) do
+				local to = flat(d.cf.Position - u.root.Position)
+				if to.Magnitude < 1.6 or dir:Dot(to.Unit) > 0.35 then
+					ctx.Doors.aiOpen(d)
+				end
+			end
+		end
+	end
 	u.hum:MoveTo(wp)
 	-- stuck: re-path, then give up on this goal
 	if t - (u.stuckT or 0) > 2 then
@@ -545,8 +570,28 @@ local function canReload(u)
 	return (it.a or 0) < (w.wd.capacity or 0) and ammoStack(u, w.wd.caliber) ~= nil
 end
 
+-- tactical light on the AI's weapon (third-person SpotLight follows the WeaponLight attribute, like players)
+local function setLight(u, on)
+	local wg = u.w and u.w.g
+	on = on == true and wg ~= nil and u.inv.items[wg] ~= nil and Inv.modStats(u.inv, wg).light == true
+	if u.lightOn == on then
+		return
+	end
+	u.lightOn = on
+	u.model:SetAttribute("WeaponLight", on)
+	for _, c in u.model:GetChildren() do
+		if c.Name == "TPWeapon" then
+			local l = c:FindFirstChild("WeaponLight")
+			if l then
+				l.Enabled = on
+			end
+		end
+	end
+end
+
 local function equip(u, w)
 	u.w = w
+	u.lightOn = nil
 	if w then
 		ctx.Chars.setWeapon(u.model, u.inv, w.g)
 		ctx.Chars.gesture(u.model, "draw", w.def.draw or 0.6)
@@ -1099,7 +1144,11 @@ local function perceive(u, t, dt)
 			local d = tor.Position - eye
 			local dist = d.Magnitude
 			local a = u.aware[model] or 0
-			local range = sk.sight * (model:GetAttribute("WeaponLight") and 1.4 or 1)
+			-- darkness and fog shorten sight; a lit weapon light gives you away from much further in the dark
+			local range = sk.sight * envView.sight
+			if model:GetAttribute("WeaponLight") then
+				range = math.max(range, sk.sight * ((envView.dark > 0.5) and 1.4 or 1.05))
+			end
 			local vis = nil
 			if dist < range then
 				local inFov = dist < CLOSE or look:Dot(d.Unit) >= FOV_COS or (a >= 1 and dist < 45)
@@ -1125,7 +1174,7 @@ local function perceive(u, t, dt)
 			end
 			-- footsteps
 			local nz = noiseOf(model)
-			if nz > 0 and dist < 60 * nz * sk.hearing then
+			if nz > 0 and dist < 60 * nz * sk.hearing * envView.hear then
 				u.heard = { pos = tor.Position + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)), t = t }
 				a = math.max(a, 0.4)
 			end
@@ -1201,6 +1250,13 @@ local function think(u)
 		if not u.reloadUntil and u.w and roundsOf(u) < capacityOf(u) * 0.5 and canReload(u) then
 			startReload(u, t)
 		end
+	end
+	-- at night, units with a weapon light use it while hunting someone (guards also on patrol)
+	if envView.dark > 0.55 then
+		local hunting = u.state == "INVESTIGATE" or u.state == "SEARCH" or u.state == "ENGAGE"
+		setLight(u, hunting or (u.kind ~= "scav" and (u.state == "PATROL" or u.state == "RETURN")))
+	elseif u.lightOn then
+		setLight(u, false)
 	end
 	updatePose(u)
 end
@@ -1394,7 +1450,7 @@ end
 -- ── events from the rest of the game ─────────────────────────────────────────
 -- a gunshot at pos: AI in earshot investigate (shooter: Player, Model or nil)
 function AI.hearShot(pos, shooter, except, loudness)
-	local radius = 200 * (loudness or 1)
+	local radius = 200 * (loudness or 1) * math.sqrt(envView.hear) -- heavy rain dulls distant shots a little
 	local t = now()
 	local smodel = (typeof(shooter) == "Instance" and shooter:IsA("Player")) and shooter.Character or shooter
 	for _, u in units do
@@ -1598,6 +1654,7 @@ function AI.init(c)
 	task.spawn(function()
 		while true do
 			task.wait(1)
+			pcall(refreshEnv)
 			local ok, err = pcall(directorTick)
 			if not ok then
 				warn("[ZR] AI director", err)

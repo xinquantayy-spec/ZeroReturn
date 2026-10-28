@@ -227,6 +227,49 @@ function C.contents(cid)
 	return HttpService:JSONEncode(list)
 end
 
+-- loose loot lying in the raid world (M10): id, item, area, position
+function C.loose(area)
+	local out = {}
+	for id, e in ctx.Loot.loose do
+		if not area or e.area == area then
+			local it = e.holder.items[e.g]
+			local p = e.part.Position
+			table.insert(out, string.format("%s %s %s (%d,%d,%d)", id, it and it.id or "?", tostring(e.area), p.X, p.Y, p.Z))
+		end
+	end
+	table.sort(out)
+	return #out .. " loose\n" .. table.concat(out, "\n")
+end
+
+-- walk up to a loose item and take it through the real pickup rules
+function C.takeLoose(name, id)
+	local p = plr(name)
+	local e = ctx.Loot.loose[id]
+	if not e then
+		return "no such loose item"
+	end
+	p.Character:PivotTo(CFrame.new(e.part.Position + Vector3.new(0, 3, 2.5)))
+	task.wait(0.2)
+	return tostring(ctx.Loot.takeLoose(p, id))
+end
+
+-- door state: door(id) -> state; door(id, true/false) opens/closes (unlocks for the test)
+function C.door(id, open)
+	local d = ctx.World.doors[id]
+	if not d then
+		return "no door"
+	end
+	if open ~= nil then
+		d.locked = false
+		ctx.Doors.aiOpen(d)
+		if open == false and d.open then
+			d.open = false
+			d.part.CFrame = d.cf
+		end
+	end
+	return string.format("%s locked=%s open=%s passThrough=%s", id, tostring(d.locked), tostring(d.open), tostring(d.modifier and d.modifier.PassThrough))
+end
+
 -- item guids of an id in the player's stash/profile (or raid kit when in raid)
 function C.find(name, id)
 	local p = plr(name)
@@ -326,6 +369,20 @@ function C.spawnAI(kind, pos)
 	return u and u.name or "failed"
 end
 
+-- send an AI unit to a point (as if it heard something there): aiGoto("Scav_3", Vector3)
+function C.aiGoto(unitName, pos)
+	for _, u in ctx.AI.units do
+		if u.name == unitName and u.alive then
+			u.state = "INVESTIGATE"
+			u.goal = pos
+			u.searchUntil = os.clock() + 30
+			u.alert = os.clock() + 30
+			return "going"
+		end
+	end
+	return "no unit"
+end
+
 -- put the player at a spot facing a direction: face(name, Vector3 pos, Vector3 lookAt)
 function C.place(name, pos, lookAt)
 	local char = plr(name).Character
@@ -402,6 +459,31 @@ function C.econ(name)
 	local p = plr(name)
 	local prof = ctx.Profiles.get(p)
 	return HttpService:JSONEncode({ econ = ctx.Economy.stateFor(prof), quests = ctx.Quests.stateFor(prof), hideout = ctx.Hideout.stateFor(prof), money = prof.money, stashH = prof.stashH })
+end
+
+-- raid time of day and weather (M10): env(hour, "clear"|"overcast"|"fog"|"rain", rain 0..1). Applies to the
+-- running raid at once (the clock jumps to `hour`) and to the next ones; env() with no hour goes back to random.
+function C.env(hour, weather, rain)
+	if hour == nil then
+		ctx.Match.forceEnv = nil
+		return "random"
+	end
+	local e = { clock0 = hour % 24, w = weather or "clear", rain = rain or ((weather == "rain") and 1 or 0) }
+	ctx.Match.forceEnv = e
+	if ctx.Match.state == "RUNNING" and ctx.Match.env then
+		local t = workspace:GetServerTimeNow()
+		local cur = ctx.Match.env
+		cur.w, cur.rain = e.w, e.rain
+		cur.clock0 = (e.clock0 - (t - (cur.t0 or t)) * 7 / 3600) % 24
+		for p, s in ctx.Raid.sessions() do
+			if not s.done then
+				ctx.Remotes.note(p, "raid", ctx.Raid.raidInfo(s))
+			end
+		end
+	elseif ctx.Match.state == "MATCHING" then
+		ctx.Match.nextEnv = table.clone(e)
+	end
+	return HttpService:JSONEncode(ctx.Match.env or e)
 end
 
 -- force the Foreman on (true), off (false) or back to chance (nil) for the next raids

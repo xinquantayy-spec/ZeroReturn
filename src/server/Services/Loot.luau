@@ -6,6 +6,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
+local WeaponModels = require(Shared.WeaponModels)
 local Inv = require(script.Parent.Inv)
 
 local Loot = {}
@@ -39,7 +40,7 @@ local POOLS = {
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
 		{ id = "HARDTACK", w = 8 }, { id = "A9_PST", w = 10, n = { 10, 35 } }, { id = "P9_MAG", w = 5, a = { 0, 17 }, at = "A9_PST" },
 		{ id = "OLD_COIN", w = 5 }, { id = "KEY_OFFICE", w = 3 }, { id = "HELMET_C2", w = 3 }, { id = "RIG_BELT", w = 3 },
-		{ id = "BAG_SLING", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "CAPT_WATCH", w = 1 },
+		{ id = "BAG_SLING", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "CAPT_WATCH", w = 1 }, { id = "KEY_DORM_104", w = 2 },
 	},
 	drawer = {
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 12 }, { id = "OLD_COIN", w = 8 }, { id = "FLASH_MODULE", w = 4 },
@@ -65,10 +66,43 @@ local POOLS = {
 	jacket = {
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
 		{ id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "PAINKILLERS", w = 4 }, { id = "RUSTED_KEYCARD", w = 1 },
+		{ id = "KEY_DORM_104", w = 3 }, { id = "KEY_DORM_203", w = 1 },
 	},
 	safe = {
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
-		{ id = "COLD_WALLET", w = 2 }, { id = "OLD_COIN", w = 10 },
+		{ id = "COLD_WALLET", w = 2 }, { id = "OLD_COIN", w = 10 }, { id = "RUSTED_KEYCARD", w = 1 },
+	},
+	-- loose loot (M10): what lies around in the open, in the dorm rooms, the office and the vault
+	junk = {
+		{ id = "BOLTS", w = 12 }, { id = "WIRES", w = 10 }, { id = "DUCT_TAPE", w = 10 }, { id = "SPARK_PLUG", w = 8 },
+		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 9 }, { id = "WATER", w = 5 }, { id = "HARDTACK", w = 6 },
+		{ id = "BANDAGE", w = 6 }, { id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "A9_PST", w = 6, n = { 5, 20 } },
+		{ id = "A12_BUCK", w = 4, n = { 3, 8 } }, { id = "BATTERY", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "CAPACITOR", w = 3 },
+		{ id = "SIGNAL_COIL", w = 4 }, { id = "CERAMIC_FUSE", w = 4 },
+	},
+	dorm = {
+		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 8 }, { id = "OLD_COIN", w = 8 }, { id = "PAINKILLERS", w = 6 },
+		{ id = "MEDKIT_S", w = 4 }, { id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "VOLT_DRINK", w = 2 },
+		{ id = "CAPT_WATCH", w = 2 }, { id = "GOLD_CHAIN", w = 2 }, { id = "FLASH_MODULE", w = 3 }, { id = "INTEL_FOLDER", w = 2 },
+		{ id = "LOGIC_BOARD", w = 2 }, { id = "P9_MAG", w = 3, a = { 0, 17 }, at = "A9_PST" }, { id = "A9_PST", w = 5, n = { 10, 30 } },
+		{ id = "BATTERY", w = 2 }, { id = "P9_PISTOL", w = 1 },
+	},
+	dorm_good = {
+		{ id = "GOLD_CHAIN", w = 8 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
+		{ id = "SEALED_DRIVE", w = 2 }, { id = "LOGIC_BOARD", w = 5 }, { id = "MIL_CIRCUIT", w = 2 }, { id = "COLD_WALLET", w = 1 },
+		{ id = "OLD_COIN", w = 6 }, { id = "MEDKIT_M", w = 4 }, { id = "HEMOSTAT", w = 2 }, { id = "RUSTED_KEYCARD", w = 1 },
+	},
+	office = {
+		{ id = "INTEL_FOLDER", w = 6 }, { id = "FLASH_MODULE", w = 5 }, { id = "SEALED_DRIVE", w = 2 }, { id = "CIGARETTES", w = 6 },
+		{ id = "OLD_COIN", w = 5 }, { id = "BATTERY", w = 3 }, { id = "CAPT_WATCH", w = 2 },
+	},
+	vault = {
+		{ id = "GOLD_CHAIN", w = 8 }, { id = "BRASS_LION", w = 3 }, { id = "COLD_WALLET", w = 3 }, { id = "MIL_CIRCUIT", w = 4 },
+		{ id = "SEALED_DRIVE", w = 5 }, { id = "INTEL_FOLDER", w = 6 }, { id = "CAPT_WATCH", w = 6 }, { id = "LEDGER", w = 2 },
+		{ id = "FLASH_MODULE", w = 5 },
+	},
+	keys = {
+		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
 	},
 }
 Loot.POOLS = POOLS
@@ -379,10 +413,17 @@ function Loot.reset(seed)
 		c.revealed, c.viewers, c.searching = {}, {}, {}
 		c.unlocked = nil
 	end
+	local ok, err = pcall(Loot.spawnLoose, seed and (seed + 77) or nil)
+	if not ok then
+		warn("[ZR] loose loot", err)
+	end
 end
 
--- raid over: bodies and dropped gear disappear (Match settles insurance from them first)
+-- raid over: bodies, dropped gear and leftover loose items disappear (Match settles insurance from them first)
 function Loot.clearTemp()
+	if Loot.clearLoose then
+		Loot.clearLoose()
+	end
 	for cid, c in containers do
 		if c.temp then
 			if c.part and c.part.Parent then
@@ -504,6 +545,188 @@ function Loot.spawnBody(model, holder, label)
 	return c
 end
 
+-- ── loose loot (M10) ─────────────────────────────────────────────────────────
+-- Items lying in the world (desks, shelves, floors) from World.looseSpots, rolled at each raid start. Picking
+-- one up (F, line of sight) puts it in the raid inventory as found-in-progress (found-in-raid on extraction).
+local loose = {} -- [id] = { id, holder, g, part, model }
+Loot.loose = loose
+local looseN = 0
+
+local function looseFolder()
+	local folder = workspace:FindFirstChild("ZR_Loose")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "ZR_Loose"
+		folder.Parent = workspace
+	end
+	return folder
+end
+
+local THICK = { ammo = 0.35, mag = 0.5, med = 0.4, food = 0.55, key = 0.1, loot = 0.3, quest = 0.18, mod = 0.3, rig = 0.5, backpack = 0.8, armor = 0.6, helmet = 0.8 }
+local MAT = { med = Enum.Material.Fabric, rig = Enum.Material.Fabric, backpack = Enum.Material.Fabric, armor = Enum.Material.Fabric, key = Enum.Material.Metal, mag = Enum.Material.Metal, ammo = Enum.Material.Metal, mod = Enum.Material.Metal }
+
+-- a physical stand-in for an item at surface cf: weapons are built from the shared weapon spec lying on their
+-- side, everything else is a block sized from its grid footprint in the item's colour
+local function looseModel(holder, g, it, cf)
+	local d = Items.defs[it.id]
+	local model = Instance.new("Model")
+	model.Name = "Loose_" .. it.id
+	local hit = Instance.new("Part")
+	hit.Name = "Pick"
+	hit.Anchored = true
+	hit.CanCollide = false
+	hit.CanTouch = false
+	hit.CanQuery = true
+	hit.Transparency = 1
+	hit.Parent = model
+	local wspec = (d.kind == "weapon" or d.kind == "pistol") and WeaponModels.build(holder.items, it, cf * CFrame.new(0, 0.14, 0) * CFrame.Angles(0, 0, math.rad(90)), 1)
+	if wspec then
+		local lo, hi = Vector3.new(math.huge, math.huge, math.huge), Vector3.new(-math.huge, -math.huge, -math.huge)
+		for _, p in wspec.parts do
+			p.Anchored = true
+			p.CanQuery = false
+			p.Parent = model
+			lo = lo:Min(p.Position - p.Size / 2)
+			hi = hi:Max(p.Position + p.Size / 2)
+		end
+		for _, p in wspec.mag do
+			p.Anchored = true
+			p.CanQuery = false
+			p.Parent = model
+		end
+		hit.Size = (hi - lo):Max(Vector3.new(0.6, 0.4, 0.6))
+		hit.CFrame = CFrame.new((lo + hi) / 2)
+	else
+		local sy = THICK[d.kind] or 0.3
+		local block = Instance.new("Part")
+		block.Name = "Item"
+		block.Anchored = true
+		block.CanCollide = false
+		block.CanQuery = false
+		block.CanTouch = false
+		block.Size = Vector3.new(math.max(0.3, d.w * 0.42), sy, math.max(0.3, d.h * 0.42))
+		block.CFrame = cf * CFrame.new(0, sy / 2, 0)
+		block.Color = d.color or Color3.fromRGB(120, 120, 110)
+		block.Material = MAT[d.kind] or Enum.Material.SmoothPlastic
+		block.TopSurface = Enum.SurfaceType.Smooth
+		block.BottomSurface = Enum.SurfaceType.Smooth
+		block.Parent = model
+		hit.Size = block.Size + Vector3.new(0.5, 0.5, 0.5)
+		hit.CFrame = block.CFrame
+	end
+	model.PrimaryPart = hit
+	return model, hit
+end
+
+function Loot.clearLoose()
+	for id, e in loose do
+		if e.model and e.model.Parent then
+			e.model:Destroy()
+		end
+		loose[id] = nil
+	end
+end
+
+-- raid start: roll every spot (spots that miss stay empty this raid)
+function Loot.spawnLoose(seed)
+	Loot.clearLoose()
+	local rand = Random.new(seed)
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = { workspace:FindFirstChild("ZR_World") }
+	local n = 0
+	for _, spot in ctx.World.looseSpots or {} do
+		if rand:NextNumber() < spot.chance then
+			local g, it = Loot.rollEntry(rand, spot.tbl)
+			if g then
+				local hitR = workspace:Raycast(spot.pos + Vector3.new(0, 1.2, 0), Vector3.new(0, -3, 0), rp)
+				local base = hitR and hitR.Position or spot.pos
+				local cf = CFrame.new(base) * CFrame.Angles(0, rand:NextNumber(0, math.pi * 2), 0)
+				local holder = Inv.newHolder("box", 8, 8)
+				Inv.place(holder, g, it, { "main" })
+				looseN += 1
+				local id = "L" .. looseN
+				local model, pick = looseModel(holder, g, it, cf)
+				local pp = Instance.new("ProximityPrompt")
+				pp.KeyboardKeyCode = Enum.KeyCode.F
+				pp.ActionText = "Take"
+				pp.ObjectText = Items.defs[it.id].name
+				pp.HoldDuration = 0
+				pp.MaxActivationDistance = 5
+				pp.RequiresLineOfSight = true
+				pp.Style = Enum.ProximityPromptStyle.Custom
+				pp:SetAttribute("ItemId", it.id) -- clients show "Unknown item" until examined
+				pp.Parent = pick
+				model.Parent = looseFolder()
+				loose[id] = { id = id, holder = holder, g = g, model = model, part = pick, area = spot.area }
+				pp.Triggered:Connect(function(player)
+					local ok, err = pcall(Loot.takeLoose, player, id)
+					if not ok then
+						warn("[ZR] take loose", err)
+					end
+				end)
+				n += 1
+			end
+		end
+	end
+	return n
+end
+
+-- pick up a loose item: same rules as looting a container (raid session, reach, space), found-in-progress
+function Loot.takeLoose(player, id)
+	local e = loose[id]
+	local s = ctx.Raid.session(player)
+	if not e or not s or s.done or s.state ~= "ACTIVE" then
+		return false, "GONE"
+	end
+	if not ctx.Remotes.allow(player, "loose", 4, 6) then
+		return false, "RATE"
+	end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root or (root.Position - e.part.Position).Magnitude > 7 then
+		return false, "TOO_FAR"
+	end
+	local b = Inv.take(e.holder, e.g)
+	if not b then
+		return false, "GONE"
+	end
+	for _, x in { b, table.unpack(b.subs) } do
+		if not s.risked[x.g] then
+			x.it.fip = true
+		end
+	end
+	local d = Items.defs[b.it.id]
+	local placed = false
+	-- a weapon goes to a free weapon slot first (Tarkov), anything else into rig/pockets/backpack
+	if d.kind == "weapon" or d.kind == "pistol" then
+		for _, slot in (d.kind == "pistol") and { "holster" } or { "primary", "secondary" } do
+			if not s.inv.slots[slot] and Inv.give(s.inv, b, { slot = slot }) then
+				placed = true
+				break
+			end
+		end
+	end
+	if not placed then
+		placed = Inv.give(s.inv, b, nil, Inv.loadOrder(s.inv))
+	end
+	if not placed then
+		Inv.give(e.holder, b, nil, { "main" })
+		ctx.Remotes.note(player, "toast", { text = "NO SPACE", tone = "warn" })
+		return false, "NO_SPACE"
+	end
+	loose[id] = nil
+	if e.model then
+		e.model:Destroy()
+	end
+	ctx.Remotes.fx("sfx", { n = "loot_pickup", p = root.Position, v = 0.7 })
+	ctx.Remotes.note(player, "toast", { text = "+ " .. string.upper(d.name), tone = "good" })
+	if ctx.Economy and ctx.Economy.raidXp then
+		ctx.Economy.raidXp(player, 2)
+	end
+	ctx.Raid.afterChange(player, true)
+	return true
+end
+
 -- AI loadouts (M8). Everything an AI carries is real inventory: it fires the rounds in its magazines, reloads
 -- from its rig and drops all of it as a lootable body.
 local function kit(rand)
@@ -546,6 +769,23 @@ local function kit(rand)
 		local g, it = Inv.newItem(id, n or 1, extra)
 		return Inv.place(h, g, it, Inv.loadOrder(h)) and g or nil
 	end
+	-- install an attachment on a weapon in the kit (skipped when the weapon has no fitting mount)
+	function k.mod(wg, id)
+		if not wg then
+			return nil
+		end
+		local mg, m = Inv.newItem(id, 1)
+		h.items[mg] = m
+		local w = h.items[wg]
+		local mount = Items.defs[id].mod.slot
+		if Inv.canMod(h, wg, mg) and not (w.mods and w.mods[mount]) then
+			w.mods = w.mods or {}
+			w.mods[mount] = mg
+			return mg
+		end
+		h.items[mg] = nil
+		return nil
+	end
 	function k.roll(pool, count)
 		for _ = 1, count do
 			local g, it = Loot.rollEntry(rand, pool)
@@ -569,10 +809,14 @@ function Loot.guardLoadout(rand)
 	if rand:NextNumber() < 0.55 then
 		k.slot("head", rand:NextNumber() < 0.7 and "HELMET_C2" or "HELMET_C3", { dur = rand:NextInteger(10, 30) })
 	end
+	local pg
 	if rand:NextNumber() < 0.7 then
-		k.gun("primary", "R17_RIFLE", "R17_MAG", rand:NextNumber() < 0.25 and "A62_AP" or "A62_FMJ", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
+		pg = k.gun("primary", "R17_RIFLE", "R17_MAG", rand:NextNumber() < 0.25 and "A62_AP" or "A62_FMJ", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
 	else
-		k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", rand:NextNumber() < 0.3 and "A9_AP" or "A9_PST", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
+		pg = k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", rand:NextNumber() < 0.3 and "A9_AP" or "A9_PST", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
+	end
+	if rand:NextNumber() < 0.55 then
+		k.mod(pg, "LIGHT_T") -- night patrols use it (AI.luau)
 	end
 	k.put(rand:NextNumber() < 0.5 and "BANDAGE" or "MEDKIT_S")
 	if rand:NextNumber() < 0.4 then
@@ -590,7 +834,7 @@ function Loot.bossLoadout(rand)
 	k.slot("head", "HELMET_C4", { dur = rand:NextInteger(35, 45) })
 	k.slot("rig", "RIG_CHEST")
 	k.slot("back", "BAG_PATROL")
-	k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3)
+	k.mod(k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3), "LIGHT_T")
 	local pg = k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1)
 	local _ = pg
 	k.put("MEDKIT_L")
@@ -616,10 +860,14 @@ function Loot.crewLoadout(rand)
 	k.slot("armor", rand:NextNumber() < 0.5 and "ARMOR_C3" or "ARMOR_C4", { dur = rand:NextInteger(35, 55) })
 	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 36) })
 	k.slot("rig", "RIG_CHEST")
+	local cg
 	if rand:NextNumber() < 0.5 then
-		k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_PS", rand:NextInteger(2, 3))
+		cg = k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_PS", rand:NextInteger(2, 3))
 	else
-		k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", rand:NextInteger(2, 3))
+		cg = k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", rand:NextInteger(2, 3))
+	end
+	if rand:NextNumber() < 0.65 then
+		k.mod(cg, "LIGHT_T")
 	end
 	k.put("MEDKIT_M")
 	k.put(rand:NextNumber() < 0.5 and "TOURNIQUET" or "BANDAGE")

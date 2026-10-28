@@ -11,6 +11,18 @@
   "sha1": "5399f60faf3de6e7834ff8963376bbbd3cc10f60",
   "uploaded": "2026-10-28 14:40:37"
  },
+ "ZR_Operator": {
+  "assetId": "89318251225515",
+  "file": "assets\\exports\\ZR_Operator.fbx",
+  "sha1": "12a413b7f6b6ff66f84a3ac35591124b632f8399",
+  "uploaded": "2026-10-28 17:00:14"
+ },
+ "ZR_SFX_Atlas": {
+  "assetId": "117513374968391",
+  "file": "assets\\audio\\out\\ZR_SFX_Atlas.ogg",
+  "sha1": "73d6cf730fe520721fa0a22b4eb34a076ed493ff",
+  "uploaded": "2026-10-28 17:18:17"
+ },
  "ZR_SFX_DryFire": {
   "assetId": "119000594646513",
   "file": "assets\\audio\\out\\ZR_SFX_DryFire.ogg",
@@ -46,5 +58,35 @@
   "file": "assets\\audio\\out\\ZR_SFX_Reload.ogg",
   "sha1": "48f4c794b1fef54be283f25ccb366921270a13fa",
   "uploaded": "2026-10-28 14:51:33"
+ },
+ "ZR_TEX_Glow": {
+  "assetId": "117277289641878",
+  "file": "assets\\textures\\out\\ZR_TEX_Glow.png",
+  "sha1": "91bfa2d9b23202b7b5bf0d776b163beebd0e926c",
+  "uploaded": "2026-10-28 15:27:52"
+ },
+ "ZR_TEX_Grain": {
+  "assetId": "139607355885425",
+  "file": "assets\\textures\\out\\ZR_TEX_Grain.png",
+  "sha1": "c42db61563953a54d8cd43fe7148ac7fc16a9886",
+  "uploaded": "2026-10-28 15:27:42"
+ },
+ "ZR_TEX_Icons": {
+  "assetId": "127422557558570",
+  "file": "assets\\textures\\out\\ZR_TEX_Icons.png",
+  "sha1": "4a85dd502c465413e7a1b58e6a4933fe16cb42b9",
+  "uploaded": "2026-10-28 15:27:50"
+ },
+ "ZR_TEX_Lens": {
+  "assetId": "74265280169160",
+  "file": "assets\\textures\\out\\ZR_TEX_Lens.png",
+  "sha1": "71c8108b10ad1556985baaf384cf4eed35a58ddb",
+  "uploaded": "2026-10-28 15:38:09"
+ },
+ "ZR_TEX_Scope": {
+  "assetId": "74080954502988",
+  "file": "assets\\textures\\out\\ZR_TEX_Scope.png",
+  "sha1": "76e365b52ca9631b10964fe67d78cc61ac01a29b",
+  "uploaded": "2026-10-28 16:20:21"
  }
 }

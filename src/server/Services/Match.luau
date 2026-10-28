@@ -10,12 +10,16 @@ local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
+local Env = require(Shared.Env)
 local Inv = require(script.Parent.Inv)
 
 local Match = {
 	state = "IDLE", id = nil, startsAt = 0, endsAt = 0, lateUntil = 0, startedAt = 0,
 	extractOpen = {}, usedSpawns = {}, squadSpawn = {}, raids = 0,
+	env = nil, -- this raid's time of day and weather (Env.State, t0 = raid start)
+	nextEnv = nil, -- rolled when matching starts, so the deploy screen can show it
 }
+local envRng = Random.new()
 local ctx
 local queue = {} -- [Player] = { kind = "pmc" | "scav", t }
 local squads = {} -- [sid] = { id, leader = Player, members = { Player }, color }
@@ -217,6 +221,7 @@ function Match.status(player)
 		state = Match.state, raidId = Match.id, startsAt = Match.startsAt, endsAt = Match.endsAt, lateUntil = Match.lateUntil,
 		scavUntil = Match.endsAt - Config.SCAV_CUTOFF, queued = q and q.kind or nil, inQueue = count(queue),
 		inRaid = liveSessions(), maxPlayers = Config.MAX_PLAYERS, scavReadyAt = prof and prof.scavReadyAt or 0, serverTime = os.time(),
+		env = (Match.state == "RUNNING") and Match.env or Match.nextEnv,
 	}
 end
 
@@ -290,6 +295,13 @@ function Match.canEnter(kind)
 	return t <= Match.lateUntil
 end
 
+-- matching countdown; the next raid's time and weather are rolled now so the terminal can show them
+local function beginMatching()
+	Match.state = "MATCHING"
+	Match.startsAt = now() + Config.MATCH_TIME
+	Match.nextEnv = Match.forceEnv and table.clone(Match.forceEnv) or Env.roll(envRng)
+end
+
 -- returns "enter" (deploy now) or "queued"
 function Match.request(player, kind)
 	if Match.canEnter(kind) then
@@ -297,8 +309,7 @@ function Match.request(player, kind)
 	end
 	queue[player] = { kind = kind, t = now() }
 	if Match.state == "IDLE" then
-		Match.state = "MATCHING"
-		Match.startsAt = now() + Config.MATCH_TIME
+		beginMatching()
 	end
 	Match.broadcast()
 	Match.touch(player)
@@ -336,6 +347,9 @@ local function startRaid()
 	Match.endsAt = t + Config.RAID_DURATION
 	Match.lateUntil = t + Config.LATE_JOIN
 	Match.emptySince = nil
+	Match.env = Match.nextEnv or (Match.forceEnv and table.clone(Match.forceEnv)) or Env.roll(envRng)
+	Match.env.t0 = t
+	Match.nextEnv = nil
 	table.clear(Match.usedSpawns)
 	table.clear(Match.squadSpawn)
 	for id, e in ctx.World.extracts do
@@ -479,9 +493,9 @@ local function endRaid(reason)
 	Match.state = "IDLE"
 	Match.id = nil
 	Match.endedReason = reason
+	Match.env = nil
 	if next(queue) then
-		Match.state = "MATCHING"
-		Match.startsAt = now() + Config.MATCH_TIME
+		beginMatching()
 	end
 	Match.broadcast()
 end

@@ -526,6 +526,84 @@ function T.run(ctx)
 		end
 	end
 
+	-- M10 raid environment: clock, daylight, rolls, AI sense multipliers, loadout lights
+	do
+		local Env = require(Shared.Env)
+		local e = { clock0 = 17.0, w = "rain", rain = 1, t0 = 1000 }
+		check("raid clock runs 7x", math.abs(Env.clock(e, 1000 + 3600 / 7) - 18.0) < 1e-6)
+		check("raid clock wraps midnight", math.abs(Env.clock({ clock0 = 23.5, w = "clear", rain = 0, t0 = 0 }, 3600 / 7) - 0.5) < 1e-6)
+		check("daylight: noon 1, midnight 0, dusk between", Env.daylight(12) == 1 and Env.daylight(0) == 0 and Env.daylight(18) > 0 and Env.daylight(18) < 1)
+		local rng = Random.new(5)
+		local okRolls, seenRain, seenNight = true, false, false
+		for _ = 1, 300 do
+			local r = Env.roll(rng)
+			okRolls = okRolls and Env.WEATHER[r.w] ~= nil and r.clock0 >= 0 and r.clock0 < 24 and ((r.w == "rain") == (r.rain > 0))
+			seenRain = seenRain or r.w == "rain"
+			seenNight = seenNight or Env.daylight(r.clock0) == 0
+		end
+		check("env rolls valid (weather, clock, rain only when raining)", okRolls and seenRain and seenNight)
+		local day = { clock0 = 12, w = "clear", rain = 0, t0 = 0 }
+		local night = { clock0 = 1, w = "clear", rain = 0, t0 = 0 }
+		local fog = { clock0 = 12, w = "fog", rain = 0, t0 = 0 }
+		check("AI sight: day > fog > night", Env.sight(day, 0) == 1 and Env.sight(fog, 0) < 1 and Env.sight(night, 0) < Env.sight(fog, 0))
+		check("AI hearing dulled by rain only", Env.hearing(day) == 1 and Env.hearing(e) < 1 and Env.hearing(nil) == 1)
+		local lit = 0
+		for i = 1, 20 do
+			local gh = Loot.crewLoadout(Random.new(i))
+			local wg = gh.slots.primary
+			if wg and Inv.modStats(gh, wg).light then
+				lit += 1
+			end
+			local okInv = Inv.check(gh)
+			if not okInv then
+				lit = -100
+				break
+			end
+		end
+		check("crew weapons carry lights (valid kits)", lit > 5)
+	end
+
+	-- M10 world: loose loot spots and pools, doors and keys
+	if ctx and ctx.World then
+		local W = ctx.World
+		local nSpots, badSpot = 0, nil
+		for _, sp in W.looseSpots or {} do
+			nSpots += 1
+			if not Loot.POOLS[sp.tbl] or type(sp.chance) ~= "number" then
+				badSpot = sp.tbl
+			end
+		end
+		check("loose spots placed with valid pools", nSpots >= 40 and badSpot == nil)
+		local badItem = nil
+		for name, pool in Loot.POOLS do
+			for _, e in pool do
+				if not Items.defs[e.id] then
+					badItem = name .. ":" .. tostring(e.id)
+				end
+			end
+		end
+		check("every loot pool item exists", badItem == nil)
+		local dorm, keyed, okKeys = 0, 0, true
+		for id, d in W.doors do
+			if string.sub(id, 1, 4) == "DORM" then
+				dorm += 1
+			end
+			if d.key then
+				keyed += 1
+				okKeys = okKeys and Items.defs[d.key] ~= nil and Items.defs[d.key].kind == "key"
+			end
+		end
+		check("dormitory has 8 doors, locked ones need real keys", dorm == 8 and keyed == 4 and okKeys)
+		check("vault opens with the keycard", W.doors.VAULT and W.doors.VAULT.key == "RUSTED_KEYCARD" and W.doors.VAULT.card == true)
+		local rand = Random.new(3)
+		local sawKey = false
+		for _ = 1, 60 do
+			local _, it = Loot.rollEntry(rand, "keys")
+			sawKey = sawKey or (it and Items.defs[it.id].kind == "key")
+		end
+		check("key spots roll keys", sawKey)
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0

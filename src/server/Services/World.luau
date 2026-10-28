@@ -138,6 +138,36 @@ local function wall(parent, cf, length, height, thick, color, mat, openings)
 	end
 end
 
+-- wall along local X with arbitrary rectangular holes { center offset, width, bottom, top } (doors: bottom 0)
+local function wallHoles(parent, cf, length, height, thick, color, mat, holes)
+	table.sort(holes, function(a, b)
+		return a[1] < b[1]
+	end)
+	local x = -length / 2
+	for _, o in holes do
+		local left, right = o[1] - o[2] / 2, o[1] + o[2] / 2
+		if left > x then
+			boxCF(parent, left - x, height, thick, cf * CFrame.new((x + left) / 2, height / 2, 0), color, mat)
+		end
+		if o[3] > 0 then
+			boxCF(parent, o[2], o[3], thick, cf * CFrame.new(o[1], o[3] / 2, 0), color, mat)
+		end
+		if o[4] < height then
+			boxCF(parent, o[2], height - o[4], thick, cf * CFrame.new(o[1], o[4] + (height - o[4]) / 2, 0), color, mat)
+		end
+		x = right
+	end
+	if x < length / 2 then
+		boxCF(parent, length / 2 - x, height, thick, cf * CFrame.new((x + length / 2) / 2, height / 2, 0), color, mat)
+	end
+end
+
+-- loose loot spots (M10): items lying on surfaces, rolled per raid by Loot (tbl = pool, chance per raid)
+World.looseSpots = {}
+local function loose(x, y, z, tbl, chance, area)
+	table.insert(World.looseSpots, { pos = Vector3.new(x, y, z), tbl = tbl, chance = chance or 0.5, area = area })
+end
+
 -- ── props (mesh first, part fallback) ─────────────────────────────────────────
 local Props = {}
 function Props.container(parent, cf, color, open)
@@ -194,7 +224,8 @@ function Props.lamp(parent, cf)
 	end
 	local head = boxCF(parent, 1.2, 0.3, 0.8, cf * CFrame.new(2.4, 17.7, 0), hex("FFD9A0"), M.Neon)
 	head.CastShadow = false
-	light(head, hex("FFC98A"), 26, 1.1, false)
+	light(head, hex("FFC98A"), 34, 1.4, false)
+	CollectionService:AddTag(head, "ZR_Lamp") -- clients switch street lamps on in the dark (Atmos)
 end
 function Props.bollard(parent, cf)
 	vcyl(parent, 1.6, 1.4, cf.X, cf.Y, cf.Z, C.metalDark, M.Metal)
@@ -361,6 +392,12 @@ local function addContainerSpot(parent, id, kind, label, cf)
 		for k = 0, 2 do
 			boxCF(parent, 4.4, 0.7, 0.1, cf * CFrame.new(0, 0.6 + k * 0.9, -1.33), C.metalDark, M.Metal)
 		end
+	elseif kind == "safe" then
+		-- squat steel safe with a dial and handle (front faces local -Z)
+		anchor = boxCF(parent, 3, 3.2, 2.6, cf * CFrame.new(0, 1.6, 0), hex("3B3F3D"), M.DiamondPlate)
+		boxCF(parent, 2.5, 2.7, 0.08, cf * CFrame.new(0, 1.65, -1.32), hex("2F3331"), M.Metal)
+		cyl(parent, 0.12, 0.7, cf * CFrame.new(-0.5, 2.1, -1.4) * CFrame.Angles(0, math.rad(90), 0), hex("A9A48F"), M.Metal)
+		boxCF(parent, 0.18, 0.9, 0.18, cf * CFrame.new(0.7, 1.6, -1.42), hex("A9A48F"), M.Metal)
 	else
 		local m = mesh("ZR_PROP_Crate", parent, cf)
 		anchor = m or boxCF(parent, 4, 4, 4, cf * CFrame.new(0, 2, 0), C.wood, M.WoodPlanks)
@@ -502,6 +539,10 @@ local function buildHarborStack(map)
 		Props.barrel(hs, CFrame.new(p[1] + 3, 0, p[2] + 2), jitter(C.blue, 0.1))
 	end
 	addContainerSpot(hs, "HS1", "crate", "Supply crate", CFrame.new(-96, 0, -110) * CFrame.Angles(0, 0.3, 0))
+	for _, p in { { -125, -140 }, { -66, -140 }, { -146, -108 }, { -102, -76 }, { -40, -108 } } do
+		loose(p[1], 0.65, p[2], "junk", 0.35, "stack")
+	end
+	loose(-38, 0.05, -138, "keys", 0.2, "stack")
 	addContainerSpot(hs, "HS2", "locker", "Dock worker locker", CFrame.new(-36, 0, -142) * CFrame.Angles(0, math.rad(-90), 0))
 	World.patrols.HS = { Vector3.new(-96, 0, -140), Vector3.new(-40, 0, -140), Vector3.new(-40, 0, -76), Vector3.new(-96, 0, -76), Vector3.new(-150, 0, -108), Vector3.new(-96, 0, -108) }
 end
@@ -544,6 +585,10 @@ local function buildPumpAnnex(map)
 	light(ctrlLamp, C.orange, 22, 1.6, true)
 	addContainerSpot(pa, "PA1", "locker", "Maintenance locker", CFrame.new(64, mzY, 111) * CFrame.Angles(0, math.rad(180), 0))
 	addContainerSpot(pa, "PA2", "crate", "Valve parts crate", CFrame.new(100, 0.4, 92))
+	loose(94, mzY + 0.05, 106, "junk", 0.45, "annex")
+	loose(112, mzY + 0.05, 104, "keys", 0.25, "annex")
+	loose(62, 2.45, 72.2, "junk", 0.3, "annex")
+	loose(84, 2.45, 79.8, "junk", 0.3, "annex")
 	-- chimney landmark (striped)
 	for k = 0, 9 do
 		vcyl(pa, 6, 8, 116, k * 6, 50, (k % 2 == 0) and C.pale or C.rust, M.Concrete)
@@ -563,7 +608,7 @@ local function buildFreightDepot(map)
 	box(fd, x1 - x0, 0.6, 1, cx, F + 0.3, z1 + 11.5, C.yellow, M.SmoothPlastic)
 	local wallC = hex("6F7468")
 	wall(fd, CFrame.new(cx, F, z1), x1 - x0, H, 1, wallC, M.CorrodedMetal, { { 70 - cx, 12, 14 }, { 100 - cx, 12, 14 }, { 130 - cx, 12, 14 } })
-	wall(fd, CFrame.new(cx, F, z0), x1 - x0, H, 1, wallC, M.CorrodedMetal, {})
+	wall(fd, CFrame.new(cx, F, z0), x1 - x0, H, 1, wallC, M.CorrodedMetal, { { 134 - cx, 4.4, 8 } }) -- vault door (office)
 	wall(fd, CFrame.new(x0, F, cz) * CFrame.Angles(0, math.rad(90), 0), z1 - z0, H, 1, wallC, M.CorrodedMetal, { { -(-130 - cz), 8, 10 } })
 	wall(fd, CFrame.new(x1, F, cz) * CFrame.Angles(0, math.rad(90), 0), z1 - z0, H, 1, wallC, M.CorrodedMetal, {})
 	-- pitched roof
@@ -618,11 +663,168 @@ local function buildFreightDepot(map)
 	-- the office is locked (Harbor Office Key); its safe holds valuables
 	addContainerSpot(off, "FD3", "safe", "Office safe", CFrame.new(128, F, -155))
 	World.doors.OFFICE = { id = "OFFICE", cf = CFrame.new(130, F + 3.75, -138), size = Vector3.new(3.9, 7.4, 0.35), key = "KEY_OFFICE", label = "Depot office", parent = off }
+	-- office desk (paperwork, sometimes a key)
+	box(off, 5, 0.3, 2.4, 141, F + 2.6, -146, C.wood, M.WoodPlanks)
+	for _, dx in { -2.2, 2.2 } do
+		for _, dz in { -0.9, 0.9 } do
+			box(off, 0.3, 2.45, 0.3, 141 + dx, F + 1.22, -146 + dz, C.metalDark, M.Metal)
+		end
+	end
+	loose(140, F + 2.76, -146.3, "office", 0.6, "office")
+	loose(142.2, F + 2.76, -145.8, "keys", 0.3, "office")
+	-- the vault (M10): a strongroom behind the office, opened with the Vault Keycard (layered: office key, then card)
+	local vault = model("Vault", fd)
+	local VZ0, VZ1, VX0, VX1 = -172, -160.5, 127, 141
+	local vc = hex("4E524F")
+	box(vault, VX1 - VX0, F, VZ1 - VZ0, (VX0 + VX1) / 2, F / 2, (VZ0 + VZ1) / 2, C.concreteDark, M.Concrete)
+	wall(vault, CFrame.new((VX0 + VX1) / 2, F, VZ0), VX1 - VX0 + 1.2, 10, 1.2, vc, M.Concrete, {})
+	wall(vault, CFrame.new(VX0, F, (VZ0 + VZ1) / 2) * CFrame.Angles(0, math.rad(90), 0), VZ1 - VZ0, 10, 1.2, vc, M.Concrete, {})
+	wall(vault, CFrame.new(VX1, F, (VZ0 + VZ1) / 2) * CFrame.Angles(0, math.rad(90), 0), VZ1 - VZ0, 10, 1.2, vc, M.Concrete, {})
+	box(vault, VX1 - VX0 + 1.2, 0.8, VZ1 - VZ0 + 1.2, (VX0 + VX1) / 2, F + 10.4, (VZ0 + VZ1) / 2, vc, M.Concrete)
+	local vlamp = box(vault, 3, 0.2, 0.6, 134, F + 9.85, -166, hex("D8E6F0"), M.Neon)
+	light(vlamp, hex("CFE2F2"), 14, 0.9, false)
+	addContainerSpot(vault, "VT1", "safe", "Vault safe", CFrame.new(129.6, F, -169.6) * CFrame.Angles(0, math.rad(180), 0))
+	addContainerSpot(vault, "VT2", "safe", "Vault safe", CFrame.new(138.4, F, -169.6) * CFrame.Angles(0, math.rad(180), 0))
+	addContainerSpot(vault, "VT3", "weaponbox", "Arms crate", CFrame.new(134, F, -170))
+	-- shelf along the west wall with loose valuables
+	box(vault, 1.6, 0.2, 7, 128.4, F + 3.2, -165, C.metalDark, M.Metal)
+	box(vault, 1.6, 0.2, 7, 128.4, F + 5.6, -165, C.metalDark, M.Metal)
+	for _, sz in { -168.3, -161.7 } do
+		box(vault, 0.2, 6, 0.2, 129.1, F + 3, sz, C.metalDark, M.Metal)
+	end
+	loose(128.4, F + 3.32, -167, "vault", 0.85, "vault")
+	loose(128.4, F + 3.32, -164, "vault", 0.6, "vault")
+	loose(128.4, F + 5.72, -165.5, "vault", 0.6, "vault")
+	-- card reader on the office side, its lamp turns green once the vault is open (Doors)
+	local reader = box(fd, 0.5, 0.8, 0.2, 136.7, F + 4.3, -159.35, hex("2A2D2B"), M.Metal)
+	reader.Name = "CardReader"
+	local led = box(fd, 0.18, 0.18, 0.06, 136.7, F + 4.55, -159.23, hex("C24A35"), M.Neon)
+	led.Name = "ReaderLed"
+	World.doors.VAULT = { id = "VAULT", cf = CFrame.new(134, F + 3.75, -160), size = Vector3.new(4.2, 7.4, 0.5), key = "RUSTED_KEYCARD", card = true, label = "Depot vault", parent = vault, led = led, color = hex("6B706C") }
 	addContainerSpot(fd, "FD2", "crate", "Freight crate", CFrame.new(84, F, -93))
+	loose(70, F + 0.05, -96, "junk", 0.35, "depot")
+	loose(128, F + 0.05, -97, "junk", 0.35, "depot")
+	loose(96, F + 1.15, -150, "junk", 0.3, "depot")
 	for _, p in { { 110, -92 }, { 116, -93 }, { 58, -120 } } do
 		Props.pallet(fd, CFrame.new(p[1], F, p[2]))
 	end
 	World.patrols.FD = { Vector3.new(36, 0, -94), Vector3.new(62, F, -94), Vector3.new(138, F, -94), Vector3.new(130, F, -112), Vector3.new(90, F, -126), Vector3.new(58, F, -130), Vector3.new(36, 0, -130) }
+end
+
+-- ── crew dormitory (M10) ──────────────────────────────────────────────────────
+-- Two storeys of crew rooms opening onto an exterior walkway / balcony, stairs at the east end. Rooms 104 and
+-- 203 are locked (keys found in raids or sold by the Fence); every room has a bunk, a desk and a locker or
+-- drawer, and loose loot. Doors start closed (some ajar) each raid.
+local function buildDormitory(map)
+	local dm = model("Dormitory", map)
+	local X0, X1, Z0, Z1, H = -70, -26, 40, 58, 10
+	local wallC, trimC = hex("7C766A"), hex("57534B")
+	local cx, cz = (X0 + X1) / 2, (Z0 + Z1) / 2
+	local drng = Random.new(1042)
+	-- slabs
+	box(dm, X1 - X0, 0.4, Z1 - Z0, cx, 0.2, cz, C.floor, M.Concrete)
+	box(dm, X1 - X0, 0.6, Z1 - Z0, cx, H, cz, C.concreteDark, M.Concrete)
+	box(dm, X1 - X0 + 6, 0.6, 4.5, cx + 3, H, Z1 + 2.25, C.concreteDark, M.Concrete) -- balcony + stair landing
+	box(dm, X1 - X0 + 2, 0.6, Z1 - Z0 + 2, cx, 2 * H + 0.3, cz, trimC, M.Concrete) -- roof
+	box(dm, X1 - X0 + 2, 1.2, 0.4, cx, 2 * H + 1, Z0 - 0.8, trimC, M.Concrete) -- roof lip
+	box(dm, X1 - X0 + 2, 1.2, 0.4, cx, 2 * H + 1, Z1 + 0.8, trimC, M.Concrete)
+	box(dm, X1 - X0 + 6, 0.1, 4.2, cx + 3, 0.05, Z1 + 2.1, C.concreteLight, M.Concrete) -- ground walkway
+	-- balcony railing (open at the stair head, x -24..-20)
+	for _, ry in { 1.6, 3.4 } do
+		box(dm, X1 - X0 + 1.8, 0.2, 0.2, (X0 + X1 + 1.8) / 2, H + 0.3 + ry, Z1 + 4.35, C.metalDark, M.Metal)
+	end
+	for px = X0 + 1, X1 + 1, 4 do
+		box(dm, 0.2, 3.4, 0.2, px, H + 0.3 + 1.7, Z1 + 4.35, C.metalDark, M.Metal)
+	end
+	-- stairs: east end, rising north from the ground to the balcony (1-stud steps like the annex)
+	for k = 0, 9 do
+		box(dm, 4, 1, 1.9, -22, k + 0.5, 80.05 - k * 1.9, C.concreteLight, M.Concrete)
+	end
+	for _, sx in { -24.15, -19.85 } do
+		local bottom, top = Vector3.new(sx, 4, 80.5), Vector3.new(sx, H + 3.6, 62.6)
+		local mid = (bottom + top) / 2
+		boxCF(dm, 0.2, 0.2, (top - bottom).Magnitude, CFrame.lookAt(mid, top), C.metalDark, M.Metal)
+		boxCF(dm, 0.3, 3, 0.3, CFrame.new(sx, 1.5, 80.5), C.metalDark, M.Metal)
+	end
+	-- outer walls per storey: windows north, doors (+ a small window) south, a window at each end
+	for floor = 0, 1 do
+		local yb = floor * H
+		local northHoles, southHoles = {}, {}
+		for i = 1, 4 do
+			local rcx = X0 + (i - 0.5) * 11
+			table.insert(northHoles, { rcx - cx, 4, 3.2, 6.4 })
+			table.insert(southHoles, { rcx - cx, 3.8, 0, 7.6 })
+			table.insert(southHoles, { rcx - 3.6 - cx, 2.2, 3.4, 6.2 })
+		end
+		wallHoles(dm, CFrame.new(cx, yb, Z0), X1 - X0, H, 0.6, wallC, M.Concrete, northHoles)
+		wallHoles(dm, CFrame.new(cx, yb, Z1), X1 - X0, H, 0.6, wallC, M.Concrete, southHoles)
+		wallHoles(dm, CFrame.new(X0, yb, cz) * CFrame.Angles(0, math.rad(90), 0), Z1 - Z0, H, 0.6, wallC, M.Concrete, { { 0, 3, 3.2, 6.4 } })
+		wallHoles(dm, CFrame.new(X1, yb, cz) * CFrame.Angles(0, math.rad(90), 0), Z1 - Z0, H, 0.6, wallC, M.Concrete, { { 0, 3, 3.2, 6.4 } })
+		for i = 1, 3 do
+			wall(dm, CFrame.new(X0 + i * 11, yb, cz) * CFrame.Angles(0, math.rad(90), 0), Z1 - Z0 - 0.6, H, 0.4, C.interior, M.Plaster, {})
+		end
+		-- rooms
+		for i = 1, 4 do
+			local num = (floor + 1) * 100 + i
+			local rx0 = X0 + (i - 1) * 11
+			local rcx = rx0 + 5.5
+			local fy = yb + (floor == 0 and 0.4 or 0.3)
+			local locked = (num == 104) or (num == 203)
+			-- bunk bed against the west side
+			for _, by in { 1.3, 4.3 } do
+				box(dm, 3.1, 0.45, 7, rx0 + 2, fy + by, Z0 + 4.3, C.olive, M.Fabric)
+			end
+			for _, px in { rx0 + 0.55, rx0 + 3.45 } do
+				for _, pz in { Z0 + 0.9, Z0 + 7.7 } do
+					box(dm, 0.25, 5, 0.25, px, fy + 2.5, pz, C.metalDark, M.Metal)
+				end
+			end
+			-- desk along the east partition with a chair block
+			box(dm, 2.2, 0.25, 3.6, rx0 + 9.6, fy + 2.6, Z0 + 6.8, C.wood, M.WoodPlanks)
+			for _, dx in { -0.85, 0.85 } do
+				for _, dz in { -1.5, 1.5 } do
+					box(dm, 0.22, 2.5, 0.22, rx0 + 9.6 + dx, fy + 1.25, Z0 + 6.8 + dz, C.metalDark, M.Metal)
+				end
+			end
+			box(dm, 1.4, 1.6, 1.4, rx0 + 7.7, fy + 0.8, Z0 + 6.8, C.metal, M.Metal)
+			-- locker by the door (even rooms) or a drawer under the window (odd rooms)
+			local cid = "DM" .. num
+			if i % 2 == 0 then
+				addContainerSpot(dm, cid, "locker", "Crew locker", CFrame.new(rx0 + 9.2, fy, Z1 - 1.5))
+			else
+				addContainerSpot(dm, cid, "drawer", "Bedside drawer", CFrame.new(rx0 + 6.7, fy, Z0 + 1.6) * CFrame.Angles(0, math.rad(180), 0))
+			end
+			-- ceiling lamp (some dead)
+			local lp = box(dm, 1.6, 0.15, 0.6, rcx, yb + H - 0.4, cz, hex("FFE6BF"), M.Neon)
+			lp.CastShadow = false
+			if drng:NextNumber() < 0.6 then
+				light(lp, hex("FFD9A8"), 14, 0.8, true)
+			else
+				lp.Material = M.SmoothPlastic
+				lp.Color = hex("8D8A80")
+			end
+			-- loose loot: desk, bunk, floor (locked rooms hold better things)
+			loose(rx0 + 9.6, fy + 2.74, Z0 + 6.2, locked and "dorm_good" or "dorm", locked and 0.85 or 0.55, "dorm")
+			loose(rx0 + 2, fy + 1.55, Z0 + 2.8, locked and "dorm_good" or "dorm", locked and 0.6 or 0.3, "dorm")
+			loose(rx0 + 5.5, fy + 0.05, Z0 + 9.5, locked and "dorm" or "junk", locked and 0.5 or 0.25, "dorm")
+			if num == 101 or num == 202 then
+				loose(rx0 + 9.6, fy + 2.74, Z0 + 7.6, "keys", 0.35, "dorm")
+			end
+			-- door
+			World.doors["DORM" .. num] = {
+				id = "DORM" .. num, cf = CFrame.new(rcx, fy + 3.57, Z1), size = Vector3.new(3.7, 7.1, 0.3),
+				key = (num == 104) and "KEY_DORM_104" or ((num == 203) and "KEY_DORM_203" or nil),
+				label = "Room " .. num, parent = dm, openChance = locked and 0 or 0.35, color = hex("6E5E4A"),
+			}
+			-- room number plate next to the door (outside)
+			local plate = box(dm, 1.2, 0.6, 0.06, rcx + 2.6, fy + 5.6, Z1 + 0.33, hex("C9C2A8"), M.SmoothPlastic)
+			sign(plate, Enum.NormalId.Back, tostring(num), hex("2E2E2A"))
+		end
+	end
+	local nameplate = box(dm, 8, 1.6, 0.1, X1 + 0.36, 2 * H - 2, cz, C.metalDark, M.Metal)
+	nameplate.CFrame = CFrame.new(X1 + 0.36, 2 * H - 2, cz) * CFrame.Angles(0, math.rad(90), 0)
+	sign(nameplate, Enum.NormalId.Back, "CREW BLOCK B", C.pale)
+	World.patrols.DM = { Vector3.new(-74, 0, 62), Vector3.new(-48, 0, 61), Vector3.new(-20, 0, 70), Vector3.new(-48, H + 0.3, 60.5), Vector3.new(-66, H + 0.3, 60.5) }
 end
 
 local function buildLandmarksAndRoutes(map)
@@ -703,6 +905,12 @@ local function buildLandmarksAndRoutes(map)
 			Props.pallet(misc, cf)
 		end
 	end
+	-- loose loot in the open (rolled per raid)
+	for _, lp in { { -130, 0.05, 116 }, { -50, 0.05, 190 }, { 230, 0.05, 147 }, { 240, 2.15, 162 }, { 190, 0.05, -184 }, { -178, 0.05, -168 },
+		{ -204, 0.05, 6 }, { -96, 0.05, 154 }, { 4, 0.05, 72 }, { 160, 0.05, -38 }, { 96, 0.05, 174 } } do
+		loose(lp[1], lp[2], lp[3], "junk", 0.3, "open")
+	end
+	loose(-52, 0.05, 192, "keys", 0.15, "open")
 	-- a few loose containers in the south yard
 	Props.container(misc, CFrame.new(-90, 0, 60) * CFrame.Angles(0, math.rad(90), 0), C.blue)
 	Props.container(misc, CFrame.new(-30, 0, 150), C.rust)
@@ -736,6 +944,7 @@ function World.build()
 	buildHarborStack(map)
 	buildPumpAnnex(map)
 	buildFreightDepot(map)
+	buildDormitory(map)
 	buildLandmarksAndRoutes(map)
 	-- extract rules (Tarkov): open, paid (MK on exit), key (carry the key), chance (rolled per raid), scav-only
 	addExtract(map, "A", "RELAY GATE", Vector3.new(184, 0, -184), Vector3.new(18, 12, 16), { kind = "open" })
@@ -775,6 +984,8 @@ function World.build()
 		v(-20, 0, 18), v(-60, 0, 32), v(60, 0, 32), v(100, 0, 12), v(160, 0, -70), v(170, 0, 100), v(-170, 0, -150),
 		-- depot dock
 		v(36, 0, -94), v(36, 0, -130),
+		-- crew dormitory walkway, balcony and the yard in front
+		v(-60, 0, 62), v(-36, 0, 62), v(-48, 10.3, 60.4), v(-30, 0, 76),
 	}
 	World.watchPosts = {
 		{ route = "PA", post = v(70, 10, 106) }, -- mezzanine overwatch in the turbine room
@@ -789,8 +1000,14 @@ function World.build()
 		slab.Size = d.size
 		slab.CFrame = d.cf
 		slab.Anchored = true
-		slab.Color = hex("5A5F57")
-		slab.Material = M.Metal
+		slab.Color = d.color or hex("5A5F57")
+		slab.Material = d.card and M.DiamondPlate or M.Metal
+		-- AI paths go through doors (they open unlocked ones on the way; Doors.luau blocks locked ones)
+		local pm = Instance.new("PathfindingModifier")
+		pm.Label = "Door"
+		pm.PassThrough = d.key == nil
+		pm.Parent = slab
+		d.modifier = pm
 		slab.TopSurface = Enum.SurfaceType.Smooth
 		slab.BottomSurface = Enum.SurfaceType.Smooth
 		slab.Parent = d.parent

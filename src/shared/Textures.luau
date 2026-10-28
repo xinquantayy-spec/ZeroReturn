@@ -6,6 +6,12 @@ local T = {
 	ICONS = "rbxassetid://105791720290643", -- 512x128 atlas, 64px cells
 	GLOW = "rbxassetid://132675918858502", -- soft radial glow
 	SCOPE = "rbxassetid://82967411651545", -- scope eyepiece overlay (transparent round view, reticle)
+	RAIN = "rbxassetid://128103121198950", -- one thin rain streak (particles, VelocityParallel)
+	SPLASH = "rbxassetid://103059249710804", -- small splash crown (rain on the ground)
+	DROPS = "rbxassetid://85371233706654", -- water droplets on the bodycam lens
+	-- bodycam lens v2 (Post): light feathered vignette, soft edge haze (tinted at runtime)
+	VIGNETTE = "rbxassetid://128387779983708", -- feathered dark rim (no colour)
+	EDGE_HAZE = "rbxassetid://117276628141722", -- soft white ring, tinted to the scene at runtime
 }
 
 -- icon atlas cells (row-major, 8 per row)

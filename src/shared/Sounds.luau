@@ -13,4 +13,5 @@ return {
 	AMBIENCE = "rbxassetid://9112829678", -- "Marina Ambience 5 (SFX)", ProSoundEffects (Roblox licensed library)
 	UI_CLICK = "rbxassetid://126592306693188", -- hit tick, pitched up at playback
 	ATLAS = "rbxassetid://117513374968391", -- ZR_SFX_Atlas: 52 short effects played by region (SoundAtlas.luau)
+	ENV_ATLAS = "rbxassetid://111806710801040", -- ZR_SFX_Env: rain/wind/insect loops + world and UI one-shots (EnvAtlas.luau)
 }
