@@ -212,6 +212,35 @@ function C.bodies()
 	return table.concat(out, ",")
 end
 
+-- everything inside a world container or body (server truth, no search needed)
+function C.contents(cid)
+	local c = ctx.Loot.containers[cid]
+	if not c then
+		return "none"
+	end
+	local list = brief(c.holder)
+	for g, it in c.holder.items do
+		if it.tag then
+			table.insert(list, "TAG " .. HttpService:JSONEncode(it.tag) .. " " .. g)
+		end
+	end
+	return HttpService:JSONEncode(list)
+end
+
+-- item guids of an id in the player's stash/profile (or raid kit when in raid)
+function C.find(name, id)
+	local p = plr(name)
+	local h = ctx.Raid.holder(p)
+	local out = {}
+	for g, it in h and h.items or {} do
+		if it.id == id then
+			local where = Inv.locate(h, g)
+			table.insert(out, { g = g, n = it.n, where = tostring(where), fir = it.fir or nil })
+		end
+	end
+	return HttpService:JSONEncode(out)
+end
+
 function C.takeTwice(name, cid)
 	local p = plr(name)
 	local c = ctx.Loot.containers[cid]
@@ -319,6 +348,60 @@ function C.tests()
 		end
 	end
 	return table.concat(report, "\n")
+end
+
+-- economy test helpers (M9)
+function C.xp(name, n)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	ctx.Economy.addXp(prof, n or 1000)
+	ctx.Raid.push(p)
+	return "level " .. ctx.Economy.level(prof) .. " xp " .. prof.xp
+end
+
+function C.money(name, n)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	prof.money = n or prof.money
+	ctx.Raid.afterChange(p, false)
+	return prof.money
+end
+
+-- found-in-raid items straight into the stash (hand-in tests)
+function C.fir(name, id, n)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	local out = {}
+	for _ = 1, n or 1 do
+		local g, it = Inv.newItem(id, 1)
+		it.fir = true
+		if Inv.place(prof, g, it, { "stash" }) then
+			table.insert(out, g)
+		end
+	end
+	ctx.Raid.afterChange(p, false)
+	return #out .. " placed"
+end
+
+-- finish the running hideout build and crafts now
+function C.hideoutNow(name)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	if prof.hideout.build then
+		prof.hideout.build.at = 0
+	end
+	for _, c in prof.hideout.crafts do
+		c.at = 0
+	end
+	ctx.Hideout.settle(prof, p)
+	ctx.Raid.afterChange(p, false)
+	return HttpService:JSONEncode(ctx.Hideout.stateFor(prof))
+end
+
+function C.econ(name)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	return HttpService:JSONEncode({ econ = ctx.Economy.stateFor(prof), quests = ctx.Quests.stateFor(prof), hideout = ctx.Hideout.stateFor(prof), money = prof.money, stashH = prof.stashH })
 end
 
 -- force the Foreman on (true), off (false) or back to chance (nil) for the next raids

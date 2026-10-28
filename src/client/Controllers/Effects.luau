@@ -292,6 +292,8 @@ function Effects.init(c)
 		c.State.fx.OnClientEvent:Connect(function(kind, d)
 			if kind == "shot" and type(d) == "table" then
 				Effects.remoteShot(d)
+			elseif kind == "sfx" and type(d) == "table" and type(d.n) == "string" and typeof(d.p) == "Vector3" then
+				Effects.sfx(d.n, d.p, d.v or 0.8, 1, 60)
 			end
 		end)
 	end

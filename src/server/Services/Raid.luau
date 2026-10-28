@@ -11,6 +11,7 @@ local Util = require(Shared.Util)
 local Grid = require(Shared.Grid)
 local Inv = require(script.Parent.Inv)
 local Settle = require(script.Parent.Settle)
+local Progress = require(Shared.Progress)
 
 local Raid = {}
 local ctx
@@ -103,6 +104,11 @@ function Raid.state(player)
 		scavReadyAt = prof.scavReadyAt or 0,
 		serverTime = os.time(),
 		queued = ctx.Match.queuedKind(player),
+		stashH = prof.stashH,
+		econ = ctx.Economy.stateFor(prof),
+		-- hideout-only blocks (traders, tasks, modules) are left out of the frequent in-raid snapshots
+		quests = (not s) and ctx.Quests.stateFor(prof) or nil,
+		hideout = (not s) and ctx.Hideout.stateFor(prof) or nil,
 	}
 end
 
@@ -150,6 +156,7 @@ function Raid.resetWorld()
 	Raid.world.seed = math.random(1, 1e9)
 	Raid.world.resets += 1
 	ctx.Loot.reset(Raid.world.seed)
+	ctx.Doors.reset()
 	ctx.AI.reset()
 	Raid.world.status = "RUNNING"
 end
@@ -253,7 +260,7 @@ function Raid.enter(player, kind, spawn, idx)
 	local s = {
 		id = raidId, inv = raidInv, state = "ACTIVE", started = t, raidStart = ctx.Match.startedAt, endsAt = ctx.Match.endsAt,
 		match = ctx.Match.id, spawn = spawn.id, extracts = ctx.Match.extractsFor(spawn, scav), kills = 0, risked = {}, found = {},
-		scav = scav,
+		scav = scav, xp = 0, karma = prof.karma or 0, karmaDelta = 0,
 		active = (raidInv.slots.primary and "primary") or (raidInv.slots.secondary and "secondary") or (raidInv.slots.holster and "holster") or (raidInv.slots.melee and "melee") or nil,
 	}
 	for g in raidInv.items do
@@ -308,10 +315,14 @@ function Raid.finalize(player, outcome)
 			prof.health = { energy = math.max(40, math.floor(hs0.energy)), water = math.max(40, math.floor(hs0.water)) }
 		end
 	end
+	-- run-through (Tarkov): extracted very quickly having done almost nothing -> loot is not found-in-raid
+	local runThrough = outcome == "SUCCESS" and not s.scav and (now() - s.started) < Progress.XP.runThrough.time and (s.xp or 0) < Progress.XP.runThrough.xp
 	local receipt, err = nil, nil
+	local xpGained, levelUp = 0, false
 	if prof then
-		receipt, err = Settle.finalize(prof, s.id, outcome, s.inv, os.time())
+		receipt, err = Settle.finalize(prof, s.id, outcome, s.inv, os.time(), { runThrough = runThrough })
 		if receipt then
+			xpGained, levelUp = ctx.Economy.afterRaid(player, prof, s, outcome, runThrough)
 			prof.stats.kills += s.kills
 			prof.stats.pmcKills += s.pmcKills or 0
 			prof.stats.scavKills += s.scavKills or 0
@@ -325,6 +336,14 @@ function Raid.finalize(player, outcome)
 			warn("[ZR] settlement skipped", player.Name, err)
 		end
 	end
+	-- a PMC's dog tag stays on the body for whoever finds it (added after settlement: it is not part of the
+	-- player's own lost/found lists)
+	if outcome == "KIA" and not s.scav and prof then
+		local tg, tag = Inv.newItem("DOGTAG", 1, { tag = { name = player.DisplayName, lvl = ctx.Economy.level(prof), by = death and death.killer or nil } })
+		if Inv.place(s.inv, tg, tag, Inv.loadOrder(s.inv)) then
+			s.risked[tg] = true
+		end
+	end
 	local summary = {
 		outcome = outcome,
 		raidId = s.id,
@@ -333,13 +352,15 @@ function Raid.finalize(player, outcome)
 		death = death,
 		scav = s.scav,
 		sold = receipt and receipt.sold or 0,
+		xp = xpGained, levelUp = levelUp or nil, level = prof and ctx.Economy.level(prof) or nil, runThrough = runThrough or nil,
 		retained = receipt and receipt.retained or {},
 		lost = receipt and receipt.lost or {},
 		kept = receipt and receipt.kept or {},
 		value = receipt and receipt.value or 0,
-		found = itemsList(s.inv, function(g)
+		-- a run-through keeps the loot but nothing counts as found-in-raid
+		found = (not runThrough) and itemsList(s.inv, function(g)
 			return not s.risked[g]
-		end),
+		end) or {},
 	}
 	ctx.Combat.reset(player)
 	local char = player.Character
@@ -394,9 +415,10 @@ function Raid.onDied(player, char)
 	end
 end
 
-function Raid.addKill(player, victimPlayer, victimModel)
+function Raid.addKill(player, victimPlayer, victimModel, headshot)
 	local s = sessions[player]
 	if s then
+		ctx.Economy.onKill(player, victimPlayer, victimModel, headshot)
 		s.kills += 1
 		if victimPlayer then
 			s.pmcKills = (s.pmcKills or 0) + 1
@@ -524,8 +546,9 @@ local function examine(player, h, g, c)
 			return
 		end
 		prof.known[it.id] = true
+		ctx.Economy.addXp(prof, Progress.XP.examine)
 		ctx.Profiles.markDirty(player)
-		ctx.Remotes.note(player, "toast", { text = "EXAMINED: " .. string.upper(d.name), tone = "good" })
+		ctx.Remotes.note(player, "toast", { text = "EXAMINED: " .. string.upper(d.name) .. "  +" .. Progress.XP.examine .. " XP", tone = "good" })
 		Raid.push(player)
 		if c then
 			ctx.Loot.broadcast(c)
@@ -682,30 +705,31 @@ function Raid.inv(player, p)
 		end
 		ctx.Loot.spawnPile(root.Position + root.CFrame.LookVector * 2.5 - Vector3.new(0, 2.5, 0), { b })
 		done = true
-	elseif op == "sell" or op == "discard" then
+	elseif op == "sell" then
+		-- sold to a trader (the best buyer unless one is named); see Economy.sell
 		if inRaid or sc then
 			return fail("NOT_AUTHORIZED")
 		end
-		local it = me.items[g]
-		if not it then
-			return fail("NO_ITEM")
+		if p.trader ~= nil and type(p.trader) ~= "string" then
+			return fail("BAD_INPUT")
 		end
-		if op == "sell" and not (me.known[it.id] or Items.knownByDefault(it.id)) then
-			return fail("UNKNOWN_ITEM", "Examine it first.")
+		local res = ctx.Economy.sell(player, me, g, p.trader)
+		if res ~= true then
+			return res
+		end
+		done = true
+	elseif op == "discard" then
+		if inRaid or sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		if not me.items[g] then
+			return fail("NO_ITEM")
 		end
 		if me.slots.secure == g then
 			return fail("NOT_AUTHORIZED")
 		end
-		local b = Inv.take(me, g)
-		if not b then
+		if not Inv.take(me, g) then
 			return fail("NO_ITEM")
-		end
-		if op == "sell" then
-			local value = Items.valueOf(b.it)
-			for _, sub in b.subs do
-				value += Items.valueOf(sub.it)
-			end
-			me.money += math.floor(value * Config.SELL_RATE)
 		end
 		done = true
 	elseif op == "insure" then

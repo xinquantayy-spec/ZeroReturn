@@ -44,7 +44,7 @@ end
 function Inv.dims(h: any, cid: string): (number, number)
 	if cid == "stash" then
 		if h.grids.stash then
-			return Config.STASH_W, Config.STASH_H
+			return Config.STASH_W, h.stashH or Config.STASH_H -- storage racks add rows (hideout)
 		end
 		return 0, 0
 	elseif cid == "pockets" then

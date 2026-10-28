@@ -13,6 +13,7 @@ World.spawns = {}
 World.extracts = {}
 World.containers = {}
 World.patrols = {}
+World.doors = {}
 World.safehouse = {}
 
 local root: Folder
@@ -302,9 +303,25 @@ local function buildSafehouse()
 	deployAnchor.CanCollide = false
 	deployAnchor.Name = "DeployPrompt"
 	deployAnchor.Parent = tbl
-	-- radio desk + cot + shelving + posters
+	-- radio desk (traders) + hideout workbench + cot + shelving + posters
 	b(6, 0.3, 3, 17, 3, -12, C.wood, M.WoodPlanks)
 	b(2.2, 1.6, 1.6, 17, 4, -12, C.metalDark, M.Metal)
+	local radioLamp = b(0.3, 0.3, 0.3, 17.7, 4.95, -11.3, hex("6CC27A"), M.Neon)
+	radioLamp.CastShadow = false
+	local radioAnchor = b(6, 4, 3, 17, 4.5, -12, C.pale, M.SmoothPlastic)
+	radioAnchor.Transparency = 1
+	radioAnchor.CanCollide = false
+	radioAnchor.Name = "TraderPrompt"
+	b(3.2, 0.3, 8, -19.8, 3, -3, C.wood, M.WoodPlanks)
+	for _, z in { -6.6, 0.6 } do
+		b(0.3, 3, 0.3, -18.6, 1.5, z, C.metalDark, M.Metal)
+	end
+	b(2.4, 2.4, 2.4, -19.6, 1.2, 4.2, C.olive, M.Metal)
+	b(0.6, 0.6, 1.6, -19.6, 2.7, 4.2, C.metalDark, M.Metal)
+	local benchAnchor = b(3.5, 4, 9, -19.6, 4.2, -2, C.pale, M.SmoothPlastic)
+	benchAnchor.Transparency = 1
+	benchAnchor.CanCollide = false
+	benchAnchor.Name = "HideoutPrompt"
 	b(7, 1.2, 3.4, -15, 1, 12, C.olive, M.Fabric)
 	b(1, 7, 6, 21, 3.5, 8, C.metal, M.Metal)
 	for k = 0, 2 do
@@ -318,7 +335,8 @@ local function buildSafehouse()
 		deploy = deployAnchor,
 		center = o,
 	}
-	for _, spec in { { stashAnchor, "Open stash", "Stash lockers", "stash" }, { deployAnchor, "Plan deployment", "Quay 7 map", "deploy" } } do
+	for _, spec in { { stashAnchor, "Open stash", "Stash lockers", "stash" }, { deployAnchor, "Plan deployment", "Quay 7 map", "deploy" },
+		{ radioAnchor, "Call traders", "Relay radio", "traders" }, { benchAnchor, "Manage hideout", "Workbench", "hideout" } } do
 		local pp = Instance.new("ProximityPrompt")
 		pp.KeyboardKeyCode = Enum.KeyCode.F -- Tarkov interact key (Q/E lean)
 		pp.ActionText = spec[2]
@@ -597,6 +615,9 @@ local function buildFreightDepot(map)
 	local olamp = box(off, 3, 0.2, 1, 136, F + 9.9, -149, hex("FFE6BF"), M.Neon)
 	light(olamp, hex("FFD7A6"), 16, 1, false)
 	addContainerSpot(off, "FD1", "drawer", "Office cabinet", CFrame.new(142, F, -156))
+	-- the office is locked (Harbor Office Key); its safe holds valuables
+	addContainerSpot(off, "FD3", "safe", "Office safe", CFrame.new(128, F, -155))
+	World.doors.OFFICE = { id = "OFFICE", cf = CFrame.new(130, F + 3.75, -138), size = Vector3.new(3.9, 7.4, 0.35), key = "KEY_OFFICE", label = "Depot office", parent = off }
 	addContainerSpot(fd, "FD2", "crate", "Freight crate", CFrame.new(84, F, -93))
 	for _, p in { { 110, -92 }, { 116, -93 }, { 58, -120 } } do
 		Props.pallet(fd, CFrame.new(p[1], F, p[2]))
@@ -760,9 +781,48 @@ function World.build()
 		{ route = "PA" },
 		{ route = "HS" },
 	}
+	World.visitZones = { PIER3 = { pos = v(236, 0, 150), r = 18 }, RELAY = { pos = v(190, 0, -190), r = 14 } }
+	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
+	for _, d in World.doors do
+		local slab = Instance.new("Part")
+		slab.Name = "Door_" .. d.id
+		slab.Size = d.size
+		slab.CFrame = d.cf
+		slab.Anchored = true
+		slab.Color = hex("5A5F57")
+		slab.Material = M.Metal
+		slab.TopSurface = Enum.SurfaceType.Smooth
+		slab.BottomSurface = Enum.SurfaceType.Smooth
+		slab.Parent = d.parent
+		local handle = Instance.new("Part")
+		handle.Name = "Handle"
+		handle.Size = Vector3.new(0.15, 0.15, 0.6)
+		handle.CFrame = d.cf * CFrame.new(d.size.X / 2 - 0.4, -0.3, 0)
+		handle.Anchored = false
+		handle.Massless = true
+		handle.CanCollide = false
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = slab
+		weld.Part1 = handle
+		weld.Parent = handle
+		handle.Color = hex("2A2D2B")
+		handle.Material = M.Metal
+		handle.Parent = slab
+		local pp = Instance.new("ProximityPrompt")
+		pp.KeyboardKeyCode = Enum.KeyCode.F
+		pp.ActionText = "Open"
+		pp.ObjectText = d.label
+		pp.HoldDuration = 0
+		pp.MaxActivationDistance = 7
+		pp.RequiresLineOfSight = false
+		pp.Style = Enum.ProximityPromptStyle.Custom
+		pp.Parent = slab
+		d.part, d.handle, d.prompt = slab, handle, pp
+		d.parent = nil
+	end
 	World.boss = {
-		name = "THE FOREMAN", home = v(136, 4, -150),
-		route = { v(136, 4, -150), v(116, 4, -128), v(84, 4, -126), v(62, 4, -110), v(100, 4, -112), v(130, 4, -112) },
+		name = "THE FOREMAN", home = v(116, 4, -128),
+		route = { v(116, 4, -128), v(84, 4, -126), v(62, 4, -110), v(100, 4, -112), v(140, 4, -112), v(142, 4, -128) },
 		crew = { v(112, 4, -130), v(80, 4, -122) },
 	}
 	root.Parent = workspace

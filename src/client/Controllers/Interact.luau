@@ -40,14 +40,31 @@ function Interact.init(c)
 			end)
 		end
 	end)
+	-- the server rewrites prompt text (doors: Unlock -> Close -> Open), so follow the shown prompt's text
+	local watch = {}
+	local function unwatch()
+		for _, cn in watch do
+			cn:Disconnect()
+		end
+		table.clear(watch)
+	end
 	PPS.PromptShown:Connect(function(prompt)
 		if prompt.Style == Enum.ProximityPromptStyle.Custom then
+			unwatch()
 			Interact.current = prompt
+			for _, prop in { "ActionText", "ObjectText" } do
+				table.insert(watch, prompt:GetPropertyChangedSignal(prop):Connect(function()
+					if Interact.current == prompt then
+						render()
+					end
+				end))
+			end
 			render()
 		end
 	end)
 	PPS.PromptHidden:Connect(function(prompt)
 		if prompt == Interact.current then
+			unwatch()
 			Interact.current = nil
 			render()
 		end
@@ -58,6 +75,10 @@ function Interact.init(c)
 			c.Inventory.show("stash")
 		elseif screen == "deploy" then
 			c.Screens.deploy()
+		elseif screen == "traders" then
+			c.Trade.traders()
+		elseif screen == "hideout" then
+			c.Trade.hideout()
 		end
 	end)
 	c.Input.deviceChanged:Connect(render)

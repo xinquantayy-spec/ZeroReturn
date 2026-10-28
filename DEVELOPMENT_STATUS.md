@@ -1,6 +1,6 @@
 # Zero Return: Development Status
 
-Build `0.5.0-m8`. Last updated 2026-10-28.
+Build `0.6.0-m9`. Last updated 2026-10-28.
 
 Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. The map is **Quay 7**, an industrial coastal evacuation zone.
 
@@ -27,8 +27,8 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 | M6 Movement & animation | Done | Own operator rig (Blender body, Motor6D skeleton) for players and AI; shared RigMath IK solver drives server hitboxes and client animation (gait, crouch depth, prone, lean, aim pitch, two-hand weapon holds, gestures, ragdoll); Tarkov movement (lean Q/E, prone Z, walk-speed wheel, leg/arm stamina, hold breath, weight, inertia, vault/mantle, free look Alt); procedural sound atlas (footsteps by surface, handling, impacts, bullet cracks). |
 | M7 Multiplayer raids | Done | One shared 25-min raid per server (queue → matching → raid, up to 12 operators), PMC late entry for 5 min, player scavs until 6 min left; squads (invite/accept/kick, shared insertion, armband colour, no friendly markers); spread spawns with per-side exfils; bodies that stay in the raid (KIA and disconnects); player-scav mode (free random kit, 10-min cooldown, loot to stash, PMC health untouched); exfil rules (open, paid, key, chance, scav-only); insurance with returns after the raid; larger lens HUD. |
 | M8 AI 2.0 | Done | AI scavs (random kits, wander and loiter, waves through the raid), Harbor Watch guards (posts and patrols), the Foreman with two crew at the freight depot (50% of raids, heavy armour, unique loot); awareness-based vision, hearing of footsteps and gunshots, suppression and call-outs; cover points generated from the map with peek-and-hide, crouching at range, strafing, suppressive fire, reloads from real magazines, healing with real meds, searching the last known position, fleeing when out of ammo; player scavs are left alone unless they attack scavs. |
-| M9 Economy | Next | Traders, barter, loyalty, quests, XP/skills, hideout crafting, keys and locked rooms. |
-| M10 World | Planned | New POIs and boss compound, doors, loose loot, time of day/weather, audio atlas, Blender weapon/gear art. |
+| M9 Economy | Done | Four traders (VOS weapons/ammo, HALE medical/food, TILDA gear, the FENCE) with loyalty levels 1–4 (level + money traded + standing), per-restock stock limits (30 min) and barters; selling to the best-paying trader (examined, empty items only); 13 trader tasks (eliminate, hand in found-in-raid items, extract, visit) with money/XP/standing/item rewards; XP and levels (kills, headshots, looting, examining, survival), the run-through rule, four skills that level with use (endurance, strength, vitality, metabolism); a hideout with five modules built over real time (generator, medstation, workbench, storage racks, water collector) and timed crafts; scav karma (fence prices, scav cooldown, hostile locals); dog tags on PMC bodies; a locked depot office opened with a key that wears out. |
+| M10 World | Next | New POIs and boss compound, doors, loose loot, time of day/weather, audio atlas, Blender weapon/gear art. |
 | M11 QA | Planned | Two-client test, device emulation, performance, exploit regression, docs, backup. |
 
 ## How a raid works (M7)
@@ -38,6 +38,18 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 3. The raid lasts **25 minutes** for everyone. PMCs can still join during the **first 5 minutes**, scavs until **6 minutes are left**; otherwise you queue for the next raid.
 4. Exfils depend on your insertion side. Some cost money (PIER 3 BOAT, 8,000 MK), need a key (SERVICE SHAFT, office key), may be closed for the whole raid (CRANE YARD LIFT), or are scav-only (STORM CULVERT). Press **O** to see yours.
 5. When the clock runs out, anyone still inside is **missing in action**. The raid also ends once nobody is left inside. Bodies and dropped gear are cleared, and **insured** items that nobody extracted come back to their owner 15 minutes later.
+
+## Progression and economy (M9)
+
+- **Traders** (relay radio in the hideout): VOS (weapons, magazines, ammunition, attachments), HALE (medicine and food), TILDA (armour, rigs, packs) and the FENCE (buys anything at a poor rate; sells a few odds and ends, including the office key). Each has loyalty levels 1–4 that need a player level, money traded with them and standing (from tasks). Higher levels unlock better stock and are 5% cheaper per level. Stock is limited per 30-minute restock.
+- **Selling:** right-click an item in the stash and choose SELL; the best-paying trader buys it. Items must be examined and containers empty. Quest items, secure containers and the recovery kit cannot be sold.
+- **Tasks:** accept them at the trader, progress in raids (kills count even if you die later; extractions; visiting places), hand in **found-in-raid** items and collect the reward (money, XP, standing, items delivered to the stash).
+- **XP and skills:** XP for kills (more for headshots, Watch, the Foreman and PMCs), looting, examining and surviving; levels follow Tarkov's curve. Endurance (sprint drain), strength (weight limits), vitality (bleed chance) and metabolism (energy/water drain) level up with use.
+- **Run-through:** extracting within 7 minutes with less than 200 raid XP keeps the loot but nothing becomes found-in-raid.
+- **Hideout** (workbench terminal): build and upgrade modules with money and items over real time (builds also finish while offline): generator, medstation (hideout healing x2/x4, med crafts), workbench (ammo crafts), storage racks (stash 10x25, 10x30), water collector. Each module runs one craft at a time.
+- **Scav karma:** killing local scavs as a player scav lowers karma; extracting as one raises it. High karma shortens the scav cooldown and improves the Fence's prices; below −1 the locals shoot your scav on sight.
+- **Dog tags:** a dead PMC's body carries their dog tag (name, level, killer); tags are worth more at higher levels.
+- **Keys:** the depot office is locked; the Harbor Office Key opens it for the rest of the raid; each unlock uses up one of its 25 uses.
 
 ## Definition of Done
 
@@ -93,9 +105,10 @@ Notes:
 
 - **Server (`src/server`)**
   - Main and Services share one `ctx` table.
-  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Health, Combat, Extract, AI, Raid, Match, Dev.
+  - Services: Remotes, Store, Profiles, Inv, Settle, Assets, World, Chars, Loot, Health, Combat, Extract, AI, Raid, Match, Economy, Quests, Hideout, Doors, Dev.
   - AI owns AI units (perception, tactics, weapons) plus the spawn director and the cover-point map; units use the same rig, ballistics, health and loot as players.
   - Match owns the raid cycle (queue, matching, shared clock, entry windows, end conditions), squads, spawn picking and insurance settlement; Raid owns per-player sessions, deploy/enter/finalize and inventory requests.
+  - Economy owns traders, selling, XP, skills and karma; Quests owns task state and progress; Hideout owns modules and crafts; Doors owns locked doors and keys.
   - Everything that matters is decided on the server: shots and damage, inventory, loot, extraction, currency and profiles.
 - **Persistence**
   - Session-locked profiles (UpdateAsync with a lock that expires after 150 s).
@@ -108,10 +121,10 @@ Notes:
 - **Client (`src/client`)**
   - Scriptable first-person bodycam camera (eye from the rig pose), Movement (stance, lean, stamina, weight, vault), Weapon (viewmodel from the shared spec, IK arms, optics), Animator (RigMath full-body animation of every operator), IAS input with a CAS fallback.
   - Look: Post (grain, lens, exposure, pain) and Lens (barrel-warped HUD text and icons) drive the recorder HUD.
-  - Custom interaction prompts, grid inventory, deploy, summary, settings and exits screens, touch cluster.
-- **Shared (`src/shared`)**: Config, Items, Weapons, WeaponModels, RigSpec (generated by `tools/rig_def.py`), RigMath, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, SoundAtlas (generated), Textures, Version.
+  - Custom interaction prompts, grid inventory, deploy, summary, settings and exits screens, trader and hideout terminals (Trade), touch cluster.
+- **Shared (`src/shared`)**: Config, Items, Weapons, WeaponModels, RigSpec (generated by `tools/rig_def.py`), RigMath, Grid, Net, InputMap, Util, AssetIds, AssetMeta, Sounds, SoundAtlas (generated), Textures, Version, TraderData, QuestData, HideoutData, Progress.
 - **Test bridges (Studio only)**
-  - `ServerStorage.ZR_Dev` (deploy [pmc|scav, skips the matching countdown], match, endRaid, expire [shared clock], hold, setExtracts, claimNow, ai, spawnAI, boss [force on/off], god [Studio-only damage immunity], place, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, tests, abuse probes, hp, shootMe, wound, give [slot], weapon).
+  - `ServerStorage.ZR_Dev` (deploy [pmc|scav, skips the matching countdown], match, endRaid, expire [shared clock], hold, setExtracts, claimNow, ai, spawnAI, boss [force on/off], god [Studio-only damage immunity], place, tp, loot, take, kill, extract, rejoin, crash, saveRetry, failWrites, tests, abuse probes, hp, shootMe, wound, give [slot], weapon, dispatch [any request through the real dispatcher], xp, money, fir [found-in-raid items to the stash], hideoutNow, econ, contents [container/body], find [item guids]).
   - `PlayerScripts.ZR_ClientDev` (state, move, fire, reload, inv, look, aim, switch, cycle, magcheck, light, slash, firemode, stance, lean, tune, pose, orbit [target], screens).
   - Neither bridge exists on live servers.
 
@@ -129,4 +142,6 @@ The full log is in `docs/kit/STATE/DECISIONS.md`.
 - **Raid cycle:** 12 s matching, 25 min raids, PMC late entry 5 min (a compromise so nobody waits a full raid), scavs until 6 min left, early end when empty.
 - **Squads:** no friendly markers or teammate health (Tarkov); squads wear one armband colour on both arms. The roster shows in the hideout and briefly at insertion or with O.
 - **Bodies:** Roblox destroys a character on respawn, so a dead player's body is copied into `workspace.ZR_Corpses` and stays lootable until the raid ends.
+- **Economy scope:** traders, barters, tasks, hideout and skills follow Tarkov's rules with original names; no flea market yet (it needs cross-server trading). Trader stock limits are per player per 30-minute restock.
+- **Run-through:** 7 minutes / 200 XP (Tarkov uses similar values), so quick dev extractions show the rule.
 - **HUD size:** text is authored at 1080p and scales with screen height to the power 0.6 (minimum 0.5), so small windows and phones keep readable numerals; everything stays in the screen margins.

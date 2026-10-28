@@ -145,6 +145,7 @@ loot("INTEL_FOLDER", "Intel Folder", "INTEL", 1, 1, 0.2, 90000, "rare", "Stamped
 loot("MIL_CIRCUIT", "Military Circuit", "MIL CIRC", 2, 1, 0.4, 160000, "epic", "Hardened military control circuit.", "#2F5A3A")
 loot("COLD_WALLET", "Cold Wallet", "WALLET", 1, 1, 0.05, 220000, "epic", "Hardware wallet. Someone will pay for it.", "#C07946")
 loot("BRASS_LION", "Brass Lion", "LION", 2, 2, 3.2, 280000, "epic", "Brass lion statuette from the harbormaster's office.", "#B08A3C")
+add("DOGTAG", { name = "Dog Tag", short = "TAG", kind = "loot", w = 1, h = 1, mass = 0.02, value = 12000, rarity = "uncommon", desc = "An operator's identification tag. Worth more the more experienced its owner was.", color = c("#A7A9A0") })
 
 local Items = { defs = defs }
 
@@ -181,6 +182,9 @@ function Items.valueOf(it: any): number
 	if d.med and d.med.hp and it.hp then
 		v = math.floor(v * math.clamp(it.hp / d.med.hp, 0.1, 1))
 	end
+	if it.tag and type(it.tag.lvl) == "number" then
+		v = math.floor(v * (1 + 0.15 * it.tag.lvl))
+	end
 	return v
 end
 
@@ -190,7 +194,7 @@ function Items.knownByDefault(id: string): boolean
 	if not d then
 		return false
 	end
-	return d.kind ~= "loot" and d.kind ~= "quest" and d.kind ~= "key" or d.rarity == "common"
+	return d.kind ~= "loot" and d.kind ~= "quest" and d.kind ~= "key" or d.rarity == "common" or id == "DOGTAG"
 end
 
 return Items

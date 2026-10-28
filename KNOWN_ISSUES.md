@@ -31,7 +31,11 @@
 15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (834 points), so open yards have little cover.
 20. **AI lethality is tuned by feel.** Reaction times, aim error and zeroing penalties are in `AI.luau` (`SKILL`); a guard can still kill a player standing in the open within a few seconds, which matches Tarkov but may need tuning after playtests.
 16. **Paid exfils use stash money.** There is no physical cash item yet, so PIER 3 BOAT charges the profile balance on exit.
-17. **Not yet in (planned M9):** dog tags on PMC bodies, the run-through status (needs XP), fence karma for scavs, co-op exfils.
+17. **Not yet in:** co-op exfils (scav + PMC), a flea market (player-to-player trading across servers), the scav case and other hideout modules (lavatory, intelligence centre, shooting range).
+21. **Dog tags need space.** The tag goes into the dead PMC's pockets, rig or backpack; if all of them are completely full, no tag is added.
+22. **Trader stock is per player.** Each player has their own purchase limits per 30-minute restock (Tarkov shares some stock between players).
+23. **Economy balance is first-pass.** Prices, XP values, task rewards, build times (5–40 min) and craft times (15–45 min) are tuned by feel and need playtests.
+24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.
 18. **Late entry is a compromise.** Tarkov PMCs only spawn at raid start; here PMCs may join for the first 5 minutes so nobody waits a full 25-minute raid on a one-raid server. `Config.LATE_JOIN` controls it.
 19. **Insurance timing** is 15 real minutes (`Config.INSURANCE_DELAY`). Returns reach the stash automatically when there is space; otherwise use COLLECT INSURANCE in the stash. Items mailed to offline owners need the real DataStore.
 
@@ -43,6 +47,8 @@
 - The Baseplate texture warning `rbxassetid://203785492` comes from the default template and is harmless.
 
 ## Fixed this session
+
+- M9: the restock timer froze when the trader screen was reopened; long hideout requirement lines were cut off; door prompts kept their old text after the server changed them; run-through reports listed picked-up items as found-in-raid; a dead PMC's own dog tag showed up in their report.
 
 - The exits list never hid after the first O press (a `false ~= nil` check); it now shows for 6 s.
 - Player corpses vanished on respawn (`LoadCharacter` destroys the old character even when detached); bodies are now copied into `ZR_Corpses`.

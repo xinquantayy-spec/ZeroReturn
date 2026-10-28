@@ -42,6 +42,7 @@ local function modal(w, h, title)
 	ctx.Interact.setEnabled(false)
 	return f, w - 28, h - 28
 end
+Screens.openModal = modal
 
 local function line(parent, y, text, color, size)
 	return K.label(parent, text, size or 13, { Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, (size or 13) + 6), TextColor3 = color or K.C.text, TextWrapped = true })
@@ -458,16 +459,20 @@ end
 
 function Screens.summary(s)
 	local o = OUTCOME[s.outcome] or { s.outcome, "text" }
-	local f, w, h = modal(720, 470, "RAID REPORT  //  " .. o[1] .. (s.scav and "  ·  SCAV" or ""))
+	local f, w, h = modal(720, 470, "RAID REPORT  //  " .. o[1] .. (s.runThrough and " (RUN THROUGH)" or "") .. (s.scav and "  ·  SCAV" or ""))
 	f:FindFirstChildOfClass("TextLabel").TextColor3 = K.C[o[2]]
-	line(f, 30, string.format("DURATION %s   ·   KILLS %d   ·   RAID %s", Util.clock(s.time or 0), s.kills or 0, string.sub(s.raidId or "", 1, 8)), K.C.dim, 12)
+	line(f, 30, string.format("DURATION %s   ·   KILLS %d   ·   +%d XP%s   ·   RAID %s", Util.clock(s.time or 0), s.kills or 0, s.xp or 0,
+		s.levelUp and ("   ·   LEVEL UP: " .. tostring(s.level)) or "", string.sub(s.raidId or "", 1, 8)), s.levelUp and K.C.green or K.C.dim, 12)
+	if s.runThrough then
+		line(f, 44, "RUN THROUGH: you extracted too quickly with too little done. Your loot is kept but is not found-in-raid.", K.C.orange, 12)
+	end
 	if ctx.State.deathInfo and s.outcome == "KIA" then
 		line(f, 44, ctx.State.deathInfo, K.C.red, 12)
 	elseif s.outcome == "MIA" then
 		line(f, 44, "THE RAID CLOCK RAN OUT BEFORE YOU REACHED AN EXFIL. INSURED GEAR WILL BE RETURNED.", K.C.orange, 12)
 	end
 	local colW = math.floor((w - 12) / 2)
-	local top = (s.outcome == "KIA" or s.outcome == "MIA") and 68 or 56 -- room for the death / MIA line
+	local top = (s.outcome == "KIA" or s.outcome == "MIA" or s.runThrough) and 68 or 56 -- room for the death / MIA / run-through line
 	local listH = h - 140 - (top - 56)
 	local retained = s.retained or {}
 	local lost = s.lost or {}

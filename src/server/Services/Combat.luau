@@ -101,7 +101,7 @@ function Combat.hitModel(model, info)
 	end
 	local attacker = info.attacker
 	if res.killed and typeof(attacker) == "Instance" and attacker:IsA("Player") then
-		ctx.Raid.addKill(attacker, victim, model)
+		ctx.Raid.addKill(attacker, victim, model, res.part == "head")
 		ctx.Remotes.note(attacker, "kill", { name = victim and victim.DisplayName or (model:GetAttribute("Label") or "UNKNOWN") })
 	end
 	return res

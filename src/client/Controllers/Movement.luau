@@ -12,6 +12,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local RigMath = require(Shared.RigMath)
+local Progress = require(Shared.Progress)
 
 local Movement = {
 	stance = "s", depth = 0.7, lean = 0, leanTarget = 0, speedStep = 10, sprinting = false, crouching = false, prone = false,
@@ -216,8 +217,14 @@ local function update(dt)
 	ctx.Camera.tremor = mods and mods.tremor or 0
 	local moving = ctx.Camera.speed > 1
 	local w = Movement.weight
-	local over = math.clamp((w - Config.WEIGHT_OVER) / (Config.WEIGHT_CRIT - Config.WEIGHT_OVER), 0, 1)
-	local crit = math.clamp((w - Config.WEIGHT_CRIT) / (Config.WEIGHT_MAX - Config.WEIGHT_CRIT), 0, 1)
+	-- skills (M9): strength raises the weight limits, endurance lowers sprint drain
+	local econ = ctx.State.data and ctx.State.data.econ
+	local skills = econ and econ.skills
+	local strong = 1 + Progress.bonus(skills, "strength")
+	local wOver, wCrit, wMax = Config.WEIGHT_OVER * strong, Config.WEIGHT_CRIT * strong, Config.WEIGHT_MAX * strong
+	Movement.limits = { over = wOver, crit = wCrit, max = wMax }
+	local over = math.clamp((w - wOver) / (wCrit - wOver), 0, 1)
+	local crit = math.clamp((w - wCrit) / (wMax - wCrit), 0, 1)
 	local canSprint = Movement.stance == "s" and not W.aiming and (not mods or mods.sprint ~= false) and crit <= 0 and os.clock() > exhaustedUntil and not Movement.vaulting
 	if Movement.sprinting and (not moving or Movement.stamina <= 0 or not canSprint) then
 		Movement.sprinting = false
@@ -232,7 +239,7 @@ local function update(dt)
 	local drainMul = 1 + over * 0.8 + crit * 1.2
 	local regenMul = (mods and mods.staminaRegen or 1) * (1 - crit * 0.6) * (moving and 0.6 or 1.2)
 	if Movement.sprinting then
-		Movement.stamina = math.max(0, Movement.stamina - Config.SPRINT_DRAIN * drainMul * dt)
+		Movement.stamina = math.max(0, Movement.stamina - Config.SPRINT_DRAIN * drainMul * (1 - Progress.bonus(skills, "endurance")) * dt)
 	else
 		Movement.stamina = math.min(Config.MAX_STAMINA, Movement.stamina + Config.STAMINA_REGEN * regenMul * dt)
 	end
@@ -306,7 +313,7 @@ local function update(dt)
 		lastMove = Vector3.zero
 	end
 	local weightMul = (1 - over * 0.12) * (1 - crit * 0.45)
-	if w > Config.WEIGHT_MAX then
+	if w > wMax then
 		weightMul = 0.3
 	end
 	hum.WalkSpeed = speed * (mods and mods.speed or 1) * weightMul * accel
@@ -314,7 +321,7 @@ local function update(dt)
 	hum.UseJumpPower = false
 	-- jump / vault (Space): vaulting takes priority over a jump when an obstacle is in front
 	vaultAvail = (inRaid or true) and root and Movement.stance ~= "p" and not Movement.vaulting and findVault(char, root) or nil
-	local canJump = Movement.stance == "s" and Movement.stamina >= Config.JUMP_COST and w <= Config.WEIGHT_MAX and not vaultAvail and not Movement.vaulting
+	local canJump = Movement.stance == "s" and Movement.stamina >= Config.JUMP_COST and w <= wMax and not vaultAvail and not Movement.vaulting
 	hum.JumpHeight = canJump and 3.2 or 0
 	-- local footsteps from the camera bob (others' come from the Animator)
 	local bob = math.sin(ctx.Camera.bobPhase)

@@ -7,6 +7,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local Textures = require(Shared.Textures)
 local Inv = require(script.Parent.Inv)
+local Progress = require(Shared.Progress)
 
 local Health = {}
 local ctx
@@ -274,10 +275,16 @@ function Health.hit(model, info)
 	hs.cause = info.cause or hs.cause
 	hs.lastHit = { attacker = info.attacker, part = key, ammo = info.ammo, weapon = info.weapon, from = info.from, at = now() }
 	applyDamage(hs, key, dmg)
+	-- vitality skill (players): fewer bleeds; taking hits trains it
+	local prof = hs.player and ctx.Profiles.get(hs.player)
+	local bleedMul = 1 - (prof and Progress.bonus(prof.skills, "vitality") or 0)
+	if prof and dmg > 0 and ctx.Economy then
+		ctx.Economy.skillUp(hs.player, prof, "vitality", dmg * 0.04)
+	end
 	if wounds and dmg > 0 and not hs.dead then
-		if math.random() < (info.bleedH or 0.05) then
+		if math.random() < (info.bleedH or 0.05) * bleedMul then
 			hs.bleedH[key] = true
-		elseif math.random() < (info.bleedL or 0.12) then
+		elseif math.random() < (info.bleedL or 0.12) * bleedMul then
 			hs.bleedL[key] = true
 		end
 		if LIMB[key] and math.random() < 0.05 + dmg / 280 then
@@ -601,6 +608,9 @@ function Health.use(player, g, part)
 			return
 		end
 		local used = pl.apply()
+		if d.food and ctx.Economy then
+			ctx.Economy.skillUp(player, ctx.Profiles.get(player), "metabolism", 6)
+		end
 		if d.med and d.med.hp then
 			it.hp = (it.hp or d.med.hp) - (used or 0)
 			if it.hp <= 0 then
@@ -698,17 +708,21 @@ function Health.start()
 						hs.cause = hs.cause or "BLEEDING"
 					end
 					if hs.player then
+						local prof = ctx.Profiles.get(hs.player)
 						if hs.inRaid then
-							hs.energy = math.max(0, hs.energy - 1 / 26)
-							hs.water = math.max(0, hs.water - 1 / 18)
+							-- metabolism skill slows energy / hydration drain
+							local m = 1 - (prof and Progress.bonus(prof.skills, "metabolism") or 0)
+							hs.energy = math.max(0, hs.energy - m / 26)
+							hs.water = math.max(0, hs.water - m / 18)
 							if hs.energy <= 0 or hs.water <= 0 then
 								applyDamage(hs, "stomach", 0.2)
 							end
 						else
-							-- hideout: slow natural recovery
+							-- hideout: slow natural recovery (the medstation speeds it up)
+							local rate = 0.6 * ((prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1)
 							for _, p in hs.parts do
 								if p.hp < p.max then
-									p.hp = math.min(p.max, p.hp + 0.6)
+									p.hp = math.min(p.max, p.hp + rate)
 									hs.dirty = true
 								end
 							end

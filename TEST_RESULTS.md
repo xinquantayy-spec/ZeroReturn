@@ -8,6 +8,23 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance numbers.
 
+## M9 Economy (2026-10-28)
+
+| Test | Method | Result |
+|---|---|---|
+| Logic suite | `ZR_Dev:Invoke("tests")` | **134/134 pass** (19 new: XP curve and levels, skill bonuses, trader prices by loyalty, best buyer, quest items unsellable, fence karma pricing, dog tag value by level, data consistency (every offer, barter, task, recipe and module references real items), run-through rule, loyalty from level/spend/standing, give/consume stash, sell quote, task status/complete/hand-in with FIR items, storage racks → stash 10x25; the scav cooldown test now expects the karma-adjusted cooldown). |
+| Buying | `dispatch trade buy` (real dispatcher) | Pass. P-9 Vesna 11,875 MK (250,000 → 238,125), 2 × 60 FMJ (−18,000), SMG then SMG again → OUT_OF_STOCK (limit 1 per restock), KST rifle → LOCKED (loyalty 2). |
+| Barter | Hale: Road Kit for 2 cigarettes + matches | Pass. Without items → "Missing: Cigarettes."; with them → traded. |
+| Selling | Spark plug, gold chain | Pass. Plug sold to the best buyer (+2,250); an unexamined chain is refused ("Examine it first."); VOS refuses loot; after examining, the chain sold for +31,000 to the best buyer. |
+| Tasks | First Aid (Hale) | Pass. Accept → turn-in refused while incomplete → 2 dressings + 1 kit found-in-raid → turned in: +12,000 MK, +400 XP, Hale standing +0.05, the Road Kit reward reached the stash as found-in-raid. Locked tasks refuse ACCEPT. |
+| Task progress | Signal Check (kill 5 scavs) | Pass. A scav shot in a raid moved it to 1/5 immediately (toast), before extraction. |
+| Hideout | Build generator → storage → workbench, craft FMJ | Pass. Missing items / missing generator / busy builder refused with the right message; each build finished with `hideoutNow`; stash grew to 10x25; craft refused a second recipe while busy and early collection; collected 60 FMJ. Money 198,375 → 18,375 (−40k −80k −60k). |
+| Screens | Relay radio (VOS, HALE, PROFILE tabs), workbench | Pass (screenshots). Offers with price and stock, loyalty requirements, tasks with status, progress and rewards, XP bar, skills, karma; hideout modules with requirements (have/need in green/red), build timers, crafts. Fixed: long requirement lines were cut off (now full width, two lines); the restock timer froze when the screen was reopened. |
+| Locked door | Depot office, real F key | Pass. Without the key: "LOCKED · REQUIRES HARBOR OFFICE KEY", door stays shut; with the key: "UNLOCKED · DEPOT OFFICE", door swings open, the office light and safe are reachable. Fixed: the on-screen prompt kept saying UNLOCK after the door opened. |
+| Run-through | Extract after 1:53 with one kill | Pass. "EXTRACTED (RUN THROUGH)" with the explanation line; loot kept, nothing found-in-raid. Fixed: the report still listed a picked-up key under FOUND IN RAID. |
+| Dog tag | PMC KIA | Pass. Body B1 holds DOGTAG {name, level}; the player's own report no longer lists the tag as lost or found. |
+| Console | Output log | No ZR errors. |
+
 ## M8 AI 2.0 (2026-10-28)
 
 | Test | Method | Result |

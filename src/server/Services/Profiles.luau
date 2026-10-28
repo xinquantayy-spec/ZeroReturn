@@ -56,6 +56,9 @@ function Profiles.load(player: Player): (any?, any)
 			table.insert(data.claims, entry)
 		end
 	end
+	if ctx and ctx.Hideout then
+		ctx.Hideout.settle(data, nil)
+	end
 	local ok, msg = Inv.check(data)
 	if not ok then
 		warn("[ZR] profile invariant failure on load", player.Name, msg)

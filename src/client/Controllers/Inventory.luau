@@ -12,6 +12,7 @@ local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local Grid = require(Shared.Grid)
 local Util = require(Shared.Util)
+local TD = require(Shared.TraderData)
 
 local Inventory = { open = false }
 local ctx, K
@@ -167,7 +168,7 @@ local function findFree(view, cid, w, h)
 	end
 	local cw, ch
 	if cid == "stash" then
-		cw, ch = Config.STASH_W, Config.STASH_H
+		cw, ch = Config.STASH_W, view.stashH or Config.STASH_H
 	elseif cid == "pockets" then
 		cw, ch = Config.POCKETS_W, Config.POCKETS_H
 	elseif cid == "main" then
@@ -378,11 +379,28 @@ local function actionsFor(ref, g)
 		end
 	end
 	if mine and not inRaid and view.slots.secure ~= g then
-		if known(it.id) and d.value > 0 and not it.rk then
-			add(string.format("SELL  +%s %s", Util.commas(math.floor(Items.valueOf(it) * Config.SELL_RATE)), Config.CURRENCY), function()
-				req({ op = "sell", g = g })
-				selected = nil
-			end, "warn")
+		-- sold to the trader paying the most (containers must be empty; mags and attachments go with a weapon)
+		local karma = view.econ and view.econ.karma
+		local tid = known(it.id) and not it.rk and TD.bestBuyer(it, karma)
+		if tid then
+			if view.grids[g] and next(view.grids[g]) then
+				add("EMPTY IT TO SELL", function() end)
+			else
+				local price = TD.sellPrice(tid, it, karma) or 0
+				if it.mag and view.items[it.mag] then
+					price += TD.sellPrice(tid, view.items[it.mag], karma) or TD.sellPrice("fence", view.items[it.mag], karma) or 0
+				end
+				for _, mg in it.mods or {} do
+					local m = view.items[mg]
+					if m then
+						price += TD.sellPrice(tid, m, karma) or TD.sellPrice("fence", m, karma) or 0
+					end
+				end
+				add(string.format("SELL TO %s  +%s %s", TD.defs[tid].name, Util.commas(price), Config.CURRENCY), function()
+					req({ op = "sell", g = g, trader = tid })
+					selected = nil
+				end, "warn")
+			end
 		end
 		add("DISCARD", function()
 			req({ op = "discard", g = g })
@@ -702,6 +720,9 @@ local function detail(parent, w, h)
 	local lines = {}
 	if isKnown then
 		table.insert(lines, d.desc)
+		if it.tag then
+			table.insert(lines, string.format("OPERATOR %s  ·  LEVEL %d%s", string.upper(tostring(it.tag.name)), it.tag.lvl or 1, it.tag.by and ("  ·  KILLED BY " .. string.upper(tostring(it.tag.by))) or ""))
+		end
 		if d.ammo then
 			table.insert(lines, string.format("DAMAGE %d%s   PEN %d   ARMOR DMG %d%%", d.ammo.dmg, d.ammo.pellets and ("x" .. d.ammo.pellets) or "", d.ammo.pen, math.floor(d.ammo.armorDmg * 100)))
 		end
@@ -858,7 +879,8 @@ function Inventory.render()
 		end)
 		right.CanvasSize = UDim2.fromOffset(0, h2 + 80)
 	elseif not inRaid then
-		local _, sh = drawGrid(right, d, "me", "stash", "STASH  " .. Config.STASH_W .. "x" .. Config.STASH_H, Config.STASH_W, Config.STASH_H, cell, 0, 0, nil)
+		local stashH = d.stashH or Config.STASH_H
+		local _, sh = drawGrid(right, d, "me", "stash", "STASH  " .. Config.STASH_W .. "x" .. stashH, Config.STASH_W, stashH, cell, 0, 0, nil)
 		right.CanvasSize = UDim2.fromOffset(0, sh + 60)
 		local row = K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, sh + 6), Size = UDim2.new(1, 0, 0, 32) })
 		K.list(row, Enum.FillDirection.Horizontal, 6)

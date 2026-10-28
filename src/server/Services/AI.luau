@@ -18,6 +18,7 @@ local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local RigMath = require(Shared.RigMath)
 local Inv = require(script.Parent.Inv)
+local KARMA_HOSTILE = require(Shared.Progress).KARMA.hostileBelow
 
 local AI = {}
 local ctx
@@ -106,7 +107,7 @@ function AI.hostileTo(faction, w)
 	if w.unit then
 		return false
 	end
-	if w.s and w.s.scav and faction == "scav" and not w.s.hostile then
+	if w.s and w.s.scav and faction == "scav" and not w.s.hostile and ((w.s.karma or 0) + (w.s.karmaDelta or 0)) >= KARMA_HOSTILE then
 		return false
 	end
 	return true

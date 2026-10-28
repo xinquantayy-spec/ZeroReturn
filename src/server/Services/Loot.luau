@@ -290,6 +290,9 @@ local function searchLoop(player, c)
 			return
 		end
 		c.revealed[player] = (c.revealed[player] or 0) + 1
+		if ctx.Economy then
+			ctx.Economy.raidXp(player, 4)
+		end
 		list = units(c)
 		send(player, c)
 	end

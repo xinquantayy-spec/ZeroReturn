@@ -7,6 +7,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local Inv = require(script.Parent.Inv)
+local Progress = require(Shared.Progress)
 
 local Settle = {}
 Settle.SCHEMA = 2
@@ -48,6 +49,7 @@ function Settle.newProfile(): any
 	p.scavReadyAt = 0
 	p.settings = {}
 	p.known = {}
+	Settle.progressFields(p)
 	-- worn kit
 	equip(p, "back", "CANVAS_BAG")
 	local rig = equip(p, "rig", "RIG_CHEST")
@@ -106,7 +108,22 @@ function Settle.migrate(p: any): any
 	p.scavReadyAt = p.scavReadyAt or 0
 	p.settings = p.settings or {}
 	p.known = p.known or {}
+	Settle.progressFields(p)
 	return p
+end
+
+-- progression and economy (M9): experience, skills, trader standing, purchases, tasks, hideout, karma
+function Settle.progressFields(p: any)
+	p.xp = p.xp or 0
+	p.skills = p.skills or {}
+	p.traders = p.traders or {}
+	p.bought = p.bought or {}
+	p.quests = p.quests or {}
+	p.hideout = p.hideout or {}
+	p.hideout.levels = p.hideout.levels or {}
+	p.hideout.crafts = p.hideout.crafts or {}
+	p.karma = p.karma or Progress.KARMA.start
+	p.stashH = p.stashH or Config.STASH_H
 end
 
 local function snapshotSecure(h: any): any?
@@ -167,7 +184,7 @@ function Settle.deployScav(p: any, raidId: string, now: number, kit: any): (any?
 		return nil, "SCAV_COOLDOWN"
 	end
 	p.pendingRaid = { id = raidId, t = now, risked = {}, value = 0, scav = true }
-	p.scavReadyAt = now + Config.SCAV_COOLDOWN
+	p.scavReadyAt = now + Progress.scavCooldown(Config.SCAV_COOLDOWN, p.karma)
 	p.stats.scavRaids += 1
 	p.rev += 1
 	return kit, nil
@@ -316,7 +333,9 @@ local function summarize(h: any, guids: { string }?): { any }
 end
 
 -- Idempotent settlement keyed by raidId. raid may be nil (crash recovery -> treated as failure).
-function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, now: number): (any?, string?)
+-- opts.runThrough: survived but too quickly with too little done -> found items are not found-in-raid.
+function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, now: number, opts: any?): (any?, string?)
+	local runThrough = opts ~= nil and opts.runThrough == true
 	if p.finalized[raidId] then
 		return nil, "ALREADY_FINALIZED"
 	end
@@ -324,7 +343,7 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 	if not pr or pr.id ~= raidId then
 		return nil, "NO_PENDING_RAID"
 	end
-	local receipt = { raidId = raidId, outcome = outcome, retained = {}, lost = {}, kept = {}, value = 0, at = now, scav = pr.scav }
+	local receipt = { raidId = raidId, outcome = outcome, retained = {}, lost = {}, kept = {}, value = 0, at = now, scav = pr.scav, runThrough = runThrough or nil }
 	if pr.scav then
 		-- player scav: everything carried out goes to the stash (overflow is sold); nothing at stake otherwise
 		if outcome == "SUCCESS" and raid then
@@ -382,7 +401,9 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 		for g, it in raid.items do
 			if it.fip then
 				it.fip = nil
-				it.fir = true
+				if not runThrough then
+					it.fir = true
+				end
 			end
 			it.ins = nil -- insurance covers one raid (and loot from other bodies is now yours)
 			p.items[g] = it

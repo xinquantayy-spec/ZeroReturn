@@ -345,7 +345,7 @@ function T.run(ctx)
 		check("scav kit has a primary", kit.slots.primary ~= nil and inv(kit))
 		local raidKit = Settle.deployScav(pr, "SCAV1", 1000, kit)
 		check("scav deploy keeps the PMC loadout home", raidKit == kit and pr.slots.primary ~= nil and pr.pendingRaid ~= nil and pr.pendingRaid.scav == true)
-		check("scav cooldown set", pr.scavReadyAt == 1000 + Config.SCAV_COOLDOWN)
+		check("scav cooldown set (karma-adjusted)", pr.scavReadyAt == 1000 + require(Shared.Progress).scavCooldown(Config.SCAV_COOLDOWN, pr.karma))
 		check("scav cannot double deploy", Settle.deployScav(pr, "SCAV2", 1001, kit) == nil)
 		local lg, lit = Inv.newItem("GOLD_CHAIN", 1)
 		lit.fip = true
@@ -437,6 +437,93 @@ function T.run(ctx)
 		check("boss loadout valid, loaded, heavy armour", inv(b) and loaded(b) and spareMags(b) == 3 and b.items[b.slots.armor].id == "ARMOR_C5" and b.slots.holster ~= nil)
 		check("crew loadout valid and loaded", inv(c) and loaded(c) and spareMags(c) >= 2)
 		check("ai skills defined", ctx.AI.SKILL.scav.spread > ctx.AI.SKILL.watch.spread and ctx.AI.SKILL.watch.spread > ctx.AI.SKILL.boss.spread)
+	end
+
+	-- M9: progression, traders, tasks, hideout, run-through
+	do
+		local P = require(Shared.Progress)
+		local TD = require(Shared.TraderData)
+		local QD = require(Shared.QuestData)
+		local HD = require(Shared.HideoutData)
+		check("xp curve", P.levelOf(0) == 1 and P.levelOf(999) == 1 and P.levelOf(1000) == 2 and P.xpFor(3) > P.xpFor(2))
+		check("skill levels", P.skillLevel(0) == 0 and P.skillLevel(250) == 2 and P.skillLevel(5000) == 10 and math.abs(P.bonus({ endurance = 500 }, "endurance") - 0.15) < 1e-6)
+		local rifle = TD.offers.vos[1]
+		check("loyalty discounts prices", TD.price("vos", rifle, 2) < TD.price("vos", rifle, 1) and TD.price("vos", rifle, 1) > Items.defs[rifle.id].value)
+		check("ammo offers sell a stack", TD.price("vos", TD.offers.vos[9], 1) == math.ceil(Items.defs["A62_FMJ"].value * 60 * 1.25))
+		local chain = { id = "GOLD_CHAIN", n = 1 }
+		local who, price = TD.bestBuyer(chain, 0)
+		check("best buyer for valuables", who == "hale" and price == math.floor(Items.defs.GOLD_CHAIN.value * 0.5))
+		check("quest items are not sold", TD.bestBuyer({ id = "LEDGER", n = 1 }, 0) == nil)
+		check("fence pays more with good karma", TD.sellPrice("fence", chain, 3) > TD.sellPrice("fence", chain, -3))
+		check("dog tags are worth more for veterans", Items.valueOf({ id = "DOGTAG", n = 1, tag = { lvl = 10 } }) > Items.valueOf({ id = "DOGTAG", n = 1, tag = { lvl = 1 } }))
+		-- data consistency
+		local okData = true
+		for _, q in QD.list do
+			for _, o in q.obj do
+				if o.kind == "handin" and not Items.defs[o.item] then
+					okData = false
+				end
+			end
+			for _, e in (q.reward and q.reward.items) or {} do
+				okData = okData and Items.defs[e[1]] ~= nil
+			end
+			okData = okData and (q.after == nil or QD.byId[q.after] ~= nil) and TD.defs[q.trader] ~= nil
+		end
+		for _, r in HD.recipes do
+			okData = okData and Items.defs[r.get[1]] ~= nil and HD.modules[r.module] ~= nil
+			for _, e in r.give do
+				okData = okData and Items.defs[e[1]] ~= nil
+			end
+		end
+		check("economy data references valid items", okData)
+		-- run-through keeps the loot but not found-in-raid
+		local pr = Settle.newProfile()
+		local raid = Settle.deploy(pr, "RT1", 3000)
+		local lg, lit = Inv.newItem("GOLD_CHAIN", 1)
+		lit.fip = true
+		Inv.place(raid, lg, lit, Inv.loadOrder(raid))
+		local rc = Settle.finalize(pr, "RT1", "SUCCESS", raid, 3100, { runThrough = true })
+		check("run-through: loot kept, not found-in-raid", rc ~= nil and rc.runThrough == true and pr.items[lg] ~= nil and pr.items[lg].fir == nil and inv(pr))
+		if ctx and ctx.Economy and ctx.Quests and ctx.Hideout then
+			local E = ctx.Economy
+			local p2 = Settle.newProfile()
+			check("loyalty starts at 1", E.loyalty(p2, "vos") == 1)
+			p2.xp = P.xpFor(3)
+			E.standing(p2, "vos").spent = 150000
+			E.standing(p2, "vos").rep = 0.15
+			check("loyalty 2 at level 3 / 150k / 0.15", E.loyalty(p2, "vos") == 2)
+			check("give and consume stash items", E.giveStash(p2, "BOLTS", 3) and select(2, E.stashItems(p2, "BOLTS")) == 3 and E.consumeStash(p2, "BOLTS", 2) and select(2, E.stashItems(p2, "BOLTS")) == 1 and inv(p2))
+			local wg = nil
+			for g, it in p2.items do
+				if it.id == "R17_MAG" and Inv.locate(p2, g) == "grid" then
+					wg = g
+				end
+			end
+			local qp, qt = E.quote(p2, wg)
+			check("quote sells a magazine to the quartermaster", qp ~= nil and qt == "vos")
+			-- tasks
+			local Q = ctx.Quests
+			local q1 = QD.byId.V1
+			check("first task available, follow-up locked", Q.status(p2, q1) == "available" and Q.status(p2, QD.byId.V2) == "locked")
+			p2.quests.V1 = { s = "active", p = { ["1"] = 5 } }
+			check("kill task complete at 5/5", Q.complete(p2, q1))
+			local h1 = QD.byId.H1
+			p2.quests.H1 = { s = "active", p = {} }
+			check("hand-in needs found-in-raid items", not Q.complete(p2, h1))
+			for _ = 1, 2 do
+				local g, it = Inv.newItem("BANDAGE", 1)
+				it.fir = true
+				Inv.place(p2, g, it, { "stash" })
+			end
+			local mg, mit = Inv.newItem("MEDKIT_S", 1)
+			mit.fir = true
+			Inv.place(p2, mg, mit, { "stash" })
+			check("hand-in complete with FIR items in the stash", Q.complete(p2, h1))
+			-- hideout build finishing offline
+			p2.hideout.build = { m = "storage", l = 1, at = 0 }
+			ctx.Hideout.settle(p2, nil)
+			check("storage racks add stash rows", p2.hideout.levels.storage == 1 and p2.stashH == 25 and Inv.dims(p2, "stash") == 10 and select(2, Inv.dims(p2, "stash")) == 25)
+		end
 	end
 
 	-- remote de-dupe

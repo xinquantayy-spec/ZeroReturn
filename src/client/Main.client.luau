@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Animator", "Hud", "Post", "Interact", "Touch", "Inventory", "Screens" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Animator", "Hud", "Post", "Interact", "Touch", "Inventory", "Screens", "Trade" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -63,6 +63,12 @@ if RunService:IsStudio() then
 			return tostring(ctx.Inventory.open)
 		elseif cmd == "deployScreen" then
 			ctx.Screens.deploy()
+			return "ok"
+		elseif cmd == "traders" then
+			ctx.Trade.traders(a)
+			return "ok"
+		elseif cmd == "hideout" then
+			ctx.Trade.hideout()
 			return "ok"
 		elseif cmd == "closeModal" then
 			ctx.Screens.close()
