@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
 local AssetMeta = require(Shared.AssetMeta)
+local Items = require(Shared.Items)
 
 local Chars = {}
 local ctx
@@ -126,30 +127,82 @@ local function rifle(char, color)
 	end
 end
 
--- gear: {bag = bool, rifle = bool}
+-- visible gear derived from a holder's equipment slots
+function Chars.gearOf(h)
+	if not h then
+		return nil
+	end
+	local function id(slot)
+		local g = h.slots[slot]
+		local it = g and h.items[g]
+		return it and it.id or nil
+	end
+	return { head = id("head"), armor = id("armor"), rig = id("rig"), back = id("back"), primary = id("primary") or id("secondary"), holster = id("holster") }
+end
+
+local PACK_SIZE = {
+	BAG_SLING = Vector3.new(1.1, 1.2, 0.55), CANVAS_BAG = Vector3.new(1.55, 1.8, 0.8),
+	BAG_PATROL = Vector3.new(1.8, 2.2, 1.0), BAG_RAID = Vector3.new(2.0, 2.6, 1.2),
+}
+
+-- gear = Chars.gearOf(holder) or nil (safehouse: no kit visible)
 function Chars.dress(char, kind, gear)
 	local look = LOOKS[kind] or LOOKS.player
 	local gc = Color3.fromHex(look.gear)
-	attach(char, "Head", Vector3.new(1.32, 0.62, 1.42), CFrame.new(0, 0.42, 0.02), Color3.fromHex(look.helmet), Enum.Material.SmoothPlastic, "Helmet")
-	attach(char, "Head", Vector3.new(1.0, 0.24, 0.12), CFrame.new(0, 0.05, -0.62), Color3.fromHex("161819"), Enum.Material.SmoothPlastic, "Visor")
-	attach(char, "UpperTorso", Vector3.new(2.05, 1.55, 1.3), CFrame.new(0, 0.05, 0), gc, Enum.Material.Fabric, "Vest")
-	for i = -1, 1 do
-		attach(char, "UpperTorso", Vector3.new(0.5, 0.6, 0.3), CFrame.new(i * 0.6, -0.25, -0.75), gc, Enum.Material.Fabric, "Pouch")
+	gear = gear or {}
+	local helmet = gear.head and Items.defs[gear.head]
+	if helmet then
+		local cls = helmet.armor and helmet.armor.class or 2
+		local hs = 1.28 + cls * 0.025
+		attach(char, "Head", Vector3.new(hs, 0.6 + cls * 0.02, hs + 0.08), CFrame.new(0, 0.42, 0.03), Color3.fromHex(look.helmet), Enum.Material.SmoothPlastic, "Helmet")
+		if helmet.armor and helmet.armor.face then
+			attach(char, "Head", Vector3.new(1.05, 0.75, 0.16), CFrame.new(0, -0.02, -0.64), Color3.fromHex("2A2D2B"), Enum.Material.Metal, "FacePlate")
+		else
+			attach(char, "Head", Vector3.new(1.0, 0.24, 0.12), CFrame.new(0, 0.05, -0.62), Color3.fromHex("161819"), Enum.Material.SmoothPlastic, "Visor")
+		end
+	elseif kind == "player" then
+		attach(char, "Head", Vector3.new(1.12, 0.3, 1.18), CFrame.new(0, 0.48, 0.05), Color3.fromHex("3E4236"), Enum.Material.Fabric, "Cap")
+	end
+	local armor = gear.armor and Items.defs[gear.armor]
+	local rig = gear.rig and Items.defs[gear.rig]
+	if armor then
+		local cls = armor.armor.class
+		attach(char, "UpperTorso", Vector3.new(2.0 + cls * 0.03, 1.5 + cls * 0.03, 1.2 + cls * 0.05), CFrame.new(0, 0.05, 0), gc, Enum.Material.Fabric, "Vest")
+		if armor.armor.zones and armor.armor.zones.arms then
+			for _, side in { "LeftUpperArm", "RightUpperArm" } do
+				attach(char, side, Vector3.new(1.08, 0.9, 1.08), CFrame.new(0, 0.15, 0), gc, Enum.Material.Fabric, "ArmGuard")
+			end
+		end
+	end
+	if rig then
+		local plate = rig.armor ~= nil
+		if plate and not armor then
+			attach(char, "UpperTorso", Vector3.new(2.05, 1.55, 1.3), CFrame.new(0, 0.05, 0), gc, Enum.Material.Fabric, "Vest")
+		end
+		local n = rig.grid and rig.grid.w or 3
+		for i = 1, math.min(n, 4) do
+			local x = (i - (math.min(n, 4) + 1) / 2) * 0.48
+			attach(char, "UpperTorso", Vector3.new(0.44, 0.58, 0.3), CFrame.new(x, -0.25, -0.72 - (armor and 0.06 or 0)), gc, Enum.Material.Fabric, "Pouch")
+		end
 	end
 	if kind == "player" then
-		local cam = attach(char, "UpperTorso", Vector3.new(0.34, 0.42, 0.18), CFrame.new(-0.45, 0.35, -0.75), Color3.fromHex("1A1C1D"), Enum.Material.SmoothPlastic, "BodyCam")
+		local cam = attach(char, "UpperTorso", Vector3.new(0.34, 0.42, 0.18), CFrame.new(-0.45, 0.35, -0.8), Color3.fromHex("1A1C1D"), Enum.Material.SmoothPlastic, "BodyCam")
 		if cam then
-			local lens = attach(char, "UpperTorso", Vector3.new(0.14, 0.14, 0.05), CFrame.new(-0.45, 0.42, -0.86), Color3.fromHex("C24A35"), Enum.Material.Neon, "CamLens")
+			local lens = attach(char, "UpperTorso", Vector3.new(0.14, 0.14, 0.05), CFrame.new(-0.45, 0.42, -0.91), Color3.fromHex("C24A35"), Enum.Material.Neon, "CamLens")
 			if lens then
 				lens.CastShadow = false
 			end
 		end
 	end
-	if gear and gear.bag then
-		attach(char, "UpperTorso", Vector3.new(1.6, 1.9, 0.85), CFrame.new(0, 0, 1.05), Color3.fromHex("6B6A4E"), Enum.Material.Fabric, "Pack")
+	if gear.back then
+		local size = PACK_SIZE[gear.back] or PACK_SIZE.CANVAS_BAG
+		attach(char, "UpperTorso", size, CFrame.new(0, 0.1 - (size.Y - 1.8) * 0.3, 0.62 + size.Z * 0.5), Color3.fromHex("6B6A4E"), Enum.Material.Fabric, "Pack")
 	end
-	if gear and gear.rifle then
+	if gear.primary then
 		rifle(char, nil)
+	end
+	if gear.holster then
+		attach(char, "LowerTorso", Vector3.new(0.22, 0.5, 0.42), CFrame.new(0.72, -0.1, 0), Color3.fromHex("23262A"), Enum.Material.SmoothPlastic, "Holster")
 	end
 	local head = char:FindFirstChild("Head")
 	if head then
@@ -198,7 +251,7 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?)
 		regen:Destroy()
 	end
 	char:PivotTo(cf)
-	Chars.dress(char, "player", holder and { bag = holder.slots.bag ~= nil, rifle = holder.slots.primary ~= nil } or nil)
+	Chars.dress(char, "player", Chars.gearOf(holder))
 	char:SetAttribute("InRaid", holder ~= nil)
 	hum.Died:Connect(function()
 		Chars.ragdoll(char)

@@ -13,13 +13,12 @@ local Config = {
 	INTERACT_RANGE = 10,
 	RESPAWN_DELAY = 4,
 
-	STASH_W = 8,
-	STASH_H = 6,
+	STASH_W = 10,
+	STASH_H = 20,
 	POCKETS_W = 4,
 	POCKETS_H = 1,
-	CONTAINER_MAX_ITEMS = 12,
-
-	START_MONEY = 1000,
+	START_MONEY = 250000,
+	RECOVERY_MONEY = 60000, -- free basic kit only when broke and without any firearm
 	SELL_RATE = 0.6,
 	MAX_HEALTH = 100,
 	MAX_STAMINA = 100,

@@ -222,7 +222,8 @@ local function spawnGuard(routeName, myGen)
 	hum.WalkSpeed = WALK
 	local idx = math.random(1, #route)
 	model:PivotTo(CFrame.new(route[idx] + Vector3.new(0, 3.3, 0)))
-	ctx.Chars.dress(model, "guard", { rifle = true })
+	local loadout = ctx.Loot.guardLoadout(Random.new())
+	ctx.Chars.dress(model, "guard", ctx.Chars.gearOf(loadout))
 	model:SetAttribute("ZR_AI", true)
 	model.Parent = folder
 	local root = model:FindFirstChild("HumanoidRootPart")
@@ -231,7 +232,7 @@ local function spawnGuard(routeName, myGen)
 	end)
 	local g = {
 		model = model, hum = hum, root = root, head = model:FindFirstChild("Head"), route = route, wp = idx,
-		state = "PATROL", lastSeen = 0, nextShot = 0, burst = 3, nextPath = 0, alive = true, name = routeName,
+		state = "PATROL", lastSeen = 0, nextShot = 0, burst = 3, nextPath = 0, alive = true, name = routeName, inv = loadout,
 	}
 	table.insert(guards, g)
 	hum.Died:Connect(function()
@@ -287,7 +288,7 @@ function AI.onKilled(model, _attacker)
 	g.alive = false
 	g.state = "DEAD"
 	model:SetAttribute("State", "DEAD")
-	ctx.Loot.spawnBody(model, "guard")
+	ctx.Loot.spawnBody(model, g.inv or ctx.Loot.guardLoadout(Random.new()), "Harbor Watch")
 	task.delay(90, function()
 		if model.Parent then
 			model:Destroy()

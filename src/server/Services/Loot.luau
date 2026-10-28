@@ -1,7 +1,11 @@
 --!nonstrict
--- World loot: server-rolled contents with stable GUIDs, timed search, range checks, atomic claims.
+-- World loot (Tarkov-style): containers are real inventory holders with grids. Opening one starts a
+-- progressive search that reveals contents one item at a time (per player, resumable). Bodies expose their
+-- equipment; their pockets/rig/backpack are searched the same way. Dropped gear forms ground piles.
+-- All moves go through Raid.inv (holder refs "c:<cid>"); this module owns access checks and views.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
+local Items = require(Shared.Items)
 local Inv = require(script.Parent.Inv)
 
 local Loot = {}
@@ -10,25 +14,61 @@ local containers = {}
 local pileN = 0
 Loot.containers = containers
 
--- weighted pools: n = stack range, a = magazine rounds range
+-- container kinds: grid size + loot pool
+local KINDS = {
+	crate = { w = 5, h = 4, count = { 2, 5 }, pool = "crate" },
+	locker = { w = 4, h = 5, count = { 2, 4 }, pool = "locker" },
+	drawer = { w = 3, h = 2, count = { 1, 3 }, pool = "drawer" },
+	medbag = { w = 4, h = 3, count = { 2, 4 }, pool = "medbag" },
+	weaponbox = { w = 6, h = 4, count = { 1, 3 }, pool = "weaponbox" },
+	toolbox = { w = 4, h = 3, count = { 2, 4 }, pool = "toolbox" },
+	jacket = { w = 2, h = 2, count = { 0, 2 }, pool = "jacket" },
+	safe = { w = 3, h = 3, count = { 1, 3 }, pool = "safe" },
+}
+Loot.KINDS = KINDS
+
+-- weighted pools: n = stack range, a = rounds range (for mags: ammo type from `at`)
 local POOLS = {
 	crate = {
-		{ id = "SIGNAL_COIL", w = 20 }, { id = "CERAMIC_FUSE", w = 20 }, { id = "UC62", w = 18, n = { 20, 45 } },
-		{ id = "BANDAGE", w = 10 }, { id = "CRACKED_LENS", w = 10 }, { id = "R17_MAG", w = 7, a = { 0, 25 } },
-		{ id = "DECK_TRANSCEIVER", w = 6 }, { id = "RUSTED_KEYCARD", w = 5 }, { id = "SEALED_DRIVE", w = 3 },
+		{ id = "BOLTS", w = 14 }, { id = "DUCT_TAPE", w = 12 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 10 },
+		{ id = "SIGNAL_COIL", w = 10 }, { id = "CERAMIC_FUSE", w = 10 }, { id = "A62_FMJ", w = 10, n = { 20, 45 } },
+		{ id = "A76_PS", w = 6, n = { 15, 40 } }, { id = "CAPACITOR", w = 6 }, { id = "BATTERY", w = 4 },
+		{ id = "FUEL_CAN", w = 3 }, { id = "DECK_TRANSCEIVER", w = 3 }, { id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" },
 	},
 	locker = {
-		{ id = "BANDAGE", w = 18 }, { id = "UC62", w = 18, n = { 15, 40 } }, { id = "CERAMIC_FUSE", w = 16 },
-		{ id = "RUSTED_KEYCARD", w = 12 }, { id = "R17_MAG", w = 10, a = { 5, 25 } }, { id = "SIGNAL_COIL", w = 10 },
-		{ id = "CRACKED_LENS", w = 8 }, { id = "SEALED_DRIVE", w = 5 },
+		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
+		{ id = "HARDTACK", w = 8 }, { id = "A9_PST", w = 10, n = { 10, 35 } }, { id = "P9_MAG", w = 5, a = { 0, 17 }, at = "A9_PST" },
+		{ id = "OLD_COIN", w = 5 }, { id = "KEY_OFFICE", w = 3 }, { id = "HELMET_C2", w = 3 }, { id = "RIG_BELT", w = 3 },
+		{ id = "BAG_SLING", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "CAPT_WATCH", w = 1 },
 	},
 	drawer = {
-		{ id = "SEALED_DRIVE", w = 16 }, { id = "RUSTED_KEYCARD", w = 18 }, { id = "CRACKED_LENS", w = 16 },
-		{ id = "CERAMIC_FUSE", w = 14 }, { id = "BANDAGE", w = 10 }, { id = "UC62", w = 8, n = { 10, 25 } },
+		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 12 }, { id = "OLD_COIN", w = 8 }, { id = "FLASH_MODULE", w = 4 },
+		{ id = "INTEL_FOLDER", w = 3 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 }, { id = "SEALED_DRIVE", w = 2 },
+		{ id = "GOLD_CHAIN", w = 3 }, { id = "PAINKILLERS", w = 6 },
 	},
-	guard = {
-		{ id = "UC62", w = 30, n = { 15, 40 } }, { id = "R17_MAG", w = 24, a = { 5, 25 } }, { id = "BANDAGE", w = 18 },
-		{ id = "SIGNAL_COIL", w = 10 }, { id = "RUSTED_KEYCARD", w = 8 }, { id = "SEALED_DRIVE", w = 4 },
+	medbag = {
+		{ id = "BANDAGE", w = 20 }, { id = "TOURNIQUET", w = 12 }, { id = "SPLINT", w = 12 }, { id = "PAINKILLERS", w = 12 },
+		{ id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MEDKIT_L", w = 3 },
+		{ id = "MED_TOOLS", w = 4 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 },
+	},
+	weaponbox = {
+		{ id = "A62_FMJ", w = 14, n = { 30, 60 } }, { id = "A62_AP", w = 4, n = { 15, 40 } }, { id = "A76_PS", w = 10, n = { 30, 60 } },
+		{ id = "A76_BP", w = 2, n = { 10, 30 } }, { id = "A9_PST", w = 10, n = { 25, 50 } }, { id = "A12_BUCK", w = 8, n = { 8, 20 } },
+		{ id = "A12_SLUG", w = 4, n = { 5, 15 } }, { id = "A76L_LPS", w = 4, n = { 10, 30 } }, { id = "R17_MAG", w = 8, a = { 0, 25 }, at = "A62_FMJ" },
+		{ id = "KST_MAG", w = 6, a = { 0, 30 }, at = "A76_PS" }, { id = "SPARROW_MAG", w = 5, a = { 0, 30 }, at = "A9_PST" },
+		{ id = "P9_PISTOL", w = 4 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "KST_RIFLE", w = 1 },
+	},
+	toolbox = {
+		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
+		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 },
+	},
+	jacket = {
+		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
+		{ id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "PAINKILLERS", w = 4 }, { id = "RUSTED_KEYCARD", w = 1 },
+	},
+	safe = {
+		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
+		{ id = "COLD_WALLET", w = 2 }, { id = "OLD_COIN", w = 10 },
 	},
 }
 Loot.POOLS = POOLS
@@ -37,55 +77,149 @@ local function fail(code, msg)
 	return ctx.Remotes.fail(code, msg)
 end
 
-function Loot.roll(rand, poolName, count)
+function Loot.rollEntry(rand, poolName)
 	local pool = POOLS[poolName] or POOLS.crate
 	local total = 0
 	for _, e in pool do
 		total += e.w
 	end
-	local out = {}
+	local r = rand:NextNumber() * total
+	for _, e in pool do
+		r -= e.w
+		if r <= 0 then
+			local n = e.n and rand:NextInteger(e.n[1], e.n[2]) or 1
+			local extra = nil
+			if e.a then
+				local a = rand:NextInteger(e.a[1], e.a[2])
+				extra = { a = a, at = a > 0 and e.at or nil }
+			end
+			return Inv.newItem(e.id, n, extra)
+		end
+	end
+	return nil
+end
+
+-- fill a box holder's main grid; returns the reveal order (top-level guids)
+function Loot.fill(holder, rand, poolName, count)
+	local order = {}
 	for _ = 1, count do
-		local r = rand:NextNumber() * total
-		for _, e in pool do
-			r -= e.w
-			if r <= 0 then
-				local n = e.n and rand:NextInteger(e.n[1], e.n[2]) or 1
-				local extra = e.a and { a = rand:NextInteger(e.a[1], e.a[2]) } or nil
-				local g, it = Inv.newItem(e.id, n, extra)
-				table.insert(out, { g = g, it = it })
-				break
+		local g, it = Loot.rollEntry(rand, poolName)
+		if g then
+			local ok, info = Inv.place(holder, g, it, { "main" })
+			if ok and info ~= "MERGED" then
+				table.insert(order, g)
 			end
 		end
 	end
-	return out
+	return order
 end
 
--- Pure claim used by take(): moves bundle g from container c into holder. No yields => atomic per server.
-function Loot.claim(c, g, holder)
-	local idx
-	for i, b in c.items do
-		if b.g == g then
-			idx = i
-			break
+-- ── reveal (search) ───────────────────────────────────────────────────────────
+-- Boxes: units = top-level items. Bodies: unit 0 = worn gear (instant), then each searchable grid.
+local function revealCost(c, unit)
+	if c.body then
+		local pl = c.holder.grids[unit]
+		local n = 0
+		for _ in pl or {} do
+			n += 1
+		end
+		return 0.6 + n * 0.35
+	end
+	local it = c.holder.items[unit]
+	local d = it and Items.defs[it.id]
+	local cells = d and d.w * d.h or 1
+	local rare = d and (Items.RARITY[d.rarity] or 0) or 0
+	return 0.45 + cells * 0.12 + rare * 0.18
+end
+
+local function units(c)
+	if not c.body then
+		return c.order
+	end
+	local list = { "pockets" }
+	local h = c.holder
+	for _, s in { "rig", "back" } do
+		local g = h.slots[s]
+		if g and h.grids[g] then
+			table.insert(list, g)
 		end
 	end
-	if not idx then
-		return false, "GONE"
-	end
-	local done, err = Inv.give(holder, c.items[idx], { "pockets", "bag" })
-	if not done then
-		return false, err
-	end
-	table.remove(c.items, idx)
-	return true, nil
+	return list
 end
 
-function Loot.view(c)
-	local out = {}
-	for _, b in c.items do
-		table.insert(out, { g = b.g, id = b.it.id, n = b.it.n, a = b.it.a, sub = b.sub and { id = b.sub.it.id, a = b.sub.it.a } or nil })
+-- Is item g visible to player? (revealed by their search)
+function Loot.visible(c, player, g)
+	local h = c.holder
+	if not h.items[g] then
+		return false
 	end
-	return out
+	local n = c.revealed[player] or 0
+	local list = units(c)
+	if not c.body then
+		local top = Inv.topOf(h, g)
+		local idx = table.find(list, top)
+		return idx ~= nil and idx <= n
+	end
+	-- bodies: worn items are visible; contents need their grid searched
+	local cur = g
+	for _ = 1, 32 do
+		local k, a = Inv.locate(h, cur)
+		if k == "slot" then
+			return true
+		end
+		if k == "grid" then
+			local idx = table.find(list, a)
+			if idx then
+				return idx <= n
+			end
+			if a == "main" then
+				return true
+			end
+			cur = a
+		elseif k == "mag" then
+			cur = a
+		else
+			return false
+		end
+	end
+	return false
+end
+
+-- snapshot of what this player can see
+function Loot.view(c, player)
+	local h = c.holder
+	local items = {}
+	for g in h.items do
+		if Loot.visible(c, player, g) then
+			items[g] = h.items[g]
+		end
+	end
+	local slots = {}
+	for s, g in h.slots do
+		slots[s] = g
+		items[g] = h.items[g]
+	end
+	local grids = {}
+	local list0 = units(c)
+	local n0 = c.revealed[player] or 0
+	for cid, pl in h.grids do
+		local unitIdx = c.body and table.find(list0, cid) or nil
+		local hidden = unitIdx ~= nil and unitIdx > n0
+		if not hidden and (Inv.BUILTIN[cid] or items[cid] ~= nil) then
+			local out = {}
+			for g, p in pl do
+				if items[g] then
+					out[g] = p
+				end
+			end
+			grids[cid] = out
+		end
+	end
+	local list = units(c)
+	return {
+		cid = c.id, label = c.label, kind = c.kind, body = c.body or nil, items = items, grids = grids, slots = slots,
+		mainW = h.mainW, mainH = h.mainH, searched = (c.revealed[player] or 0) >= #list, searching = c.searching[player] ~= nil,
+	}
 end
 
 local function reach(player, c, slack)
@@ -107,12 +241,13 @@ local function reach(player, c, slack)
 	end
 	return true, s
 end
+Loot.reach = reach
 
 local function send(player, c)
-	ctx.Remotes.note(player, "loot", { cid = c.id, label = c.label, items = Loot.view(c) })
+	ctx.Remotes.note(player, "loot", Loot.view(c, player))
 end
 
-local function broadcast(c)
+function Loot.broadcast(c)
 	for p in c.viewers do
 		if p.Parent and reach(p, c, 4) then
 			send(p, c)
@@ -120,6 +255,108 @@ local function broadcast(c)
 			c.viewers[p] = nil
 		end
 	end
+end
+
+-- container a player may manipulate right now (opened, in reach)
+function Loot.access(player, cid)
+	local c = containers[cid]
+	if not c then
+		return nil, "GONE"
+	end
+	local okR, err = reach(player, c, 3)
+	if not okR then
+		return nil, err
+	end
+	if not c.viewers[player] then
+		return nil, "NOT_OPEN"
+	end
+	return c, nil
+end
+
+local function searchLoop(player, c)
+	if c.searching[player] then
+		return
+	end
+	c.searching[player] = true
+	local list = units(c)
+	while (c.revealed[player] or 0) < #list do
+		local nextUnit = list[(c.revealed[player] or 0) + 1]
+		local t = revealCost(c, nextUnit)
+		ctx.Remotes.note(player, "search", { cid = c.id, t = t, label = c.label })
+		task.wait(t)
+		if containers[c.id] ~= c or not c.viewers[player] or not reach(player, c, 2) then
+			ctx.Remotes.note(player, "search", { cid = c.id, cancel = true })
+			c.searching[player] = nil
+			return
+		end
+		c.revealed[player] = (c.revealed[player] or 0) + 1
+		list = units(c)
+		send(player, c)
+	end
+	c.searching[player] = nil
+	ctx.Remotes.note(player, "search", { cid = c.id, cancel = true })
+	send(player, c)
+end
+
+function Loot.open(player, cid)
+	local c = containers[cid]
+	if not c or not reach(player, c, 1) then
+		return
+	end
+	if not ctx.Remotes.allow(player, "open", 2, 3) then
+		return
+	end
+	if c.locked and not c.unlocked then
+		ctx.Remotes.note(player, "toast", { text = "LOCKED", tone = "warn" })
+		return
+	end
+	c.viewers[player] = true
+	send(player, c)
+	task.spawn(searchLoop, player, c)
+end
+
+function Loot.close(player, cid)
+	local c = containers[cid]
+	if c then
+		c.viewers[player] = nil
+	end
+end
+
+-- call after any change to a container's holder
+function Loot.changed(c)
+	if not c.body then
+		-- newly put items are already known to whoever put them; keep order list in sync
+		local seen = {}
+		for _, g in c.order do
+			seen[g] = true
+		end
+		for g in c.holder.grids.main or {} do
+			if not seen[g] then
+				table.insert(c.order, g)
+				for p, n in c.revealed do
+					if n >= #c.order - 1 then
+						c.revealed[p] = n + 1
+					end
+				end
+			end
+		end
+		for i = #c.order, 1, -1 do
+			local g = c.order[i]
+			if not (c.holder.grids.main or {})[g] then
+				table.remove(c.order, i)
+				for p, n in c.revealed do
+					if n >= i then
+						c.revealed[p] = n - 1
+					end
+				end
+			end
+		end
+	end
+	if c.temp and c.pile and next(c.holder.items) == nil and c.part then
+		c.part:Destroy()
+		containers[c.id] = nil
+	end
+	Loot.broadcast(c)
 end
 
 function Loot.reset(seed)
@@ -133,98 +370,57 @@ function Loot.reset(seed)
 	end
 	local rand = Random.new(seed)
 	for _, c in containers do
-		local count = (c.kind == "drawer") and rand:NextInteger(1, 3) or rand:NextInteger(2, 4)
-		c.items = Loot.roll(rand, c.kind, count)
-		c.searched = {}
-		c.viewers = {}
-		c.searching = {}
+		local k = KINDS[c.kind] or KINDS.crate
+		c.holder = Inv.newHolder("box", k.w, k.h)
+		c.order = Loot.fill(c.holder, rand, k.pool, rand:NextInteger(k.count[1], k.count[2]))
+		c.revealed, c.viewers, c.searching = {}, {}, {}
+		c.unlocked = nil
 	end
 end
 
-function Loot.open(player, cid)
-	local c = containers[cid]
-	if not c or not reach(player, c, 1) then
-		return
+local function lootFolder()
+	local folder = workspace:FindFirstChild("ZR_Loot")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "ZR_Loot"
+		folder.Parent = workspace
 	end
-	if not ctx.Remotes.allow(player, "open", 2, 3) then
-		return
-	end
-	if not c.searched[player] then
-		if c.searching[player] then
-			return
+	return folder
+end
+
+local function prompt(part, label, action)
+	local pp = Instance.new("ProximityPrompt")
+	pp.ActionText = action or "Search"
+	pp.ObjectText = label
+	pp.HoldDuration = 0
+	pp.MaxActivationDistance = Config.INTERACT_RANGE - 1
+	pp.RequiresLineOfSight = false
+	pp.Style = Enum.ProximityPromptStyle.Custom
+	pp.Parent = part
+	return pp
+end
+
+function Loot.register(c)
+	containers[c.id] = c
+	return c
+end
+
+-- ground pile at pos (merges into a nearby pile); bundles = Inv.take results
+function Loot.spawnPile(pos, bundles)
+	for _, c in containers do
+		if c.pile and c.part and (c.part.Position - pos).Magnitude < 3.5 then
+			local allOk = true
+			for _, b in bundles do
+				if not Inv.give(c.holder, b, nil, { "main" }) then
+					allOk = false
+				end
+			end
+			if allOk then
+				Loot.changed(c)
+				return c
+			end
 		end
-		c.searching[player] = true
-		ctx.Remotes.note(player, "search", { cid = cid, t = Config.SEARCH_TIME, label = c.label })
-		task.wait(Config.SEARCH_TIME)
-		c.searching[player] = nil
-		if containers[cid] ~= c or not reach(player, c, 2) then
-			ctx.Remotes.note(player, "search", { cid = cid, cancel = true })
-			return
-		end
-		c.searched[player] = true
 	end
-	c.viewers[player] = true
-	send(player, c)
-end
-
-function Loot.take(player, cid, g)
-	if type(cid) ~= "string" or type(g) ~= "string" then
-		return fail("BAD_INPUT")
-	end
-	local c = containers[cid]
-	if not c then
-		return fail("GONE")
-	end
-	local okk, s = reach(player, c, 3)
-	if not okk then
-		return fail(s)
-	end
-	if not c.searched[player] then
-		return fail("NOT_AUTHORIZED")
-	end
-	local done, err = Loot.claim(c, g, s.inv)
-	broadcast(c)
-	if not done then
-		ctx.Raid.push(player)
-		if err == "GONE" then
-			send(player, c)
-			return fail("GONE", "Already taken.")
-		end
-		return fail(err, "No space in pockets or pack.")
-	end
-	ctx.Raid.afterChange(player, true)
-	return ctx.Remotes.ok()
-end
-
-function Loot.put(player, cid, g)
-	if type(cid) ~= "string" or type(g) ~= "string" then
-		return fail("BAD_INPUT")
-	end
-	local c = containers[cid]
-	if not c then
-		return fail("GONE")
-	end
-	local okk, s = reach(player, c, 3)
-	if not okk then
-		return fail(s)
-	end
-	if not c.searched[player] then
-		return fail("NOT_AUTHORIZED")
-	end
-	if #c.items >= Config.CONTAINER_MAX_ITEMS then
-		return fail("FULL", "Container is full.")
-	end
-	local bundle = Inv.take(s.inv, g)
-	if not bundle then
-		return fail("NO_ITEM")
-	end
-	table.insert(c.items, bundle)
-	broadcast(c)
-	ctx.Raid.afterChange(player, true)
-	return ctx.Remotes.ok()
-end
-
-function Loot.spawnPile(pos, label, items, kind)
 	pileN += 1
 	local cid = "P" .. pileN
 	local rp = RaycastParams.new()
@@ -234,73 +430,112 @@ function Loot.spawnPile(pos, label, items, kind)
 	local ground = hit and hit.Position or pos
 	local part = Instance.new("Part")
 	part.Name = "Loot_" .. cid
-	part.Size = (kind == "body") and Vector3.new(2.2, 1.1, 1.6) or Vector3.new(1.8, 0.9, 1.3)
+	part.Size = Vector3.new(1.8, 0.7, 1.3)
 	part.Anchored = true
 	part.CanCollide = false
-	part.Color = (kind == "body") and Color3.fromHex("2F3438") or Color3.fromHex("4A4B3E")
+	part.Color = Color3.fromHex("4A4B3E")
 	part.Material = Enum.Material.Fabric
 	part.CFrame = CFrame.new(ground + Vector3.new(0, part.Size.Y / 2, 0)) * CFrame.Angles(0, math.random() * 6.28, 0)
-	local pp = Instance.new("ProximityPrompt")
-	pp.ActionText = "Search"
-	pp.ObjectText = label
-	pp.HoldDuration = 0
-	pp.MaxActivationDistance = Config.INTERACT_RANGE - 1
-	pp.RequiresLineOfSight = false
-	pp.Style = Enum.ProximityPromptStyle.Custom
-	pp.Parent = part
-	local folder = workspace:FindFirstChild("ZR_Loot")
-	if not folder then
-		folder = Instance.new("Folder")
-		folder.Name = "ZR_Loot"
-		folder.Parent = workspace
+	local holder = Inv.newHolder("box", 8, 8)
+	local c = { id = cid, kind = "pile", label = "Dropped gear", part = part, holder = holder, order = {}, revealed = {}, viewers = {}, searching = {}, temp = true, pile = true }
+	for _, b in bundles do
+		Inv.give(holder, b, nil, { "main" })
 	end
-	part.Parent = folder
-	local c = { id = cid, kind = kind or "pile", label = label, part = part, items = items, searched = {}, viewers = {}, searching = {}, temp = true }
+	for g in holder.grids.main do
+		table.insert(c.order, g)
+	end
+	prompt(part, "Dropped gear", "Loot")
+	part.Parent = lootFolder()
 	containers[cid] = c
-	pp.Triggered:Connect(function(p)
+	part:FindFirstChildOfClass("ProximityPrompt").Triggered:Connect(function(p)
+		c.revealed[p] = #c.order -- dropped gear needs no search
 		Loot.open(p, cid)
 	end)
 	return c
 end
 
-function Loot.drop(player, g)
-	if type(g) ~= "string" then
-		return fail("BAD_INPUT")
-	end
-	local s = ctx.Raid.session(player)
-	local char = player.Character
-	local root = char and char:FindFirstChild("HumanoidRootPart")
-	if not s or not root then
-		return fail("NOT_AUTHORIZED")
-	end
-	local bundle = Inv.take(s.inv, g)
-	if not bundle then
-		return fail("NO_ITEM")
-	end
-	local c = Loot.spawnPile(root.Position + root.CFrame.LookVector * 2.5, "Dropped gear", { bundle }, "pile")
-	ctx.Raid.afterChange(player, true)
-	return ctx.Remotes.ok({ cid = c.id })
+-- a corpse: holder = full inventory (slots/pockets/containers). part = something to stand next to.
+function Loot.spawnBody(model, holder, label)
+	pileN += 1
+	local cid = "B" .. pileN
+	local root = model and (model:FindFirstChild("UpperTorso") or model:FindFirstChild("HumanoidRootPart"))
+	local anchor = Instance.new("Part")
+	anchor.Name = "Body_" .. cid
+	anchor.Size = Vector3.new(2.6, 1.2, 2.6)
+	anchor.Transparency = 1
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CFrame = CFrame.new(root and root.Position or model:GetPivot().Position)
+	anchor.Parent = lootFolder()
+	local c = { id = cid, kind = "body", body = true, label = label or "Body", part = anchor, holder = holder, order = {}, revealed = {}, viewers = {}, searching = {}, temp = true }
+	containers[cid] = c
+	prompt(anchor, label or "Body", "Search").Triggered:Connect(function(p)
+		Loot.open(p, cid)
+	end)
+	-- keep the prompt on the ragdoll as it settles
+	task.spawn(function()
+		for _ = 1, 12 do
+			task.wait(0.5)
+			if not anchor.Parent then
+				return
+			end
+			if root and root.Parent then
+				anchor.CFrame = CFrame.new(root.Position)
+			end
+		end
+	end)
+	return c
 end
 
-function Loot.spawnBody(model, poolName)
-	local root = model:FindFirstChild("HumanoidRootPart")
-	local pos = root and root.Position or model:GetPivot().Position
-	local items = Loot.roll(Random.new(), poolName or "guard", math.random(2, 4))
-	return Loot.spawnPile(pos + Vector3.new(1.5, 0, 0), "Harbor Watch kit", items, "body")
+-- temporary guard loadout until the AI loadout generator (M8) owns this
+function Loot.guardLoadout(rand)
+	rand = rand or Random.new()
+	local h = Inv.newHolder("raid")
+	local function slot(slotName, id, extra)
+		local g, it = Inv.newItem(id, 1, extra)
+		Inv.placeSlot(h, g, it, slotName)
+		return g
+	end
+	local wg = slot("primary", "R17_RIFLE")
+	local mg, mag = Inv.newItem("R17_MAG", 1, { a = rand:NextInteger(4, 25), at = "A62_FMJ" })
+	h.items[mg] = mag
+	h.items[wg].mag = mg
+	local rig = slot("rig", rand:NextNumber() < 0.5 and "RIG_CHEST" or "RIG_BELT")
+	if rand:NextNumber() < 0.45 then
+		slot("armor", rand:NextNumber() < 0.7 and "ARMOR_C2" or "ARMOR_C3", { dur = rand:NextInteger(18, 45) })
+	end
+	if rand:NextNumber() < 0.4 then
+		slot("head", "HELMET_C2", { dur = rand:NextInteger(10, 30) })
+	end
+	for _ = 1, rand:NextInteger(1, 2) do
+		local g, it = Inv.newItem("R17_MAG", 1, { a = rand:NextInteger(0, 25), at = "A62_FMJ" })
+		if it.a == 0 then
+			it.at = nil
+		end
+		Inv.place(h, g, it, { rig })
+	end
+	for _ = 1, rand:NextInteger(0, 3) do
+		local g, it = Loot.rollEntry(rand, "jacket")
+		if g then
+			Inv.place(h, g, it, { "pockets", rig })
+		end
+	end
+	return h
 end
 
 function Loot.init(c)
 	ctx = c
 	for _, spot in ctx.World.containers do
-		local entry = { id = spot.id, kind = spot.kind, label = spot.label, part = spot.part, items = {}, searched = {}, viewers = {}, searching = {} }
+		local entry = { id = spot.id, kind = spot.kind, label = spot.label, part = spot.part, holder = Inv.newHolder("box", 5, 4), order = {}, revealed = {}, viewers = {}, searching = {} }
 		containers[spot.id] = entry
 		spot.prompt.Triggered:Connect(function(player)
 			Loot.open(player, spot.id)
 		end)
 	end
 	ctx.Remotes.onReq("loot", function(player, p)
-		if p.op == "close" and type(p.cid) == "string" and containers[p.cid] then
-			containers[p.cid].viewers[player] = nil
+		if p.op == "close" and type(p.cid) == "string" then
+			Loot.close(player, p.cid)
 		end
 		return ctx.Remotes.ok()
 	end, 6, 8)

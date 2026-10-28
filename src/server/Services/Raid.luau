@@ -70,10 +70,10 @@ function Raid.state(player)
 		money = prof.money,
 		phase = s and "RAID" or "SAFEHOUSE",
 		items = h.items,
-		pockets = h.pockets,
-		bag = h.bag,
+		grids = h.grids,
 		slots = h.slots,
-		stash = (not s) and prof.stash or nil,
+		known = prof.known,
+		active = s and s.active or nil,
 		stats = prof.stats,
 		settings = prof.settings,
 		persistence = ctx.Store.mode,
@@ -161,6 +161,7 @@ function Raid.deploy(player, p)
 	local s = {
 		id = raidId, inv = raidInv, state = "ACTIVE", started = t, endsAt = t + Config.RAID_DURATION,
 		spawn = spawn.id, extracts = spawn.extracts, kills = 0, risked = {}, found = {},
+		active = (raidInv.slots.primary and "primary") or (raidInv.slots.secondary and "secondary") or (raidInv.slots.holster and "holster") or nil,
 	}
 	for g in raidInv.items do
 		s.risked[g] = true
@@ -217,12 +218,20 @@ function Raid.finalize(player, outcome)
 		kills = s.kills,
 		retained = receipt and receipt.retained or {},
 		lost = receipt and receipt.lost or {},
+		kept = receipt and receipt.kept or {},
 		value = receipt and receipt.value or 0,
 		found = itemsList(s.inv, function(g)
 			return not s.risked[g]
 		end),
 	}
 	ctx.Combat.reset(player)
+	-- what was lost stays in the world as a lootable body (KIA) for whoever finds it
+	if outcome == "KIA" and receipt and next(s.inv.items) ~= nil then
+		local char = player.Character
+		if char then
+			ctx.Loot.spawnBody(char, s.inv, player.DisplayName)
+		end
+	end
 	if player.Parent and outcome ~= "DISCONNECTED" then
 		ctx.Remotes.note(player, "summary", summary)
 		task.delay((outcome == "KIA") and Config.RESPAWN_DELAY or 0.6, function()
@@ -261,25 +270,106 @@ function Raid.addKill(player)
 end
 
 -- ── inventory requests ────────────────────────────────────────────────────────
+-- holder refs: "me" (profile in the safehouse, raid kit in raid) | "c:<cid>" (opened container / body)
 local function validDest(d)
 	if type(d) ~= "table" then
 		return nil
 	end
 	if d.slot ~= nil then
-		if d.slot == "primary" or d.slot == "bag" then
+		if type(d.slot) == "string" and Items.SLOTS[d.slot] then
 			return { slot = d.slot }
 		end
 		return nil
 	end
-	if (d.c == "stash" or d.c == "pockets" or d.c == "bag") and Grid.isInt(d.x) and Grid.isInt(d.y) then
+	if type(d.c) == "string" and #d.c <= 40 and Grid.isInt(d.x) and Grid.isInt(d.y) then
 		return { c = d.c, x = d.x, y = d.y, r = (d.r == 1) and 1 or 0 }
 	end
 	return nil
 end
 
+local function resolve(player, ref, inRaid)
+	if ref == nil or ref == "me" then
+		return Raid.holder(player), nil
+	end
+	if type(ref) == "string" and string.sub(ref, 1, 2) == "c:" and #ref <= 24 then
+		if not inRaid then
+			return nil, "NOT_IN_RAID"
+		end
+		local c, err = ctx.Loot.access(player, string.sub(ref, 3))
+		if not c then
+			return nil, err
+		end
+		return c.holder, c
+	end
+	return nil, "BAD_INPUT"
+end
+
+local SLOT_FOR = { helmet = "head", armor = "armor", rig = "rig", backpack = "back", secure = "secure", pistol = "holster", melee = "melee" }
+
+local function slotFor(h, d)
+	if d.kind == "weapon" then
+		return (not h.slots.primary and "primary") or (not h.slots.secondary and "secondary") or "primary"
+	end
+	return SLOT_FOR[d.kind]
+end
+
+-- items taken from the world in raid become "found in progress" (found-in-raid if extracted)
+local function markFound(s, h, g)
+	if not s then
+		return
+	end
+	local list = { g }
+	Inv.descendants(h, g, list)
+	for _, x in list do
+		local it = h.items[x]
+		if it and not s.risked[x] and not it.fir then
+			it.fip = true
+		end
+	end
+end
+
+local examining = {}
+
+local function examine(player, h, g, c)
+	local prof = ctx.Profiles.get(player)
+	local it = h.items[g]
+	if not it or not prof then
+		return fail("NO_ITEM")
+	end
+	if prof.known[it.id] or Items.knownByDefault(it.id) then
+		return fail("ALREADY_KNOWN")
+	end
+	if examining[player] then
+		return fail("BUSY")
+	end
+	local d = Items.defs[it.id]
+	local t = 1.2 + (Items.RARITY[d.rarity] or 0) * 0.7
+	examining[player] = true
+	ctx.Remotes.note(player, "progress", { label = "EXAMINING", t = t })
+	task.delay(t, function()
+		examining[player] = nil
+		if not player.Parent then
+			return
+		end
+		local still = (c and c.holder.items[g]) or (not c and Raid.holder(player).items[g])
+		if not still then
+			ctx.Remotes.note(player, "toast", { text = "EXAMINE INTERRUPTED", tone = "warn" })
+			return
+		end
+		prof.known[it.id] = true
+		ctx.Profiles.markDirty(player)
+		ctx.Remotes.note(player, "toast", { text = "EXAMINED: " .. string.upper(d.name), tone = "good" })
+		Raid.push(player)
+		if c then
+			ctx.Loot.broadcast(c)
+		end
+	end)
+	return ok()
+end
+
 function Raid.inv(player, p)
-	local h, inRaid = Raid.holder(player)
-	if not h then
+	local me, inRaid = Raid.holder(player)
+	if not me then
 		return fail("NOT_READY")
 	end
 	if deploying[player] then
@@ -289,95 +379,164 @@ function Raid.inv(player, p)
 	if g ~= nil and (type(g) ~= "string" or #g > 40) then
 		return fail("BAD_INPUT")
 	end
+	local s = sessions[player]
 	if inRaid then
-		local s = sessions[player]
 		local char = player.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 		if not s or s.done or not hum or hum.Health <= 0 then
 			return fail("NOT_AUTHORIZED")
 		end
 	end
+	local opts = { inRaid = inRaid }
+	local src, sc = resolve(player, p.from, inRaid)
+	if not src then
+		return fail(sc or "BAD_INPUT")
+	end
+	if g and sc and not ctx.Loot.visible(sc, player, g) then
+		return fail("NOT_SEARCHED")
+	end
+	local touched = sc
 	local done, err
-	if op == "move" then
-		local dest = validDest(p.dest)
-		if not dest then
-			return fail("BAD_INPUT")
-		end
-		if inRaid and dest.c == "stash" then
-			return fail("NO_ACCESS")
-		end
-		done, err = Inv.move(h, g, dest)
-	elseif op == "quick" then
-		local to = p.to
-		if to == "equip" then
-			local it = h.items[g]
-			local d = it and Items.defs[it.id]
-			if not d then
-				return fail("NO_ITEM")
+	if op == "move" or op == "quick" or op == "equip" then
+		local dst, dc = src, sc
+		if p.to ~= nil then
+			dst, dc = resolve(player, p.to, inRaid)
+			if not dst then
+				return fail(dc or "BAD_INPUT")
 			end
-			local slot = (d.kind == "weapon" and "primary") or (d.kind == "bag" and "bag") or nil
-			if not slot then
-				return fail("WRONG_SLOT")
-			end
-			done, err = Inv.move(h, g, { slot = slot })
-		elseif to == "pockets" or to == "bag" or (to == "stash" and not inRaid) then
-			done, err = Inv.autoMove(h, g, { to })
-		elseif to == "loadout" and not inRaid then
-			done, err = Inv.autoMove(h, g, { "pockets", "bag" })
-		else
-			return fail("BAD_INPUT")
 		end
-	elseif op == "take" then
-		if not inRaid then
-			return fail("NOT_IN_RAID")
-		end
-		return ctx.Loot.take(player, p.cid, g)
-	elseif op == "put" then
-		if not inRaid then
-			return fail("NOT_IN_RAID")
-		end
-		return ctx.Loot.put(player, p.cid, g)
-	elseif op == "drop" then
-		if not inRaid then
-			return fail("NOT_IN_RAID")
-		end
-		return ctx.Loot.drop(player, g)
-	elseif op == "use" then
-		if not inRaid then
-			return fail("NOT_IN_RAID")
-		end
-		return ctx.Combat.startHeal(player, g)
-	elseif op == "sell" then
-		if inRaid then
-			return fail("NOT_AUTHORIZED")
-		end
-		local it = h.items[g]
+		touched = touched or dc
+		local it = src.items[g]
 		if not it then
 			return fail("NO_ITEM")
 		end
-		local bundle = Inv.take(h, g)
-		if not bundle then
-			return fail("BAG_NOT_EMPTY")
+		local dest, order
+		if op == "move" then
+			dest = validDest(p.dest)
+			if not dest then
+				return fail("BAD_INPUT")
+			end
+		elseif op == "equip" then
+			local slot = slotFor(dst, Items.defs[it.id])
+			if not slot then
+				return fail("WRONG_SLOT")
+			end
+			if slot == "secure" and inRaid then
+				return fail("SECURE_LOCKED")
+			end
+			dest = { slot = slot }
+		else
+			if p.to == "stash" then
+				if inRaid then
+					return fail("NO_ACCESS")
+				end
+				dst, dc, order = me, nil, { "stash" }
+			elseif dst == me then
+				order = Inv.loadOrder(me)
+			else
+				order = Inv.loadOrder(dst)
+			end
 		end
-		local value = Items.valueOf(bundle.it) + (bundle.sub and Items.valueOf(bundle.sub.it) or 0)
-		h.money += math.floor(value * Config.SELL_RATE)
-		done = true
-	elseif op == "fill" then
-		if inRaid then
+		if src == dst then
+			if dest then
+				done, err = Inv.move(src, g, dest, opts)
+			else
+				done, err = Inv.autoPlace(src, g, order)
+			end
+		else
+			done, err = Inv.transfer(src, g, dst, dest, order, opts)
+			if done and dst == me and sc then
+				markFound(s, me, g)
+			end
+		end
+	elseif op == "split" then
+		if sc then
 			return fail("NOT_AUTHORIZED")
 		end
-		done = Inv.fillMags(h) > 0
-		err = "NOTHING_TO_LOAD"
+		local dest = validDest(p.dest)
+		if not dest or type(p.n) ~= "number" then
+			return fail("BAD_INPUT")
+		end
+		done, err = Inv.split(src, g, p.n, dest)
+	elseif op == "load" then
+		if sc or type(p.ammo) ~= "string" then
+			return fail("BAD_INPUT")
+		end
+		local n, e = Inv.loadAmmo(src, g, p.ammo)
+		done, err = n > 0, e
+	elseif op == "unload" then
+		if sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		local n, e = Inv.unloadAmmo(src, g, inRaid and Inv.loadOrder(src) or { "stash" })
+		done, err = n > 0, e
+	elseif op == "examine" then
+		return examine(player, src, g, sc)
+	elseif op == "use" then
+		if sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		if ctx.Health then
+			return ctx.Health.use(player, g, p.part)
+		end
+		return ctx.Combat.startHeal(player, g)
+	elseif op == "drop" then
+		if not inRaid or sc then
+			return fail("NOT_IN_RAID")
+		end
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if not root then
+			return fail("NOT_AUTHORIZED")
+		end
+		if me.slots.secure == g then
+			return fail("SECURE_LOCKED")
+		end
+		local b = Inv.take(me, g)
+		if not b then
+			return fail("NO_ITEM")
+		end
+		ctx.Loot.spawnPile(root.Position + root.CFrame.LookVector * 2.5 - Vector3.new(0, 2.5, 0), { b })
+		done = true
+	elseif op == "sell" or op == "discard" then
+		if inRaid or sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		local it = me.items[g]
+		if not it then
+			return fail("NO_ITEM")
+		end
+		if op == "sell" and not (me.known[it.id] or Items.knownByDefault(it.id)) then
+			return fail("UNKNOWN_ITEM", "Examine it first.")
+		end
+		if me.slots.secure == g then
+			return fail("NOT_AUTHORIZED")
+		end
+		local b = Inv.take(me, g)
+		if not b then
+			return fail("NO_ITEM")
+		end
+		if op == "sell" then
+			local value = Items.valueOf(b.it)
+			for _, sub in b.subs do
+				value += Items.valueOf(sub.it)
+			end
+			me.money += math.floor(value * Config.SELL_RATE)
+		end
+		done = true
 	elseif op == "recovery" then
 		if inRaid then
 			return fail("NOT_AUTHORIZED")
 		end
-		done, err = Settle.recoveryKit(h)
+		done, err = Settle.recoveryKit(me)
 	else
 		return fail("BAD_INPUT")
 	end
 	if not done then
 		return fail(err or "FAILED")
+	end
+	if touched then
+		ctx.Loot.changed(touched)
 	end
 	Raid.afterChange(player, inRaid)
 	return ok()

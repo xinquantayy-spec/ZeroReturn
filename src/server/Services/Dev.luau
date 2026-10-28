@@ -20,7 +20,10 @@ local function brief(h)
 	local list = {}
 	for g, it in h.items do
 		local where, info = Inv.locate(h, g)
-		table.insert(list, string.format("%s x%d%s @%s%s", it.id, it.n, it.a and ("(" .. it.a .. ")") or "", tostring(where), type(info) == "string" and (":" .. info) or ""))
+		if type(info) == "string" and #info > 12 then
+			info = h.items[info] and h.items[info].id or info
+		end
+		table.insert(list, string.format("%s x%d%s @%s%s%s", it.id, it.n, it.a and ("(" .. it.a .. ")") or "", tostring(where), type(info) == "string" and (":" .. info) or "", it.fip and " FIP" or (it.fir and " FIR" or "")))
 	end
 	table.sort(list)
 	return list
@@ -73,47 +76,109 @@ function C.tp(name, where)
 	return "ok " .. tostring(cf.Position)
 end
 
+-- open a world container (teleporting next to it) and wait for the search to finish
 function C.loot(name, cid)
 	local p = plr(name)
 	C.tp(name, cid)
 	task.wait(0.3)
 	ctx.Loot.open(p, cid)
 	local c = ctx.Loot.containers[cid]
-	return HttpService:JSONEncode(c and ctx.Loot.view(c) or "none")
+	local t0 = os.clock()
+	while c and c.searching[p] and os.clock() - t0 < 20 do
+		task.wait(0.2)
+	end
+	if not c then
+		return "none"
+	end
+	local v = ctx.Loot.view(c, p)
+	local list = {}
+	for g, it in v.items do
+		table.insert(list, it.id .. "x" .. it.n)
+	end
+	table.sort(list)
+	return HttpService:JSONEncode({ searched = v.searched, items = list })
 end
 
-function C.take(name, cid, index)
+local function firstVisible(p, c)
+	for g in c.holder.grids.main or {} do
+		if ctx.Loot.visible(c, p, g) then
+			return g
+		end
+	end
+	return nil
+end
+
+function C.take(name, cid)
 	local p = plr(name)
 	local c = ctx.Loot.containers[cid]
-	local b = c and c.items[index or 1]
-	if not b then
+	local g = c and firstVisible(p, c)
+	if not g then
 		return "nothing"
 	end
-	return HttpService:JSONEncode(ctx.Loot.take(p, cid, b.g))
+	return HttpService:JSONEncode(ctx.Remotes.dispatch(p, "inv", { op = "quick", g = g, from = "c:" .. cid, to = "me", rid = "take" .. g }))
+end
+
+-- take the first visible item from any grid or slot of a container/body (bodies: slots first)
+function C.takeAny(name, cid, slotFirst)
+	local p = plr(name)
+	local c = ctx.Loot.containers[cid]
+	if not c then
+		return "none"
+	end
+	local pick
+	if slotFirst then
+		for _, sg in c.holder.slots do
+			pick = sg
+			break
+		end
+	end
+	if not pick then
+		for _, pl in c.holder.grids do
+			for g in pl do
+				if ctx.Loot.visible(c, p, g) then
+					pick = g
+					break
+				end
+			end
+			if pick then
+				break
+			end
+		end
+	end
+	if not pick then
+		return "nothing visible"
+	end
+	local id = c.holder.items[pick].id
+	return id .. " " .. HttpService:JSONEncode(ctx.Remotes.dispatch(p, "inv", { op = "quick", g = pick, from = "c:" .. cid, to = "me", rid = "ta" .. pick }))
+end
+
+function C.bodies()
+	local out = {}
+	for cid, c in ctx.Loot.containers do
+		if c.body then
+			table.insert(out, cid)
+		end
+	end
+	return table.concat(out, ",")
 end
 
 function C.takeTwice(name, cid)
 	local p = plr(name)
 	local c = ctx.Loot.containers[cid]
-	local b = c and c.items[1]
-	if not b then
+	local g = c and firstVisible(p, c)
+	if not g then
 		return "nothing"
 	end
 	local r1, r2
 	task.spawn(function()
-		r1 = ctx.Remotes.dispatch(p, "inv", { op = "take", cid = cid, g = b.g, rid = "dupA" })
+		r1 = ctx.Remotes.dispatch(p, "inv", { op = "quick", g = g, from = "c:" .. cid, to = "me", rid = "dupA" })
 	end)
 	task.spawn(function()
-		r2 = ctx.Remotes.dispatch(p, "inv", { op = "take", cid = cid, g = b.g, rid = "dupB" })
+		r2 = ctx.Remotes.dispatch(p, "inv", { op = "quick", g = g, from = "c:" .. cid, to = "me", rid = "dupB" })
 	end)
 	task.wait(0.2)
-	local count = 0
-	for g in ctx.Raid.session(p).inv.items do
-		if g == b.g then
-			count += 1
-		end
-	end
-	return HttpService:JSONEncode({ r1 = r1, r2 = r2, copiesInBag = count })
+	local copies = (ctx.Raid.session(p).inv.items[g] and 1 or 0) + (c.holder.items[g] and 1 or 0)
+	return HttpService:JSONEncode({ r1 = r1, r2 = r2, copiesTotal = copies })
 end
 
 function C.kill(name)
@@ -205,8 +270,7 @@ function C.shotAbuse(name)
 		return "not in raid"
 	end
 	local before = ctx.Combat.stats.accepted
-	local wg = s.inv.slots.primary
-	local mag = wg and s.inv.items[wg].mag and s.inv.items[s.inv.items[wg].mag]
+	local _, _, _, _, mag = ctx.Combat.activeWeapon(s)
 	local ammo0 = mag and mag.a
 	local dir = Vector3.new(0, 0, -1)
 	for i = 1, 20 do

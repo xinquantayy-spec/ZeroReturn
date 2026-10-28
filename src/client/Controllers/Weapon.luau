@@ -44,32 +44,42 @@ local lastStance = nil
 local lastStanceT = 0
 local dryLatch = false
 
-local function wdef()
+-- active weapon from the snapshot (server decides the active slot)
+local function activeItem()
 	local d = ctx.State.data
-	local g = d and d.slots and d.slots.primary
-	local it = g and d.items[g]
+	if not d or not d.slots then
+		return nil, nil
+	end
+	local slot = d.active or "primary"
+	local g = d.slots[slot]
+	return g and d.items[g], d
+end
+
+local function wdef()
+	local it = activeItem()
 	local idef = it and Items.defs[it.id]
-	return idef and Weapons[idef.weapon], it
+	return idef and idef.weapon and Weapons[idef.weapon], it
 end
 
 local function computeAmmo()
-	local d = ctx.State.data
-	if not d or not d.slots then
+	local it, d = activeItem()
+	if not it then
 		return 0, 0, false
 	end
-	local g = d.slots.primary
-	local it = g and d.items[g]
-	local mag = it and it.mag and d.items[it.mag]
+	local idef = Items.defs[it.id]
+	local rounds = (idef.family and it.mag and d.items[it.mag]) or ((not idef.family) and it) or nil
 	local spare = 0
-	for _, c in { "pockets", "bag" } do
-		for gg in d[c] or {} do
+	for _, cid in { d.slots.rig or "", "pockets" } do
+		for gg in (d.grids and d.grids[cid]) or {} do
 			local x = d.items[gg]
-			if x and x.id == "R17_MAG" then
+			local xd = x and Items.defs[x.id]
+			if xd and xd.kind == "mag" and xd.family == idef.family then
 				spare += x.a or 0
 			end
 		end
 	end
-	return mag and mag.a or 0, spare, it ~= nil
+	Weapon.weaponName = string.upper(idef.name)
+	return rounds and rounds.a or 0, spare, idef.weapon ~= nil and Weapons[idef.weapon] ~= nil
 end
 Weapon.computeAmmo = computeAmmo
 
@@ -256,7 +266,7 @@ local function fireOnce(def)
 	end
 	ctx.Effects.sound(Sounds.R17_FIRE, SoundService, 0.9, 1 + math.random() * 0.06)
 	local k = (Weapon.aiming and 0.72 or 1) * (Weapon.crouching and 0.85 or 1)
-	ctx.Camera.kick(def.recoilPitch * k, (math.random() * 2 - 1) * def.recoilYaw)
+	ctx.Camera.kick(def.recoilV * k, (math.random() * 2 - 1) * def.recoilH)
 	kickZ += 0.045
 	kickRot += math.rad(2.2)
 end

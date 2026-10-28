@@ -52,40 +52,46 @@ function Screens.deploy()
 		return
 	end
 	local f, w, h = modal(560, 420, "DEPLOYMENT ORDER  //  " .. Config.MAP_NAME)
-	local wg = d.slots.primary
-	local w8 = wg and d.items[wg]
-	local mag = w8 and w8.mag and d.items[w8.mag]
-	local mags, rounds, meds, other, value = 0, 0, 0, 0, 0
-	for _, c in { "pockets", "bag" } do
-		for g in d[c] or {} do
-			local it = d.items[g]
-			local def = Items.defs[it.id]
-			if def.kind == "mag" then
-				mags += 1
-				rounds += it.a or 0
-			elseif def.kind == "heal" then
-				meds += it.n
-			else
-				other += 1
-			end
-			value += Items.valueOf(it)
+	-- loadout summary from worn gear and carried containers
+	local value, mags, rounds, meds = 0, 0, 0, 0
+	local function walk(g, depth)
+		local it = d.items[g]
+		if not it or depth > 6 then
+			return
+		end
+		local def = Items.defs[it.id]
+		value += Items.valueOf(it)
+		if def.kind == "mag" then
+			mags += 1
+			rounds += it.a or 0
+		elseif def.kind == "med" then
+			meds += 1
+		end
+		if it.mag then
+			walk(it.mag, depth + 1)
+		end
+		for cg in (d.grids and d.grids[g]) or {} do
+			walk(cg, depth + 1)
 		end
 	end
 	for _, g in d.slots do
-		local it = d.items[g]
-		value += Items.valueOf(it)
-		if it.mag and d.items[it.mag] then
-			value += Items.valueOf(d.items[it.mag])
-		end
+		walk(g, 0)
 	end
-	line(f, 34, "RAID WINDOW  " .. Util.clock(Config.RAID_DURATION) .. "    INSERTION  randomized (Ferry Tunnel / South Yard)", K.C.dim, 12)
-	line(f, 52, "EXFIL  assigned on insertion · hold position " .. Config.EXTRACT_HOLD .. " s at the radio beacon", K.C.dim, 12)
-	line(f, 84, "PRIMARY   " .. (w8 and string.format("R-17 Carbine  %d/25", mag and mag.a or 0) or "NONE  -  you will deploy unarmed"), w8 and K.C.text or K.C.orange, 14)
-	line(f, 106, string.format("SPARE     %d magazines · %d rounds", mags, rounds), K.C.text, 14)
-	line(f, 128, string.format("MEDICAL   %d field dressings", meds), K.C.text, 14)
-	line(f, 150, string.format("OTHER     %d items   ·   PACK %s", other, d.slots.bag and "worn" or "none"), K.C.text, 14)
-	line(f, 182, string.format("AT RISK   %s %s", Util.commas(value), Config.CURRENCY), K.C.ochre, 15)
-	line(f, 206, "Everything in your loadout is lost if you are killed or miss extraction. Your stash stays safe.", K.C.dim, 12)
+	for g in (d.grids and d.grids.pockets) or {} do
+		walk(g, 0)
+	end
+	local function slotName(slot)
+		local g = d.slots[slot]
+		local it = g and d.items[g]
+		return it and Items.defs[it.id].name or "-"
+	end
+	line(f, 34, "RAID WINDOW  " .. Util.clock(Config.RAID_DURATION) .. "    INSERTION  randomized    EXFIL  assigned on insertion", K.C.dim, 12)
+	line(f, 60, "PRIMARY    " .. slotName("primary") .. "     HOLSTER  " .. slotName("holster"), d.slots.primary and K.C.text or K.C.orange, 13)
+	line(f, 80, "ARMOR      " .. slotName("armor") .. "     HELMET  " .. slotName("head"), K.C.text, 13)
+	line(f, 100, "RIG        " .. slotName("rig") .. "     BACKPACK  " .. slotName("back"), K.C.text, 13)
+	line(f, 124, string.format("SPARE      %d magazines · %d rounds     MEDICAL  %d items", mags, rounds, meds), K.C.text, 13)
+	line(f, 152, string.format("AT RISK    %s %s", Util.commas(value), Config.CURRENCY), K.C.ochre, 15)
+	line(f, 176, "Everything you wear and carry is lost if you are killed or miss extraction - except your secure container. Your stash stays safe.", K.C.dim, 12)
 	local row = K.frame(f, { Name = "Row", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 0, 40) })
 	K.list(row, Enum.FillDirection.Horizontal, 10)
 	local deploy = K.button(row, "DEPLOY", { Size = UDim2.fromOffset(180, 40), BackgroundColor3 = Color3.fromHex("3A3524"), TextColor3 = K.C.ochre, TextSize = 16 })
@@ -144,8 +150,14 @@ function Screens.summary(s)
 	local listH = h - 140
 	local retained = s.retained or {}
 	local lost = s.lost or {}
-	itemList(f, 0, 56, colW, listH, "CARRIED OUT  (" .. #retained .. ")", retained, K.C.green)
-	itemList(f, colW + 12, 56, colW, listH, "LOST  (" .. #lost .. ")", lost, K.C.red)
+	local kept = s.kept or {}
+	if s.outcome == "SUCCESS" then
+		itemList(f, 0, 56, colW, listH, "CARRIED OUT  (" .. #retained .. ")", retained, K.C.green)
+		itemList(f, colW + 12, 56, colW, listH, "FOUND IN RAID  (" .. #(s.found or {}) .. ")", s.found or {}, K.C.ochre)
+	else
+		itemList(f, 0, 56, colW, listH, "SECURE CONTAINER KEPT  (" .. #kept .. ")", kept, K.C.green)
+		itemList(f, colW + 12, 56, colW, listH, "LOST  (" .. #lost .. ")", lost, K.C.red)
+	end
 	local net = s.outcome == "SUCCESS" and ("+" .. Util.commas(s.value or 0)) or ("-" .. Util.commas(s.value or 0))
 	line(f, h - 78, string.format("NET VALUE  %s %s   ·   FOUND IN RAID %d", net, Config.CURRENCY, #(s.found or {})), K.C.ochre, 14)
 	local b = K.button(f, "RETURN TO SAFEHOUSE", { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.fromOffset(280, 42), TextSize = 15, TextColor3 = K.C.ochre })

@@ -1,6 +1,10 @@
 --!nonstrict
--- Inventory / stash / loot UI. Works without drag: select an item (click/tap/A), then tap a target cell,
--- a slot, or an action button. All changes are server requests; UI re-renders from the server snapshot.
+-- Tarkov-style inventory: equipment slots, pockets, nested rig/backpack/secure grids, stash, containers, bodies.
+-- Mouse: drag & drop (R rotates while dragging), right-click menu, Ctrl+click quick move, Alt+click equip.
+-- Touch / gamepad: select an item, then a cell or slot, or use the action buttons. The server is authoritative;
+-- the UI re-renders from snapshots ("me" = my holder, "c:<cid>" = the open container or body).
+local UIS = game:GetService("UserInputService")
+local DEBUG = game:GetService("RunService"):IsStudio()
 local GuiService = game:GetService("GuiService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
@@ -10,18 +14,59 @@ local Util = require(Shared.Util)
 
 local Inventory = { open = false }
 local ctx, K
-local gui, panel
-local mode = "raid"
-local selected = nil -- { g = guid, src = "inv" | "loot" }
-local rot = 0
+local gui, panel, menu, ghost
 local loot = nil
-local tiles = {}
-local firstFocus = nil
+local selected = nil -- { g, ref }
+local rot = 0
+local gridTargets, slotTargets = {}, {}
+local drag = nil
 local busy = false
+local firstFocus = nil
+local status = nil -- { text, t0, dur }
+local hoverG = nil
+local hover = nil -- drop target under the cursor, from engine MouseEnter events (matches what the user sees)
+
+local function hoverOn(obj, target)
+	obj.MouseEnter:Connect(function()
+		hover = target
+	end)
+	obj.MouseLeave:Connect(function()
+		if hover == target then
+			hover = nil
+		end
+	end)
+end
+
+local defs = Items.defs
+local SLOT_LAYOUT = {
+	{ "head", 0, 0, 2, 2 }, { "armor", 2, 0, 3, 3 }, { "rig", 5, 0, 3, 3 }, { "back", 8, 0, 3, 3 },
+	{ "primary", 0, 3, 5, 2 }, { "holster", 5, 3, 2, 2 }, { "melee", 7, 3, 1, 2 }, { "secure", 8, 3, 3, 2 },
+	{ "secondary", 0, 5, 5, 2 },
+}
+
+-- ── helpers ────────────────────────────────────────────────────────────────────
+local function data()
+	return ctx.State.data
+end
+
+local function known(id)
+	local d = data()
+	return (d and d.known and d.known[id]) or Items.knownByDefault(id)
+end
+
+local function viewOf(ref)
+	if ref == "me" then
+		return data()
+	end
+	if loot and ref == "c:" .. loot.cid then
+		return loot
+	end
+	return nil
+end
 
 local function req(payload)
 	if busy then
-		return
+		return nil
 	end
 	busy = true
 	local res = ctx.State.req("inv", payload)
@@ -32,386 +77,740 @@ local function req(payload)
 	return res
 end
 
-local function itemText(it, d)
-	local def = Items.defs[it.id]
-	if def.kind == "weapon" then
-		local mag = it.mag and d.items[it.mag]
-		return mag and string.format("%d/%d", mag.a or 0, Items.defs.R17_MAG.capacity) or "NO MAG"
-	elseif def.kind == "mag" then
-		return string.format("%d/%d", it.a or 0, def.capacity)
-	elseif def.stack > 1 then
-		return "x" .. it.n
+local function locate(view, g)
+	for cid, pl in view.grids or {} do
+		if pl[g] then
+			return "grid", cid, pl[g]
+		end
+	end
+	for s, sg in view.slots or {} do
+		if sg == g then
+			return "slot", s
+		end
+	end
+	return nil
+end
+
+local function massOf(view, g, depth)
+	local it = view.items[g]
+	local d = it and defs[it.id]
+	if not d then
+		return 0
+	end
+	local m = d.mass * ((d.stack > 1) and it.n or 1)
+	if it.a and it.at and defs[it.at] then
+		m += it.a * defs[it.at].mass
+	end
+	if it.mag then
+		m += massOf(view, it.mag, (depth or 0) + 1)
+	end
+	if view.grids and view.grids[g] and (depth or 0) < 6 then
+		for cg in view.grids[g] do
+			m += massOf(view, cg, (depth or 0) + 1)
+		end
+	end
+	return m
+end
+
+local function gearWeight(view)
+	local m = 0
+	for _, g in view.slots or {} do
+		m += massOf(view, g)
+	end
+	for g in (view.grids and view.grids.pockets) or {} do
+		m += massOf(view, g)
+	end
+	return m
+end
+
+local function inside(obj, pos)
+	local p, s = obj.AbsolutePosition, obj.AbsoluteSize
+	return pos.X >= p.X and pos.Y >= p.Y and pos.X < p.X + s.X and pos.Y < p.Y + s.Y
+end
+
+local function mouse()
+	return UIS:GetMouseLocation()
+end
+
+local function cornerText(view, it)
+	local d = defs[it.id]
+	if not known(it.id) then
+		return ""
+	end
+	if d.kind == "weapon" or d.kind == "pistol" then
+		if d.family then
+			local m = it.mag and view.items[it.mag]
+			return m and "MAG" or "NO MAG"
+		end
+		return string.format("%d/%d", it.a or 0, d.capacity or 0)
+	elseif d.kind == "mag" then
+		return string.format("%d/%d", it.a or 0, d.capacity)
+	elseif d.stack > 1 then
+		return tostring(it.n)
+	elseif d.armor and it.dur then
+		return string.format("%d/%d", math.ceil(it.dur), d.armor.dur)
+	elseif d.med and d.med.hp and it.hp then
+		return string.format("%d/%d", math.ceil(it.hp), d.med.hp)
+	elseif it.uses then
+		return tostring(it.uses)
 	end
 	return ""
 end
 
-local function tile(parent, guid, it, d, px, py, pw, ph)
-	local def = Items.defs[it.id]
-	local isSel = selected and selected.g == guid
-	local t = K.new("TextButton", {
-		Text = "", AutoButtonColor = true, BorderSizePixel = 0, Position = UDim2.fromOffset(px, py), Size = UDim2.fromOffset(pw, ph),
-		BackgroundColor3 = def.color:Lerp(K.C.panel, 0.45), ZIndex = 3, Selectable = true, SelectionImageObject = K.selection(),
-	}, parent)
-	K.stroke(t, isSel and K.C.ochre or K.C.line, isSel and 0 or 0.7, isSel and 2 or 1)
-	K.label(t, def.short, 12, { Position = UDim2.fromOffset(4, 2), Size = UDim2.new(1, -6, 0, 14), FontFace = K.bold, ZIndex = 4 })
-	K.label(t, itemText(it, d), 11, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, -1), Size = UDim2.new(1, -6, 0, 14), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 4 })
-	if def.rarity ~= "common" then
-		K.frame(t, { Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = (def.rarity == "rare") and K.C.orange or K.C.ochre, ZIndex = 4 })
+local function findFree(view, cid, w, h)
+	local pl = view.grids and view.grids[cid]
+	if not pl then
+		return nil
 	end
-	if it.rk then
-		K.label(t, "RK", 9, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 4, 1, -1), Size = UDim2.fromOffset(20, 12), TextColor3 = K.C.dim, ZIndex = 4 })
+	local cw, ch
+	if cid == "stash" then
+		cw, ch = Config.STASH_W, Config.STASH_H
+	elseif cid == "pockets" then
+		cw, ch = Config.POCKETS_W, Config.POCKETS_H
+	elseif cid == "main" then
+		cw, ch = view.mainW or 0, view.mainH or 0
+	else
+		local c = view.items[cid]
+		local cd = c and defs[c.id]
+		if not (cd and cd.grid) then
+			return nil
+		end
+		cw, ch = cd.grid.w, cd.grid.h
 	end
-	tiles[guid] = t
-	return t
+	local x, y, r = Grid.findFree(cw, ch, pl, function(gg)
+		local it = view.items[gg]
+		local d = it and defs[it.id]
+		return d and d.w or 1, d and d.h or 1
+	end, w, h)
+	return x, y, r
 end
 
-local function onTile(guid)
-	local d = ctx.State.data
-	if selected and selected.src == "inv" and selected.g ~= guid then
-		local a, b = d.items[selected.g], d.items[guid]
-		if a and b and a.id == b.id and Items.defs[a.id].stack > 1 then
-			for _, c in { "stash", "pockets", "bag" } do
-				local p = d[c] and d[c][guid]
-				if p then
-					req({ op = "move", g = selected.g, dest = { c = c, x = p.x, y = p.y, r = 0 } })
-					selected = nil
-					return
-				end
+-- ── actions ────────────────────────────────────────────────────────────────────
+local function quick(ref, g)
+	local inRaid = ctx.State.inRaid()
+	if ref == "me" then
+		if loot then
+			return req({ op = "quick", g = g, from = "me", to = "c:" .. loot.cid })
+		end
+		if not inRaid then
+			local k, cid = locate(data(), g)
+			if k == "grid" and cid == "stash" then
+				return req({ op = "quick", g = g, from = "me" })
+			end
+			return req({ op = "quick", g = g, from = "me", to = "stash" })
+		end
+		return req({ op = "quick", g = g, from = "me" })
+	end
+	return req({ op = "quick", g = g, from = ref, to = "me" })
+end
+
+local function actionsFor(ref, g)
+	local view = viewOf(ref)
+	local it = view and view.items[g]
+	if not it then
+		return {}
+	end
+	local d = defs[it.id]
+	local inRaid = ctx.State.inRaid()
+	local mine = ref == "me"
+	local list = {}
+	local function add(label, fn, tone)
+		table.insert(list, { label = label, fn = fn, tone = tone })
+	end
+	if not known(it.id) then
+		add("EXAMINE", function()
+			req({ op = "examine", g = g, from = ref })
+		end, "good")
+	end
+	add(mine and (loot and "MOVE TO " .. string.upper(loot.label) or (inRaid and "AUTO-ARRANGE" or "QUICK MOVE")) or "TAKE", function()
+		quick(ref, g)
+	end)
+	local k = locate(view, g)
+	if Items.SLOTS and (d.kind == "weapon" or d.kind == "pistol" or d.kind == "melee" or d.kind == "helmet" or d.kind == "armor" or d.kind == "rig" or d.kind == "backpack" or (d.kind == "secure" and not inRaid)) and k ~= "slot" then
+		add("EQUIP", function()
+			req({ op = "equip", g = g, from = ref, to = "me" })
+		end)
+	end
+	if mine and (d.kind == "med" or d.kind == "food") and known(it.id) then
+		add("USE", function()
+			req({ op = "use", g = g })
+		end, "good")
+	end
+	if mine and (d.kind == "mag" or ((d.kind == "weapon" or d.kind == "pistol") and d.capacity and not d.family)) then
+		if (it.a or 0) > 0 then
+			add("UNLOAD AMMO", function()
+				req({ op = "unload", g = g })
+			end)
+		end
+		local cal = d.caliber
+		local seen = {}
+		for ag, a in view.items do
+			local ad = defs[a.id]
+			if ad.kind == "ammo" and ad.caliber == cal and not seen[a.id] and locate(view, ag) == "grid" then
+				seen[a.id] = true
+				add("LOAD " .. ad.short .. " (" .. a.n .. ")", function()
+					req({ op = "load", g = g, ammo = ag })
+				end)
 			end
 		end
 	end
-	selected = { g = guid, src = "inv" }
+	if mine and (d.kind == "weapon" or d.kind == "pistol") and it.mag then
+		add("REMOVE MAGAZINE", function()
+			req({ op = "quick", g = it.mag, from = "me", to = (not inRaid) and "stash" or nil })
+		end)
+	end
+	if mine and d.stack > 1 and it.n > 1 then
+		add("SPLIT IN HALF", function()
+			local _, cid = locate(view, g)
+			local x, y, r = findFree(view, cid, d.w, d.h)
+			if not x then
+				ctx.State.toast("NO SPACE TO SPLIT", "warn")
+				return
+			end
+			req({ op = "split", g = g, n = math.floor(it.n / 2), dest = { c = cid, x = x, y = y, r = r } })
+		end)
+	end
+	if mine and inRaid and view.slots.secure ~= g then
+		add("DROP", function()
+			req({ op = "drop", g = g })
+		end, "warn")
+	end
+	if mine and not inRaid and view.slots.secure ~= g then
+		if known(it.id) and d.value > 0 and not it.rk then
+			add(string.format("SELL  +%s %s", Util.commas(math.floor(Items.valueOf(it) * Config.SELL_RATE)), Config.CURRENCY), function()
+				req({ op = "sell", g = g })
+				selected = nil
+			end, "warn")
+		end
+		add("DISCARD", function()
+			req({ op = "discard", g = g })
+			selected = nil
+		end, "warn")
+	end
+	return list
+end
+
+local function closeMenu()
+	if menu then
+		menu:Destroy()
+		menu = nil
+	end
+end
+
+local function openMenu(ref, g, pos)
+	closeMenu()
+	local list = actionsFor(ref, g)
+	if #list == 0 then
+		return
+	end
+	menu = K.frame(gui, { Name = "ContextMenu", Position = UDim2.fromOffset(pos.X + 4, pos.Y + 4), Size = UDim2.fromOffset(230, #list * 30 + 8), BackgroundColor3 = K.C.bg, ZIndex = 50 })
+	K.stroke(menu, K.C.line, 0.4)
+	K.pad(menu, 4)
+	K.list(menu, nil, 2)
+	for i, a in list do
+		local b = K.button(menu, a.label, { Size = UDim2.new(1, 0, 0, 28), TextSize = 13, ZIndex = 51, LayoutOrder = i, TextXAlignment = Enum.TextXAlignment.Left })
+		b.Text = "  " .. a.label
+		if a.tone == "warn" then
+			b.TextColor3 = K.C.orange
+		elseif a.tone == "good" then
+			b.TextColor3 = K.C.green
+		end
+		b.Activated:Connect(function()
+			closeMenu()
+			a.fn()
+		end)
+	end
+	local vp = K.viewport(gui)
+	local s = menu.AbsoluteSize
+	menu.Position = UDim2.fromOffset(math.min(pos.X + 4, vp.X - s.X - 4), math.min(pos.Y + 4, vp.Y - s.Y - 4))
+end
+
+-- ── drawing ────────────────────────────────────────────────────────────────────
+local function onTileClick(ref, g)
+	local cur = selected
+	if cur and cur.g ~= g and cur.ref then
+		-- second tap on another item: drop onto it (merge / insert magazine / into container)
+		local view = viewOf(ref)
+		local k, cid, p = locate(view, g)
+		if k == "grid" then
+			req({ op = "move", g = cur.g, from = cur.ref, to = ref, dest = { c = cid, x = p.x, y = p.y, r = 0 } })
+			selected = nil
+			return
+		end
+	end
+	if cur and cur.g == g then
+		selected = nil
+	else
+		selected = { g = g, ref = ref }
+	end
 	Inventory.render()
 end
 
-local function onCell(c, x, y)
+local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
+	local it = view.items[g]
+	local d = defs[it.id]
+	local isKnown = known(it.id)
+	local isSel = selected and selected.g == g and selected.ref == ref
+	local base = isKnown and d.color:Lerp(K.C.panel, 0.42) or Color3.fromHex("2A2D2E")
+	local t = K.new("TextButton", {
+		Name = "Tile_" .. g, Text = "", AutoButtonColor = true, BorderSizePixel = 0, Position = UDim2.fromOffset(px, py),
+		Size = UDim2.fromOffset(pw, ph), BackgroundColor3 = base, ZIndex = 4, Selectable = true, SelectionImageObject = K.selection(),
+	}, parent)
+	K.stroke(t, isSel and K.C.ochre or K.C.line, isSel and 0 or 0.72, isSel and 2 or 1)
+	local small = math.min(pw, ph) < 40
+	K.label(t, isKnown and d.short or "?", small and 10 or 12, { Position = UDim2.fromOffset(3, 2), Size = UDim2.new(1, -5, 0, 13), FontFace = K.bold, ZIndex = 5, TextTruncate = Enum.TextTruncate.AtEnd })
+	local corner = cornerText(view, it)
+	if corner ~= "" then
+		K.label(t, corner, small and 10 or 11, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, -1), Size = UDim2.new(1, -6, 0, 13), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 5 })
+	end
+	if isKnown and (Items.RARITY[d.rarity] or 0) > 0 then
+		local col = ({ K.C.ochre, K.C.orange, Color3.fromHex("B05CC8"), K.C.red })[Items.RARITY[d.rarity]] or K.C.ochre
+		K.frame(t, { Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = col, ZIndex = 5 })
+	end
+	if it.fir then
+		K.label(t, "FIR", 9, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 3, 1, -1), Size = UDim2.fromOffset(22, 11), TextColor3 = K.C.green, ZIndex = 5 })
+	elseif it.rk then
+		K.label(t, "RK", 9, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 3, 1, -1), Size = UDim2.fromOffset(22, 11), TextColor3 = K.C.dim, ZIndex = 5 })
+	end
+	if d.armor and it.dur then
+		local f = math.clamp(it.dur / d.armor.dur, 0, 1)
+		K.frame(t, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 2, 1, -14), Size = UDim2.new(f, -4, 0, 2), BackgroundColor3 = f > 0.5 and K.C.green or K.C.orange, ZIndex = 5 })
+	end
+	t.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			closeMenu()
+			if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+				quick(ref, g)
+				return
+			end
+			if UIS:IsKeyDown(Enum.KeyCode.LeftAlt) then
+				req({ op = "equip", g = g, from = ref, to = "me" })
+				return
+			end
+			local m = mouse()
+			if DEBUG then
+				print("[ZR] drag begin", g:sub(1, 6), m)
+			end
+			local rel = m - t.AbsolutePosition
+			local gc = cellAbs or Inventory.cell or 40
+			drag = { g = g, ref = ref, start = m, started = false, grabX = cellAbs and math.floor(rel.X / gc) or 0, grabY = cellAbs and math.floor(rel.Y / gc) or 0, cell = Inventory.cell or gc, w = d.w, h = d.h, r = 0, label = isKnown and d.short or "?" }
+			local _, _, p = locate(viewOf(ref), g)
+			if p and p.r == 1 then
+				drag.w, drag.h, drag.r = d.h, d.w, 1
+			end
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			openMenu(ref, g, mouse())
+		end
+	end)
+	t.MouseEnter:Connect(function()
+		hoverG = { g = g, ref = ref }
+	end)
+	if dropAs then
+		hoverOn(t, dropAs)
+	end
+	t.Activated:Connect(function(input)
+		if input and input.UserInputType == Enum.UserInputType.MouseButton1 then
+			return -- mouse handled by the drag logic
+		end
+		onTileClick(ref, g)
+	end)
+	return t
+end
+
+local function placeSelected(ref, dest)
 	if not selected then
 		return
 	end
-	if selected.src == "inv" then
-		local g = selected.g
-		local res = req({ op = "move", g = g, dest = { c = c, x = x, y = y, r = rot } })
-		if res and res.ok then
-			selected = nil
-		end
-	elseif selected.src == "loot" and loot then
-		req({ op = "take", cid = loot.cid, g = selected.g })
+	local res = req({ op = "move", g = selected.g, from = selected.ref, to = ref, dest = dest })
+	if res and res.ok then
 		selected = nil
 	end
 end
 
-local function drawGrid(parent, d, c, title, w, h, cell, x0, y0)
-	local holder = K.frame(parent, { BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y0), Size = UDim2.fromOffset(w * cell, h * cell + 20) })
+local function drawGrid(parent, view, ref, cid, title, cw, ch, cell, x0, y0, clip)
+	local holder = K.frame(parent, { BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y0), Size = UDim2.fromOffset(math.max(cw * cell, 60), ch * cell + 18) })
 	K.label(holder, title, 11, { Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })
-	local g = K.frame(holder, { Position = UDim2.fromOffset(0, 18), Size = UDim2.fromOffset(w * cell, h * cell), BackgroundColor3 = K.C.panel })
-	K.stroke(g, K.C.line, 0.75)
-	if w == 0 or h == 0 then
-		K.label(holder, "   -  none —", 12, { Position = UDim2.fromOffset(0, 18), TextColor3 = K.C.dim })
-		return holder
+	if cw == 0 or ch == 0 then
+		return holder, 18
 	end
-	for yy = 1, h do
-		for xx = 1, w do
+	local g = K.frame(holder, { Name = "Grid_" .. string.sub(cid, 1, 8), Position = UDim2.fromOffset(0, 17), Size = UDim2.fromOffset(cw * cell, ch * cell), BackgroundColor3 = K.C.panel })
+	K.stroke(g, K.C.line, 0.75)
+	for yy = 1, ch do
+		for xx = 1, cw do
 			local cb = K.new("TextButton", {
-				Text = "", AutoButtonColor = false, BorderSizePixel = 0, BackgroundColor3 = K.C.cell, BackgroundTransparency = 0.45,
-				Position = UDim2.fromOffset((xx - 1) * cell + 1, (yy - 1) * cell + 1), Size = UDim2.fromOffset(cell - 2, cell - 2),
+				Name = string.format("Cell_%d_%d", xx, yy), Text = "", AutoButtonColor = false, BorderSizePixel = 0, BackgroundColor3 = K.C.cell,
+				BackgroundTransparency = 0.5, Position = UDim2.fromOffset((xx - 1) * cell + 1, (yy - 1) * cell + 1), Size = UDim2.fromOffset(cell - 2, cell - 2),
 				Selectable = true, SelectionImageObject = K.selection(), ZIndex = 2,
 			}, g)
-			cb.Activated:Connect(function()
-				onCell(c, xx, yy)
+			hoverOn(cb, { kind = "cell", ref = ref, cid = cid, x = xx, y = yy })
+			cb.Activated:Connect(function(input)
+				if input and input.UserInputType == Enum.UserInputType.MouseButton1 and not selected then
+					return
+				end
+				if selected then
+					placeSelected(ref, { c = cid, x = xx, y = yy, r = rot })
+				end
 			end)
 			if not firstFocus then
 				firstFocus = cb
 			end
 		end
 	end
-	for guid, p in d[c] or {} do
-		local it = d.items[guid]
+	for guid, p in (view.grids and view.grids[cid]) or {} do
+		local it = view.items[guid]
 		if it then
-			local def = Items.defs[it.id]
-			local iw, ih = Grid.dims(def.w, def.h, p.r)
-			local t = tile(g, guid, it, d, (p.x - 1) * cell + 1, (p.y - 1) * cell + 1, iw * cell - 2, ih * cell - 2)
-			t.Activated:Connect(function()
-				onTile(guid)
-			end)
+			local d = defs[it.id]
+			local iw, ih = Grid.dims(d.w, d.h, p.r)
+			tile(g, view, ref, guid, (p.x - 1) * cell + 1, (p.y - 1) * cell + 1, iw * cell - 2, ih * cell - 2, cell, { kind = "cell", ref = ref, cid = cid, x = p.x, y = p.y, occupied = guid })
 		end
 	end
-	return holder
+	table.insert(gridTargets, { ref = ref, cid = cid, frame = g, cell = cell, w = cw, h = ch, clip = clip })
+	return holder, ch * cell + 22
 end
 
-local function drawSlot(parent, d, slotName, title, x0, y0, w, h)
-	local holder = K.frame(parent, { BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y0), Size = UDim2.fromOffset(w, h + 18) })
-	K.label(holder, title, 11, { Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })
-	local guid = d.slots[slotName]
-	local it = guid and d.items[guid]
-	if it then
-		local t = tile(holder, guid, it, d, 0, 18, w, h)
-		local def = Items.defs[it.id]
-		K.label(t, def.name, 11, { Position = UDim2.fromOffset(4, 16), Size = UDim2.new(1, -8, 0, 14), TextColor3 = K.C.dim, ZIndex = 4 })
-		t.Activated:Connect(function()
-			onTile(guid)
-		end)
+local function drawSlot(parent, view, ref, slot, x0, y0, w, h, cell)
+	local holder = K.frame(parent, { Name = "Slot_" .. slot, BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y0), Size = UDim2.fromOffset(w, h + 16) })
+	K.label(holder, Items.SLOT_NAMES[slot] or slot, 10, { Size = UDim2.new(1, 0, 0, 14), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd })
+	local box = K.frame(holder, { Position = UDim2.fromOffset(0, 15), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.panel })
+	K.stroke(box, K.C.line, 0.6)
+	local g = view.slots and view.slots[slot]
+	local slotTarget = { kind = "slot", ref = ref, slot = slot }
+	if g and view.items[g] then
+		tile(box, view, ref, g, 1, 1, w - 2, h - 2, nil, slotTarget)
 	else
-		local e = K.button(holder, "EMPTY", { Position = UDim2.fromOffset(0, 18), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.panel, TextColor3 = K.C.dim })
+		local e = K.new("TextButton", { Name = "Btn_SLOT_" .. string.upper(slot), Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Selectable = true, SelectionImageObject = K.selection(), ZIndex = 3 }, box)
+		hoverOn(e, slotTarget)
 		e.Activated:Connect(function()
-			if selected and selected.src == "inv" then
-				req({ op = "quick", g = selected.g, to = "equip" })
-				selected = nil
+			if selected then
+				placeSelected(ref, { slot = slot })
 			end
 		end)
 	end
+	table.insert(slotTargets, { ref = ref, slot = slot, frame = box })
 	return holder
 end
 
-local function loadMass(d, list)
-	local m = 0
-	for _, c in list do
-		for g in d[c] or {} do
-			local it = d.items[g]
-			if it then
-				m += Items.defs[it.id].mass * it.n
-			end
+-- equipment layout + pockets + container grids for any holder view (mine or a body)
+local function drawGear(parent, view, ref, cell, width)
+	local y = 0
+	local slotCell = math.floor(math.min(cell * 1.05, (width - 10) / 11))
+	for _, e in SLOT_LAYOUT do
+		local slot, sx, sy, sw, sh = e[1], e[2], e[3], e[4], e[5]
+		drawSlot(parent, view, ref, slot, sx * slotCell, y + sy * (slotCell + 6), sw * slotCell - 6, sh * slotCell - 2, slotCell)
+	end
+	y += 7 * (slotCell + 6) + 4
+	local ph
+	if view.grids and view.grids.pockets then
+		local _, h0 = drawGrid(parent, view, ref, "pockets", "POCKETS", Config.POCKETS_W, Config.POCKETS_H, cell, 0, y, nil)
+		ph = h0
+	else
+		K.label(parent, "POCKETS  -  NOT SEARCHED", 11, { Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })
+		ph = 20
+	end
+	local secure = view.slots and view.slots.secure
+	if secure and view.grids and view.grids[secure] and view.items[secure] then
+		local sd = defs[view.items[secure].id]
+		drawGrid(parent, view, ref, secure, "SECURE", sd.grid.w, sd.grid.h, cell, (Config.POCKETS_W + 1) * cell, y, nil)
+		ph = math.max(ph, sd.grid.h * cell + 22)
+	end
+	y += ph + 4
+	for _, s in { "rig", "back" } do
+		local cg = view.slots and view.slots[s]
+		local it = cg and view.items[cg]
+		if it and view.grids and view.grids[cg] then
+			local cd = defs[it.id]
+			local _, gh = drawGrid(parent, view, ref, cg, (s == "rig" and "RIG  " or "BACKPACK  ") .. string.upper(cd.name), cd.grid.w, cd.grid.h, cell, 0, y, nil)
+			y += gh + 4
+		elseif ref ~= "me" and it and defs[it.id].grid then
+			-- body container not yet searched
+			K.label(parent, (s == "rig" and "RIG" or "BACKPACK") .. "  -  NOT SEARCHED", 11, { Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })
+			y += 20
 		end
 	end
-	for _, g in d.slots or {} do
-		local it = d.items[g]
-		if it then
-			m += Items.defs[it.id].mass
-		end
-	end
-	return m
+	return y
 end
 
-local function actionButtons(parent, d, y)
-	local col = K.frame(parent, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 260) })
-	K.list(col, nil, 6)
-	local function act(text, fn, tone)
-		local b = K.button(col, text, { Size = UDim2.new(1, 0, 0, 32), TextSize = 13 })
-		if tone == "warn" then
-			b.TextColor3 = K.C.orange
-		end
-		b.Activated:Connect(fn)
-		return b
-	end
-	if not selected then
-		return col
-	end
-	local g = selected.g
-	if selected.src == "loot" then
-		act("TAKE", function()
-			req({ op = "take", cid = loot.cid, g = g })
-			selected = nil
-		end)
-		return col
-	end
-	local it = d.items[g]
+local function detail(parent, w, h)
+	local det = K.frame(parent, { Name = "Detail", Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.panel })
+	K.stroke(det, K.C.line, 0.7)
+	K.pad(det, 8)
+	local sel = selected or hoverG
+	local view = sel and viewOf(sel.ref)
+	local it = view and view.items[sel.g]
 	if not it then
-		return col
+		K.label(det, ctx.Input.device() == "Gamepad" and "Select an item (A), then a free cell or slot." or "Drag items between grids. Right-click for actions, Ctrl+click quick move, Alt+click equip, R rotates while dragging.", 12, { Size = UDim2.fromScale(1, 1), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
+		return
 	end
-	local def = Items.defs[it.id]
-	if mode == "stash" then
-		act("TO STASH", function()
-			req({ op = "quick", g = g, to = "stash" })
-		end)
-		act("TO LOADOUT", function()
-			req({ op = "quick", g = g, to = "loadout" })
-		end)
+	local d = defs[it.id]
+	local isKnown = known(it.id)
+	K.label(det, isKnown and string.upper(d.name) or "UNKNOWN ITEM", 14, { FontFace = K.bold, Size = UDim2.new(0.6, 0, 0, 18) })
+	local lines = {}
+	if isKnown then
+		table.insert(lines, d.desc)
+		if d.ammo then
+			table.insert(lines, string.format("DAMAGE %d%s   PEN %d   ARMOR DMG %d%%", d.ammo.dmg, d.ammo.pellets and ("x" .. d.ammo.pellets) or "", d.ammo.pen, math.floor(d.ammo.armorDmg * 100)))
+		end
+		if d.armor then
+			table.insert(lines, string.format("CLASS %d   DURABILITY %d/%d", d.armor.class, math.ceil(it.dur or d.armor.dur), d.armor.dur))
+		end
+		if d.grid then
+			table.insert(lines, string.format("CAPACITY %dx%d", d.grid.w, d.grid.h))
+		end
+		table.insert(lines, string.format("VALUE %s %s   ·   %.2f kg   ·   %dx%d%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), d.w, d.h, it.fir and "   ·   FOUND IN RAID" or ""))
 	else
-		act("TO POCKETS", function()
-			req({ op = "quick", g = g, to = "pockets" })
-		end)
-		act("TO PACK", function()
-			req({ op = "quick", g = g, to = "bag" })
-		end)
+		table.insert(lines, "Examine this item to identify it.")
 	end
-	if def.kind == "weapon" or def.kind == "bag" then
-		act("EQUIP", function()
-			req({ op = "quick", g = g, to = "equip" })
-		end)
-	end
-	act("ROTATE NEXT PLACEMENT (" .. (rot == 1 and "ON" or "OFF") .. ")", function()
+	K.label(det, table.concat(lines, "\n"), 11, { Position = UDim2.fromOffset(0, 20), Size = UDim2.new(0.6, 0, 1, -20), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
+	-- action buttons (touch / gamepad; mouse users also get the right-click menu)
+	local col = K.frame(det, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.38, 0, 1, 0) })
+	local grid = K.new("UIGridLayout", { CellSize = UDim2.new(0.5, -3, 0, 26), CellPadding = UDim2.fromOffset(4, 4), SortOrder = Enum.SortOrder.LayoutOrder }, col)
+	local list = actionsFor(sel.ref, sel.g)
+	table.insert(list, 1, { label = "ROTATE " .. (rot == 1 and "ON" or "OFF"), fn = function()
 		rot = 1 - rot
 		Inventory.render()
-	end)
-	if mode == "raid" then
-		if def.kind == "heal" then
-			act("USE", function()
-				req({ op = "use", g = g })
-			end)
+	end })
+	for i, a in list do
+		local b = K.button(col, a.label, { TextSize = 11, LayoutOrder = i })
+		if a.tone == "warn" then
+			b.TextColor3 = K.C.orange
+		elseif a.tone == "good" then
+			b.TextColor3 = K.C.green
 		end
-		if loot then
-			act("PUT IN " .. string.upper(loot.label), function()
-				req({ op = "put", cid = loot.cid, g = g })
-				selected = nil
-			end)
-		end
-		act("DROP", function()
-			req({ op = "drop", g = g })
-			selected = nil
-		end, "warn")
-	else
-		local value = math.floor(Items.valueOf(it) * Config.SELL_RATE)
-		act("SELL  +" .. value .. " " .. Config.CURRENCY, function()
-			req({ op = "sell", g = g })
-			selected = nil
-		end, "warn")
+		b.Activated:Connect(a.fn)
 	end
-	return col
+	local _ = grid
 end
 
 function Inventory.render()
 	if not Inventory.open then
 		return
 	end
-	local d = ctx.State.data
-	if not d then
+	local d = data()
+	if not d or not d.slots then
 		return
 	end
-	if selected and selected.src == "inv" and not d.items[selected.g] then
+	if selected and not (viewOf(selected.ref) and viewOf(selected.ref).items[selected.g]) then
 		selected = nil
 	end
 	if panel then
 		panel:Destroy()
 	end
-	table.clear(tiles)
+	closeMenu()
+	table.clear(gridTargets)
+	table.clear(slotTargets)
+	hover = nil
 	firstFocus = nil
+	local inRaid = ctx.State.inRaid()
 	local vp = K.viewport(gui)
-	local W = math.floor(math.min(vp.X - 16, 1200))
-	local H = math.floor(math.min(vp.Y - 10, 700))
-	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.04 })
+	local W = math.floor(math.min(vp.X - 12, 1360))
+	local H = math.floor(math.min(vp.Y - 8, 800))
+	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(panel, K.C.line, 0.45)
 	-- header
-	local title = (mode == "stash") and "STASH & LOADOUT  //  RELAY 7" or "FIELD KIT  //  " .. Config.MAP_NAME
-	K.label(panel, title, 16, { Position = UDim2.fromOffset(14, 8), Size = UDim2.fromOffset(W - 200, 22), FontFace = K.bold })
-	local info = string.format("LOAD %.1f kg", loadMass(d, { "pockets", "bag" }))
-	if mode == "stash" then
+	local weight = gearWeight(d)
+	local head = inRaid and ("FIELD KIT  //  " .. Config.MAP_NAME) or "HIDEOUT  //  STASH & GEAR"
+	K.label(panel, head, 16, { Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(W - 220, 22), FontFace = K.bold })
+	local info = string.format("WEIGHT %.1f kg", weight)
+	if not inRaid then
 		info ..= string.format("   ·   %s %s", Util.commas(d.money or 0), Config.CURRENCY)
 	end
-	K.label(panel, info, 12, { Position = UDim2.fromOffset(14, 30), Size = UDim2.fromOffset(W - 200, 16), TextColor3 = K.C.dim })
-	local close = K.button(panel, "CLOSE [" .. ctx.Input.label("Inventory") .. "]", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(150, 30) })
+	if status and os.clock() - status.t0 < status.dur then
+		info ..= string.format("   ·   %s %.1fs", status.text, status.dur - (os.clock() - status.t0))
+	end
+	K.label(panel, info, 12, { Position = UDim2.fromOffset(12, 28), Size = UDim2.fromOffset(W - 220, 16), TextColor3 = weight > 40 and K.C.orange or K.C.dim })
+	local close = K.button(panel, "CLOSE [" .. ctx.Input.label("Inventory") .. "]", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(150, 30) })
 	close.Activated:Connect(Inventory.close)
-	local top = 56
-	local bodyH = H - top - 10
-	-- column widths
-	local detailW = math.floor(W * 0.24)
-	local leftW = W - detailW - 30
-	local cell
-	if mode == "stash" then
-		local stashW = math.floor(leftW * 0.56)
-		cell = math.floor(math.clamp(math.min(stashW / Config.STASH_W, (bodyH - 30) / Config.STASH_H), 24, 50))
-		drawGrid(panel, d, "stash", "STASH  " .. Config.STASH_W .. "x" .. Config.STASH_H, Config.STASH_W, Config.STASH_H, cell, 12, top)
-		local lx = 12 + Config.STASH_W * cell + 18
-		local lw = leftW - (lx - 12)
-		local lcell = math.floor(math.clamp(math.min(lw / 4, (bodyH - 150) / 6), 22, 46))
-		drawSlot(panel, d, "primary", "PRIMARY", lx, top, math.min(lw, lcell * 4), lcell + 6)
-		drawSlot(panel, d, "bag", "PACK", lx, top + lcell + 30, math.min(lw, lcell * 2), lcell)
-		drawGrid(panel, d, "pockets", "POCKETS", Config.POCKETS_W, Config.POCKETS_H, lcell, lx, top + lcell * 2 + 56)
-		local bw, bh = 0, 0
-		local bagIt = d.slots.bag and d.items[d.slots.bag]
-		if bagIt then
-			local bd = Items.defs[bagIt.id]
-			bw, bh = bd.bagW, bd.bagH
+	local top, detailH = 52, 112
+	local bodyH = H - top - detailH - 14
+	local leftW = math.floor(W * 0.47)
+	local rightW = W - leftW - 30
+	-- cell size from the widest thing on the left (11 slot columns) and the right (stash 10 columns)
+	local cell = math.floor(math.clamp(math.min((leftW - 20) / 11, (rightW - 24) / Config.STASH_W), 24, 46))
+	Inventory.cell = cell
+	-- left: my gear
+	local left = K.new("ScrollingFrame", { Name = "Gear", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(12, top), Size = UDim2.fromOffset(leftW, bodyH), ScrollBarThickness = 5, CanvasSize = UDim2.new(), Selectable = false }, panel)
+	local gh = drawGear(left, d, "me", cell, leftW)
+	left.CanvasSize = UDim2.fromOffset(0, gh + 10)
+	for _, t in gridTargets do
+		t.clip = t.clip or left
+	end
+	for _, t in slotTargets do
+		t.clip = t.clip or left
+	end
+	-- right: stash / container / body
+	local right = K.new("ScrollingFrame", { Name = "Other", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(leftW + 22, top), Size = UDim2.fromOffset(rightW, bodyH), ScrollBarThickness = 5, CanvasSize = UDim2.new(), Selectable = false }, panel)
+	local nG, nS = #gridTargets, #slotTargets
+	if loot and inRaid then
+		local ref = "c:" .. loot.cid
+		local title = string.upper(loot.label) .. ((loot.searching and not loot.searched) and "   ·   SEARCHING..." or "")
+		K.label(right, title, 13, { Name = "LootTitle", Size = UDim2.new(1, 0, 0, 18), FontFace = K.bold, TextColor3 = K.C.ochre })
+		local h2
+		if loot.body then
+			h2 = drawGear(K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 2000) }), loot, ref, cell, rightW)
+		else
+			local _, gh2 = drawGrid(right, loot, ref, "main", "CONTENTS", loot.mainW or 5, loot.mainH or 4, cell, 0, 24, nil)
+			h2 = gh2
 		end
-		drawGrid(panel, d, "bag", "PACK COMPARTMENT", bw, bh, lcell, lx, top + lcell * 3 + 82)
-	else
-		local lootW = loot and math.floor(leftW * 0.42) or 0
-		local invW = leftW - lootW
-		cell = math.floor(math.clamp(math.min(invW / 6, (bodyH - 120) / 6.4), 24, 52))
-		drawSlot(panel, d, "primary", "PRIMARY", 12, top, cell * 4, cell + 6)
-		drawSlot(panel, d, "bag", "PACK", 12 + cell * 4 + 12, top, cell * 2, cell + 6)
-		drawGrid(panel, d, "pockets", "POCKETS", Config.POCKETS_W, Config.POCKETS_H, cell, 12, top + cell + 32)
-		local bw, bh = 0, 0
-		local bagIt = d.slots.bag and d.items[d.slots.bag]
-		if bagIt then
-			local bd = Items.defs[bagIt.id]
-			bw, bh = bd.bagW, bd.bagH
-		end
-		drawGrid(panel, d, "bag", "PACK COMPARTMENT", bw, bh, cell, 12, top + cell * 2 + 58)
-		if loot then
-			local lx = 12 + invW
-			local lf = K.frame(panel, { Name = "LootPanel", Position = UDim2.fromOffset(lx, top), Size = UDim2.fromOffset(lootW - 12, bodyH - 10), BackgroundColor3 = K.C.panel })
-			K.stroke(lf, K.C.ochre, 0.4)
-			K.label(lf, "  " .. string.upper(loot.label), 13, { Size = UDim2.new(1, 0, 0, 22), FontFace = K.bold, TextColor3 = K.C.ochre })
-			local list = K.new("ScrollingFrame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(6, 28), Size = UDim2.new(1, -12, 1, -76), CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4, BorderSizePixel = 0, Selectable = false }, lf)
-			K.list(list, nil, 4)
-			if #loot.items == 0 then
-				K.label(list, "Empty.", 12, { TextColor3 = K.C.dim })
+		local takeAll = K.button(right, "TAKE ALL", { Name = "Btn_TAKEALL", Position = UDim2.fromOffset(0, h2 + 34), Size = UDim2.fromOffset(160, 30) })
+		takeAll.Activated:Connect(function()
+			local v = viewOf(ref)
+			if not v then
+				return
 			end
-			for i, li in loot.items do
-				local def = Items.defs[li.id]
-				local extra = (li.n and li.n > 1) and (" x" .. li.n) or ""
-				if def and def.kind == "mag" then
-					extra = string.format(" %d/%d", li.a or 0, def.capacity)
-				end
-				local b = K.button(list, "", { Size = UDim2.new(1, -6, 0, 34), LayoutOrder = i, TextXAlignment = Enum.TextXAlignment.Left })
-				b.Text = string.format("  TAKE  %s%s", def and def.name or li.id, extra)
-				b.TextSize = 13
-				if def and def.rarity ~= "common" then
-					b.TextColor3 = (def.rarity == "rare") and K.C.orange or K.C.ochre
-				end
-				b.Activated:Connect(function()
-					req({ op = "take", cid = loot.cid, g = li.g })
-				end)
-				if i == 1 then
-					firstFocus = b
-				end
-			end
-			local all = K.button(lf, "TAKE ALL", { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.new(1, -12, 0, 34) })
-			all.Activated:Connect(function()
-				for _, li in loot.items do
-					local r = req({ op = "take", cid = loot.cid, g = li.g })
-					if not r or not r.ok then
-						break
+			local list = {}
+			for cid, pl in v.grids or {} do
+				if cid == "main" or cid == "pockets" then
+					for g in pl do
+						table.insert(list, g)
 					end
 				end
-			end)
-		end
-	end
-	-- details column
-	local dx = W - detailW - 12
-	local det = K.frame(panel, { Position = UDim2.fromOffset(dx, top), Size = UDim2.fromOffset(detailW, bodyH - 10), BackgroundColor3 = K.C.panel })
-	K.stroke(det, K.C.line, 0.7)
-	K.pad(det, 10)
-	local sel = selected and selected.src == "inv" and d.items[selected.g]
-	if sel then
-		local def = Items.defs[sel.id]
-		K.label(det, string.upper(def.name), 15, { FontFace = K.bold, TextWrapped = true, Size = UDim2.new(1, 0, 0, 20) })
-		K.label(det, def.desc, 12, { Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 48), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
-		K.label(det, string.format("VALUE %d %s   MASS %.1f   %dx%d", Items.valueOf(sel), Config.CURRENCY, def.mass * sel.n, def.w, def.h), 11, { Position = UDim2.fromOffset(0, 76), Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.ochre })
-		actionButtons(det, d, 100)
-	else
-		K.label(det, "SELECT AN ITEM", 13, { FontFace = K.bold, TextColor3 = K.C.dim })
-		K.label(det, ((ctx.Input.device() == "Gamepad") and "Press A on" or "Click or tap") .. " an item, then a free cell, a slot or an action.", 12, { Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, 60), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
-	end
-	if mode == "stash" then
-		local gb = K.frame(det, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 112) })
-		K.list(gb, nil, 6)
-		K.button(gb, "FILL ALL MAGAZINES", { Size = UDim2.new(1, 0, 0, 32), TextSize = 13 }, function()
-			req({ op = "fill" })
+			end
+			for _, g in list do
+				local r = req({ op = "quick", g = g, from = ref, to = "me" })
+				if not r or not r.ok then
+					break
+				end
+			end
 		end)
-		local hasRifle = false
+		right.CanvasSize = UDim2.fromOffset(0, h2 + 80)
+	elseif not inRaid then
+		local _, sh = drawGrid(right, d, "me", "stash", "STASH  " .. Config.STASH_W .. "x" .. Config.STASH_H, Config.STASH_W, Config.STASH_H, cell, 0, 0, nil)
+		right.CanvasSize = UDim2.fromOffset(0, sh + 60)
+		local row = K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, sh + 6), Size = UDim2.new(1, 0, 0, 32) })
+		K.list(row, Enum.FillDirection.Horizontal, 6)
+		local hasGun = false
 		for _, it in d.items do
-			if it.id == "R17_RIFLE" then
-				hasRifle = true
+			local idf = defs[it.id]
+			if idf and (idf.kind == "weapon" or idf.kind == "pistol") then
+				hasGun = true
 			end
 		end
-		if not hasRifle then
-			K.button(gb, "CLAIM RECOVERY KIT", { Size = UDim2.new(1, 0, 0, 32), TextSize = 13, TextColor3 = K.C.ochre }, function()
+		if not hasGun and (d.money or 0) < (Config.RECOVERY_MONEY or 0) then
+			K.button(row, "CLAIM RECOVERY KIT", { Size = UDim2.fromOffset(200, 30), TextSize = 13, TextColor3 = K.C.ochre }, function()
 				req({ op = "recovery" })
 			end)
 		end
+	else
+		K.label(right, "Open a container or body to loot it.\nPress " .. ctx.Input.label("Inventory") .. " to close.", 13, { Size = UDim2.new(1, 0, 0, 40), TextColor3 = K.C.dim, TextWrapped = true })
 	end
-	-- gamepad focus: keep the selected tile, else first cell / loot row
+	for i = nG + 1, #gridTargets do
+		gridTargets[i].clip = right
+	end
+	for i = nS + 1, #slotTargets do
+		slotTargets[i].clip = right
+	end
+	-- detail strip
+	local det = K.frame(panel, { BackgroundTransparency = 1, Position = UDim2.new(0, 12, 1, -detailH - 8), Size = UDim2.new(1, -24, 0, detailH) })
+	detail(det, W - 24, detailH)
 	if ctx.Input.device() == "Gamepad" then
-		local target = (selected and tiles[selected.g]) or firstFocus
-		K.focus(target)
+		K.focus(firstFocus)
 	end
 end
 
-function Inventory.show(m)
-	if ctx.State.inRaid() then
-		m = "raid"
+-- ── drag & drop (mouse) ────────────────────────────────────────────────────────
+local function dropTarget(pos)
+	if hover then
+		return hover
 	end
-	mode = m or "raid"
+	for _, s in slotTargets do
+		if s.frame.Parent and inside(s.frame, pos) and (not s.clip or inside(s.clip, pos)) then
+			return { kind = "slot", ref = s.ref, slot = s.slot }
+		end
+	end
+	for _, t in gridTargets do
+		if t.frame.Parent and inside(t.frame, pos) and (not t.clip or inside(t.clip, pos)) then
+			local rel = pos - t.frame.AbsolutePosition
+			return { kind = "cell", ref = t.ref, cid = t.cid, x = math.floor(rel.X / t.cell) + 1, y = math.floor(rel.Y / t.cell) + 1, cell = t.cell }
+		end
+	end
+	return nil
+end
+
+local function endDrag()
+	if ghost then
+		ghost:Destroy()
+		ghost = nil
+	end
+	local dd = drag
+	drag = nil
+	if not dd then
+		return
+	end
+	if not dd.started then
+		onTileClick(dd.ref, dd.g)
+		return
+	end
+	local tgt = dropTarget(mouse())
+	if DEBUG then
+		print("[ZR] drop", dd.g:sub(1, 6), "at", mouse(), tgt and (tgt.kind .. " " .. tostring(tgt.slot or tgt.cid) .. " " .. tostring(tgt.x) .. "," .. tostring(tgt.y)) or "nothing")
+	end
+	if not tgt then
+		return
+	end
+	if tgt.kind == "slot" then
+		req({ op = "move", g = dd.g, from = dd.ref, to = tgt.ref, dest = { slot = tgt.slot } })
+		return
+	end
+	local view = viewOf(tgt.ref)
+	local occupant = nil
+	if tgt.occupied and tgt.occupied ~= dd.g then
+		local p = view and view.grids and view.grids[tgt.cid] and view.grids[tgt.cid][tgt.occupied]
+		if p then
+			req({ op = "move", g = dd.g, from = dd.ref, to = tgt.ref, dest = { c = tgt.cid, x = p.x, y = p.y, r = 0 } })
+			return
+		end
+	end
+	if tgt.occupied == dd.g then
+		return
+	end
+	if view and view.grids and view.grids[tgt.cid] then
+		for og, p in view.grids[tgt.cid] do
+			local it = view.items[og]
+			local d = it and defs[it.id]
+			if d and og ~= dd.g then
+				local w, h = Grid.dims(d.w, d.h, p.r)
+				if tgt.x >= p.x and tgt.x < p.x + w and tgt.y >= p.y and tgt.y < p.y + h then
+					occupant = p
+				end
+			end
+		end
+	end
+	local dest
+	if occupant then
+		dest = { c = tgt.cid, x = occupant.x, y = occupant.y, r = 0 }
+	else
+		local gx, gy = dd.grabX, dd.grabY
+		if dd.r ~= (dd.r0 or dd.r) then
+			gx, gy = gy, gx
+		end
+		dest = { c = tgt.cid, x = math.max(1, tgt.x - gx), y = math.max(1, tgt.y - gy), r = dd.r }
+	end
+	req({ op = "move", g = dd.g, from = dd.ref, to = tgt.ref, dest = dest })
+end
+
+local function updateGhost()
+	if not drag or not drag.started then
+		return
+	end
+	local c = drag.cell
+	if not ghost then
+		ghost = K.frame(gui, { Name = "DragGhost", BackgroundColor3 = K.C.ochre, BackgroundTransparency = 0.6, ZIndex = 60, Active = false })
+		pcall(function()
+			ghost.Interactable = false
+		end)
+		K.stroke(ghost, K.C.ochre, 0)
+		K.label(ghost, drag.label, 12, { Position = UDim2.fromOffset(3, 2), Size = UDim2.new(1, -4, 0, 14), FontFace = K.bold, ZIndex = 61 })
+	end
+	local m = mouse()
+	local gx, gy = drag.grabX, drag.grabY
+	if drag.r ~= drag.r0 then
+		gx, gy = gy, gx
+	end
+	ghost.Size = UDim2.fromOffset(drag.w * c - 2, drag.h * c - 2)
+	ghost.Position = UDim2.fromOffset(m.X - gx * c - c * 0.5 + 6, m.Y - gy * c - c * 0.5 + 6)
+end
+
+function Inventory.show()
 	Inventory.open = true
 	gui.Enabled = true
 	ctx.Input.setMenu(true)
@@ -427,6 +826,12 @@ function Inventory.close()
 	gui.Enabled = false
 	selected = nil
 	rot = 0
+	drag = nil
+	closeMenu()
+	if ghost then
+		ghost:Destroy()
+		ghost = nil
+	end
 	local l = loot
 	loot = nil
 	ctx.Input.setMenu(false)
@@ -443,7 +848,7 @@ function Inventory.toggle()
 	if Inventory.open then
 		Inventory.close()
 	elseif not (ctx.Screens and ctx.Screens.modal) then
-		Inventory.show(ctx.State.inRaid() and "raid" or "stash")
+		Inventory.show()
 	end
 end
 
@@ -459,7 +864,11 @@ function Inventory.init(c)
 	end)
 	c.Input.on("Back", function(down)
 		if down and Inventory.open then
-			Inventory.close()
+			if menu then
+				closeMenu()
+			else
+				Inventory.close()
+			end
 		end
 	end)
 	c.State.changed:Connect(function()
@@ -467,17 +876,62 @@ function Inventory.init(c)
 			Inventory.render()
 		end
 	end)
-	c.State.on("loot", function(d)
-		loot = d
+	c.State.on("loot", function(v)
+		loot = v
 		if Inventory.open then
 			Inventory.render()
 		else
-			Inventory.show("raid")
+			Inventory.show()
+		end
+	end)
+	c.State.on("progress", function(p)
+		status = { text = p.label or "WORKING", t0 = os.clock(), dur = p.t or 1 }
+		if Inventory.open then
+			Inventory.render()
+			task.delay((p.t or 1) + 0.05, function()
+				if Inventory.open then
+					Inventory.render()
+				end
+			end)
 		end
 	end)
 	c.State.on("summary", function()
 		loot = nil
 		Inventory.close()
+	end)
+	UIS.InputChanged:Connect(function(input)
+		if drag and input.UserInputType == Enum.UserInputType.MouseMovement then
+			if DEBUG and not drag.started then
+				print("[ZR] drag move", mouse())
+			end
+			if not drag.started and (mouse() - drag.start).Magnitude > 6 then
+				drag.started = true
+				drag.r0 = drag.r
+				selected = nil
+			end
+			updateGhost()
+		end
+	end)
+	UIS.InputEnded:Connect(function(input)
+		if drag and input.UserInputType == Enum.UserInputType.MouseButton1 then
+			endDrag()
+		end
+	end)
+	UIS.InputBegan:Connect(function(input)
+		if not Inventory.open then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.R then
+			if drag and drag.started then
+				drag.w, drag.h = drag.h, drag.w
+				drag.r = 1 - drag.r
+				updateGhost()
+			else
+				rot = 1 - rot
+			end
+		elseif input.UserInputType == Enum.UserInputType.MouseButton1 and menu and not inside(menu, mouse()) then
+			closeMenu()
+		end
 	end)
 end
 

@@ -1,14 +1,43 @@
 --!nonstrict
--- Pure-logic regression tests (grid, inventory, settlement, de-dupe, locks). Run in Studio via ZR_Dev "tests".
+-- Pure-logic regression tests (grid, inventory 2.0, settlement, loot, de-dupe, locks). Run via ZR_Dev "tests".
 local Services = script.Parent.Parent:WaitForChild("Services")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Grid = require(Shared.Grid)
-local Util = require(Shared.Util)
+local Items = require(Shared.Items)
 local Inv = require(Services.Inv)
 local Settle = require(Services.Settle)
 local Loot = require(Services.Loot)
 
 local T = {}
+
+local function findId(h, id, where)
+	for g, it in h.items do
+		if it.id == id and (not where or Inv.locate(h, g) == where) then
+			return g
+		end
+	end
+	return nil
+end
+
+local function biggest(h, id)
+	local best, n = nil, -1
+	for g, it in h.items do
+		if it.id == id and it.n > n then
+			best, n = g, it.n
+		end
+	end
+	return best
+end
+
+local function countId(h, id)
+	local n = 0
+	for _, it in h.items do
+		if it.id == id then
+			n += it.n
+		end
+	end
+	return n
+end
 
 function T.run(ctx)
 	local passed, failed, notes = 0, 0, {}
@@ -20,12 +49,15 @@ function T.run(ctx)
 			table.insert(notes, "FAIL " .. name)
 		end
 	end
-	local function one(h, g)
-		local ok = Inv.check(h)
-		return ok and h.items[g] ~= nil
+	local function inv(h)
+		local ok, msg = Inv.check(h)
+		if not ok then
+			table.insert(notes, "invariant: " .. tostring(msg))
+		end
+		return ok
 	end
 
-	-- grid
+	-- grid geometry
 	local sz = function()
 		return 2, 1
 	end
@@ -40,94 +72,175 @@ function T.run(ctx)
 
 	-- starter profile
 	local p = Settle.newProfile()
-	check("new profile invariant", (Inv.check(p)))
-	check("starter rifle equipped", p.slots.primary ~= nil and p.items[p.slots.primary].mag ~= nil)
-	check("starter pack equipped", p.slots.bag ~= nil)
-
-	-- moves
-	local someMag
-	for g, it in p.items do
-		if it.id == "R17_MAG" and Inv.locate(p, g) == "pockets" then
-			someMag = g
+	check("new profile invariant", inv(p))
+	local pw = p.items[p.slots.primary]
+	local pm = pw and p.items[pw.mag]
+	check("starter rifle loaded", pm ~= nil and pm.a == 25 and pm.at == "A62_FMJ")
+	check("starter pistol loaded", p.slots.holster ~= nil and p.items[p.slots.holster].mag ~= nil)
+	check("starter worn kit", p.slots.secure and p.slots.back and p.slots.rig and p.slots.armor and p.slots.melee and true)
+	local rigMags = 0
+	for g in p.grids[p.slots.rig] do
+		if Items.defs[p.items[g].id].kind == "mag" then
+			rigMags += 1
 		end
 	end
-	check("mag in pockets", someMag ~= nil)
-	local okMove = Inv.move(p, someMag, { c = "stash", x = 8, y = 5, r = 0 })
-	check("move to stash corner", okMove and one(p, someMag))
-	local blocked = Inv.move(p, someMag, { c = "stash", x = 8, y = 6, r = 0 })
-	check("out of bounds rejected", not blocked)
-	check("bag into own pack rejected", not Inv.move(p, p.slots.bag, { c = "bag", x = 1, y = 1, r = 0 }))
-	local band = Inv.findKind(p, "heal", { "pockets", "bag" })
-	check("dressing in loadout", band ~= nil)
-	check("unequip pack with contents rejected", not Inv.move(p, p.slots.bag, { c = "stash", x = 1, y = 6, r = 0 }))
-	check("invariant after moves", (Inv.check(p)))
+	check("rig holds 3 mags", rigMags == 3)
+	local pocketsOk = true
+	for g in p.grids.pockets do
+		local d = Items.defs[p.items[g].id]
+		pocketsOk = pocketsOk and d.w * d.h == 1
+	end
+	check("pockets hold 1x1 only", pocketsOk)
 
-	-- stacking + fill mags
-	local g1, a1 = Inv.newItem("UC62", 50)
-	local g2, a2 = Inv.newItem("UC62", 30)
-	local h = Inv.newHolder(true)
+	-- moves and rules
+	local rigMag = findId(p, "R17_MAG", "grid")
+	check("move mag to stash corner", (Inv.move(p, rigMag, { c = "stash", x = 10, y = 19, r = 0 })) and inv(p))
+	check("out of bounds rejected", not Inv.move(p, rigMag, { c = "stash", x = 10, y = 20, r = 0 }))
+	local back = p.slots.back
+	check("bag into itself rejected", not Inv.move(p, back, { c = back, x = 1, y = 1, r = 0 }))
+	check("full bag into rig rejected", select(2, Inv.move(p, back, { c = p.slots.rig, x = 1, y = 1, r = 0 })) ~= nil)
+	local water = findId(p, "WATER")
+	local _, eTooBig = Inv.move(p, water, { c = "pockets", x = 4, y = 1, r = 0 })
+	check("1x2 into pockets rejected", eTooBig == "TOO_BIG")
+	local _, eSec = Inv.move(p, p.slots.primary, { c = p.slots.secure, x = 1, y = 1, r = 0 })
+	check("rifle into secure rejected", eSec == "SECURE_RESTRICTED")
+	local stashAmmo = findId(p, "A9_PST")
+	check("ammo into secure allowed", (Inv.move(p, stashAmmo, { c = p.slots.secure, x = 1, y = 1, r = 0 })))
+	local helmet = findId(p, "HELMET_C2")
+	check("equip helmet", (Inv.move(p, helmet, { slot = "head" })) and p.slots.head == helmet)
+	local _, eW = Inv.move(p, helmet, { slot = "holster" })
+	check("helmet into holster rejected", eW ~= nil)
+	local prg, pri = Inv.newItem("RIG_PLATE")
+	Inv.place(p, prg, pri, { "stash" })
+	local oldRig = p.slots.rig
+	Inv.detach(p, oldRig)
+	Inv.autoPlace(p, oldRig, { "stash" })
+	local _, eConf = Inv.move(p, prg, { slot = "rig" })
+	check("plate rig blocked by body armor", eConf == "ARMOR_CONFLICT")
+	check("invariant after rule checks", inv(p))
+	check("secure locked in raid", select(2, Inv.move(p, p.slots.secure, { c = "stash", x = 1, y = 1, r = 0 }, { inRaid = true })) == "SECURE_LOCKED")
+
+	-- stacks
+	local h = Inv.newHolder("profile")
+	local g1, a1 = Inv.newItem("A62_FMJ", 50)
+	local g2, a2 = Inv.newItem("A62_FMJ", 30)
 	Inv.place(h, g1, a1, { "stash" })
 	Inv.place(h, g2, a2, { "stash" })
-	local total = 0
-	for _, it in h.items do
-		total += it.n
-	end
-	check("stack merge keeps count", total == 80 and (Inv.check(h)))
+	check("stack merge keeps count", countId(h, "A62_FMJ") == 80 and inv(h))
+	local sg = findId(h, "A62_FMJ")
+	check("split stack", (Inv.split(h, sg, 10, { c = "stash", x = 5, y = 5, r = 0 })) and countId(h, "A62_FMJ") == 80 and inv(h))
+
+	-- ammo + magazines
 	local mg, mi = Inv.newItem("R17_MAG", 1, { a = 0 })
 	Inv.place(h, mg, mi, { "stash" })
-	local loaded = Inv.fillMags(h)
-	check("fill mags loads 25", loaded == 25 and h.items[mg].a == 25 and (Inv.check(h)))
+	local ag = biggest(h, "A62_FMJ")
+	local loaded = Inv.loadAmmo(h, mg, ag)
+	check("load mag 25", loaded == 25 and h.items[mg].a == 25 and h.items[mg].at == "A62_FMJ" and countId(h, "A62_FMJ") == 55 and inv(h))
+	local pg, pi = Inv.newItem("A9_PST", 20)
+	Inv.place(h, pg, pi, { "stash" })
+	local _, eCal = Inv.loadAmmo(h, mg, pg)
+	check("wrong caliber rejected", eCal == "WRONG_CALIBER")
+	local apg, api = Inv.newItem("A62_AP", 10)
+	Inv.place(h, apg, api, { "stash" })
+	Inv.unloadAmmo(h, mg, { "stash" })
+	check("unload returns rounds", h.items[mg].a == 0 and countId(h, "A62_FMJ") == 80 and inv(h))
+	Inv.loadAmmo(h, mg, ag, 5)
+	local _, eMix = Inv.loadAmmo(h, mg, apg)
+	check("mixed ammo rejected", eMix == "MIXED_AMMO")
+	-- best mag + swap
+	local q = Settle.newProfile()
+	local qw = q.slots.primary
+	local qold = q.items[qw].mag
+	q.items[qold].a = 3
+	local best = Inv.bestMag(q, qw)
+	check("best mag from rig", best ~= nil and Inv.locate(q, best) == "grid" and q.items[best].a == 25)
+	local okSwap = Inv.insertMag(q, best, qw)
+	check("mag swap keeps both", okSwap and q.items[qw].mag == best and Inv.locate(q, qold) == "grid" and inv(q))
 
-	-- deploy / settle success (idempotent)
+	-- bundles / transfers between holders
+	local bag = q.slots.back
+	local before = 0
+	for _ in q.grids[bag] do
+		before += 1
+	end
+	local b = Inv.take(q, bag)
+	check("take bag with contents", b ~= nil and #b.subs >= before and q.items[bag] == nil and inv(q))
+	local box = Inv.newHolder("box", 6, 6)
+	check("give bag to box", (Inv.give(box, b, nil, { "main" })) and inv(box) and box.items[bag] ~= nil)
+	local moved = Inv.transfer(box, bag, q, { slot = "back" })
+	check("transfer back to slot", moved and q.slots.back == bag and inv(q) and inv(box) and next(box.items) == nil)
+	local tiny = Inv.newHolder("box", 1, 1)
+	local okT, eT = Inv.transfer(q, bag, tiny, nil, { "main" })
+	check("failed transfer rolls back", not okT and q.slots.back == bag and inv(q) and inv(tiny) and eT ~= nil)
+	local s1, i1 = Inv.newItem("A62_FMJ", 40)
+	local s2, i2 = Inv.newItem("A62_FMJ", 40)
+	local hb = Inv.newHolder("box", 3, 3)
+	Inv.place(hb, s1, i1, { "main" })
+	Inv.place(q, s2, i2, { "stash" })
+	local pl = hb.grids.main[s1]
+	Inv.transfer(q, s2, hb, { c = "main", x = pl.x, y = pl.y, r = 0 })
+	check("cross-holder merge conserves", hb.items[s1].n == 60 and q.items[s2].n == 20 and inv(q) and inv(hb))
+
+	-- deploy / settle
 	local prof = Settle.newProfile()
+	local stashCount = 0
+	for _ in prof.grids.stash do
+		stashCount += 1
+	end
 	local raidInv = Settle.deploy(prof, "raid1", 1)
-	check("deploy reserves loadout", raidInv ~= nil and prof.pendingRaid ~= nil and next(prof.slots) == nil)
+	check("deploy reserves loadout", raidInv ~= nil and prof.pendingRaid ~= nil and next(prof.slots) == nil and prof.pendingRaid.secure ~= nil)
 	check("deploy twice rejected", Settle.deploy(prof, "raid2", 2) == nil)
-	check("profile invariant during raid", (Inv.check(prof)))
-	check("raid inventory invariant", (Inv.check(raidInv)))
-	local lg, li = Inv.newItem("SEALED_DRIVE", 1)
-	check("loot placed in raid bag", (Inv.place(raidInv, lg, li, { "pockets", "bag" })))
+	check("profile invariant during raid", inv(prof))
+	check("raid inventory invariant", inv(raidInv))
+	local lg, li = Inv.newItem("SEALED_DRIVE", 1, { fip = true })
+	check("loot into raid kit", (Inv.place(raidInv, lg, li, Inv.loadOrder(raidInv))))
 	local r1 = Settle.finalize(prof, "raid1", "SUCCESS", raidInv, 3)
 	local r2, e2 = Settle.finalize(prof, "raid1", "SUCCESS", raidInv, 4)
 	check("success credits loot once", r1 ~= nil and prof.items[lg] ~= nil and r2 == nil and e2 == "ALREADY_FINALIZED")
-	check("profile invariant after success", (Inv.check(prof)))
-	local drives = 0
-	for _, it in prof.items do
-		if it.id == "SEALED_DRIVE" then
-			drives += 1
+	check("found in raid on extraction", prof.items[lg] and prof.items[lg].fir == true and prof.items[lg].fip == nil)
+	check("profile invariant after success", inv(prof))
+
+	local prof2 = Settle.newProfile()
+	local inv2 = Settle.deploy(prof2, "raidK", 1)
+	local kg, ki = Inv.newItem("GOLD_CHAIN", 1, { fip = true })
+	Inv.place(inv2, kg, ki, { inv2.slots.secure })
+	local xg, xi = Inv.newItem("DECK_TRANSCEIVER", 1, { fip = true })
+	Inv.place(inv2, xg, xi, Inv.loadOrder(inv2))
+	local rk = Settle.finalize(prof2, "raidK", "KIA", inv2, 2)
+	check("KIA lists losses", rk ~= nil and #rk.lost > 0 and #rk.retained == 0)
+	check("KIA keeps secure contents", prof2.slots.secure ~= nil and prof2.items[kg] ~= nil and prof2.items[kg].fir == nil and prof2.items[kg].fip == nil)
+	check("KIA loses the rest", prof2.items[xg] == nil and prof2.slots.primary == nil and next(prof2.grids.pockets) == nil)
+	check("invariant after KIA", inv(prof2))
+	prof2.money = 0
+	local okRk = Settle.recoveryKit(prof2)
+	check("recovery kit when broke", okRk and inv(prof2))
+	check("recovery kit only once", not Settle.recoveryKit(prof2))
+	local rkValue = 0
+	for _, it in prof2.items do
+		if it.rk then
+			rkValue += Items.valueOf(it)
 		end
 	end
-	check("no duplicated loot", drives == 1)
+	check("recovery kit worth nothing", rkValue == 0)
 
-	-- KIA loses loadout and loot
-	local prof2 = Settle.newProfile()
-	local stashCount = Util.count(prof2.stash)
-	local inv2 = Settle.deploy(prof2, "raidK", 1)
-	local kg, ki = Inv.newItem("DECK_TRANSCEIVER", 1)
-	Inv.place(inv2, kg, ki, { "bag", "pockets" })
-	local rk = Settle.finalize(prof2, "raidK", "KIA", inv2, 2)
-	check("KIA receipt lists losses", rk ~= nil and #rk.lost > 0 and #rk.retained == 0)
-	check("KIA leaves loadout empty", next(prof2.slots) == nil and next(prof2.pockets) == nil)
-	check("KIA keeps stash, no loot credit", Util.count(prof2.stash) == stashCount and prof2.items[kg] == nil)
-	check("recovery kit when weaponless", (Settle.recoveryKit(prof2)) and prof2.slots.primary ~= nil)
-	check("recovery kit only once", not Settle.recoveryKit(prof2))
-	check("invariant after recovery", (Inv.check(prof2)))
-
-	-- disconnect recovery (no raid inventory available)
 	local prof3 = Settle.newProfile()
-	Settle.deploy(prof3, "raidD", 1)
+	local raid3 = Settle.deploy(prof3, "raidD", 1)
+	local sec3 = raid3.slots.secure
 	local rd = Settle.finalize(prof3, "raidD", "DISCONNECTED", nil, 2)
-	check("disconnect settles as loss", rd ~= nil and prof3.pendingRaid == nil and #rd.lost > 0)
+	check("crash settles as loss, secure restored", rd ~= nil and prof3.pendingRaid == nil and #rd.lost > 0 and prof3.slots.secure == sec3 and inv(prof3))
 
-	-- container claim atomicity
-	local c = { items = Loot.roll(Random.new(1), "crate", 3) }
-	local target = c.items[1].g
-	local hA, hB = Inv.newHolder(false), Inv.newHolder(false)
-	local okA = Loot.claim(c, target, hA)
-	local okB, eB = Loot.claim(c, target, hB)
-	check("same GUID claimed once", okA and not okB and eB == "GONE" and hB.items[target] == nil)
+	local old = { schema = 1, items = {}, settings = { fov = 90 } }
+	Settle.migrate(old)
+	check("schema change wipes, keeps settings", old.schema == Settle.SCHEMA and old.settings.fov == 90 and old.slots.primary ~= nil and inv(old))
 
-	-- remote de-dupe: same rid executes once
+	-- loot
+	local lb = Inv.newHolder("box", 5, 4)
+	local order = Loot.fill(lb, Random.new(7), "crate", 4)
+	check("loot fill invariant", inv(lb) and #order >= 1)
+	local gl = Loot.guardLoadout(Random.new(3))
+	check("guard loadout invariant", inv(gl) and gl.slots.primary ~= nil and gl.slots.rig ~= nil)
+
+	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0
 		ctx.Remotes.onReq("__test", function()
@@ -136,9 +249,9 @@ function T.run(ctx)
 		end, 100, 100)
 		local fake = { Name = "test" }
 		local a = ctx.Remotes.dispatch(fake, "__test", { rid = "X1" })
-		local b = ctx.Remotes.dispatch(fake, "__test", { rid = "X1" })
+		local bb = ctx.Remotes.dispatch(fake, "__test", { rid = "X1" })
 		local bad = ctx.Remotes.dispatch(fake, "__test", { rid = "X2", nested = { a = { b = { c = { d = 1 } } } } })
-		check("rid de-dupe", calls == 1 and a == b)
+		check("rid de-dupe", calls == 1 and a == bb)
 		check("deep payload rejected", bad.ok == false and bad.code == "BAD_INPUT")
 		check("unknown action rejected", ctx.Remotes.dispatch(fake, "nope", {}).code == "BAD_INPUT")
 	end

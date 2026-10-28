@@ -54,6 +54,20 @@ local function alive(player)
 	return nil, nil
 end
 
+-- active weapon of a raid session: guid, item, Weapons def, item def, rounds holder (mag or weapon tube)
+function Combat.activeWeapon(s)
+	local slot = s.active
+	local wg = slot and s.inv.slots[slot]
+	local wit = wg and s.inv.items[wg]
+	local d = wit and Items.defs[wit.id]
+	local wdef = d and d.weapon and Weapons[d.weapon]
+	if not wdef then
+		return nil
+	end
+	local rounds = (d.family and wit.mag and s.inv.items[wit.mag]) or ((not d.family) and wit) or nil
+	return wg, wit, wdef, d, rounds
+end
+
 local function reject(why, player)
 	Combat.stats.rejected += 1
 	if player then
@@ -113,16 +127,13 @@ function Combat.shoot(player, seq, origin, dir)
 	if t < w.reloadUntil then
 		return reject("shot while reloading", nil)
 	end
-	local wg = s.inv.slots.primary
-	local wit = wg and s.inv.items[wg]
-	local wdef = wit and Weapons[Items.defs[wit.id].weapon]
+	local wg, wit, wdef, wd, mag = Combat.activeWeapon(s)
 	if not wdef then
 		return reject("no weapon", player)
 	end
 	if t - w.last < (60 / wdef.rpm) * 0.8 then
 		return reject("fire rate", player)
 	end
-	local mag = wit.mag and s.inv.items[wit.mag]
 	if not mag or (mag.a or 0) <= 0 then
 		ctx.Remotes.note(player, "ammo", { a = 0 })
 		return reject("empty", nil)
@@ -139,8 +150,13 @@ function Combat.shoot(player, seq, origin, dir)
 		origin = hp -- origin hint behind a wall: fall back to the server head position
 	end
 	w.last = t
+	local ammoDef = mag.at and Items.defs[mag.at]
 	mag.a -= 1
+	if mag.a <= 0 then
+		mag.at = nil
+	end
 	Combat.stats.accepted += 1
+	local ballistic = ammoDef and ammoDef.ammo or { dmg = 40, pen = 20 }
 	local res = workspace:Raycast(origin, dir * wdef.range, filter(char))
 	local hitPos = res and res.Position or (origin + dir * wdef.range)
 	local hit = false
@@ -149,13 +165,14 @@ function Combat.shoot(player, seq, origin, dir)
 		local thum = model and model:FindFirstChildOfClass("Humanoid")
 		if thum and thum.Health > 0 then
 			local nm = res.Instance.Name
-			local mult = (nm == "Head" and wdef.headMult) or (LIMB[nm] and wdef.limbMult) or 1
+			local mult = (nm == "Head" and 2) or (LIMB[nm] and 0.7) or 1
 			local dist = (hitPos - origin).Magnitude
+			local fs = wdef.range * Weapons.FALLOFF_START
 			local fall = 1
-			if dist > wdef.falloffStart then
-				fall = math.max(wdef.falloffMin, 1 - (dist - wdef.falloffStart) / (wdef.range - wdef.falloffStart) * (1 - wdef.falloffMin))
+			if dist > fs then
+				fall = math.max(Weapons.FALLOFF_MIN, 1 - (dist - fs) / (wdef.range - fs) * (1 - Weapons.FALLOFF_MIN))
 			end
-			local killed = Combat.damage(model, thum, wdef.damage * mult * fall, player, origin)
+			local killed = Combat.damage(model, thum, ballistic.dmg * 0.6 * mult * fall, player, origin)
 			hit = true
 			ctx.Remotes.note(player, "hit", { head = nm == "Head", kill = killed })
 		end
@@ -174,45 +191,47 @@ function Combat.reload(player)
 	if t < w.reloadUntil then
 		return
 	end
-	local wg = s.inv.slots.primary
-	local wit = wg and s.inv.items[wg]
-	local wdef = wit and Weapons[Items.defs[wit.id].weapon]
-	if not wdef then
-		return
-	end
-	local cur = wit.mag and s.inv.items[wit.mag]
-	local curA = cur and cur.a or 0
-	local better = false
-	for _, c in { "pockets", "bag" } do
-		for g in s.inv[c] do
-			local it = s.inv.items[g]
-			if it.id == wdef.mag and (it.a or 0) > curA then
-				better = true
-			end
-		end
-	end
-	if not better then
+	local wg, wit, wdef, wd, cur = Combat.activeWeapon(s)
+	if not wdef or not wd.family then
 		ctx.Remotes.note(player, "reload", { state = "none" })
 		return
 	end
+	local best = Inv.bestMag(s.inv, wg)
+	if not best then
+		ctx.Remotes.note(player, "reload", { state = "none" })
+		return
+	end
+	local dur = (cur and (cur.a or 0) > 0) and wdef.reload or wdef.reloadEmpty
 	local token = {}
 	w.reloadToken = token
-	w.reloadUntil = t + wdef.reload
-	ctx.Remotes.note(player, "reload", { state = "start", t = wdef.reload })
-	task.delay(wdef.reload, function()
+	w.reloadUntil = t + dur
+	ctx.Remotes.note(player, "reload", { state = "start", t = dur })
+	task.delay(dur, function()
 		if W[player] ~= w or w.reloadToken ~= token then
 			return
 		end
 		local s2 = ctx.Raid.session(player)
-		if s2 ~= s or s.done or not alive(player) then
+		if s2 ~= s or s.done or not alive(player) or not s.inv.items[best] or not s.inv.items[wg] then
 			return
 		end
-		local done, a = Inv.reload(s.inv)
-		ctx.Remotes.note(player, "ammo", { a = done and a or curA })
+		local done, err = Inv.insertMag(s.inv, best, wg)
+		if not done and err == "NO_SPACE" and wit.mag then
+			-- no room for the old magazine: it falls to the ground (Tarkov quick reload)
+			local char = player.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart")
+			local b = Inv.take(s.inv, wit.mag)
+			if b and root then
+				ctx.Loot.spawnPile(root.Position - Vector3.new(0, 2.5, 0), { b })
+			end
+			Inv.insertMag(s.inv, best, wg)
+		end
+		local m = wit.mag and s.inv.items[wit.mag]
+		ctx.Remotes.note(player, "ammo", { a = m and m.a or 0 })
 		ctx.Raid.push(player)
 	end)
 end
 
+-- interim medkit use (replaced by the body-part Health model)
 function Combat.startHeal(player, g)
 	local s = ctx.Raid.session(player)
 	local char, hum = alive(player)
@@ -227,18 +246,29 @@ function Combat.startHeal(player, g)
 		return ctx.Remotes.fail("BUSY")
 	end
 	if g == nil then
-		g = Inv.findKind(s.inv, "heal", { "pockets", "bag" })
+		for _, cid in Inv.loadOrder(s.inv) do
+			for x in s.inv.grids[cid] or {} do
+				local d = Items.defs[s.inv.items[x].id]
+				if d.kind == "med" and d.med.hp then
+					g = x
+					break
+				end
+			end
+			if g then
+				break
+			end
+		end
 	end
 	local it = g and s.inv.items[g]
 	local def = it and Items.defs[it.id]
-	local loc = g and Inv.locate(s.inv, g)
-	if not def or def.kind ~= "heal" or (loc ~= "pockets" and loc ~= "bag") then
-		return ctx.Remotes.fail("NO_ITEM", "No dressing in pockets or pack.")
+	if not def or def.kind ~= "med" or not def.med.hp then
+		return ctx.Remotes.fail("NO_ITEM", "No medkit on you.")
 	end
 	local token = {}
 	w.healToken = token
-	ctx.Remotes.note(player, "heal", { state = "start", t = 2.5 })
-	task.delay(2.5, function()
+	local t = def.med.time or 2.5
+	ctx.Remotes.note(player, "heal", { state = "start", t = t, label = "USING " .. string.upper(def.name) })
+	task.delay(t, function()
 		if w.healToken ~= token then
 			return
 		end
@@ -247,8 +277,12 @@ function Combat.startHeal(player, g)
 		if not h2 or ctx.Raid.session(player) ~= s or s.done or not s.inv.items[g] then
 			return
 		end
-		Inv.consume(s.inv, g)
-		h2.Health = math.min(h2.MaxHealth, h2.Health + def.heal)
+		local amount = math.min(h2.MaxHealth - h2.Health, it.hp or def.med.hp, 60)
+		h2.Health += amount
+		it.hp = (it.hp or def.med.hp) - amount
+		if it.hp <= 0 then
+			Inv.consume(s.inv, g)
+		end
 		ctx.Remotes.note(player, "heal", { state = "done" })
 		ctx.Raid.push(player)
 	end)
