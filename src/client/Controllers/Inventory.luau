@@ -490,13 +490,59 @@ local function drawSlot(parent, view, ref, slot, x0, y0, w, h, cell)
 	return holder
 end
 
+local PART_ORDER = { "head", "thorax", "stomach", "larm", "rarm", "lleg", "rleg" }
+local PART_SHORT = { head = "HEAD", thorax = "THORAX", stomach = "STOMACH", larm = "L.ARM", rarm = "R.ARM", lleg = "L.LEG", rleg = "R.LEG" }
+
+-- body-part health; with a medical item selected, click a part to treat it (Tarkov drag-onto-body)
+local function drawHealth(parent, width)
+	local v = ctx.State.vitals
+	if not v or not v.parts then
+		return 0
+	end
+	K.label(parent, string.format("HEALTH  %d/%d     ENERGY %d     HYDRATION %d", math.ceil(v.hp), math.floor(v.max), math.floor(v.energy or 0), math.floor(v.water or 0)), 12, { Size = UDim2.new(1, 0, 0, 16), FontFace = K.bold, TextColor3 = (v.hp / v.max < 0.4) and K.C.red or K.C.text })
+	local bw = math.floor((width - 6 * 4) / 7)
+	for i, k in PART_ORDER do
+		local p = v.parts[k]
+		if p then
+			local hp, max, bleed, frac = p[1], p[2], p[3], p[4]
+			local f = max > 0 and hp / max or 0
+			local col = (hp <= 0 and Color3.fromHex("1A1A1A")) or (f < 0.4 and Color3.fromHex("6A2A22")) or (f < 0.75 and Color3.fromHex("5E5228")) or Color3.fromHex("2F4A33")
+			local b = K.button(parent, "", { Name = "Btn_PART_" .. string.upper(k), Position = UDim2.fromOffset((i - 1) * (bw + 4), 20), Size = UDim2.fromOffset(bw, 40), BackgroundColor3 = col })
+			b.Text = string.format("%s\n%d/%d", PART_SHORT[k], hp, max)
+			b.TextSize = 11
+			if hp <= 0 then
+				b.TextColor3 = K.C.red
+			end
+			local marks = (bleed == 2 and "HB " or (bleed == 1 and "LB " or "")) .. (frac and "FX" or "")
+			if marks ~= "" then
+				K.label(b, marks, 9, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -2, 0, 1), Size = UDim2.fromOffset(40, 10), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = K.C.orange, ZIndex = 5 })
+			end
+			b.Activated:Connect(function()
+				local sel = selected
+				local it = sel and sel.ref == "me" and data().items[sel.g]
+				local d = it and defs[it.id]
+				if d and (d.kind == "med") and ctx.State.inRaid() then
+					req({ op = "use", g = sel.g, part = k })
+					selected = nil
+				end
+			end)
+		end
+	end
+	return 66
+end
+
 -- equipment layout + pockets + container grids for any holder view (mine or a body)
 local function drawGear(parent, view, ref, cell, width)
 	local y = 0
+	if ref == "me" then
+		local hf = K.frame(parent, { Name = "Health", BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 64) })
+		y += drawHealth(hf, width - 12)
+	end
 	local slotCell = math.floor(math.min(cell * 1.05, (width - 10) / 11))
+	local y0 = y
 	for _, e in SLOT_LAYOUT do
 		local slot, sx, sy, sw, sh = e[1], e[2], e[3], e[4], e[5]
-		drawSlot(parent, view, ref, slot, sx * slotCell, y + sy * (slotCell + 6), sw * slotCell - 6, sh * slotCell - 2, slotCell)
+		drawSlot(parent, view, ref, slot, sx * slotCell, y0 + sy * (slotCell + 6), sw * slotCell - 6, sh * slotCell - 2, slotCell)
 	end
 	y += 7 * (slotCell + 6) + 4
 	local ph

@@ -240,6 +240,29 @@ function T.run(ctx)
 	local gl = Loot.guardLoadout(Random.new(3))
 	check("guard loadout invariant", inv(gl) and gl.slots.primary ~= nil and gl.slots.rig ~= nil)
 
+	-- health model (pure parts)
+	local Health = require(Services.Health)
+	local hs = Health.new()
+	local t0, m0 = Health.total(hs)
+	check("health 440 total", t0 == 440 and m0 == 440)
+	Health.applyDamage(hs, "larm", 80)
+	check("limb overflow spills", hs.parts.larm.hp == 0 and Health.total(hs) < 440 - 60 and not hs.dead)
+	local before = hs.parts.thorax.hp
+	Health.applyDamage(hs, "larm", 30)
+	check("destroyed limb spreads damage", hs.parts.thorax.hp < before and not hs.dead)
+	Health.applyDamage(hs, "head", 40)
+	check("head destroyed kills", hs.dead == true)
+	local hs2 = Health.new()
+	Health.applyDamage(hs2, "thorax", 84)
+	check("thorax at 1 survives", not hs2.dead and hs2.parts.thorax.hp == 1)
+	Health.applyDamage(hs2, "lleg", 200)
+	check("spill into thorax kills", hs2.dead == true)
+	local hs3 = Health.new()
+	hs3.fract.lleg = true
+	check("fracture causes pain, slows, no sprint", Health.inPain(hs3) and Health.mods(hs3).speed < 1 and Health.mods(hs3).sprint == false)
+	hs3.painUntil = os.clock() + 60
+	check("painkillers allow sprint", Health.mods(hs3).sprint == true and not Health.inPain(hs3))
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0

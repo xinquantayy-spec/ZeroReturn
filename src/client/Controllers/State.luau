@@ -78,6 +78,8 @@ function State.init(_ctx)
 	note.OnClientEvent:Connect(function(kind, data)
 		if kind == "raid" then
 			State.raid = data
+		elseif kind == "vitals" then
+			State.vitals = data
 		end
 		State.emit(kind, data)
 	end)

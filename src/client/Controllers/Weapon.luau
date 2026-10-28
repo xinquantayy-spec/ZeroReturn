@@ -343,13 +343,16 @@ local function update(dt)
 			defaultHip = hum.HipHeight
 		end
 		local moving = ctx.Camera.speed > 1
-		if Weapon.sprinting and (not moving or Weapon.stamina <= 0 or Weapon.crouching) then
+		local vit = ctx.State.vitals
+		local mods = vit and vit.mods or nil
+		ctx.Camera.tremor = mods and mods.tremor or 0
+		if Weapon.sprinting and (not moving or Weapon.stamina <= 0 or Weapon.crouching or (mods and not mods.sprint)) then
 			Weapon.sprinting = false
 		end
 		if Weapon.sprinting then
 			Weapon.stamina = math.max(0, Weapon.stamina - Config.SPRINT_DRAIN * dt)
 		else
-			Weapon.stamina = math.min(Config.MAX_STAMINA, Weapon.stamina + Config.STAMINA_REGEN * dt)
+			Weapon.stamina = math.min(Config.MAX_STAMINA, Weapon.stamina + Config.STAMINA_REGEN * dt * (mods and mods.staminaRegen or 1))
 		end
 		local speed = Config.WALK_SPEED
 		if Weapon.sprinting then
@@ -362,7 +365,7 @@ local function update(dt)
 		if Weapon.healing then
 			speed = math.min(speed, Config.CROUCH_SPEED)
 		end
-		hum.WalkSpeed = speed
+		hum.WalkSpeed = speed * (mods and mods.speed or 1)
 		hum.HipHeight = Weapon.crouching and (defaultHip - 1.0) or defaultHip
 		hum.UseJumpPower = false
 		hum.JumpHeight = (Weapon.crouching or Weapon.stamina < Config.JUMP_COST) and 0 or 3.6

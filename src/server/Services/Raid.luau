@@ -197,6 +197,16 @@ function Raid.finalize(player, outcome)
 	s.state = outcome
 	sessions[player] = nil
 	local prof = ctx.Profiles.get(player)
+	local char0 = player.Character
+	local hs0 = char0 and ctx.Health and ctx.Health.get(char0)
+	local death = (outcome == "KIA" and char0) and Raid.deathInfo(char0) or nil
+	if prof then
+		-- Tarkov: survivors keep their wounds (recovering in the hideout); death resets health
+		prof.health = (outcome == "SUCCESS" and hs0 and not hs0.dead) and ctx.Health.save(hs0) or nil
+		if outcome ~= "SUCCESS" and hs0 then
+			prof.health = { energy = math.max(40, math.floor(hs0.energy)), water = math.max(40, math.floor(hs0.water)) }
+		end
+	end
 	local receipt, err = nil, nil
 	if prof then
 		receipt, err = Settle.finalize(prof, s.id, outcome, s.inv, os.time())
@@ -216,6 +226,7 @@ function Raid.finalize(player, outcome)
 		raidId = s.id,
 		time = now() - s.started,
 		kills = s.kills,
+		death = death,
 		retained = receipt and receipt.retained or {},
 		lost = receipt and receipt.lost or {},
 		kept = receipt and receipt.kept or {},
@@ -262,11 +273,42 @@ function Raid.onDied(player, char)
 	end
 end
 
-function Raid.addKill(player)
+function Raid.addKill(player, victimPlayer)
 	local s = sessions[player]
 	if s then
 		s.kills += 1
+		if victimPlayer then
+			s.pmcKills = (s.pmcKills or 0) + 1
+		end
 	end
+end
+
+-- who/what killed this character (Tarkov death screen)
+function Raid.deathInfo(char)
+	local hs = ctx.Health and ctx.Health.get(char)
+	local lh = hs and hs.lastHit
+	if not hs then
+		return nil
+	end
+	local info = { cause = hs.cause or "UNKNOWN" }
+	if lh and os.clock() - lh.at < 30 then
+		local a = lh.attacker
+		local name = "UNKNOWN"
+		if typeof(a) == "Instance" then
+			if a:IsA("Player") then
+				name = a.DisplayName
+			elseif a:IsA("Model") then
+				name = "HARBOR WATCH"
+			end
+		end
+		local root = char:FindFirstChild("HumanoidRootPart")
+		info.killer = name
+		info.weapon = lh.weapon
+		info.ammo = lh.ammo
+		info.part = ctx.Health.NAMES[lh.part]
+		info.dist = (root and typeof(lh.from) == "Vector3") and math.floor((root.Position - lh.from).Magnitude * 0.28) or nil
+	end
+	return info
 end
 
 -- ── inventory requests ────────────────────────────────────────────────────────

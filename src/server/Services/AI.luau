@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local DEV = game:GetService("RunService"):IsStudio()
 local PathfindingService = game:GetService("PathfindingService")
+local Items = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR").Items)
 
 local AI = {}
 local ctx
@@ -129,8 +130,18 @@ local function fire(g, char)
 		local model = r.Instance:FindFirstAncestorOfClass("Model")
 		local hum = model and model:FindFirstChildOfClass("Humanoid")
 		if hum and model == char then
-			local dmg = math.random(DMG_MIN, DMG_MAX) * ((r.Instance.Name == "Head") and 1.8 or 1)
-			ctx.Combat.damage(model, hum, dmg, g.model, muzzle)
+			local ammoId = "A62_FMJ"
+			local inv = g.inv
+			local w = inv and inv.slots.primary and inv.items[inv.slots.primary]
+			local m = w and w.mag and inv.items[w.mag]
+			if m and m.at then
+				ammoId = m.at
+			end
+			local a = Items.defs[ammoId].ammo
+			ctx.Combat.hitModel(model, {
+				dmg = a.dmg, pen = a.pen, armorDmg = a.armorDmg, bleedL = a.bleedL, bleedH = a.bleedH, part = r.Instance, hitPos = r.Position,
+				attacker = g.model, from = muzzle, weapon = "R-17", ammo = Items.defs[ammoId].name,
+			})
 		end
 	end
 	ctx.Remotes.fx("shot", { o = muzzle, p = hitPos, n = r and r.Normal or nil, ai = true })
@@ -235,6 +246,10 @@ local function spawnGuard(routeName, myGen)
 		state = "PATROL", lastSeen = 0, nextShot = 0, burst = 3, nextPath = 0, alive = true, name = routeName, inv = loadout,
 	}
 	table.insert(guards, g)
+	root.CanQuery = false
+	ctx.Health.attach(model, { kind = "ai", holder = function()
+		return g.inv
+	end })
 	hum.Died:Connect(function()
 		ctx.Chars.ragdoll(model)
 		AI.onKilled(model, nil)

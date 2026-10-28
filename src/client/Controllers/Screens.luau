@@ -146,6 +146,9 @@ function Screens.summary(s)
 	local f, w, h = modal(720, 470, "RAID REPORT  //  " .. o[1])
 	f:FindFirstChildOfClass("TextLabel").TextColor3 = K.C[o[2]]
 	line(f, 30, string.format("DURATION %s   ·   KILLS %d   ·   RAID %s", Util.clock(s.time or 0), s.kills or 0, string.sub(s.raidId or "", 1, 8)), K.C.dim, 12)
+	if ctx.State.deathInfo and s.outcome == "KIA" then
+		line(f, 44, ctx.State.deathInfo, K.C.red, 12)
+	end
 	local colW = math.floor((w - 12) / 2)
 	local listH = h - 140
 	local retained = s.retained or {}
@@ -252,6 +255,16 @@ function Screens.init(c)
 	gui = K.screen("ZR_Screens", 30)
 	c.State.on("summary", function(s)
 		print("[ZR] summary received:", s.outcome)
+		local dth = s.death
+		if dth then
+			if dth.killer then
+				ctx.State.deathInfo = string.format("KILLED BY %s  ·  %s  ·  %s  ·  %s%s", dth.killer, dth.weapon or "?", dth.ammo or "?", dth.part or "?", dth.dist and ("  ·  " .. dth.dist .. " M") or "")
+			else
+				ctx.State.deathInfo = "CAUSE  ·  " .. tostring(dth.cause)
+			end
+		else
+			ctx.State.deathInfo = nil
+		end
 		task.wait(s.outcome == "KIA" and 2.5 or 0.4)
 		Screens.summary(s)
 	end)

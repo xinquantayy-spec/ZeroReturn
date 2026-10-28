@@ -162,6 +162,11 @@ local function update(dt)
 	local breathe = (aiming and 0.5 or 1) * motion
 	local breathP = math.sin(t * 1.65) * 0.0026 * breathe
 	local breathY = math.sin(t * 0.83 + 1.3) * 0.0019 * breathe
+	local tr = (Camera.tremor or 0) * (aiming and 1 or 0.35)
+	if tr > 0 then
+		breathP += (math.noise(t * 7, 1.7) * 0.006 + math.sin(t * 23) * 0.0012) * tr
+		breathY += (math.noise(t * 7, 9.1) * 0.006) * tr
+	end
 	local target = root.Position + Vector3.new(0, eyeOffset, 0)
 	if smoothPos then
 		smoothPos = smoothPos:Lerp(target, math.min(1, dt * 22))

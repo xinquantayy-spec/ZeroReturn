@@ -75,6 +75,58 @@ local function reject(why, player)
 	end
 end
 
+-- Apply a ballistic hit to any character (player or AI) through the Health model.
+-- info = { dmg, pen, armorDmg, bleedL, bleedH, part, hitPos, attacker, from, weapon, ammo }
+function Combat.hitModel(model, info)
+	local victim = Players:GetPlayerFromCharacter(model)
+	if victim and not ctx.Raid.session(victim) then
+		return nil
+	end
+	local res = ctx.Health.hit(model, info)
+	if not res then
+		return nil
+	end
+	if victim then
+		ctx.Remotes.note(victim, "dmg", { amt = math.floor(res.dmg + 0.5), from = info.from, part = res.part, blocked = not res.penetrated })
+	else
+		ctx.AI.onDamaged(model, info.attacker)
+	end
+	local attacker = info.attacker
+	if res.killed and typeof(attacker) == "Instance" and attacker:IsA("Player") then
+		ctx.Raid.addKill(attacker, victim)
+		ctx.Remotes.note(attacker, "kill", { name = victim and victim.DisplayName or "Harbor Watch" })
+	end
+	return res
+end
+
+-- generic damage (environment): applied to the thorax through the health model
+function Combat.damage(model, hum, amount, attacker, fromPos)
+	local torso = model:FindFirstChild("UpperTorso") or model:FindFirstChild("HumanoidRootPart")
+	local res = Combat.hitModel(model, { dmg = amount, pen = 0, armorDmg = 0, part = torso, attacker = attacker, from = fromPos })
+	return res and res.killed or false
+end
+
+-- active weapon of a raid session: guid, item, Weapons def, item def, rounds holder (mag or weapon tube)
+function Combat.activeWeapon(s)
+	local slot = s.active
+	local wg = slot and s.inv.slots[slot]
+	local wit = wg and s.inv.items[wg]
+	local d = wit and Items.defs[wit.id]
+	local wdef = d and d.weapon and Weapons[d.weapon]
+	if not wdef then
+		return nil
+	end
+	local rounds = (d.family and wit.mag and s.inv.items[wit.mag]) or ((not d.family) and wit) or nil
+	return wg, wit, wdef, d, rounds
+end
+
+local function reject(why, player)
+	Combat.stats.rejected += 1
+	if player then
+		ctx.Remotes.strike(player, why)
+	end
+end
+
 -- attacker: Player or AI model; fromPos: where the damage came from (for the victim's indicator)
 function Combat.damage(model, hum, amount, attacker, fromPos)
 	if hum.Health <= 0 or amount <= 0 then
@@ -134,6 +186,10 @@ function Combat.shoot(player, seq, origin, dir)
 	if t - w.last < (60 / wdef.rpm) * 0.8 then
 		return reject("fire rate", player)
 	end
+	local hs = ctx.Health.of(player)
+	if hs and hs.using then
+		return reject("shot while treating", nil)
+	end
 	if not mag or (mag.a or 0) <= 0 then
 		ctx.Remotes.note(player, "ammo", { a = 0 })
 		return reject("empty", nil)
@@ -157,28 +213,48 @@ function Combat.shoot(player, seq, origin, dir)
 	end
 	Combat.stats.accepted += 1
 	local ballistic = ammoDef and ammoDef.ammo or { dmg = 40, pen = 20 }
-	local res = workspace:Raycast(origin, dir * wdef.range, filter(char))
-	local hitPos = res and res.Position or (origin + dir * wdef.range)
-	local hit = false
-	if res then
-		local model = res.Instance:FindFirstAncestorOfClass("Model")
-		local thum = model and model:FindFirstChildOfClass("Humanoid")
-		if thum and thum.Health > 0 then
-			local nm = res.Instance.Name
-			local mult = (nm == "Head" and 2) or (LIMB[nm] and 0.7) or 1
-			local dist = (hitPos - origin).Magnitude
-			local fs = wdef.range * Weapons.FALLOFF_START
-			local fall = 1
-			if dist > fs then
-				fall = math.max(Weapons.FALLOFF_MIN, 1 - (dist - fs) / (wdef.range - fs) * (1 - Weapons.FALLOFF_MIN))
+	local pellets = ballistic.pellets or 1
+	local hit, killed = false, false
+	local firstPos, firstNormal
+	for i = 1, pellets do
+		local d2 = dir
+		if pellets > 1 then
+			local sp = math.rad(wdef.pelletSpread or 2.5)
+			d2 = (CFrame.lookAt(Vector3.zero, dir) * CFrame.Angles((math.random() * 2 - 1) * sp, (math.random() * 2 - 1) * sp, 0)).LookVector
+		end
+		local res = workspace:Raycast(origin, d2 * wdef.range, filter(char))
+		local hitPos = res and res.Position or (origin + d2 * wdef.range)
+		if i == 1 then
+			firstPos, firstNormal = hitPos, res and res.Normal or nil
+		end
+		if res then
+			local model = res.Instance:FindFirstAncestorOfClass("Model")
+			local thum = model and model:FindFirstChildOfClass("Humanoid")
+			if thum and thum.Health > 0 then
+				local dist = (hitPos - origin).Magnitude
+				local fs = wdef.range * Weapons.FALLOFF_START
+				local fall = 1
+				if dist > fs then
+					fall = math.max(Weapons.FALLOFF_MIN, 1 - (dist - fs) / (wdef.range - fs) * (1 - Weapons.FALLOFF_MIN))
+				end
+				local r = Combat.hitModel(model, {
+					dmg = ballistic.dmg * fall, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall), armorDmg = ballistic.armorDmg,
+					bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = res.Instance, hitPos = hitPos, attacker = player,
+					from = origin, weapon = wd.name, ammo = ammoDef and ammoDef.name or "?",
+				})
+				if r then
+					hit = true
+					killed = killed or r.killed
+				end
 			end
-			local killed = Combat.damage(model, thum, ballistic.dmg * 0.6 * mult * fall, player, origin)
-			hit = true
-			ctx.Remotes.note(player, "hit", { head = nm == "Head", kill = killed })
 		end
 	end
+	local hitPos = firstPos
+	if hit then
+		ctx.Remotes.note(player, "hit", { kill = killed })
+	end
 	ctx.AI.hearShot(origin, player)
-	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = res and res.Normal or nil, h = hit }, player)
+	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = hit, w = wd.weapon }, player)
 end
 
 function Combat.reload(player)

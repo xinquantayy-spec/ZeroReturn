@@ -246,6 +246,16 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?)
 		return nil
 	end
 	Chars.setupHumanoid(hum)
+	root.CanQuery = false
+	if ctx and ctx.Health then
+		local prof = ctx.Profiles.get(player)
+		ctx.Health.attach(char, {
+			player = player, kind = "player", inRaid = holder ~= nil, saved = prof and prof.health,
+			holder = function()
+				return (ctx.Raid.holder(player))
+			end,
+		})
+	end
 	local regen = char:FindFirstChild("Health")
 	if regen and regen:IsA("Script") then
 		regen:Destroy()

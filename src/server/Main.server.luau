@@ -5,7 +5,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local ctx = {}
-for _, name in { "Remotes", "Store", "Profiles", "Inv", "Settle", "Assets", "World", "Chars", "Loot", "Combat", "Extract", "AI", "Raid", "Dev" } do
+for _, name in { "Remotes", "Store", "Profiles", "Inv", "Settle", "Assets", "World", "Health", "Chars", "Loot", "Combat", "Extract", "AI", "Raid", "Dev" } do
 	ctx[name] = require(Services:WaitForChild(name))
 end
 
@@ -14,11 +14,12 @@ ctx.Store.init(ctx)
 ctx.Profiles.init(ctx)
 ctx.Assets.init(ctx)
 ctx.World.build()
-for _, name in { "Chars", "Loot", "Combat", "Extract", "AI", "Raid", "Dev" } do
+for _, name in { "Health", "Chars", "Loot", "Combat", "Extract", "AI", "Raid", "Dev" } do
 	ctx[name].init(ctx)
 end
 ctx.Remotes.open()
 ctx.Profiles.start()
+ctx.Health.start()
 ctx.Extract.start()
 ctx.Raid.start()
 print("[ZR] server ready", Config.BUILD, "persistence:", ctx.Store.mode)

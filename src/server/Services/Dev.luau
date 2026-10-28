@@ -319,6 +319,59 @@ function C.saveRetry(name, n)
 	return HttpService:JSONEncode({ failInjected = n or 2, ok = ok, err = err, unusedFailures = left, seconds = math.floor((os.clock() - t0) * 10) / 10 })
 end
 
+-- health: vitals snapshot
+function C.hp(name)
+	local p = plr(name)
+	local hs = ctx.Health.of(p)
+	if not hs then
+		return "no health state"
+	end
+	local v = ctx.Health.vitals(hs)
+	local parts = {}
+	for _, k in ctx.Health.PARTS do
+		local pp = v.parts[k]
+		table.insert(parts, string.format("%s %d/%d%s%s", k, pp[1], pp[2], pp[3] == 2 and " HB" or (pp[3] == 1 and " LB" or ""), pp[4] and " FX" or ""))
+	end
+	local fx = {}
+	for _, e in v.effects do
+		table.insert(fx, e.label)
+	end
+	return string.format("%d/%d E%d W%d | %s | %s | speed %.2f sprint %s", math.ceil(v.hp), v.max, v.energy, v.water, table.concat(parts, ", "), table.concat(fx, ","), v.mods.speed, tostring(v.mods.sprint))
+end
+
+-- simulate an incoming round on a body part: shootMe(name, "UpperTorso", "A62_FMJ")
+function C.shootMe(name, partName, ammoId)
+	local p = plr(name)
+	local char = p.Character
+	local part = char and char:FindFirstChild(partName or "UpperTorso")
+	local ad = Items.defs[ammoId or "A62_FMJ"]
+	if not part or not ad or not ad.ammo then
+		return "bad args"
+	end
+	local a = ad.ammo
+	local res = ctx.Combat.hitModel(char, { dmg = a.dmg, pen = a.pen, armorDmg = a.armorDmg, bleedL = a.bleedL, bleedH = a.bleedH, part = part, hitPos = part.Position + Vector3.new(0, 0.3, 0.3), attacker = nil, from = part.Position + Vector3.new(0, 0, 40), weapon = "TEST", ammo = ad.name })
+	if not res then
+		return "no hit"
+	end
+	return string.format("part %s dmg %.1f pen %s armor %s ric %s killed %s", res.part, res.dmg, tostring(res.penetrated), tostring(res.armor), tostring(res.ricochet), tostring(res.killed))
+end
+
+function C.wound(name, kind, part)
+	local hs = ctx.Health.of(plr(name))
+	if not hs then
+		return "none"
+	end
+	if kind == "light" then
+		hs.bleedL[part or "larm"] = true
+	elseif kind == "heavy" then
+		hs.bleedH[part or "lleg"] = true
+	elseif kind == "fracture" then
+		hs.fract[part or "lleg"] = true
+	end
+	hs.dirty = true
+	return "ok"
+end
+
 function C.shots()
 	return HttpService:JSONEncode(ctx.Combat.stats)
 end
