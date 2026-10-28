@@ -11,7 +11,8 @@ if sys.argv[1:2] == ["--commit"]:  # mark the last staged set as synced (same as
     import runpy
     runpy.run_path(str(ROOT / "tools" / "sync_done.py"))
     sys.exit(0)
-roots = sys.argv[1:] or ["src", "tools", "docs", "assets/blender_scripts", "assets/audio", "assets/textures", "default.project.json", "rokit.toml", ".gitignore"]
+roots = sys.argv[1:] or ["src", "tools", "docs", "assets/blender_scripts", "assets/audio", "assets/textures", "default.project.json", "rokit.toml", ".gitignore",
+                         "DEVELOPMENT_STATUS.md", "NEXT_TASK.md", "TEST_RESULTS.md", "KNOWN_ISSUES.md", "ASSET_MANIFEST.md"]
 # never pushed: files the PC side owns (written by Blender on the dev PC)
 SKIP = {"assets/upload_manifest.json"}
 state = json.loads(STATE.read_text()) if STATE.exists() else {}
