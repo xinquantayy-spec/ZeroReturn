@@ -47,7 +47,7 @@ local function visible(g, char)
 	if dist > CLOSE and g.root.CFrame.LookVector:Dot(d.Unit) < FOV_COS then
 		return false, dist
 	end
-	params.FilterDescendantsInstances = { g.model, workspace:FindFirstChild("EFB_Fx") }
+	params.FilterDescendantsInstances = { g.model, workspace:FindFirstChild("ZR_Fx") }
 	local r = workspace:Raycast(from, d, params)
 	return (r == nil) or r.Instance:IsDescendantOf(char), dist
 end
@@ -122,7 +122,7 @@ local function fire(g, char)
 		spread += 0.6
 	end
 	local dir = (CFrame.lookAt(muzzle, aim) * CFrame.Angles(math.rad((math.random() * 2 - 1) * spread), math.rad((math.random() * 2 - 1) * spread), 0)).LookVector
-	params.FilterDescendantsInstances = { g.model, workspace:FindFirstChild("EFB_Fx") }
+	params.FilterDescendantsInstances = { g.model, workspace:FindFirstChild("ZR_Fx") }
 	local r = workspace:Raycast(muzzle, dir * 400, params)
 	local hitPos = r and r.Position or (muzzle + dir * 400)
 	if r then
@@ -207,7 +207,7 @@ local function spawnGuard(routeName, myGen)
 	end)
 	if not ok or not model or myGen ~= gen then
 		if not ok then
-			warn("[EFB] guard spawn failed", model)
+			warn("[ZR] guard spawn failed", model)
 		end
 		return
 	end
@@ -223,7 +223,7 @@ local function spawnGuard(routeName, myGen)
 	local idx = math.random(1, #route)
 	model:PivotTo(CFrame.new(route[idx] + Vector3.new(0, 3.3, 0)))
 	ctx.Chars.dress(model, "guard", { rifle = true })
-	model:SetAttribute("EFB_AI", true)
+	model:SetAttribute("ZR_AI", true)
 	model.Parent = folder
 	local root = model:FindFirstChild("HumanoidRootPart")
 	pcall(function()
@@ -242,7 +242,7 @@ local function spawnGuard(routeName, myGen)
 		while g.alive and model.Parent and myGen == gen do
 			local okk, err = pcall(think, g)
 			if not okk then
-				warn("[EFB] AI think", err)
+				warn("[ZR] AI think", err)
 			end
 			task.wait(0.2)
 		end
@@ -317,7 +317,7 @@ end
 function AI.init(c)
 	ctx = c
 	folder = Instance.new("Folder")
-	folder.Name = "EFB_AI"
+	folder.Name = "ZR_AI"
 	folder.Parent = workspace
 end
 

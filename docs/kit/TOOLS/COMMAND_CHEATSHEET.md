@@ -9,7 +9,7 @@ rojo --help
 blender --version
 
 # once the dedicated repo and project exist
-rojo build default.project.json -o build/EscapeFromBloxov.rbxlx
+rojo build default.project.json -o build/ZeroReturn.rbxlx
 rojo serve default.project.json
 
 # optional only if installed and repo configured

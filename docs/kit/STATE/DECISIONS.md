@@ -4,3 +4,8 @@
 - 2026-10-28 | D03 | Server authority for valuables, combat, raid outcomes and persistence.
 - 2026-10-28 | D04 | Performance-first original low-poly art and adaptive bodycam overlay.
 - 2026-10-28 | D05 | One stage per Claude Code session; no Cowork and no extra agents.
+- 2026-10-28 | D06 | Rojo serve port 34873 (34872 belongs to another local project). Rojo 7.7.1 pinned via Rokit.
+- 2026-10-28 | D07 | Meshes are procedural Blender scripts (vertex colour, no textures), uploaded via Open Cloud with a key kept only in the owner's home folder; loaded at runtime with InsertService.
+- 2026-10-28 | D08 | Audio: original procedural SFX (assets/audio/synth_sfx.py) plus Roblox-licensed library ambience. Creator Store rips rejected.
+- 2026-10-28 | D09 | Studio-only test bridges (ServerStorage.ZR_Dev, PlayerScripts.ZR_ClientDev) drive integration and exploit tests; never created on live servers.
+- 2026-10-28 | D10 | Project renamed to Zero Return (formerly Escape From Bloxov); PC folder name unchanged for now.

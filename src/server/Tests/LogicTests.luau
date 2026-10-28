@@ -1,7 +1,7 @@
 --!nonstrict
--- Pure-logic regression tests (grid, inventory, settlement, de-dupe, locks). Run in Studio via EFB_Dev "tests".
+-- Pure-logic regression tests (grid, inventory, settlement, de-dupe, locks). Run in Studio via ZR_Dev "tests".
 local Services = script.Parent.Parent:WaitForChild("Services")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Grid = require(Shared.Grid)
 local Util = require(Shared.Util)
 local Inv = require(Services.Inv)

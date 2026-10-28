@@ -1,6 +1,6 @@
 --!nonstrict
 -- Extraction zones: server checks position at 5 Hz; 6 s hold; leaving, dying or timer expiry cancels.
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local Extract = {}
@@ -57,7 +57,7 @@ function Extract.start()
 			task.wait(0.2)
 			local ok, err = pcall(Extract.tick)
 			if not ok then
-				warn("[EFB] extract tick", err)
+				warn("[ZR] extract tick", err)
 			end
 		end
 	end)

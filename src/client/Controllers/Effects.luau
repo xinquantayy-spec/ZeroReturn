@@ -3,7 +3,7 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Sounds = require(Shared.Sounds)
 
 local Effects = {}
@@ -142,12 +142,12 @@ end
 
 function Effects.init(c)
 	ctx = c
-	local old = workspace:FindFirstChild("EFB_Fx")
+	local old = workspace:FindFirstChild("ZR_Fx")
 	if old then
 		old:Destroy()
 	end
 	fx = Instance.new("Folder")
-	fx.Name = "EFB_Fx"
+	fx.Name = "ZR_Fx"
 	fx.Parent = workspace
 	if c.State.fx then
 		c.State.fx.OnClientEvent:Connect(function(kind, d)

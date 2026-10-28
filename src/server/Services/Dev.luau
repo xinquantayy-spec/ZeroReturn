@@ -1,11 +1,11 @@
 --!nonstrict
--- Studio-only test bridge: ServerStorage.EFB_Dev:Invoke(cmd, ...) drives full-loop tests via MCP execute_luau.
+-- Studio-only test bridge: ServerStorage.ZR_Dev:Invoke(cmd, ...) drives full-loop tests via MCP execute_luau.
 -- Never created on live servers.
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ServerStorage = game:GetService("ServerStorage")
 local HttpService = game:GetService("HttpService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local Inv = require(script.Parent.Inv)
 
@@ -191,6 +191,70 @@ function C.recovery(name)
 	return HttpService:JSONEncode(ctx.Raid.inv(plr(name), { op = "recovery" }))
 end
 
+-- route a crafted payload through the real request dispatcher (validation, rate limit, de-dupe)
+function C.dispatch(name, action, payload)
+	return HttpService:JSONEncode(ctx.Remotes.dispatch(plr(name), action, payload))
+end
+
+-- shot abuse: same-tick flood, replayed sequence, NaN direction, far origin, fake extra args
+function C.shotAbuse(name)
+	local p = plr(name)
+	local s = ctx.Raid.session(p)
+	local head = p.Character and p.Character:FindFirstChild("Head")
+	if not s or not head then
+		return "not in raid"
+	end
+	local before = ctx.Combat.stats.accepted
+	local wg = s.inv.slots.primary
+	local mag = wg and s.inv.items[wg].mag and s.inv.items[s.inv.items[wg].mag]
+	local ammo0 = mag and mag.a
+	local dir = Vector3.new(0, 0, -1)
+	for i = 1, 20 do
+		ctx.Combat.shoot(p, 100000 + i, head.Position, dir)
+	end
+	local flood = ctx.Combat.stats.accepted - before
+	task.wait(0.3)
+	local b2 = ctx.Combat.stats.accepted
+	ctx.Combat.shoot(p, 100000 + 5, head.Position, dir) -- replayed (old) sequence
+	ctx.Combat.shoot(p, 200001, head.Position, Vector3.new(0 / 0, 0, -1)) -- NaN
+	ctx.Combat.shoot(p, 200002, head.Position + Vector3.new(500, 0, 0), dir) -- origin far away -> clamped to head
+	local after = ctx.Combat.stats.accepted - b2
+	return HttpService:JSONEncode({ floodAccepted = flood, laterAccepted = after, ammoBefore = ammo0, ammoAfter = mag and mag.a })
+end
+
+-- crash mid-raid: stored copy must already hold the escrow (pendingRaid); reload settles it as DISCONNECTED
+function C.crash(name)
+	local p = plr(name)
+	if not ctx.Raid.session(p) then
+		return "not in raid"
+	end
+	local key = ctx.Profiles.key(p.UserId)
+	local stored = ctx.Store.peek(key)
+	local storedPending = stored ~= nil and stored.pendingRaid ~= nil
+	ctx.Raid.dropForTest(p)
+	ctx.Profiles.forgetForTest(p)
+	local prof, rec = ctx.Profiles.load(p)
+	ctx.Chars.spawn(p, ctx.Raid.safeSpawnCF(), nil)
+	ctx.Raid.push(p)
+	local after = ctx.Store.peek(key)
+	return HttpService:JSONEncode({
+		storedPendingBeforeCrash = storedPending, recovered = rec ~= nil, outcome = rec and rec.outcome, lost = rec and rec.lost and #rec.lost,
+		pendingAfter = prof and prof.pendingRaid ~= nil, storedPendingAfter = after and after.pendingRaid ~= nil,
+		invariant = prof and select(2, Inv.check(prof)) or "ok", items = prof and brief(prof),
+	})
+end
+
+-- save retry: fail the next n writes, then do a critical save (4 attempts with backoff)
+function C.saveRetry(name, n)
+	local p = plr(name)
+	ctx.Store.failNext = n or 2
+	local t0 = os.clock()
+	local ok, err = ctx.Profiles.save(p, true)
+	local left = ctx.Store.failNext
+	ctx.Store.failNext = 0
+	return HttpService:JSONEncode({ failInjected = n or 2, ok = ok, err = err, unusedFailures = left, seconds = math.floor((os.clock() - t0) * 10) / 10 })
+end
+
 function C.shots()
 	return HttpService:JSONEncode(ctx.Combat.stats)
 end
@@ -200,12 +264,12 @@ function Dev.init(c)
 	if not RunService:IsStudio() then
 		return
 	end
-	local old = ServerStorage:FindFirstChild("EFB_Dev")
+	local old = ServerStorage:FindFirstChild("ZR_Dev")
 	if old then
 		old:Destroy()
 	end
 	local bf = Instance.new("BindableFunction")
-	bf.Name = "EFB_Dev"
+	bf.Name = "ZR_Dev"
 	bf.OnInvoke = function(cmd, a, b, d)
 		local f = C[cmd]
 		if not f then

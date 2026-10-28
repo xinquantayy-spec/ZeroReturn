@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local Store = require(script.Parent.Store)
 local Settle = require(script.Parent.Settle)
 local Inv = require(script.Parent.Inv)
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local Profiles = {}
@@ -52,7 +52,7 @@ function Profiles.load(player: Player): (any?, any)
 	end
 	local ok, msg = Inv.check(data)
 	if not ok then
-		warn("[EFB] profile invariant failure on load", player.Name, msg)
+		warn("[ZR] profile invariant failure on load", player.Name, msg)
 	end
 	if not player.Parent then
 		Store.write(key, data, true)
@@ -90,7 +90,7 @@ function Profiles.save(player: Player, critical: boolean?, release: boolean?): (
 	if ok then
 		e.dirty = false
 	else
-		warn("[EFB] profile save failed", player.Name, err)
+		warn("[ZR] profile save failed", player.Name, err)
 	end
 	return ok, err
 end
@@ -119,6 +119,13 @@ end
 
 function Profiles.all(): { [Player]: any }
 	return live
+end
+
+-- Studio test hook: drop the live profile without saving (simulates a crash; the last stored copy wins).
+function Profiles.forgetForTest(player: Player)
+	if game:GetService("RunService"):IsStudio() then
+		live[player] = nil
+	end
 end
 
 -- Studio test hook: simulate leave + rejoin on the same server (release then load again).

@@ -2,7 +2,7 @@
 
 ## Copy/paste instruction to Claude Code
 
-You are implementing ONLY stage 06A of ESCAPE FROM BLOXOV, an original Roblox extraction shooter. Use Claude Code directly, **not Cowork**, and do not delegate to extra agents. I have approximately 50% weekly Claude usage remaining: conserve tokens, inspect only necessary files, favor direct tool calls, write code/assets to disk rather than long replies, and do not start later stages without permission.
+You are implementing ONLY stage 06A of ZERO RETURN, an original Roblox extraction shooter. Use Claude Code directly, **not Cowork**, and do not delegate to extra agents. I have approximately 50% weekly Claude usage remaining: conserve tokens, inspect only necessary files, favor direct tool calls, write code/assets to disk rather than long replies, and do not start later stages without permission.
 
 ### Read only
 - `CLAUDE.md`, `STATE/PROGRESS.md`, `STATE/DECISIONS.md`.

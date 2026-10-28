@@ -5,7 +5,7 @@
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
 
@@ -25,10 +25,10 @@ function Store.init(_ctx: any)
 	end)
 	if ok then
 		Store.mode = "DATASTORE"
-		print("[EFB] Profiles: DataStore", name)
+		print("[ZR] Profiles: DataStore", name)
 	else
 		Store.mode = "MEMORY"
-		warn("[EFB] Profiles: DataStore unavailable (" .. tostring(err) .. ") -> in-memory store, data lasts until server shutdown")
+		warn("[ZR] Profiles: DataStore unavailable (" .. tostring(err) .. ") -> in-memory store, data lasts until server shutdown")
 	end
 end
 

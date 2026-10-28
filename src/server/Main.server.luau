@@ -1,7 +1,7 @@
 --!nonstrict
--- Escape From Bloxov server bootstrap. Explicit startup order; services share one ctx table.
+-- Zero Return server bootstrap. Explicit startup order; services share one ctx table.
 local Services = script.Parent:WaitForChild("Services")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local ctx = {}
@@ -21,4 +21,4 @@ ctx.Remotes.open()
 ctx.Profiles.start()
 ctx.Extract.start()
 ctx.Raid.start()
-print("[EFB] server ready", Config.BUILD, "persistence:", ctx.Store.mode)
+print("[ZR] server ready", Config.BUILD, "persistence:", ctx.Store.mode)

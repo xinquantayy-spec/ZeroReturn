@@ -2,7 +2,7 @@
 -- Server-authoritative combat. Clients send shot intent only (seq, origin hint, direction).
 -- Server validates state/ammo/cadence/origin, raycasts, applies damage. Reload/heal are server timed.
 local Players = game:GetService("Players")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local Util = require(Shared.Util)
@@ -23,7 +23,7 @@ params.FilterType = Enum.RaycastFilterType.Exclude
 
 local function filter(exclude)
 	local list = { exclude }
-	local fx = workspace:FindFirstChild("EFB_Fx")
+	local fx = workspace:FindFirstChild("ZR_Fx")
 	if fx then
 		table.insert(list, fx)
 	end

@@ -1,7 +1,7 @@
 --!nonstrict
 -- Modal screens: deployment order, post-raid dossier, settings, exits list. Gamepad focus + Back support.
 local GuiService = game:GetService("GuiService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
@@ -245,9 +245,9 @@ end
 function Screens.init(c)
 	ctx = c
 	K = c.UiKit
-	gui = K.screen("EFB_Screens", 30)
+	gui = K.screen("ZR_Screens", 30)
 	c.State.on("summary", function(s)
-		print("[EFB] summary received:", s.outcome)
+		print("[ZR] summary received:", s.outcome)
 		task.wait(s.outcome == "KIA" and 2.5 or 0.4)
 		Screens.summary(s)
 	end)

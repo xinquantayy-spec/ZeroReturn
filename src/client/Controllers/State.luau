@@ -1,7 +1,7 @@
 --!nonstrict
 -- Client mirror of server state + note dispatch + request helpers. The server snapshot is authoritative.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Shared = ReplicatedStorage:WaitForChild("EFB")
+local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Net = require(Shared.Net)
 
 local State = { data = nil, raid = nil, ready = false }
@@ -66,7 +66,7 @@ function State.init(_ctx)
 	local st = Net.get(Net.State)
 	local note = Net.get(Net.Note)
 	if not (req and st and note) then
-		warn("[EFB] remotes missing; server not ready")
+		warn("[ZR] remotes missing; server not ready")
 		return
 	end
 	st.OnClientEvent:Connect(function(snap)

@@ -3,7 +3,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Shared = ReplicatedStorage:WaitForChild("EFB")
+local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
@@ -33,6 +33,12 @@ function Raid.session(player)
 end
 function Raid.sessions()
 	return sessions
+end
+-- Studio test hook: forget a raid session without settling it (simulates the server dying mid-raid).
+function Raid.dropForTest(player)
+	if RunService:IsStudio() then
+		sessions[player] = nil
+	end
 end
 
 function Raid.holder(player)
@@ -197,11 +203,11 @@ function Raid.finalize(player, outcome)
 			prof.stats.kills += s.kills
 			local good, msg = Inv.check(prof)
 			if not good then
-				warn("[EFB] INVARIANT after settlement", player.Name, msg)
+				warn("[ZR] INVARIANT after settlement", player.Name, msg)
 			end
 			task.spawn(ctx.Profiles.save, player, true)
 		else
-			warn("[EFB] settlement skipped", player.Name, err)
+			warn("[ZR] settlement skipped", player.Name, err)
 		end
 	end
 	local summary = {
@@ -382,7 +388,7 @@ function Raid.afterChange(player, inRaid)
 	if h then
 		local good, msg = Inv.check(h)
 		if not good then
-			warn("[EFB] INVARIANT", player.Name, msg)
+			warn("[ZR] INVARIANT", player.Name, msg)
 		end
 	end
 	if not inRaid then
@@ -431,7 +437,7 @@ local function onPlayerAdded(player)
 	local prof, recovered = ctx.Profiles.load(player)
 	if not prof then
 		if player.Parent then
-			player:Kick("Escape From Bloxov: profile unavailable (" .. tostring(recovered) .. "). Please rejoin in a minute.")
+			player:Kick("Zero Return: profile unavailable (" .. tostring(recovered) .. "). Please rejoin in a minute.")
 		end
 		return
 	end

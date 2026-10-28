@@ -1,4 +1,4 @@
-# Claude Code local project instructions: ESCAPE FROM BLOXOV
+# Claude Code local project instructions: ZERO RETURN
 
 Treat this directory as the source of truth for a staged Roblox extraction shooter. **Do not use Cowork** or other agents unless owner explicitly opts in. Goal: original extraction game, not a one-for-one Tarkov or BODYCAM clone.
 
@@ -30,4 +30,4 @@ Update `STATE/PROGRESS.md` with milestone/stage, files changed, build/test comma
 Do not read all files recursively or repeatedly; use targeted search and stage-listed specs. No large pasted code listings in chat; write files and report paths. Keep generated assets in small batches, produce stable manifest entries, reuse atlas materials. Prefer scriptable Blender modeling for simple assets and verify import actually works.
 
 ## Default style direction
-Working title `ESCAPE FROM BLOXOV`, map `QUAY 7`. Industrial coastal quarantine/evacuation world, olive/charcoal/sand/rust palette, simplified realistic silhouettes, intentionally soft/pixel-lean textures and small details that distinguish it from Roblox. Minimal diegetic bodycam overlay with signal/time/REC indicators, understated health/ammo readable on all screens. No heavy VHS distortion or direct BODYCAM UI copying.
+Working title `ZERO RETURN`, map `QUAY 7`. Industrial coastal quarantine/evacuation world, olive/charcoal/sand/rust palette, simplified realistic silhouettes, intentionally soft/pixel-lean textures and small details that distinguish it from Roblox. Minimal diegetic bodycam overlay with signal/time/REC indicators, understated health/ammo readable on all screens. No heavy VHS distortion or direct BODYCAM UI copying.

@@ -1,4 +1,4 @@
-# Game design document v1 — ESCAPE FROM BLOXOV
+# Game design document v1 — ZERO RETURN
 
 ## The fantasy
 A scavenger operative enters an abandoned coastal industrial exclusion zone to recover components, encrypted records and valuable equipment while rival operatives and autonomous security patrols search the same place. Leave through an extraction before a closing timer, or lose the gear taken in. The player keeps useful loot, improves a persistent stash and prepares for a riskier run.

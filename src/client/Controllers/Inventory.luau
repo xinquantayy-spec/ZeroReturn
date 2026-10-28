@@ -2,7 +2,7 @@
 -- Inventory / stash / loot UI. Works without drag: select an item (click/tap/A), then tap a target cell,
 -- a slot, or an action button. All changes are server requests; UI re-renders from the server snapshot.
 local GuiService = game:GetService("GuiService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Grid = require(Shared.Grid)
@@ -450,7 +450,7 @@ end
 function Inventory.init(c)
 	ctx = c
 	K = c.UiKit
-	gui = K.screen("EFB_Inventory", 20)
+	gui = K.screen("ZR_Inventory", 20)
 	gui.Enabled = false
 	c.Input.on("Inventory", function(down)
 		if down then

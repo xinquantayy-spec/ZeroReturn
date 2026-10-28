@@ -3,8 +3,9 @@
 local Players = game:GetService("Players")
 local StarterPlayer = game:GetService("StarterPlayer")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Shared = ReplicatedStorage:WaitForChild("EFB")
+local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
+local AssetMeta = require(Shared.AssetMeta)
 
 local Chars = {}
 local ctx
@@ -83,13 +84,16 @@ local function rifle(char, color)
 	if not torso then
 		return
 	end
-	local lib = ReplicatedStorage:FindFirstChild("EFB_Assets")
-	local meshRifle = lib and lib:FindFirstChild("EFB_WPN_R17_TP")
+	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local meshRifle = lib and lib:FindFirstChild("ZR_WPN_R17_TP")
 	local base = torso.CFrame * CFrame.new(0.45, -0.25, -1.05) * CFrame.Angles(math.rad(-8), math.rad(4), 0)
 	local parts = {}
 	if meshRifle then
 		local m = meshRifle:Clone()
-		m.CFrame = base
+		local s = 0.7 -- uploaded at 1.15x viewmodel proportions; carbine ~2.8 studs on a ~5.5 stud operator
+		m.Size *= s
+		local grip = torso.CFrame * CFrame.new(0.38, -0.45, -0.5) * CFrame.Angles(math.rad(-10), math.rad(6), 0)
+		m.CFrame = grip * CFrame.new(AssetMeta.ZR_WPN_R17_TP * s)
 		table.insert(parts, m)
 	else
 		local function seg(sx, sy, sz, ox, oy, oz, col)
@@ -176,7 +180,7 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?)
 		player:LoadCharacterWithHumanoidDescription(Chars.description("player"))
 	end)
 	if not ok then
-		warn("[EFB] character load failed", err)
+		warn("[ZR] character load failed", err)
 		player:LoadCharacter()
 	end
 	local char = player.Character

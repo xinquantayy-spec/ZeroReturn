@@ -1,8 +1,8 @@
 asset_key,source_blend,export_file,category,triangle_estimate,material_count,texture_resolution,stud_dimensions,studio_imported,roblox_asset_id,license_or_authorship,notes
-EFB_PROP_CONTAINER,assets/blender_sources/container.blend,assets/exports/container.fbx,environment,450,1,256x256,TBD,NO,,original,calibration first
-EFB_PROP_CRATE,assets/blender_sources/crate.blend,assets/exports/crate.fbx,loot,160,1,128x128,TBD,NO,,original,
-EFB_PROP_BARREL,assets/blender_sources/barrel.blend,assets/exports/barrel.fbx,environment,180,1,128x128,TBD,NO,,original,
-EFB_PROP_DOOR,assets/blender_sources/door.blend,assets/exports/door.fbx,environment,300,1,256x256,TBD,NO,,original,
-EFB_PROP_LIGHT,assets/blender_sources/light.blend,assets/exports/light.fbx,environment,170,1,128x128,TBD,NO,,original,
-EFB_WEAPON_R17,assets/blender_sources/R17.blend,assets/exports/R17.fbx,viewmodel,2400,2,512x512,TBD,NO,,original,fictional firearm silhouette
-EFB_GUARD,assets/blender_sources/guard.blend,assets/exports/guard.fbx,character,2800,2,512x512,TBD,NO,,original,custom character
+ZR_PROP_CONTAINER,assets/blender_sources/container.blend,assets/exports/container.fbx,environment,450,1,256x256,TBD,NO,,original,calibration first
+ZR_PROP_CRATE,assets/blender_sources/crate.blend,assets/exports/crate.fbx,loot,160,1,128x128,TBD,NO,,original,
+ZR_PROP_BARREL,assets/blender_sources/barrel.blend,assets/exports/barrel.fbx,environment,180,1,128x128,TBD,NO,,original,
+ZR_PROP_DOOR,assets/blender_sources/door.blend,assets/exports/door.fbx,environment,300,1,256x256,TBD,NO,,original,
+ZR_PROP_LIGHT,assets/blender_sources/light.blend,assets/exports/light.fbx,environment,170,1,128x128,TBD,NO,,original,
+ZR_WEAPON_R17,assets/blender_sources/R17.blend,assets/exports/R17.fbx,viewmodel,2400,2,512x512,TBD,NO,,original,fictional firearm silhouette
+ZR_GUARD,assets/blender_sources/guard.blend,assets/exports/guard.fbx,character,2800,2,512x512,TBD,NO,,original,custom character

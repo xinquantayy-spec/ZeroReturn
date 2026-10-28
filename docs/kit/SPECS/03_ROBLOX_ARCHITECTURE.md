@@ -2,7 +2,7 @@
 
 ## Repository layout (target, adapt to existing connection after audit)
 ```text
-EscapeFromBloxov/
+ZeroReturn/
   default.project.json
   aftman.toml OR rokit.toml (only if installed)
   src/shared/

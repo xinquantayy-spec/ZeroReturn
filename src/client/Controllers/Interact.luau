@@ -26,7 +26,7 @@ end
 function Interact.init(c)
 	ctx = c
 	K = c.UiKit
-	gui = K.screen("EFB_Prompt", 7)
+	gui = K.screen("ZR_Prompt", 7)
 	btn = K.button(gui, "", {
 		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -196), Size = UDim2.fromOffset(260, 34),
 		BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.25, TextSize = 14, Visible = false, Selectable = false,

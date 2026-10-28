@@ -1,7 +1,7 @@
 --!strict
--- Escape From Bloxov: tunable constants shared by server and client (read-only).
+-- Zero Return: tunable constants shared by server and client (read-only).
 local Config = {
-	GAME_NAME = "ESCAPE FROM BLOXOV",
+	GAME_NAME = "ZERO RETURN",
 	BUILD = "0.1.0-m1",
 	MAP_NAME = "QUAY 7",
 	RECORDER = "FIELD RECORDER M4",
@@ -35,8 +35,8 @@ local Config = {
 	FOV = 76,
 	AIM_FOV = 58,
 
-	DATASTORE_LIVE = "EFB_Profiles_v1",
-	DATASTORE_DEV = "DEV_EFB_Profiles_v1",
+	DATASTORE_LIVE = "ZR_Profiles_v1",
+	DATASTORE_DEV = "DEV_ZR_Profiles_v1",
 	LOCK_TTL = 150,
 	AUTOSAVE = 60,
 	FINALIZED_LOG = 20,

@@ -1,6 +1,6 @@
 --!nonstrict
 -- World loot: server-rolled contents with stable GUIDs, timed search, range checks, atomic claims.
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Inv = require(script.Parent.Inv)
 
@@ -229,7 +229,7 @@ function Loot.spawnPile(pos, label, items, kind)
 	local cid = "P" .. pileN
 	local rp = RaycastParams.new()
 	rp.FilterType = Enum.RaycastFilterType.Include
-	rp.FilterDescendantsInstances = { workspace:FindFirstChild("EFB_World") }
+	rp.FilterDescendantsInstances = { workspace:FindFirstChild("ZR_World") }
 	local hit = workspace:Raycast(pos + Vector3.new(0, 3, 0), Vector3.new(0, -30, 0), rp)
 	local ground = hit and hit.Position or pos
 	local part = Instance.new("Part")
@@ -248,10 +248,10 @@ function Loot.spawnPile(pos, label, items, kind)
 	pp.RequiresLineOfSight = false
 	pp.Style = Enum.ProximityPromptStyle.Custom
 	pp.Parent = part
-	local folder = workspace:FindFirstChild("EFB_Loot")
+	local folder = workspace:FindFirstChild("ZR_Loot")
 	if not folder then
 		folder = Instance.new("Folder")
-		folder.Name = "EFB_Loot"
+		folder.Name = "ZR_Loot"
 		folder.Parent = workspace
 	end
 	part.Parent = folder

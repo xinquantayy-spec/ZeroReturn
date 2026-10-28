@@ -1,21 +1,21 @@
 {
-  "name": "EscapeFromBloxov",
+  "name": "ZeroReturn",
   "servePort": 34873,
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$ignoreUnknownInstances": true,
-      "EFB": { "$path": "src/shared" }
+      "ZR": { "$path": "src/shared" }
     },
     "ServerScriptService": {
       "$ignoreUnknownInstances": true,
-      "EFBServer": { "$path": "src/server" }
+      "ZRServer": { "$path": "src/server" }
     },
     "StarterPlayer": {
       "$ignoreUnknownInstances": true,
       "StarterPlayerScripts": {
         "$ignoreUnknownInstances": true,
-        "EFBClient": { "$path": "src/client" }
+        "ZRClient": { "$path": "src/client" }
       }
     }
   }

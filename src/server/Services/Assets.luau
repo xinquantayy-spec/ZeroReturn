@@ -1,17 +1,17 @@
 --!nonstrict
--- Loads uploaded Blender meshes into ReplicatedStorage.EFB_Assets (MeshParts keyed by name).
+-- Loads uploaded Blender meshes into ReplicatedStorage.ZR_Assets (MeshParts keyed by name).
 -- Meshes already present (inserted at edit time) are kept; missing ones are loaded via InsertService.
 local InsertService = game:GetService("InsertService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AssetIds = require(ReplicatedStorage:WaitForChild("EFB"):WaitForChild("AssetIds"))
+local AssetIds = require(ReplicatedStorage:WaitForChild("ZR"):WaitForChild("AssetIds"))
 
 local Assets = {}
 
 function Assets.init(_ctx)
-	local lib = ReplicatedStorage:FindFirstChild("EFB_Assets")
+	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
 	if not lib then
 		lib = Instance.new("Folder")
-		lib.Name = "EFB_Assets"
+		lib.Name = "ZR_Assets"
 		lib.Parent = ReplicatedStorage
 	end
 	local loaded, failed = 0, 0
@@ -39,14 +39,14 @@ function Assets.init(_ctx)
 			model:Destroy()
 		else
 			failed += 1
-			warn("[EFB] asset load failed", entry.key, entry.id, model)
+			warn("[ZR] asset load failed", entry.key, entry.id, model)
 		end
 	end
-	print(string.format("[EFB] Assets: %d meshes loaded, %d batches failed, library has %d", loaded, failed, #lib:GetChildren()))
+	print(string.format("[ZR] Assets: %d meshes loaded, %d batches failed, library has %d", loaded, failed, #lib:GetChildren()))
 end
 
 function Assets.get(name: string): Instance?
-	local lib = ReplicatedStorage:FindFirstChild("EFB_Assets")
+	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
 	return lib and lib:FindFirstChild(name)
 end
 

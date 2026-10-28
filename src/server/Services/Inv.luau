@@ -5,7 +5,7 @@
 --     slots = {primary = guid?, bag = guid?} }
 -- Invariant: every item guid has exactly one location (a grid placement, a slot, or loaded in a weapon).
 local RS = game:GetService("ReplicatedStorage")
-local Shared = RS:WaitForChild("EFB")
+local Shared = RS:WaitForChild("ZR")
 local Items = require(Shared.Items)
 local Grid = require(Shared.Grid)
 local Config = require(Shared.Config)

@@ -13,9 +13,9 @@ bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 bpy.ops.mesh.primitive_cube_add(size=2, location=(0,0,1))
 cube = bpy.context.object
-cube.name = 'EFB_CALIBRATION_CUBE_2x2x2'
+cube.name = 'ZR_CALIBRATION_CUBE_2x2x2'
 bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-mat = bpy.data.materials.new('EFB_CHECK_ORANGE')
+mat = bpy.data.materials.new('ZR_CHECK_ORANGE')
 mat.diffuse_color=(0.68,0.33,0.15,1.0)
 cube.data.materials.append(mat)
 blend = root/'calibration_cube.blend'

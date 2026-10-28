@@ -1,9 +1,9 @@
 --!strict
--- Remote names. The server creates ReplicatedStorage.EFB_Net; clients wait (bounded) for it.
+-- Remote names. The server creates ReplicatedStorage.ZR_Net; clients wait (bounded) for it.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = {
-	FOLDER = "EFB_Net",
+	FOLDER = "ZR_Net",
 	Req = "Req", -- RemoteFunction  C->S  (action, payload) -> result
 	Shoot = "Shoot", -- RemoteEvent  C->S  (seq, origin, dir)
 	Act = "Act", -- RemoteEvent      C->S  (action, payload) fire-and-forget

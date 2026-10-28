@@ -80,7 +80,7 @@ local function collect()
 			table.insert(list, p.Character)
 		end
 	end
-	local ai = workspace:FindFirstChild("EFB_AI")
+	local ai = workspace:FindFirstChild("ZR_AI")
 	if ai then
 		for _, m in ai:GetChildren() do
 			table.insert(list, m)

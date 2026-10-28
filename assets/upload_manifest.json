@@ -1,0 +1,50 @@
+{
+ "EFB_CAL_Crate4": {
+  "assetId": "98627364621889",
+  "file": "assets\\exports\\EFB_CAL_Crate4.fbx",
+  "sha1": "7140924804f2e4c3e0b6214b41451eb440e927fc",
+  "uploaded": "2026-10-28 13:49:08"
+ },
+ "ZR_BatchA": {
+  "assetId": "125938077801710",
+  "file": "assets\\exports\\ZR_BatchA.fbx",
+  "sha1": "5399f60faf3de6e7834ff8963376bbbd3cc10f60",
+  "uploaded": "2026-10-28 14:40:37"
+ },
+ "ZR_SFX_DryFire": {
+  "assetId": "119000594646513",
+  "file": "assets\\audio\\out\\ZR_SFX_DryFire.ogg",
+  "sha1": "ee1bf36b7da06033a869507dd0a292485803b63c",
+  "uploaded": "2026-10-28 14:51:15"
+ },
+ "ZR_SFX_ExtractBeep": {
+  "assetId": "120970680447327",
+  "file": "assets\\audio\\out\\ZR_SFX_ExtractBeep.ogg",
+  "sha1": "7a8b5d246694222459dab2febce025781acd148f",
+  "uploaded": "2026-10-28 14:51:18"
+ },
+ "ZR_SFX_HitTick": {
+  "assetId": "126592306693188",
+  "file": "assets\\audio\\out\\ZR_SFX_HitTick.ogg",
+  "sha1": "97dddff00aa2f2b9ae0fbdc13c41f41d755e568e",
+  "uploaded": "2026-10-28 14:51:22"
+ },
+ "ZR_SFX_R17_Fire": {
+  "assetId": "125276898958159",
+  "file": "assets\\audio\\out\\ZR_SFX_R17_Fire.ogg",
+  "sha1": "7b6d7b483f997f2222e6716bad663dc5ef6eb3bb",
+  "uploaded": "2026-10-28 14:51:26"
+ },
+ "ZR_SFX_R17_FireFar": {
+  "assetId": "72578681964971",
+  "file": "assets\\audio\\out\\ZR_SFX_R17_FireFar.ogg",
+  "sha1": "45c49ad1867b42e3435dd1bd7f0a9db75bd54bf3",
+  "uploaded": "2026-10-28 14:51:29"
+ },
+ "ZR_SFX_Reload": {
+  "assetId": "102400197652572",
+  "file": "assets\\audio\\out\\ZR_SFX_Reload.ogg",
+  "sha1": "48f4c794b1fef54be283f25ccb366921270a13fa",
+  "uploaded": "2026-10-28 14:51:33"
+ }
+}

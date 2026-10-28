@@ -3,10 +3,12 @@
 -- progress (search/heal/extract), damage edge + direction, toasts, vignette. Event-driven + 10 Hz text.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
+local Sounds = require(Shared.Sounds)
+local SoundService = game:GetService("SoundService")
 
 local Hud = {}
 local ctx, K
@@ -32,8 +34,8 @@ local function bar(parent, pos, w, h, color)
 end
 
 local function build()
-	gui = K.screen("EFB_HUD", 5)
-	vigGui = K.screen("EFB_Vignette", 1)
+	gui = K.screen("ZR_HUD", 5)
+	vigGui = K.screen("ZR_Vignette", 1)
 	vigGui.ScreenInsets = Enum.ScreenInsets.None
 	-- vignette: four soft edges (gradients, no textures)
 	for i, spec in { { UDim2.new(1, 0, 0.22, 0), UDim2.fromScale(0, 0), 90 }, { UDim2.new(1, 0, 0.22, 0), UDim2.fromScale(0, 0.78), -90 }, { UDim2.new(0.16, 0, 1, 0), UDim2.fromScale(0, 0), 0 }, { UDim2.new(0.16, 0, 1, 0), UDim2.fromScale(0.84, 0), 180 } } do
@@ -178,6 +180,11 @@ local function fastUpdate(dt)
 	if ex then
 		local left = ex.ends - workspace:GetServerTimeNow()
 		label = string.format("( o ) EXFIL %s  -  HOLD %.1fs", ex.name, math.max(0, left))
+		local sec = math.ceil(left)
+		if sec ~= ex.beep and sec >= 0 then
+			ex.beep = sec
+			ctx.Effects.sound(Sounds.EXTRACT_BEEP, SoundService, sec <= 1 and 0.55 or 0.4, sec <= 1 and 1.25 or 1)
+		end
 		frac = 1 - math.clamp(left / Config.EXTRACT_HOLD, 0, 1)
 	elseif search then
 		frac = math.clamp((now - search.t0) / search.dur, 0, 1)
@@ -268,6 +275,7 @@ function Hud.init(c)
 	c.State.on("hit", function(d)
 		hitT = os.clock()
 		hitKill = d.kill == true
+		ctx.Effects.sound(Sounds.HIT, SoundService, hitKill and 0.7 or 0.5, hitKill and 0.8 or 1)
 	end)
 	c.State.on("kill", function()
 		Hud.toast("TARGET DOWN", "good")

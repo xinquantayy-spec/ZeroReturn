@@ -1,5 +1,5 @@
 --!nonstrict
--- Escape From Bloxov client bootstrap: controllers share one ctx table; explicit init order.
+-- Zero Return client bootstrap: controllers share one ctx table; explicit init order.
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
@@ -16,7 +16,7 @@ for _, name in ORDER do
 	if m.init then
 		local ok, err = pcall(m.init, ctx)
 		if not ok then
-			warn("[EFB] client init failed:", name, err)
+			warn("[ZR] client init failed:", name, err)
 		end
 	end
 end
@@ -39,7 +39,7 @@ end)
 -- Studio-only client test bridge (driven via MCP execute_luau in the Client datamodel)
 if RunService:IsStudio() then
 	local bf = Instance.new("BindableFunction")
-	bf.Name = "EFB_ClientDev"
+	bf.Name = "ZR_ClientDev"
 	bf.OnInvoke = function(cmd, a)
 		if cmd == "state" then
 			local W = ctx.Weapon
@@ -78,4 +78,4 @@ if RunService:IsStudio() then
 	end
 	bf.Parent = Players.LocalPlayer:WaitForChild("PlayerScripts")
 end
-print("[EFB] client ready; input:", ctx.Input.backend)
+print("[ZR] client ready; input:", ctx.Input.backend)

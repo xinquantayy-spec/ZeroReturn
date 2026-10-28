@@ -4,7 +4,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local Camera = { yaw = 0, pitch = 0, bobPhase = 0, speed = 0 }
@@ -158,7 +158,7 @@ function Camera.init(c)
 			stick = Vector2.zero
 		end
 	end)
-	RunService:BindToRenderStep("EFB_Camera", Enum.RenderPriority.Camera.Value + 1, update)
+	RunService:BindToRenderStep("ZR_Camera", Enum.RenderPriority.Camera.Value + 1, update)
 end
 
 return Camera

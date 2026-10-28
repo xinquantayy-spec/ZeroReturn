@@ -45,7 +45,7 @@ end
 function Touch.init(c)
 	ctx = c
 	K = c.UiKit
-	gui = K.screen("EFB_Touch", 6)
+	gui = K.screen("ZR_Touch", 6)
 	gui.Enabled = false
 	for _, spec in LAYOUT do
 		local action, label, pos, size = spec[1], spec[2], spec[3], spec[4]

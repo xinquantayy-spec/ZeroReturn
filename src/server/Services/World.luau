@@ -1,11 +1,12 @@
 --!nonstrict
 -- Builds the safehouse and the Quay 7 raid map at server start (deterministic, no saved place data needed).
--- Uploaded Blender meshes (ReplicatedStorage.EFB_Assets) replace part-built fallbacks when available.
+-- Uploaded Blender meshes (ReplicatedStorage.ZR_Assets) replace part-built fallbacks when available.
 local Lighting = game:GetService("Lighting")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Shared = ReplicatedStorage:WaitForChild("EFB")
+local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
+local AssetMeta = require(Shared.AssetMeta)
 
 local World = {}
 World.spawns = {}
@@ -99,16 +100,16 @@ local function sign(parent, face, text, textColor, bg)
 	return g
 end
 
--- mesh asset or nil (ReplicatedStorage.EFB_Assets populated by the Assets service)
+-- mesh asset or nil (ReplicatedStorage.ZR_Assets populated by the Assets service)
 local function mesh(key, parent, bottomCF, color)
-	local lib = ReplicatedStorage:FindFirstChild("EFB_Assets")
+	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
 	local src = lib and lib:FindFirstChild(key)
 	if not src then
 		return nil
 	end
 	local m = src:Clone()
 	m.Anchored = true
-	m.CFrame = bottomCF * CFrame.new(0, m.Size.Y / 2, 0)
+	m.CFrame = bottomCF * CFrame.new(AssetMeta[key] or Vector3.new(0, m.Size.Y / 2, 0))
 	if color then
 		m.Color = color
 	end
@@ -139,7 +140,7 @@ end
 -- ── props (mesh first, part fallback) ─────────────────────────────────────────
 local Props = {}
 function Props.container(parent, cf, color, open)
-	if mesh(open and "EFB_ENV_Container20_Open" or "EFB_ENV_Container20", parent, cf, color) then
+	if mesh(open and "ZR_ENV_Container20_Open" or "ZR_ENV_Container20", parent, cf, color) then
 		return
 	end
 	local m = model("Container", parent)
@@ -159,13 +160,13 @@ function Props.container(parent, cf, color, open)
 	body.Name = "Body"
 end
 function Props.crate(parent, cf)
-	if mesh("EFB_PROP_Crate", parent, cf) then
+	if mesh("ZR_PROP_Crate", parent, cf) then
 		return
 	end
 	boxCF(parent, 4, 4, 4, cf * CFrame.new(0, 2, 0), C.wood, M.WoodPlanks)
 end
 function Props.barrel(parent, cf, color)
-	if mesh("EFB_PROP_Barrel", parent, cf, color) then
+	if mesh("ZR_PROP_Barrel", parent, cf, color) then
 		return
 	end
 	vcyl(parent, 4.4, 3.2, cf.X, cf.Y, cf.Z, color or C.blue, M.Metal)
@@ -173,20 +174,20 @@ function Props.barrel(parent, cf, color)
 	vcyl(parent, 0.2, 3.35, cf.X, cf.Y + 3, cf.Z, C.metalDark, M.Metal)
 end
 function Props.pallet(parent, cf)
-	if mesh("EFB_PROP_Pallet", parent, cf) then
+	if mesh("ZR_PROP_Pallet", parent, cf) then
 		return
 	end
 	boxCF(parent, 5, 0.6, 4.2, cf * CFrame.new(0, 0.3, 0), C.wood, M.WoodPlanks)
 end
 function Props.barrier(parent, cf)
-	if mesh("EFB_PROP_Barrier", parent, cf) then
+	if mesh("ZR_PROP_Barrier", parent, cf) then
 		return
 	end
 	boxCF(parent, 8, 1.4, 2.4, cf * CFrame.new(0, 0.7, 0), C.concreteLight, M.Concrete)
 	boxCF(parent, 8, 2, 1.2, cf * CFrame.new(0, 2.4, 0), C.concreteLight, M.Concrete)
 end
 function Props.lamp(parent, cf)
-	if not mesh("EFB_PROP_LightPole", parent, cf) then
+	if not mesh("ZR_PROP_LightPole", parent, cf) then
 		vcyl(parent, 18, 0.6, cf.X, cf.Y, cf.Z, C.metalDark, M.Metal)
 		boxCF(parent, 3, 0.4, 0.8, cf * CFrame.new(1.2, 18, 0), C.metalDark, M.Metal)
 	end
@@ -225,7 +226,7 @@ local function setupLighting()
 	atm.Haze = 2.4
 	atm.Parent = Lighting
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Name = "EFB_Grade"
+	cc.Name = "ZR_Grade"
 	cc.Saturation = -0.22
 	cc.Contrast = 0.08
 	cc.Brightness = 0.01
@@ -341,7 +342,7 @@ local function addContainerSpot(parent, id, kind, label, cf)
 			boxCF(parent, 4.4, 0.7, 0.1, cf * CFrame.new(0, 0.6 + k * 0.9, -1.33), C.metalDark, M.Metal)
 		end
 	else
-		local m = mesh("EFB_PROP_Crate", parent, cf)
+		local m = mesh("ZR_PROP_Crate", parent, cf)
 		anchor = m or boxCF(parent, 4, 4, 4, cf * CFrame.new(0, 2, 0), C.wood, M.WoodPlanks)
 		boxCF(parent, 2.2, 0.15, 1.2, cf * CFrame.new(0, 4.08, 0), C.orange, M.SmoothPlastic)
 	end
@@ -354,7 +355,7 @@ local function addContainerSpot(parent, id, kind, label, cf)
 	pp.RequiresLineOfSight = false
 	pp.Style = Enum.ProximityPromptStyle.Custom
 	pp.Parent = anchor
-	CollectionService:AddTag(anchor, "EFB_Container")
+	CollectionService:AddTag(anchor, "ZR_Container")
 	table.insert(World.containers, { id = id, kind = kind, label = label, part = anchor, prompt = pp })
 end
 
@@ -695,12 +696,12 @@ function World.build()
 			inst:Destroy()
 		end
 	end
-	local old = workspace:FindFirstChild("EFB_World")
+	local old = workspace:FindFirstChild("ZR_World")
 	if old then
 		old:Destroy()
 	end
 	root = Instance.new("Folder")
-	root.Name = "EFB_World"
+	root.Name = "ZR_World"
 	local trig = Instance.new("Folder")
 	trig.Name = "Triggers"
 	trig.Parent = root
@@ -726,7 +727,7 @@ function World.build()
 			n += 1
 		end
 	end
-	print(string.format("[EFB] World built: %d parts, %d containers, %d spawns", n, #World.containers, #World.spawns))
+	print(string.format("[ZR] World built: %d parts, %d containers, %d spawns", n, #World.containers, #World.spawns))
 end
 
 function World.init(_ctx) end

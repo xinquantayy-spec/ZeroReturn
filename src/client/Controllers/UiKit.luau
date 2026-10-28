@@ -56,7 +56,7 @@ end
 local selectionTemplate
 function K.selection()
 	if not selectionTemplate then
-		selectionTemplate = K.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Name = "EFB_Select" })
+		selectionTemplate = K.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Name = "ZR_Select" })
 		K.stroke(selectionTemplate, K.C.ochre, 0, 2)
 	end
 	return selectionTemplate
@@ -73,10 +73,29 @@ function K.button(parent, text, props, onClick)
 	for k, v in props or {} do
 		b[k] = v
 	end
+	b.Activated:Connect(K.click)
 	if onClick then
 		b.Activated:Connect(onClick)
 	end
 	return b
+end
+
+-- shared UI click (one cached Sound, restarted per press)
+local clickSound
+function K.click()
+	local id = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR").Sounds).UI_CLICK
+	if id == "" then
+		return
+	end
+	if not clickSound then
+		clickSound = Instance.new("Sound")
+		clickSound.SoundId = id
+		clickSound.Volume = 0.22
+		clickSound.PlaybackSpeed = 1.6
+		clickSound.Parent = game:GetService("SoundService")
+	end
+	clickSound.TimePosition = 0
+	clickSound:Play()
 end
 
 function K.pad(parent, px)

@@ -6,11 +6,12 @@ local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
-local Shared = ReplicatedStorage:WaitForChild("EFB")
+local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local Sounds = require(Shared.Sounds)
+local AssetMeta = require(Shared.AssetMeta)
 
 local Weapon = {
 	aiming = false, crouching = false, sprinting = false, reloading = false, healing = false,
@@ -20,6 +21,7 @@ local ctx
 local player = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 local vm, vmRoot, magPart
+local magOffset = CFrame.identity
 local VS = 0.55 -- viewmodel scale (part-built fallback is authored at 1.0)
 local function sc(cf)
 	return CFrame.new(cf.Position * VS) * cf.Rotation
@@ -106,7 +108,7 @@ local function buildViewmodel()
 		vm:Destroy()
 	end
 	vm = Instance.new("Model")
-	vm.Name = "EFB_Viewmodel"
+	vm.Name = "ZR_Viewmodel"
 	vmRoot = Instance.new("Part")
 	vmRoot.Name = "Root"
 	vmRoot.Size = Vector3.new(0.1, 0.1, 0.1)
@@ -119,9 +121,9 @@ local function buildViewmodel()
 	vmRoot.Parent = vm
 	vm.PrimaryPart = vmRoot
 	local o = CFrame.identity
-	local lib = ReplicatedStorage:FindFirstChild("EFB_Assets")
-	local meshGun = lib and lib:FindFirstChild("EFB_VM_R17")
-	local meshArms = lib and lib:FindFirstChild("EFB_VM_Arms")
+	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local meshGun = lib and lib:FindFirstChild("ZR_VM_R17")
+	local meshArms = lib and lib:FindFirstChild("ZR_VM_Arms")
 	local dark, furn, metal = Color3.fromHex("2A2E2C"), Color3.fromHex("515B55"), Color3.fromHex("3B403D")
 	if meshGun then
 		local g = meshGun:Clone()
@@ -130,7 +132,7 @@ local function buildViewmodel()
 		g.CanCollide = false
 		g.CanQuery = false
 		g.CastShadow = false
-		g.CFrame = o * CFrame.new(0, 0, -0.95) -- mesh authored centred on its bounds; see EFB_VM_R17 notes
+		g.CFrame = o * CFrame.new(AssetMeta.ZR_VM_R17) -- mesh authored with the grip at its origin
 		g.Parent = vm
 		local w = Instance.new("WeldConstraint")
 		w.Part0 = vmRoot
@@ -163,7 +165,7 @@ local function buildViewmodel()
 		a.CanCollide = false
 		a.CanQuery = false
 		a.CastShadow = false
-		a.CFrame = o * CFrame.new(0, -0.35, -0.55)
+		a.CFrame = o * CFrame.new(AssetMeta.ZR_VM_Arms)
 		a.Parent = vm
 		local w = Instance.new("WeldConstraint")
 		w.Part0 = vmRoot
@@ -177,11 +179,18 @@ local function buildViewmodel()
 		limb(vm, Vector3.new(-0.08, -0.22, -1.3), Vector3.new(-0.5, -0.62, -0.4), 0.27, sleeve)
 		newPart(vm, Vector3.new(0.3, 0.06, 0.3), o * CFrame.new(-0.27, -0.42, -0.85) * CFrame.Angles(math.rad(-30), math.rad(-40), 0), Color3.fromHex("6B6A4E"), Enum.Material.Fabric) -- cuff band
 	end
-	magPart = Instance.new("Part")
+	local meshMag = lib and lib:FindFirstChild("ZR_VM_R17_Mag")
+	magOffset = CFrame.identity
+	if meshMag then
+		magPart = meshMag:Clone()
+		magOffset = CFrame.new(AssetMeta.ZR_VM_R17_Mag)
+	else
+		magPart = Instance.new("Part")
+		magPart.Size = Vector3.new(0.13, 0.48, 0.24) * VS
+		magPart.Color = Color3.fromHex("33383B")
+		magPart.Material = Enum.Material.Metal
+	end
 	magPart.Name = "Mag"
-	magPart.Size = Vector3.new(0.13, 0.48, 0.24) * VS
-	magPart.Color = Color3.fromHex("33383B")
-	magPart.Material = Enum.Material.Metal
 	magPart.Anchored = true
 	magPart.CanCollide = false
 	magPart.CanQuery = false
@@ -232,7 +241,7 @@ local function fireOnce(def)
 	local dir = (camCF * CFrame.Angles((math.random() * 2 - 1) * r, (math.random() * 2 - 1) * r, 0)).LookVector
 	local origin = camCF.Position
 	ctx.State.shoot(seq, origin, dir)
-	rayParams.FilterDescendantsInstances = { player.Character, vm, workspace:FindFirstChild("EFB_Fx") }
+	rayParams.FilterDescendantsInstances = { player.Character, vm, workspace:FindFirstChild("ZR_Fx") }
 	local res = workspace:Raycast(origin, dir * def.range, rayParams)
 	local hit = res and res.Position or (origin + dir * def.range)
 	local muzzle = (vmRoot.CFrame * MUZZLE).Position
@@ -379,7 +388,7 @@ local function update(dt)
 	local bob = CFrame.new(math.cos(ph) * 0.03 * bobAmt, -math.abs(math.sin(ph)) * 0.025 * bobAmt, 0)
 	local base = HIP:Lerp(AIM, aimA):Lerp(SPRINT, sprintA):Lerp(RELOAD, reloadA * 0.85)
 	-- wall pullback
-	rayParams.FilterDescendantsInstances = { char, vm, workspace:FindFirstChild("EFB_Fx") }
+	rayParams.FilterDescendantsInstances = { char, vm, workspace:FindFirstChild("ZR_Fx") }
 	local wallHit = workspace:Raycast(cam.CFrame.Position, cam.CFrame.LookVector * 1.7, rayParams)
 	local push = wallHit and (1.7 - wallHit.Distance) or 0
 	local pull = CFrame.new(0, -push * 0.12, push * 0.75) * CFrame.Angles(push * 0.22, 0, 0)
@@ -396,7 +405,7 @@ local function update(dt)
 			magCF = magHome * CFrame.new(0, -(1 - (p - 0.55) / 0.27) * 0.45, 0.03)
 		end
 	end
-	magPart.CFrame = vmRoot.CFrame * magCF
+	magPart.CFrame = vmRoot.CFrame * magCF * magOffset
 end
 
 local function onSnapshot()
@@ -448,7 +457,8 @@ function Weapon.init(c)
 		end
 	end)
 	Input.on("Reload", function(down)
-		if down then
+		-- gamepad X is shared with the interaction prompt: a visible prompt takes the press
+		if down and not (Input.device() == "Gamepad" and c.Interact and c.Interact.current) then
 			Weapon.startReload()
 		end
 	end)
@@ -496,17 +506,17 @@ function Weapon.init(c)
 			end)
 		end
 	end)
-	RunService:BindToRenderStep("EFB_Weapon", Enum.RenderPriority.Camera.Value + 2, update)
+	RunService:BindToRenderStep("ZR_Weapon", Enum.RenderPriority.Camera.Value + 2, update)
 	-- rebuild when meshes arrive later (non-blocking)
 	task.spawn(function()
-		local lib = ReplicatedStorage:WaitForChild("EFB_Assets", 15)
+		local lib = ReplicatedStorage:WaitForChild("ZR_Assets", 15)
 		if lib then
 			lib.ChildAdded:Connect(function(ch)
-				if ch.Name == "EFB_VM_R17" or ch.Name == "EFB_VM_Arms" then
+				if ch.Name == "ZR_VM_R17" or ch.Name == "ZR_VM_Arms" or ch.Name == "ZR_VM_R17_Mag" then
 					buildViewmodel()
 				end
 			end)
-			if lib:FindFirstChild("EFB_VM_R17") then
+			if lib:FindFirstChild("ZR_VM_R17") then
 				buildViewmodel()
 			end
 		end

@@ -1,6 +1,6 @@
-# ESCAPE FROM BLOXOV — Claude Code production kit
+# ZERO RETURN — Claude Code production kit
 
-**Purpose:** Build an ORIGINAL, premium-feeling PvPvE extraction shooter for Roblox, inspired by Escape from Tarkov's raid/stash/loss loop and the visual language of body-mounted camera footage. Working title **ESCAPE FROM BLOXOV** is a placeholder; check any final branding before release. This is not permission to reproduce copyrighted names, maps, weapons, logos, game UI, sound, animations, characters or assets from either reference game.
+**Purpose:** Build an ORIGINAL, premium-feeling PvPvE extraction shooter for Roblox, inspired by Escape from Tarkov's raid/stash/loss loop and the visual language of body-mounted camera footage. Working title **ZERO RETURN** is a placeholder; check any final branding before release. This is not permission to reproduce copyrighted names, maps, weapons, logos, game UI, sound, animations, characters or assets from either reference game.
 
 **Intended agent:** Claude Code, with your chosen Opus 5.5 Max configuration (if available to your account). This is not a Claude Cowork workflow. The ZIP is an instruction/reference kit, **not** a prebuilt game or a working Claude integration.
 

@@ -3,7 +3,7 @@
 -- request-id de-duplication (repeated rid returns the original result, never re-executes).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local Shared = ReplicatedStorage:WaitForChild("EFB")
+local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Net = require(Shared.Net)
 local Util = require(Shared.Util)
 
@@ -56,7 +56,7 @@ function Remotes.strike(player: Player, why: string)
 	local n = (Remotes.strikes[player] or 0) + 1
 	Remotes.strikes[player] = n
 	if n % 25 == 1 then
-		warn("[EFB] rejected input from", player.Name, why, "strikes", n)
+		warn("[ZR] rejected input from", player.Name, why, "strikes", n)
 	end
 end
 
@@ -117,7 +117,7 @@ function Remotes.dispatch(player: Player, action: any, payload: any): any
 	end
 	local ok, res = pcall(h.fn, player, payload)
 	if not ok then
-		warn("[EFB] handler error", action, res)
+		warn("[ZR] handler error", action, res)
 		res = fail("SERVER_ERROR")
 	end
 	res = res or fail("SERVER_ERROR")
@@ -162,7 +162,7 @@ function Remotes.init(_ctx: any)
 		end
 		local ok, err = pcall(h.fn, player, payload)
 		if not ok then
-			warn("[EFB] act error", action, err)
+			warn("[ZR] act error", action, err)
 		end
 	end)
 	shoot.OnServerEvent:Connect(function(player: Player, seq: any, origin: any, dir: any)
@@ -173,7 +173,7 @@ function Remotes.init(_ctx: any)
 		if shootHandler then
 			local ok, err = pcall(shootHandler, player, seq, origin, dir)
 			if not ok then
-				warn("[EFB] shoot error", err)
+				warn("[ZR] shoot error", err)
 			end
 		end
 	end)

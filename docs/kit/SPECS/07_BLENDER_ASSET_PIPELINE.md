@@ -18,7 +18,7 @@ Batch A: one shipping container, steel catwalk segment, pipe elbow, barrel, ligh
 These are design targets, not official Roblox limits. Maximize silhouettes and reusable texture atlas; reduce texture memory and part counts; MeshParts can use simple/block collision for static props. Avoid creating hundreds of physics-enabled tiny parts.
 
 ## Pipeline
-1. Build in Blender with names `EFB_[category]_[assetname]_LOD0`. Apply transforms and verify dimensions against Roblox calibration cube.
+1. Build in Blender with names `ZR_[category]_[assetname]_LOD0`. Apply transforms and verify dimensions against Roblox calibration cube.
 2. Use intentional topology, UVs and atlas. Create `blender_sources/*.blend` or scriptable `.py` files, export `.fbx` or `.gltf`, create thumbnails via Blender rendering only if actually available. Build `ASSETS/IMPORT_MANIFEST.csv`.
 3. Import via Roblox Studio 3D Importer or verified Studio bridge. Validate orientation/up axis, pivot, scaling, colors and collision; verify actual MeshPart instances and their IDs. Do not rely on imagined plugin import methods.
 4. Keep exported assets in repo and original Blender source; manifest contains asset keys, dimensions, triangle counts, materials, texture sizes, export path, import status, Roblox IDs when confirmed.

@@ -3,7 +3,7 @@
 -- shared InputMap. Fallback: ContextActionService. Touch buttons call Input.trigger. Contexts: play/global/menu.
 local UIS = game:GetService("UserInputService")
 local CAS = game:GetService("ContextActionService")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local InputMap = require(Shared.InputMap)
 
 local Input = { backend = "none", actions = {} }
@@ -50,7 +50,7 @@ local function setupIAS(container)
 	return pcall(function()
 		for name, prio in { play = 10, global = 15, menu = 20 } do
 			local c = Instance.new("InputContext")
-			c.Name = "EFB_" .. name
+			c.Name = "ZR_" .. name
 			c.Priority = prio
 			c.Sink = false
 			c.Enabled = name ~= "menu"
@@ -101,7 +101,7 @@ local function setupCAS()
 		for _, k in spec.pad do
 			table.insert(inputs, k)
 		end
-		CAS:BindActionAtPriority("EFB_" .. action, function(_, state)
+		CAS:BindActionAtPriority("ZR_" .. action, function(_, state)
 			if state == Enum.UserInputState.Begin then
 				if menu and spec.context == "play" then
 					return Enum.ContextActionResult.Pass
@@ -177,7 +177,7 @@ function Input.init(_ctx)
 		setupCAS()
 		Input.backend = "CAS"
 	end
-	print("[EFB] input backend:", Input.backend)
+	print("[ZR] input backend:", Input.backend)
 	lastDevice = Input.device()
 	local function check()
 		local d = Input.device()

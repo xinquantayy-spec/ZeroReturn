@@ -1,7 +1,7 @@
 --!strict
 -- Pure profile transactions: new profile, migration, deploy reservation and idempotent raid settlement.
 local RS = game:GetService("ReplicatedStorage")
-local Shared = RS:WaitForChild("EFB")
+local Shared = RS:WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)

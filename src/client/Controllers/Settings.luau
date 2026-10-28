@@ -1,7 +1,7 @@
 --!nonstrict
 -- Player settings (persisted in the profile) + quality presets. Presets change presentation only.
 local Lighting = game:GetService("Lighting")
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("EFB")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local Settings = {
@@ -18,7 +18,7 @@ function Settings.apply()
 	if bloom then
 		bloom.Enabled = d.quality >= 2
 	end
-	local grade = Lighting:FindFirstChild("EFB_Grade")
+	local grade = Lighting:FindFirstChild("ZR_Grade")
 	if grade then
 		grade.Enabled = d.quality >= 2 or d.film
 	end
