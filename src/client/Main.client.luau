@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "Atmos", "Interact", "Touch", "Inventory", "Screens", "Trade" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "Atmos", "Detail", "Interact", "Touch", "Inventory", "Screens", "Trade" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -177,6 +177,25 @@ if RunService:IsStudio() then
 		elseif cmd == "nade" then
 			-- a = { hold = seconds, under = bool }: press G, hold, release
 			return ctx.Grenade.testThrow(a and a.hold, a and a.under)
+		elseif cmd == "detail" then
+			-- M12 detail layer probe; a = graphics level to switch to (0 POTATO .. 3 HIGH), nil = just report
+			if a ~= nil then
+				ctx.Settings.set("quality", a)
+			end
+			local st = ctx.Detail.stats()
+			st.shadows = game:GetService("Lighting").GlobalShadows
+			local n, variants = 0, 0
+			local w = workspace:FindFirstChild("ZR_World")
+			for _, d in w and w:GetDescendants() or {} do
+				if d:IsA("BasePart") then
+					n += 1
+					if d.MaterialVariant ~= "" then
+						variants += 1
+					end
+				end
+			end
+			st.worldParts, st.worldVariants = n, variants
+			return HttpService:JSONEncode(st)
 		elseif cmd == "hidden" then
 			-- first-person hidden set vs the character's parts (C12: no growth with equipment churn)
 			local me = Players.LocalPlayer.Character

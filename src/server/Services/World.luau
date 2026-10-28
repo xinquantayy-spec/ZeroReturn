@@ -211,7 +211,7 @@ function Props.pallet(parent, cf)
 	boxCF(parent, 5, 0.6, 4.2, cf * CFrame.new(0, 0.3, 0), C.wood, M.WoodPlanks)
 end
 function Props.barrier(parent, cf)
-	if mesh("ZR_PROP_Barrier", parent, cf) then
+	if mesh("ZR_PROP_Barrier", parent, cf, C.concreteLight) then -- tinted: the bare mesh reads chalk-white in daylight
 		return
 	end
 	boxCF(parent, 8, 1.4, 2.4, cf * CFrame.new(0, 0.7, 0), C.concreteLight, M.Concrete)
@@ -226,6 +226,30 @@ function Props.lamp(parent, cf)
 	head.CastShadow = false
 	light(head, hex("FFC98A"), 34, 1.4, false)
 	CollectionService:AddTag(head, "ZR_Lamp") -- clients switch street lamps on in the dark (Atmos)
+end
+-- M12 cover props from the wear kit (build_wear_kit.py -> ZR_WearKit): gameplay geometry, they collide and stop
+-- bullets. Each has a plain block stand-in of the same footprint in case the batch is missing.
+local COVER_FALLBACK = {
+	CarWreck = { Vector3.new(6.1, 4.3, 16.2), C.rustDark, M.CorrodedMetal },
+	Dumpster = { Vector3.new(6.1, 5.2, 5), C.olive, M.Metal },
+	TyreStack = { Vector3.new(4.5, 3.1, 2.9), C.metalDark, M.Rubber },
+	CinderStack = { Vector3.new(5.9, 2.8, 4.2), C.concreteLight, M.Concrete },
+	DrumDented = { Vector3.new(3.4, 4.5, 3.3), C.blue, M.Metal },
+	CableReel = { Vector3.new(2.7, 4, 4), C.wood, M.WoodPlanks },
+	BarrierBroken = { Vector3.new(7.7, 2.9, 2.5), C.concreteLight, M.Concrete },
+	Sandbags = { Vector3.new(5.7, 2.2, 1.2), C.sand, M.Fabric },
+	PalletStack = { Vector3.new(5.4, 2.6, 4.7), C.wood, M.WoodPlanks },
+}
+local COVER_TINT = { BarrierBroken = C.concreteLight, Sandbags = hex("A39A80") }
+function Props.cover(parent, kind, cf, color)
+	color = color or COVER_TINT[kind]
+	local m = mesh("ZR_PROP_" .. kind, parent, cf, color)
+	if not m then
+		local f = COVER_FALLBACK[kind]
+		m = boxCF(parent, f[1].X, f[1].Y, f[1].Z, cf * CFrame.new(0, f[1].Y / 2, 0), color or f[2], f[3])
+	end
+	m.Name = "Cover_" .. kind
+	return m
 end
 function Props.bollard(parent, cf)
 	vcyl(parent, 1.6, 1.4, cf.X, cf.Y, cf.Z, C.metalDark, M.Metal)
@@ -404,6 +428,7 @@ local function addContainerSpot(parent, id, kind, label, cf)
 		boxCF(parent, 2.2, 0.15, 1.2, cf * CFrame.new(0, 4.08, 0), C.orange, M.SmoothPlastic)
 	end
 	anchor.Name = "Loot_" .. id
+	anchor:SetAttribute("NoDetail", true) -- furniture, not a wall: no grime or wall fittings from the detail plan
 	local pp = Instance.new("ProximityPrompt")
 	pp.KeyboardKeyCode = Enum.KeyCode.F -- Tarkov interact key (Q/E lean)
 	pp.ActionText = "Search"
@@ -905,6 +930,33 @@ local function buildLandmarksAndRoutes(map)
 			Props.pallet(misc, cf)
 		end
 	end
+	-- M12 cover from the wear kit: wrecks, dumpsters, stacks and sandbags break up the open yards and the roads.
+	-- Every spot is clear of spawns, exfil zones, AI posts and paths, loot spots, containers and doors.
+	local DUMPSTER = { hex("3E5A45"), hex("3D5468"), hex("6B4A3A") }
+	local kit = {
+		-- north lot and the cross road
+		{ "CarWreck", -20, -150, 20 }, { "Sandbags", 2, -168, 0 }, { "CinderStack", -36, -128, 15 }, { "CarWreck", 25, -60, 3 },
+		-- behind the depot, north strip
+		{ "PalletStack", 172, -140, 10 }, { "TyreStack", 182, -112, 0 }, { "CableReel", 60, -180, 90 }, { "Sandbags", 112, -178, 0 },
+		-- east apron
+		{ "CarWreck", 172, 72, 5 }, { "CableReel", 186, 96, 0 }, { "Sandbags", 166, 52, 90 }, { "BarrierBroken", 100, -8, 0 },
+		-- south yard
+		{ "CarWreck", -100, 140, 70 }, { "TyreStack", -160, 165, 25 }, { "Dumpster", -60, 118, 0 }, { "CinderStack", -15, 105, 40 },
+		{ "CarWreck", 125, 158, -15 }, { "DrumDented", 40, 140, 0 }, { "DrumDented", 43.6, 141.5, 0 }, { "PalletStack", 150, 135, 30 },
+		-- between the dormitory and the road, around the annex
+		{ "BarrierBroken", -5, 40, 90 }, { "DrumDented", 10, 95, 0 }, { "Dumpster", 128, 80, 90 }, { "PalletStack", 95, 42, 10 },
+		-- west side and the main road
+		{ "Dumpster", -170, -40, 90 }, { "CarWreck", -140, -22, 80 }, { "TyreStack", -165, 95, 0 }, { "CarWreck", -110, 5, 92 },
+	}
+	local nd = 0
+	for _, c in kit do
+		local col
+		if c[1] == "Dumpster" then
+			nd += 1
+			col = DUMPSTER[(nd - 1) % #DUMPSTER + 1]
+		end
+		Props.cover(misc, c[1], CFrame.new(c[2], 0, c[3]) * CFrame.Angles(0, math.rad(c[4]), 0), col)
+	end
 	-- loose loot in the open (rolled per raid)
 	for _, lp in { { -130, 0.05, 116 }, { -50, 0.05, 190 }, { 230, 0.05, 147 }, { 240, 2.15, 162 }, { 190, 0.05, -184 }, { -178, 0.05, -168 },
 		{ -204, 0.05, 6 }, { -96, 0.05, 154 }, { 4, 0.05, 72 }, { 160, 0.05, -38 }, { 96, 0.05, 174 } } do
@@ -1050,6 +1102,7 @@ function World.build()
 		slab.Anchored = true
 		slab.Color = d.color or hex("5A5F57")
 		slab.Material = d.card and M.DiamondPlate or M.Metal
+		slab:SetAttribute("NoDetail", true) -- it swings open; decals would be left hanging in the air
 		-- AI paths go through doors (they open unlocked ones on the way; Doors.luau blocks locked ones)
 		local pm = Instance.new("PathfindingModifier")
 		pm.Label = "Door"
@@ -1099,6 +1152,36 @@ function World.build()
 		end
 	end
 	print(string.format("[ZR] World built: %d parts (%d worn), %d containers, %d spawns", n, worn, #World.containers, #World.spawns))
+end
+
+-- places the cosmetic detail plan keeps its ground clutter away from (M12): loot spots, containers, doors (and
+-- their swing), exfil zones and spawns, so clutter never hides loot or a prompt and never fills a doorway
+function World.detailAvoid()
+	local out = {}
+	local function add(pos, r)
+		table.insert(out, { pos = pos, r = r })
+	end
+	for _, s in World.looseSpots do
+		add(s.pos, 1.8)
+	end
+	for _, c in World.containers do
+		if c.part then
+			add(c.part.Position, math.max(c.part.Size.X, c.part.Size.Z) / 2 + 2)
+		end
+	end
+	for _, d in World.doors do
+		local cf = d.part and d.part.CFrame or d.cf
+		if cf and d.size then
+			add(cf.Position, d.size.X + 0.6)
+		end
+	end
+	for _, e in World.extracts do
+		add(e.pos, math.max(e.size.X, e.size.Z) / 2 + 1)
+	end
+	for _, sp in World.spawns do
+		add(sp.cf.Position, 4)
+	end
+	return out
 end
 
 function World.init(_ctx) end

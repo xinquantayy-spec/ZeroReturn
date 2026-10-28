@@ -24,6 +24,7 @@ local CELL = Wear.CELL
 local UP = Vector3.yAxis
 
 local cells, rng, rp, op
+local avoid = {} -- { pos, r }: loot spots, containers, doors, exfils, spawns (World.detailAvoid)
 
 local function r2(v)
 	return math.floor(v * 100 + 0.5) / 100
@@ -152,6 +153,12 @@ local function ground(key, p, yaw, lod, col, fy0)
 	local fy = hit.Position.Y
 	if fy0 and math.abs(fy - fy0) > 0.6 then
 		return false
+	end
+	for _, a in avoid do
+		local d = a.pos - Vector3.new(p.X, fy, p.Z)
+		if math.abs(d.Y) < 4 and d.X * d.X + d.Z * d.Z < a.r * a.r then
+			return false
+		end
 	end
 	local half = KIT_FOOT[key] or Vector3.new(1, 0.5, 1)
 	-- the spot must be empty (no wall, crate, stair or door in the way); test a little above the floor
@@ -466,8 +473,9 @@ local function floorPart(p)
 	end
 end
 
-function Plan.generate(list, seed)
+function Plan.generate(list, seed, avoidList)
 	cells, Plan.count, Plan.stats = {}, 0, {}
+	avoid = avoidList or {}
 	rng = Random.new(seed or 1207)
 	rp = RaycastParams.new()
 	rp.FilterType = Enum.RaycastFilterType.Include

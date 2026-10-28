@@ -353,7 +353,7 @@ local function step(dt)
 		placeClock = 0
 		if rain > 0 then
 			local q = ctx.Settings.data.quality or 2
-			Atmos.cover = placeRain(rain * (q >= 2 and 1 or 0.5), cur.wind * 0.6)
+			Atmos.cover = placeRain(rain * (q >= 2 and 1 or (q >= 1 and 0.5 or 0.3)), cur.wind * 0.6)
 		elseif Atmos.raining then
 			stopRain()
 			Atmos.cover = 0

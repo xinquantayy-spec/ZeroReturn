@@ -255,7 +255,7 @@ local function step(dt)
 		ang = math.acos(math.clamp(look:Dot(lastLook), -1, 1)) / dt
 	end
 	lastLook = look
-	local target = (S.mblur ~= false) and math.clamp((ang - 2.6) * 1.15, 0, 4.5) or 0
+	local target = (S.mblur ~= false and (S.quality or 3) > 0) and math.clamp((ang - 2.6) * 1.15, 0, 4.5) or 0 -- no turn blur on POTATO
 	turnBlur += (target - turnBlur) * math.min(1, dt * 14)
 	-- auto-exposure: adapt slowly, so walking out of a building overexposes for a moment
 	probeClock += dt

@@ -125,10 +125,18 @@ local function loadCell(sv)
 	if not cx then
 		return
 	end
-	local cell = { key = sv.Name, center = Vector3.new(tonumber(cx) * Wear.CELL + HALF, 0, tonumber(cz) * Wear.CELL + HALF), byLod = { {}, {}, {} }, built = {} }
+	local cell = { key = sv.Name, center = Vector3.new(tonumber(cx) * Wear.CELL + HALF, 0, tonumber(cz) * Wear.CELL + HALF), byLod = { {}, {}, {} }, built = {}, y0 = math.huge, y1 = -math.huge }
 	for _, e in list do
 		local l = math.clamp(lodOf(e) or 2, 1, 3)
 		table.insert(cell.byLod[l], e)
+		local y = e[4]
+		if type(y) == "number" then
+			cell.y0 = math.min(cell.y0, y)
+			cell.y1 = math.max(cell.y1, y)
+		end
+	end
+	if cell.y0 > cell.y1 then
+		cell.y0, cell.y1 = 0, 0
 	end
 	cells[sv.Name] = cell
 end
@@ -153,6 +161,14 @@ local function clearAll()
 end
 
 -- ── which cells, at which detail ────────────────────────────────────────────────
+-- distance from the camera to a cell's box (its 64-stud square and the height range of its details)
+local function cellDist(cell, camPos)
+	local dx = math.max(0, math.abs(cell.center.X - camPos.X) - HALF)
+	local dz = math.max(0, math.abs(cell.center.Z - camPos.Z) - HALF)
+	local dy = math.max(0, cell.y0 - camPos.Y, camPos.Y - cell.y1)
+	return math.sqrt(dx * dx + dy * dy + dz * dz)
+end
+
 local function refresh()
 	local cam = workspace.CurrentCamera
 	if not cam then
@@ -162,8 +178,7 @@ local function refresh()
 	local rings = RINGS[Detail.level]
 	local built = 0
 	for _, cell in cells do
-		local dv = cell.center - camPos
-		local d = math.sqrt(dv.X * dv.X + dv.Z * dv.Z) - HALF
+		local d = cellDist(cell, camPos)
 		for lod = 1, 3 do
 			local r = rings and rings[lod]
 			local have = cell.built[lod] ~= nil
@@ -188,8 +203,7 @@ local function refresh()
 	local keep = {}
 	for _, j in queue do
 		if j.folder.Parent then
-			local dv = j.cell.center - camPos
-			j.d = math.sqrt(dv.X * dv.X + dv.Z * dv.Z) + j.lod * 20
+			j.d = cellDist(j.cell, camPos) + j.lod * 20
 			table.insert(keep, j)
 		end
 	end
@@ -228,8 +242,11 @@ local function work()
 	Detail.pending = #queue
 end
 
--- ── potato: plain materials, no shadows (local only, reversible) ─────────────────
-local stripped = setmetatable({}, { __mode = "k" })
+-- ── potato: plain materials, no shadows, no cloud layer (local only, reversible) ───
+-- Fog, light levels and exposure stay the same on every preset, so no setting sees further or through more.
+-- strong keys: a weak-keyed table would drop Instance keys (their Lua handles get collected while the parts live on),
+-- and leaving POTATO would then not restore the materials
+local stripped = {}
 local stripConn
 local function strip(d)
 	if d:IsA("BasePart") and d.MaterialVariant ~= "" then
@@ -249,6 +266,10 @@ local function setPotato(on)
 			end
 		end
 		Lighting.GlobalShadows = false
+		local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+		if clouds then
+			clouds.Enabled = false
+		end
 	else
 		if stripConn then
 			stripConn:Disconnect()
@@ -261,6 +282,10 @@ local function setPotato(on)
 		end
 		table.clear(stripped)
 		Lighting.GlobalShadows = true
+		local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+		if clouds then
+			clouds.Enabled = true
+		end
 	end
 end
 

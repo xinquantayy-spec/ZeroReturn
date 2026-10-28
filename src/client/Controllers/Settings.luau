@@ -1,12 +1,13 @@
 --!nonstrict
--- Player settings (persisted in the profile) + quality presets. Presets change presentation only.
+-- Player settings (persisted in the profile) + graphics presets (quality 0 POTATO, 1 LOW, 2 MEDIUM, 3 HIGH).
+-- Presets change presentation only, never what the server simulates.
 local Lighting = game:GetService("Lighting")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
 local Settings = {
 	data = {
-		fov = Config.FOV, sens = 1, quality = 2, shake = 1, reduceMotion = false, film = true, reticle = false, adsToggle = false,
+		fov = Config.FOV, sens = 1, quality = 3, shake = 1, reduceMotion = false, film = true, reticle = false, adsToggle = false,
 		grain = 0.5, lens = true, mblur = true, curve = false, hudScale = 1, hitfx = false,
 	},
 }
@@ -40,10 +41,10 @@ function Settings.init(c)
 			Settings.apply()
 		end
 	end)
-	-- low-end touch devices start on LOW unless the player chose otherwise
+	-- graphics (quality): 3 HIGH by default on every platform, phones included (owner decision, M12);
+	-- MEDIUM, LOW and POTATO are opt-in. Small touch screens only start with lighter film grain.
 	local UIS = game:GetService("UserInputService")
 	if UIS.TouchEnabled and not UIS.KeyboardEnabled then
-		Settings.data.quality = 1
 		Settings.data.grain = 0.35
 	end
 	task.defer(Settings.apply)

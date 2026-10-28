@@ -873,9 +873,12 @@ local function saveSettings(player, p)
 		end
 		return true
 	end
-	if not (num("fov", 65, 100) and num("sens", 0.2, 3) and num("quality", 1, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
+	if not (num("fov", 65, 100) and num("sens", 0.2, 3) and num("quality", 0, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
 		and bool("reduceMotion") and bool("film") and bool("reticle") and bool("adsToggle") and bool("lens") and bool("mblur") and bool("curve") and bool("hitfx")) then
 		return fail("BAD_INPUT")
+	end
+	if s.quality then
+		s.quality = math.floor(s.quality + 0.5) -- graphics preset: 0 POTATO, 1 LOW, 2 MEDIUM, 3 HIGH
 	end
 	ctx.Profiles.markDirty(player)
 	return ok()

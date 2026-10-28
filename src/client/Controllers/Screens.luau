@@ -508,7 +508,7 @@ function Screens.summary(s)
 end
 
 local SETTING_ROWS = {
-	{ "QUALITY PRESET", "quality", "enum", { "LOW", "MEDIUM", "HIGH" } },
+	{ "GRAPHICS", "quality", "enum", { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }, 0 },
 	{ "FIELD OF VIEW", "fov", "num", 65, 100, 5, "%d" },
 	{ "SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },
 	{ "SCREEN SHAKE", "shake", "num", 0, 1, 0.25, "pct" },
@@ -553,7 +553,8 @@ function Screens.settings()
 		K.label(row, value, 13, { Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0.2, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
 		local function bump(dir)
 			if kind == "enum" then
-				S.set(key, math.clamp((v or 1) + dir, 1, #r[4]))
+				local lo = r[5] or 1 -- first index (0 when the list starts at [0])
+				S.set(key, math.clamp((v or lo) + dir, lo, #r[4]))
 			elseif kind == "num" then
 				local nv = math.clamp((v or 0) + dir * r[6], r[4], r[5])
 				S.set(key, math.floor(nv * 100 + 0.5) / 100)
