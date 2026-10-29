@@ -7,6 +7,9 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local WeaponModels = require(Shared.WeaponModels)
+local ItemMeta = require(Shared.ItemMeta)
+local Equipment = require(Shared.Equipment)
+local AssetMeta = require(Shared.AssetMeta)
 local Inv = require(script.Parent.Inv)
 
 local Loot = {}
@@ -617,10 +620,109 @@ local function looseFolder()
 end
 
 local THICK = { ammo = 0.35, mag = 0.5, med = 0.4, food = 0.55, key = 0.1, loot = 0.3, quest = 0.18, mod = 0.3, rig = 0.5, backpack = 0.8, armor = 0.6, helmet = 0.8 }
+local M = Enum.Material
+-- item model material key (build_items_*.py) -> Roblox material, reflectance, transparency
+local IT_MAT = {
+	metal = { M.Metal }, gunmetal = { M.Metal }, brass = { M.Metal, 0.05 }, copper = { M.Metal, 0.05 }, gold = { M.Foil, 0.08 },
+	chrome = { M.Metal, 0.15 }, plastic = { M.SmoothPlastic }, polymer = { M.Plastic }, rubber = { M.Rubber }, fabric = { M.Fabric },
+	leather = { M.Leather }, paper = { M.SmoothPlastic }, cardboard = { M.Cardboard }, wood = { M.Wood }, ceramic = { M.SmoothPlastic, 0.02 },
+	glass = { M.Glass, 0.05, 0.45 }, emissive = { M.Neon }, foil = { M.Foil },
+}
+-- worn equipment lying around: which slot shows it, and how it lies (armour and rigs front up)
+local WEAR_SLOT = { helmet = "head", headwear = "head", headset = "ears", facecover = "face", armor = "armor", rig = "rig", backpack = "back" }
+local WEAR_LIE = { armor = CFrame.Angles(-math.pi / 2, 0, 0), rig = CFrame.Angles(-math.pi / 2, 0, 0) }
+
+local function assetLib()
+	return game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+end
+
+local function quietPart(p)
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+end
+
+-- the item's Blender model (ItemMeta pieces) at surface cf; returns its bounding box (size, centre CFrame) or nil
+local function placeItemModel(model, id, cf)
+	local meta = ItemMeta[id]
+	local lib = assetLib()
+	if not meta or not lib then
+		return nil
+	end
+	local n = 0
+	for _, pc in meta.pieces do
+		local src = lib:FindFirstChild("ZR_IT_" .. id .. "__" .. pc[1])
+		if src then
+			local p = src:Clone()
+			quietPart(p)
+			local mm = IT_MAT[pc[1]] or IT_MAT.plastic
+			p.Material = mm[1]
+			p.Reflectance = mm[2] or 0
+			p.Transparency = mm[3] or 0
+			p.Color = Color3.new(1, 1, 1)
+			p.CastShadow = meta.size.Magnitude > 0.5 and pc[1] ~= "glass"
+			p.CFrame = cf * CFrame.new(pc[2])
+			p.Parent = model
+			n += 1
+		end
+	end
+	if n == 0 then
+		return nil
+	end
+	return meta.size, cf * CFrame.new(meta.center)
+end
+
+-- worn equipment: the same meshes the characters wear, tinted, lying on the surface
+local function placeWearModel(model, d, cf)
+	local slot = WEAR_SLOT[d.kind]
+	local vis = slot and Equipment.visualOf(slot, d.id)
+	local lib = assetLib()
+	if not vis or not lib then
+		return nil
+	end
+	local host = vis.pieces[1] and vis.pieces[1].host
+	local lie = WEAR_LIE[d.kind] or CFrame.new()
+	local parts, lo, hi = {}, nil, nil
+	for _, pc in vis.pieces do
+		local src = pc.host == host and lib:FindFirstChild(pc.key)
+		if src then
+			local off = AssetMeta[pc.key] or Vector3.zero
+			table.insert(parts, { src = src, off = off, pc = pc })
+			for _, sx in { -1, 1 } do
+				for _, sy in { -1, 1 } do
+					for _, sz in { -1, 1 } do
+						local c = (lie * CFrame.new(off + src.Size * 0.5 * Vector3.new(sx, sy, sz))).Position
+						lo = lo and lo:Min(c) or c
+						hi = hi and hi:Max(c) or c
+					end
+				end
+			end
+		end
+	end
+	if #parts == 0 then
+		return nil
+	end
+	-- the host frame sits so that the lowest corner touches the surface, centred over the spot
+	local mid = (lo + hi) / 2
+	local base = cf * CFrame.new(-mid.X, -lo.Y, -mid.Z) * lie
+	for _, e in parts do
+		local p = e.src:Clone()
+		quietPart(p)
+		p.Color = e.pc.tint and Color3.fromHex(e.pc.tint) or Color3.new(1, 1, 1)
+		p.Material = (e.pc.mat and Enum.Material[e.pc.mat]) or M.SmoothPlastic
+		p.CastShadow = true
+		p.CFrame = base * CFrame.new(e.off)
+		p.Parent = model
+	end
+	return hi - lo, cf * CFrame.new(0, (hi.Y - lo.Y) / 2, 0)
+end
 local MAT = { med = Enum.Material.Fabric, rig = Enum.Material.Fabric, backpack = Enum.Material.Fabric, armor = Enum.Material.Fabric, key = Enum.Material.Metal, mag = Enum.Material.Metal, ammo = Enum.Material.Metal, mod = Enum.Material.Metal }
 
--- a physical stand-in for an item at surface cf: weapons are built from the shared weapon spec lying on their
--- side, everything else is a block sized from its grid footprint in the item's colour
+-- an item lying at surface cf: weapons are built from the shared weapon spec lying on their side, other items
+-- are their Blender model (ItemMeta) or, for worn gear, the character meshes; a block sized from the grid
+-- footprint in the item's colour stands in when the meshes have not loaded
 local function looseModel(holder, g, it, cf)
 	local d = Items.defs[it.id]
 	local model = Instance.new("Model")
@@ -651,6 +753,16 @@ local function looseModel(holder, g, it, cf)
 		hit.Size = (hi - lo):Max(Vector3.new(0.6, 0.4, 0.6))
 		hit.CFrame = CFrame.new((lo + hi) / 2)
 	else
+		local size, centre = placeItemModel(model, it.id, cf)
+		if not size then
+			size, centre = placeWearModel(model, d, cf)
+		end
+		if size then
+			hit.Size = size:Max(Vector3.new(0.6, 0.4, 0.6)) + Vector3.new(0.2, 0.2, 0.2)
+			hit.CFrame = centre
+			model.PrimaryPart = hit
+			return model, hit
+		end
 		local sy = THICK[d.kind] or 0.3
 		local block = Instance.new("Part")
 		block.Name = "Item"

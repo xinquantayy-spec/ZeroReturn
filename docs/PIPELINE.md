@@ -74,6 +74,11 @@ uploaded as Decals (`upload_model(png, key, desc, asset_type="Decal")`); the ima
 Decal (`InsertService:LoadAsset(decalId)`, then `Decal.Texture`) and written to `src/materials/<name>.model.json`.
 A texture with grid lines (tiles, ceiling grid) uses `MaterialPattern = "Regular"`.
 
+**Item models and pictures.** Every item is modelled once (`build_items_a/b/c.py` on `zr_items.py`). The same
+model is rendered to the inventory picture, which is packed into two atlas sheets uploaded as Decals; and it is
+exported with baked AO for the loose loot (three Model batches). Generated tables are `ItemIcons.luau`
+(`tools/item_icons.py`) and `ItemMeta.luau` (`tools/item_meta.py`). Full steps: `docs/items/ITEM_ART.md`.
+
 ## Audio
 
 1. **Generate.** Run `python3 assets/audio/synth_sfx.py assets/audio/out`. It needs numpy, scipy and ffmpeg. The sounds are fully procedural, with no samples.

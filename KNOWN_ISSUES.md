@@ -37,7 +37,6 @@
 23. **Economy balance is first-pass.** Prices, XP values, task rewards, build times (5–40 min) and craft times (15–45 min) are tuned by feel and need playtests.
 25. **Rain and environment sounds not yet checked.** The DNS problem is fixed and the meshes and lens textures load, but the rain streaks, splashes, lens droplets and the environment sound atlas still need a look in a rainy raid.
 26. **Weather is per raid.** Rain, fog and cloud cover are fixed for a whole raid (no changes mid-raid); the sun follows Roblox's fixed-season sky (sunrise about 6:00, sunset about 18:00).
-27. **Loose loot models are simple.** Non-weapon items lying in the world are blocks in the item's colour and size; weapons use the real weapon model.
 28. **Doors swing one way.** Doors always open inward by 100° around the hinge; a player standing in the swing is not pushed. Closed doors do not muffle sound yet.
 29. **Grenade paths ignore people.** The server works out the whole path at release against the static world, so a grenade passes through characters, and a door that moves after the throw does not change it.
 30. **AI only react to where a grenade ends up.** Units near the landing point notice it once it lands; they do not dodge a grenade in flight.
@@ -64,6 +63,8 @@
 47. **Cinema risers are 1.3 studs.** Players step up them; AI use the side aisle with half steps.
 48. **An unknown asset warning.** `rbxassetid://111777818918264` (and once `92890594649410`) fail to load in raids ("HTTP 502" or "Asset content representation is being generated"). No instance in the client or server references them; likely a freshly uploaded image or mesh still processing. Harmless so far; watch the console.
 49. **Studio frame rates depend on Studio's render quality.** Studio renders at quality 21 (the maximum) during Play; devices choose their own level. `settings().Rendering.QualityLevel` can be set from the client command bar for comparisons (it resets when Play stops).
+50. **A modded gun shows the bare gun's picture.** Item pictures are one render per item, so a rifle with a scope and a suppressor still shows the plain rifle in the grid; its attachments are listed in the detail strip. Tarkov draws the modded gun; doing that needs a picture per build or a live 3D view of the gun in the tile.
+51. **Item pictures are not checked on a phone.** At 64 px per grid cell they look sharp in Studio on the laptop; how readable the small ones (ammunition, keys) are on a phone screen is not verified.
 44. **Syncing to the laptop without the shell tool.** When the laptop's shell tool is unavailable, files reach the PC as one bundle (`tools/pc_patch.py`) run through Blender's Python. Each sync shows up as a file card in the chat. Rojo then updates Studio as usual.
 33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.
@@ -78,6 +79,8 @@
 - The Baseplate texture warning `rbxassetid://203785492` comes from the default template and is harmless.
 
 ## Fixed this session
+
+- M13 items (owner request): loose loot was a block in the item's colour (old issue 27). Every item now has a Blender model and a picture: 124 inventory pictures in two atlas sheets, and loose loot lies as the real model (95 items from three new batches, worn gear as the character meshes, guns as before). See `docs/items/ITEM_ART.md`.
 
 - M13 Meridian Mall:
   - The exits list kept showing CARGO LIFT as NEEDS POWER after the generator started (the raid info was not re-sent).

@@ -8,6 +8,22 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M13 Item pictures and loose loot models (2026-10-29)
+
+Studio on the owner's T490 laptop, one client. Pipeline and details: `docs/items/ITEM_ART.md`. Captures: `docs/items/evidence/I01`–`I07`.
+
+| Test | Method | Result |
+|---|---|---|
+| Suites | `ZR_Dev:Invoke("tests")` in a raid | **LogicTests 167/167, CharTests 38/38, LookTests 19/19, MapTests 30/30.** |
+| Coverage | `atlas.json` against every item id | Pass. 124 of 124 items have a picture; 95 have a loose loot model, the 22 worn items use the character meshes, the 7 weapons the weapon model. |
+| Asset loading | Server log | Pass. "605 meshes loaded, 0 batches failed" (three mall kits plus the three item batches, 235 item meshes). |
+| Stash and gear | Inventory screen in the safehouse, capture `I01` | Pass. Pictures fill each item's footprint, turned items show turned pictures, unexamined items are dark silhouettes, the selected item's picture is in the detail strip, and dragging shows the picture. |
+| Traders | Relay radio, capture `I02` | Pass. Every offer and barter row has its item's picture. |
+| Loose loot | Raid on `meridian`, capture `I03` | Pass. Wires on a VOLTA shelf lie as the Blender model with baked contact shading; the TAKE prompt works on the invisible pick box. Items are anchored with no collision or raycast hits. |
+| Review sheets | `zr_item_reg.sheet` | All 124 pictures on stash-style sheets (`I04` weapons and ammunition, `I05` gear, `I06` medical, food and keys, `I07` loot). |
+| Console | Output | No ZR errors. |
+| Not verified | – | Phones (picture readability, memory), two clients. |
+
 ## M13 Meridian Mall (2026-10-29)
 
 Studio on the owner's T490 laptop, one client, raids on `meridian` started through the dev bridge (`map`, `deploy`). Screenshots: `docs/maps/evidence/M01`–`M08`.

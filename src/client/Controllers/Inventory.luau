@@ -480,12 +480,15 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 	local d = defs[it.id]
 	local isKnown = known(it.id)
 	local isSel = selected and selected.g == g and selected.ref == ref
-	local base = isKnown and d.color:Lerp(K.C.panel, 0.42) or Color3.fromHex("2A2D2E")
+	-- a dark tile with a faint tint of the item's colour, its Blender picture on top (Tarkov's stash look)
+	local base = isKnown and d.color:Lerp(K.C.panel2, 0.78) or Color3.fromHex("232627")
 	local t = K.new("TextButton", {
 		Name = "Tile_" .. g, Text = "", AutoButtonColor = true, BorderSizePixel = 0, Position = UDim2.fromOffset(px, py),
 		Size = UDim2.fromOffset(pw, ph), BackgroundColor3 = base, ZIndex = 4, Selectable = true, SelectionImageObject = K.selection(),
 	}, parent)
 	K.stroke(t, isSel and K.C.ochre or K.C.line, isSel and 0 or 0.72, isSel and 2 or 1)
+	local rotated = d.w ~= d.h and ((pw > ph) ~= (d.w > d.h))
+	K.itemIcon(t, it.id, pw, ph, rotated, not isKnown, 4)
 	local small = math.min(pw, ph) < 40
 	K.label(t, isKnown and d.short or "?", small and 10 or 12, { Position = UDim2.fromOffset(3, 2), Size = UDim2.new(1, -5, 0, 13), FontFace = K.bold, ZIndex = 5, TextTruncate = Enum.TextTruncate.AtEnd })
 	local corner = cornerText(view, it)
@@ -529,7 +532,7 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 			end
 			local rel = m - t.AbsolutePosition
 			local gc = cellAbs or Inventory.cell or 40
-			drag = { g = g, ref = ref, start = m, started = false, grabX = cellAbs and math.floor(rel.X / gc) or 0, grabY = cellAbs and math.floor(rel.Y / gc) or 0, cell = Inventory.cell or gc, w = d.w, h = d.h, r = 0, label = isKnown and d.short or "?" }
+			drag = { g = g, ref = ref, id = it.id, unknown = not isKnown, start = m, started = false, grabX = cellAbs and math.floor(rel.X / gc) or 0, grabY = cellAbs and math.floor(rel.Y / gc) or 0, cell = Inventory.cell or gc, w = d.w, h = d.h, r = 0, label = isKnown and d.short or "?" }
 			local _, _, p = locate(viewOf(ref), g)
 			if p and p.r == 1 then
 				drag.w, drag.h, drag.r = d.h, d.w, 1
@@ -726,6 +729,12 @@ local function detail(parent, w, h)
 	local d = defs[it.id]
 	local isKnown = known(it.id)
 	K.label(det, isKnown and string.upper(d.name) or "UNKNOWN ITEM", 14, { FontFace = K.bold, Size = UDim2.new(0.6, 0, 0, 18) })
+	-- the item's picture, as large as the strip allows, between the text and the buttons
+	local picH = math.max(24, h - 20)
+	local picW = math.floor(math.min(w * 0.22, picH * d.w / d.h))
+	picH = math.floor(math.min(picH, picW * d.h / d.w))
+	local pic = K.frame(det, { Name = "Picture", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(0.62, -4, 0, 0), Size = UDim2.fromOffset(picW, picH) })
+	K.itemIcon(pic, it.id, picW, picH, false, not isKnown, 3)
 	local lines = {}
 	if isKnown then
 		table.insert(lines, d.desc)
@@ -774,7 +783,7 @@ local function detail(parent, w, h)
 	else
 		table.insert(lines, "Examine this item to identify it.")
 	end
-	K.label(det, table.concat(lines, "\n"), 11, { Position = UDim2.fromOffset(0, 20), Size = UDim2.new(0.6, 0, 1, -20), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
+	K.label(det, table.concat(lines, "\n"), 11, { Position = UDim2.fromOffset(0, 20), Size = UDim2.new(0.62, -picW - 10, 1, -20), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
 	-- action buttons (touch / gamepad; mouse users also get the right-click menu)
 	local col = K.frame(det, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.38, 0, 1, 0) })
 	local grid = K.new("UIGridLayout", { CellSize = UDim2.new(0.5, -3, 0, 26), CellPadding = UDim2.fromOffset(4, 4), SortOrder = Enum.SortOrder.LayoutOrder }, col)
@@ -1031,6 +1040,18 @@ local function updateGhost()
 	end
 	ghost.Size = UDim2.fromOffset(drag.w * c - 2, drag.h * c - 2)
 	ghost.Position = UDim2.fromOffset(m.X - gx * c - c * 0.5 + 6, m.Y - gy * c - c * 0.5 + 6)
+	-- the picture follows the drag (and turns with R)
+	local d = defs[drag.id or ""]
+	local key = string.format("%d_%d", drag.w, drag.h)
+	if d and ghost:GetAttribute("IconKey") ~= key then
+		ghost:SetAttribute("IconKey", key)
+		local old = ghost:FindFirstChild("Icon")
+		if old then
+			old:Destroy()
+		end
+		local pw, ph = drag.w * c - 2, drag.h * c - 2
+		K.itemIcon(ghost, drag.id, pw, ph, d.w ~= d.h and ((pw > ph) ~= (d.w > d.h)), drag.unknown, 60)
+	end
 end
 
 function Inventory.show()

@@ -2,6 +2,7 @@
 -- Tiny UI helper kit: "field recorder" instrument style (charcoal panels, 1px pale strokes, mono type).
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
+local ItemIcons = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR"):WaitForChild("ItemIcons"))
 
 local K = {}
 K.font = Font.fromEnum(Enum.Font.RobotoMono)
@@ -146,4 +147,34 @@ function K.scale()
 	return math.clamp(v.Y / 720, 0.72, 1.6)
 end
 
+-- an item's Blender picture (ItemIcons atlas) centred in `parent`, w x h pixels as the item lies there;
+-- rotated: the item lies turned (its picture turns 90 degrees); unknown: a dark silhouette until examined
+function K.itemIcon(parent, id, w, h, rotated, unknown, z)
+	local ic = ItemIcons.items[id]
+	if not ic then
+		return nil
+	end
+	local pad = math.max(1, math.floor(math.min(w, h) * 0.04))
+	local img = K.new("ImageLabel", {
+		Name = "Icon", BackgroundTransparency = 1, Image = ItemIcons.sheets[ic[1]], ImageRectOffset = Vector2.new(ic[2], ic[3]),
+		ImageRectSize = Vector2.new(ic[4], ic[5]), ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5), ZIndex = z or 4,
+		Size = rotated and UDim2.fromOffset(h - pad * 2, w - pad * 2) or UDim2.fromOffset(w - pad * 2, h - pad * 2),
+		Rotation = rotated and 90 or 0,
+	}, parent)
+	if unknown then
+		img.ImageColor3 = Color3.fromRGB(26, 28, 29)
+		img.ImageTransparency = 0.15
+	end
+	pcall(function()
+		img.Interactable = false
+	end)
+	return img
+end
+
+function K.hasIcon(id)
+	return ItemIcons.items[id] ~= nil
+end
+
 return K
+

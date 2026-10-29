@@ -86,11 +86,19 @@ local function section(parent, s)
 end
 
 -- one row: label on the left, info in the middle, a button on the right
-local function row(parent, label, info, btnText, enabled, onClick, infoColor)
+local function row(parent, label, info, btnText, enabled, onClick, infoColor, itemId)
 	-- rows without a label (requirement lines) give the info the full width and let it wrap onto a second line
 	local wide = label == ""
-	local r = K.frame(parent, { BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.2, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, wide and 36 or 30) })
-	if not wide then
+	local pic = itemId and K.hasIcon(itemId)
+	local r = K.frame(parent, { BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.2, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, wide and 36 or (pic and 40 or 30)) })
+	if pic then
+		local d = Items.defs[itemId]
+		local ph = 36
+		local pw = math.floor(math.min(72, ph * d.w / d.h))
+		local box = K.frame(r, { Name = "Picture", Position = UDim2.fromOffset(2, 2), Size = UDim2.fromOffset(pw, ph), BackgroundColor3 = K.C.panel2 })
+		K.itemIcon(box, itemId, pw, ph, false, false, 3)
+		K.label(r, label, 12, { Position = UDim2.fromOffset(pw + 8, 0), Size = UDim2.new(0.5, -pw - 8, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
+	elseif not wide then
 		K.label(r, "  " .. label, 12, { Size = UDim2.new(0.5, 0, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
 	end
 	K.label(r, info or "", 11, {
@@ -144,7 +152,7 @@ local function traderPanel(f, x, y, w, h, d, tid)
 		local can = not locked and left_ > 0 and (d.money or 0) >= price
 		local _, b = row(left, def.name .. ((o.n > 1) and (" x" .. o.n) or ""), info, locked and "LOCKED" or (left_ > 0 and "BUY" or "SOLD OUT"), can, function()
 			req("trade", { op = "buy", trader = tid, i = i })
-		end, (not locked and (d.money or 0) < price) and K.C.red or nil)
+		end, (not locked and (d.money or 0) < price) and K.C.red or nil, o.id)
 		if b then
 			b.Name = "Buy_" .. o.id
 		end
@@ -163,7 +171,7 @@ local function traderPanel(f, x, y, w, h, d, tid)
 			end
 			row(left, def.name, locked and ("LOYALTY " .. bt.ll) or table.concat(parts, "  "), locked and "LOCKED" or (used < bt.limit and "TRADE" or "SOLD OUT"), ok and not locked and used < bt.limit, function()
 				req("trade", { op = "barter", trader = tid, i = i })
-			end)
+			end, nil, bt.id)
 		end
 	end
 	text(left, "Sell from your stash: right-click (or select) an item and choose SELL. The best-paying trader buys it.", K.C.dim, 11)

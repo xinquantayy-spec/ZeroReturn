@@ -15,4 +15,8 @@ return {
 	{ key = "ZR_MallKitA", id = 133338997186647 }, -- structure and fixtures: storefronts, shutters, columns, ceiling holes, balustrades, escalator, fountain, wall breach, collapsed slab, rubble (build_mall_kit_a.py)
 	{ key = "ZR_MallKitB", id = 110014146320763 }, -- store furnishings: gondolas, wall shelves, fridges, checkouts, trolleys, kiosks, racks, mannequins, food court, cinema, gym, homewares (build_mall_kit_b.py)
 	{ key = "ZR_MallKitC", id = 129684075485706 }, -- back of house and outdoor: pallet racks, cages, lockers, desks, generator, forklift, dock doors, cargo lift, cars, barrier, shelters, rooftop units (build_mall_kit_c.py)
+	-- M13 item models for loose loot (ZR_IT_<item>__<material> pieces, see ItemMeta.luau; build_items_export.py)
+	{ key = "ZR_ItemsA", id = 91684040376497 }, -- magazines, ammunition, grenades, weapon mods, repair kit, secure containers
+	{ key = "ZR_ItemsB", id = 104263145712235 }, -- medicine, food and drink, keys and keycards, quest items
+	{ key = "ZR_ItemsC", id = 125911946207153 }, -- valuables and barter goods
 }
