@@ -11,7 +11,7 @@ export type MapDef = {
 
 local Maps = {}
 
-Maps.order = { "quay7", "smelter" }
+Maps.order = { "quay7", "smelter", "pinewatch" }
 
 Maps.defs = {
 	quay7 = {
@@ -27,6 +27,13 @@ Maps.defs = {
 		kind = "FACTORY",
 		raidTime = 900,
 		desc = "Blast furnaces, catwalks, a casting shed, offices and service tunnels under the yard. Short raids, close fights.",
+	},
+	pinewatch = {
+		id = "pinewatch",
+		name = "PINEWATCH",
+		kind = "FOREST",
+		raidTime = 1800,
+		desc = "Pine woods on rolling hills: a sawmill, a lake with a boathouse, an ambushed convoy, a ranger lookout and an old shelter under the ridge. Big and open; the Sawyer works the mill in some raids.",
 	},
 } :: { [string]: MapDef }
 

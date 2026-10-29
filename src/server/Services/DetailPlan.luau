@@ -516,14 +516,17 @@ local function floorPart(p)
 	end
 end
 
-function Plan.generate(list, seed, avoidList)
+function Plan.generate(list, seed, avoidList, nature)
 	cells, Plan.count, Plan.stats = {}, 0, {}
 	avoid = avoidList or {}
 	rng = Random.new(seed or 1207)
 	rp = RaycastParams.new()
 	rp.FilterType = Enum.RaycastFilterType.Include
-	rp.FilterDescendantsInstances = list
+	local solid = table.clone(list)
+	table.insert(solid, workspace.Terrain) -- terrain maps: the ground in front of a cabin wall is terrain
+	rp.FilterDescendantsInstances = solid
 	rp.RespectCanCollide = true
+	rp.IgnoreWater = true
 	op = OverlapParams.new()
 	op.FilterType = Enum.RaycastFilterType.Include
 	op.FilterDescendantsInstances = list
@@ -591,6 +594,7 @@ function Plan.generate(list, seed, avoidList)
 		sv.Parent = folder
 	end
 	folder:SetAttribute("Count", Plan.count)
+	folder:SetAttribute("Nature", HttpService:JSONEncode(nature or {})) -- terrain regions for client ground cover (M13)
 	folder.Parent = ReplicatedStorage
 	local top = {}
 	for k, v in Plan.stats do

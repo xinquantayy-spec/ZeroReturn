@@ -10,4 +10,5 @@ return {
 	{ key = "ZR_WearKit", id = 122101191158248 }, -- M12 wear kit: 29 cosmetic ZR_WK_* pieces, 9 ZR_PROP_* cover props (build_wear_kit.py)
 	{ key = "ZR_CharBase", id = 101424875475699 }, -- M16 block body ZR_BLOCK_R15_V1 (15 ZR_BLK_* segments), helmet A, calibration cube (build_char_base.py)
 	{ key = "ZR_CharGear", id = 111486052124640 }, -- M16 equipment: 33 ZR_EQ_* / ZR_OV_* / ZR_FP_* meshes (build_char_gear.py)
+	{ key = "ZR_Nature", id = 131399075967241 }, -- M13 nature kit: 20 ZR_NAT_* pines (trunk + crown), rocks, logs, bushes, ground cover (build_nature.py)
 }

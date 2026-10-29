@@ -390,7 +390,10 @@ end
 local function startRaid()
 	local t = now()
 	Match.map = Match.pickMap()
-	ctx.World.activate(Match.map)
+	if not ctx.World.activate(Match.map) then
+		Match.map = "quay7" -- the chosen map did not build (World logs why)
+		ctx.World.activate(Match.map)
+	end
 	Match.state = "RUNNING"
 	Match.id = Util.guid()
 	Match.raids += 1

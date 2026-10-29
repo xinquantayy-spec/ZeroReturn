@@ -107,7 +107,7 @@ local POOLS = {
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
-		{ id = "KEY_SMELT_OFFICE", w = 5 },
+		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_PINE_BUNKER", w = 4 },
 	},
 }
 Loot.POOLS = POOLS
@@ -492,7 +492,8 @@ function Loot.spawnPile(pos, bundles)
 	local cid = "P" .. pileN
 	local rp = RaycastParams.new()
 	rp.FilterType = Enum.RaycastFilterType.Include
-	rp.FilterDescendantsInstances = { workspace:FindFirstChild("ZR_World") }
+	rp.FilterDescendantsInstances = { workspace.Terrain, workspace:FindFirstChild("ZR_World") }
+	rp.IgnoreWater = true
 	local hit = workspace:Raycast(pos + Vector3.new(0, 3, 0), Vector3.new(0, -30, 0), rp)
 	local ground = hit and hit.Position or pos
 	local part = Instance.new("Part")
@@ -643,7 +644,8 @@ function Loot.spawnLoose(seed)
 	local rand = Random.new(seed)
 	local rp = RaycastParams.new()
 	rp.FilterType = Enum.RaycastFilterType.Include
-	rp.FilterDescendantsInstances = { workspace:FindFirstChild("ZR_World") }
+	rp.FilterDescendantsInstances = { workspace.Terrain, workspace:FindFirstChild("ZR_World") }
+	rp.IgnoreWater = true
 	local n = 0
 	for _, spot in ctx.World.looseSpots or {} do
 		if rand:NextNumber() < spot.chance then

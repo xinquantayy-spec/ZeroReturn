@@ -17,7 +17,7 @@ ctx.World.build()
 -- M12: the cosmetic detail plan reads the finished map once (walls, openings, floors) and publishes it for the
 -- clients' detail layer; it yields while it works, so the rest of the server starts in the meantime
 task.spawn(function()
-	local ok, err = pcall(ctx.DetailPlan.generate, ctx.World.mapModels(), 1207, ctx.World.detailAvoid())
+	local ok, err = pcall(ctx.DetailPlan.generate, ctx.World.mapModels(), 1207, ctx.World.detailAvoid(), ctx.World.natureRegions)
 	if not ok then
 		warn("[ZR] detail plan failed:", err)
 	end

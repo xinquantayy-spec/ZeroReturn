@@ -8,6 +8,7 @@
 -- Graphics presets (Settings.quality): 3 HIGH, 2 MEDIUM, 1 LOW, 0 POTATO. Potato builds no detail, swaps the worn
 -- materials back to plain ones and turns shadows off, on this client only (switching back restores everything).
 local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
@@ -116,6 +117,78 @@ local function lodOf(e)
 	return e[1] == 1 and e[12] or e[9]
 end
 
+-- ── M13 ground cover on terrain maps ───────────────────────────────────────────────────────────────────────
+-- The server names the terrain regions (plan attribute "Nature": { x0, z0, x1, z1, yMin, yMax } in world studs). Each
+-- client scatters grass, ferns, reeds, fallen branches and stones over the terrain of the cells near its camera,
+-- seeded per cell, so every client gets the same layout. Nothing here is taller than a prone body (no setting hides
+-- more than another); like the rest of the layer it never collides or blocks sight.
+-- material -> { key, share of sample points, lod, min scale, max scale }
+local NAT = {
+	[Enum.Material.Grass] = { { "ZR_NAT_Grass", 0.34, 3, 0.75, 0.98 }, { "ZR_NAT_Fern", 0.08, 2, 0.7, 1.1 } },
+	[Enum.Material.LeafyGrass] = { { "ZR_NAT_Fern", 0.26, 2, 0.7, 1.2 }, { "ZR_NAT_Grass", 0.12, 3, 0.7, 0.95 }, { "ZR_NAT_Branch", 0.02, 3, 0.6, 1.0 } },
+	[Enum.Material.Ground] = { { "ZR_NAT_Branch", 0.04, 3, 0.6, 1.1 }, { "ZR_NAT_Fern", 0.05, 2, 0.6, 0.9 } },
+	[Enum.Material.Mud] = { { "ZR_NAT_Reeds", 0.45, 2, 0.42, 0.52 } }, -- only by the water (see genNature)
+	[Enum.Material.Rock] = { { "ZR_NAT_RockPile", 0.05, 2, 0.18, 0.3 } },
+	[Enum.Material.Slate] = { { "ZR_NAT_RockPile", 0.05, 2, 0.18, 0.3 } },
+}
+local NAT_GRID = 12 -- sample points per cell side
+local natParams = RaycastParams.new()
+natParams.FilterType = Enum.RaycastFilterType.Include
+local function r2(v)
+	return math.floor(v * 100 + 0.5) / 100
+end
+
+-- scatter one cell's ground cover; false when the terrain there has not streamed in yet (try again later)
+local function genNature(cell)
+	local r = cell.natRegion
+	natParams.FilterDescendantsInstances = { workspace.Terrain, workspace:FindFirstChild("ZR_World") }
+	local rnd = Random.new(bit32.bxor(cell.cx * 73856093, cell.cz * 19349663) % 2147483647)
+	local step = Wear.CELL / NAT_GRID
+	local x0, z0 = cell.center.X - HALF, cell.center.Z - HALF
+	local hits, added = 0, 0
+	for i = 0, NAT_GRID - 1 do
+		for k = 0, NAT_GRID - 1 do
+			local x, z = x0 + (i + rnd:NextNumber(0.1, 0.9)) * step, z0 + (k + rnd:NextNumber(0.1, 0.9)) * step
+			local roll, yaw, sr = rnd:NextNumber(), rnd:NextNumber(0, 360), rnd:NextNumber()
+			if x >= r[1] and x <= r[3] and z >= r[2] and z <= r[4] then
+				local hit = workspace:Raycast(Vector3.new(x, r[6], z), Vector3.new(0, r[5] - r[6], 0), natParams)
+				if hit then
+					hits += 1
+				end
+				-- terrain only (not a floor, a trunk or a rock), not too steep
+				local opts = hit and hit.Instance == workspace.Terrain and hit.Normal.Y > 0.75 and NAT[hit.Material]
+				if opts then
+					local acc = 0
+					for _, o in opts do
+						acc += o[2]
+						if roll < acc then
+							if not (o[1] == "ZR_NAT_Reeds" and hit.Position.Y > 2.6) then -- reeds by the lake, not in road ruts
+								local s = o[4] + (o[5] - o[4]) * sr
+								local y = r2(hit.Position.Y - 0.05)
+								table.insert(cell.byLod[o[3]], { 2, o[1], r2(x), y, r2(z), math.floor(yaw), 0, 0, o[3], r2(s), r2(s), r2(s), 0 })
+								cell.y0 = math.min(cell.y0, y)
+								cell.y1 = math.max(cell.y1, y + 1)
+								added += 1
+							end
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+	return hits > 0, added
+end
+
+local function dropCell(cell, lod)
+	local f = cell.built[lod]
+	if f then
+		Detail.instances -= f:GetAttribute("N") or 0
+		f:Destroy()
+		cell.built[lod] = nil
+	end
+end
+
 local function loadCell(sv)
 	local ok, list = pcall(HttpService.JSONDecode, HttpService, sv.Value)
 	if not ok or type(list) ~= "table" then
@@ -138,15 +211,37 @@ local function loadCell(sv)
 	if cell.y0 > cell.y1 then
 		cell.y0, cell.y1 = 0, 0
 	end
+	-- a cell that already carried ground cover keeps its region (the cover is scattered again)
+	local old = cells[sv.Name]
+	if old and old.natRegion then
+		cell.natRegion, cell.natPending, cell.cx, cell.cz = old.natRegion, true, old.cx, old.cz
+		cell.y0, cell.y1 = math.min(cell.y0, old.natRegion[5]), math.max(cell.y1, old.natRegion[6])
+		for lod = 1, 3 do
+			dropCell(old, lod)
+		end
+	end
 	cells[sv.Name] = cell
 end
 
-local function dropCell(cell, lod)
-	local f = cell.built[lod]
-	if f then
-		Detail.instances -= f:GetAttribute("N") or 0
-		f:Destroy()
-		cell.built[lod] = nil
+-- cells over terrain regions get ground cover, scattered when the camera first comes near
+local function addNatureCells(regions)
+	local CELL = Wear.CELL
+	for _, r in regions do
+		if type(r) == "table" and #r >= 6 then
+			for cx = math.floor(r[1] / CELL), math.floor(r[3] / CELL) do
+				for cz = math.floor(r[2] / CELL), math.floor(r[4] / CELL) do
+					local key = cx .. "_" .. cz
+					local cell = cells[key]
+					if not cell then
+						cell = { key = key, center = Vector3.new(cx * CELL + HALF, 0, cz * CELL + HALF), byLod = { {}, {}, {} }, built = {}, y0 = r[5], y1 = r[6], under = false }
+						cells[key] = cell
+					else
+						cell.y0, cell.y1 = math.min(cell.y0, r[5]), math.max(cell.y1, r[6])
+					end
+					cell.cx, cell.cz, cell.natRegion, cell.natPending = cx, cz, r, true
+				end
+			end
+		end
 	end
 end
 
@@ -180,10 +275,15 @@ local function refresh()
 	-- tunnels and the surface hide each other: underground cells only while the camera is underground, and only
 	-- the surface right around a stairwell while it is
 	local camUnder = camPos.Y < -1
+	local reach = rings and (rings[1] + 40) or 0
+	local gen = {}
 	for _, cell in cells do
 		local d = cellDist(cell, camPos)
 		if cell.under ~= camUnder then
 			d = (cell.under or d > 40) and math.huge or d
+		end
+		if cell.natPending and d < reach and os.clock() >= (cell.natRetry or 0) then
+			table.insert(gen, { cell = cell, d = d })
 		end
 		for lod = 1, 3 do
 			local r = rings and rings[lod]
@@ -205,6 +305,24 @@ local function refresh()
 		end
 	end
 	Detail.cells = built
+	-- ground cover for the nearest pending cells (a couple per pass; they build on the next pass)
+	table.sort(gen, function(a, b)
+		return a.d < b.d
+	end)
+	for i = 1, math.min(2, #gen) do
+		local cell = gen[i].cell
+		local ok, added = genNature(cell)
+		if ok then
+			cell.natPending = false
+			Detail.natureCells = (Detail.natureCells or 0) + 1
+			Detail.natureItems = (Detail.natureItems or 0) + added
+			for lod = 1, 3 do
+				dropCell(cell, lod) -- rebuild with the cover included
+			end
+		else
+			cell.natRetry = os.clock() + 2 -- terrain not streamed in yet
+		end
+	end
 	-- nearest jobs first; drop jobs whose folder was torn down
 	local keep = {}
 	for _, j in queue do
@@ -246,6 +364,29 @@ local function work()
 		end
 	end
 	Detail.pending = #queue
+end
+
+-- ── M13 tree shadows: forest trees arrive without shadows (thousands of casters would sink the frame rate);
+-- the trees near the camera cast them, the radius set by the graphics level ─────────────────────────────────
+local TREE_SHADOW = { [3] = 90, [2] = 55, [1] = 0, [0] = 0 }
+local trees = {} -- tagged trunks and crowns (streamed in and out)
+local shadowOn = {}
+local lastShadowPos = nil
+local function treeShadows(camPos, force)
+	if not force and lastShadowPos and (camPos - lastShadowPos).Magnitude < 6 then
+		return
+	end
+	lastShadowPos = camPos
+	local r = TREE_SHADOW[Detail.level] or 0
+	local r2 = r * r
+	for p in trees do
+		local d = p.Position - camPos
+		local want = r > 0 and (d.X * d.X + d.Z * d.Z) < r2
+		if want ~= (shadowOn[p] == true) then
+			p.CastShadow = want
+			shadowOn[p] = want or nil
+		end
+	end
 end
 
 -- ── potato: plain materials, no shadows, no cloud layer (local only, reversible) ───
@@ -304,16 +445,25 @@ function Detail.setLevel(level)
 	Detail.level = level
 	Detail.applied = true
 	clearAll()
+	local cam = workspace.CurrentCamera
+	if cam then
+		treeShadows(cam.CFrame.Position, true)
+	end
 	if level == 0 then
 		setPotato(true)
 	elseif wasPotato then
 		setPotato(false)
 	end
+	-- the cloud layer is sky dressing only: LOW and POTATO go without it
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	if clouds then
+		clouds.Enabled = level >= 2
+	end
 	refresh()
 end
 
 function Detail.stats()
-	return { level = Detail.level, instances = Detail.instances, cells = Detail.cells, pending = Detail.pending, planCells = (function()
+	return { level = Detail.level, instances = Detail.instances, cells = Detail.cells, pending = Detail.pending, natureCells = Detail.natureCells or 0, natureItems = Detail.natureItems or 0, planCells = (function()
 		local n = 0
 		for _ in cells do
 			n += 1
@@ -336,6 +486,10 @@ function Detail.init(c)
 				for _, sv in pf:GetChildren() do
 					loadCell(sv)
 				end
+				local okN, regions = pcall(HttpService.JSONDecode, HttpService, pf:GetAttribute("Nature") or "[]")
+				if okN and type(regions) == "table" then
+					addNatureCells(regions)
+				end
 				pf.ChildAdded:Connect(loadCell)
 				refresh()
 				-- a new plan (another map) replaces the folder
@@ -343,6 +497,18 @@ function Detail.init(c)
 			end
 			pf = ReplicatedStorage:WaitForChild("ZR_DetailPlan", 300)
 		end
+	end)
+	-- forest trees (streamed in and out)
+	for _, p in CollectionService:GetTagged("ZR_TreeShadow") do
+		trees[p] = true
+	end
+	CollectionService:GetInstanceAddedSignal("ZR_TreeShadow"):Connect(function(p)
+		trees[p] = true
+		lastShadowPos = nil
+	end)
+	CollectionService:GetInstanceRemovedSignal("ZR_TreeShadow"):Connect(function(p)
+		trees[p] = nil
+		shadowOn[p] = nil
 	end)
 	-- potato also has to catch the world folder if it arrives after the setting
 	workspace.ChildAdded:Connect(function(ch)
@@ -366,6 +532,10 @@ function Detail.init(c)
 		if acc >= 0.4 then
 			acc = 0
 			refresh()
+			local cam = workspace.CurrentCamera
+			if cam then
+				treeShadows(cam.CFrame.Position, false)
+			end
 		end
 		if #queue > 0 then
 			work()

@@ -23,12 +23,13 @@ local rng = Random.new()
 
 local worldRay = RaycastParams.new()
 worldRay.FilterType = Enum.RaycastFilterType.Include
+worldRay.IgnoreWater = true
 local losRay = RaycastParams.new()
 losRay.FilterType = Enum.RaycastFilterType.Exclude
 
 local function setWorld()
 	local w = workspace:FindFirstChild("ZR_World")
-	worldRay.FilterDescendantsInstances = { w }
+	worldRay.FilterDescendantsInstances = { workspace.Terrain, w } -- terrain maps bounce grenades off the ground
 	return w ~= nil
 end
 

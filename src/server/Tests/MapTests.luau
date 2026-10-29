@@ -24,7 +24,10 @@ function T.run(ctx)
 	local models = W.mapModels()
 	local rp = RaycastParams.new()
 	rp.FilterType = Enum.RaycastFilterType.Include
-	rp.FilterDescendantsInstances = models
+	local solid = table.clone(models)
+	table.insert(solid, workspace.Terrain) -- terrain maps stand on terrain
+	rp.FilterDescendantsInstances = solid
+	rp.IgnoreWater = true
 	local op = OverlapParams.new()
 	op.FilterType = Enum.RaycastFilterType.Include
 	op.FilterDescendantsInstances = models
@@ -111,7 +114,12 @@ function T.run(ctx)
 			badC = c.id
 		end
 	end
-	check("M05 containers live on every map", badC == nil and (perMap.quay7 or 0) >= 10 and (perMap.smelter or 0) >= 10, (perMap.quay7 or 0) .. "/" .. (perMap.smelter or 0))
+	local counts, fewC = {}, false
+	for _, id in Maps.order do
+		table.insert(counts, id .. "=" .. (perMap[id] or 0))
+		fewC = fewC or (perMap[id] or 0) < 10
+	end
+	check("M05 containers live on every map", badC == nil and not fewC, (badC or "") .. " " .. table.concat(counts, " "))
 	local badD = nil
 	for id, d in W.doors do
 		if not (d.part and d.prompt and d.map) then
@@ -184,7 +192,12 @@ function T.run(ctx)
 			end
 		end
 	end
-	check("M08 AI cover on every map", (found.quay7 or 0) > 300 and (found.smelter or 0) > 150, (found.quay7 or 0) .. "/" .. (found.smelter or 0))
+	local coverInfo, fewCover = {}, false
+	for _, id in Maps.order do
+		table.insert(coverInfo, id .. "=" .. (found[id] or 0))
+		fewCover = fewCover or (found[id] or 0) < ((id == "quay7") and 300 or 150)
+	end
+	check("M08 AI cover on every map", not fewCover, table.concat(coverInfo, " "))
 	local pf = ReplicatedStorage:FindFirstChild("ZR_DetailPlan")
 	local cellsOn = {}
 	for _, sv in pf and pf:GetChildren() or {} do
@@ -197,7 +210,54 @@ function T.run(ctx)
 			end
 		end
 	end
-	check("M09 the detail plan covers every map", (cellsOn.quay7 or 0) > 20 and (cellsOn.smelter or 0) > 10, (cellsOn.quay7 or 0) .. "/" .. (cellsOn.smelter or 0))
+	local cellInfo, fewCells = {}, false
+	for _, id in Maps.order do
+		table.insert(cellInfo, id .. "=" .. (cellsOn[id] or 0))
+		fewCells = fewCells or (cellsOn[id] or 0) < ((id == "quay7") and 20 or 10)
+	end
+	check("M09 the detail plan covers every map", not fewCells, table.concat(cellInfo, " "))
+
+	-- M10 terrain maps: the ground is terrain under every spawn and exfil, the lake holds water, foliage hides
+	local pw = W.maps.pinewatch
+	if pw then
+		local tp = RaycastParams.new()
+		tp.FilterType = Enum.RaycastFilterType.Include
+		tp.FilterDescendantsInstances = { workspace.Terrain }
+		local onTerrain = 0
+		for _, s in pw.spawns do
+			local hit = workspace:Raycast(s.cf.Position + Vector3.new(0, 2, 0), Vector3.new(0, -10, 0), tp)
+			if hit and hit.Normal.Y > 0.75 then
+				onTerrain += 1
+			end
+		end
+		check("M10 Pinewatch spawns stand on gentle terrain", onTerrain == #pw.spawns, onTerrain .. "/" .. #pw.spawns)
+		local wet = workspace:Raycast(Vector3.new(100, 20, 1960), Vector3.new(0, -40, 0), tp)
+		check("M10 the lake holds water", wet ~= nil and wet.Material == Enum.Material.Water and math.abs(wet.Position.Y) < 0.6, wet and (tostring(wet.Material) .. " " .. string.format("%.1f", wet.Position.Y)))
+		check("M10 bushes and young pines registered as foliage", W.foliage.n > 150, W.foliage.n)
+		-- a sight line through the middle of a registered bush is blocked; the same line lifted above it is not
+		local item
+		for _, list in W.foliage.cells do
+			item = list[1]
+			if item then
+				break
+			end
+		end
+		if item then
+			local y = (item.y0 + item.y1) / 2
+			local a, b = Vector3.new(item.x - 30, y, item.z), Vector3.new(item.x + 30, y, item.z)
+			local up = item.y1 + 3
+			check("M10 foliage blocks AI sight through it, not over it", W.foliageBetween(a, b) and not W.foliageBetween(Vector3.new(a.X, up, a.Z), Vector3.new(b.X, up, b.Z)))
+		end
+		local trunks, crownsQuiet = 0, true
+		for _, d in pw.model:GetDescendants() do
+			if d.Name == "Trunk" then
+				trunks += 1
+			elseif d.Name == "Crown" or d.Name == "Bush" then
+				crownsQuiet = crownsQuiet and not d.CanCollide and not d.CanQuery
+			end
+		end
+		check("M10 the forest stands (solid trunks, crowns and bushes pass shots)", trunks > 600 and crownsQuiet, trunks)
+	end
 
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then

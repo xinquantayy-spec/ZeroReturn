@@ -64,6 +64,77 @@ function World.mapModels()
 	end
 	return out
 end
+
+-- M13 concealing foliage (bushes, young pines on terrain maps). The meshes take no collisions and no queries, so
+-- shots and grenades pass through, but they hide what is behind or inside them: players see that on screen and the
+-- AI asks World.foliageBetween. Each piece is a vertical cylinder (centre, radius, height range) kept in 16-stud
+-- cells.
+local FCELL = 16
+World.foliage = { cells = {}, n = 0 }
+function World.addFoliage(pos, r, y0, y1)
+	local f = World.foliage
+	local item = { x = pos.X, z = pos.Z, r = r, y0 = y0, y1 = y1 }
+	for cx = math.floor((pos.X - r) / FCELL), math.floor((pos.X + r) / FCELL) do
+		for cz = math.floor((pos.Z - r) / FCELL), math.floor((pos.Z + r) / FCELL) do
+			local k = cx .. "," .. cz
+			local list = f.cells[k]
+			if not list then
+				list = {}
+				f.cells[k] = list
+			end
+			table.insert(list, item)
+		end
+	end
+	f.n += 1
+	return item
+end
+-- does the sight line a -> b pass through foliage? (a viewer standing inside a bush still sees out of it)
+function World.foliageBetween(a, b)
+	local f = World.foliage
+	if f.n == 0 then
+		return false
+	end
+	local dx, dz = b.X - a.X, b.Z - a.Z
+	local len = math.sqrt(dx * dx + dz * dz)
+	local steps = math.max(1, math.ceil(len / (FCELL / 2)))
+	local seen = {}
+	for i = 0, steps do
+		local t = i / steps
+		local k = math.floor((a.X + dx * t) / FCELL) .. "," .. math.floor((a.Z + dz * t) / FCELL)
+		if not seen[k] then
+			seen[k] = true
+			for _, it in f.cells[k] or {} do
+				if seen[it] then
+					continue
+				end
+				seen[it] = true
+				local ox, oz = a.X - it.x, a.Z - it.z
+				local cc = ox * ox + oz * oz - it.r * it.r
+				if cc <= 0 then
+					continue -- the viewer is inside this one
+				end
+				-- where does the line enter and leave the circle (t in 0..1)?
+				local qa = dx * dx + dz * dz
+				if qa < 1e-6 then
+					continue
+				end
+				local qb = 2 * (ox * dx + oz * dz)
+				local disc = qb * qb - 4 * qa * cc
+				if disc > 0 then
+					local sq = math.sqrt(disc)
+					local t0, t1 = math.max(0, (-qb - sq) / (2 * qa)), math.min(1, (-qb + sq) / (2 * qa))
+					if t0 < t1 then
+						local y0, y1 = a.Y + (b.Y - a.Y) * t0, a.Y + (b.Y - a.Y) * t1
+						if math.max(y0, y1) >= it.y0 and math.min(y0, y1) <= it.y1 then
+							return true
+						end
+					end
+				end
+			end
+		end
+	end
+	return false
+end
 local rng = Random.new(707)
 local M = Enum.Material
 local function hex(h)
@@ -1082,7 +1153,7 @@ function World.kit()
 		World = World, root = root, C = C, M = M, hex = hex, rng = rng, Props = Props,
 		part = part, box = box, boxCF = boxCF, cyl = cyl, vcyl = vcyl, model = model, jitter = jitter, light = light,
 		sign = sign, mesh = mesh, wall = wall, wallHoles = wallHoles, loose = loose,
-		container = addContainerSpot, extract = addExtract,
+		container = addContainerSpot, extract = addExtract, foliage = World.addFoliage,
 	}
 end
 
@@ -1099,6 +1170,8 @@ function World.build()
 	end
 	root = Instance.new("Folder")
 	root.Name = "ZR_World"
+	World.foliage = { cells = {}, n = 0 }
+	World.natureRegions = {} -- terrain areas that get client ground cover (M13): { x0, z0, x1, z1, yMin, yMax }
 	local trig = Instance.new("Folder")
 	trig.Name = "Triggers"
 	trig.Parent = root
@@ -1167,10 +1240,43 @@ function World.build()
 	-- the area the AI samples for cover points, and the floor heights it keeps
 	World.bounds = { x0 = -192, x1 = 192, z0 = -192, z1 = 192, yMin = -2, yMax = 16 }
 	endMap("quay7", map)
-	-- M13: Smelter (factory-type), built at its own origin by its own module
-	beginMap("smelter")
-	local smelter = require(script.Parent.Parent.Maps.Smelter)(World.kit(), root)
-	endMap("smelter", smelter)
+	-- M13: the other maps, each built at its own origin by its own module (src/server/Maps). A module that fails is
+	-- left out (logged, its half-built parts removed) so the server still starts with the maps that did build.
+	local function moduleMap(id, moduleName)
+		local trig = #root.Triggers:GetChildren()
+		beginMap(id)
+		local t0 = os.clock()
+		local ok, res = pcall(function()
+			return require(script.Parent.Parent.Maps[moduleName])(World.kit(), root)
+		end)
+		if ok and res then
+			endMap(id, res)
+			print(string.format("[ZR] map %s built in %.2fs", id, os.clock() - t0))
+			return
+		end
+		warn("[ZR] map " .. id .. " failed to build: " .. tostring(res))
+		local partial = root:FindFirstChild(moduleName)
+		if partial then
+			partial:Destroy()
+		end
+		for i = #World.containers, 1, -1 do
+			if World.containers[i].map == id then
+				table.remove(World.containers, i)
+			end
+		end
+		for did, d in World.doors do
+			if d.map == nil then
+				World.doors[did] = nil
+			end
+		end
+		local kids = root.Triggers:GetChildren()
+		for i = trig + 1, #kids do
+			kids[i]:Destroy()
+		end
+		currentMap = nil
+	end
+	moduleMap("smelter", "Smelter")
+	moduleMap("pinewatch", "Pinewatch")
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
 	for _, d in World.doors do
 		local slab = Instance.new("Part")

@@ -72,6 +72,7 @@ local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Exclude
 local worldParams = RaycastParams.new()
 worldParams.FilterType = Enum.RaycastFilterType.Include
+worldParams.IgnoreWater = true -- terrain maps (M13): hills and ground count, lake water does not
 
 local function now()
 	return os.clock()
@@ -191,22 +192,27 @@ local function buildCover()
 		warn("[ZR] AI: no map for cover")
 		return
 	end
-	worldParams.FilterDescendantsInstances = models
+	-- terrain maps (Pinewatch): the ground and hills are terrain, so sight and cover rays take it too
+	local solid = table.clone(models)
+	table.insert(solid, workspace.Terrain)
+	worldParams.FilterDescendantsInstances = solid
 	local op = OverlapParams.new()
 	op.FilterType = Enum.RaycastFilterType.Include
 	op.FilterDescendantsInstances = models
 	local count = 0
-	-- every map has its own area and floor range (Quay 7: yard to mezzanine; Smelter: tunnels to catwalks)
+	-- every map has its own area, floor range and sample step (Quay 7: yard to mezzanine; Smelter: tunnels to
+	-- catwalks; Pinewatch: a big open map, sampled more coarsely)
 	for _, m in ctx.World.maps do
 		local b = m.bounds
 		if not b then
 			continue
 		end
-		for x = b.x0, b.x1, 3 do
-			for z = b.z0, b.z1, 3 do
+		local step = b.step or 3
+		for x = b.x0, b.x1, step do
+			for z = b.z0, b.z1, step do
 				-- every walkable level at this spot (yard, building floors under roofs, catwalks, tunnels)
 				local floors = {}
-				local y = 60
+				local y = math.max(60, b.yMax + 20)
 				for _ = 1, 6 do
 					local hit = workspace:Raycast(Vector3.new(x, y, z), Vector3.new(0, -(y - b.yMin + 10), 0), worldParams)
 					if not hit then
@@ -324,6 +330,12 @@ local function exposure(model)
 		f *= 0.7
 	elseif st == "p" then
 		f *= 0.45
+		-- lying in grass (terrain maps) hides most of a body
+		local hum = model:FindFirstChildOfClass("Humanoid")
+		local fm = hum and hum.FloorMaterial
+		if fm == Enum.Material.Grass or fm == Enum.Material.LeafyGrass then
+			f *= 0.6
+		end
 	end
 	local root = model:FindFirstChild("HumanoidRootPart")
 	local v = root and flat(root.AssemblyLinearVelocity).Magnitude or 0
@@ -360,9 +372,13 @@ local function visiblePart(u, model, eye)
 	params.FilterDescendantsInstances = ignoreFor(u)
 	local G = ctx.Grenades
 	local smoke = G ~= nil and #G.smokes > 0
+	-- M13 bushes and young pines take no shots (no queries) but hide what is behind or inside them; right up close
+	-- the movement still gives you away
+	local W = ctx.World
+	local leafy = W.foliage ~= nil and W.foliage.n > 0
 	for _, name in { "Head", "UpperTorso", "LowerTorso" } do
 		local p = model:FindFirstChild(name)
-		if p and not (smoke and G.smokeBetween(eye, p.Position)) then
+		if p and not (smoke and G.smokeBetween(eye, p.Position)) and not (leafy and (p.Position - eye).Magnitude > 6 and W.foliageBetween(eye, p.Position)) then
 			local r = workspace:Raycast(eye, p.Position - eye, params)
 			if r == nil or r.Instance:IsDescendantOf(model) then
 				return p
@@ -1927,11 +1943,11 @@ function AI.reset()
 			local route = W.patrols[wp.route]
 			if route then
 				local idx = math.random(1, #route)
-				AI.spawn("watch", wp.post or route[idx], { route = (not wp.post) and route or nil, wp = idx, post = wp.post })
+				AI.spawn("watch", wp.post or route[idx], { route = (not wp.post) and route or nil, wp = idx, post = wp.post, label = wp.label, name = wp.label })
 			end
 		end
 		if bossRaid and W.boss then
-			local boss = AI.spawn("boss", W.boss.home, { route = W.boss.route, wp = 1, label = "Foreman" })
+			local boss = AI.spawn("boss", W.boss.home, { route = W.boss.route, wp = 1, label = W.boss.label or "Foreman", name = W.boss.label })
 			for i, p in W.boss.crew or {} do
 				if myGen ~= gen then
 					return
