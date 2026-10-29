@@ -8,6 +8,23 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M14 Weapon modding and guns as parts (2026-10-29)
+
+Studio on the owner's T490 laptop, one client. Design and fidelity check: `docs/weapons/WEAPON_MODDING.md`.
+
+| Test | Method | Result |
+|---|---|---|
+| Suites | `ZR_Dev:Invoke("tests")` | **LogicTests 184/184, CharTests 38/38, LookTests 19/19, MapTests 32/32.** |
+| Modding rules | LogicTests M14 block (32 checks) | Pass. Starter rifle is a full default build (5x2); a 9 mm suppressor is refused on the 6.2 barrel (WRONG_FIT); a rail optic is refused on the pistol (NO_SLOT); the 6.2 suppressor swaps the flash hider to the stash and makes the rifle 6x2; reflex then 4x scope swap; stats (suppressed, 4x, quieter, less recoil); quad rail replaces the carbine handguard; a light dropped on the equipped gun lands on the rail; the free-float handguard is refused over the front-sight gas block (CONFLICT); barrel off with its parts makes the gun inoperable and lighter; a barrel with a suppressor is bigger than the bare barrel; the whole build moves as one bundle; a magazine dropped on the holster loads it; presets arrive as builds; tube capacity comes from the tube; in raid a pistol grip is locked without a multitool (detach and drag both refused), a flash hider is not, and with a multitool the grip comes off. |
+| Asset loading | Server log | Pass. "792 meshes loaded, 0 batches failed": the seven gun batches add 187 pieces. |
+| 2D pictures | Every preset drawn large through `UiKit.gunPicture`; stash capture | Pass. Each preset shows its own parts (R-17 patrol, marksman and close-quarters builds, KS-7 tactical and quiet, Harrow tactical, SMG-9 tactical, P-9 tactical, Tundra marksman and scout). A stripped rifle keeps 5x2 (standard magazine outline); a marksman build is 6x2. |
+| First person | Raid on `quay7` with the R-17 patrol build | Pass. The viewmodel is built from the 14 part meshes plus the magazine; hip and aimed views; the RS-1 reflex dot sits on the bore line. |
+| Third person | Orbit camera | Pass. The character holds the same build (quad rail, vertical grip, flash hider). |
+| Loose loot | Raid on `quay7` | Pass for magazines (built from their part meshes); no loose gun or part rolled in the checked raid. |
+| Modding screen | `ZR_ClientDev modding` on the R-17 marksman build | Pass. 3D gun, slot boxes with leader lines, stats (ergonomics 45, recoil 72/26, 10 MOA, 800 m, 942 m/s, 650 RPM, 4.42 kg, 6x2, 6x, loud, ready to fire). Dark polymer parts now use their sprites; tiny parts keep their close-up renders. |
+| Console | Output | No ZR errors. |
+| Not verified | – | Phones, two clients, trader preset rows on screen, every part fitted by hand in the modding screen. |
+
 ## M13 Item pictures and loose loot models (2026-10-29)
 
 Studio on the owner's T490 laptop, one client. Pipeline and details: `docs/items/ITEM_ART.md`. Captures: `docs/items/evidence/I01`–`I07`.

@@ -16,6 +16,8 @@ local Weapons = require(Shared.Weapons)
 local Sounds = require(Shared.Sounds)
 local Textures = require(Shared.Textures)
 local WeaponModels = require(Shared.WeaponModels)
+local WP = require(Shared.WeaponParts)
+local GunBuild = require(Shared.GunBuild)
 local Equipment = require(Shared.Equipment)
 local RigSpec = require(Shared.RigSpec)
 
@@ -48,7 +50,6 @@ local POUCH = CFrame.new(-0.14, -0.98, -0.28) -- camera space, off-screen (rig p
 local BELT = CFrame.new(0.06, -0.95, -0.3) -- camera space, off-screen (shells)
 local SLOT_KEYS = { Primary = "primary", Secondary = "secondary", Sidearm = "holster", Knife = "melee" }
 local CYCLE = { "primary", "secondary", "holster", "melee" }
-local MOUNTS = { "rail", "muzzle", "under", "side" }
 local SLASH_TIME = 0.5
 
 -- camera-space grip poses per weapon kind
@@ -194,10 +195,10 @@ end
 local function vmKey(it, g)
 	local look, variant = myLook()
 	local me = Players.LocalPlayer.Character
-	local k = { g, it.mag and "M" or "-", look .. variant, tostring(me and me:GetAttribute("AppearanceRev") or 0), tostring(me) }
-	for _, mount in MOUNTS do
-		k[#k + 1] = (it.mods and it.mods[mount]) or "-"
-	end
+	local items = ctx.State.data and ctx.State.data.items or {}
+	-- the build (M14) and whether its part meshes have loaded (the gun is rebuilt from Blender parts when they do)
+	local k = { g, it.mag and "M" or "-", look .. variant, tostring(me and me:GetAttribute("AppearanceRev") or 0), tostring(me),
+		WP.signature(items, g), GunBuild.ready(items, g) and "mesh" or "spec" }
 	return table.concat(k, "|")
 end
 
@@ -667,6 +668,15 @@ local function fireOnce()
 	if t - Weapon.lastShot < 60 / def.rpm then
 		return
 	end
+	-- M14: a gun missing a required part does not fire (the server refuses the shot too)
+	if o.ms.operable == false then
+		if not dryLatch then
+			dryLatch = true
+			ctx.Effects.sound(Sounds.DRY_FIRE, SoundService, 0.6)
+			ctx.State.toast("WEAPON IS MISSING PARTS", "warn")
+		end
+		return
+	end
 	if Weapon.ammo <= 0 then
 		if not dryLatch then
 			dryLatch = true
@@ -684,7 +694,7 @@ local function fireOnce()
 	local M = ctx.Movement
 	local crouch = M and M.crouching
 	local camCF = ctx.Camera.aimCFrame or cam.CFrame -- free look does not move the weapon
-	local spread = Weapon.aiming and def.aimSpread or def.hipSpread
+	local spread = (Weapon.aiming and def.aimSpread or def.hipSpread) * (Weapon.aiming and (o.ms.acc or 1) or 1)
 	if ctx.Camera.speed > 2 then
 		spread += def.moveSpread * (Weapon.aiming and 0.35 or 1)
 	end
@@ -1194,11 +1204,7 @@ local function onSnapshot()
 	end
 	Weapon.melee = def.melee == true
 	Weapon.slot = d.active
-	local mass = Items.defs[it.id].mass or 3
-	for _, mg in it.mods or {} do
-		local mi = d.items[mg]
-		mass += mi and Items.defs[mi.id] and Items.defs[mi.id].mass or 0
-	end
+	local mass = (Items.defs[it.id].mass or 3) + WP.sum(d.items, g).mass
 	Weapon.mass = mass
 	Weapon.weaponName = string.upper(Items.defs[it.id].name)
 	Weapon.modeName = def.modes[Weapon.mode] or def.modes[1]

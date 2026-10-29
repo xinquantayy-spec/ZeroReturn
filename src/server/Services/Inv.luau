@@ -1,12 +1,14 @@
 --!strict
 -- Inventory 2.0 (pure, no yields): Tarkov-style equipment slots, nested container grids, magazines in weapons.
 -- holder = {
---   items = { [guid] = item },   item = { id, n, a?(rounds), at?(ammo id), mag?(guid), dur?, uses?, hp?, fir?, fip?, rk? }
+--   items = { [guid] = item },   item = { id, n, a?(rounds), at?(ammo id), mag?(guid), dur?, uses?, hp?, fir?, fip?, rk?,
+--                                        mods?(slot -> part guid), sz?({ w, h }: a build's grid size, M14) }
 --   grids = { [cid] = { [guid] = { x, y, r } } },   cid = "stash" | "pockets" | "main" | <container item guid>
 --   slots = { [slot] = guid },   mainW?, mainH?  (world boxes / ground piles)
 --   erev?  equipment revision: bumped on every slot change (stale equip requests are refused, M16)
 -- }
--- Invariant: every item has exactly one location: a grid placement, a slot, or a weapon's magazine well.
+-- Invariant: every item has exactly one location: a grid placement, a slot, a weapon's magazine well, or a slot
+-- of a weapon part (M14 builds: a weapon base holds parts, parts hold parts; see WeaponParts).
 local RS = game:GetService("ReplicatedStorage")
 local Shared = RS:WaitForChild("ZR")
 local Items = require(Shared.Items)
@@ -14,12 +16,26 @@ local Grid = require(Shared.Grid)
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
 local Equipment = require(Shared.Equipment)
+local WP = require(Shared.WeaponParts)
 
 local Inv = {}
 local defs = Items.defs
 local SLOTS = Items.SLOTS
 local BUILTIN = { stash = true, pockets = true, main = true }
 Inv.BUILTIN = BUILTIN
+
+-- grid size of an item as it lies: a build takes the size of its parts (it.sz), anything else its definition's
+function Inv.sizeOf(it: any): (number, number)
+	local sz = it and it.sz
+	if sz then
+		return sz[1], sz[2]
+	end
+	local d = it and defs[it.id]
+	if not d then
+		return 1, 1
+	end
+	return d.w, d.h
+end
 
 function Inv.newHolder(kind: string?, w: number?, h: number?): any
 	if kind == "box" then
@@ -34,14 +50,10 @@ end
 
 local function sizer(h: any)
 	return function(g: string): (number, number)
-		local it = h.items[g]
-		local d = it and defs[it.id]
-		if not d then
-			return 1, 1
-		end
-		return d.w, d.h
+		return Inv.sizeOf(h.items[g])
 	end
 end
+Inv.sizer = sizer
 
 function Inv.dims(h: any, cid: string): (number, number)
 	if cid == "stash" then
@@ -146,6 +158,7 @@ function Inv.descendants(h: any, g: string, out: { string }?): { string }
 		for _, mg in it.mods do
 			if h.items[mg] then
 				table.insert(list, mg)
+				Inv.descendants(h, mg, list) -- parts hold parts (M14)
 			end
 		end
 	end
@@ -167,6 +180,47 @@ local function setSlot(h: any, slot: string, g: string?)
 end
 Inv.setSlot = setSlot
 
+-- the root of the build g is on (follows magazine wells and part slots only, not containers)
+function Inv.buildRoot(h: any, g: string): string
+	local cur = g
+	for _ = 1, 32 do
+		local k, a = Inv.locate(h, cur)
+		if k ~= "mod" and k ~= "mag" then
+			return cur
+		end
+		cur = a
+	end
+	return cur
+end
+
+-- recompute a build's grid size (it.sz) from its parts; plain items keep their definition's size
+local function measure(h: any, g: string)
+	local it = h.items[g]
+	if not it then
+		return
+	end
+	if WP.measured(it) then
+		local d = defs[it.id]
+		local w, hh = WP.buildSize(h.items, g, d.w, d.h)
+		if w and hh and (w ~= d.w or hh ~= d.h) then
+			it.sz = { w, hh }
+		else
+			it.sz = nil
+		end
+	else
+		it.sz = nil
+	end
+end
+
+-- after a build changed: the item itself and the root of the build it is on
+function Inv.resize(h: any, g: string)
+	measure(h, g)
+	local root = Inv.buildRoot(h, g)
+	if root ~= g then
+		measure(h, root)
+	end
+end
+
 local function detach(h: any, g: string)
 	local k, a, b = Inv.locate(h, g)
 	if k == "grid" then
@@ -175,11 +229,14 @@ local function detach(h: any, g: string)
 		setSlot(h, a, nil)
 	elseif k == "mag" then
 		h.items[a].mag = nil
+		Inv.resize(h, a)
 	elseif k == "mod" then
 		h.items[a].mods[b] = nil
 		if next(h.items[a].mods) == nil then
 			h.items[a].mods = nil
 		end
+		Inv.resize(h, a)
+		measure(h, g)
 	end
 end
 Inv.detach = detach
@@ -213,7 +270,8 @@ function Inv.canEnter(h: any, g: string, cid: string): (boolean, string?)
 	if d.kind == "secure" and cid ~= "stash" then
 		return false, "SECURE_RESTRICTED"
 	end
-	if cid == "pockets" and d.w * d.h > 1 then
+	local iw, ih = Inv.sizeOf(it)
+	if cid == "pockets" and iw * ih > 1 then
 		return false, "TOO_BIG"
 	end
 	if not BUILTIN[cid] then
@@ -321,13 +379,29 @@ function Inv.insertMag(h: any, mg: string, wg: string): (boolean, string?)
 	local old = w.mag
 	detach(h, mg)
 	w.mag = mg
+	Inv.resize(h, wg)
+	-- a bigger magazine makes the gun taller (Tarkov): it must still fit where it lies
+	if not Inv.fitsWhereItLies(h, Inv.buildRoot(h, wg)) then
+		w.mag = old
+		Inv.resize(h, wg)
+		if k == "grid" and p then
+			h.grids[cid][mg] = p
+		end
+		return false, "NO_SPACE"
+	end
 	if old then
 		local od = defs[h.items[old].id]
-		if k == "grid" and p and od.w == md.w and od.h == md.h then
+		local ow, oh = Grid.dims(od.w, od.h, p and p.r or 0)
+		local cw, ch = 0, 0
+		if k == "grid" and p then
+			cw, ch = Inv.dims(h, cid)
+		end
+		if k == "grid" and p and od.w == md.w and od.h == md.h and Grid.fits(cw, ch, h.grids[cid], sizer(h), p.x, p.y, ow, oh, nil) then
 			h.grids[cid][old] = { x = p.x, y = p.y, r = p.r }
 		elseif not Inv.autoPlace(h, old, Inv.loadOrder(h)) then
 			-- undo: nowhere to put the old magazine
 			w.mag = old
+			Inv.resize(h, wg)
 			if k == "grid" and p then
 				h.grids[cid][mg] = p
 			end
@@ -335,6 +409,18 @@ function Inv.insertMag(h: any, mg: string, wg: string): (boolean, string?)
 		end
 	end
 	return true, nil
+end
+
+-- does the item still fit at its grid placement (after its build grew)? Items in slots or attached always do.
+function Inv.fitsWhereItLies(h: any, g: string): boolean
+	local k, cid, p = Inv.locate(h, g)
+	if k ~= "grid" then
+		return true
+	end
+	local iw, ih = Inv.sizeOf(h.items[g])
+	local w, hh = Grid.dims(iw, ih, p.r)
+	local cw, ch = Inv.dims(h, cid)
+	return Grid.fits(cw, ch, h.grids[cid], sizer(h), p.x, p.y, w, hh, g)
 end
 
 -- Move an item within one holder. dest = { c = cid, x, y, r } | { slot = name }.
@@ -350,6 +436,9 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 	if opts and opts.inRaid and h.slots.secure == g then
 		return false, "SECURE_LOCKED"
 	end
+	if Inv.vitalLocked(h, g, opts) then
+		return false, "NEED_MULTITOOL"
+	end
 	local d = defs[it.id]
 	ensureGrid(h, g)
 	if dest.slot ~= nil then
@@ -361,7 +450,7 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 			if d.kind == "mag" and od.family and od.family == d.family then
 				return Inv.insertMag(h, g, occ)
 			elseif d.kind == "mod" then
-				return Inv.attachMod(h, occ, g, Inv.loadOrder(h))
+				return Inv.attachMod(h, occ, g, Inv.loadOrder(h), opts)
 			end
 		end
 		local okE, errE = Inv.canEquip(h, g, dest.slot)
@@ -393,8 +482,9 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 		if d.kind == "mag" and td.family and td.family == d.family and td.kind ~= "mag" then
 			return Inv.insertMag(h, g, target)
 		end
-		if d.kind == "mod" and td.weapon then
-			return Inv.attachMod(h, target, g, Inv.loadOrder(h))
+		if d.kind == "mod" and WP.SLOTS[t.id] then
+			-- a part dropped on a gun or a part goes into a free slot that takes it (Tarkov)
+			return Inv.attachMod(h, target, g, Inv.loadOrder(h), opts)
 		end
 		if td.grid and target ~= g then
 			return Inv.autoPlace(h, g, { target })
@@ -404,7 +494,8 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 	if not okC then
 		return false, errC
 	end
-	local w, hh = Grid.dims(d.w, d.h, r)
+	local iw, ih = Inv.sizeOf(it)
+	local w, hh = Grid.dims(iw, ih, r)
 	local cw, ch = Inv.dims(h, cid)
 	local k, a = Inv.locate(h, g)
 	local ignore = (k == "grid" and a == cid) and g or nil
@@ -462,7 +553,8 @@ function Inv.autoPlace(h: any, g: string, order: { string }): (boolean, string?)
 				local cw, ch = Inv.dims(h, cid)
 				local own = pl[g]
 				pl[g] = nil
-				local x, y, r = Grid.findFree(cw, ch, pl, sizer(h), d.w, d.h)
+				local iw, ih = Inv.sizeOf(it)
+				local x, y, r = Grid.findFree(cw, ch, pl, sizer(h), iw, ih)
 				if own then
 					pl[g] = own
 				end
@@ -479,15 +571,59 @@ function Inv.autoPlace(h: any, g: string, order: { string }): (boolean, string?)
 	return false, lastErr
 end
 
+-- M14: a new weapon base comes as a whole gun: its default build, or it.preset (a trader's or a kit's build).
+-- The preset's magazine is added (empty) only with it.presetMag; kits and starter loadouts add loaded ones.
+-- it.bare keeps a stripped receiver.
+function Inv.expandBuild(h: any, g: string)
+	local it = h.items[g]
+	if not it or not WP.isBase(it.id) or it.mods ~= nil or it.bare then
+		it.preset, it.presetMag = nil, nil
+		return
+	end
+	local pr = WP.META.presets[it.preset or it.id]
+	if not pr or pr.base ~= it.id then
+		pr = WP.META.presets[it.id]
+	end
+	local withMag = it.presetMag == true and it.mag == nil
+	it.preset, it.presetMag = nil, nil
+	if not pr then
+		return
+	end
+	local function grow(node: any, t: any)
+		for sname, sub in t[2] do
+			if sname == "mag" then
+				if withMag and node == it and defs[sub[1]] then
+					local mg, mag = Inv.newItem(sub[1], 1)
+					h.items[mg] = mag
+					it.mag = mg
+				end
+			elseif defs[sub[1]] then
+				local pg, part = Inv.newItem(sub[1], 1)
+				h.items[pg] = part
+				node.mods = node.mods or {}
+				node.mods[sname] = pg
+				grow(part, sub)
+			end
+		end
+	end
+	grow(it, pr.tree)
+	Inv.resize(h, g)
+end
+
 -- Add a new item record (not yet in h). Stacks merge first. Returns ok, info ("MERGED" when fully merged).
 function Inv.place(h: any, g: string, it: any, order: { string }): (boolean, string?)
 	if not defs[it.id] or h.items[g] then
 		return false, "BAD_ITEM"
 	end
 	h.items[g] = it
+	Inv.expandBuild(h, g)
 	local okP, err = Inv.autoPlace(h, g, order)
 	if not okP then
 		if h.items[g] then
+			for _, sg in Inv.descendants(h, g) do
+				h.items[sg] = nil
+				h.grids[sg] = nil
+			end
 			h.items[g] = nil
 			h.grids[g] = nil
 		end
@@ -503,8 +639,13 @@ end
 function Inv.placeSlot(h: any, g: string, it: any, slot: string): (boolean, string?)
 	h.items[g] = it
 	ensureGrid(h, g)
+	Inv.expandBuild(h, g)
 	local okE, err = Inv.canEquip(h, g, slot)
 	if not okE then
+		for _, sg in Inv.descendants(h, g) do
+			h.items[sg] = nil
+			h.grids[sg] = nil
+		end
 		h.items[g] = nil
 		h.grids[g] = nil
 		return false, err
@@ -549,6 +690,8 @@ local function insertBundle(h: any, b: any)
 			h.grids[s.a][s.g] = { x = s.b.x, y = s.b.y, r = s.b.r }
 		end
 	end
+	-- a build that lost parts on the way (insurance returns) takes its new size
+	measure(h, b.g)
 end
 
 local function removeBundle(h: any, b: any)
@@ -571,9 +714,11 @@ function Inv.restore(h: any, b: any)
 		setSlot(h, f.a, b.g)
 	elseif f.k == "mag" and h.items[f.a] then
 		h.items[f.a].mag = b.g
+		Inv.resize(h, f.a)
 	elseif f.k == "mod" and h.items[f.a] then
 		h.items[f.a].mods = h.items[f.a].mods or {}
 		h.items[f.a].mods[f.b] = b.g
+		Inv.resize(h, f.a)
 	end
 end
 
@@ -614,6 +759,9 @@ function Inv.transfer(src: any, g: string, dst: any, dest: any?, order: { string
 	end
 	if opts and opts.inRaid and src.slots.secure == g then
 		return false, "SECURE_LOCKED"
+	end
+	if Inv.vitalLocked(src, g, opts) then
+		return false, "NEED_MULTITOOL"
 	end
 	local d = defs[it.id]
 	if dest and dest.c and d.stack > 1 and dst.grids[dest.c] and Grid.isInt(dest.x) and Grid.isInt(dest.y) then
@@ -709,93 +857,205 @@ function Inv.weight(h: any, guids: { string }?): number
 	return m
 end
 
--- ── weapon attachments ────────────────────────────────────────────────────────
-local Weapons = require(Shared.Weapons)
-
-function Inv.canMod(h: any, wg: string, mg: string): (boolean, string?)
-	local w, m = h.items[wg], h.items[mg]
-	local wd, md = w and defs[w.id], m and defs[m.id]
-	if not wd or not md or not md.mod or not wd.weapon then
-		return false, "INCOMPATIBLE"
-	end
-	local spec = Weapons[wd.weapon]
-	local slots = spec and spec.slots or {}
-	local slotOk = slots[md.mod.slot]
-	if not slotOk then
-		return false, "NO_MOUNT"
-	end
-	if md.mod.caliber and slotOk ~= true and slotOk ~= md.mod.caliber then
-		return false, "WRONG_CALIBER"
-	end
-	return true, nil
+-- ── weapon parts (M14, Tarkov-style modding; docs/weapons/WEAPON_MODDING.md) ──────────────────────
+local function isVital(id: string?): boolean
+	local p = id and WP.parts[id]
+	return p ~= nil and WP.CATS[p.cat] ~= nil and WP.CATS[p.cat].group == "vital"
 end
+Inv.isVital = isVital
 
--- Install attachment mg on weapon wg (an occupied mount swaps: the old attachment is auto-placed).
-function Inv.attachMod(h: any, wg: string, mg: string, order: { string }): (boolean, string?)
-	local okM, err = Inv.canMod(h, wg, mg)
-	if not okM then
-		return false, err
-	end
-	local w = h.items[wg]
-	local mount = defs[h.items[mg].id].mod.slot
-	local k, cid, p = Inv.locate(h, mg)
-	if k ~= "grid" then
-		return false, "BAD_SOURCE"
-	end
-	local old = w.mods and w.mods[mount]
-	detach(h, mg)
-	w.mods = w.mods or {}
-	w.mods[mount] = mg
-	if old then
-		local placed = Inv.autoPlace(h, old, order)
-		if not placed then
-			w.mods[mount] = old
-			h.grids[cid][mg] = p
-			return false, "NO_SPACE"
+-- carrying a multitool anywhere on you (Tarkov 0.14) lets you change vital parts in a raid
+function Inv.hasTool(h: any): boolean
+	for g, it in h.items do
+		if it.id == WP.MULTITOOL and Inv.locate(h, g) ~= nil then
+			return true
 		end
 	end
+	return false
+end
+
+-- an attached vital part cannot leave its gun during a raid without a multitool
+function Inv.vitalLocked(h: any, g: string, opts: any?): boolean
+	if not (opts and opts.inRaid) then
+		return false
+	end
+	local it = h.items[g]
+	if not it or not isVital(it.id) then
+		return false
+	end
+	local k = Inv.locate(h, g)
+	return k == "mod" and not Inv.hasTool(h)
+end
+
+-- is `inner` part of the build under `outer` (through part slots and magazine wells)?
+local function inBuild(h: any, outer: string, inner: string): boolean
+	local cur = inner
+	for _ = 1, 32 do
+		if cur == outer then
+			return true
+		end
+		local k, a = Inv.locate(h, cur)
+		if k ~= "mod" and k ~= "mag" then
+			return false
+		end
+		cur = a
+	end
+	return false
+end
+
+-- put part mg into slot `sname` of item pg (a weapon or a part). An occupied slot swaps: the part there (with
+-- its own parts) goes to the grids in `order`. Fails when the part does not fit the slot, conflicts with the
+-- build, would make the gun too big for where it lies, or is a vital part in a raid without a multitool.
+function Inv.attachPart(h: any, pg: string, sname: string, mg: string, order: { string }, opts: any?): (boolean, string?)
+	local parent, part = h.items[pg], h.items[mg]
+	if not parent or not part then
+		return false, "NO_ITEM"
+	end
+	if type(sname) ~= "string" then
+		return false, "BAD_INPUT"
+	end
+	if pg == mg or inBuild(h, mg, pg) then
+		return false, "SELF"
+	end
+	local okF, errF = WP.fits(parent.id, sname, part.id)
+	if not okF then
+		return false, errF
+	end
+	local old = parent.mods and parent.mods[sname]
+	if old == mg then
+		return true, nil
+	end
+	local root = Inv.buildRoot(h, pg)
+	if WP.conflict(h.items, root, part.id, old) then
+		return false, "CONFLICT"
+	end
+	if opts and opts.inRaid and (isVital(part.id) or (old and h.items[old] and isVital(h.items[old].id))) and not Inv.hasTool(h) then
+		return false, "NEED_MULTITOOL"
+	end
+	if opts and opts.inRaid and Inv.vitalLocked(h, mg, opts) then
+		return false, "NEED_MULTITOOL"
+	end
+	-- a shell tube that would hold fewer shells than are loaded: unload first
+	local rootIt = h.items[root]
+	if old and rootIt and (rootIt.a or 0) > 0 and sname == "tube" and (WP.parts[part.id].capacity or 0) < rootIt.a then
+		return false, "UNLOAD_FIRST"
+	end
+	local sk, sa, sb = Inv.locate(h, mg)
+	detach(h, mg)
+	parent.mods = parent.mods or {}
+	parent.mods[sname] = mg
+	Inv.resize(h, pg)
+	local ok = Inv.fitsWhereItLies(h, root)
+	if ok and old and h.items[old] then
+		measure(h, old)
+		ok = (Inv.autoPlace(h, old, order))
+	end
+	if not ok then
+		-- undo: the old part back in the slot (or the slot empty), the new one back where it was
+		parent.mods[sname] = old
+		if parent.mods and next(parent.mods) == nil then
+			parent.mods = nil
+		end
+		if sk == "grid" and h.grids[sa] then
+			h.grids[sa][mg] = sb
+		elseif sk == "slot" then
+			setSlot(h, sa, mg)
+		elseif sk == "mod" and h.items[sa] then
+			h.items[sa].mods = h.items[sa].mods or {}
+			h.items[sa].mods[sb] = mg
+			Inv.resize(h, sa)
+		end
+		measure(h, mg)
+		Inv.resize(h, pg)
+		return false, "NO_SPACE"
+	end
 	return true, nil
 end
 
-function Inv.detachMod(h: any, wg: string, mount: string, order: { string }): (boolean, string?)
-	local w = h.items[wg]
-	local mg = w and w.mods and w.mods[mount]
-	if not mg then
+-- take the part out of slot `sname` of pg (with the parts on it) and put it into the grids in `order`
+function Inv.detachPart(h: any, pg: string, sname: string, order: { string }, opts: any?): (boolean, string?)
+	local parent = h.items[pg]
+	local mg = parent and parent.mods and parent.mods[sname]
+	if not mg or not h.items[mg] then
 		return false, "NO_MOD"
+	end
+	if Inv.vitalLocked(h, mg, opts) then
+		return false, "NEED_MULTITOOL"
+	end
+	local root = Inv.buildRoot(h, pg)
+	if sname == "tube" and h.items[root] and (h.items[root].a or 0) > 0 then
+		return false, "UNLOAD_FIRST"
 	end
 	detach(h, mg)
 	local okP, err = Inv.autoPlace(h, mg, order)
 	if not okP then
-		w.mods = w.mods or {}
-		w.mods[mount] = mg
+		parent.mods = parent.mods or {}
+		parent.mods[sname] = mg
+		Inv.resize(h, pg)
+		measure(h, mg)
 		return false, err
 	end
 	return true, nil
 end
 
--- combined handling modifiers from installed attachments
-function Inv.modStats(h: any, wg: string): any
-	local w = h.items[wg]
-	local st = { ergo = 0, recoil = 1, loud = 1, zoom = nil, reflex = false, light = false, suppressed = false }
-	for _, mg in (w and w.mods) or {} do
-		local m = h.items[mg]
-		local md = m and defs[m.id] and defs[m.id].mod
-		if md then
-			st.ergo += md.ergo or 0
-			st.recoil *= md.recoil or 1
-			st.loud *= md.loud or 1
-			st.zoom = md.zoom or st.zoom
-			st.reflex = st.reflex or md.reflex == true
-			st.light = st.light or md.light == true
-			st.suppressed = st.suppressed or (md.loud or 1) < 0.6
-		end
+-- a part dropped onto a gun (or onto a part): the first free slot on that build that takes it, else a slot
+-- whose part it can replace
+function Inv.attachMod(h: any, wg: string, mg: string, order: { string }, opts: any?): (boolean, string?)
+	local m = h.items[mg]
+	if not h.items[wg] or not m then
+		return false, "NO_ITEM"
 	end
-	return st
+	if not WP.parts[m.id] then
+		return false, "INCOMPATIBLE"
+	end
+	local root = Inv.buildRoot(h, wg)
+	local pg, sname = WP.freeSlot(h.items, root, m.id)
+	if not pg then
+		pg, sname = WP.swapSlot(h.items, root, m.id)
+	end
+	if not pg or not sname then
+		return false, "NO_SLOT"
+	end
+	return Inv.attachPart(h, pg, sname, mg, order, opts)
+end
+
+-- the old name: take whatever is in slot `mount` of wg off
+function Inv.detachMod(h: any, wg: string, mount: string, order: { string }, opts: any?): (boolean, string?)
+	return Inv.detachPart(h, wg, mount, order, opts)
+end
+
+-- handling of a weapon's build (WeaponParts.stats): ergonomics delta, recoil / accuracy / velocity / loudness
+-- multipliers against the default build, sights, light, laser, suppressed, operable
+function Inv.modStats(h: any, wg: string): any
+	return WP.stats(h.items, wg)
+end
+
+-- shells a tube-fed gun holds (its tube part), or a magazine's / internal magazine's capacity
+function Inv.capacityOf(h: any, g: string): number?
+	local it = h.items[g]
+	local d = it and defs[it.id]
+	if not d then
+		return nil
+	end
+	if d.kind == "mag" then
+		return d.capacity
+	end
+	if (d.kind == "weapon" or d.kind == "pistol") and not d.family then
+		local s = WP.SLOTS[it.id]
+		if s and s.tube then
+			local tg = it.mods and it.mods.tube
+			local t = tg and h.items[tg]
+			local p = t and WP.parts[t.id]
+			return p and p.capacity or 0
+		end
+		return d.capacity
+	end
+	return nil
 end
 
 -- ── ammunition ─────────────────────────────────────────────────────────────────
 -- capacity/caliber of a loadable target (magazine, or weapon with an internal tube)
-function Inv.loadable(it: any): (number?, string?)
+function Inv.loadable(it: any, h: any?, g: string?): (number?, string?)
 	local d = it and defs[it.id]
 	if not d then
 		return nil, nil
@@ -804,6 +1064,10 @@ function Inv.loadable(it: any): (number?, string?)
 		return d.capacity, d.caliber
 	end
 	if (d.kind == "weapon" or d.kind == "pistol") and d.capacity and not d.family then
+		-- tube-fed guns hold what their tube part holds (M14)
+		if h and g then
+			return Inv.capacityOf(h, g), d.caliber
+		end
 		return d.capacity, d.caliber
 	end
 	return nil, nil
@@ -815,7 +1079,7 @@ function Inv.loadAmmo(h: any, tg: string, ag: string, count: number?): (number, 
 	if not t or not am then
 		return 0, "NO_ITEM"
 	end
-	local cap, cal = Inv.loadable(t)
+	local cap, cal = Inv.loadable(t, h, tg)
 	local ad = defs[am.id]
 	if not cap or ad.kind ~= "ammo" then
 		return 0, "INCOMPATIBLE"
@@ -977,7 +1241,8 @@ function Inv.check(h: any): (boolean, string?)
 			if not d then
 				return false, "unknown def in " .. cid
 			end
-			local w, hh = Grid.dims(d.w, d.h, p.r)
+			local iw, ih = Inv.sizeOf(h.items[g])
+			local w, hh = Grid.dims(iw, ih, p.r)
 			if not Grid.fits(cw, ch, pl, sizer(h), p.x, p.y, w, hh, g) then
 				return false, "overlap/out of bounds " .. g .. " in " .. cid
 			end
@@ -1005,7 +1270,7 @@ function Inv.check(h: any): (boolean, string?)
 			return false, "container without grid " .. g
 		end
 		if it.a ~= nil then
-			local cap = Inv.loadable(it)
+			local cap = Inv.loadable(it, h, g)
 			if not cap or it.a < 0 or it.a > cap then
 				return false, "bad rounds " .. g
 			end
@@ -1017,16 +1282,29 @@ function Inv.check(h: any): (boolean, string?)
 			end
 		end
 		if it.mods then
-			for mount, mg in it.mods do
-				local e = mark(mg, "mod:" .. mount)
+			for sname, mg in it.mods do
+				local e = mark(mg, "mod:" .. sname)
 				if e then
 					return false, e
 				end
-				local md = h.items[mg] and defs[h.items[mg].id]
-				if not md or not md.mod or md.mod.slot ~= mount then
-					return false, "bad mod mount " .. mount
+				local m = h.items[mg]
+				if not m or not WP.fits(it.id, sname, m.id) then
+					return false, "part " .. tostring(m and m.id) .. " does not fit " .. it.id .. "." .. sname
 				end
 			end
+		end
+		-- a build's grid size follows its parts (a part that sits on a gun has no size of its own)
+		if WP.measured(it) then
+			if Inv.locate(h, g) ~= "mod" then
+				local d = defs[it.id]
+				local mw, mh = WP.buildSize(h.items, g, d.w, d.h)
+				local sw, sh = Inv.sizeOf(it)
+				if mw and (mw ~= sw or mh ~= sh) then
+					return false, string.format("stale size %s %dx%d (parts say %dx%d)", it.id, sw, sh, mw, mh)
+				end
+			end
+		elseif it.sz then
+			return false, "size on a plain item " .. g
 		end
 	end
 	for g in h.items do

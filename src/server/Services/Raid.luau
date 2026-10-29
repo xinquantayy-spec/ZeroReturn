@@ -9,6 +9,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local Grid = require(Shared.Grid)
+local WP = require(Shared.WeaponParts)
 local Inv = require(script.Parent.Inv)
 local Settle = require(script.Parent.Settle)
 local Progress = require(Shared.Progress)
@@ -114,7 +115,6 @@ function Raid.state(player)
 end
 
 local GEAR_SLOTS = { "head", "ears", "face", "armor", "rig", "back", "holster", "primary", "secondary", "melee" }
-local MOUNTS = { "rail", "muzzle", "under", "side" }
 local DRAW_ORDER = { "primary", "secondary", "holster", "melee" }
 
 local function weaponAt(h, slot)
@@ -130,13 +130,11 @@ local function gearKey(h, active)
 		local g = h.slots[slot]
 		parts[#parts + 1] = (g and h.items[g]) and h.items[g].id or "-"
 	end
-	local ag = active and h.slots[active]
-	local a = ag and h.items[ag]
-	if a then
-		parts[#parts + 1] = a.mag and "M" or "-"
-		for _, mount in MOUNTS do
-			local mg = a.mods and a.mods[mount]
-			parts[#parts + 1] = (mg and h.items[mg]) and h.items[mg].id or "-"
+	-- every carried gun's build (M14: the parts show in the hands and slung on the back)
+	for _, slot in DRAW_ORDER do
+		local g = h.slots[slot]
+		if g and h.items[g] then
+			parts[#parts + 1] = WP.signature(h.items, g)
 		end
 	end
 	return table.concat(parts, "|")
@@ -681,20 +679,56 @@ function Raid.inv(player, p)
 		local n, e = Inv.unloadAmmo(src, g, inRaid and Inv.loadOrder(src) or { "stash" })
 		done, err = n > 0, e
 	elseif op == "mod" or op == "unmod" then
+		-- weapon modding (M14): a part into a slot of a gun or of a part on it (p.slot), or into the first slot
+		-- that takes it; "unmod" takes the part in slot p.slot (or the old p.mount) off item p.g
 		if sc then
 			return fail("NOT_AUTHORIZED")
 		end
+		if not g or not src.items[g] then
+			return fail("NO_ITEM")
+		end
+		local slotName = p.slot or p.mount
+		if slotName ~= nil and (type(slotName) ~= "string" or #slotName > 24) then
+			return fail("BAD_INPUT")
+		end
 		local order = inRaid and Inv.loadOrder(src) or { "stash" }
 		if op == "mod" then
-			if type(p.mod) ~= "string" then
+			if type(p.mod) ~= "string" or #p.mod > 40 or not src.items[p.mod] then
 				return fail("BAD_INPUT")
 			end
-			done, err = Inv.attachMod(src, g, p.mod, order)
+			if slotName == "mag" then
+				-- the modding screen's magazine slot: the same as dropping the magazine on the gun
+				done, err = Inv.insertMag(src, p.mod, g)
+			elseif slotName then
+				done, err = Inv.attachPart(src, g, slotName, p.mod, order, opts)
+			else
+				done, err = Inv.attachMod(src, g, p.mod, order, opts)
+			end
 		else
-			if type(p.mount) ~= "string" then
+			if not slotName then
 				return fail("BAD_INPUT")
 			end
-			done, err = Inv.detachMod(src, g, p.mount, order)
+			if slotName == "mag" then
+				local mg = src.items[g].mag
+				if not mg then
+					return fail("NO_MOD")
+				end
+				Inv.detach(src, mg)
+				done, err = Inv.autoPlace(src, mg, order)
+				if not done then
+					src.items[g].mag = mg
+					Inv.resize(src, g)
+				end
+			else
+				done, err = Inv.detachPart(src, g, slotName, order, opts)
+			end
+		end
+		if err == "NEED_MULTITOOL" then
+			return fail(err, "Vital parts need a multitool in a raid.")
+		elseif err == "CONFLICT" then
+			return fail(err, "That part does not go with the rest of the build.")
+		elseif err == "UNLOAD_FIRST" then
+			return fail(err, "Unload the shells first.")
 		end
 	elseif op == "examine" then
 		return examine(player, src, g, sc)
@@ -714,6 +748,9 @@ function Raid.inv(player, p)
 		end
 		if me.slots.secure == g then
 			return fail("SECURE_LOCKED")
+		end
+		if Inv.vitalLocked(me, g, opts) then
+			return fail("NEED_MULTITOOL", "Vital parts need a multitool in a raid.")
 		end
 		local b = Inv.take(me, g)
 		if not b then

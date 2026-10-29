@@ -3,6 +3,7 @@
 -- of items at a share of their value; barter trades swap items for items; stock is limited per restock window.
 -- Shared so the client shows exactly the prices the server charges (server truth: Economy.luau).
 local Items = require(script.Parent.Items)
+local WP = require(script.Parent.WeaponParts)
 
 local T = {}
 
@@ -44,6 +45,11 @@ T.LL = {
 local function o(id: string, ll: number, limit: number, n: number?): any
 	return { id = id, ll = ll, limit = limit, n = n or 1 }
 end
+-- M14: a gun sold as a build (Tarkov trader presets): the base item with the preset's parts and an empty magazine
+local function pre(preset: string, ll: number, limit: number): any
+	local pr = WP.META.presets[preset]
+	return { id = pr.base, ll = ll, limit = limit, n = 1, preset = preset }
+end
 T.offers = {
 	vos = {
 		o("R17_RIFLE", 1, 2), o("P9_PISTOL", 1, 2), o("HARROW12", 1, 2), o("SPARROW_SMG", 1, 1), o("FIELD_KNIFE", 1, 3),
@@ -55,6 +61,24 @@ T.offers = {
 		o("TUNDRA_BOLT", 3, 1), o("A76L_LPS", 3, 4, 40), o("A62_AP", 3, 4, 60), o("A9_AP", 3, 4, 50), o("A12_SLUG", 3, 4, 20),
 		o("SUPP_62", 3, 1), o("SCOPE_4X", 3, 1),
 		o("A76_BP", 4, 3, 60), o("A76L_SNB", 4, 2, 40),
+		-- M14 weapon parts and builds (Tarkov: the gunsmith's assortment grows with loyalty)
+		o("GRIP_STOP", 1, 3), o("R17_FH_A2", 1, 3), o("KST_FH_SLANT", 1, 3), o("SPR_FH_3L", 1, 2), o("AR_PG_ERGO", 1, 2),
+		o("AK_PG_RUB", 1, 2), o("MNT_RISER", 1, 3), o("R17_RS_FLIP", 1, 2), o("R17_FS_FLIP", 1, 2), o("AR_STK_CARB", 1, 2),
+		o("KST_HG_POLY", 1, 2), o("HAR_FE_POLY", 1, 2), o("HAR_STK_PG", 1, 1), o("P9_BRL_THR", 1, 2), o("KST_MAG_POLY", 1, 6),
+		o("R17_HG_QUAD", 2, 2), o("R17_COMP", 2, 2), o("R17_BRK", 2, 2), o("KST_DC_RAIL", 2, 1), o("KST_MNT_SIDE", 2, 1),
+		o("KST_HG_RAIL", 2, 1), o("SPR_HG_TRI", 2, 1), o("SPR_MNT_CLAW", 2, 1), o("GRIP_ANG", 2, 2), o("GRIP_STUB", 2, 2),
+		o("LASER_DOT", 2, 2), o("HOLO_EX", 2, 1), o("SIGHT_MICRO", 2, 1), o("AR_CH_EXT", 2, 2), o("AR_PG_ANG", 2, 2),
+		o("AK_PG_ERGO", 2, 2), o("KST_STK_FOLD", 2, 1), o("SPR_STK_FIXED", 2, 1), o("HAR_FE_RAIL", 2, 1), o("HAR_BRK", 2, 1),
+		o("HAR_CHOKE", 2, 1), o("TUN_MNT_SCOUT", 2, 1), o("P9_SLIDE_CUT", 2, 1), o("P9_COMP", 2, 1), o("R17_BRL_105", 2, 1),
+		o("HAR_BRL_14", 2, 1), o("HAR_TUBE_4", 2, 1), o("KST_MAG40", 2, 3), o("P9_MAG33", 2, 3),
+		pre("R17_PATROL", 2, 1), pre("HAR_SHORT", 2, 1), pre("P9_TAC", 2, 1),
+		o("R17_HG_MLOK", 3, 1), o("R17_GAS_LOW", 3, 2), o("R17_BRL_18", 3, 1), o("SUPP_62C", 3, 1), o("SUPP_76", 3, 1),
+		o("AR_STK_SKEL", 3, 1), o("KST_STK_TUBE", 3, 1), o("HAR_STK_TACT", 3, 1), o("HAR_BRL_20", 3, 1), o("HAR_TUBE_8", 3, 1),
+		o("TUN_STK_SPORT", 3, 1), o("TUN_MNT_SIDE", 3, 1), o("TUN_BRK", 3, 1), o("MNT_RINGS", 3, 1), o("SCOPE_16", 3, 1),
+		o("LASER_COMBO", 3, 1), o("SPR_GRIP_NAVY", 3, 1), o("SPR_MAG50", 3, 2),
+		pre("KST_TAC", 3, 1), pre("SPR_TAC", 3, 1), pre("HAR_TAC", 3, 1), pre("TUN_SCOUT", 3, 1), pre("R17_CQB", 3, 1), pre("KST_QUIET", 3, 1),
+		o("SCOPE_8X", 4, 1), o("SUPP_76L", 4, 1), o("TUN_STK_CHAS", 4, 1), o("R17_MAG60", 4, 2),
+		pre("R17_DMR", 4, 1), pre("TUN_MARKSMAN", 4, 1),
 	},
 	hale = {
 		o("BANDAGE", 1, 10), o("PAINKILLERS", 1, 5), o("MEDKIT_S", 1, 5), o("SPLINT", 1, 5), o("WATER", 1, 5), o("HARDTACK", 1, 5),
@@ -72,6 +96,7 @@ T.offers = {
 	fence = {
 		o("RIG_BELT", 1, 2), o("BAG_SLING", 1, 2), o("BANDAGE", 1, 4), o("R17_MAG", 1, 4), o("A62_FMJ", 1, 4, 60), o("KEY_OFFICE", 1, 1),
 		o("KEY_DORM_104", 1, 1), o("KEY_DORM_203", 2, 1), o("GREN_RK5", 1, 2), o("KEY_SMELT_OFFICE", 1, 1),
+		o("MULTITOOL", 1, 1),
 	},
 }
 
@@ -101,11 +126,32 @@ T.barters = {
 	fence = {},
 }
 
+-- value of a gun as a build: the base plus every part of its preset (default build when preset is nil) and the
+-- preset's magazine
+function T.buildValue(id: string, preset: string?): number
+	local d = Items.defs[id]
+	local pr = WP.META.presets[preset or id]
+	if not pr or pr.base ~= id then
+		return d and d.value or 0
+	end
+	local v = 0
+	local function add(t)
+		local pd = Items.defs[t[1]]
+		v += pd and pd.value or 0
+		for _, sub in t[2] do
+			add(sub)
+		end
+	end
+	add(pr.tree)
+	return v
+end
+
 -- price of one purchase at a loyalty level (each level is 5% cheaper)
 function T.price(traderId: string, offer: any, ll: number): number
 	local d = Items.defs[offer.id]
 	local tr = T.defs[traderId]
-	return math.max(1, math.ceil(d.value * (offer.n or 1) * tr.markup * (1 - 0.05 * (math.max(1, ll) - 1))))
+	local value = WP.isBase(offer.id) and T.buildValue(offer.id, offer.preset) or d.value
+	return math.max(1, math.ceil(value * (offer.n or 1) * tr.markup * (1 - 0.05 * (math.max(1, ll) - 1))))
 end
 
 -- what a trader pays for an item instance (nil = not interested). Fence pays less with bad karma.

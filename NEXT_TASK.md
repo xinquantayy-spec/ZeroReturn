@@ -1,5 +1,9 @@
 # Next Task
 
+**Current focus (owner approved, 2026-10-29 14:37): the Relay 7 lobby.** A physical lobby rebuilt as a worn cold-war relay bunker where every Tarkov screen has a station: bunk room (spawn, stash locker, mirror), ops room (map table and vote, departure board, roster, task board, insurance window), traders' hall (VOS, HALE, TILDA as NPCs at counters, the Fence at the back door, mail pigeonholes), hideout wing (modules showing each player's own levels), gunsmith bench (modding, the gun in a vise), firing range (booths, plates at 10/25/50 m, free practice ammo, no damage) and motor pool (board the van with your squad to deploy; scav hatch). Every screen still opens from its key. Level of detail top notch at full performance: under 300 Blender kit props, at most 6 shadow-casting lights, the bunker moved away from the maps. Research and design: the owner's doc "Zero Return Lobby: Research and Concept" (claude.ai artifact). Steps: blockout with screenshots, Blender kit, wiring, new features, tests and performance.
+
+**M14 weapon modding is done (part A, 2026-10-29).** Follow-ups from the fidelity check (KNOWN_ISSUES 52–57): laser beams and device modes, folding stocks, saved builds with buying missing parts, sight zeroing and variable zoom, 3D inspect for every item, part sizes against Tarkov's.
+
 **M16 Characters (owner request, 2026-10-28) is done (part A).** Block body, Blender equipment set, server appearance system and role presets; see `docs/character/`. M16 part B is still to do:
 - the two-client checks (C06, C08), which need a Studio Clients-and-Servers run by the owner;
 - touch and controller emulation of the equipment screen (C11);

@@ -66,7 +66,7 @@ def sprites(seconds=45.0, redo=False):
     import zr_guns
     if redo:
         STATE["sprites"].clear()
-    recs, left = zr_guns.run_sprites(None, seconds, STATE["sprites"])
+    recs, left = zr_guns.run_sprite_sheets(seconds, STATE["sprites"])
     os.makedirs(os.path.dirname(REC), exist_ok=True)
     with open(REC, "w") as f:
         json.dump(STATE["sprites"], f, indent=1, sort_keys=True)

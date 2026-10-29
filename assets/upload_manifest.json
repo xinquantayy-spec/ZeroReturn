@@ -185,17 +185,71 @@
   "sha1": "9040920f519210c4ca9b42361e1ddffbf32c84d2",
   "uploaded": "2026-10-28 20:30:45"
  },
+ "ZR_GunSprites_0": {
+  "assetId": "96138034238454",
+  "file": "assets\\renders\\guns\\ZR_GunSprites_0.png",
+  "sha1": "9d9bd4ca392d04ffe63ea7483a39a95616078e50",
+  "uploaded": "2026-10-29 13:27:08"
+ },
+ "ZR_GunsAK": {
+  "assetId": "92833064438128",
+  "file": "assets\\exports\\ZR_GunsAK.fbx",
+  "sha1": "495f830cfc925c3f5d0f1c22cab961b948207bfe",
+  "uploaded": "2026-10-29 13:25:37"
+ },
+ "ZR_GunsAR": {
+  "assetId": "130670418678516",
+  "file": "assets\\exports\\ZR_GunsAR.fbx",
+  "sha1": "5f22e51493f894d2285a6aeb061ad6e08ccea258",
+  "uploaded": "2026-10-29 13:25:26"
+ },
+ "ZR_GunsBolt": {
+  "assetId": "80035562450165",
+  "file": "assets\\exports\\ZR_GunsBolt.fbx",
+  "sha1": "17e611289b171a850a003ca3a92a50f8c2fee867",
+  "uploaded": "2026-10-29 13:26:20"
+ },
+ "ZR_GunsMods": {
+  "assetId": "131071003311039",
+  "file": "assets\\exports\\ZR_GunsMods.fbx",
+  "sha1": "e53d531577eec0edf795a3e52c4793d8223707fc",
+  "uploaded": "2026-10-29 13:26:57"
+ },
+ "ZR_GunsPistol": {
+  "assetId": "99358645164066",
+  "file": "assets\\exports\\ZR_GunsPistol.fbx",
+  "sha1": "6bcc79d00a8043e3daa2ebe80f61633992292575",
+  "uploaded": "2026-10-29 13:26:37"
+ },
+ "ZR_GunsSG": {
+  "assetId": "70558979775509",
+  "file": "assets\\exports\\ZR_GunsSG.fbx",
+  "sha1": "2634ced5bf1bd21dd46406f0859b25f94205e005",
+  "uploaded": "2026-10-29 13:26:12"
+ },
+ "ZR_GunsSMG": {
+  "assetId": "106931227232196",
+  "file": "assets\\exports\\ZR_GunsSMG.fbx",
+  "sha1": "1a06037e72fd87336d85046c25b72f5eb6107474",
+  "uploaded": "2026-10-29 13:25:56"
+ },
  "ZR_ItemIcons_0": {
-  "assetId": "139210144598492",
+  "assetId": "123687419025418",
   "file": "assets\\renders\\items\\ZR_ItemIcons_0.png",
-  "sha1": "065d0244b0c85ba44d27299897d8f463e141a891",
-  "uploaded": "2026-10-29 11:53:14"
+  "sha1": "7208abb9af263fbd9b2e585a52e4eb97e93d8340",
+  "uploaded": "2026-10-29 13:27:14"
  },
  "ZR_ItemIcons_1": {
-  "assetId": "134070123007106",
+  "assetId": "126219559767238",
   "file": "assets\\renders\\items\\ZR_ItemIcons_1.png",
-  "sha1": "24c7879932b259a46cbcfa46de8cb0f5bab43c4d",
-  "uploaded": "2026-10-29 11:53:17"
+  "sha1": "eb4e8c10bcad7772c5c9786626a94a54e0a76b44",
+  "uploaded": "2026-10-29 13:27:24"
+ },
+ "ZR_ItemIcons_2": {
+  "assetId": "121993961196060",
+  "file": "assets\\renders\\items\\ZR_ItemIcons_2.png",
+  "sha1": "a9202b4b94c2fe8f8bba795c5d32b18252c101b0",
+  "uploaded": "2026-10-29 13:27:28"
  },
  "ZR_ItemsA": {
   "assetId": "91684040376497",

@@ -157,6 +157,58 @@ About 90 new parts plus the existing mods. Names and models are original.
    - inventory tiles draw the composite picture;
    - the modding window shows the build in 3D with its slots and stats.
 
+### 2.4 Size rules as built
+
+- A gun's grid size is measured from the outline of every part on it, in cells, at the picture scale (long guns
+  5.5 cells a metre, pistols 7), less a 0.25-cell tolerance. The default R-17 is 5x2, as Tarkov's M4A1 is.
+- An empty magazine well keeps the outline of the standard magazine: unloading never shrinks a gun, while a
+  60-round magazine still makes it taller. This matches Tarkov, where a standard magazine adds no size.
+- A loose part with parts on it (a barrel with a suppressor) keeps its own grid size and grows by what the parts
+  add past its own outline, like Tarkov's per-direction ExtraSize.
+- Pistol grips are 1x1, as in Tarkov (checked: the AR skeletonised grip on the Tarkov wiki).
+- Lone parts in the stash fill their cells, like Tarkov's icons; tiny parts that would blow up past 2.5x use
+  their close-up item render instead of the side-view sprite.
+
+### 2.5 Uploaded batches
+
+| Batch | Asset id | Contents |
+|---|---|---|
+| ZR_GunsAR | 130670418678516 | R-17 receiver and parts, R-17 magazines |
+| ZR_GunsAK | 92833064438128 | KS-7 receiver and parts, magazines |
+| ZR_GunsSMG | 106931227232196 | SMG-9 receiver and parts, magazines |
+| ZR_GunsSG | 70558979775509 | Harrow-12 receiver and parts, tubes |
+| ZR_GunsBolt | 80035562450165 | Tundra receiver and parts |
+| ZR_GunsPistol | 99358645164066 | P-9 frame and parts, magazines |
+| ZR_GunsMods | 131071003311039 | shared sights, mounts, foregrips, lights and lasers, suppressors |
+| Sprite sheet | 105623866578178 | side-view sprites of every part (1024 px sheet, `GunMeta.sprites`) |
+
+The batches load into `ReplicatedStorage.ZR_Assets` at server start (`AssetIds.luau`): 187 mesh pieces.
+
+## 3. Fidelity check against Tarkov (2026-10-29)
+
+Checked in Studio: the logic tests (184 of 184), the 2D build pictures of every preset, the first-person gun
+(hip and aimed through the RS-1 reflex), the third-person gun, a loose magazine and the modding screen.
+
+| Tarkov | Zero Return | Verdict |
+|---|---|---|
+| Functional, gear and vital mod groups | Same groups and categories | Same |
+| Nested named slots, required slots, fits, conflicts | Same; the free-float handguard needs the low gas block | Same |
+| Size grows with parts; a standard magazine adds none | Measured from the parts; empty magwells keep the standard outline | Same rule, measured differently |
+| Icon shows the current build | Composite picture from part sprites, in every grid, ghost and detail strip | Same |
+| Modding screen: 3D gun, slots around it, stats | 3D gun you can turn, slot boxes with leader lines, stats panel | Same layout, our own art |
+| Swap by dropping a part on a gun or slot | Same, the old part goes to your stash | Same |
+| Vital parts locked in raid without a multitool | Same | Same |
+| Traders sell presets; loot and AI carry builds | VOS presets by loyalty level; loot 30% presets; AI kits | Same |
+| Handling: ergonomics, recoil, accuracy, velocity, sighting range, loudness, weight | Same figures, against the default build | Same |
+| Tactical devices with modes (light, laser, both) | Light works; the lasers have no beam or dot yet | **Gap** |
+| Folding stocks fold to make the gun smaller | The folding stock exists but cannot be folded | **Gap** |
+| Saved weapon builds; buy the missing parts from the modding screen | Not built | **Gap** |
+| Sight zeroing and variable zoom | Fixed zoom, no zeroing | **Gap** |
+| Inspect any item in 3D | 3D only for guns in the modding screen | **Gap** |
+| Durability and malfunctions | Planned for M11 part B | **Gap** |
+
+The gaps are listed in `KNOWN_ISSUES.md` and queued in `NEXT_TASK.md`.
+
 ## Sources
 
 - [Escape from Tarkov Wiki: Weapon mods](https://escapefromtarkov.fandom.com/wiki/Weapon_mods)

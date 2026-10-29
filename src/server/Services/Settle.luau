@@ -7,10 +7,11 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local Inv = require(script.Parent.Inv)
+local WP = require(Shared.WeaponParts)
 local Progress = require(Shared.Progress)
 
 local Settle = {}
-Settle.SCHEMA = 2
+Settle.SCHEMA = 3 -- 3: M14 weapon builds (guns are part trees); older profiles are wiped like a Tarkov wipe
 
 local function equip(p: any, slot: string, id: string, extra: any?): string
 	local g, it = Inv.newItem(id, 1, extra)
@@ -35,6 +36,7 @@ local function weaponWithMag(p: any, slot: string, wid: string, mid: string, amm
 	local mg, mag = Inv.newItem(mid, 1, { a = Items.defs[mid].capacity, at = ammoId, rk = rk })
 	p.items[mg] = mag
 	p.items[wg].mag = mg
+	Inv.resize(p, wg)
 	return wg
 end
 
@@ -248,13 +250,11 @@ function Settle.insure(p: any, g: string, userId: number): (number?, string?)
 	if not insurable(p, g) then
 		return nil, "NOT_INSURABLE"
 	end
-	local list = { g }
-	if it.mag then
-		table.insert(list, it.mag)
-	end
-	for _, mg in it.mods or {} do
-		table.insert(list, mg)
-	end
+	-- the item with its magazine and every part on it (M14 builds)
+	local list = {}
+	WP.walk(p.items, g, function(bg)
+		table.insert(list, bg)
+	end)
 	return insureList(p, list, userId)
 end
 

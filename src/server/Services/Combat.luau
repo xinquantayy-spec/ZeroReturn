@@ -8,6 +8,7 @@ local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local Util = require(Shared.Util)
 local Inv = require(script.Parent.Inv)
+local WP = require(Shared.WeaponParts)
 
 local Combat = {}
 local ctx
@@ -156,6 +157,14 @@ function Combat.shoot(player, seq, origin, dir)
 	if ctx.Grenades and ctx.Grenades.busy(player) then
 		return reject("shot while throwing", nil)
 	end
+	-- M14: a gun missing a required part (barrel, bolt, handguard, ...) does not fire
+	if wg and not WP.operable(s.inv.items, wg) then
+		if t - (w.inopNote or 0) > 2 then
+			w.inopNote = t
+			ctx.Remotes.note(player, "toast", { text = "WEAPON IS MISSING PARTS", tone = "warn" })
+		end
+		return reject("inoperable", nil)
+	end
 	if not mag or (mag.a or 0) <= 0 then
 		ctx.Remotes.note(player, "ammo", { a = 0 })
 		return reject("empty", nil)
@@ -239,7 +248,7 @@ local function tubeReload(player, s, w, wg, wit, wdef, wd)
 			if w.tube ~= token or W[player] ~= w or ctx.Raid.session(player) ~= s or s.done or not alive(player) or not s.inv.items[wg] then
 				break
 			end
-			if (wit.a or 0) >= (wd.capacity or 0) then
+			if (wit.a or 0) >= (Inv.capacityOf(s.inv, wg) or 0) then
 				break
 			end
 			local ammoG
@@ -261,7 +270,7 @@ local function tubeReload(player, s, w, wg, wit, wdef, wd)
 			end
 			Inv.loadAmmo(s.inv, wg, ammoG, 1)
 			ctx.Remotes.note(player, "ammo", { a = wit.a or 0, tube = true })
-			if (wit.a or 0) >= (wd.capacity or 0) then
+			if (wit.a or 0) >= (Inv.capacityOf(s.inv, wg) or 0) then
 				break -- tube full: done right away
 			end
 		end
@@ -433,7 +442,7 @@ function Combat.magCheck(player)
 		if not wd2 then
 			return
 		end
-		local cap = (wd2.family and r2 and Items.defs[r2.id].capacity) or wd2.capacity or 1
+		local cap = (wd2.family and r2 and Items.defs[r2.id].capacity) or (wg and Inv.capacityOf(s.inv, wg)) or wd2.capacity or 1
 		local text = r2 and estimate(r2.a or 0, cap) or "NO MAGAZINE"
 		local ammo = r2 and r2.at and Items.defs[r2.at] and Items.defs[r2.at].short or nil
 		ctx.Remotes.note(player, "magcheck", { state = "done", text = text, ammo = ammo })

@@ -8,6 +8,8 @@
 local Shared = script.Parent
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
+local WP = require(Shared.WeaponParts)
+local GunBuild = require(Shared.GunBuild)
 local V = Vector3.new
 local C = {
 	dark = Color3.fromHex("26292A"), metal = Color3.fromHex("3B403D"), poly = Color3.fromHex("4E5650"),
@@ -119,6 +121,14 @@ M.weapons = {
 	},
 }
 
+-- the old firing-hand anchors place the Blender guns (GunBuild) so the tuned poses still fit
+for vm, spec in M.weapons do
+	local w = Weapons[vm]
+	if w and w.item and spec.anchors and spec.anchors.grip then
+		GunBuild.setOldGrip(w.item, spec.anchors.grip)
+	end
+end
+
 -- magazines relative to the weapon magwell anchor
 M.mags = {
 	R17 = { { "b", V(0.08, 0.36, 0.14), V(0, -0.17, 0), C.dark, V(10, 0, 0) } },
@@ -127,27 +137,6 @@ M.mags = {
 	P9 = { { "b", V(0.055, 0.2, 0.1), V(0, -0.02, 0), C.dark, V(-12, 0, 0) } },
 }
 
--- attachments relative to their mount anchor; eye = sight eye point (optics)
-M.mods = {
-	RED_DOT = {
-		mount = "rail",
-		parts = {
-			{ "b", V(0.08, 0.025, 0.12), V(0, 0.0125, 0), C.dark }, -- base
-			{ "b", V(0.012, 0.075, 0.05), V(-0.034, 0.0625, -0.02), C.dark }, -- hood posts
-			{ "b", V(0.012, 0.075, 0.05), V(0.034, 0.0625, -0.02), C.dark },
-			{ "b", V(0.08, 0.012, 0.05), V(0, 0.106, -0.02), C.dark }, -- hood top
-			{ "b", V(0.056, 0.074, 0.004), V(0, 0.0625, -0.035), C.glass, nil, Enum.Material.Glass }, -- tinted window
-			{ "b", V(0.03, 0.02, 0.03), V(0.03, 0.03, 0.03), C.metal }, -- battery cap
-		},
-		eye = V(0, 0.0625, 0),
-	},
-	SCOPE_4X = { mount = "rail", parts = { { "b", V(0.08, 0.05, 0.04), V(0, 0.025, -0.12), C.dark }, { "b", V(0.08, 0.05, 0.04), V(0, 0.025, 0.12), C.dark }, { "c", 0.5, 0.085, V(0, 0.1, 0), C.dark }, { "c", 0.12, 0.13, V(0, 0.1, -0.28), C.dark }, { "c", 0.1, 0.11, V(0, 0.1, 0.27), C.dark } }, eye = V(0, 0.1, 0.3), zoom = 4 },
-	SUPP_62 = { mount = "muzzle", parts = { { "c", 0.42, 0.09, V(0, 0, -0.2), C.dark } }, len = 0.42 },
-	SUPP_9 = { mount = "muzzle", parts = { { "c", 0.4, 0.085, V(0, 0, -0.19), C.dark } }, len = 0.4 },
-	BRAKE_76 = { mount = "muzzle", parts = { { "b", V(0.08, 0.08, 0.12), V(0, 0, -0.06), C.dark } }, len = 0.12 },
-	GRIP_V = { mount = "under", parts = { { "b", V(0.06, 0.2, 0.07), V(0, -0.1, 0), C.dark } } },
-	LIGHT_T = { mount = "side", parts = { { "c", 0.16, 0.06, V(0.03, 0, 0), C.dark } } },
-}
 
 local function rot(r)
 	if r then
@@ -188,6 +177,11 @@ end
 -- Returns { parts, mag, moving = { pump?, bolt? }, anchors, spec, eye, zoom, reflex, muzzle, suppressed, lightPart }
 -- (anchors in spec units). Parts in `moving` are also in `parts`.
 function M.build(items, it, origin: CFrame, scale: number)
+	-- M14: the Blender parts of the gun's build when they have loaded (GunBuild); the old spec otherwise
+	local gb = GunBuild.build(items, it, origin, scale)
+	if gb then
+		return gb
+	end
 	local d = Items.defs[it.id]
 	local wdef = d and d.weapon and Weapons[d.weapon]
 	local spec = wdef and M.weapons[wdef.viewmodel or d.weapon]
@@ -216,29 +210,17 @@ function M.build(items, it, origin: CFrame, scale: number)
 			table.insert(out.mag, M.part(p, mo, scale))
 		end
 	end
-	for _, mg in it.mods or {} do
-		local m = items[mg]
-		local mspec = m and M.mods[m.id]
-		local anchor = mspec and spec.anchors[mspec.mount]
-		if anchor then
-			local mo = origin * CFrame.new(anchor * scale)
-			for k, p in mspec.parts do
-				local part = M.part(p, mo, scale)
-				table.insert(out.parts, part)
-				if k == 1 and Items.defs[m.id].mod.light then
-					out.lightPart = part -- cylinder along Z: its Right face points down the barrel
-				end
-			end
-			if mspec.eye then
-				out.eye = anchor + mspec.eye
-				out.zoom = mspec.zoom
-				out.reflex = Items.defs[m.id].mod.reflex == true
-			end
-			if mspec.mount == "muzzle" then
-				out.muzzle = spec.anchors.muzzle + Vector3.new(0, 0, -(mspec.len or 0))
-				out.suppressed = (Items.defs[m.id].mod.loud or 1) < 0.6
-			end
+	-- while the part meshes load, the old spec shows the bare gun; the build's optics and devices still count
+	local g
+	for k, v in items do
+		if v == it then
+			g = k
+			break
 		end
+	end
+	if g and WP.isBase(it.id) then
+		local st = WP.stats(items, g)
+		out.zoom, out.reflex, out.suppressed = st.zoom, st.reflex, st.suppressed
 	end
 	return out
 end
@@ -270,23 +252,14 @@ function M.holdOf(id: string?)
 	return c.kind, c.anchors
 end
 
--- handling modifiers from attachments (mirror of server Inv.modStats)
+-- handling of a weapon's build (mirror of server Inv.modStats; M14: WeaponParts.stats)
 function M.modStats(items, it)
-	local st = { ergo = 0, recoil = 1, loud = 1, zoom = nil, reflex = false, light = false, suppressed = false }
-	for _, mg in (it and it.mods) or {} do
-		local m = items[mg]
-		local md = m and Items.defs[m.id] and Items.defs[m.id].mod
-		if md then
-			st.ergo += md.ergo or 0
-			st.recoil *= md.recoil or 1
-			st.loud *= md.loud or 1
-			st.zoom = md.zoom or st.zoom
-			st.reflex = st.reflex or md.reflex == true
-			st.light = st.light or md.light == true
-			st.suppressed = st.suppressed or (md.loud or 1) < 0.6
+	for k, v in items do
+		if v == it then
+			return WP.stats(items, k)
 		end
 	end
-	return st
+	return { ergo = 0, recoil = 1, acc = 1, vel = 1, loud = 1, zoom = nil, reflex = false, light = false, suppressed = false, operable = true }
 end
 
 return M

@@ -6,6 +6,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
+local WP = require(Shared.WeaponParts)
 local Util = require(Shared.Util)
 local TD = require(Shared.TraderData)
 local P = require(Shared.Progress)
@@ -153,8 +154,10 @@ local function buy(player, prof, p)
 		return fail("NOT_ENOUGH_MONEY", "Not enough money.")
 	end
 	local done = 0
+	-- a gun comes as a build (its preset or the default one) with an empty magazine (M14)
+	local extra = WP.isBase(offer.id) and { preset = offer.preset, presetMag = true } or nil
 	for _ = 1, qty do
-		if not Economy.giveStash(prof, offer.id, offer.n) then
+		if not Economy.giveStash(prof, offer.id, offer.n, extra) then
 			break
 		end
 		done += 1
@@ -191,7 +194,7 @@ local function barter(player, prof, p)
 			return fail("MISSING_ITEMS", "Missing: " .. Items.defs[need[1]].name .. ".")
 		end
 	end
-	if not Economy.giveStash(prof, offer.id, 1) then
+	if not Economy.giveStash(prof, offer.id, 1, WP.isBase(offer.id) and { presetMag = true } or nil) then
 		return fail("NO_SPACE", "No room in your stash.")
 	end
 	for _, need in offer.give do
@@ -229,31 +232,60 @@ function Economy.quote(prof, g, tid)
 	return price, tid
 end
 
-function Economy.sell(player, prof, g, tid)
+-- sell one stash item (no message): price, trader | nil, failure
+local function sellOne(prof, g, tid)
 	if prof.slots.secure == g then
-		return fail("NOT_AUTHORIZED")
+		return nil, fail("NOT_AUTHORIZED")
 	end
 	local it = prof.items[g]
 	if not it then
-		return fail("NO_ITEM")
+		return nil, fail("NO_ITEM")
 	end
 	if not (prof.known[it.id] or Items.knownByDefault(it.id)) then
-		return fail("UNKNOWN_ITEM", "Examine it first.")
+		return nil, fail("UNKNOWN_ITEM", "Examine it first.")
 	end
 	if tid ~= nil and not TD.defs[tid] then
-		return fail("BAD_INPUT")
+		return nil, fail("BAD_INPUT")
 	end
 	local price, who = Economy.quote(prof, g, tid)
 	if not price then
 		local msgs = { NOT_EMPTY = "Empty it first.", NOT_BUYING = tid and (TD.defs[tid].name .. " doesn't buy that.") or "No trader buys that." }
-		return fail(who or "FAILED", msgs[who or ""])
+		return nil, fail(who or "FAILED", msgs[who or ""])
 	end
 	if not Inv.take(prof, g) then
-		return fail("NO_ITEM")
+		return nil, fail("NO_ITEM")
 	end
 	prof.money += price
 	standing(prof, who).spent += price
+	return price, who
+end
+Economy.sellOne = sellOne
+
+function Economy.sell(player, prof, g, tid)
+	local price, who = sellOne(prof, g, tid)
+	if not price then
+		return who
+	end
 	ctx.Remotes.note(player, "toast", { text = string.format("SOLD TO %s  +%s %s", TD.defs[who].name, Util.commas(price), Config.CURRENCY), tone = "good" })
+	return true
+end
+
+-- the trader screen's SELL deal: several items in one request (each checked like a single sale)
+function Economy.sellMany(player, prof, gs, tid)
+	local total, n, lastFail = 0, 0, nil
+	for _, g in gs do
+		local price, who = sellOne(prof, g, tid)
+		if price then
+			total += price
+			n += 1
+		else
+			lastFail = who
+		end
+	end
+	if n == 0 then
+		return lastFail or fail("NOT_BUYING")
+	end
+	ctx.Remotes.note(player, "toast", { text = string.format("SOLD %d ITEM%s TO %s  +%s %s", n, n == 1 and "" or "S", tid and TD.defs[tid].name or "TRADERS", Util.commas(total), Config.CURRENCY), tone = "good" })
 	return true
 end
 
@@ -391,6 +423,18 @@ local function tradeReq(player, p)
 			return fail("BAD_INPUT")
 		end
 		res = Economy.sell(player, prof, p.g, p.trader)
+	elseif p.op == "sellmany" then
+		if type(p.gs) ~= "table" or #p.gs == 0 or #p.gs > 40 then
+			return fail("BAD_INPUT")
+		end
+		local seen = {}
+		for _, g in p.gs do
+			if type(g) ~= "string" or #g > 40 or seen[g] then
+				return fail("BAD_INPUT")
+			end
+			seen[g] = true
+		end
+		res = Economy.sellMany(player, prof, p.gs, p.trader)
 	else
 		return fail("BAD_INPUT")
 	end

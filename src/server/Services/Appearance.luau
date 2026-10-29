@@ -12,6 +12,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Equipment = require(Shared.Equipment)
+local WP = require(Shared.WeaponParts)
 
 local Appearance = {}
 local ctx
@@ -20,7 +21,6 @@ local tracked = setmetatable({}, { __mode = "k" })
 Appearance.tracked = tracked
 Appearance.stats = { applies = 0, built = 0, destroyed = 0, fallbacks = 0, reconciles = 0 }
 local logged = {}
-local MOUNTS = { "rail", "muzzle", "under", "side" }
 
 function Appearance.init(c)
 	ctx = c
@@ -90,15 +90,12 @@ local function weaponSig(h, activeG)
 	local parts = { tostring(activeG) }
 	local it = activeG and h.items[activeG]
 	if it then
-		parts[#parts + 1] = it.id .. (it.mag and "M" or "-")
-		for _, mount in MOUNTS do
-			local mg = it.mods and it.mods[mount]
-			parts[#parts + 1] = (mg and h.items[mg]) and h.items[mg].id or "-"
-		end
+		-- the whole build (M14: every part shows in third person) and whether a magazine is in
+		parts[#parts + 1] = WP.signature(h.items, activeG) .. (it.mag and "M" or "-")
 	end
 	for _, slot in { "primary", "secondary" } do
 		local g = h.slots[slot]
-		parts[#parts + 1] = (g and h.items[g]) and (g .. ":" .. h.items[g].id) or "-"
+		parts[#parts + 1] = (g and h.items[g]) and (g .. ":" .. WP.signature(h.items, g)) or "-"
 	end
 	return table.concat(parts, "|")
 end

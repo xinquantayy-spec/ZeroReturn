@@ -10,6 +10,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
+local WP = require(Shared.WeaponParts)
 local Grid = require(Shared.Grid)
 local Util = require(Shared.Util)
 local Maps = require(Shared.Maps)
@@ -41,8 +42,14 @@ local function hoverOn(obj, target)
 end
 
 local defs = Items.defs
-local MOUNTS = { "rail", "muzzle", "under", "side" }
-local MOUNT_NAMES = { rail = "OPTIC", muzzle = "MUZZLE", under = "FOREGRIP", side = "TACTICAL" }
+-- grid size of an item as it lies (M14: a gun's build sets its size, it.sz from the server)
+local function sizeOf(it)
+	if it and it.sz then
+		return it.sz[1], it.sz[2]
+	end
+	local d = it and defs[it.id]
+	return d and d.w or 1, d and d.h or 1
+end
 local SLOT_LAYOUT = {
 	{ "head", 0, 0, 2, 2 }, { "ears", 0, 2, 1, 1 }, { "face", 1, 2, 1, 1 }, { "armor", 2, 0, 3, 3 }, { "rig", 5, 0, 3, 3 }, { "back", 8, 0, 3, 3 },
 	{ "primary", 0, 3, 5, 2 }, { "holster", 5, 3, 2, 2 }, { "melee", 7, 3, 1, 2 }, { "secure", 8, 3, 3, 2 },
@@ -103,6 +110,7 @@ local function locate(view, g)
 	end
 	return nil
 end
+Inventory.locate = locate
 
 local function massOf(view, g, depth)
 	local it = view.items[g]
@@ -155,7 +163,14 @@ local function cornerText(view, it)
 			local m = it.mag and view.items[it.mag]
 			return m and "MAG" or "NO MAG"
 		end
-		return string.format("%d/%d", it.a or 0, d.capacity or 0)
+		-- tube-fed: the tube part holds the shells (M14)
+		local cap = d.capacity or 0
+		if WP.SLOTS[it.id] and WP.SLOTS[it.id].tube then
+			local tg = it.mods and it.mods.tube
+			local t = tg and view.items[tg]
+			cap = (t and WP.parts[t.id] and WP.parts[t.id].capacity) or 0
+		end
+		return string.format("%d/%d", it.a or 0, cap)
 	elseif d.kind == "mag" then
 		return string.format("%d/%d", it.a or 0, d.capacity)
 	elseif d.stack > 1 then
@@ -193,7 +208,7 @@ local function findFree(view, cid, w, h)
 	local x, y, r = Grid.findFree(cw, ch, pl, function(gg)
 		local it = view.items[gg]
 		local d = it and defs[it.id]
-		return d and d.w or 1, d and d.h or 1
+		return sizeOf(it)
 	end, w, h)
 	return x, y, r
 end
@@ -217,15 +232,14 @@ local function quick(ref, g)
 	return req({ op = "quick", g = g, from = ref, to = "me" })
 end
 
--- client mirror of the server's Inv.canMod (mount present, muzzle devices match the caliber)
-local function modFits(wit, mit)
-	local wd, md = defs[wit.id], defs[mit.id]
-	local spec = wd and wd.weapon and Weapons[wd.weapon]
-	local slotOk = spec and spec.slots and md and md.mod and spec.slots[md.mod.slot]
-	if not slotOk then
-		return false
+-- client mirror of the server's Inv.attachMod: a free slot on the build that takes the part, else one it can replace
+local function modSlot(view, wg, pid)
+	local pg, sname = WP.freeSlot(view.items, wg, pid)
+	if pg then
+		return pg, sname, false
 	end
-	return not (md.mod.caliber and slotOk ~= true and slotOk ~= md.mod.caliber)
+	pg, sname = WP.swapSlot(view.items, wg, pid)
+	return pg, sname, pg ~= nil
 end
 
 -- client mirror of Settle.insurable: no ammo, quest items, recovery-kit items or secure-container contents
@@ -341,25 +355,22 @@ local function actionsFor(ref, g)
 			req({ op = "quick", g = it.mag, from = "me", to = (not inRaid) and "stash" or nil })
 		end)
 	end
-	-- weapon modding: detach installed attachments; install an attachment on any compatible weapon you carry
-	if mine and d.weapon then
-		for _, mount in MOUNTS do
-			local mg = it.mods and it.mods[mount]
-			local m = mg and view.items[mg]
-			if m then
-				add("REMOVE " .. defs[m.id].short, function()
-					req({ op = "unmod", g = g, mount = mount })
-				end)
-			end
-		end
+	-- weapon modding (M14, Tarkov): the modding screen for a gun (or a part with slots); a loose part goes
+	-- straight onto a gun you have where a slot takes it
+	if mine and (WP.isBase(it.id) or WP.SLOTS[it.id]) and ctx.Modding then
+		add("MODDING", function()
+			ctx.Modding.open(g)
+		end, "good")
 	end
 	if mine and d.kind == "mod" and locate(view, g) == "grid" then
 		for wg, w in view.items do
-			if w ~= it and defs[w.id].weapon and modFits(w, it) then
-				local occupied = w.mods and w.mods[d.mod.slot]
-				add((occupied and "SWAP ONTO " or "INSTALL ON ") .. defs[w.id].short, function()
-					req({ op = "mod", g = wg, mod = g })
-				end, "good")
+			if w ~= it and WP.isBase(w.id) and locate(view, wg) ~= nil then
+				local pg, sname, swap = modSlot(view, wg, it.id)
+				if pg then
+					add((swap and "SWAP ONTO " or "INSTALL ON ") .. defs[w.id].short, function()
+						req({ op = "mod", g = pg, slot = sname, mod = g })
+					end, "good")
+				end
 			end
 		end
 	end
@@ -487,8 +498,14 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 		Size = UDim2.fromOffset(pw, ph), BackgroundColor3 = base, ZIndex = 4, Selectable = true, SelectionImageObject = K.selection(),
 	}, parent)
 	K.stroke(t, isSel and K.C.ochre or K.C.line, isSel and 0 or 0.72, isSel and 2 or 1)
-	local rotated = d.w ~= d.h and ((pw > ph) ~= (d.w > d.h))
-	K.itemIcon(t, it.id, pw, ph, rotated, not isKnown, 4)
+	local iw, ih = sizeOf(it)
+	local rotated = iw ~= ih and ((pw > ph) ~= (iw > ih))
+	if K.isBuild(view.items, g) then
+		-- a gun is drawn as it is built: every part on it, at the stash scale (Tarkov)
+		K.gunPicture(t, view.items, g, pw, ph, rotated, 4, (cellAbs or Inventory.cell or 40) / 64)
+	else
+		K.itemIcon(t, it.id, pw, ph, rotated, not isKnown, 4)
+	end
 	local small = math.min(pw, ph) < 40
 	K.label(t, isKnown and d.short or "?", small and 10 or 12, { Position = UDim2.fromOffset(3, 2), Size = UDim2.new(1, -5, 0, 13), FontFace = K.bold, ZIndex = 5, TextTruncate = Enum.TextTruncate.AtEnd })
 	local corner = cornerText(view, it)
@@ -532,10 +549,10 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 			end
 			local rel = m - t.AbsolutePosition
 			local gc = cellAbs or Inventory.cell or 40
-			drag = { g = g, ref = ref, id = it.id, unknown = not isKnown, start = m, started = false, grabX = cellAbs and math.floor(rel.X / gc) or 0, grabY = cellAbs and math.floor(rel.Y / gc) or 0, cell = Inventory.cell or gc, w = d.w, h = d.h, r = 0, label = isKnown and d.short or "?" }
+			drag = { g = g, ref = ref, id = it.id, unknown = not isKnown, start = m, started = false, grabX = cellAbs and math.floor(rel.X / gc) or 0, grabY = cellAbs and math.floor(rel.Y / gc) or 0, cell = Inventory.cell or gc, w = (sizeOf(it)), h = select(2, sizeOf(it)), r = 0, label = isKnown and d.short or "?", items = view.items }
 			local _, _, p = locate(viewOf(ref), g)
 			if p and p.r == 1 then
-				drag.w, drag.h, drag.r = d.h, d.w, 1
+				drag.w, drag.h, drag.r = drag.h, drag.w, 1
 			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			openMenu(ref, g, mouse())
@@ -599,7 +616,10 @@ local function drawGrid(parent, view, ref, cid, title, cw, ch, cell, x0, y0, cli
 		local it = view.items[guid]
 		if it then
 			local d = defs[it.id]
-			local iw, ih = Grid.dims(d.w, d.h, p.r)
+			local iw, ih = Grid.dims(sizeOf(it))
+			if p.r == 1 then
+				iw, ih = ih, iw
+			end
 			tile(g, view, ref, guid, (p.x - 1) * cell + 1, (p.y - 1) * cell + 1, iw * cell - 2, ih * cell - 2, cell, { kind = "cell", ref = ref, cid = cid, x = p.x, y = p.y, occupied = guid })
 		end
 	end
@@ -730,11 +750,16 @@ local function detail(parent, w, h)
 	local isKnown = known(it.id)
 	K.label(det, isKnown and string.upper(d.name) or "UNKNOWN ITEM", 14, { FontFace = K.bold, Size = UDim2.new(0.6, 0, 0, 18) })
 	-- the item's picture, as large as the strip allows, between the text and the buttons
+	local sw, sh = sizeOf(it)
 	local picH = math.max(24, h - 20)
-	local picW = math.floor(math.min(w * 0.22, picH * d.w / d.h))
-	picH = math.floor(math.min(picH, picW * d.h / d.w))
+	local picW = math.floor(math.min(w * 0.22, picH * sw / sh))
+	picH = math.floor(math.min(picH, picW * sh / sw))
 	local pic = K.frame(det, { Name = "Picture", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(0.62, -4, 0, 0), Size = UDim2.fromOffset(picW, picH) })
-	K.itemIcon(pic, it.id, picW, picH, false, not isKnown, 3)
+	if K.isBuild(view.items, sel.g) then
+		K.gunPicture(pic, view.items, sel.g, picW, picH, false, 3)
+	else
+		K.itemIcon(pic, it.id, picW, picH, false, not isKnown, 3)
+	end
 	local lines = {}
 	if isKnown then
 		table.insert(lines, d.desc)
@@ -750,36 +775,17 @@ local function detail(parent, w, h)
 		if d.grid then
 			table.insert(lines, string.format("CAPACITY %dx%d", d.grid.w, d.grid.h))
 		end
-		local wspec = d.weapon and Weapons[d.weapon]
-		if wspec and next(wspec.slots or {}) then
-			local mods = {}
-			for _, mount in MOUNTS do
-				if wspec.slots[mount] then
-					local mg = it.mods and it.mods[mount]
-					local m = mg and view.items[mg]
-					table.insert(mods, MOUNT_NAMES[mount] .. ": " .. (m and defs[m.id].short or "-"))
-				end
+		-- M14: a gun's build (handling, missing parts) or a part's effect and where it fits
+		if ctx.Modding and (WP.isBase(it.id) or (d.part and it.mods)) then
+			for _, line in ctx.Modding.describeBuild(view.items, sel.g, true) do
+				table.insert(lines, line)
 			end
-			table.insert(lines, table.concat(mods, "   "))
+		elseif ctx.Modding and d.part then
+			for _, line in ctx.Modding.describePart(it.id, true) do
+				table.insert(lines, line)
+			end
 		end
-		if d.mod then
-			local fx = {}
-			if d.mod.recoil and d.mod.recoil ~= 1 then
-				table.insert(fx, string.format("RECOIL %+d%%", math.floor((d.mod.recoil - 1) * 100 + 0.5)))
-			end
-			if d.mod.ergo and d.mod.ergo ~= 0 then
-				table.insert(fx, string.format("ERGO %+d", d.mod.ergo))
-			end
-			if d.mod.loud and d.mod.loud ~= 1 then
-				table.insert(fx, string.format("LOUDNESS %+d%%", math.floor((d.mod.loud - 1) * 100 + 0.5)))
-			end
-			if d.mod.zoom then
-				table.insert(fx, string.format("%dx ZOOM", d.mod.zoom))
-			end
-			table.insert(fx, "MOUNT: " .. (MOUNT_NAMES[d.mod.slot] or "?") .. (d.mod.caliber and (" " .. d.mod.caliber) or ""))
-			table.insert(lines, table.concat(fx, "   "))
-		end
-		table.insert(lines, string.format("VALUE %s %s   ·   %.2f kg   ·   %dx%d%s%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), d.w, d.h, it.fir and "   ·   FOUND IN RAID" or "", it.ins and "   ·   INSURED" or ""))
+		table.insert(lines, string.format("VALUE %s %s   ·   %.2f kg   ·   %dx%d%s%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), sw, sh, it.fir and "   ·   FOUND IN RAID" or "", it.ins and "   ·   INSURED" or ""))
 	else
 		table.insert(lines, "Examine this item to identify it.")
 	end
@@ -1000,7 +1006,8 @@ local function endDrag()
 			local it = view.items[og]
 			local d = it and defs[it.id]
 			if d and og ~= dd.g then
-				local w, h = Grid.dims(d.w, d.h, p.r)
+				local sw, sh = sizeOf(it)
+				local w, h = Grid.dims(sw, sh, p.r)
 				if tgt.x >= p.x and tgt.x < p.x + w and tgt.y >= p.y and tgt.y < p.y + h then
 					occupant = p
 				end
@@ -1050,7 +1057,15 @@ local function updateGhost()
 			old:Destroy()
 		end
 		local pw, ph = drag.w * c - 2, drag.h * c - 2
-		K.itemIcon(ghost, drag.id, pw, ph, d.w ~= d.h and ((pw > ph) ~= (d.w > d.h)), drag.unknown, 60)
+		local items = drag.items
+		local it0 = items and items[drag.g]
+		local sw, sh = sizeOf(it0 or { id = drag.id })
+		local rotated = sw ~= sh and ((pw > ph) ~= (sw > sh))
+		if items and K.isBuild(items, drag.g) then
+			K.gunPicture(ghost, items, drag.g, pw, ph, rotated, 60, c / 64)
+		else
+			K.itemIcon(ghost, drag.id, pw, ph, rotated, drag.unknown, 60)
+		end
 	end
 end
 
@@ -1078,6 +1093,9 @@ function Inventory.close()
 	end
 	local l = loot
 	loot = nil
+	if ctx.Modding and ctx.Modding.open_ then
+		ctx.Modding.close()
+	end
 	ctx.Input.setMenu(false)
 	ctx.Interact.setEnabled(true)
 	pcall(function()
@@ -1109,6 +1127,10 @@ function Inventory.init(c)
 		end
 	end)
 	c.Input.on("Back", function(down)
+		-- Back closes the modding screen first (it sits over the inventory)
+		if ctx.Modding and (ctx.Modding.open_ or os.clock() - (ctx.Modding.closedAt or 0) < 0.15) then
+			return
+		end
 		if down and Inventory.open then
 			if menu then
 				closeMenu()

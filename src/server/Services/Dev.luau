@@ -7,6 +7,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local HttpService = game:GetService("HttpService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
+local WP = require(Shared.WeaponParts)
 local Inv = require(script.Parent.Inv)
 
 local Dev = {}
@@ -647,8 +648,9 @@ function C.shots()
 	return HttpService:JSONEncode(ctx.Combat.stats)
 end
 
--- spawn an item into the player's raid kit (rig/pockets/backpack), an empty equipment slot, or the stash
-function C.give(name, id, n, slot)
+-- spawn an item into the player's raid kit (rig/pockets/backpack), an empty equipment slot, or the stash;
+-- extra = item fields, e.g. { preset = "R17_PATROL" } for a gun build or { bare = true } for a stripped base
+function C.give(name, id, n, slot, extra)
 	local p = plr(name)
 	if not Items.defs[id] then
 		return "unknown item " .. tostring(id)
@@ -657,7 +659,7 @@ function C.give(name, id, n, slot)
 	if not h then
 		return "no holder"
 	end
-	local g, it = Inv.newItem(id, n or 1)
+	local g, it = Inv.newItem(id, n or 1, extra)
 	local okP, err
 	if slot then
 		okP, err = Inv.placeSlot(h, g, it, slot)
@@ -840,8 +842,12 @@ function C.weapon(name)
 	end
 	local wg, wit, wdef, wd, rounds = ctx.Combat.activeWeapon(s)
 	local mods = {}
-	for mount, mg in (wit and wit.mods) or {} do
-		mods[mount] = s.inv.items[mg] and s.inv.items[mg].id
+	if wg then
+		WP.walk(s.inv.items, wg, function(_, it, _, sname)
+			if sname then
+				mods[sname] = it.id
+			end
+		end)
 	end
 	local char = p.Character
 	local tp, sling, light = 0, 0, nil
@@ -1035,12 +1041,12 @@ function Dev.init(c)
 	end
 	local bf = Instance.new("BindableFunction")
 	bf.Name = "ZR_Dev"
-	bf.OnInvoke = function(cmd, a, b, d, e)
+	bf.OnInvoke = function(cmd, ...)
 		local f = C[cmd]
 		if not f then
 			return "unknown cmd"
 		end
-		local ok, res = pcall(f, a, b, d, e)
+		local ok, res = pcall(f, ...)
 		return ok and res or ("ERR " .. tostring(res))
 	end
 	bf.Parent = ServerStorage

@@ -574,7 +574,7 @@ local function capacityOf(u)
 		local md = m and Items.defs[m.id]
 		return md and md.capacity or 10
 	end
-	return w.wd.capacity or 5
+	return Inv.capacityOf(u.inv, w.g) or w.wd.capacity or 5
 end
 
 local function ammoStack(u, caliber)
@@ -600,7 +600,7 @@ local function canReload(u)
 		return best ~= nil and (u.inv.items[best].a or 0) > 0
 	end
 	local it = u.inv.items[w.g]
-	return (it.a or 0) < (w.wd.capacity or 0) and ammoStack(u, w.wd.caliber) ~= nil
+	return (it.a or 0) < (Inv.capacityOf(u.inv, w.g) or 0) and ammoStack(u, w.wd.caliber) ~= nil
 end
 
 -- tactical light on the AI's weapon (third-person SpotLight follows the WeaponLight attribute, like players)
@@ -677,7 +677,7 @@ local function reloadTick(u, t)
 		local it = u.inv.items[w.g]
 		-- keep loading shells unless the fight needs the gun now
 		local busy = u.state == "ENGAGE" and u.visible and (it.a or 0) >= 1 and math.random() < 0.5
-		if (it.a or 0) < (w.wd.capacity or 0) and ammoStack(u, w.wd.caliber) and not busy then
+		if (it.a or 0) < (Inv.capacityOf(u.inv, w.g) or 0) and ammoStack(u, w.wd.caliber) and not busy then
 			local dur = w.def.reload * u.skill.reload
 			u.reloadUntil = t + dur
 			ctx.Chars.gesture(u.model, "tube", dur)

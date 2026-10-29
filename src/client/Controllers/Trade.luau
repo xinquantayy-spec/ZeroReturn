@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
+local WP = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR"):WaitForChild("WeaponParts"))
 local Util = require(Shared.Util)
 local TD = require(Shared.TraderData)
 local QD = require(Shared.QuestData)
@@ -92,7 +93,7 @@ local function row(parent, label, info, btnText, enabled, onClick, infoColor, it
 	local pic = itemId and K.hasIcon(itemId)
 	local r = K.frame(parent, { BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.2, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, wide and 36 or (pic and 40 or 30)) })
 	if pic then
-		local d = Items.defs[itemId]
+		local d = Items.defs[string.match(itemId, "^([^#]+)") or itemId]
 		local ph = 36
 		local pw = math.floor(math.min(72, ph * d.w / d.h))
 		local box = K.frame(r, { Name = "Picture", Position = UDim2.fromOffset(2, 2), Size = UDim2.fromOffset(pw, ph), BackgroundColor3 = K.C.panel2 })
@@ -150,9 +151,11 @@ local function traderPanel(f, x, y, w, h, d, tid)
 		local price = TD.price(tid, o, st.ll)
 		local info = locked and ("LOYALTY " .. o.ll) or string.format("%s %s  ·  %d LEFT", Util.commas(price), Config.CURRENCY, math.max(0, left_))
 		local can = not locked and left_ > 0 and (d.money or 0) >= price
-		local _, b = row(left, def.name .. ((o.n > 1) and (" x" .. o.n) or ""), info, locked and "LOCKED" or (left_ > 0 and "BUY" or "SOLD OUT"), can, function()
+		-- a gun sold as a preset shows the preset's name and its build (Tarkov's trader presets)
+		local oname = o.preset and WP.PRESET_NAMES[o.preset] or def.name
+		local _, b = row(left, oname .. ((o.n > 1) and (" x" .. o.n) or ""), info, locked and "LOCKED" or (left_ > 0 and "BUY" or "SOLD OUT"), can, function()
 			req("trade", { op = "buy", trader = tid, i = i })
-		end, (not locked and (d.money or 0) < price) and K.C.red or nil, o.id)
+		end, (not locked and (d.money or 0) < price) and K.C.red or nil, o.preset and (o.id .. "#" .. o.preset) or o.id)
 		if b then
 			b.Name = "Buy_" .. o.id
 		end

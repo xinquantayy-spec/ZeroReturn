@@ -25,7 +25,7 @@ from zr_item_reg import item
 SPR_OUT = os.path.join(ROOT, "assets", "renders", "guns")
 # cells per metre of each picture class: a build's picture is put together from its parts at this scale, and its
 # grid size is its length and height in cells (see WeaponParts.sizeOf)
-CLASSES = {"long": 5.5, "pistol": 8.0}
+CLASSES = {"long": 5.5, "pistol": 7.0}
 SPRITE_CELL = 64          # atlas pixels per grid cell
 SPRITE_SS = 2             # render supersampling
 NO_BAKE = ("glass", "emissive")
@@ -651,6 +651,118 @@ def _run_sprites(names, seconds, done):
         if done is not None:
             done[name] = rec
         zr_items.clear_items(coll)
+    return out, left
+
+
+def run_sprite_sheets(seconds=45.0, done=None, sheet=(1024, 448), samples=12, gap=6):
+    """batched side sprites (much faster than one render per part): the parts of one picture class are laid out
+    side by side at that class's scale in front of one orthographic camera, rendered once, and the sheet is cut
+    into the same files and records as render_sprite. Returns (records rendered now, jobs left)."""
+    with gun_lighting():
+        return _run_sheets(seconds, done, sheet, samples, gap)
+
+
+def _run_sheets(seconds, done, sheet, samples, gap):
+    import time
+    import numpy as np
+    t0 = time.time()
+    scn, _, coll = zr_items.studio()
+    jobs = [j for j in sprite_jobs() if done is None or j[0] not in done]
+    if not jobs:
+        return {}, []
+    cls = jobs[0][2]
+    cpm = CLASSES[cls]
+    pps = cpm * SPRITE_CELL / U                    # atlas pixels per stud
+    pad, ss = 2, SPRITE_SS
+    SW, SH = sheet
+    zr_items.clear_items(coll)
+    placed = []
+    x = y = shelf = 0
+    for name, pid, c, rn, rot in jobs:
+        if c != cls:
+            continue
+        if time.time() - t0 > seconds * 0.5:      # leave the rest of the budget for the render
+            break
+        m = Euler(tuple(R(a) for a in rot)).to_matrix().to_4x4()
+        objs, _ = build_part(pid, coll, m)
+        for o in objs:      # unique names: building the same part again (another roll) would replace these
+            o.name = "%s#%d" % (o.name, len(placed))
+            o.data.name = o.name
+        pts = zr_items._corners(objs)
+        y0, y1 = min(p.y for p in pts), max(p.y for p in pts)
+        z0, z1 = min(p.z for p in pts), max(p.z for p in pts)
+        W = int(math.ceil((y1 - y0) * pps)) + 2 * pad
+        H = int(math.ceil((z1 - z0) * pps)) + 2 * pad
+        if x > 0 and x + W > SW:
+            x, y, shelf = 0, y + shelf, 0
+        if placed and y + H > SH:
+            for o in objs:                         # no room left on this sheet: next call
+                me = o.data
+                bpy.data.objects.remove(o)
+                if me and me.users == 0:
+                    bpy.data.meshes.remove(me)
+            break
+        # the sprite's top-left lands on sheet pixel (x, y): world y grows to the right, world z upward
+        ty = (x + pad) / pps - y0
+        tz = -(y + pad) / pps - z1
+        for o in objs:
+            o.matrix_world = Matrix.Translation((0.0, ty, tz)) @ o.matrix_world
+            mat = zr_items.render_material(o.get("zr_mat", "plastic"))
+            o.data.materials.clear()
+            o.data.materials.append(mat)
+        placed.append((name, objs, x, y, W, H, round(pad - y0 * pps, 2), round(pad + z1 * pps, 2)))
+        x += W + gap
+        shelf = max(shelf, H + gap)
+    if not placed:
+        return {}, [j[0] for j in jobs]
+    allobjs = [o for e in placed for o in e[1]]
+    Ws = max(e[2] + e[4] for e in placed)
+    Hs = max(e[3] + e[5] for e in placed)
+    cam = _sprite_cam(scn)
+    prev_cam = scn.camera
+    scn.camera = cam
+    zr_items.frame(cam, allobjs, max(1, Ws), max(1, Hs), "left", 0.0)   # the lights of the "left" view
+    cam.data.ortho_scale = max(Ws, Hs) / pps
+    xmax = max(p.x for p in zr_items._corners(allobjs))
+    cam.matrix_world = Matrix.Translation((xmax + 50.0, Ws / (2 * pps), -Hs / (2 * pps))) @ Euler((R(90), 0, R(90))).to_matrix().to_4x4()
+    cam.data.clip_start = 0.01
+    cam.data.clip_end = 200.0
+    scn.render.resolution_x = Ws * ss
+    scn.render.resolution_y = Hs * ss
+    old_samples = scn.eevee.taa_render_samples
+    scn.eevee.taa_render_samples = samples
+    os.makedirs(SPR_OUT, exist_ok=True)
+    sheet_path = os.path.join(SPR_OUT, "_sheet_tmp.png")
+    scn.render.filepath = sheet_path
+    win = bpy.context.window
+    prevs = win.scene
+    win.scene = scn
+    try:
+        bpy.ops.render.render(write_still=True, scene=scn.name)
+    finally:
+        win.scene = prevs
+        scn.camera = prev_cam
+        scn.eevee.taa_render_samples = old_samples
+    img = bpy.data.images.load(sheet_path, check_existing=False)
+    iw, ih = img.size
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(ih, iw, 4)   # bottom-up rows
+    bpy.data.images.remove(img)
+    out = {}
+    for name, objs, sx, sy, W, H, ox, oy in placed:
+        r0 = ih - (sy + H) * ss
+        crop = px[r0:r0 + H * ss, sx * ss:(sx + W) * ss, :].copy()
+        im = bpy.data.images.new("_zr_spr", W * ss, H * ss, alpha=True)
+        im.pixels[:] = crop.ravel()
+        im.filepath_raw = os.path.join(SPR_OUT, name + ".png")
+        im.file_format = "PNG"
+        im.save()
+        bpy.data.images.remove(im)
+        rec = {"w": W, "h": H, "ox": ox, "oy": oy, "file": name}
+        out[name] = rec
+        if done is not None:
+            done[name] = rec
+    zr_items.clear_items(coll)
+    left = [j[0] for j in jobs if j[0] not in out]
     return out, left
 
 

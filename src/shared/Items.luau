@@ -29,24 +29,13 @@ local function add(id: string, d: any)
 end
 
 -- ── weapons ───────────────────────────────────────────────────────────────────
-add("R17_RIFLE", { name = "R-17 Carbine", short = "R-17", kind = "weapon", w = 5, h = 2, mass = 3.2, value = 32000, caliber = "6.2", weapon = "R17", family = "R17", desc = "Fictional 6.2x40 service carbine. Dependable, stiff recoil.", color = c("#55605A") })
-add("KST_RIFLE", { name = "Kestrel KS-7", short = "KS-7", kind = "weapon", w = 5, h = 2, mass = 3.5, value = 41000, caliber = "7.6", weapon = "KST", family = "KST", rarity = "uncommon", desc = "Stamped-receiver 7.6x39 rifle. Heavy hitter, climbs hard.", color = c("#5C5446") })
-add("SPARROW_SMG", { name = "Sparrow SMG-9", short = "SMG-9", kind = "weapon", w = 4, h = 2, mass = 2.6, value = 27000, caliber = "9", weapon = "SPARROW", family = "SPARROW", desc = "Compact 9x19 submachine gun. Fast, controllable, weak against plates.", color = c("#4B5054") })
-add("HARROW12", { name = "Harrow-12 Pump", short = "H-12", kind = "weapon", w = 5, h = 1, mass = 3.4, value = 19000, caliber = "12", weapon = "HARROW", capacity = 6, desc = "12-gauge pump with a 6-shell tube. Load shells directly.", color = c("#5A4B3C") })
-add("TUNDRA_BOLT", { name = "Tundra Bolt Rifle", short = "TUNDRA", kind = "weapon", w = 6, h = 1, mass = 4.1, value = 46000, caliber = "7.6L", weapon = "TUNDRA", capacity = 5, rarity = "uncommon", desc = "Long bolt-action in 7.6x54. Five-round internal magazine.", color = c("#4F4A3B") })
-add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.8, value = 9500, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
+add("R17_RIFLE", { name = "R-17 Carbine", short = "R-17", kind = "weapon", w = 5, h = 2, mass = 1.3, value = 8000, caliber = "6.2", weapon = "R17", family = "R17", desc = "Fictional 6.2x40 service carbine. Dependable, stiff recoil.", color = c("#55605A") })
+add("KST_RIFLE", { name = "Kestrel KS-7", short = "KS-7", kind = "weapon", w = 5, h = 2, mass = 2.4, value = 27000, caliber = "7.6", weapon = "KST", family = "KST", rarity = "uncommon", desc = "Stamped-receiver 7.6x39 rifle. Heavy hitter, climbs hard.", color = c("#5C5446") })
+add("SPARROW_SMG", { name = "Sparrow SMG-9", short = "SMG-9", kind = "weapon", w = 3, h = 2, mass = 2.0, value = 11000, caliber = "9", weapon = "SPARROW", family = "SPARROW", desc = "Compact 9x19 submachine gun. Fast, controllable, weak against plates.", color = c("#4B5054") })
+add("HARROW12", { name = "Harrow-12 Pump", short = "H-12", kind = "weapon", w = 6, h = 1, mass = 1.4, value = 4800, caliber = "12", weapon = "HARROW", capacity = 6, desc = "12-gauge pump with a 6-shell tube. Load shells directly.", color = c("#5A4B3C") })
+add("TUNDRA_BOLT", { name = "Tundra Bolt Rifle", short = "TUNDRA", kind = "weapon", w = 6, h = 1, mass = 2.8, value = 40000, caliber = "7.6L", weapon = "TUNDRA", capacity = 5, rarity = "uncommon", desc = "Long bolt-action in 7.6x54. Five-round internal magazine.", color = c("#4F4A3B") })
+add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 add("FIELD_KNIFE", { name = "Field Knife", short = "KNIFE", kind = "melee", w = 1, h = 2, mass = 0.3, value = 4000, weapon = "KNIFE", desc = "Fixed-blade utility knife.", color = c("#5E5E58") })
-
--- ── attachments (weapon mods) ────────────────────────────────────────────────
--- mod = { slot = "rail"|"muzzle"|"under"|"side", caliber?, ergo?, recoil? (multiplier), loud? (multiplier), zoom?, reflex?, light? }
-local MODC = c("#33383A")
-add("RED_DOT", { name = "RS-1 Reflex Sight", short = "REFLEX", kind = "mod", w = 1, h = 1, mass = 0.2, value = 16000, mod = { slot = "rail", ergo = -1, reflex = true }, desc = "Open reflex sight with a red dot. Mounts on the top rail.", color = MODC })
-add("SCOPE_4X", { name = "C4 Combat Scope", short = "4X", kind = "mod", w = 2, h = 1, mass = 0.55, value = 48000, rarity = "uncommon", mod = { slot = "rail", ergo = -4, zoom = 4 }, desc = "Fixed 4x prism scope. Mounts on the top rail.", color = MODC })
-add("SUPP_62", { name = "6.2 Suppressor", short = "SUPP 6.2", kind = "mod", w = 2, h = 1, mass = 0.5, value = 36000, rarity = "uncommon", mod = { slot = "muzzle", caliber = "6.2", loud = 0.35, recoil = 0.93, ergo = -3 }, desc = "Sound suppressor for 6.2 rifles. Hides the muzzle flash.", color = MODC })
-add("SUPP_9", { name = "9mm Suppressor", short = "SUPP 9", kind = "mod", w = 2, h = 1, mass = 0.3, value = 24000, mod = { slot = "muzzle", caliber = "9", loud = 0.3, recoil = 0.95, ergo = -2 }, desc = "Sound suppressor for 9x19 weapons.", color = MODC })
-add("BRAKE_76", { name = "7.6 Muzzle Brake", short = "BRAKE", kind = "mod", w = 1, h = 1, mass = 0.2, value = 12000, mod = { slot = "muzzle", caliber = "7.6", loud = 1.15, recoil = 0.85 }, desc = "Muzzle brake for 7.6x39. Less recoil, more noise.", color = MODC })
-add("GRIP_V", { name = "Vertical Foregrip", short = "GRIP", kind = "mod", w = 1, h = 1, mass = 0.1, value = 9000, mod = { slot = "under", recoil = 0.9, ergo = 4 }, desc = "Vertical grip. Steadier bursts, faster handling.", color = MODC })
-add("LIGHT_T", { name = "WL-2 Weapon Light", short = "LIGHT", kind = "mod", w = 1, h = 1, mass = 0.15, value = 11000, mod = { slot = "side", light = true, ergo = -1 }, desc = "Weapon light. Toggle with L.", color = MODC })
 
 -- ── magazines ─────────────────────────────────────────────────────────────────
 add("R17_MAG", { name = "R-17 25-rd Magazine", short = "MAG 25", kind = "mag", w = 1, h = 2, mass = 0.3, value = 2800, capacity = 25, caliber = "6.2", family = "R17", desc = "25-round steel box magazine for the R-17.", color = c("#3E4440") })
@@ -54,6 +43,12 @@ add("R17_MAG40", { name = "R-17 40-rd Magazine", short = "MAG 40", kind = "mag",
 add("KST_MAG", { name = "KS-7 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.33, value = 3400, capacity = 30, caliber = "7.6", family = "KST", desc = "Curved 30-round 7.6x39 magazine.", color = c("#4A4237") })
 add("SPARROW_MAG", { name = "SMG-9 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.22, value = 2600, capacity = 30, caliber = "9", family = "SPARROW", desc = "Straight 30-round 9x19 stick magazine.", color = c("#3F4346") })
 add("P9_MAG", { name = "P-9 17-rd Magazine", short = "MAG 17", kind = "mag", w = 1, h = 1, mass = 0.12, value = 1900, capacity = 17, caliber = "9", family = "P9", desc = "Double-stack pistol magazine.", color = c("#3C3F41") })
+-- M14: more magazines (Tarkov-style: a bigger magazine makes the gun taller in the inventory)
+add("R17_MAG60", { name = "R-17 60-rd Magazine", short = "MAG 60", kind = "mag", w = 1, h = 3, mass = 0.75, value = 22000, capacity = 60, caliber = "6.2", family = "R17", rarity = "rare", desc = "Quad-stack 60-round magazine. Heavy and slow to load, but you rarely need to.", color = c("#2E3230") })
+add("KST_MAG_POLY", { name = "KS-7 30-rd Polymer Magazine", short = "MAG 30P", kind = "mag", w = 1, h = 2, mass = 0.25, value = 4200, capacity = 30, caliber = "7.6", family = "KST", desc = "Ribbed polymer 30-round magazine. Lighter than the steel one.", color = c("#3A3532") })
+add("KST_MAG40", { name = "KS-7 40-rd Magazine", short = "MAG 40", kind = "mag", w = 1, h = 3, mass = 0.42, value = 11000, capacity = 40, caliber = "7.6", family = "KST", rarity = "uncommon", desc = "Long 40-round magazine from the support-weapon variant.", color = c("#42392F") })
+add("SPR_MAG50", { name = "SMG-9 50-rd Drum", short = "DRUM 50", kind = "mag", w = 2, h = 2, mass = 0.6, value = 16000, capacity = 50, caliber = "9", family = "SPARROW", rarity = "rare", desc = "Twin-spring 50-round drum. Slow to load, heavy on the rig.", color = c("#34383A") })
+add("P9_MAG33", { name = "P-9 33-rd Extended Magazine", short = "MAG 33", kind = "mag", w = 1, h = 2, mass = 0.24, value = 7400, capacity = 33, caliber = "9", family = "P9", rarity = "uncommon", desc = "Extended stick magazine for the P-9.", color = c("#35383A") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -137,6 +132,7 @@ add("GREN_SMOKE", { name = "DS-2 Smoke Grenade", short = "SMOKE", kind = "grenad
 
 -- ── weapon maintenance (M11) ─────────────────────────────────────────────────
 add("WEAPON_KIT", { name = "Gunsmith Repair Kit", short = "GUN KIT", kind = "repair", w = 2, h = 1, mass = 1.1, value = 34000, rarity = "uncommon", repair = { points = 150 }, desc = "Springs, pins and a cleaning set. Restores weapon durability out of raid (150 points), with less wear than a trader repair.", color = c("#5B5E52") })
+add("MULTITOOL", { name = "Multitool", short = "MTOOL", kind = "loot", w = 2, h = 1, mass = 0.25, value = 18000, rarity = "uncommon", desc = "Pliers, drivers and a file in one. Carrying it lets you change vital weapon parts (barrels, gas blocks, handguards, pistol grips, receivers) during a raid.", color = c("#8A3E32") })
 
 -- ── keys, quest items ─────────────────────────────────────────────────────────
 add("KEY_OFFICE", { name = "Harbor Office Key", short = "OFFICE KEY", kind = "key", w = 1, h = 1, mass = 0.02, value = 22000, rarity = "uncommon", key = { door = "office", uses = 25 }, desc = "Opens the harbor office.", color = c("#8C7A4E") })
@@ -192,6 +188,20 @@ loot("TOOTHPASTE", "Toothpaste", "PASTE", 1, 1, 0.15, 4000, "common", "Unopened 
 loot("SOAP", "Soap Bar", "SOAP", 1, 1, 0.1, 3000, "common", "Wrapped bar of soap.", "#C8B8D8")
 loot("BLEACH", "Bleach", "BLEACH", 1, 2, 1.0, 8000, "common", "A bottle of household bleach.", "#D8DCE0")
 add("DOGTAG", { name = "Dog Tag", short = "TAG", kind = "loot", w = 1, h = 1, mass = 0.02, value = 12000, rarity = "uncommon", desc = "An operator's identification tag. Worth more the more experienced its owner was.", color = c("#A7A9A0") })
+
+-- ── M14 weapon parts (WeaponParts.luau): every part is an item of kind "mod" with its part record ──────────
+local WP = require(script.Parent.WeaponParts)
+local PART_COLOR = {
+	barrel = "3A3F42", gasblock = "3C4143", handguard = "3E4346", grip = "34383A", receiver = "3B4042", stock = "3A3E40",
+	charge = "3B3F41", tube = "3A3F42", muzzle = "33383A", sight = "2F3436", ironfront = "3A3E40", ironrear = "3A3E40",
+	mount = "393E40", foregrip = "36393B", tactical = "34383A",
+}
+for id, p in WP.parts do
+	add(id, {
+		name = p.name, short = p.short, kind = "mod", w = p.w, h = p.h, mass = p.mass, value = p.value, rarity = p.rarity,
+		desc = p.desc, color = c("#" .. (PART_COLOR[p.cat] or "3A3E40")), part = p,
+	})
+end
 
 local Items = { defs = defs }
 

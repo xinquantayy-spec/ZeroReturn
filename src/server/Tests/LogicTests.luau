@@ -264,38 +264,100 @@ function T.run(ctx)
 	hs3.painUntil = os.clock() + 60
 	check("painkillers allow sprint", Health.mods(hs3).sprint == true and not Health.inPain(hs3))
 
-	-- weapon modding (mounts, caliber-specific muzzle devices, swaps return the old part, slot drops)
+	-- M14 weapon modding (Tarkov-style builds: slots and fits, swaps, conflicts, required parts, sizes, the
+	-- multitool rule in raid, presets, tube capacity)
 	do
+		local WP = require(Shared.WeaponParts)
 		local h = Settle.newProfile()
 		local rifle, pistol = h.slots.primary, h.slots.holster
-		local function stash(id)
-			local g, it = Inv.newItem(id)
+		local function stash(id, extra)
+			local g, it = Inv.newItem(id, 1, extra)
 			local okP = Inv.place(h, g, it, { "stash" })
 			return okP and g or nil
 		end
-		local dot, scope, supp9, supp62, light = stash("RED_DOT"), stash("SCOPE_4X"), stash("SUPP_9"), stash("SUPP_62"), stash("LIGHT_T")
-		check("mods placed", dot and scope and supp9 and supp62 and light and true)
-		check("9mm suppressor refused on 6.2 rifle", select(2, Inv.attachMod(h, rifle, supp9, { "stash" })) == "WRONG_CALIBER")
-		check("rail optic refused on pistol", select(2, Inv.attachMod(h, pistol, dot, { "stash" })) == "NO_MOUNT")
-		check("suppressor installs", (Inv.attachMod(h, rifle, supp62, { "stash" })) and h.items[rifle].mods.muzzle == supp62 and Inv.locate(h, supp62) == "mod")
-		check("reflex installs", (Inv.attachMod(h, rifle, dot, { "stash" })) and inv(h))
-		check("scope swaps reflex back to stash", (Inv.attachMod(h, rifle, scope, { "stash" })) and h.items[rifle].mods.rail == scope and Inv.locate(h, dot) == "grid" and inv(h))
+		local function partOn(rootG, id)
+			local found
+			WP.walk(h.items, rootG, function(cg, it)
+				if it.id == id then
+					found = cg
+				end
+			end)
+			return found
+		end
+		local r = h.items[rifle]
+		check("starter rifle is a whole default build", WP.signature(h.items, rifle) ~= "" and partOn(rifle, "R17_UPPER") ~= nil and partOn(rifle, "R17_BRL_145") ~= nil and WP.operable(h.items, rifle) and inv(h))
+		local w0, h0 = Inv.sizeOf(r)
+		check("default R-17 is 5x2", w0 == 5 and h0 == 2)
+		local barrel = partOn(rifle, "R17_BRL_145")
+		local supp9, supp62, dot, scope, light = stash("SUPP_9"), stash("SUPP_62"), stash("RED_DOT"), stash("SCOPE_4X"), stash("LIGHT_T")
+		check("parts placed", supp9 and supp62 and dot and scope and light and true)
+		check("9mm suppressor does not fit the 6.2 barrel", select(2, Inv.attachPart(h, barrel, "muzzle", supp9, { "stash" })) == "WRONG_FIT")
+		check("rail optic does not fit the pistol", select(2, Inv.attachMod(h, pistol, dot, { "stash" })) == "NO_SLOT")
+		local fh = partOn(rifle, "R17_FH_A2")
+		check("suppressor replaces the flash hider (swap to stash)", (Inv.attachMod(h, rifle, supp62, { "stash" })) and h.items[barrel].mods.muzzle == supp62 and Inv.locate(h, fh) == "grid" and inv(h))
+		local w1 = Inv.sizeOf(h.items[rifle])
+		check("a suppressor makes the rifle longer (6 cells)", w1 == 6)
+		check("reflex goes on the upper's rail", (Inv.attachMod(h, rifle, dot, { "stash" })) and partOn(rifle, "RED_DOT") == dot and inv(h))
+		check("scope swaps the reflex back to the stash", (Inv.attachMod(h, rifle, scope, { "stash" })) and partOn(rifle, "SCOPE_4X") == scope and Inv.locate(h, dot) == "grid" and inv(h))
 		local ms = Inv.modStats(h, rifle)
-		check("mod stats", ms.suppressed and ms.zoom == 4 and ms.loud < 0.5 and ms.recoil < 1)
-		check("light via slot drop", (Inv.move(h, light, { slot = "primary" })) and h.items[rifle].mods.side == light and Inv.modStats(h, rifle).light)
+		check("build stats: suppressed, 4x, quieter, less recoil", ms.suppressed and ms.zoom == 4 and ms.loud < 0.5 and ms.recoil < 1 and ms.operable)
+		check("no rail for a light on the carbine handguard", select(2, Inv.attachMod(h, rifle, light, { "stash" })) == "NO_SLOT")
+		-- the quad rail handguard: a light goes on its side rail
+		local quad = stash("R17_HG_QUAD")
+		local upper = partOn(rifle, "R17_UPPER")
+		local carb = partOn(rifle, "R17_HG_CARB")
+		check("quad rail replaces the carbine handguard", (Inv.attachPart(h, upper, "handguard", quad, { "stash" })) and Inv.locate(h, carb) == "grid" and inv(h))
+		check("light on the quad rail (slot drop on the equipped gun)", (Inv.move(h, light, { slot = "primary" })) and partOn(rifle, "LIGHT_T") == light and Inv.modStats(h, rifle).light)
+		-- conflicts: a free-float handguard needs a low-profile gas block
+		local mlok = stash("R17_HG_MLOK")
+		check("free-float handguard refused over the front sight gas block", select(2, Inv.attachPart(h, upper, "handguard", mlok, { "stash" })) == "CONFLICT")
+		-- required parts: no barrel, no shooting; the barrel comes off with its parts
 		local mass0 = Inv.weight(h)
-		check("mods count toward carried weight", mass0 > 0)
-		check("detach returns to grid", (Inv.detachMod(h, rifle, "muzzle", { "stash" })) and Inv.locate(h, supp62) == "grid" and Inv.weight(h) < mass0 and inv(h))
-		check("detach empty mount fails", select(2, Inv.detachMod(h, rifle, "under", { "stash" })) == "NO_MOD")
-		-- weapon with mods moves as one bundle (take/restore keeps attachments)
+		check("parts count toward carried weight", mass0 > 0)
+		check("barrel off (with its suppressor and gas block)", (Inv.detachPart(h, upper, "barrel", { "stash" })) and Inv.locate(h, barrel) == "grid" and h.items[barrel].mods.muzzle == supp62 and Inv.weight(h) < mass0 and inv(h))
+		check("a gun without a barrel is not operable", not WP.operable(h.items, rifle) and #WP.missing(h.items, rifle) == 1 and WP.missing(h.items, rifle)[1].slot == "barrel")
+		local bw = Inv.sizeOf(h.items[barrel])
+		check("a barrel with a suppressor on it is bigger than the bare barrel", bw > Items.defs.R17_BRL_145.w)
+		check("barrel back on", (Inv.attachPart(h, upper, "barrel", barrel, { "stash" })) and WP.operable(h.items, rifle) and inv(h))
+		-- the build moves as one bundle
 		local b = Inv.take(h, rifle)
-		check("bundle carries mods", b ~= nil and #b.subs >= 3)
-		check("bundle restore", b ~= nil and (Inv.give(h, b, nil, { "stash" })) and h.items[rifle].mods.rail == scope and inv(h))
-		-- magazine dropped onto the equipped weapon's slot loads it
+		check("bundle carries the whole build", b ~= nil and #b.subs >= 8)
+		check("bundle restore", b ~= nil and (Inv.give(h, b, nil, { "stash" })) and partOn(rifle, "SCOPE_4X") == scope and inv(h))
+		-- a magazine dropped onto the equipped pistol loads it
 		local spareMag = stash("P9_MAG")
-		local pw = h.items[pistol]
-		local oldMag = pw.mag
+		local oldMag = h.items[pistol].mag
 		check("mag onto holster slot inserts", spareMag ~= nil and (Inv.move(h, spareMag, { slot = "holster" })) and h.items[pistol].mag == spareMag and Inv.locate(h, oldMag) == "grid" and inv(h))
+		-- presets and tube-fed capacity
+		local tac = stash("HARROW12", { preset = "HAR_TAC" })
+		check("a preset gun arrives as its build", tac ~= nil and partOn(tac, "HAR_TUBE_8") ~= nil and partOn(tac, "RED_DOT") ~= nil and inv(h))
+		check("tube-fed capacity comes from the tube (8)", tac ~= nil and Inv.capacityOf(h, tac) == 8)
+		local sw, sh = Inv.sizeOf(h.items[tac])
+		check("preset size from its parts", sw >= 6 and sh >= 1)
+		-- in a raid, vital parts need a multitool; functional parts do not (Tarkov 0.14+)
+		local h2 = Settle.newProfile()
+		local raid = Settle.deploy(h2, "MT1", 1000)
+		local rg = raid and raid.slots.primary
+		local rbar, rgrip
+		if rg then
+			WP.walk(raid.items, rg, function(cg, it)
+				if it.id == "R17_BRL_145" then
+					rbar = cg
+				elseif it.id == "AR_PG_A2" then
+					rgrip = cg
+				end
+			end)
+		end
+		check("raid copy keeps the build", rbar ~= nil and rgrip ~= nil)
+		if rbar and rgrip then
+			local order = Inv.loadOrder(raid)
+			check("raid: pistol grip cannot come off without a multitool", select(2, Inv.detachPart(raid, rg, "grip", order, { inRaid = true })) == "NEED_MULTITOOL")
+			check("raid: a vital part cannot be dragged off either", select(2, Inv.move(raid, rgrip, { c = order[1], x = 1, y = 1 }, { inRaid = true })) == "NEED_MULTITOOL")
+			check("raid: the flash hider comes off without tools", (Inv.detachPart(raid, rbar, "muzzle", order, { inRaid = true })) and Inv.check(raid))
+			local mtg, mt = Inv.newItem("MULTITOOL")
+			local placed = Inv.place(raid, mtg, mt, order)
+			check("raid: with a multitool the grip comes off", placed and (Inv.detachPart(raid, rg, "grip", order, { inRaid = true })) and Inv.check(raid))
+			check("raid: no grip, no shooting", not WP.operable(raid.items, rg))
+		end
 	end
 
 	-- operator rig math (shared by the server hitbox pose and every client's animator)

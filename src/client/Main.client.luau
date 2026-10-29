@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "Atmos", "Detail", "Interact", "Touch", "Inventory", "Screens", "Trade" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "Atmos", "Detail", "Interact", "Touch", "Inventory", "Modding", "Screens", "Trade" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -69,6 +69,10 @@ if RunService:IsStudio() then
 			return "ok"
 		elseif cmd == "hideout" then
 			ctx.Trade.hideout()
+			return "ok"
+		elseif cmd == "modding" then
+			-- a = the weapon's guid (in the stash or equipped): the M14 modding screen
+			ctx.Modding.open(a)
 			return "ok"
 		elseif cmd == "closeModal" then
 			ctx.Screens.close()

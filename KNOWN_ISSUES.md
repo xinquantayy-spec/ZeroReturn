@@ -63,8 +63,14 @@
 47. **Cinema risers are 1.3 studs.** Players step up them; AI use the side aisle with half steps.
 48. **An unknown asset warning.** `rbxassetid://111777818918264` (and once `92890594649410`) fail to load in raids ("HTTP 502" or "Asset content representation is being generated"). No instance in the client or server references them; likely a freshly uploaded image or mesh still processing. Harmless so far; watch the console.
 49. **Studio frame rates depend on Studio's render quality.** Studio renders at quality 21 (the maximum) during Play; devices choose their own level. `settings().Rendering.QualityLevel` can be set from the client command bar for comparisons (it resets when Play stops).
-50. **A modded gun shows the bare gun's picture.** Item pictures are one render per item, so a rifle with a scope and a suppressor still shows the plain rifle in the grid; its attachments are listed in the detail strip. Tarkov draws the modded gun; doing that needs a picture per build or a live 3D view of the gun in the tile.
+50. **Resolved in M14 (2026-10-29): a modded gun now shows its build.** Every grid tile, drag ghost, detail strip and trader preset row draws the gun from the sprites of the parts actually on it.
 51. **Item pictures are not checked on a phone.** At 64 px per grid cell they look sharp in Studio on the laptop; how readable the small ones (ammunition, keys) are on a phone screen is not verified.
+52. **Tactical lasers have no beam (M14 gap).** The LC-4 and LP-1 count as lasers in the stats, but nothing is drawn and there are no device modes yet; Tarkov cycles light, laser and both.
+53. **Folding stocks cannot be folded (M14 gap).** Tarkov lets you fold a stock to make the gun one or two cells shorter; the KS-7 folding stock is always unfolded here.
+54. **No saved weapon builds (M14 gap).** Tarkov's modding screen saves builds and buys the missing parts from traders; here you fit parts you own, one at a time.
+55. **No sight zeroing or variable zoom (M14 gap).** Scopes have one fixed zoom (the V6 is shown as 6x) and no zeroing distance.
+56. **3D inspect only for guns (M14 gap).** The modding screen shows a gun in 3D; other items have only their picture.
+57. **Part grid sizes are hand-set.** Only the pistol grips (1x1) were checked against Tarkov's wiki; barrels, handguards, stocks and sights keep sizes chosen to look like Tarkov's.
 44. **Syncing to the laptop without the shell tool.** When the laptop's shell tool is unavailable, files reach the PC as one bundle (`tools/pc_patch.py`) run through Blender's Python. Each sync shows up as a file card in the chat. Rojo then updates Studio as usual.
 33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.

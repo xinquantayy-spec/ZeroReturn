@@ -7,10 +7,12 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local WeaponModels = require(Shared.WeaponModels)
+local GunBuild = require(Shared.GunBuild)
 local ItemMeta = require(Shared.ItemMeta)
 local Equipment = require(Shared.Equipment)
 local AssetMeta = require(Shared.AssetMeta)
 local Inv = require(script.Parent.Inv)
+local WP = require(Shared.WeaponParts)
 
 local Loot = {}
 local ctx
@@ -71,10 +73,17 @@ local POOLS = {
 		{ id = "KST_MAG", w = 6, a = { 0, 30 }, at = "A76_PS" }, { id = "SPARROW_MAG", w = 5, a = { 0, 30 }, at = "A9_PST" },
 		{ id = "P9_PISTOL", w = 4 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "KST_RIFLE", w = 1 },
 		{ id = "GREN_RK5", w = 6 }, { id = "GREN_F7", w = 2 }, { id = "GREN_STUN", w = 3 }, { id = "GREN_SMOKE", w = 4 },
+		-- M14 weapon parts (Tarkov weapon boxes hold mods too)
+		{ id = "GRIP_V", w = 3 }, { id = "GRIP_STUB", w = 2 }, { id = "GRIP_ANG", w = 1 }, { id = "LIGHT_T", w = 3 }, { id = "LASER_DOT", w = 2 },
+		{ id = "RED_DOT", w = 2 }, { id = "SIGHT_MICRO", w = 1 }, { id = "MNT_RISER", w = 2 }, { id = "R17_FH_A2", w = 3 }, { id = "R17_COMP", w = 2 },
+		{ id = "KST_FH_SLANT", w = 3 }, { id = "AR_PG_ERGO", w = 2 }, { id = "AK_PG_RUB", w = 2 }, { id = "R17_HG_QUAD", w = 1 },
+		{ id = "KST_HG_POLY", w = 1 }, { id = "AR_STK_CARB", w = 2 }, { id = "KST_STK_FOLD", w = 1 }, { id = "R17_MAG40", w = 1, a = { 0, 40 }, at = "A62_FMJ" },
+		{ id = "KST_MAG_POLY", w = 2, a = { 0, 30 }, at = "A76_PS" }, { id = "P9_MAG33", w = 1, a = { 0, 33 }, at = "A9_PST" },
 	},
 	toolbox = {
 		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
 		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "WEAPON_KIT", w = 2 },
+		{ id = "MULTITOOL", w = 3 }, { id = "AR_CH_EXT", w = 1 }, { id = "R17_GAS_LOW", w = 1 },
 	},
 	jacket = {
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
@@ -182,6 +191,11 @@ function Loot.rollEntry(rand, poolName)
 			if d and d.weapon and d.kind ~= "melee" then
 				extra = extra or {}
 				extra.wear = math.floor(rand:NextNumber(45, 95) * 10) / 10 -- found weapons are used (M11)
+				-- M14: now and then a found gun is somebody's build rather than the factory one
+				local others = WP.PRESETS_OF[e.id]
+				if others and #others > 0 and rand:NextNumber() < 0.3 then
+					extra.preset = others[rand:NextInteger(1, #others)]
+				end
 			end
 			return Inv.newItem(e.id, n, extra)
 		end
@@ -735,23 +749,38 @@ local function looseModel(holder, g, it, cf)
 	hit.CanQuery = true
 	hit.Transparency = 1
 	hit.Parent = model
-	local wspec = (d.kind == "weapon" or d.kind == "pistol") and WeaponModels.build(holder.items, it, cf * CFrame.new(0, 0.14, 0) * CFrame.Angles(0, 0, math.rad(90)), 1)
-	if wspec then
-		local lo, hi = Vector3.new(math.huge, math.huge, math.huge), Vector3.new(-math.huge, -math.huge, -math.huge)
-		for _, p in wspec.parts do
-			p.Anchored = true
-			p.CanQuery = false
-			p.Parent = model
-			lo = lo:Min(p.Position - p.Size / 2)
-			hi = hi:Max(p.Position + p.Size / 2)
+	-- guns and gun parts lie on their right side, built from their Blender parts as they are put together
+	local lie = cf * CFrame.Angles(0, 0, math.rad(90))
+	local pieces
+	if d.kind == "weapon" or d.kind == "pistol" then
+		local wspec = WeaponModels.build(holder.items, it, lie, 1)
+		if wspec then
+			pieces = {}
+			for _, p in wspec.parts do
+				table.insert(pieces, p)
+			end
+			for _, p in wspec.mag do
+				table.insert(pieces, p)
+			end
 		end
-		for _, p in wspec.mag do
+	elseif d.kind == "mod" or d.kind == "mag" then
+		pieces = GunBuild.pieces(holder.items, g, lie, 1)
+	end
+	if pieces and #pieces > 0 then
+		-- settle the build on the surface, centred over the spot (box in the spot's own yaw frame)
+		local lo, hi = GunBuild.bounds(pieces, cf)
+		local mid = (lo + hi) / 2
+		local shift = cf:VectorToWorldSpace(Vector3.new(-mid.X, -lo.Y, -mid.Z))
+		for _, p in pieces do
 			p.Anchored = true
+			p.CanCollide = false
 			p.CanQuery = false
+			p.CanTouch = false
+			p.CFrame = p.CFrame + shift
 			p.Parent = model
 		end
-		hit.Size = (hi - lo):Max(Vector3.new(0.6, 0.4, 0.6))
-		hit.CFrame = CFrame.new((lo + hi) / 2)
+		hit.Size = (hi - lo):Max(Vector3.new(0.6, 0.4, 0.6)) + Vector3.new(0.2, 0.2, 0.2)
+		hit.CFrame = cf * CFrame.new(0, (hi.Y - lo.Y) / 2, 0)
 	else
 		local size, centre = placeItemModel(model, it.id, cf)
 		if not size then
@@ -906,9 +935,10 @@ local function kit(rand)
 		end
 		return nil
 	end
-	-- weapon with a loaded magazine (or loaded tube) plus `spares` magazines into the rig/pockets
-	function k.gun(slotName, id, magId, ammoId, spares, fill)
-		local wg = k.slot(slotName, id)
+	-- weapon (its default build, or `preset`, M14) with a loaded magazine (or loaded tube) plus `spares`
+	-- magazines into the rig/pockets
+	function k.gun(slotName, id, magId, ammoId, spares, fill, preset)
+		local wg = k.slot(slotName, id, preset and { preset = preset } or nil)
 		if not wg then
 			return nil
 		end
@@ -921,16 +951,18 @@ local function kit(rand)
 			local mg, mag = Inv.newItem(magId, 1, { a = math.max(1, math.floor(cap * (fill or 1))), at = ammoId })
 			h.items[mg] = mag
 			h.items[wg].mag = mg
+			Inv.resize(h, wg)
 			for _ = 1, spares or 0 do
 				local g, it = Inv.newItem(magId, 1, { a = cap, at = ammoId })
 				Inv.place(h, g, it, Inv.loadOrder(h))
 			end
 		else
 			local d = Items.defs[id]
-			h.items[wg].a = d.capacity or 5
+			local cap = Inv.capacityOf(h, wg) or d.capacity or 5
+			h.items[wg].a = cap
 			h.items[wg].at = ammoId
 			if (spares or 0) > 0 then
-				local g, it = Inv.newItem(ammoId, math.min(Items.defs[ammoId].stack, (d.capacity or 5) * spares))
+				local g, it = Inv.newItem(ammoId, math.min(Items.defs[ammoId].stack, cap * spares))
 				Inv.place(h, g, it, Inv.loadOrder(h))
 			end
 		end
@@ -940,18 +972,15 @@ local function kit(rand)
 		local g, it = Inv.newItem(id, n or 1, extra)
 		return Inv.place(h, g, it, Inv.loadOrder(h)) and g or nil
 	end
-	-- install an attachment on a weapon in the kit (skipped when the weapon has no fitting mount)
+	-- put a part on a weapon in the kit, in a free slot that takes it (skipped when there is none)
 	function k.mod(wg, id)
 		if not wg then
 			return nil
 		end
 		local mg, m = Inv.newItem(id, 1)
 		h.items[mg] = m
-		local w = h.items[wg]
-		local mount = Items.defs[id].mod.slot
-		if Inv.canMod(h, wg, mg) and not (w.mods and w.mods[mount]) then
-			w.mods = w.mods or {}
-			w.mods[mount] = mg
+		local pg, sname = WP.freeSlot(h.items, wg, id)
+		if pg and sname and Inv.attachPart(h, pg, sname, mg, {}) then
 			return mg
 		end
 		h.items[mg] = nil
@@ -990,14 +1019,11 @@ function Loot.guardLoadout(rand)
 	if rand:NextNumber() < 0.2 then
 		k.slot("face", "GAITER", { tint = "black" })
 	end
-	local pg
+	-- M14 builds: patrol builds carry a light on the rail (night patrols use it, AI.luau)
 	if rand:NextNumber() < 0.7 then
-		pg = k.gun("primary", "R17_RIFLE", "R17_MAG", rand:NextNumber() < 0.25 and "A62_AP" or "A62_FMJ", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
+		k.gun("primary", "R17_RIFLE", "R17_MAG", rand:NextNumber() < 0.25 and "A62_AP" or "A62_FMJ", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1), rand:NextNumber() < 0.55 and "R17_PATROL" or nil)
 	else
-		pg = k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", rand:NextNumber() < 0.3 and "A9_AP" or "A9_PST", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1))
-	end
-	if rand:NextNumber() < 0.55 then
-		k.mod(pg, "LIGHT_T") -- night patrols use it (AI.luau)
+		k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", rand:NextNumber() < 0.3 and "A9_AP" or "A9_PST", rand:NextInteger(1, 3), rand:NextNumber(0.6, 1), rand:NextNumber() < 0.45 and "SPR_TAC" or nil)
 	end
 	k.put(rand:NextNumber() < 0.5 and "BANDAGE" or "MEDKIT_S")
 	if rand:NextNumber() < 0.4 then
@@ -1027,7 +1053,7 @@ function Loot.bossLoadout(rand)
 	k.slot("head", "HARDHAT_FOREMAN", { dur = rand:NextInteger(16, 22) })
 	k.slot("rig", "RIG_CHEST", { tint = "charcoal" })
 	k.slot("back", "BAG_PATROL", { tint = "charcoal" })
-	k.mod(k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3), "LIGHT_T")
+	k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3, nil, "KST_TAC")
 	local pg = k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1)
 	local _ = pg
 	k.put("MEDKIT_L")
@@ -1061,9 +1087,9 @@ function Loot.caretakerLoadout(rand)
 	k.slot("armor", "ARMOR_C6", { dur = rand:NextInteger(60, 80), tint = "black" })
 	k.slot("head", "HELMET_C5", { dur = rand:NextInteger(30, 45) })
 	k.slot("rig", "RIG_CHEST", { tint = "black" })
-	k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.6 and "A12_SLUG" or "A12_BUCK", 4)
-	k.gun("secondary", "R17_RIFLE", "R17_MAG40", "A62_AP", 2)
-	k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1)
+	k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.6 and "A12_SLUG" or "A12_BUCK", 4, nil, "HAR_TAC")
+	k.gun("secondary", "R17_RIFLE", "R17_MAG40", "A62_AP", 2, nil, "R17_CQB")
+	k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1, nil, "P9_TAC")
 	k.put("MEDKIT_L")
 	k.put("HEMOSTAT")
 	k.put("PAINKILLERS")
@@ -1098,14 +1124,11 @@ function Loot.crewLoadout(rand)
 	if rand:NextNumber() < 0.4 then
 		k.slot("back", "BAG_SLING", { tint = "black" })
 	end
-	local cg
+	local tac = rand:NextNumber() < 0.65
 	if rand:NextNumber() < 0.5 then
-		cg = k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_PS", rand:NextInteger(2, 3))
+		k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_PS", rand:NextInteger(2, 3), nil, tac and "KST_TAC" or nil)
 	else
-		cg = k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", rand:NextInteger(2, 3))
-	end
-	if rand:NextNumber() < 0.65 then
-		k.mod(cg, "LIGHT_T")
+		k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", rand:NextInteger(2, 3), nil, tac and "R17_PATROL" or nil)
 	end
 	k.put("MEDKIT_M")
 	k.put(rand:NextNumber() < 0.5 and "TOURNIQUET" or "BANDAGE")
@@ -1160,8 +1183,10 @@ function Loot.scavLoadout(rand)
 		local mg, mag = Inv.newItem(gun[3], 1, { a = rand:NextInteger(math.floor(cap * 0.4), cap), at = gun[4] })
 		h.items[mg] = mag
 		h.items[wg].mag = mg
+		Inv.resize(h, wg)
 	else
-		h.items[wg].a = rand:NextInteger(math.max(1, (wd.capacity or 5) - 3), wd.capacity or 5)
+		local cap = Inv.capacityOf(h, wg) or wd.capacity or 5
+		h.items[wg].a = rand:NextInteger(math.max(1, cap - 3), cap)
 		h.items[wg].at = gun[4]
 	end
 	local rig = rand:NextNumber() < 0.7 and slot("rig", rand:NextNumber() < 0.6 and "RIG_BELT" or "RIG_CHEST") or nil
@@ -1191,6 +1216,7 @@ function Loot.scavLoadout(rand)
 			local mg, mag = Inv.newItem("P9_MAG", 1, { a = rand:NextInteger(5, 17), at = "A9_PST" })
 			h.items[mg] = mag
 			h.items[pg].mag = mg
+			Inv.resize(h, pg)
 		end
 	end
 	if rand:NextNumber() < 0.7 then
