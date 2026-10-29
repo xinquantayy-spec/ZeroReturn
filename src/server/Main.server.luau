@@ -20,7 +20,15 @@ task.spawn(function()
 	local ok, err = pcall(ctx.DetailPlan.generate, ctx.World.mapModels(), 1207, ctx.World.detailAvoid(), ctx.World.natureRegions)
 	if not ok then
 		warn("[ZR] detail plan failed:", err)
+		return
 	end
+	-- clients only get the detail of the map in play (published again on every activation)
+	local function publish(_, m)
+		local n = ctx.DetailPlan.publish(m and m.bounds)
+		print(string.format("[ZR] detail plan published for %s: %d entries", tostring(ctx.World.activeMap), n))
+	end
+	ctx.World.onActivate = publish
+	publish(ctx.World.activeMap, ctx.World.maps[ctx.World.activeMap])
 end)
 for _, name in { "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Doors", "Dev" } do
 	ctx[name].init(ctx)

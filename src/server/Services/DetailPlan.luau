@@ -1,7 +1,8 @@
 --!nonstrict
 -- M12 detail plan. After a map is built the server reads its geometry once (walls and their faces, openings,
--- floors and slabs, wall caps) and writes a seeded list of cosmetic details, grouped in 64-stud cells, to
--- ReplicatedStorage.ZR_DetailPlan (one JSON StringValue per cell; underground cells end in "u"). Each client builds the cells near its camera at
+-- floors and slabs, wall caps) and writes a seeded list of cosmetic details, grouped in 64-stud cells. The cells of
+-- the map in play (M13: Plan.publish on every map activation) go to ReplicatedStorage.ZR_DetailPlan (one JSON
+-- StringValue per cell; underground cells end in "u"). Each client builds the cells near its camera at
 -- its graphics level (client Detail controller). Details never collide, block sight or take bullets, and they are
 -- kept low or flat against surfaces, so they never become cover; gameplay props stay in World.
 --
@@ -17,7 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Wear = require(Shared.Wear)
 
-local Plan = { count = 0, stats = {} }
+local Plan = { count = 0, stats = {}, allCells = nil, nature = {} }
 local M = Enum.Material
 local D = Wear.DEC
 local CELL = Wear.CELL
@@ -578,24 +579,15 @@ function Plan.generate(list, seed, avoidList, nature)
 			task.wait()
 		end
 	end
-	-- publish: one JSON string per cell
-	local folder = ReplicatedStorage:FindFirstChild("ZR_DetailPlan")
-	if folder then
-		folder:Destroy()
-	end
-	folder = Instance.new("Folder")
-	folder.Name = "ZR_DetailPlan"
+	-- keep every cell (each map publishes its own share when it is activated)
+	Plan.allCells = {}
 	local bytes = 0
 	for k, list2 in cells do
-		local sv = Instance.new("StringValue")
-		sv.Name = k
-		sv.Value = HttpService:JSONEncode(list2)
-		bytes += #sv.Value
-		sv.Parent = folder
+		local s = HttpService:JSONEncode(list2)
+		Plan.allCells[k] = { json = s, n = #list2 }
+		bytes += #s
 	end
-	folder:SetAttribute("Count", Plan.count)
-	folder:SetAttribute("Nature", HttpService:JSONEncode(nature or {})) -- terrain regions for client ground cover (M13)
-	folder.Parent = ReplicatedStorage
+	Plan.nature = nature or {}
 	local top = {}
 	for k, v in Plan.stats do
 		table.insert(top, { k, v })
@@ -607,8 +599,44 @@ function Plan.generate(list, seed, avoidList, nature)
 	for i2 = 1, math.min(14, #top) do
 		table.insert(parts2, top[i2][1] .. "=" .. top[i2][2])
 	end
-	print(string.format("[ZR] Detail plan: %d entries in %d cells (%.0f KB) in %.2fs; %s", Plan.count, #folder:GetChildren(), bytes / 1024, os.clock() - t0, table.concat(parts2, " ")))
+	local nCells = 0
+	for _ in Plan.allCells do
+		nCells += 1
+	end
+	print(string.format("[ZR] Detail plan: %d entries in %d cells (%.0f KB, all maps) in %.2fs; %s", Plan.count, nCells, bytes / 1024, os.clock() - t0, table.concat(parts2, " ")))
 	return Plan.count
+end
+
+-- the cells inside `bounds` (a map's play area, with a cell of margin) replace ReplicatedStorage.ZR_DetailPlan;
+-- clients clear their detail and rebuild from the new set. nil bounds publish everything.
+function Plan.publish(bounds)
+	if not Plan.allCells then
+		return 0
+	end
+	local old = ReplicatedStorage:FindFirstChild("ZR_DetailPlan")
+	if old then
+		old:Destroy()
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "ZR_DetailPlan"
+	local n, bytes = 0, 0
+	for k, c in Plan.allCells do
+		local cx, cz = string.match(k, "^(-?%d+)_(-?%d+)")
+		local x, z = (tonumber(cx) + 0.5) * CELL, (tonumber(cz) + 0.5) * CELL
+		if not bounds or (x >= bounds.x0 - CELL and x <= bounds.x1 + CELL and z >= bounds.z0 - CELL and z <= bounds.z1 + CELL) then
+			local sv = Instance.new("StringValue")
+			sv.Name = k
+			sv.Value = c.json
+			sv.Parent = folder
+			n += c.n
+			bytes += #c.json
+		end
+	end
+	folder:SetAttribute("Count", n)
+	folder:SetAttribute("Bytes", bytes)
+	folder:SetAttribute("Nature", HttpService:JSONEncode(Plan.nature)) -- terrain regions for client ground cover (M13)
+	folder.Parent = ReplicatedStorage
+	return n
 end
 
 return Plan

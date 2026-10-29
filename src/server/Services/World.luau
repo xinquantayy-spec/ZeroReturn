@@ -54,6 +54,9 @@ function World.activate(id)
 	end
 	World.activeMap = id
 	World.map = m.model
+	if World.onActivate then
+		task.spawn(World.onActivate, id, m) -- the detail plan publishes this map's cells
+	end
 	return true
 end
 -- every map model (AI sight and cover, detail plan)
@@ -1276,7 +1279,7 @@ function World.build()
 		currentMap = nil
 	end
 	moduleMap("smelter", "Smelter")
-	moduleMap("pinewatch", "Pinewatch")
+	-- parked for now (owner's call, M13): moduleMap("pinewatch", "Pinewatch")
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
 	for _, d in World.doors do
 		local slab = Instance.new("Part")

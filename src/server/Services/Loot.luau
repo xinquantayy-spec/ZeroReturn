@@ -107,7 +107,7 @@ local POOLS = {
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
-		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_PINE_BUNKER", w = 4 },
+		{ id = "KEY_SMELT_OFFICE", w = 5 },
 	},
 }
 Loot.POOLS = POOLS

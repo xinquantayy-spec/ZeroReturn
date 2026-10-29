@@ -11,7 +11,7 @@ export type MapDef = {
 
 local Maps = {}
 
-Maps.order = { "quay7", "smelter", "pinewatch" }
+Maps.order = { "quay7", "smelter" }
 
 Maps.defs = {
 	quay7 = {
@@ -28,6 +28,11 @@ Maps.defs = {
 		raidTime = 900,
 		desc = "Blast furnaces, catwalks, a casting shed, offices and service tunnels under the yard. Short raids, close fights.",
 	},
+} :: { [string]: MapDef }
+
+-- maps taken out of the rotation for now (their modules stay in src/server/Maps and are not built); moving an
+-- entry back into Maps.defs and Maps.order, and its module back into World.build, brings the map back
+Maps.parked = {
 	pinewatch = {
 		id = "pinewatch",
 		name = "PINEWATCH",

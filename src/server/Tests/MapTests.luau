@@ -198,10 +198,9 @@ function T.run(ctx)
 		fewCover = fewCover or (found[id] or 0) < ((id == "quay7") and 300 or 150)
 	end
 	check("M08 AI cover on every map", not fewCover, table.concat(coverInfo, " "))
-	local pf = ReplicatedStorage:FindFirstChild("ZR_DetailPlan")
 	local cellsOn = {}
-	for _, sv in pf and pf:GetChildren() or {} do
-		local cx, cz = string.match(sv.Name, "^(-?%d+)_(-?%d+)u?$")
+	for key in ctx.DetailPlan.allCells or {} do
+		local cx, cz = string.match(key, "^(-?%d+)_(-?%d+)u?$")
 		local x, z = (tonumber(cx) + 0.5) * Wear.CELL, (tonumber(cz) + 0.5) * Wear.CELL
 		for id, m in W.maps do
 			local b = m.bounds
