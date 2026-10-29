@@ -17,6 +17,7 @@ local Sounds = require(Shared.Sounds)
 local Textures = require(Shared.Textures)
 local WeaponModels = require(Shared.WeaponModels)
 local Equipment = require(Shared.Equipment)
+local RigSpec = require(Shared.RigSpec)
 
 local Weapon = {
 	aiming = false, reloading = false, healing = false, drawing = false, checking = false, light = false, scoped = false,
@@ -32,8 +33,12 @@ local TUNE = {
 	vms = 0.55, -- viewmodel scale of the shared weapon spec
 	upper = 0.56, fore = 0.54, -- arm segment lengths (viewmodel studs)
 	upperW = 0.21, foreW = 0.17, -- sleeve thickness (round, the forearm swells toward the elbow)
-	rShoulder = Vector3.new(0.4, -0.58, 0.02), lShoulder = Vector3.new(-0.42, -0.62, -0.32),
+	rShoulder = Vector3.new(0.5, -0.74, 0.08), lShoulder = Vector3.new(-0.46, -0.7, -0.3),
 	rPole = Vector3.new(0.7, -1, 0.3), lPole = Vector3.new(-1, -0.7, 0.1),
+	-- the character's own block arms in first person: lengths and thickness relative to the body (1 = the body's
+	-- exact proportions), and where each fist sits in its hand frame (tuned in Studio for hip, ADS, pistol, knife)
+	armScale = 0.62, armThick = 0.45,
+	rFist = Vector3.new(0, 0, 0), lFist = Vector3.new(0, -0.05, 0),
 }
 Weapon.TUNE = TUNE
 local GLOVE_SEAM = Color3.fromHex("181A19") -- glove colours come from the look (Equipment.fpColors)
@@ -188,7 +193,8 @@ end
 
 local function vmKey(it, g)
 	local look, variant = myLook()
-	local k = { g, it.mag and "M" or "-", look .. variant }
+	local me = Players.LocalPlayer.Character
+	local k = { g, it.mag and "M" or "-", look .. variant, tostring(me and me:GetAttribute("AppearanceRev") or 0), tostring(me) }
 	for _, mount in MOUNTS do
 		k[#k + 1] = (it.mods and it.mods[mount]) or "-"
 	end
@@ -307,14 +313,90 @@ local function buildVm(it, d, g)
 			seam = vpart(model, Vector3.new(0.056, 0.02, 0.135), GLOVE_SEAM),
 		}
 	end
-	o.armR, o.armL = arm(), arm()
-	o.armOrder = { "upper", "elbow", "fore", "bulk", "cuff", "palm", "pad", "fingers", "thumb", "seam" }
-	o.arms = {}
-	for _, a in { o.armR, o.armL } do
-		for _, k in o.armOrder do
-			table.insert(o.arms, a[k])
-			table.insert(o.all, a[k])
-			table.insert(o.cfs, a[k].CFrame)
+	-- first person shows the character's own arms: its block arm segments and hands (same meshes, outfit colours
+	-- and worn arm gear: armbands, shoulder markers, arm guards), cloned and scaled for the viewmodel
+	local char = player.Character
+	local function bodyArm(side)
+		local up = char and char:FindFirstChild(side .. "UpperArm")
+		local lo = char and char:FindFirstChild(side .. "LowerArm")
+		local ha = char and char:FindFirstChild(side .. "Hand")
+		if not (up and lo and ha and up:IsA("BasePart") and lo:IsA("BasePart") and ha:IsA("BasePart")) then
+			return nil
+		end
+		local s, t = TUNE.armScale, TUNE.armThick
+		local function scaled(v)
+			return Vector3.new(v.X * s * t, v.Y * s, v.Z * s * t)
+		end
+		local function clone(src)
+			local p = src:Clone()
+			for _, ch in p:GetChildren() do
+				if not (ch:IsA("SurfaceAppearance") or ch:IsA("Decal") or ch:IsA("Texture")) then
+					ch:Destroy()
+				end
+			end
+			p.Size = scaled(src.Size)
+			-- the body's Fabric texture is world-scaled: coarse at viewmodel size, so the clones are smooth
+			if p.Material == Enum.Material.Fabric then
+				p.Material = CLOTH
+			end
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.CastShadow = false
+			p.Massless = true
+			p.Transparency = 0
+			p.LocalTransparencyModifier = 0
+			p.Parent = model
+			return p
+		end
+		local a = { upper = clone(up), lower = clone(lo), hand = clone(ha), gear = {} }
+		local hostOf = { [up] = "upper", [lo] = "lower", [ha] = "hand" }
+		for _, g in char:GetChildren() do
+			if g.Name == "Gear" and g:IsA("BasePart") then
+				local w = g:FindFirstChildOfClass("WeldConstraint")
+				local host = w and hostOf[w.Part0]
+				if host then
+					local rel = w.Part0.CFrame:ToObjectSpace(g.CFrame)
+					table.insert(a.gear, { part = clone(g), host = host, off = CFrame.new(scaled(rel.Position)) * rel.Rotation })
+				end
+			end
+		end
+		-- joint geometry from the rig: segment lengths, where each part's centre sits between its joints
+		local P, J = RigSpec.parts, {}
+		for _, j in RigSpec.joints do
+			J[j.name] = j.pos
+		end
+		local sh, el, wr = J[side .. "Shoulder"], J[side .. "Elbow"], J[side .. "Wrist"]
+		a.lenU = (sh - el).Magnitude * s
+		a.lenF = (el - wr).Magnitude * s
+		a.tU = (sh.Y - P[side .. "UpperArm"].center.Y) / (sh.Y - el.Y)
+		a.tF = (el.Y - P[side .. "LowerArm"].center.Y) / (el.Y - wr.Y)
+		a.handOff = (wr.Y - P[side .. "Hand"].center.Y) * s
+		return a
+	end
+	local rA, lA = bodyArm("Right"), bodyArm("Left")
+	if rA and lA then
+		o.block = true
+		o.armR, o.armL = rA, lA
+		for _, a in { rA, lA } do
+			for _, k in { "upper", "lower", "hand" } do
+				table.insert(o.all, a[k])
+				table.insert(o.cfs, a[k].CFrame)
+			end
+			for _, g in a.gear do
+				table.insert(o.all, g.part)
+				table.insert(o.cfs, g.part.CFrame)
+			end
+		end
+	else
+		-- no character yet: the old block sleeves until the next rebuild
+		o.armR, o.armL = arm(), arm()
+		for _, a in { o.armR, o.armL } do
+			for _, k in { "upper", "elbow", "fore", "bulk", "cuff", "palm", "pad", "fingers", "thumb", "seam" } do
+				table.insert(o.all, a[k])
+				table.insert(o.cfs, a[k].CFrame)
+			end
 		end
 	end
 	o.shell = vpart(model, Vector3.new(0.11, 0.042, 0.042), Color3.fromHex("8E2B22"))
@@ -407,6 +489,42 @@ local function armCFrames(a, S, E, W, H, side, out, i)
 		out[i + 9] = H * CFrame.new(0, -0.05, 0.066) * CFrame.Angles(0, 0, math.rad(90))
 	end
 	return i + 10
+end
+
+-- a frame along a limb segment from joint A (proximal) to joint B (distal): +Y toward A like the body's rest pose,
+-- +X toward the camera's right (the body's parts are not mirrored), the part centre at fraction t from A to B
+local function segFrame(A, B, t, right)
+	local y = A - B
+	y = y.Magnitude > 1e-4 and y.Unit or Vector3.yAxis
+	local x = right - y * right:Dot(y)
+	x = x.Magnitude > 1e-4 and x.Unit or y:Cross(Vector3.zAxis).Unit
+	return CFrame.fromMatrix(A + (B - A) * t, x, y, x:Cross(y))
+end
+
+-- the wrist that puts the fist's centre on the hand frame H (fist offset in H's space), reaching from shoulder S
+local function wristFor(a, H, S, fist)
+	local c = (H * CFrame.new(fist)).Position
+	local d = c - S
+	d = d.Magnitude > 1e-4 and d.Unit or Vector3.new(0, 0, -1)
+	return c - d * a.handOff
+end
+
+-- one block arm's CFrames: upper arm (shoulder S to elbow E), lower arm (E to wrist W), the fist beyond the wrist,
+-- then the worn arm gear on its host segment
+local function blockArmCFrames(a, S, E, W, right, out, i)
+	local fU = segFrame(S, E, a.tU, right)
+	local fL = segFrame(E, W, a.tF, right)
+	local fH = fL.Rotation + (W + (W - E).Unit * a.handOff)
+	out[i] = fU
+	out[i + 1] = fL
+	out[i + 2] = fH
+	local frames = { upper = fU, lower = fL, hand = fH }
+	i += 3
+	for _, g in a.gear do
+		out[i] = frames[g.host] * g.off
+		i += 1
+	end
+	return i
 end
 
 local function setMagHidden(o, hidden)
@@ -1010,13 +1128,25 @@ local function update(dt)
 		end
 	end
 	local rS, lS = camCF * TUNE.rShoulder, camCF * TUNE.lShoulder
-	local rW = (rHand * CFrame.new(0, -0.04, 0.08)).Position
-	local lW = (lHand * CFrame.new(-0.02, -0.035, 0.08)).Position
-	local rE = solve(rS, rW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.rPole))
-	local lE = solve(lS, lW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.lPole))
 	local n = o.nFixed
-	local nxt = armCFrames(o.armR, rS, rE, rW, rHand, 1, cfs, n + 1)
-	nxt = armCFrames(o.armL, lS, lE, lW, lHand, -1, cfs, nxt)
+	local nxt
+	if o.block then
+		-- the character's own block arms: fists on the grip and the handguard
+		local A, B = o.armR, o.armL
+		local rW, lW = wristFor(A, rHand, rS, TUNE.rFist), wristFor(B, lHand, lS, TUNE.lFist)
+		local rE = solve(rS, rW, A.lenU, A.lenF, camCF:VectorToWorldSpace(TUNE.rPole))
+		local lE = solve(lS, lW, B.lenU, B.lenF, camCF:VectorToWorldSpace(TUNE.lPole))
+		local right = camCF.RightVector
+		nxt = blockArmCFrames(A, rS, rE, rW, right, cfs, n + 1)
+		nxt = blockArmCFrames(B, lS, lE, lW, right, cfs, nxt)
+	else
+		local rW = (rHand * CFrame.new(0, -0.04, 0.08)).Position
+		local lW = (lHand * CFrame.new(-0.02, -0.035, 0.08)).Position
+		local rE = solve(rS, rW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.rPole))
+		local lE = solve(lS, lW, TUNE.upper, TUNE.fore, camCF:VectorToWorldSpace(TUNE.lPole))
+		nxt = armCFrames(o.armR, rS, rE, rW, rHand, 1, cfs, n + 1)
+		nxt = armCFrames(o.armL, lS, lE, lW, lHand, -1, cfs, nxt)
+	end
 	if (o.shell.Transparency < 1) ~= shellOn then
 		o.shell.Transparency = shellOn and 0 or 1
 	end
@@ -1193,9 +1323,31 @@ function Weapon.init(c)
 			Weapon.cancelAim()
 		end
 	end)
-	player.CharacterAdded:Connect(function()
+	-- the first-person arms are the character's own: rebuild them for a new character and whenever what it wears
+	-- changes (outfit, arm gear)
+	local function watchChar(char)
+		char:GetAttributeChangedSignal("AppearanceRev"):Connect(function()
+			if vm and player.Character == char then
+				destroyVm()
+				onSnapshot()
+			end
+		end)
+		task.spawn(function()
+			char:WaitForChild("RightHand", 10)
+			char:WaitForChild("LeftHand", 10)
+			if player.Character == char and vm then
+				destroyVm()
+				onSnapshot()
+			end
+		end)
+	end
+	if player.Character then
+		watchChar(player.Character)
+	end
+	player.CharacterAdded:Connect(function(char)
 		resetActions()
 		lastActiveG = nil
+		watchChar(char)
 	end)
 	RunService:BindToRenderStep("ZR_Weapon", Enum.RenderPriority.Camera.Value + 2, update)
 end
