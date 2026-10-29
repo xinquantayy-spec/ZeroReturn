@@ -688,3 +688,23 @@ def dogtag(I):
         a = 2 * math.pi * k / n
         lathe(m, [(0.0, -0.0015), (0.0015, 0.0), (0.0, 0.0015)], col("B8BAB2"), seg=6, x=math.cos(a) * 0.03, y=0.035 + math.sin(a) * 0.018,
               z=0.0015)
+
+
+# ── M14: the multitool (lets you change vital weapon parts in raid, as in Tarkov) ──
+@item("MULTITOOL", 2, 1, view="three_q", margin=0.08)
+def multitool(I):
+    m, r = I("metal"), I("rubber")
+    STEELC = col("A4A9A6")
+    for sx in (-1, 1):                                                  # two folded handles
+        m.box((sx * 0.0072, 0.0, 0.006), (0.0062, 0.1, 0.012), STEELC, bevel=0.0018)
+        r.box((sx * 0.0105, 0.008, 0.006), (0.0012, 0.066, 0.0085), col("B04A2A"), bevel=0.0005)   # grip inserts
+        for k in range(3):
+            m.cyl((sx * 0.0105, 0.042 - k * 0.04, 0.006), (sx * 0.0112, 0.042 - k * 0.04, 0.006), 0.0018, shade(STEELC, 0.6), seg=8)
+    # plier jaws out of the front, a blade and a screwdriver tucked in the handles
+    m.box((0.0, -0.064, 0.006), (0.009, 0.03, 0.007), shade(STEELC, 0.9), bevel=0.0015)
+    m.box((0.0, -0.082, 0.006), (0.006, 0.012, 0.005), shade(STEELC, 0.85), bevel=0.0012)
+    for k in range(5):
+        m.box((0.0047, -0.058 - k * 0.0045, 0.006), (0.0006, 0.002, 0.0055), shade(STEELC, 0.5))
+    m.box((0.0, 0.054, 0.0125), (0.004, 0.02, 0.0012), shade(STEELC, 1.12), bevel=0.0004)
+    m.cyl((0.0, 0.05, 0.006), (0.0, 0.05, 0.0135), 0.003, shade(STEELC, 0.7), seg=10)
+    label_band(I("paper"), (0.0, 0.01, 0.0125), (0.006, 0.03, 0.0), col("2A2C2C"), axis="z", sign=1)

@@ -246,11 +246,18 @@ def render_material(key):
 
 
 # ── the icon studio ────────────────────────────────────────────────────────────
+WORLD = None  # name of a world used instead of ZR_IconsWorld (gun renders: zr_guns.gun_world)
+EXPOSURE = None  # exposure override (gun renders)
+
+
 def studio():
     scn = bpy.data.scenes.get("ZR_Icons")
     if scn is None:
         scn = bpy.data.scenes.new("ZR_Icons")
-    if scn.world is None or scn.world.name != "ZR_IconsWorld":
+    if WORLD and bpy.data.worlds.get(WORLD):
+        if scn.world is None or scn.world.name != WORLD:
+            scn.world = bpy.data.worlds[WORLD]
+    elif scn.world is None or scn.world.name != "ZR_IconsWorld":
         w = bpy.data.worlds.get("ZR_IconsWorld") or bpy.data.worlds.new("ZR_IconsWorld")
         w.use_nodes = True
         bg = w.node_tree.nodes.get("Background")
@@ -270,7 +277,7 @@ def studio():
         scn.view_settings.look = "None"
     except TypeError:
         pass
-    scn.view_settings.exposure = 0.55
+    scn.view_settings.exposure = EXPOSURE if EXPOSURE is not None else 0.55
     scn.view_settings.gamma = 1.0
     ee = scn.eevee
     for k, v in (("taa_render_samples", 32), ("use_shadows", True), ("use_raytracing", True), ("shadow_ray_count", 2), ("shadow_step_count", 8)):
