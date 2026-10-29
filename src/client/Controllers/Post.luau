@@ -132,7 +132,9 @@ function Post.apply()
 	local S = ctx.Settings.data
 	local q = S.quality or 2
 	fx.rays.Enabled = q >= 2
-	fx.dof.Enabled = q >= 3
+	-- depth of field (HIGH) blurs only what is beyond ~100 studs; under a roof nothing is that far, so it is off
+	-- indoors (it is the most expensive post effect, ~5 ms a frame on an integrated GPU at full quality)
+	fx.dof.Enabled = q >= 3 and indoorTarget < 0.6
 	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
 	if bloom then
 		bloom.Enabled = q >= 2
@@ -265,6 +267,10 @@ local function step(dt)
 	end
 	indoor += (indoorTarget - indoor) * math.min(1, dt * 0.9)
 	Post.indoor = indoor
+	local wantDof = (S.quality or 2) >= 3 and indoorTarget < 0.6
+	if fx.dof.Enabled ~= wantDof then
+		fx.dof.Enabled = wantDof
+	end
 	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
 	Post.burstAmt = math.max(0, Post.burstAmt - dt * 4)
 	Post.flash = math.max(0, Post.flash - dt * 5)

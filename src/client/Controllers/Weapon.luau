@@ -700,9 +700,9 @@ local function fireOnce()
 	local hit = res and res.Position or (origin + dir * def.range)
 	local muzzle = (o.grip * CFrame.new(o.muzzle)).Position
 	if not o.ms.suppressed and not Weapon.scoped then
-		ctx.Effects.flash(muzzle)
+		ctx.Effects.flash(muzzle, 0.12)
 		if ctx.Post then
-			ctx.Post.burst(0.22)
+			ctx.Post.burst(0.1)
 		end
 	end
 	local it, d = activeItem()

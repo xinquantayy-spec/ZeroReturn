@@ -340,14 +340,18 @@ function Effects.tracer(o, p)
 	fade(part, 0.07)
 end
 
-function Effects.flash(pos)
-	local part = tmpPart(Vector3.new(0.35, 0.35, 0.35), CFrame.new(pos), Color3.fromHex("FFD9A0"), Enum.Material.Neon, 0.2)
+-- muzzle flash: a small round glow and a short light. size: the glow's diameter (first person passes a smaller
+-- one, since the viewmodel muzzle sits right in front of the camera)
+function Effects.flash(pos, size)
+	size = size or 0.22
+	local part = tmpPart(Vector3.new(size, size, size), CFrame.new(pos), Color3.fromHex("FFD9A0"), Enum.Material.Neon, 0.3)
+	part.Shape = Enum.PartType.Ball
 	local l = Instance.new("PointLight")
 	l.Color = Color3.fromHex("FFC98A")
-	l.Range = 12
-	l.Brightness = 2.5
+	l.Range = 9
+	l.Brightness = 1.6
 	l.Parent = part
-	fade(part, 0.05)
+	fade(part, 0.045)
 end
 
 function Effects.impactSound(pos, isBody, material)

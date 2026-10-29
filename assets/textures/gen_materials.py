@@ -369,10 +369,179 @@ def wood_weathered(out):
     save(out, "WoodWeathered", col, height, rough, 2.2)
 
 
+# ── M13 Meridian Mall surfaces ───────────────────────────────────────────────
+def grid_lines(n_cells, width, n=N):
+    """distance-based grid line mask (cells per tile, line width in px), returns 0..1 (1 on the line)"""
+    y, x = np.mgrid[0:n, 0:n]
+    cell = n / n_cells
+    dx = np.abs(((x + cell / 2) % cell) - cell / 2)
+    dy = np.abs(((y + cell / 2) % cell) - cell / 2)
+    d = np.minimum(dx, dy)
+    return smoothstep(width * 0.5 + 0.8, width * 0.5 - 0.4, d)
+
+
+def cell_index(n_cells, n=N):
+    y, x = np.mgrid[0:n, 0:n]
+    cell = n / n_cells
+    return (x // cell).astype(int), (y // cell).astype(int)
+
+
+def terrazzo(out):
+    """mall floor: polished terrazzo panels (4 studs, 16 studs per tile) with dark joint strips, a slightly different
+    tone per panel, mixed stone chips, traffic scuffs and grime along the joints, hairline cracks, water marks.
+    v2: joints and panel tones strong enough to read at walking distance (fine chips alone average out)"""
+    r = rng_for("terrazzo")
+    n_cells = 4
+    gx, gy = cell_index(n_cells)
+    panel = r.uniform(-0.06, 0.05, (n_cells, n_cells))[gx, gy]
+    warmth = r.uniform(-0.03, 0.03, (n_cells, n_cells))[gx, gy]
+    base = 0.8 + panel + fbm(r, f0=3, beta=2.2) * 0.03
+    col = np.dstack([base * (1.0 + warmth), base * 0.97, base * (0.93 - warmth)])
+    for count, rad, tone in ((9000, (0.8, 2.0), (0.44, 0.44, 0.45)), (3800, (1.2, 3.2), (0.95, 0.94, 0.9)),
+                             (1600, (1.6, 3.6), (0.58, 0.56, 0.54)), (600, (1.8, 4.2), (0.24, 0.24, 0.25)),
+                             (240, (2.0, 4.6), (0.62, 0.38, 0.3)), (200, (2.0, 4.4), (0.78, 0.7, 0.52))):
+        m = dots(r, count, rad, soft=0.35)
+        col = col * (1 - m[..., None]) + np.array(tone)[None, None, :] * m[..., None]
+    strip = grid_lines(n_cells, 7.0)
+    grimeEdge = np.clip(blur(strip, 7) * 3.0, 0, 1) * 0.16
+    traffic = smoothstep(0.1, 1.6, band(r, 260)) * 0.14
+    scuff = streaks(r, 160, (20, 90), (2, 5), wobble=3.5) * 0.2
+    heel = dots(r, 220, (1.2, 3.0), soft=0.6) * 0.3
+    water = stain(r, 3, 0.9, 1.9)
+    tide = np.clip(np.abs(np.sin(water * 7)) * water, 0, 1) * 0.16
+    crk = cracks(r, 6, seg=(10, 26), width=(1, 2), steps=(8, 22))
+    shade = 1 - grimeEdge - traffic * 0.7 - scuff - heel - tide - crk * 0.45
+    col = col * shade[..., None]
+    joint = np.array((0.3, 0.29, 0.27))
+    col = col * (1 - strip[..., None]) + joint[None, None, :] * strip[..., None]
+    col = col * (1 - water[..., None] * 0.08 * (1 - np.array(WARM)))
+    height = -strip * 1.4 - crk * 2.2 + fbm(r, f0=6, beta=2.0) * 0.08
+    rough = 0.2 + traffic * 2.6 + scuff * 1.5 + grimeEdge * 1.5 + crk * 0.5 + heel + strip * 0.5
+    metal = strip * 0.0
+    save(out, "Terrazzo", col, height, rough, 1.6, metal)
+
+
+def floor_tiles(out):
+    """large ceramic floor tiles (2 studs, 8 studs per tile): tone variation, dirty grout, chipped corners, two
+    cracked tiles, scuffs and dried spills"""
+    r = rng_for("floor_tiles")
+    n_cells = 4
+    gx, gy = cell_index(n_cells)
+    tone = r.uniform(-0.07, 0.06, (n_cells, n_cells))[gx, gy]
+    grout = grid_lines(n_cells, 11.0)
+    groutDirt = 0.3 + fbm(r, f0=8, beta=1.6) * 0.08
+    mott = fbm(r, f0=10, beta=1.8) * 0.02 + fbm(r, f0=60, beta=0.8, fmax=420) * 0.012
+    y, x = np.mgrid[0:N, 0:N]
+    cell = N / n_cells
+    lx, ly = (x % cell) / cell, (y % cell) / cell
+    chips = np.zeros((N, N))
+    for _ in range(9):
+        cx, cy = int(r.integers(0, n_cells)), int(r.integers(0, n_cells))
+        corner = (r.integers(0, 2), r.integers(0, 2))
+        ox, oy = (cx + corner[0]) * cell, (cy + corner[1]) * cell
+        rad = r.uniform(8, 20)
+        chips = np.maximum(chips, smoothstep(rad, rad * 0.6, np.sqrt(((x - ox + N / 2) % N - N / 2) ** 2 + ((y - oy + N / 2) % N - N / 2) ** 2)))
+    crk = np.zeros((N, N))
+    for k in range(2):
+        cx, cy = int(r.integers(0, n_cells)), int(r.integers(0, n_cells))
+        c = cracks(r, 3, seg=(8, 18), width=(1, 2), steps=(6, 14))
+        crk = np.maximum(crk, c * ((gx == cx) & (gy == cy)))
+    spill = stain(r, 5, 1.0, 1.9) * 0.18
+    scuff = streaks(r, 70, (14, 50), (1, 3), wobble=3) * 0.14
+    v = 0.86 + tone + mott - spill - scuff - crk * 0.45 - chips * 0.25
+    v = v * (1 - grout) + groutDirt * grout
+    col = tint(v, (1.0, 0.99, 0.96))
+    col = col * (1 - spill[..., None] * 0.6 * (1 - np.array(WARM)))
+    height = -grout * 1.2 - crk * 1.6 - chips * 0.8 + mott * 2
+    rough = 0.32 + grout * 0.55 + spill * 1.2 + scuff + chips * 0.4 + crk * 0.3
+    save(out, "FloorTiles", col, height, rough, 1.6)
+
+
+def ceiling_tiles(out):
+    """suspended acoustic ceiling seen from below (2-stud tiles, 8 studs per tile): fissured tiles with uneven age,
+    a painted T-bar grid with a shadow line, tide-marked water stains, mould spots"""
+    r = rng_for("ceiling_tiles")
+    n_cells = 4
+    gx, gy = cell_index(n_cells)
+    age = r.uniform(-0.06, 0.02, (n_cells, n_cells))[gx, gy]
+    bar = grid_lines(n_cells, 7.0)
+    shadow = np.clip(np.roll(grid_lines(n_cells, 3.0), 4, axis=0) + np.roll(grid_lines(n_cells, 3.0), 4, axis=1), 0, 1) * (1 - bar)
+    fiss = dots(r, 9000, (0.5, 1.4), soft=0.4) * 0.16 + cracks(r, 260, seg=(2, 5), branch=0, width=(1, 1), steps=(1, 3), turn=0.8) * 0.12
+    mott = fbm(r, f0=12, beta=1.6) * 0.015
+    water = stain(r, 2.2, 0.8, 1.9)
+    tide = np.clip(np.abs(np.sin(water * 9)) * water, 0, 1)
+    mould = dots(r, 260, (0.8, 2.4), soft=0.8) * smoothstep(0.4, 1.0, water)
+    v = 0.9 + age + mott - fiss - water * 0.1 - tide * 0.14 - mould * 0.35 - shadow * 0.14
+    v = v * (1 - bar) + 0.84 * bar
+    col = tint(v, (1.0, 0.99, 0.96))
+    col = col * (1 - (water * 0.25 + tide * 0.5)[..., None] * (1 - np.array(WARM)) * 1.4)
+    height = -fiss * 4 + bar * 1.0 - shadow * 0.5
+    rough = 0.95 - bar * 0.4
+    save(out, "CeilingTiles", col, height, rough, 1.4)
+
+
+def vinyl_floor(out):
+    """supermarket vinyl tiles (1 stud, 8 studs per tile): two alternating speckled tones, seams, heel scuffs,
+    trolley wheel tracks, dirt patches and worn walkways"""
+    r = rng_for("vinyl_floor")
+    n_cells = 8
+    gx, gy = cell_index(n_cells)
+    checker = ((gx + gy) % 2).astype(float)
+    tone = 0.86 - checker * 0.07 + r.uniform(-0.012, 0.012, (n_cells, n_cells))[gx, gy]
+    speck = dots(r, 7000, (0.5, 1.4), soft=0.3) * 0.12 - dots(r, 2600, (0.5, 1.2), soft=0.3) * 0.06
+    seam = grid_lines(n_cells, 1.6)
+    y, x = np.mgrid[0:N, 0:N]
+    tracks = np.zeros((N, N))
+    for _ in range(6):
+        x0 = r.uniform(0, N)
+        wob = fbm(r, f0=2, beta=2.6) * 18
+        for off in (0, 26):
+            tracks = np.maximum(tracks, np.exp(-((((x - x0 - off - wob + N / 2) % N) - N / 2) / 1.3) ** 2) * r.uniform(0.3, 0.7))
+    heel = streaks(r, 120, (10, 36), (2, 4), wobble=5) * 0.3
+    dirt = stain(r, 3, 0.6, 1.8) * 0.12
+    worn = smoothstep(0.2, 1.6, band(r, 200)) * 0.06
+    v = tone + speck - seam * 0.18 - tracks * 0.08 - heel - dirt + worn * 0.5
+    col = tint(v, (1.0, 0.98, 0.94))
+    height = -seam * 0.8 + speck * 0.5
+    rough = 0.42 + dirt * 1.4 + heel * 0.6 + worn * 1.8 + seam * 0.3
+    save(out, "VinylFloor", col, height, rough, 1.2)
+
+
+def carpet_worn(out):
+    """cinema carpet (8 studs per tile): an original lattice motif in gold and navy on burgundy, fibre noise,
+    flattened walkways, dark drink spills and gum spots"""
+    r = rng_for("carpet_worn")
+    y, x = np.mgrid[0:N, 0:N]
+    p = N / 8
+    u, v_ = (x % p) / p - 0.5, (y % p) / p - 0.5
+    diamond = np.abs(u) + np.abs(v_)
+    lattice = smoothstep(0.035, 0.015, np.abs(diamond - 0.5))
+    centre = smoothstep(0.09, 0.06, np.sqrt(u * u + v_ * v_))
+    ring = smoothstep(0.02, 0.0, np.abs(np.sqrt(u * u + v_ * v_) - 0.2)) * 0.8
+    fibre = fbm(r, f0=120, beta=0.3, fmax=500) * 0.05 + fbm(r, f0=30, beta=1.0) * 0.03
+    burg = np.array((0.42, 0.13, 0.15))
+    gold = np.array((0.74, 0.58, 0.3))
+    navy = np.array((0.16, 0.18, 0.3))
+    col = burg[None, None, :] * (1 + fibre[..., None])
+    col = col * (1 - lattice[..., None]) + gold * lattice[..., None]
+    col = col * (1 - centre[..., None]) + navy * centre[..., None]
+    col = col * (1 - ring[..., None]) + gold * 0.8 * ring[..., None]
+    worn = smoothstep(0.1, 1.5, band(r, 220))
+    spill = stain(r, 6, 1.1, 2.0)
+    gum = dots(r, 90, (1.5, 3.5), soft=0.5)
+    col = col * (1 + worn[..., None] * 0.12) * (1 - spill[..., None] * 0.45)
+    col = col * (1 - gum[..., None]) + np.array((0.32, 0.3, 0.3)) * gum[..., None]
+    height = fibre * 6 - worn * 0.4 + gum * 0.6
+    rough = np.ones((N, N)) * 0.97 - spill * 0.15
+    save(out, "CarpetWorn", col, height, rough, 1.2)
+
+
 ALL = {
     "ConcreteWorn": concrete_worn, "ConcretePanel": concrete_panel, "PlasterPeel": plaster_peel,
     "MetalPaint": metal_paint, "Corrugated": corrugated, "AsphaltCracked": asphalt_cracked,
     "FloorConcrete": floor_concrete, "WoodWeathered": wood_weathered,
+    "Terrazzo": terrazzo, "FloorTiles": floor_tiles, "CeilingTiles": ceiling_tiles, "VinylFloor": vinyl_floor,
+    "CarpetWorn": carpet_worn,
 }
 
 if __name__ == "__main__":

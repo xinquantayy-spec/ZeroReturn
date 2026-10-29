@@ -270,6 +270,15 @@ function C.door(id, open)
 	return string.format("%s locked=%s open=%s passThrough=%s", id, tostring(d.locked), tostring(d.open), tostring(d.modifier and d.modifier.PassThrough))
 end
 
+-- M13 switches: switch(id, true|false) flips it now; switch(id) reports
+function C.switch(id, on)
+	if on ~= nil and not ctx.Doors.setSwitch(id, on) then
+		return "no switch " .. tostring(id)
+	end
+	local sw = ctx.World.switches[id]
+	return sw and string.format("%s on=%s pending=%s", id, tostring(sw.on), tostring(sw.pending)) or "no switch"
+end
+
 -- item guids of an id in the player's stash/profile (or raid kit when in raid)
 function C.find(name, id)
 	local p = plr(name)

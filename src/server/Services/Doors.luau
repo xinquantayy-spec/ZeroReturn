@@ -115,7 +115,68 @@ function Doors.near(pos, r)
 	return out
 end
 
--- raid start: every door closed and locked again; some ordinary doors are left ajar
+-- M13 switches (the Meridian Mall generator): hold the prompt to start a change that takes `delay` seconds and
+-- lasts for the rest of the raid (lights, the exfils that need power). Every raid starts with them off.
+local function useSwitch(player, sw)
+	if sw.on or sw.pending then
+		return
+	end
+	if not ctx.Remotes.allow(player, "switch", 2, 3) then
+		return
+	end
+	local s = ctx.Raid.session(player)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not s or s.done or not root or (root.Position - sw.part.Position).Magnitude > 12 then
+		return
+	end
+	sw.pending = true
+	if sw.prompt then
+		sw.prompt.Enabled = false
+	end
+	ctx.Remotes.note(player, "toast", { text = sw.startText or "STARTING", tone = "good" })
+	ctx.Remotes.fx("sfx", { n = "metal_creak", p = sw.part.Position, v = 1 })
+	local raid = ctx.Raid.world.resets
+	task.delay(sw.delay or 6, function()
+		if ctx.Raid.world.resets ~= raid or not sw.pending then
+			return -- a new raid began meanwhile
+		end
+		sw.pending = nil
+		sw.on = true
+		if sw.onChange then
+			local ok, err = pcall(sw.onChange, true)
+			if not ok then
+				warn("[ZR] switch", sw.id, err)
+			end
+		end
+		ctx.Remotes.fx("sfx", { n = "keycard", p = sw.part.Position, v = 1 })
+		-- exits that need power read it from the raid info: send everyone in the raid the new state
+		for p, rs in ctx.Raid.sessions() do
+			if not rs.done then
+				ctx.Remotes.note(p, "raid", ctx.Raid.raidInfo(rs))
+			end
+		end
+		if player.Parent then
+			ctx.Remotes.note(player, "toast", { text = sw.doneText or "POWER ON", tone = "good" })
+		end
+	end)
+end
+
+function Doors.resetSwitches()
+	for _, sw in ctx.World.switches do
+		sw.on, sw.pending = false, nil
+		if sw.prompt then
+			sw.prompt.Enabled = true
+		end
+		if sw.onChange then
+			local ok, err = pcall(sw.onChange, false)
+			if not ok then
+				warn("[ZR] switch", sw.id, err)
+			end
+		end
+	end
+end
+
+-- raid start: every door closed and locked again; some ordinary doors are left ajar; switches off
 function Doors.reset()
 	for _, d in ctx.World.doors do
 		d.locked = d.key ~= nil
@@ -123,6 +184,24 @@ function Doors.reset()
 			set(d, (not d.locked) and math.random() < (d.openChance or 0), true)
 		end
 	end
+	Doors.resetSwitches()
+end
+
+-- test hook: flip a switch now (Dev "switch")
+function Doors.setSwitch(id, on)
+	local sw = ctx.World.switches[id]
+	if not sw then
+		return false
+	end
+	sw.pending = nil
+	sw.on = on and true or false
+	if sw.prompt then
+		sw.prompt.Enabled = not sw.on
+	end
+	if sw.onChange then
+		pcall(sw.onChange, sw.on)
+	end
+	return true
 end
 
 function Doors.init(c)
@@ -139,6 +218,17 @@ function Doors.init(c)
 		d.locked = d.key ~= nil
 		d.open = false
 		refresh(d)
+	end
+	for _, sw in c.World.switches do
+		sw.on = false
+		if sw.prompt then
+			sw.prompt.Triggered:Connect(function(player)
+				local ok, err = pcall(useSwitch, player, sw)
+				if not ok then
+					warn("[ZR] switch", err)
+				end
+			end)
+		end
 	end
 end
 

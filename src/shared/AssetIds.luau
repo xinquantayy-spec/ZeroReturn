@@ -11,4 +11,8 @@ return {
 	{ key = "ZR_CharBase", id = 101424875475699 }, -- M16 block body ZR_BLOCK_R15_V1 (15 ZR_BLK_* segments), helmet A, calibration cube (build_char_base.py)
 	{ key = "ZR_CharGear", id = 111486052124640 }, -- M16 equipment: 33 ZR_EQ_* / ZR_OV_* / ZR_FP_* meshes (build_char_gear.py)
 	{ key = "ZR_Nature", id = 131399075967241 }, -- M13 nature kit: 20 ZR_NAT_* pines (trunk + crown), rocks, logs, bushes, ground cover (build_nature.py)
+	-- M13 Meridian Mall kit (ZR_MK_<Prop>__<material> pieces, see KitMeta.luau and Maps/Kit.luau)
+	{ key = "ZR_MallKitA", id = 133338997186647 }, -- structure and fixtures: storefronts, shutters, columns, ceiling holes, balustrades, escalator, fountain, wall breach, collapsed slab, rubble (build_mall_kit_a.py)
+	{ key = "ZR_MallKitB", id = 110014146320763 }, -- store furnishings: gondolas, wall shelves, fridges, checkouts, trolleys, kiosks, racks, mannequins, food court, cinema, gym, homewares (build_mall_kit_b.py)
+	{ key = "ZR_MallKitC", id = 129684075485706 }, -- back of house and outdoor: pallet racks, cages, lockers, desks, generator, forklift, dock doors, cargo lift, cars, barrier, shelters, rooftop units (build_mall_kit_c.py)
 }

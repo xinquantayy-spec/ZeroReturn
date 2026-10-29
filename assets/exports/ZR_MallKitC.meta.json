@@ -1,0 +1,964 @@
+{
+ "ZR_MK_PalletRack__cardboard": {
+  "center": [
+   -0.0073,
+   6.2762,
+   0.015
+  ],
+  "size": [
+   15.089,
+   11.5724,
+   3.7253
+  ],
+  "tris": 1656
+ },
+ "ZR_MK_PalletRack__metal": {
+  "center": [
+   -0.0,
+   6.86,
+   0.0
+  ],
+  "size": [
+   15.8,
+   4.66,
+   4.2
+  ],
+  "tris": 24
+ },
+ "ZR_MK_PalletRack__paint": {
+  "center": [
+   -0.0,
+   7.0,
+   0.0
+  ],
+  "size": [
+   16.3,
+   14.0,
+   4.45
+  ],
+  "tris": 372
+ },
+ "ZR_MK_PalletRack__wood": {
+  "center": [
+   -0.0,
+   4.83,
+   0.0
+  ],
+  "size": [
+   15.2,
+   9.66,
+   3.8
+  ],
+  "tris": 924
+ },
+ "ZR_MK_PalletBoxes__cardboard": {
+  "center": [
+   0.0017,
+   2.5342,
+   -0.0072
+  ],
+  "size": [
+   3.8175,
+   4.0884,
+   3.8552
+  ],
+  "tris": 336
+ },
+ "ZR_MK_PalletBoxes__wood": {
+  "center": [
+   -0.0,
+   0.23,
+   0.0
+  ],
+  "size": [
+   4.0,
+   0.46,
+   4.0
+  ],
+  "tris": 132
+ },
+ "ZR_MK_RollCage__cardboard": {
+  "center": [
+   0.0024,
+   2.0704,
+   0.0041
+  ],
+  "size": [
+   2.465,
+   3.1609,
+   3.2758
+  ],
+  "tris": 264
+ },
+ "ZR_MK_RollCage__metal": {
+  "center": [
+   -0.0,
+   2.9875,
+   0.0
+  ],
+  "size": [
+   2.7,
+   5.295,
+   3.5
+  ],
+  "tris": 236
+ },
+ "ZR_MK_RollCage__rubber": {
+  "center": [
+   -0.0,
+   0.2,
+   0.0
+  ],
+  "size": [
+   2.6,
+   0.4,
+   3.4
+  ],
+  "tris": 224
+ },
+ "ZR_MK_StorageShelf__cardboard": {
+  "center": [
+   -0.0556,
+   3.7277,
+   -0.005
+  ],
+  "size": [
+   7.4611,
+   6.5754,
+   1.9355
+  ],
+  "tris": 240
+ },
+ "ZR_MK_StorageShelf__metal": {
+  "center": [
+   -0.0,
+   3.5,
+   0.0
+  ],
+  "size": [
+   8.0,
+   7.0,
+   2.0
+  ],
+  "tris": 108
+ },
+ "ZR_MK_StorageShelfEmpty__cardboard": {
+  "center": [
+   0.3765,
+   0.2,
+   -1.6
+  ],
+  "size": [
+   6.3694,
+   0.08,
+   1.8002
+  ],
+  "tris": 36
+ },
+ "ZR_MK_StorageShelfEmpty__metal": {
+  "center": [
+   -0.0,
+   3.5,
+   0.0
+  ],
+  "size": [
+   8.0,
+   7.0,
+   2.0
+  ],
+  "tris": 108
+ },
+ "ZR_MK_Lockers__metal": {
+  "center": [
+   -0.75,
+   3.2,
+   -0.1
+  ],
+  "size": [
+   1.3,
+   6.1,
+   1.4
+  ],
+  "tris": 12
+ },
+ "ZR_MK_Lockers__paint": {
+  "center": [
+   -0.0,
+   3.2,
+   -0.7026
+  ],
+  "size": [
+   6.0,
+   6.4,
+   3.2053
+  ],
+  "tris": 300
+ },
+ "ZR_MK_OfficeDesk__fabric": {
+  "center": [
+   -0.6,
+   2.95,
+   -2.3114
+  ],
+  "size": [
+   2.2145,
+   2.3,
+   2.2374
+  ],
+  "tris": 24
+ },
+ "ZR_MK_OfficeDesk__metal": {
+  "center": [
+   -1.1792,
+   1.25,
+   -0.9947
+  ],
+  "size": [
+   3.3616,
+   2.5,
+   4.7093
+  ],
+  "tris": 104
+ },
+ "ZR_MK_OfficeDesk__plastic": {
+  "center": [
+   0.1081,
+   3.4,
+   -0.0449
+  ],
+  "size": [
+   3.6162,
+   1.6,
+   2.4899
+  ],
+  "tris": 84
+ },
+ "ZR_MK_OfficeDesk__wood": {
+  "center": [
+   -0.0,
+   1.3125,
+   0.0
+  ],
+  "size": [
+   6.0,
+   2.625,
+   3.0
+  ],
+  "tris": 24
+ },
+ "ZR_MK_CCTVDesk__metal": {
+  "center": [
+   -0.0,
+   6.0,
+   1.4
+  ],
+  "size": [
+   9.0,
+   6.6,
+   0.3
+  ],
+  "tris": 12
+ },
+ "ZR_MK_CCTVDesk__plastic": {
+  "center": [
+   -0.0,
+   5.75,
+   0.2875
+  ],
+  "size": [
+   8.8,
+   6.3,
+   1.975
+  ],
+  "tris": 264
+ },
+ "ZR_MK_CCTVDesk__wood": {
+  "center": [
+   -0.0,
+   1.3125,
+   0.0
+  ],
+  "size": [
+   9.0,
+   2.625,
+   3.0
+  ],
+  "tris": 24
+ },
+ "ZR_MK_ElectricCabinet__metal": {
+  "center": [
+   0.05,
+   8.25,
+   0.2
+  ],
+  "size": [
+   5.46,
+   2.5,
+   0.36
+  ],
+  "tris": 112
+ },
+ "ZR_MK_ElectricCabinet__paint": {
+  "center": [
+   -0.0,
+   3.5,
+   -0.045
+  ],
+  "size": [
+   5.9,
+   7.0,
+   1.69
+  ],
+  "tris": 144
+ },
+ "ZR_MK_Generator__metal": {
+  "center": [
+   1.9167,
+   5.6091,
+   0.0279
+  ],
+  "size": [
+   18.2334,
+   11.2182,
+   5.4558
+  ],
+  "tris": 120
+ },
+ "ZR_MK_Generator__paint": {
+  "center": [
+   0.45,
+   4.15,
+   0.0
+  ],
+  "size": [
+   15.1,
+   6.3,
+   5.28
+  ],
+  "tris": 1092
+ },
+ "ZR_MK_Generator__plastic": {
+  "center": [
+   8.06,
+   3.64,
+   0.075
+  ],
+  "size": [
+   0.12,
+   1.32,
+   1.85
+  ],
+  "tris": 52
+ },
+ "ZR_MK_Forklift__leather": {
+  "center": [
+   -0.0,
+   3.75,
+   1.675
+  ],
+  "size": [
+   1.6,
+   1.9,
+   1.55
+  ],
+  "tris": 24
+ },
+ "ZR_MK_Forklift__metal": {
+  "center": [
+   -0.0,
+   4.11,
+   -1.575
+  ],
+  "size": [
+   3.4,
+   8.18,
+   8.65
+  ],
+  "tris": 152
+ },
+ "ZR_MK_Forklift__paint": {
+  "center": [
+   -0.0,
+   2.3,
+   0.75
+  ],
+  "size": [
+   3.6,
+   3.2,
+   5.9
+  ],
+  "tris": 24
+ },
+ "ZR_MK_Forklift__rubber": {
+  "center": [
+   -0.0,
+   2.4842,
+   0.725
+  ],
+  "size": [
+   3.9,
+   4.8901,
+   5.75
+  ],
+  "tris": 240
+ },
+ "ZR_MK_DockDoor__glass": {
+  "center": [
+   -0.0,
+   7.0,
+   0.1
+  ],
+  "size": [
+   11.0,
+   0.8,
+   0.06
+  ],
+  "tris": 48
+ },
+ "ZR_MK_DockDoor__metal": {
+  "center": [
+   -0.0,
+   6.44,
+   -0.7
+  ],
+  "size": [
+   12.25,
+   13.12,
+   2.6
+  ],
+  "tris": 36
+ },
+ "ZR_MK_DockDoor__paint": {
+  "center": [
+   -0.0,
+   5.9875,
+   0.253
+  ],
+  "size": [
+   12.0,
+   11.975,
+   0.506
+  ],
+  "tris": 84
+ },
+ "ZR_MK_DockDoor__rubber": {
+  "center": [
+   -0.0,
+   6.4,
+   -0.65
+  ],
+  "size": [
+   13.6,
+   13.2,
+   1.3
+  ],
+  "tris": 60
+ },
+ "ZR_MK_DockDoorOpen__metal": {
+  "center": [
+   -0.0,
+   6.74,
+   -0.6
+  ],
+  "size": [
+   13.0,
+   13.72,
+   2.8
+  ],
+  "tris": 48
+ },
+ "ZR_MK_DockDoorOpen__paint": {
+  "center": [
+   -0.0,
+   12.1,
+   5.6
+  ],
+  "size": [
+   12.0,
+   0.15,
+   12.0
+  ],
+  "tris": 62
+ },
+ "ZR_MK_DockDoorOpen__rubber": {
+  "center": [
+   -0.0,
+   6.4,
+   -0.65
+  ],
+  "size": [
+   13.6,
+   13.2,
+   1.3
+  ],
+  "tris": 60
+ },
+ "ZR_MK_CargoLift__metal": {
+  "center": [
+   -0.0,
+   5.0,
+   -0.15
+  ],
+  "size": [
+   11.0,
+   10.0,
+   6.3
+  ],
+  "tris": 72
+ },
+ "ZR_MK_CargoLift__paint": {
+  "center": [
+   -0.0,
+   4.5,
+   -0.225
+  ],
+  "size": [
+   10.8,
+   9.0,
+   6.05
+  ],
+  "tris": 72
+ },
+ "ZR_MK_CargoLift__plastic": {
+  "center": [
+   -1.395,
+   6.7,
+   -0.45
+  ],
+  "size": [
+   4.79,
+   6.0,
+   1.9
+  ],
+  "tris": 104
+ },
+ "ZR_MK_CarSedan__fabric": {
+  "center": [
+   -0.0,
+   3.0,
+   0.9125
+  ],
+  "size": [
+   4.9,
+   1.8,
+   5.625
+  ],
+  "tris": 108
+ },
+ "ZR_MK_CarSedan__glass": {
+  "center": [
+   -0.0,
+   3.625,
+   1.35
+  ],
+  "size": [
+   5.2,
+   1.45,
+   6.7
+  ],
+  "tris": 12
+ },
+ "ZR_MK_CarSedan__metal": {
+  "center": [
+   -0.0,
+   1.4602,
+   -1.17
+  ],
+  "size": [
+   6.02,
+   2.1997,
+   12.58
+  ],
+  "tris": 204
+ },
+ "ZR_MK_CarSedan__paint": {
+  "center": [
+   -0.0,
+   2.675,
+   -0.025
+  ],
+  "size": [
+   5.94,
+   3.85,
+   14.75
+  ],
+  "tris": 172
+ },
+ "ZR_MK_CarSedan__plastic": {
+  "center": [
+   -0.0,
+   2.2675,
+   -0.025
+  ],
+  "size": [
+   7.0,
+   2.635,
+   15.63
+  ],
+  "tris": 216
+ },
+ "ZR_MK_CarSedan__rubber": {
+  "center": [
+   -0.0,
+   0.95,
+   -0.05
+  ],
+  "size": [
+   5.95,
+   2.1,
+   11.2
+  ],
+  "tris": 224
+ },
+ "ZR_MK_CarHatch__fabric": {
+  "center": [
+   -0.0,
+   3.0,
+   1.2125
+  ],
+  "size": [
+   4.7,
+   1.8,
+   5.625
+  ],
+  "tris": 108
+ },
+ "ZR_MK_CarHatch__glass": {
+  "center": [
+   -0.0,
+   3.725,
+   2.25
+  ],
+  "size": [
+   5.0,
+   1.55,
+   7.9
+  ],
+  "tris": 12
+ },
+ "ZR_MK_CarHatch__metal": {
+  "center": [
+   -0.0,
+   1.4602,
+   -0.97
+  ],
+  "size": [
+   5.82,
+   2.1997,
+   10.98
+  ],
+  "tris": 204
+ },
+ "ZR_MK_CarHatch__paint": {
+  "center": [
+   -0.0,
+   2.75,
+   -0.025
+  ],
+  "size": [
+   5.74,
+   4.0,
+   12.75
+  ],
+  "tris": 168
+ },
+ "ZR_MK_CarHatch__plastic": {
+  "center": [
+   -0.0,
+   2.2675,
+   -0.025
+  ],
+  "size": [
+   6.8,
+   2.635,
+   13.63
+  ],
+  "tris": 216
+ },
+ "ZR_MK_CarHatch__rubber": {
+  "center": [
+   -0.0,
+   0.95,
+   0.0
+  ],
+  "size": [
+   5.75,
+   2.1,
+   9.9
+  ],
+  "tris": 224
+ },
+ "ZR_MK_CarSedanSmashed__fabric": {
+  "center": [
+   -0.0,
+   2.85,
+   0.9125
+  ],
+  "size": [
+   4.9,
+   1.8,
+   5.625
+  ],
+  "tris": 108
+ },
+ "ZR_MK_CarSedanSmashed__glass": {
+  "center": [
+   -0.0252,
+   2.03,
+   0.6672
+  ],
+  "size": [
+   6.695,
+   4.04,
+   7.4657
+  ],
+  "tris": 92
+ },
+ "ZR_MK_CarSedanSmashed__metal": {
+  "center": [
+   -0.0,
+   1.3852,
+   -1.17
+  ],
+  "size": [
+   6.02,
+   2.0497,
+   12.58
+  ],
+  "tris": 204
+ },
+ "ZR_MK_CarSedanSmashed__paint": {
+  "center": [
+   -0.0,
+   2.3888,
+   -0.025
+  ],
+  "size": [
+   5.94,
+   3.5776,
+   14.75
+  ],
+  "tris": 172
+ },
+ "ZR_MK_CarSedanSmashed__plastic": {
+  "center": [
+   -0.0,
+   2.1175,
+   -0.025
+  ],
+  "size": [
+   7.0,
+   2.635,
+   15.63
+  ],
+  "tris": 216
+ },
+ "ZR_MK_CarSedanSmashed__rubber": {
+  "center": [
+   -0.0,
+   0.95,
+   -0.05
+  ],
+  "size": [
+   5.95,
+   2.1,
+   11.2
+  ],
+  "tris": 224
+ },
+ "ZR_MK_ParkingBarrier__metal": {
+  "center": [
+   -4.0,
+   4.95,
+   1.0
+  ],
+  "size": [
+   1.4,
+   0.15,
+   1.2
+  ],
+  "tris": 12
+ },
+ "ZR_MK_ParkingBarrier__paint": {
+  "center": [
+   3.6262,
+   2.3631,
+   0.35
+  ],
+  "size": [
+   16.4524,
+   4.8738,
+   2.3
+  ],
+  "tris": 110
+ },
+ "ZR_MK_ParkingBarrier__plastic": {
+  "center": [
+   -4.0,
+   3.0,
+   0.475
+  ],
+  "size": [
+   0.8,
+   1.2,
+   0.05
+  ],
+  "tris": 24
+ },
+ "ZR_MK_BusShelter__glass": {
+  "center": [
+   0.065,
+   3.7051,
+   0.5084
+  ],
+  "size": [
+   9.93,
+   7.3898,
+   3.8168
+  ],
+  "tris": 124
+ },
+ "ZR_MK_BusShelter__metal": {
+  "center": [
+   -0.0,
+   4.1125,
+   0.2
+  ],
+  "size": [
+   10.6,
+   8.225,
+   4.8
+  ],
+  "tris": 108
+ },
+ "ZR_MK_BusShelter__plastic": {
+  "center": [
+   -0.1,
+   4.9375,
+   0.2
+  ],
+  "size": [
+   10.2,
+   6.075,
+   4.0
+  ],
+  "tris": 36
+ },
+ "ZR_MK_TrolleyBay__metal": {
+  "center": [
+   -0.0,
+   3.552,
+   0.0
+  ],
+  "size": [
+   12.2078,
+   7.1039,
+   6.24
+  ],
+  "tris": 120
+ },
+ "ZR_MK_TrolleyBay__plastic": {
+  "center": [
+   -0.0,
+   6.5875,
+   -0.05
+  ],
+  "size": [
+   12.6,
+   1.375,
+   6.7
+  ],
+  "tris": 24
+ },
+ "ZR_MK_HVAC__metal": {
+  "center": [
+   0.9,
+   2.925,
+   0.0
+  ],
+  "size": [
+   12.2,
+   5.85,
+   5.4
+  ],
+  "tris": 428
+ },
+ "ZR_MK_HVAC__paint": {
+  "center": [
+   -0.0,
+   3.0,
+   0.0
+  ],
+  "size": [
+   10.0,
+   4.4,
+   5.09
+  ],
+  "tris": 204
+ },
+ "ZR_MK_Projector__metal": {
+  "center": [
+   -0.0,
+   3.5,
+   -0.45
+  ],
+  "size": [
+   2.6,
+   7.0,
+   4.7
+  ],
+  "tris": 188
+ },
+ "ZR_MK_Projector__paint": {
+  "center": [
+   -0.0,
+   4.2,
+   0.0
+  ],
+  "size": [
+   2.2,
+   2.0,
+   3.6
+  ],
+  "tris": 12
+ },
+ "ZR_MK_CardboardPile__cardboard": {
+  "center": [
+   0.2379,
+   0.6089,
+   0.2903
+  ],
+  "size": [
+   3.9986,
+   1.3378,
+   4.4965
+  ],
+  "tris": 120
+ },
+ "ZR_MK_Hoarding__metal": {
+  "center": [
+   -0.0,
+   4.25,
+   0.4
+  ],
+  "size": [
+   12.1732,
+   8.5,
+   0.2
+  ],
+  "tris": 72
+ },
+ "ZR_MK_Hoarding__wood": {
+  "center": [
+   -0.0,
+   4.0,
+   -0.8
+  ],
+  "size": [
+   11.9,
+   8.0,
+   3.7719
+  ],
+  "tris": 48
+ }
+}

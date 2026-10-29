@@ -57,6 +57,23 @@ g = {}; exec(open(PATH_TO_zr_upload.py).read(), g); g["upload_model"](fbx, "ZR_B
 
 `Services/Assets.luau` loads the meshes at runtime through InsertService, and `World.mesh()` places them using those offsets.
 
+**Materials on meshes (measured 2026-10-29, `ZR_UVTest` probe).**
+
+- A Roblox material (or MaterialVariant) on a MeshPart tiles at a fixed number of studs per texture, like on a
+  Part. The mesh's UVs and the MeshPart's scale do not change it: a plane with UVs at 4 studs per unit, one at 8,
+  and the same plane resized to half size all showed the same brick size as an 8x8 Part.
+- Vertex colours multiply the material texture, so baked ambient occlusion and grime show on top of it.
+- So kit meshes need no UVs and no textures of their own. Each prop is split by material into separate objects
+  that share one origin (`<Name>__<material>`, for example `ZR_MK_Checkout__metal`). In game each piece gets its
+  Roblox material and, where one fits, a MaterialVariant, with the colour coming from the vertex colours.
+  Every prop gets the same texel density, and props share the material textures that are already loaded.
+
+**Surface materials.** Big flat surfaces (floors, walls, ceilings) are Parts with MaterialVariants made by
+`assets/textures/gen_materials.py` (colour at 1024, normal, roughness and metalness at 512). The images are
+uploaded as Decals (`upload_model(png, key, desc, asset_type="Decal")`); the image id is read in Studio from the
+Decal (`InsertService:LoadAsset(decalId)`, then `Decal.Texture`) and written to `src/materials/<name>.model.json`.
+A texture with grid lines (tiles, ceiling grid) uses `MaterialPattern = "Regular"`.
+
 ## Audio
 
 1. **Generate.** Run `python3 assets/audio/synth_sfx.py assets/audio/out`. It needs numpy, scipy and ffmpeg. The sounds are fully procedural, with no samples.

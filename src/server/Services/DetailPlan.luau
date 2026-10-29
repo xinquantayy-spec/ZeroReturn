@@ -196,8 +196,9 @@ local function wallFace(p, f, sign, mat)
 	local function at(u, y, off)
 		return Vector3.new(fc.X, y, fc.Z) + right * u + n * off
 	end
-	-- 1. streaks hanging from the top edge, the whole face (texture strip)
-	if hgt >= 2.5 and len >= 2.4 and rng:NextNumber() < (ext and 0.85 or 0.4) then
+	-- 1. streaks hanging from the top edge, the whole face (texture strip); indoors only now and then (they are
+	-- rain marks, and a whole-face alpha layer on every inside wall is the most expensive detail there is)
+	if hgt >= 2.5 and len >= 2.4 and rng:NextNumber() < (ext and 0.85 or 0.15) then
 		decal(D.Streaks, at(0, mid, 0.02), n, len, hgt, 1, 0, rng:NextNumber(6, 9), hgt * 1.02, ext and rng:NextNumber(0.05, 0.3) or rng:NextNumber(0.35, 0.55), u0)
 	end
 	-- 2. dirt rising from the floor
@@ -206,9 +207,13 @@ local function wallFace(p, f, sign, mat)
 		local damp = ext and rng:NextNumber() < 0.3
 		decal(damp and D.BaseDamp or D.BaseGrime, at(0, f.bottom + hb / 2, 0.03), n, len, hb, 1, 0, rng:NextNumber(7, 10), hb, ext and rng:NextNumber(0, 0.2) or rng:NextNumber(0.25, 0.45), u0)
 	end
-	-- 3. interior plaster peels, takes water stains
-	if plaster and not ext and hgt >= 3 and rng:NextNumber() < 0.65 then
-		decal(D.Peel, at(0, mid, 0.04), n, len, hgt, 2, 0, rng:NextNumber(5, 8), rng:NextNumber(5, 8), rng:NextNumber(0.1, 0.35), u0)
+	-- 3. interior plaster peels in patches (water damage), not over whole walls
+	if plaster and not ext and hgt >= 3 and rng:NextNumber() < 0.4 then
+		local pw = math.min(len, rng:NextNumber(5, 12))
+		local ph = math.min(hgt, rng:NextNumber(3, 6))
+		local pu = rng:NextNumber(-len / 2 + pw / 2, len / 2 - pw / 2)
+		local py = rng:NextNumber(f.bottom + ph / 2, f.top - ph / 2)
+		decal(D.Peel, at(pu, py, 0.04), n, pw, ph, 2, 0, rng:NextNumber(5, 8), rng:NextNumber(5, 8), rng:NextNumber(0.1, 0.35), u0 + len / 2 + pu - pw / 2)
 	end
 	-- 4. spot marks
 	local spots = math.floor(len / 8 + rng:NextNumber())
@@ -409,10 +414,30 @@ local function container(p)
 end
 
 -- wall caps and the top of long boundary walls: barbed wire
+-- maps (or parts of them) can opt out of barbed wire with a NoWire attribute on any ancestor
+local noWireCache = {}
+local function noWire(p)
+	local par = p.Parent
+	local v = noWireCache[par]
+	if v == nil then
+		v = false
+		local a = par
+		while a and a ~= workspace do
+			if a:GetAttribute("NoWire") then
+				v = true
+				break
+			end
+			a = a.Parent
+		end
+		noWireCache[par] = v
+	end
+	return v
+end
+
 local function capWire(p)
 	local s = p.Size
 	local cf = p.CFrame
-	if cf.UpVector.Y < 0.985 or s.Y > 1.6 then
+	if cf.UpVector.Y < 0.985 or s.Y > 1.6 or noWire(p) then
 		return
 	end
 	local len, dir = s.X, cf.RightVector
@@ -579,6 +604,7 @@ function Plan.generate(list, seed, avoidList, nature)
 			task.wait()
 		end
 	end
+	table.clear(noWireCache)
 	-- keep every cell (each map publishes its own share when it is activated)
 	Plan.allCells = {}
 	local bytes = 0

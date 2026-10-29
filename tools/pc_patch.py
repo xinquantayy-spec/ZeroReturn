@@ -68,6 +68,14 @@ def hunks(old, new):
                 hi += 1
                 jhi += 1
         out.append(["".join(a[lo:hi]), "".join(b[jlo:jhi])])
+    # the runner applies the hunks one after another: each must still be unique in the text as patched so far
+    text = old
+    for o, n in out:
+        if text.count(o) != 1:
+            return None
+        text = text.replace(o, n, 1)
+    if text != new:
+        return None
     return out
 
 

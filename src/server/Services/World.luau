@@ -16,7 +16,14 @@ World.extracts = {}
 World.containers = {}
 World.patrols = {}
 World.doors = {}
+World.switches = {} -- M13: [id] = { id, label, part, prompt, delay, onChange(on), map } (Doors.luau runs them)
 World.safehouse = {}
+
+-- whether a switch (the Meridian Mall generator) is on in this raid
+function World.switchOn(id)
+	local sw = World.switches[id]
+	return sw ~= nil and sw.on == true
+end
 
 local root: Folder
 
@@ -39,6 +46,9 @@ local function endMap(id, mapModel)
 	end
 	for _, d in World.doors do
 		d.map = d.map or id
+	end
+	for _, sw in World.switches do
+		sw.map = sw.map or id
 	end
 	World.maps[id] = m
 	currentMap = nil
@@ -285,8 +295,30 @@ end
 
 -- loose loot spots (M10): items lying on surfaces, rolled per raid by Loot (tbl = pool, chance per raid)
 World.looseSpots = {}
-local function loose(x, y, z, tbl, chance, area)
-	table.insert(World.looseSpots, { pos = Vector3.new(x, y, z), tbl = tbl, chance = chance or 0.5, area = area })
+local function loose(x, y, z, tbl, chance, area, snap)
+	table.insert(World.looseSpots, { pos = Vector3.new(x, y, z), tbl = tbl, chance = chance or 0.5, area = area, snap = snap })
+end
+
+-- M13: loose spots marked `snap` drop onto the surface below them once the world is in the workspace (a counter,
+-- a shelf, a floor), so a map can give approximate heights
+local function snapLooseSpots()
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Exclude
+	rp.FilterDescendantsInstances = { root.Triggers }
+	rp.IgnoreWater = true
+	local moved = 0
+	for _, m in World.maps do
+		for _, sp in m.looseSpots do
+			if sp.snap then
+				local hit = workspace:Raycast(sp.pos + Vector3.new(0, 2.5, 0), Vector3.new(0, -7, 0), rp)
+				if hit and hit.Instance.CanCollide then
+					sp.pos = hit.Position + Vector3.new(0, 0.05, 0)
+					moved += 1
+				end
+			end
+		end
+	end
+	return moved
 end
 
 -- ── props (mesh first, part fallback) ─────────────────────────────────────────
@@ -531,9 +563,12 @@ local function buildSafehouse()
 end
 
 -- ── Quay 7 ────────────────────────────────────────────────────────────────────
-local function addContainerSpot(parent, id, kind, label, cf)
+local function addContainerSpot(parent, id, kind, label, cf, anchorPart)
 	local anchor
-	if kind == "locker" then
+	if anchorPart then
+		-- M13: an existing prop part is the container (a checkout's till, a fridge, a stock-room shelf)
+		anchor = anchorPart
+	elseif kind == "locker" then
 		anchor = boxCF(parent, 3, 7, 2.2, cf * CFrame.new(0, 3.5, 0), C.olive, M.Metal)
 		boxCF(parent, 0.15, 0.8, 0.1, cf * CFrame.new(0.9, 3.8, -1.12), C.metalDark, M.Metal)
 	elseif kind == "drawer" then
@@ -1272,6 +1307,11 @@ function World.build()
 				World.doors[did] = nil
 			end
 		end
+		for sid, sw in World.switches do
+			if sw.map == nil then
+				World.switches[sid] = nil
+			end
+		end
 		local kids = root.Triggers:GetChildren()
 		for i = trig + 1, #kids do
 			kids[i]:Destroy()
@@ -1279,6 +1319,7 @@ function World.build()
 		currentMap = nil
 	end
 	moduleMap("smelter", "Smelter")
+	moduleMap("meridian", "MeridianMall")
 	-- parked for now (owner's call, M13): moduleMap("pinewatch", "Pinewatch")
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
 	for _, d in World.doors do
@@ -1328,6 +1369,7 @@ function World.build()
 	World.activate("quay7")
 	local worn = World.applyWear(root)
 	root.Parent = workspace
+	snapLooseSpots()
 	local n = 0
 	for _, d in root:GetDescendants() do
 		if d:IsA("BasePart") then

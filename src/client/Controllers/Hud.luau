@@ -313,6 +313,8 @@ function Hud.exitStatus(e)
 		return "MAY BE UNAVAILABLE", C.yellow
 	elseif e.rule == "scav" then
 		return "SCAV ONLY", C.green
+	elseif e.rule == "power" then
+		return e.powered and "POWER ON" or "NEEDS POWER", e.powered and C.green or C.yellow
 	end
 	return "", C.green
 end

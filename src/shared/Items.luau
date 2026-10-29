@@ -124,6 +124,9 @@ add("WATER", { name = "Water Bottle", short = "WATER", kind = "food", w = 1, h =
 add("STEW", { name = "Canned Stew", short = "STEW", kind = "food", w = 1, h = 1, mass = 0.4, value = 6500, food = { energy = 55, water = -5, time = 5 }, desc = "Energy +55.", color = c("#8F6A4A") })
 add("HARDTACK", { name = "Hardtack", short = "HARDTACK", kind = "food", w = 1, h = 1, mass = 0.15, value = 3000, food = { energy = 30, water = -12, time = 3 }, desc = "Energy +30, dries you out.", color = c("#A48C64") })
 add("VOLT_DRINK", { name = "Volt Energy Drink", short = "VOLT", kind = "food", w = 1, h = 2, mass = 0.4, value = 11000, rarity = "uncommon", food = { energy = 20, water = 35, stamina = 60, time = 3 }, desc = "Energy +20, hydration +35, stamina boost.", color = c("#6E8F3C") })
+-- M13 Meridian Mall: groceries
+add("JUICE", { name = "Fruit Juice Carton", short = "JUICE", kind = "food", w = 1, h = 2, mass = 0.5, value = 7000, food = { water = 45, energy = 10, time = 3 }, desc = "Hydration +45, energy +10. Still sealed.", color = c("#C8962E") })
+add("CHOC_BAR", { name = "Chocolate Bar", short = "CHOC", kind = "food", w = 1, h = 1, mass = 0.1, value = 5000, food = { energy = 25, water = -6, time = 2 }, desc = "Energy +25.", color = c("#6E3E2A") })
 
 -- ── grenades (M11) ───────────────────────────────────────────────────────────
 -- thrown with G from the rig or pockets (Tarkov: never from the backpack); the fuse starts on release
@@ -142,6 +145,12 @@ add("KEY_PINE_BUNKER", { name = "Shelter P-7 Key", short = "P-7 KEY", kind = "ke
 add("KEY_SMELT_OFFICE", { name = "Smelter Office Key", short = "SMELT KEY", kind = "key", w = 1, h = 1, mass = 0.02, value = 26000, rarity = "uncommon", key = { door = "smelter_office", uses = 25 }, desc = "Smelter office block: opens the manager's office upstairs and the watchman's door in the west fence.", color = c("#7A6E58") })
 add("KEY_DORM_104", { name = "Dorm Room 104 Key", short = "DORM 104", kind = "key", w = 1, h = 1, mass = 0.02, value = 16000, rarity = "uncommon", key = { door = "dorm104", uses = 30 }, desc = "Crew dormitory, ground floor, room 104.", color = c("#7E8A6B") })
 add("KEY_DORM_203", { name = "Dorm Room 203 Key", short = "DORM 203", kind = "key", w = 1, h = 1, mass = 0.02, value = 34000, rarity = "uncommon", key = { door = "dorm203", uses = 20 }, desc = "Crew dormitory, upper floor, room 203. The foreman's quarters.", color = c("#6B7E8A") })
+-- M13 Meridian Mall keys
+add("KEY_MALL_STAFF", { name = "Meridian Staff Key", short = "STAFF KEY", kind = "key", w = 1, h = 1, mass = 0.02, value = 28000, rarity = "uncommon", key = { door = "mall_staff", uses = 20 }, desc = "Meridian Mall: the food-court kitchen and the staff exit to the east car park.", color = c("#6E7A8A") })
+add("KEY_MALL_SECURITY", { name = "Mall Security Key", short = "SECURITY", kind = "key", w = 1, h = 1, mass = 0.02, value = 64000, rarity = "rare", key = { door = "mall_security", uses = 15 }, desc = "Meridian Mall, upper level: the security office behind the management suite.", color = c("#3E4E6E") })
+add("KEY_VOLTA_STORE", { name = "VOLTA Store Room Key", short = "VOLTA KEY", kind = "key", w = 1, h = 1, mass = 0.02, value = 82000, rarity = "rare", key = { door = "volta_store", uses = 12 }, desc = "Meridian Mall: the stock room behind the VOLTA electronics store.", color = c("#C8B23A") })
+add("KEY_MEDIQ", { name = "MEDIQ Dispensary Key", short = "MEDIQ KEY", kind = "key", w = 1, h = 1, mass = 0.02, value = 36000, rarity = "uncommon", key = { door = "mediq", uses = 20 }, desc = "Meridian Mall: the locked dispensary behind the MEDIQ pharmacy counter.", color = c("#4E8A6E") })
+add("CARD_MALL_VAULT", { name = "Savings Vault Keycard", short = "VAULT CARD", kind = "key", w = 1, h = 1, mass = 0.02, value = 140000, rarity = "rare", key = { door = "mall_vault", uses = 6, card = true }, desc = "Meridian Savings branch: opens the vault behind the tellers. 6 uses.", color = c("#8C3E5A") })
 add("SEALED_DRIVE", { name = "Sealed Drive", short = "DRIVE", kind = "quest", w = 1, h = 1, mass = 0.1, value = 120000, rarity = "rare", desc = "Evacuation office data drive in a sealed sleeve.", color = c("#C07946") })
 add("LEDGER", { name = "Harbormaster's Ledger", short = "LEDGER", kind = "quest", w = 1, h = 1, mass = 0.3, value = 450000, rarity = "legendary", desc = "Leather ledger of every shipment that left Quay 7.", color = c("#7A4A2E") })
 
@@ -172,6 +181,16 @@ loot("INTEL_FOLDER", "Intel Folder", "INTEL", 1, 1, 0.2, 90000, "rare", "Stamped
 loot("MIL_CIRCUIT", "Military Circuit", "MIL CIRC", 2, 1, 0.4, 160000, "epic", "Hardened military control circuit.", "#2F5A3A")
 loot("COLD_WALLET", "Cold Wallet", "WALLET", 1, 1, 0.05, 220000, "epic", "Hardware wallet. Someone will pay for it.", "#C07946")
 loot("BRASS_LION", "Brass Lion", "LION", 2, 2, 3.2, 280000, "epic", "Brass lion statuette from the harbormaster's office.", "#B08A3C")
+-- M13 Meridian Mall: electronics and household goods
+loot("GPU_CARD", "Graphics Card", "GPU", 2, 1, 0.9, 190000, "epic", "A boxed high-end graphics card from the VOLTA stock room. Someone always wants one.", "#3A4A5A")
+loot("HDD", "Hard Drive", "HDD", 1, 1, 0.4, 24000, "uncommon", "A 3.5-inch hard drive, data unknown.", "#5A6066")
+loot("RAM_STICK", "Memory Module", "RAM", 1, 1, 0.05, 15000, "uncommon", "A desktop memory stick in a blister pack.", "#3A6E4A")
+loot("PHONE", "Smartphone", "PHONE", 1, 1, 0.2, 32000, "uncommon", "A display-model phone with a cracked screen.", "#2E3238")
+loot("POWER_BANK", "Power Bank", "PWR BANK", 1, 1, 0.3, 9000, "common", "Portable battery, half charged.", "#4A5E7A")
+loot("LIGHTBULB", "Light Bulb", "BULB", 1, 1, 0.1, 3500, "common", "An incandescent bulb, still in its sleeve.", "#D8D2A8")
+loot("TOOTHPASTE", "Toothpaste", "PASTE", 1, 1, 0.15, 4000, "common", "Unopened tube of toothpaste.", "#5A8EB8")
+loot("SOAP", "Soap Bar", "SOAP", 1, 1, 0.1, 3000, "common", "Wrapped bar of soap.", "#C8B8D8")
+loot("BLEACH", "Bleach", "BLEACH", 1, 2, 1.0, 8000, "common", "A bottle of household bleach.", "#D8DCE0")
 add("DOGTAG", { name = "Dog Tag", short = "TAG", kind = "loot", w = 1, h = 1, mass = 0.02, value = 12000, rarity = "uncommon", desc = "An operator's identification tag. Worth more the more experienced its owner was.", color = c("#A7A9A0") })
 
 local Items = { defs = defs }

@@ -1,0 +1,338 @@
+{
+ "Balustrade": {
+  "center": [
+   -0.0,
+   1.876,
+   0.0
+  ],
+  "mats": [
+   "chrome",
+   "glass",
+   "metal"
+  ],
+  "size": [
+   8.0,
+   3.752,
+   0.5
+  ]
+ },
+ "BalustradeBroken": {
+  "center": [
+   -0.0,
+   1.876,
+   -0.57
+  ],
+  "mats": [
+   "chrome",
+   "glass",
+   "metal"
+  ],
+  "size": [
+   8.0,
+   3.752,
+   5.119
+  ]
+ },
+ "BrokenEdge": {
+  "center": [
+   -0.043,
+   -1.321,
+   -0.752
+  ],
+  "mats": [
+   "concrete",
+   "metal"
+  ],
+  "size": [
+   12.138,
+   2.936,
+   2.598
+  ]
+ },
+ "CeilingCollapse": {
+  "center": [
+   -0.0,
+   0.041,
+   0.0
+  ],
+  "mats": [
+   "concrete",
+   "fabric",
+   "metal",
+   "paint",
+   "plaster"
+  ],
+  "size": [
+   16.08,
+   8.619,
+   16.08
+  ]
+ },
+ "CeilingDebris": {
+  "center": [
+   -0.476,
+   0.121,
+   0.326
+  ],
+  "mats": [
+   "fabric",
+   "metal",
+   "plaster"
+  ],
+  "size": [
+   6.085,
+   1.332,
+   6.182
+  ]
+ },
+ "CeilingHole": {
+  "center": [
+   -0.0,
+   0.451,
+   0.0
+  ],
+  "mats": [
+   "concrete",
+   "fabric",
+   "metal",
+   "paint",
+   "plaster"
+  ],
+  "size": [
+   16.08,
+   7.797,
+   16.08
+  ]
+ },
+ "Column": {
+  "center": [
+   -0.0,
+   8.5,
+   0.0
+  ],
+  "mats": [
+   "metal",
+   "plaster",
+   "stone"
+  ],
+  "size": [
+   2.9,
+   17.0,
+   2.9
+  ]
+ },
+ "ColumnDamaged": {
+  "center": [
+   0.77,
+   8.489,
+   -0.582
+  ],
+  "mats": [
+   "concrete",
+   "metal",
+   "plaster",
+   "stone"
+  ],
+  "size": [
+   4.44,
+   17.022,
+   4.063
+  ]
+ },
+ "Escalator": {
+  "center": [
+   -0.0,
+   9.118,
+   -17.651
+  ],
+  "mats": [
+   "chrome",
+   "glass",
+   "metal",
+   "rubber"
+  ],
+  "size": [
+   5.4,
+   24.616,
+   39.698
+  ]
+ },
+ "Fountain": {
+  "center": [
+   -0.0,
+   6.066,
+   0.0
+  ],
+  "mats": [
+   "concrete",
+   "paint",
+   "stone",
+   "tile"
+  ],
+  "size": [
+   18.57,
+   12.479,
+   18.57
+  ]
+ },
+ "GlassShards": {
+  "center": [
+   -0.132,
+   0.02,
+   0.019
+  ],
+  "mats": [
+   "glass"
+  ],
+  "size": [
+   4.223,
+   0.02,
+   4.063
+  ]
+ },
+ "RubbleA": {
+  "center": [
+   0.027,
+   0.467,
+   0.0
+  ],
+  "mats": [
+   "concrete",
+   "metal"
+  ],
+  "size": [
+   4.454,
+   1.346,
+   3.6
+  ]
+ },
+ "RubbleB": {
+  "center": [
+   -0.0,
+   1.194,
+   0.0
+  ],
+  "mats": [
+   "concrete",
+   "metal"
+  ],
+  "size": [
+   8.8,
+   2.876,
+   7.2
+  ]
+ },
+ "Shutter": {
+  "center": [
+   -0.0,
+   6.05,
+   0.05
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   16.4,
+   12.1,
+   1.1
+  ]
+ },
+ "ShutterBent": {
+  "center": [
+   -0.0,
+   6.037,
+   -2.705
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   16.4,
+   12.126,
+   6.61
+  ]
+ },
+ "ShutterHalf": {
+  "center": [
+   -0.0,
+   6.05,
+   0.05
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   16.4,
+   12.1,
+   1.1
+  ]
+ },
+ "SlabCollapse": {
+  "center": [
+   0.03,
+   8.739,
+   -7.084
+  ],
+  "mats": [
+   "concrete",
+   "metal",
+   "stone"
+  ],
+  "size": [
+   12.155,
+   18.297,
+   29.943
+  ]
+ },
+ "StoreFront": {
+  "center": [
+   -0.0,
+   6.0,
+   -0.05
+  ],
+  "mats": [
+   "glass",
+   "metal"
+  ],
+  "size": [
+   16.0,
+   12.0,
+   0.7
+  ]
+ },
+ "StoreFrontBroken": {
+  "center": [
+   -0.0,
+   6.0,
+   -0.199
+  ],
+  "mats": [
+   "glass",
+   "metal"
+  ],
+  "size": [
+   16.0,
+   12.0,
+   5.6
+  ]
+ },
+ "WallBreach": {
+  "center": [
+   -0.0,
+   4.468,
+   -0.301
+  ],
+  "mats": [
+   "concrete",
+   "plaster"
+  ],
+  "size": [
+   8.0,
+   9.065,
+   5.216
+  ]
+ }
+}

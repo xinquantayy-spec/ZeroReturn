@@ -11,7 +11,7 @@ export type MapDef = {
 
 local Maps = {}
 
-Maps.order = { "quay7", "smelter" }
+Maps.order = { "quay7", "smelter", "meridian" }
 
 Maps.defs = {
 	quay7 = {
@@ -27,6 +27,13 @@ Maps.defs = {
 		kind = "FACTORY",
 		raidTime = 900,
 		desc = "Blast furnaces, catwalks, a casting shed, offices and service tunnels under the yard. Short raids, close fights.",
+	},
+	meridian = {
+		id = "meridian",
+		name = "MERIDIAN MALL",
+		kind = "SHOPPING MALL",
+		raidTime = 1500,
+		desc = "A dark two-level mall: a supermarket with a car park on its roof, a food court under a cinema, a fountain atrium and loading docks. Start the generator to light it and run the cargo lift; the Caretaker walks the atrium in some raids.",
 	},
 } :: { [string]: MapDef }
 

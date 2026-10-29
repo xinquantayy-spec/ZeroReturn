@@ -53,12 +53,17 @@
 38. **Belt rig pouches are at the back.** They sit there to stay clear of the thighs when crouching and of the hands hanging at the sides.
 39. **Worn materials can render black after a fresh upload (Studio).** If a material's textures fail to load once (for example while new images are still processing), Studio keeps rendering that exact set of textures black for the session. Restart Studio, or upload one of the maps again so the set gets a new ID (done for five materials on 2026-10-29).
 40. **Client-side clutter is not identical for everyone.** HIGH draws low clutter (trash bags, cardboard, tipped bins) that POTATO does not, so a player lying prone right beside clutter is slightly easier to see on POTATO. Clutter is kept low and mostly along walls, and fog, light and cover are identical at every level.
-41. **Performance on devices is unknown.** HIGH (the owner's default everywhere, phones included) adds depth of field, sun rays, bloom and the full detail layer. On the T490 laptop in Studio it runs at about 34–37 fps against 58 on POTATO. Phones and consoles have not been measured.
+41. **Performance on devices is unknown.** HIGH (the owner's default everywhere, phones included) adds depth of field (outdoors only since M13), sun rays, bloom and the full detail layer. On the T490 laptop in Studio it runs at about 34–37 fps on Quay 7 against 58 on POTATO, and 26–31 fps in the mall at Studio's maximum render quality (46–58 at quality 10). Phones and consoles have not been measured.
 42. **Container decals float slightly.** Rust and grime on shipping containers sit on a flat plane just outside the corrugation, which shows at grazing angles.
 43. **Not built yet (M12 leftovers):**
     - chain-link fences: they need to block movement but not bullets or sight;
     - denser interiors: desks with drawers out, filing cabinets, lockers;
     - wear on the older Blender props (containers, pallets, barrels have only their baked colours plus the decals).
+45. **Five new MaterialVariants live only in the open Studio session.** Rojo could not create `ZR_Terrazzo`, `ZR_FloorTiles`, `ZR_CeilingTiles`, `ZR_VinylFloor` and `ZR_CarpetWorn` in MaterialService ("parent doesn't exist"), so they were added to the place directly with the same properties as `src/materials/*.model.json`. Save the place in Studio (owner) to keep them; reconnecting the Rojo plugin should also create them.
+46. **Stocked shelving is triangle-heavy.** Each product is real geometry: a gondola is 7.3k triangles and the supermarket view about 114k triangles of shelving. It measured about 1 ms a frame at render quality 10 on the T490, so it was left as is; a lower-poly product set (box products without hidden faces, one filler block per shelf) would roughly halve it if phones need it.
+47. **Cinema risers are 1.3 studs.** Players step up them; AI use the side aisle with half steps.
+48. **An unknown asset warning.** `rbxassetid://111777818918264` (and once `92890594649410`) fail to load in raids ("HTTP 502" or "Asset content representation is being generated"). No instance in the client or server references them; likely a freshly uploaded image or mesh still processing. Harmless so far; watch the console.
+49. **Studio frame rates depend on Studio's render quality.** Studio renders at quality 21 (the maximum) during Play; devices choose their own level. `settings().Rendering.QualityLevel` can be set from the client command bar for comparisons (it resets when Play stops).
 44. **Syncing to the laptop without the shell tool.** When the laptop's shell tool is unavailable, files reach the PC as one bundle (`tools/pc_patch.py`) run through Blender's Python. Each sync shows up as a file card in the chat. Rojo then updates Studio as usual.
 33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.
@@ -73,6 +78,14 @@
 - The Baseplate texture warning `rbxassetid://203785492` comes from the default template and is harmless.
 
 ## Fixed this session
+
+- M13 Meridian Mall:
+  - The exits list kept showing CARGO LIFT as NEEDS POWER after the generator started (the raid info was not re-sent).
+  - AI could not reach the cinema's back rows or projection booths (1.3-stud risers, a 3.6-wide booth door, the visit point inside the projector).
+  - The detail plan put barbed wire on the mall's facade bands, parapets and gallery edges.
+  - Interior walls carried whole-wall rain streaks and peeling plaster layers on most faces (the costliest detail indoors); now occasional streaks and plaster patches.
+  - Depth of field ran indoors, where nothing is far enough to blur; it now switches off under a roof (HIGH).
+  - The muzzle flash was a large square glow; it is now small and round (owner request).
 
 - M12:
   - Five worn materials (worn concrete, precast panels, plaster, painted metal, asphalt) rendered almost black; they now have fresh roughness maps.

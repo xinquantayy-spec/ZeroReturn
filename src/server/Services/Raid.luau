@@ -55,7 +55,7 @@ function Raid.raidInfo(s)
 	for _, id in s.extracts do
 		local e = ctx.World.extracts[id]
 		local r = e.rule or {}
-		table.insert(ex, { id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key })
+		table.insert(ex, { id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key, powered = r.kind == "power" and ctx.World.switchOn(r.switch) or nil })
 	end
 	return {
 		id = s.id, started = s.raidStart or s.started, endsAt = s.endsAt, spawn = s.spawn, extracts = ex, state = s.state,

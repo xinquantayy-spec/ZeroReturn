@@ -25,6 +25,12 @@ local KINDS = {
 	toolbox = { w = 4, h = 3, count = { 2, 4 }, pool = "toolbox" },
 	jacket = { w = 2, h = 2, count = { 0, 2 }, pool = "jacket" },
 	safe = { w = 3, h = 3, count = { 1, 3 }, pool = "safe" },
+	-- M13 Meridian Mall
+	register = { w = 2, h = 2, count = { 0, 2 }, pool = "register" },
+	techbox = { w = 4, h = 3, count = { 1, 3 }, pool = "tech" },
+	pharmacy = { w = 4, h = 3, count = { 2, 4 }, pool = "pharmacy" },
+	grocery = { w = 4, h = 3, count = { 1, 4 }, pool = "grocery" },
+	cooler = { w = 3, h = 3, count = { 1, 3 }, pool = "drinks" },
 }
 Loot.KINDS = KINDS
 
@@ -107,7 +113,44 @@ local POOLS = {
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
-		{ id = "KEY_SMELT_OFFICE", w = 5 },
+		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_MALL_STAFF", w = 3 }, { id = "KEY_MEDIQ", w = 2 }, { id = "KEY_MALL_SECURITY", w = 1 },
+	},
+	-- M13 Meridian Mall
+	register = {
+		{ id = "OLD_COIN", w = 10 }, { id = "CIGARETTES", w = 8 }, { id = "MATCHES", w = 6 }, { id = "POWER_BANK", w = 5 },
+		{ id = "PHONE", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "FLASH_MODULE", w = 2 }, { id = "KEY_MALL_STAFF", w = 2 },
+	},
+	tech = {
+		{ id = "WIRES", w = 10 }, { id = "CAPACITOR", w = 8 }, { id = "LOGIC_BOARD", w = 8 }, { id = "HDD", w = 8 },
+		{ id = "RAM_STICK", w = 8 }, { id = "POWER_BANK", w = 8 }, { id = "PHONE", w = 6 }, { id = "SIGNAL_COIL", w = 6 },
+		{ id = "BATTERY", w = 4 }, { id = "FLASH_MODULE", w = 5 }, { id = "GPU_CARD", w = 3 }, { id = "SEALED_DRIVE", w = 2 },
+		{ id = "DECK_TRANSCEIVER", w = 2 }, { id = "MIL_CIRCUIT", w = 1 },
+	},
+	pharmacy = {
+		{ id = "BANDAGE", w = 18 }, { id = "PAINKILLERS", w = 16 }, { id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 },
+		{ id = "TOURNIQUET", w = 8 }, { id = "SPLINT", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MED_TOOLS", w = 4 },
+		{ id = "MEDKIT_L", w = 3 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 },
+	},
+	grocery = {
+		{ id = "WATER", w = 14 }, { id = "JUICE", w = 10 }, { id = "CHOC_BAR", w = 12 }, { id = "STEW", w = 10 },
+		{ id = "HARDTACK", w = 8 }, { id = "VOLT_DRINK", w = 5 }, { id = "TOOTHPASTE", w = 6 }, { id = "SOAP", w = 6 },
+		{ id = "BLEACH", w = 4 }, { id = "CIGARETTES", w = 6 }, { id = "MATCHES", w = 6 }, { id = "LIGHTBULB", w = 4 },
+	},
+	drinks = { { id = "WATER", w = 14 }, { id = "JUICE", w = 12 }, { id = "VOLT_DRINK", w = 8 } },
+	mall = {
+		{ id = "CHOC_BAR", w = 10 }, { id = "JUICE", w = 8 }, { id = "WATER", w = 6 }, { id = "CIGARETTES", w = 8 },
+		{ id = "MATCHES", w = 6 }, { id = "POWER_BANK", w = 6 }, { id = "LIGHTBULB", w = 6 }, { id = "TOOTHPASTE", w = 5 },
+		{ id = "SOAP", w = 5 }, { id = "PHONE", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "BATTERY", w = 2 },
+		{ id = "WIRES", w = 4 }, { id = "DUCT_TAPE", w = 4 }, { id = "A9_PST", w = 3, n = { 5, 15 } }, { id = "BANDAGE", w = 4 },
+	},
+	mallkeys = {
+		{ id = "KEY_MALL_STAFF", w = 8 }, { id = "KEY_MEDIQ", w = 6 }, { id = "KEY_MALL_SECURITY", w = 3 },
+		{ id = "KEY_VOLTA_STORE", w = 2 }, { id = "CARD_MALL_VAULT", w = 1 },
+	},
+	mallgood = {
+		{ id = "GPU_CARD", w = 2 }, { id = "FLASH_MODULE", w = 6 }, { id = "GOLD_CHAIN", w = 6 }, { id = "CAPT_WATCH", w = 4 },
+		{ id = "PHONE", w = 8 }, { id = "HDD", w = 6 }, { id = "RAM_STICK", w = 6 }, { id = "INTEL_FOLDER", w = 3 },
+		{ id = "SEALED_DRIVE", w = 2 }, { id = "MEDKIT_M", w = 4 }, { id = "KEY_MALL_SECURITY", w = 1 },
 	},
 }
 Loot.POOLS = POOLS
@@ -894,6 +937,39 @@ function Loot.bossLoadout(rand)
 		k.put("KEY_OFFICE")
 	end
 	k.roll("safe", rand:NextInteger(1, 3))
+	return k.h
+end
+
+-- M13 the Caretaker (Meridian Mall): the mall's former security chief in assault armour with arm guards and a
+-- face-plate helmet, a pump gun with slugs and a carbine slung behind, and the keys to the places he guards
+function Loot.caretakerLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 85, 100 }
+	k.slot("armor", "ARMOR_C6", { dur = rand:NextInteger(60, 80), tint = "black" })
+	k.slot("head", "HELMET_C5", { dur = rand:NextInteger(30, 45) })
+	k.slot("rig", "RIG_CHEST", { tint = "black" })
+	k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.6 and "A12_SLUG" or "A12_BUCK", 4)
+	k.gun("secondary", "R17_RIFLE", "R17_MAG40", "A62_AP", 2)
+	k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1)
+	k.put("MEDKIT_L")
+	k.put("HEMOSTAT")
+	k.put("PAINKILLERS")
+	k.put("GREN_STUN")
+	k.put("GREN_F7")
+	if rand:NextNumber() < 0.5 then
+		k.put("KEY_VOLTA_STORE")
+	end
+	if rand:NextNumber() < 0.35 then
+		k.put("KEY_MALL_SECURITY")
+	end
+	if rand:NextNumber() < 0.15 then
+		k.put("CARD_MALL_VAULT")
+	end
+	if rand:NextNumber() < 0.4 then
+		k.put("GPU_CARD")
+	end
+	k.roll("mallgood", rand:NextInteger(1, 3))
 	return k.h
 end
 

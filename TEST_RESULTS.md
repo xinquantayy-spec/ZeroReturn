@@ -8,6 +8,23 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M13 Meridian Mall (2026-10-29)
+
+Studio on the owner's T490 laptop, one client, raids on `meridian` started through the dev bridge (`map`, `deploy`). Screenshots: `docs/maps/evidence/M01`–`M08`.
+
+| Test | Method | Result |
+|---|---|---|
+| Suites | `ZR_Dev:Invoke("tests")` | **LogicTests 167/167, CharTests 38/38, LookTests 19/19, MapTests 32/32** (30 during a raid). MapTests now cover the mall: built, spawns on floors with head room, exfils over floors, every side with an open exit, loose loot resting on surfaces (snapped at build), containers and keyed doors live, AI zones, cover points, detail plan. |
+| Build | Server log | Pass. The mall builds in 0.24 s: 2,407 parts and 1,810 kit meshes (621 props of all 86 kinds), 47 containers, 53 prompts. All three kit batches load (370 meshes, 0 failed). |
+| Generator | Real prompt (`InputHoldBegin`, 3 s hold) | Pass. "GENERATOR STARTING", prompt disabled; 9 s later lit lights 47 → 123 and 288 ceiling panels glow; the raid info reaches the client with CARGO LIFT `powered = true` and the player gets "POWER ON". **Bug found and fixed:** the exits list kept saying NEEDS POWER until the next raid-info update; the server now sends it when the power comes on. |
+| Cargo lift exit | Teleport into the zone | Pass. With power: extracted after 7 s. Fresh raid without power: still in the raid after 12 s. |
+| AI paths | PathfindingService with the AI agent (radius 1.6, height 5.6, no jumping); `aiGoto` | Pass: L1 ↔ L2 (escalators, collapse slope, stair cores), yard → L2, car park → lobby, ground → roof car park over the ramp; a scav sent from L1 to the L2 gallery arrived. **Fixed:** the cinema seating (1.3-stud risers) had no path to the back or the projection booths; a side aisle with half steps and a wider booth door fixed it, and the PROJECTION visit point moved off the projector. |
+| Barbed wire | Detail plan | **Fixed:** the plan put 173 barbed-wire pieces on the mall's facade bands, parapets and gallery edges; the mall now opts out (`NoWire`), 0 left. |
+| Muzzle flash (owner request) | Fired the R-17 in a raid, `ZR_Fx` probe, capture `W01` | Pass. First person: a 0.12-stud round glow (was a 0.35 cube), light range 9 / brightness 1.6 (was 12 / 2.5), exposure kick halved. Other shooters: 0.22 round glow. No errors. |
+| Frame rate | RenderStepped count, Studio (client and server in one process), our HIGH | Mall 25.6–31.4 fps at Studio's render quality 21, 45.8–57.7 at quality 10, 60 (the cap) at quality 5, against Quay 7 30.1 / 60 / 60. Before the pass: atrium 23–24 / 45, gallery 22–23 / 43–47. Table and cost breakdown in `docs/maps/MERIDIAN_MALL.md`. Indicative only. |
+| Console | Output | No ZR errors. New warnings: `rbxassetid://111777818918264` fails to load (HTTP 502 or "being generated") and is not referenced by any instance (KNOWN_ISSUES 48); the two new floor maps returned HTTP 502 once and loaded after a retry. |
+| Not verified | – | Phones and consoles; two clients; a full 25-minute raid with players fighting through the mall. |
+
 ## M12 Look 2.0 (2026-10-29)
 
 Studio on the owner's T490 laptop. Details and screenshots: `docs/look/LOOK_2_0.md`, `docs/look/evidence/L01`–`L11`.

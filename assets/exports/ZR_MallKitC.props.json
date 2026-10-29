@@ -1,0 +1,412 @@
+{
+ "BusShelter": {
+  "center": [
+   -0.0,
+   4.113,
+   0.2
+  ],
+  "mats": [
+   "glass",
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   10.6,
+   8.225,
+   4.8
+  ]
+ },
+ "CCTVDesk": {
+  "center": [
+   -0.0,
+   4.65,
+   0.025
+  ],
+  "mats": [
+   "metal",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   9.0,
+   9.3,
+   3.05
+  ]
+ },
+ "CarHatch": {
+  "center": [
+   -0.0,
+   2.325,
+   -0.025
+  ],
+  "mats": [
+   "fabric",
+   "glass",
+   "metal",
+   "paint",
+   "plastic",
+   "rubber"
+  ],
+  "size": [
+   6.8,
+   4.85,
+   13.63
+  ]
+ },
+ "CarSedan": {
+  "center": [
+   -0.0,
+   2.25,
+   -0.025
+  ],
+  "mats": [
+   "fabric",
+   "glass",
+   "metal",
+   "paint",
+   "plastic",
+   "rubber"
+  ],
+  "size": [
+   7.0,
+   4.7,
+   15.63
+  ]
+ },
+ "CarSedanSmashed": {
+  "center": [
+   -0.0,
+   2.039,
+   -0.025
+  ],
+  "mats": [
+   "fabric",
+   "glass",
+   "metal",
+   "paint",
+   "plastic",
+   "rubber"
+  ],
+  "size": [
+   7.0,
+   4.278,
+   15.63
+  ]
+ },
+ "CardboardPile": {
+  "center": [
+   0.238,
+   0.609,
+   0.29
+  ],
+  "mats": [
+   "cardboard"
+  ],
+  "size": [
+   3.999,
+   1.338,
+   4.496
+  ]
+ },
+ "CargoLift": {
+  "center": [
+   -0.0,
+   5.0,
+   -0.15
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "plastic"
+  ],
+  "size": [
+   11.0,
+   10.0,
+   6.3
+  ]
+ },
+ "DockDoor": {
+  "center": [
+   -0.0,
+   6.4,
+   -0.7
+  ],
+  "mats": [
+   "glass",
+   "metal",
+   "paint",
+   "rubber"
+  ],
+  "size": [
+   13.6,
+   13.2,
+   2.6
+  ]
+ },
+ "DockDoorOpen": {
+  "center": [
+   -0.0,
+   6.7,
+   4.8
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "rubber"
+  ],
+  "size": [
+   13.6,
+   13.8,
+   13.6
+  ]
+ },
+ "ElectricCabinet": {
+  "center": [
+   -0.0,
+   4.75,
+   -0.045
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   5.9,
+   9.5,
+   1.69
+  ]
+ },
+ "Forklift": {
+  "center": [
+   -0.0,
+   4.11,
+   -1.1
+  ],
+  "mats": [
+   "leather",
+   "metal",
+   "paint",
+   "rubber"
+  ],
+  "size": [
+   3.9,
+   8.18,
+   9.6
+  ]
+ },
+ "Generator": {
+  "center": [
+   1.917,
+   5.609,
+   0.028
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "plastic"
+  ],
+  "size": [
+   18.233,
+   11.218,
+   5.456
+  ]
+ },
+ "HVAC": {
+  "center": [
+   0.9,
+   2.925,
+   0.0
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   12.2,
+   5.85,
+   5.4
+  ]
+ },
+ "Hoarding": {
+  "center": [
+   -0.0,
+   4.25,
+   -0.8
+  ],
+  "mats": [
+   "metal",
+   "wood"
+  ],
+  "size": [
+   12.173,
+   8.5,
+   3.772
+  ]
+ },
+ "Lockers": {
+  "center": [
+   -0.0,
+   3.2,
+   -0.703
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   6.0,
+   6.4,
+   3.205
+  ]
+ },
+ "OfficeDesk": {
+  "center": [
+   -0.0,
+   2.1,
+   -0.965
+  ],
+  "mats": [
+   "fabric",
+   "metal",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   6.0,
+   4.2,
+   4.93
+  ]
+ },
+ "PalletBoxes": {
+  "center": [
+   -0.0,
+   2.289,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "wood"
+  ],
+  "size": [
+   4.0,
+   4.578,
+   4.0
+  ]
+ },
+ "PalletRack": {
+  "center": [
+   -0.0,
+   7.0,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "metal",
+   "paint",
+   "wood"
+  ],
+  "size": [
+   16.3,
+   14.0,
+   4.45
+  ]
+ },
+ "ParkingBarrier": {
+  "center": [
+   3.576,
+   2.476,
+   0.4
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "plastic"
+  ],
+  "size": [
+   16.552,
+   5.099,
+   2.4
+  ]
+ },
+ "Projector": {
+  "center": [
+   -0.0,
+   3.5,
+   -0.45
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   2.6,
+   7.0,
+   4.7
+  ]
+ },
+ "RollCage": {
+  "center": [
+   -0.0,
+   2.817,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "metal",
+   "rubber"
+  ],
+  "size": [
+   2.7,
+   5.635,
+   3.5
+  ]
+ },
+ "StorageShelf": {
+  "center": [
+   -0.0,
+   3.508,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "metal"
+  ],
+  "size": [
+   8.0,
+   7.015,
+   2.0
+  ]
+ },
+ "StorageShelfEmpty": {
+  "center": [
+   -0.0,
+   3.5,
+   -0.75
+  ],
+  "mats": [
+   "cardboard",
+   "metal"
+  ],
+  "size": [
+   8.0,
+   7.0,
+   3.5
+  ]
+ },
+ "TrolleyBay": {
+  "center": [
+   -0.0,
+   3.637,
+   -0.05
+  ],
+  "mats": [
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   12.6,
+   7.275,
+   6.7
+  ]
+ }
+}

@@ -1,0 +1,730 @@
+{
+ "ZR_MK_StoreFront__glass": {
+  "center": [
+   -0.0,
+   6.3,
+   0.0
+  ],
+  "size": [
+   15.4,
+   10.4,
+   0.08
+  ],
+  "tris": 108
+ },
+ "ZR_MK_StoreFront__metal": {
+  "center": [
+   -0.0,
+   6.0,
+   -0.05
+  ],
+  "size": [
+   16.0,
+   12.0,
+   0.7
+  ],
+  "tris": 168
+ },
+ "ZR_MK_StoreFrontBroken__glass": {
+  "center": [
+   0.1236,
+   5.755,
+   -0.1993
+  ],
+  "size": [
+   15.6471,
+   11.4899,
+   5.6001
+  ],
+  "tris": 356
+ },
+ "ZR_MK_StoreFrontBroken__metal": {
+  "center": [
+   -0.0,
+   6.0,
+   -0.05
+  ],
+  "size": [
+   16.0,
+   12.0,
+   0.7
+  ],
+  "tris": 168
+ },
+ "ZR_MK_Shutter__metal": {
+  "center": [
+   -0.0,
+   5.5,
+   -0.0725
+  ],
+  "size": [
+   16.1,
+   11.0,
+   0.695
+  ],
+  "tris": 64
+ },
+ "ZR_MK_Shutter__paint": {
+  "center": [
+   -0.0,
+   6.05,
+   0.05
+  ],
+  "size": [
+   16.4,
+   12.1,
+   1.1
+  ],
+  "tris": 1972
+ },
+ "ZR_MK_ShutterHalf__metal": {
+  "center": [
+   -0.0,
+   5.5,
+   0.0
+  ],
+  "size": [
+   16.1,
+   11.0,
+   0.55
+  ],
+  "tris": 24
+ },
+ "ZR_MK_ShutterHalf__paint": {
+  "center": [
+   -0.0,
+   7.64,
+   0.05
+  ],
+  "size": [
+   16.4,
+   8.92,
+   1.1
+  ],
+  "tris": 1396
+ },
+ "ZR_MK_ShutterBent__metal": {
+  "center": [
+   0.0309,
+   5.498,
+   -0.35
+  ],
+  "size": [
+   16.1619,
+   11.0039,
+   1.4275
+  ],
+  "tris": 36
+ },
+ "ZR_MK_ShutterBent__paint": {
+  "center": [
+   -0.0,
+   6.0369,
+   -2.7052
+  ],
+  "size": [
+   16.4,
+   12.1261,
+   6.6103
+  ],
+  "tris": 2532
+ },
+ "ZR_MK_Column__metal": {
+  "center": [
+   -0.0,
+   1.3,
+   0.0
+  ],
+  "size": [
+   2.46,
+   1.4,
+   2.46
+  ],
+  "tris": 48
+ },
+ "ZR_MK_Column__plaster": {
+  "center": [
+   -0.0,
+   8.825,
+   0.0
+  ],
+  "size": [
+   2.7,
+   16.35,
+   2.7
+  ],
+  "tris": 88
+ },
+ "ZR_MK_Column__stone": {
+  "center": [
+   -0.0,
+   0.3,
+   0.0
+  ],
+  "size": [
+   2.9,
+   0.6,
+   2.9
+  ],
+  "tris": 44
+ },
+ "ZR_MK_ColumnDamaged__concrete": {
+  "center": [
+   1.3452,
+   3.741,
+   -1.143
+  ],
+  "size": [
+   3.2904,
+   7.518,
+   2.8861
+  ],
+  "tris": 552
+ },
+ "ZR_MK_ColumnDamaged__metal": {
+  "center": [
+   -0.0,
+   4.0524,
+   0.0
+  ],
+  "size": [
+   2.46,
+   6.9047,
+   2.46
+  ],
+  "tris": 240
+ },
+ "ZR_MK_ColumnDamaged__plaster": {
+  "center": [
+   0.5504,
+   8.4891,
+   -0.6317
+  ],
+  "size": [
+   3.8009,
+   17.0218,
+   3.9633
+  ],
+  "tris": 276
+ },
+ "ZR_MK_ColumnDamaged__stone": {
+  "center": [
+   -0.0,
+   0.3,
+   0.0
+  ],
+  "size": [
+   2.9,
+   0.6,
+   2.9
+  ],
+  "tris": 44
+ },
+ "ZR_MK_CeilingHole__concrete": {
+  "center": [
+   -0.0,
+   4.2,
+   0.0
+  ],
+  "size": [
+   16.0,
+   0.3,
+   16.0
+  ],
+  "tris": 12
+ },
+ "ZR_MK_CeilingHole__fabric": {
+  "center": [
+   2.1469,
+   0.2148,
+   -0.3824
+  ],
+  "size": [
+   1.8209,
+   1.0926,
+   2.4639
+  ],
+  "tris": 40
+ },
+ "ZR_MK_CeilingHole__metal": {
+  "center": [
+   -0.0,
+   0.1814,
+   0.0
+  ],
+  "size": [
+   16.08,
+   7.2572,
+   16.08
+  ],
+  "tris": 930
+ },
+ "ZR_MK_CeilingHole__paint": {
+  "center": [
+   0.4659,
+   2.675,
+   0.0
+  ],
+  "size": [
+   7.74,
+   2.15,
+   16.0
+  ],
+  "tris": 192
+ },
+ "ZR_MK_CeilingHole__plaster": {
+  "center": [
+   -0.0,
+   -0.6915,
+   0.0
+  ],
+  "size": [
+   15.9,
+   1.643,
+   15.9
+  ],
+  "tris": 684
+ },
+ "ZR_MK_CeilingCollapse__concrete": {
+  "center": [
+   -0.0,
+   4.2,
+   0.0
+  ],
+  "size": [
+   16.0,
+   0.3,
+   16.0
+  ],
+  "tris": 12
+ },
+ "ZR_MK_CeilingCollapse__fabric": {
+  "center": [
+   0.2351,
+   0.055,
+   -2.2211
+  ],
+  "size": [
+   3.3852,
+   1.7555,
+   2.9682
+  ],
+  "tris": 60
+ },
+ "ZR_MK_CeilingCollapse__metal": {
+  "center": [
+   -0.0,
+   -0.2293,
+   0.0
+  ],
+  "size": [
+   16.08,
+   8.0785,
+   16.08
+  ],
+  "tris": 1026
+ },
+ "ZR_MK_CeilingCollapse__paint": {
+  "center": [
+   -0.5677,
+   2.675,
+   0.0
+  ],
+  "size": [
+   7.74,
+   2.15,
+   16.0
+  ],
+  "tris": 192
+ },
+ "ZR_MK_CeilingCollapse__plaster": {
+  "center": [
+   -0.0,
+   -0.9003,
+   0.0
+  ],
+  "size": [
+   15.9,
+   2.0605,
+   15.9
+  ],
+  "tris": 660
+ },
+ "ZR_MK_CeilingDebris__fabric": {
+  "center": [
+   1.5277,
+   0.1212,
+   0.5005
+  ],
+  "size": [
+   1.611,
+   1.3321,
+   1.1992
+  ],
+  "tris": 40
+ },
+ "ZR_MK_CeilingDebris__metal": {
+  "center": [
+   -1.159,
+   0.1101,
+   1.1965
+  ],
+  "size": [
+   4.7189,
+   0.1899,
+   4.4406
+  ],
+  "tris": 48
+ },
+ "ZR_MK_CeilingDebris__plaster": {
+  "center": [
+   -0.3739,
+   0.1535,
+   0.0343
+  ],
+  "size": [
+   5.8809,
+   0.6199,
+   5.5993
+  ],
+  "tris": 432
+ },
+ "ZR_MK_Balustrade__chrome": {
+  "center": [
+   -0.0,
+   3.6,
+   0.0
+  ],
+  "size": [
+   8.0,
+   0.3043,
+   0.32
+  ],
+  "tris": 36
+ },
+ "ZR_MK_Balustrade__glass": {
+  "center": [
+   -0.0,
+   1.83,
+   0.0
+  ],
+  "size": [
+   7.5,
+   2.94,
+   0.1
+  ],
+  "tris": 12
+ },
+ "ZR_MK_Balustrade__metal": {
+  "center": [
+   -0.0,
+   1.8,
+   0.0
+  ],
+  "size": [
+   8.0,
+   3.6,
+   0.5
+  ],
+  "tris": 36
+ },
+ "ZR_MK_BalustradeBroken__chrome": {
+  "center": [
+   -0.0,
+   3.6,
+   0.0
+  ],
+  "size": [
+   8.0,
+   0.3043,
+   0.32
+  ],
+  "tris": 36
+ },
+ "ZR_MK_BalustradeBroken__glass": {
+  "center": [
+   -0.0,
+   1.6551,
+   -0.5696
+  ],
+  "size": [
+   7.4,
+   3.2899,
+   5.1186
+  ],
+  "tris": 110
+ },
+ "ZR_MK_BalustradeBroken__metal": {
+  "center": [
+   -0.0,
+   1.8,
+   0.0
+  ],
+  "size": [
+   8.0,
+   3.6,
+   0.5
+  ],
+  "tris": 36
+ },
+ "ZR_MK_Escalator__chrome": {
+  "center": [
+   -0.0,
+   9.3,
+   -18.5
+  ],
+  "size": [
+   4.22,
+   18.6,
+   37.2
+  ],
+  "tris": 48
+ },
+ "ZR_MK_Escalator__glass": {
+  "center": [
+   -0.0,
+   10.5556,
+   -17.001
+  ],
+  "size": [
+   3.908,
+   21.0888,
+   38.3979
+  ],
+  "tris": 34
+ },
+ "ZR_MK_Escalator__metal": {
+  "center": [
+   -0.0,
+   7.6548,
+   -18.75
+  ],
+  "size": [
+   5.4,
+   21.6903,
+   37.5
+  ],
+  "tris": 972
+ },
+ "ZR_MK_Escalator__rubber": {
+  "center": [
+   -0.0,
+   12.1973,
+   -18.5
+  ],
+  "size": [
+   4.16,
+   18.457,
+   36.003
+  ],
+  "tris": 160
+ },
+ "ZR_MK_Fountain__concrete": {
+  "center": [
+   2.815,
+   0.3942,
+   0.5234
+  ],
+  "size": [
+   5.1588,
+   1.1349,
+   8.3098
+  ],
+  "tris": 220
+ },
+ "ZR_MK_Fountain__paint": {
+  "center": [
+   -0.0,
+   7.6,
+   0.0
+  ],
+  "size": [
+   9.4109,
+   9.4109,
+   6.5628
+  ],
+  "tris": 996
+ },
+ "ZR_MK_Fountain__stone": {
+  "center": [
+   -0.0,
+   1.5,
+   0.0
+  ],
+  "size": [
+   18.5697,
+   3.0,
+   18.5697
+  ],
+  "tris": 792
+ },
+ "ZR_MK_Fountain__tile": {
+  "center": [
+   -0.0,
+   0.175,
+   0.0
+  ],
+  "size": [
+   16.3,
+   0.35,
+   16.3
+  ],
+  "tris": 108
+ },
+ "ZR_MK_WallBreach__concrete": {
+  "center": [
+   -0.0,
+   4.2502,
+   -0.301
+  ],
+  "size": [
+   7.97,
+   8.6296,
+   5.2159
+  ],
+  "tris": 1168
+ },
+ "ZR_MK_WallBreach__plaster": {
+  "center": [
+   -0.0,
+   4.4931,
+   -1.165
+  ],
+  "size": [
+   8.0,
+   9.0138,
+   3.2499
+  ],
+  "tris": 888
+ },
+ "ZR_MK_SlabCollapse__concrete": {
+  "center": [
+   0.03,
+   8.6632,
+   -6.4154
+  ],
+  "size": [
+   12.155,
+   18.146,
+   28.6051
+  ],
+  "tris": 1292
+ },
+ "ZR_MK_SlabCollapse__metal": {
+  "center": [
+   0.0095,
+   9.292,
+   -9.9557
+  ],
+  "size": [
+   11.1479,
+   17.1899,
+   24.2008
+  ],
+  "tris": 280
+ },
+ "ZR_MK_SlabCollapse__stone": {
+  "center": [
+   -0.0,
+   10.5161,
+   -9.6387
+  ],
+  "size": [
+   11.9,
+   13.9345,
+   19.8706
+  ],
+  "tris": 60
+ },
+ "ZR_MK_BrokenEdge__concrete": {
+  "center": [
+   -0.0432,
+   -0.5199,
+   -0.2319
+  ],
+  "size": [
+   12.138,
+   1.3345,
+   1.5571
+  ],
+  "tris": 280
+ },
+ "ZR_MK_BrokenEdge__metal": {
+  "center": [
+   -0.0228,
+   -1.5181,
+   -0.8246
+  ],
+  "size": [
+   11.6351,
+   2.5407,
+   2.4539
+  ],
+  "tris": 270
+ },
+ "ZR_MK_RubbleA__concrete": {
+  "center": [
+   0.0269,
+   0.4666,
+   0.0
+  ],
+  "size": [
+   4.4538,
+   1.3457,
+   3.6
+  ],
+  "tris": 450
+ },
+ "ZR_MK_RubbleA__metal": {
+  "center": [
+   1.0319,
+   0.464,
+   0.6166
+  ],
+  "size": [
+   1.7161,
+   0.5248,
+   1.7587
+  ],
+  "tris": 60
+ },
+ "ZR_MK_RubbleB__concrete": {
+  "center": [
+   -0.0,
+   1.1935,
+   0.0
+  ],
+  "size": [
+   8.8,
+   2.8758,
+   7.2
+  ],
+  "tris": 810
+ },
+ "ZR_MK_RubbleB__metal": {
+  "center": [
+   0.0207,
+   0.9843,
+   -1.1462
+  ],
+  "size": [
+   2.688,
+   1.0041,
+   2.8371
+  ],
+  "tris": 60
+ },
+ "ZR_MK_GlassShards__glass": {
+  "center": [
+   -0.1318,
+   0.0199,
+   0.0194
+  ],
+  "size": [
+   4.2233,
+   0.0198,
+   4.0632
+  ],
+  "tris": 85
+ }
+}

@@ -17,8 +17,8 @@
 **Current focus (owner request, 2026-10-29):** four maps furnished and worn with Blender props (small details, furniture, structural damage) at full performance, the character's own arms in first person, a Blender picture for every item, and Tarkov's inventory/stash/trader layout (own art and fonts). Pinewatch is parked (kept in the repo, out of the vote). Order:
 
 1. **First-person arms** = the character's block arms. **Done** (Weapon.luau `bodyArm`; evidence FP01–FP05).
-2. **Blender material pipeline:** UV-unwrapped kit meshes, shared Roblox materials and MaterialVariants, baked vertex AO; proven in Studio before the kit is built.
-3. **Meridian Mall:** Blender kit (storefronts and shutters, escalators, ceiling grid with missing tiles, skylights, kiosks, stocked shelving, checkouts, food court, cinema seats, mannequins, trolleys, signage, debris and damage pieces), then the map (two levels, atrium, cinema, supermarket, electronics and sports stores, food court, service corridors, loading docks, rooftop car park, loot, keys, exfils, spawns, AI, wear, tests, FPS).
+2. **Blender material pipeline.** **Done.** Kit props split by material (no UVs needed: Roblox materials tile by studs on meshes, measured), baked vertex AO and grime, five new MaterialVariants (`docs/PIPELINE.md`).
+3. **Meridian Mall.** **Done (2026-10-29), playable.** 86-prop Blender kit in three batches, 621 props placed, two levels, atrium, cinema, supermarket, about 20 stores, food court, service corridor, docks, roof car park, generator power, 6 exfils, 5 keys, 47 containers, the Caretaker; tests and frame rates in `docs/maps/MERIDIAN_MALL.md` and `TEST_RESULTS.md`. Possible polish later: a lower-poly product set for the shelving (KNOWN_ISSUES 46).
 4. **Items:** Blender model and render for every item (~108), atlases uploaded through Open Cloud, icon map; loose loot uses the real models.
 5. **Inventory, stash and trader screens** in Tarkov's layout (gear slots around a character view, grids with item pictures, names, counts and durability, context menus, examine).
 6. **Border Yard** built with MapKit/TerrainKit and the Blender props.
@@ -33,7 +33,7 @@ Maps are original. They are the same kinds of places as Tarkov's with their own 
 1. **Map system:** `World` builds one map per raid (gameplay geometry, spawns, exfils, loot, containers, doors, AI posts and patrols, cover). Queued players vote for the next raid's map; ties are random. Map modules share `Maps/MapKit` (walls, slabs, stairs, roofs, furniture, trucks, fences) and `Maps/TerrainKit` (voxel terrain from a height function).
 2. **Smelter** (factory-type): furnace halls, catwalks, tunnels, offices; short raids, close fights. Playable.
 3. **Pinewatch** (woods-type): built, parked by the owner (2026-10-29).
-4. **Meridian Mall** (mall-type): in progress.
+4. **Meridian Mall** (mall-type): playable (2026-10-29).
 5. **Border Yard** (customs-type): a checkpoint, two dorm blocks, a fuel depot, warehouses, a river. Designed.
 
 ## After that
@@ -47,5 +47,5 @@ Maps are original. They are the same kinds of places as Tarkov's with their own 
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open `Zero Return.rbxl` and connect the Rojo plugin.
-3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **167/167**, CharTests **38/38**, LookTests **19/19**, MapTests all passing (24 during a raid).
+3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **167/167**, CharTests **38/38**, LookTests **19/19**, MapTests 32/32 (30 during a raid).
 4. If the laptop's shell tool is missing, sync files with `tools/pc_patch.py` (a bundle run through Blender's Python). Rojo then carries `src/` into Studio. `tools/studio_patch.py` can patch Studio directly for quick tests; sync the PC afterwards.

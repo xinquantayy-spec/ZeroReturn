@@ -1,0 +1,202 @@
+--!nonstrict
+-- M13 Blender kit props (ZR_MK_<Prop>__<material> pieces from the ZR_MallKit* batches, see KitMeta.luau).
+-- Kit.place(parent, name, cf, opts) puts a prop's pieces at cf (origin bottom-centre, front along cf.LookVector):
+--   * each piece gets its Roblox material and, where one fits, a MaterialVariant; colour comes from the baked
+--     vertex colours (the MeshPart colour is white or a tint that multiplies them);
+--   * the pieces are cosmetic (no collision, no queries, no touch); the prop gets a few invisible box colliders
+--     instead (its bounding box, or the shapes in COLL), so physics, bullets, the AI and pathfinding deal with
+--     boxes, not the triangles;
+--   * without the kit (batch not loaded yet) a prop is a plain box of its size, so the map plays the same.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("ZR")
+local KitMeta = require(Shared:WaitForChild("KitMeta"))
+
+local M = Enum.Material
+local V = Vector3.new
+local Kit = {}
+
+-- material key -> { material, variant, transparency, reflectance, castShadow }
+Kit.MATS = {
+	metal = { M.Metal },
+	paint = { M.Metal, "ZR_MetalPaint" },
+	chrome = { M.Metal, nil, 0, 0.12 },
+	plastic = { M.SmoothPlastic },
+	glass = { M.Glass, nil, 0.62, 0.05, false },
+	fabric = { M.Fabric },
+	wood = { M.Wood },
+	rubber = { M.Rubber },
+	concrete = { M.Concrete, "ZR_ConcreteWorn" },
+	stone = { M.Marble },
+	tile = { M.CeramicTiles },
+	cardboard = { M.Cardboard },
+	leather = { M.Leather },
+	neon = { M.SmoothPlastic },
+	glow = { M.Neon, nil, 0, 0, false },
+	plaster = { M.Plaster, "ZR_PlasterPeel" },
+	soil = { M.Ground },
+	plant = { M.Fabric },
+	carpet = { M.Carpet },
+}
+
+-- colliders in prop space (x right, y up, z toward the back; the front faces -z): { size, centre }
+local function bx(sx, sy, sz, x, y, z)
+	return { V(sx, sy, sz), V(x, y, z) }
+end
+local NONE = {}
+Kit.COLL = {
+	StoreFront = { bx(6, 12, 0.5, -5, 6, 0), bx(6, 12, 0.5, 5, 6, 0), bx(4, 4, 0.5, 0, 10, 0) },
+	-- broken panes (x 2.3..4.85 and -7.7..-5.15 seen from the front... mirrored: see build_mall_kit_a) keep the
+	-- kick plate (step over it) and the transom
+	StoreFrontBroken = {
+		bx(3, 12, 0.5, -6.5, 6, 0), bx(2.85, 1.1, 0.5, -3.58, 0.55, 0), bx(2.85, 4, 0.5, -3.58, 10, 0), bx(4.3, 4, 0.5, 0, 10, 0),
+		bx(2.85, 12, 0.5, 3.58, 6, 0), bx(3, 1.1, 0.5, 6.5, 0.55, 0), bx(3, 4, 0.5, 6.5, 10, 0),
+	},
+	Shutter = { bx(16.4, 12.1, 0.6, 0, 6.05, 0) },
+	ShutterHalf = { bx(16.4, 8.8, 0.6, 0, 7.7, 0) }, -- a 3.3 gap at the floor: prone to crawl under
+	ShutterBent = { bx(11.4, 12.1, 0.6, -2.5, 6.05, 0), bx(5, 5.5, 0.6, 5.7, 9.35, 0) }, -- 4.4 x 6.6 gap at x 3.2..7.6
+	CeilingHole = NONE, CeilingCollapse = NONE, CeilingDebris = NONE, BrokenEdge = NONE, GlassShards = NONE, RubbleA = NONE,
+	Escalator = NONE, SlabCollapse = NONE, -- walkable shapes come from the map
+	RubbleB = { bx(6.4, 1.4, 5, 0, 0.7, 0) },
+	Balustrade = { bx(8, 3.8, 0.5, 0, 1.9, 0) },
+	BalustradeBroken = { bx(8, 3.8, 0.5, 0, 1.9, 0) },
+	WallBreach = { bx(1.7, 9, 0.8, -3.15, 4.5, 0), bx(1.7, 9, 0.8, 3.15, 4.5, 0), bx(4.6, 2.3, 0.8, 0, 7.85, 0) },
+	Checkout = { bx(8, 3.2, 2.4, 0, 1.6, 0) },
+	Kiosk = { bx(10.2, 3.3, 1.4, 0, 1.65, -2.4), bx(1.4, 3.3, 3.6, -4.4, 1.65, 0.3), bx(1.4, 3.3, 3.6, 4.4, 1.65, 0.3), bx(6.2, 3.3, 1.4, 2, 1.65, 2.4) },
+	FoodTable = { bx(3, 2.6, 3, 0, 1.3, 0) },
+	FoodTableMess = { bx(3, 2.6, 3, 0, 1.3, 0) },
+	OfficeDesk = { bx(6, 2.7, 3, 0, 1.35, 0) },
+	BallPit = { bx(12, 2.9, 0.8, 0, 1.45, -5.6), bx(12, 2.9, 0.8, 0, 1.45, 5.6), bx(0.8, 2.9, 10.4, -5.6, 1.45, 0), bx(0.8, 2.9, 10.4, 5.6, 1.45, 0), bx(10.4, 1.5, 10.4, 0, 0.75, 0) },
+	DockDoorOpen = NONE,
+	CargoLift = { bx(0.2, 10, 6, -3.9, 5, 0), bx(0.2, 10, 6, 3.9, 5, 0), bx(8, 10, 0.2, 0, 5, 2.9), bx(8, 0.3, 6, 0, 0.15, 0) },
+	ParkingBarrier = { bx(1.6, 4.2, 1.6, 0, 2.1, 0), bx(1.2, 4.8, 1, -4, 2.4, 1) },
+	BusShelter = { bx(10, 8, 0.2, 0, 4, 1.9), bx(0.2, 8, 3.3, 5, 4, 0.25) },
+	TrolleyBay = NONE, CardboardPile = NONE,
+	Hoarding = { bx(4, 8, 0.4, -4, 4, 0), bx(4, 8, 0.4, 4, 4, 0), bx(4, 4, 0.4, 0, 6, 0) },
+	MannequinFallen = NONE, ClothesRackFallen = NONE, TrolleyTipped = { bx(3.6, 2, 3.4, 0, 1, 0) },
+}
+-- the fountain: its ring wall as eight boxes and the plinth (the basin is walkable, shots pass the sculpture)
+do
+	local f = { bx(5, 3.6, 5, 0, 1.8, 0) }
+	for k = 0, 7 do
+		local a = k * math.pi / 4
+		local r = 8.55
+		table.insert(f, { V(7.4, 1.9, 1.0), CFrame.new(math.cos(a) * r, 0.95, math.sin(a) * r) * CFrame.Angles(0, -a - math.pi / 2, 0) })
+	end
+	Kit.COLL.Fountain = f
+end
+-- the collider's surface material for impacts and footsteps
+local COLL_MAT = {
+	metal = M.Metal, paint = M.Metal, chrome = M.Metal, plastic = M.Plastic, glass = M.Glass, fabric = M.Fabric, wood = M.Wood,
+	rubber = M.Rubber, concrete = M.Concrete, stone = M.Marble, tile = M.CeramicTiles, cardboard = M.Cardboard,
+	leather = M.Leather, plaster = M.Plaster, carpet = M.Carpet,
+}
+
+local function lib()
+	return ReplicatedStorage:FindFirstChild("ZR_Assets")
+end
+
+function Kit.has(name)
+	local p = KitMeta.props[name]
+	local l = lib()
+	return p ~= nil and l ~= nil and l:FindFirstChild("ZR_MK_" .. name .. "__" .. p.pieces[1].mat) ~= nil
+end
+
+function Kit.size(name)
+	local p = KitMeta.props[name]
+	return p and p.size, p and p.center
+end
+
+-- opts: tint (Color3 for "paint", or { [mat] = Color3 }), variants ({ [mat] = name | false }), collide (false or a
+-- list of { size, centre }), shadows (false: no piece casts a shadow), name, attrs ({ [k] = v } on the model)
+function Kit.place(parent, name, cf, opts)
+	opts = opts or {}
+	local p = KitMeta.props[name]
+	if not p then
+		warn("[ZR] Kit: no prop " .. tostring(name))
+		return nil
+	end
+	local m = Instance.new("Model")
+	m.Name = opts.name or ("Kit_" .. name)
+	m:SetAttribute("Kit", name)
+	m:SetAttribute("NoDetail", true)
+	for k, v in opts.attrs or {} do
+		m:SetAttribute(k, v)
+	end
+	local l = lib()
+	local placed = 0
+	for _, pc in p.pieces do
+		local src = l and l:FindFirstChild("ZR_MK_" .. name .. "__" .. pc.mat)
+		if src then
+			local part = src:Clone()
+			local mm = Kit.MATS[pc.mat] or Kit.MATS.plastic
+			part.Anchored = true
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.Material = mm[1]
+			local variant = mm[2]
+			if opts.variants and opts.variants[pc.mat] ~= nil then
+				variant = opts.variants[pc.mat] or nil
+			end
+			part.MaterialVariant = variant or ""
+			part.Transparency = mm[3] or 0
+			part.Reflectance = mm[4] or 0
+			part.CastShadow = mm[5] ~= false and opts.shadows ~= false
+			local tint = opts.tint
+			if typeof(tint) == "Color3" then
+				part.Color = (pc.mat == "paint") and tint or Color3.new(1, 1, 1)
+			elseif type(tint) == "table" and tint[pc.mat] then
+				part.Color = tint[pc.mat]
+			else
+				part.Color = Color3.new(1, 1, 1)
+			end
+			part.CFrame = cf * CFrame.new(pc.center)
+			part:SetAttribute("NoDetail", true)
+			part:SetAttribute("KitMat", pc.mat)
+			part.Parent = m
+			placed += 1
+		end
+	end
+	local coll = opts.collide
+	if coll == nil then
+		coll = Kit.COLL[name] or { { p.size, p.center } }
+	end
+	local mat0 = COLL_MAT[p.pieces[1].mat] or M.Concrete
+	if placed == 0 then
+		-- no kit: a plain stand-in of the prop's size (visible), same collision as with the kit
+		local box = Instance.new("Part")
+		box.Name = "KitFallback"
+		box.Anchored = true
+		box.Size = p.size
+		box.CFrame = cf * CFrame.new(p.center)
+		box.Color = Color3.fromRGB(110, 112, 108)
+		box.Material = mat0
+		box.CanCollide = false
+		box.CanQuery = false
+		box.TopSurface = Enum.SurfaceType.Smooth
+		box.BottomSurface = Enum.SurfaceType.Smooth
+		box:SetAttribute("NoDetail", true)
+		box.Parent = m
+	end
+	if coll then
+		for i, c in coll do
+			local b = Instance.new("Part")
+			b.Name = "KitCollider"
+			b.Anchored = true
+			b.Size = c[1]
+			b.CFrame = cf * ((typeof(c[2]) == "CFrame") and c[2] or CFrame.new(c[2]))
+			b.Transparency = 1
+			b.CastShadow = false
+			b.Material = mat0
+			b.CanCollide = true
+			b.CanQuery = true
+			b.CanTouch = false
+			b:SetAttribute("NoDetail", true)
+			b.Parent = m
+		end
+	end
+	m.Parent = parent
+	return m
+end
+
+return Kit

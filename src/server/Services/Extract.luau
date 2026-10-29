@@ -1,7 +1,7 @@
 --!nonstrict
 -- Extraction zones: server checks position at 5 Hz; 6 s hold; leaving, dying or timer expiry cancels.
 -- Tarkov extract rules: open, paid (MK on exit), key (carry the key), chance (open or closed for the whole
--- raid, unknown until you get there) and scav-only. PMCs get their side's list, scavs every extract.
+-- raid, unknown until you get there), scav-only and power (works once a switch such as a generator is on). PMCs get their side's list, scavs every extract.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
@@ -35,6 +35,8 @@ function Extract.blocked(player, s, e)
 		return "CLOSED", "NOT AVAILABLE THIS RAID"
 	elseif r.kind == "scav" and not s.scav then
 		return "SCAV_ONLY", "SCAVS ONLY"
+	elseif r.kind == "power" and not ctx.World.switchOn(r.switch) then
+		return "POWER", r.needs or "NO POWER"
 	elseif r.kind == "key" and r.key and not carries(s.inv, r.key) then
 		local d = Items.defs[r.key]
 		return "KEY", "REQUIRES " .. string.upper(d and d.name or r.key)

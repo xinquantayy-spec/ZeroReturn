@@ -1563,8 +1563,9 @@ function AI.spawn(kind, pos, opts)
 		return nil
 	end
 	local myGen = gen
-	local variant = math.random(1, Equipment.variants(LOOK[kind]))
-	local ok, model = pcall(ctx.Chars.buildRig, LOOK[kind], variant)
+	local look = opts.look or LOOK[kind] -- a map's boss may bring its own look and loadout (M13)
+	local variant = math.random(1, Equipment.variants(look))
+	local ok, model = pcall(ctx.Chars.buildRig, look, variant)
 	if not ok or not model or myGen ~= gen then
 		if not ok then
 			warn("[ZR] AI spawn failed", model)
@@ -1582,9 +1583,10 @@ function AI.spawn(kind, pos, opts)
 	ctx.Chars.setupHumanoid(hum)
 	hum.WalkSpeed = WALK
 	model:PivotTo(CFrame.new(pos + Vector3.new(0, 3.3, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
-	local inv = LOADOUT[kind](Random.new())
+	local custom = opts.loadout and ctx.Loot[opts.loadout]
+	local inv = custom and custom(Random.new()) or LOADOUT[kind](Random.new())
 	local gear = ctx.Chars.gearOf(inv)
-	ctx.Appearance.apply(model, { look = LOOK[kind], variant = variant, holder = inv, active = gear and gear.activeG })
+	ctx.Appearance.apply(model, { look = look, variant = variant, holder = inv, active = gear and gear.activeG })
 	model:SetAttribute("ZR_AI", true)
 	model:SetAttribute("Kind", kind)
 	model:SetAttribute("Faction", FACTION[kind])
@@ -1947,7 +1949,7 @@ function AI.reset()
 			end
 		end
 		if bossRaid and W.boss then
-			local boss = AI.spawn("boss", W.boss.home, { route = W.boss.route, wp = 1, label = W.boss.label or "Foreman", name = W.boss.label })
+			local boss = AI.spawn("boss", W.boss.home, { route = W.boss.route, wp = 1, label = W.boss.label or "Foreman", name = W.boss.label, look = W.boss.look, loadout = W.boss.loadout })
 			for i, p in W.boss.crew or {} do
 				if myGen ~= gen then
 					return
