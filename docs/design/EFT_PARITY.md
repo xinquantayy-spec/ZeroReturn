@@ -64,6 +64,8 @@ and an attribute list (icon, name, value; handling stats with a bar). Unknown it
 | Wish list: items flagged for tasks, hideout or trading | Missing | Wish list |
 | Hideout: modules, crafts, shooting range, customisation (0.16: wall finishes "Blue paint", "Factory walls", "Modest wallpaper"; floors "Small tiles", "Factory floor"; a "Factory ceiling"; unlocked by level, tasks, achievements and prestige; posters as hideout upgrades and loot; range targets by leveling the range) | Have (in the bunker); the bunker is one shared, kept relay station (painted walls, grime only where it gathers, 2026-11-01) | Customisation: per-player finishes drawn on each client (the bunker is shared), unlocked by level and tasks; posters; range targets |
 
+**Skills (2026-11-01):** 24 skills in Tarkov's four groups, levels 0 to 51 (level n costs min(10n, 100) points), raid fatigue, Health and Charisma growing from their groups, each with a working effect. Missing: MASTERING, ACHIEVEMENTS, PRESTIGE, friends and chat.
+
 ## 4. In-raid information and controls
 
 Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Default keys:
@@ -79,7 +81,7 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Quick slots | 4 to 0 | Heal on H | Quick slots |
 | Prone | X | Z | Move; double Z drops the backpack |
 | Time and exits | Double O (raid timer on by default since 0.16.7) | O (exits) | Add the time |
-| Head device (NVG, face shield) | N | N flips the goggles or the face shield (`NightVision.luau`; touch button NV, no gamepad binding); since 2026-11-01 the server learns the goggles' pose (act `nvg`) and others see them up or down | Gamepad binding |
+| Head device (NVG, face shield) | N | Done 2026-11-01: N flips goggles or raises the face shield | - |
 | Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Y and F1 to F12 | Some | The rest |
 | Rebinding with press, double press, hold and release | Settings, Controls | Missing | Keybinding screen |
 
@@ -97,11 +99,12 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Time of day that follows a raid clock; weather (clear, overcast, rain, fog, wind; winter snow) | Weather and fog per raid | Raid clock, seasons |
+| Time of day that follows a raid clock; weather (clear, overcast, rain, fog, wind; winter snow) | Raid clock, weather and fog per raid; seasons from the real calendar (2026-11-01: winter snow and frost, autumn foliage and more rain, spring greener) | - |
 | Per-material impacts, bullet holes, muzzle flash and smoke, tracers, blood | Have | Check against Tarkov in M15 |
 | Pain darkening, tremor, tunnel vision, contusion, stun and flash white-out | Have | Check durations |
-| Picture-in-picture optics, variable zoom, switch sights | Fixed zoom | Variable zoom and PiP (KNOWN_ISSUES 52-57) |
-| Night vision and thermals | Goggles and thermal goggles built (`NightVision.luau`); since 2026-11-01 other players see them flipped up on the helmet mount or strap, or down over the eyes (meshes pending, KNOWN_ISSUES 64) | Compare the tube numbers with Tarkov; thermal weapon scopes are not built |
+| Picture-in-picture optics, variable zoom, switch sights | Variable zoom done 2026-11-01 (Alt + right mouse steps the V6 between 1x, a red-dot view and 6x; kept per scope). PiP is not possible in Roblox (no rendering the world into a lens), so a scope zooms the whole view behind its mask (exception 3) | Switch sights (Ctrl + right mouse) once builds can carry a backup sight |
+| Ballistics: bullets fly with drop and travel time by muzzle velocity, zeroing (Page Up / Page Down) | Done 2026-11-01: drop and travel time by muzzle velocity, AI aim for it, zeroing with Page Up / Page Down in Tarkov's steps | Per-scope zeroing lists, if needed |
+| Night vision and thermals | Goggles done 2026-11-01: four night-vision tubes (monocular circle, two binoculars, panoramic quad; phosphor colour, gain, grain, light flare each) and thermal goggles, on mounted helmets or a head strap, drawn on characters up or down (ZR_EyeGear); the faceplate helmet's shield (raised = face open to hits, lowered = visor tint) | Night-vision and thermal scopes, the flip animation of the mount, AI wearing goggles at night |
 | Face shield, glasses and gas mask overlays (cracks when hit) | Face shield: a tinted visor round the view (N). Glasses and gas mask built 2026-11-01: a mild lens tint per item, blindness protection against stun charges, the mask's rubber frame with smoked lenses; both step aside while night-vision goggles are down | Cracks when hit, the mask's breathing loop, fogging and raindrops (notes below) |
 | Full-body awareness, weapon inertia and sway (0.13.5), visual recoil with bolt movement and camera shake (0.16) | Arms, sway, recoil | Legs in view, bolt movement |
 
@@ -157,7 +160,7 @@ Gaps (not copied):
 - **No gamepad binding for N** (the existing head-device key); the touch button exists.
 - **No pictures yet:** the five items have no inventory picture or loose-loot model (the item art set has 124 pictures);
   their tiles show the item colour and short name, and loose ones lie as a coloured block until an art pass.
-- **Meshes pending:** `build_eyewear.py` has not been run, so characters wear neutral boxes (KNOWN_ISSUES 64).
+- **Meshes:** built and uploaded 2026-11-01 (batch ZR_EyeGear, 16 meshes); the five items still use the generic inventory picture.
 
 ## Order of work
 
@@ -179,3 +182,12 @@ Gaps (not copied):
 - [TarkovForge: Salewa](https://tarkovforge.com/meds/salewa-first-aid-kit) (med fields), [Gamepressure: health and injuries](https://www.gamepressure.com/escape-from-tarkov/health-and-injuries/z1cf2f)
 - Eyewear and face gear (2026-11-01): [TarkovForge: glasses](https://tarkovforge.com/glasses) (armor, durability, blindness protection), [6B34](https://tarkovforge.com/glasses/6b34-anti-fragmentation-glasses), [AFGlass](https://tarkovforge.com/glasses/anti-fragmentation-glasses), [Caiman visor](https://tarkovforge.com/glasses/galvion-caiman-fixed-arm-visor), [GP-5 gas mask](https://tarkovforge.com/face-covers/gp-5-gas-mask); Wiki: [Eyewear](https://escapefromtarkov.fandom.com/wiki/Eyewear), [RayBench Aviator glasses](https://escapefromtarkov.fandom.com/wiki/RayBench_Aviator_glasses) (Ragman LL4), [Kolpak-1S](https://escapefromtarkov.fandom.com/wiki/Kolpak-1S_riot_helmet), [EXFIL face shield](https://escapefromtarkov.fandom.com/wiki/Team_Wendy_EXFIL_Ballistic_face_shield_(Black)), [Maska-1SCh](https://escapefromtarkov.fandom.com/wiki/Maska-1SCh_face_shield_(Olive_Drab)), [Jason mask](https://escapefromtarkov.fandom.com/wiki/Jason_mask) (blocks lists)
 - Patch notes: [0.16.0.0 (Sportskeeda)](https://sportskeeda.com/esports/escape-tarkov-patch-notes-update-0-16-0-0-new-event-customs-rework-prestige-system), [0.16.7.0 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-0.16.7.0-full-patch-notes-aP2RA1G8vdlq), [1.0.4.5 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-1.0.4.5-improves-performance-reworks-weapon-balance-and-fixes-key-issues-aPJVC8b37l9m)
+
+## 7. Maps (owner, 2026-11-01: same map as Tarkov's, own buildings and names)
+
+| Tarkov | Zero Return | To do |
+|---|---|---|
+| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 110 buildings with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | Mounted machine guns (no stationary-weapon system yet), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
+| Interchange | Meridian Mall is our own layout | Rebuild on Interchange's layout the same way |
+| Woods | Pinewatch, parked by the owner | - |
+| Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
