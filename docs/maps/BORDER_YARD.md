@@ -277,3 +277,107 @@ agents register; the part count and server time of the dressing (the geometry bu
 first use); whether the stand-in blocks (no meshes) or the kit props look right; the frame rate on a low-end phone.
 
 The Files table above still lists `Play.luau` as minimal and `Dress.luau` as a stub: they are the two files this section describes.
+
+## Industrial side (part 2b, `Works.luau`)
+
+Written 2026-11-01 without a Luau runtime. `python3 tools/luau_check.py src` passes (115 files, 0 failing). An offline Lua 5.4 mock (the
+module converted to Lua and run against stand-ins for `kit`, `Kit`, `MapKit`, `Layout` and `Instance`; the mock is not in the repo) ran it
+with 0 warnings and 0 failed structures, and top-down and side drawings of its parts were looked at. Nothing has run in Studio: every count
+below is the mock's, not the game's. `Buildings.luau` requires `Works.luau` under pcall and each structure runs under its own pcall (a
+failure is a `warn` naming it, the rest still stand). The module prints one line, in the mock `[ZR] Border works: 8249 parts, 428 kit props,
+311 containers, 199 loose spots, 139 doors, 191 lamps, 0 lights with shadows, 81 props skipped, 0 failed`.
+
+It builds the 24 footprints of kind warehouse, warehouse_small, big_building, complex, tower, tank, platform and bunker_entrance (the other
+43 are `Living.luau`'s) and the six spaces of `L.under`. Each stands on its footprint in its own frame (u along the width, v along the depth,
+y up from the flat pad) and follows `L.outline`, `L.upper`, `L.floors` and `L.stairs` where they exist. Walls are thin Block parts (brick,
+precast concrete panel or corrugated sheet outside; plaster, concrete or steel inside) with real openings: vehicle gates 12 to 16 studs wide,
+doors 4.2 wide and 7.9 high, windows. Floors, mezzanines and roofs are slabs. Every climb is a stair flight: the game has no ladder climbing,
+so the layout's `ladder-N` pits became stairs. Flat roofs have parapets and the `Works` model carries `NoWire`, so the detail layer puts no
+barbed wire on roofs and gantries. Tables, benches, bunks and shelves are built from parts (`NoDetail`); the kit props go to racks, cars,
+forklifts, generators and the like. Containers are kit props (the collider carries the prompt) while a building is under its prop cap, then
+plain World containers (311: crate 73, toolbox 53, weaponbox 44, techbox 29, locker 27, safe 26, drawer 25, medbag 25, jacket 5, others 4);
+loose loot uses the pools `junk`, `tech`, `vault`, `keys` and `office`, area `border`. 159 light sources, none casts a shadow.
+
+| Id | Structure | Parts | What stands there |
+|---|---|---|---|
+| 22 | STORE 3 | 230 | one 170 x 119 hall under a gable roof: pallet racks in six rows, forklifts, roll cages, a workshop corner, an office in the north-east corner (desk, safe) |
+| 23 | STORE 4 | 411 + 183 | the hall with an office deck; under it the switch basement (`L.under` S4, stairs ladder-35 and ladder-36): three zones split by two walls, pillars, the generator hall with the K-13 lever at its west end |
+| 20 | STORE 7 | 344 | two office mezzanines over the hall and a locked office in the south-east corner (`by_store7`) |
+| 31 | STORE 17 | 337 | the L-shaped hall (`L.outline`), a gate bay with canopy, apron, bollards and a painted lane in the notch where the STORE 17 GATE scav extract stands, racks, a mezzanine with the foreman's office, a gallery above it |
+| 21 | THE DEPOT | 346 | the tall L-shaped factory hall, an overhead crane, a stair tower to the roof, the DEPOT ROOF perch |
+| 33 | RED STORES | 426 | the 190 x 100 brick hall with a row of shuttered stores, an upper deck and a wire cage of seized goods (`by_red`) |
+| 28 | THE BASTION | 851 + 244 | two storeys and a walkable roof: a double-height drill hall in the north, a corridor with rooms on both sides, two dog-leg stair halls, the strongroom (`by_bastion`), a yard apron with a guard booth and floodlights; the two K-13 stairs come down inside it to BUNKER K-13 (`L.under` K13: a bulkhead with a hermetic door, side doors, a status lamp the lever lights) |
+| 27 | THE DERRICK | 1362 | the open steel frame: three platform blocks on two decks (13 and 26 studs), a braced lattice tower with a switchback stair to the top deck (y 158), a mast to 167 and a jib to the sniper perch |
+| 34 | THE FRAME | 546 | the unfinished concrete skeleton: columns with rebar stubs, beams, strip slabs at three levels, two solid dog-leg stairs, no walls; a foreman's cabin, brick pallets, sand and a mixer at its foot |
+| 30 | MOTOR SHOP + BOILER HOUSE | 1158 + 71 | the brick boiler hall (46.6 high: galleries at two levels, a stair tower of four dog-legs to the roof, three drum boilers, a stack, the BOILER HOUSE ROOF perch with cover), the workshop wing in the west (gantry crane, a car on a lift, a parts mezzanine, the foreman's office `by_motor`), the parts store in the north (mezzanine, a stair to its roof) and the boilerman's cabin whose locked door (`by_boiler`) opens on a stairwell down to the BOILER CELLAR (`L.under` BC: five pumps, two feed tanks, valves and a desk) |
+| 32 | OLD WORKS | 312 | the unfinished concrete works: a one-storey hall under a roof terrace in the west, the two-storey block in the east with a site office, a stair to the deck and one to the roof |
+| 19 | PUMP HOUSE | 241 | the brick pump hall: four pumps in a double-height void, a gallery all round, two stairs |
+| 8 to 11 | STORAGE BLOCKS | 85 to 107 | four 100 to 155 long steel-clad sheds: loading gates on the north side, racks on the back wall, stacked crates |
+| 12, 13, 15, 16 | FUEL TANKS | 90 each | 22-stud steel tanks on a concrete ring; a 36-step spiral stair round the shell and a railed catwalk across the roof |
+| 14, 17 | PUMP PLATFORMS | 51, 53 | concrete pads with two pump skids, pipe racks, a control hut and light poles; the strip the PMC spawns stand on stays free |
+| 50, 51 | K-11 and SMUGGLERS' HOLE sheds | 19 each | brick sheds over the two stair shafts; below them `L.under` K11 (114 parts: arrival hall, blast door, bunks, the vault `by_k11`) and SH (111: a timber-propped cache of crates and barrels) |
+| - | OLD PUMPS CELLAR (OP) | 86 | the cellar under the old gas station: two buried tanks, a pump bench, shelves and stores; Living's two sheds above keep its stair shaft (ladder-39) clear |
+
+Budgets: 8,249 parts (the brief says about 9,000), 428 kit props (450), 0 lights with shadows (20; the spec allows 40 for the whole map).
+
+### Points (`B.points`)
+
+Map-local x and z, world y at standing height (3 studs above the floor), from the mock.
+
+| Name | Where | x, y, z |
+|---|---|---|
+| STORE4_LEVER | at the lever, west end of the STORE 4 basement | -560.5, -12.9, 2.4 |
+| K11_DOOR | K-11's blast door | -1460.8, -12.9, -292.1 |
+| K13_DOOR | K-13's bulkhead door | -130.3, -12.9, -357.8 |
+| SMUGGLERS_HOLE | the tunnel's arrival hall | -962.1, -12.9, -243.3 |
+| BASTION_TOP | the Bastion's roof | -121.5, 28.8, -270.9 |
+| BASTION_YARD | the yard apron by the guard booth | -188.7, 3.1, -355.3 |
+| DERRICK_TOP | the top deck | -327.0, 161.4, 39.9 |
+| FRAME_TOP | the Frame's third level | -166.4, 28.1, 54.6 |
+| BOILER_CELLAR | the middle of the cellar (the extract zone) | 181.2, -12.9, -48.4 |
+| MOTOR_SHOP | the workshop floor | 74.7, 3.2, -78.5 |
+| RED_STORES | the long hall | 1173.1, 3.2, -272.5 |
+| DEPOT_ROOF | the Depot's roof perch (also in `L.snipers`) | -978.4, 45.2, -115.2 |
+
+### The power switch
+
+`W.switches.BORDER_STORE4` is a lever in the STORE 4 basement (an F prompt, 8 studs, a 5 s delay: "THROWING THE LEVER", then "POWER ON"). Its
+`onChange` switches every lamp and status panel it owns: the basement's and K-13's. It is built first in the basement, so the K-13 exit
+has its switch whatever fails below. The raid starts with it off (`World.resetSwitches` calls `onChange(false)`; the module calls it once
+more when the build ends). The K-13 exit rule in `Layout.ext` is `{ kind = "power", switch = "BORDER_STORE4", needs = "NO POWER  ·  THROW THE LEVER IN STORE 4" }`.
+
+### Keys
+
+| Door id | Key item | Where |
+|---|---|---|
+| `by_store7` | KEY_BY_STORE | STORE 7's locked office |
+| `by_red` | KEY_BY_RED | the cage of seized goods in the RED STORES |
+| `by_bastion` | KEY_BY_BASTION | the Bastion's strongroom |
+| `by_motor` | KEY_BY_MOTOR | the Motor Shop's foreman's office |
+| `by_boiler` | KEY_BY_BOILER | the boilerman's cabin (the stairs to the BOILER CELLAR; the cellar's exit uses the same key) |
+| `by_k11` | KEY_BY_K11 | K-11's vault door (the way in stays open, as in the reference) |
+
+K-13's door is not locked: no key item exists for it. Every other door in the module is an unlocked door that opens at random (35 %).
+
+### Gaps and judgment calls (to copy into `docs/design/EFT_PARITY.md`; this part did not edit it)
+
+- No ladders: the game has no climbing, so the layout's `ladder-N` pits are stair flights, wider and longer than the reference's ladders (the
+  Derrick's switchback, the tanks' spirals, the Frame's dog-legs).
+- The interiors are our own plans on the reference footprints, floors, stairs and locked rooms; rooms, props and loot spots are not the reference's.
+- The Depot's crane, the car lift, the boilers, tanks and pumps are static scenery, not machines.
+- K-13: the power lever and the exit rule follow the reference; the bunker's own door is open (no key item exists for it).
+- K-11 has an extra locked vault door (`by_k11`) for its cache; the reference's way in is open.
+- The three marksman perches on these roofs (BOILER HOUSE ROOF, DEPOT ROOF, DERRICK ROOF) are walkable, but no AI kind fills them.
+
+Unverified (nothing has run in Studio): that every stair flight is climbable and every rail, hole and door is where the drawings put it; the
+kit colliders carrying the container prompts; the frame rate on a low-end phone (8,249 parts here, plus Living's). Known risks:
+
+- The BOILER CELLAR has no level-0 stair entry in `L.stairs`, so Ground dug no shaft for it: the cabin's stairwell is cut with
+  `Terrain:FillBlock` (under pcall) and a hole in the cellar's earth ceiling. If the cut fails, the cellar is sealed and its key extract
+  cannot be reached.
+- K-13 is built in the Bastion's frame (rot 79.8) while its void is stamped at rot -10 on a 4-stud grid: the same box turned 90 degrees, so the
+  walls may sit up to two studs off the void's edge.
+- The Derrick's decks reach y 158 to 167, but `W.bounds.yMax` in `init.luau` is 110, the top of the box `DetailPlan.publish` covers. Raise it
+  to about 175 there (not this module's file).
+- 81 props were skipped by the keep-out circles round spawns, extracts and scav points and by each building's prop cap.
+- Whether the wall openings of Living's OLD PUMPS sheds line up with the stair this module's cellar brings up in the shaft ladder-39 is unchecked.
