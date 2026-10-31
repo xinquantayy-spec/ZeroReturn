@@ -576,6 +576,7 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: strin
 		regen:Destroy()
 	end
 	char:PivotTo(cf)
+	char:SetAttribute("TP", os.clock()) -- the movement guard takes this as a server teleport
 	char:SetAttribute("Stance", "s")
 	char:SetAttribute("Lean", 0)
 	char:SetAttribute("Pitch", 0)

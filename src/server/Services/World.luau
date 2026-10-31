@@ -39,7 +39,96 @@ local function beginMap(id)
 	World.sideExtracts, World.scavZones, World.watchPosts, World.visitZones = {}, {}, {}, {}
 	World.boss, World.bounds = nil, nil
 end
+-- z-fighting (owner, 2026-11-01: "textures keep glitching near the corners"): two parts whose faces lie in the same
+-- plane, facing the same way, over a shared area flicker as the camera moves (walls overlapping at a corner, slabs
+-- overlapping where floors meet, trims flush with a wall end). Every such pair in a finished map gets one face pulled
+-- back by a hair (the smaller part's), so one surface is always in front. Axis-aligned blocks only (the map kits'
+-- walls, slabs and trims); meshes and invisible parts are left alone.
+local ZF_EPS, ZF_TOL, ZF_CELL = 0.03, 0.004, 24
+function World.fixCoplanar(model)
+	local list = {}
+	for _, p in model:GetDescendants() do
+		if p:IsA("Part") and p.Shape == Enum.PartType.Block and p.Transparency < 1 then
+			local cf = p.CFrame
+			local ok = true
+			for _, v in { cf.RightVector, cf.UpVector, cf.LookVector } do
+				local ax = math.max(math.abs(v.X), math.abs(v.Y), math.abs(v.Z))
+				if ax < 0.9999 then
+					ok = false
+					break
+				end
+			end
+			if ok then
+				local e = ((cf.RightVector * p.Size.X):Abs() + (cf.UpVector * p.Size.Y):Abs() + (cf.LookVector * p.Size.Z):Abs()) / 2
+				table.insert(list, { p = p, lo = cf.Position - e, hi = cf.Position + e, vol = p.Size.X * p.Size.Y * p.Size.Z })
+			end
+		end
+	end
+	local cells = {}
+	for i, b in list do
+		for cx = math.floor(b.lo.X / ZF_CELL), math.floor(b.hi.X / ZF_CELL) do
+			for cz = math.floor(b.lo.Z / ZF_CELL), math.floor(b.hi.Z / ZF_CELL) do
+				local k = cx * 65536 + cz
+				cells[k] = cells[k] or {}
+				table.insert(cells[k], i)
+			end
+		end
+	end
+	local AX = { "X", "Y", "Z" }
+	local seen, fixed = {}, 0
+	-- pull face (axis, side) of part b back by ZF_EPS
+	local function pull(b, axis, side)
+		local p = b.p
+		local cf = p.CFrame
+		local w = (axis == "X" and Vector3.xAxis) or (axis == "Y" and Vector3.yAxis) or Vector3.zAxis
+		local locals = { { cf.RightVector, "X" }, { cf.UpVector, "Y" }, { cf.LookVector, "Z" } }
+		for _, l in locals do
+			if math.abs(l[1]:Dot(w)) > 0.9999 then
+				local size = p.Size
+				local amt = math.min(ZF_EPS, size[l[2]] * 0.25)
+				p.Size = Vector3.new(l[2] == "X" and size.X - amt or size.X, l[2] == "Y" and size.Y - amt or size.Y, l[2] == "Z" and size.Z - amt or size.Z)
+				p.CFrame = cf - w * (side * amt / 2)
+				if side > 0 then
+					b.hi = b.hi - w * amt
+				else
+					b.lo = b.lo + w * amt
+				end
+				return
+			end
+		end
+	end
+	for _, idxs in cells do
+		for ia = 1, #idxs do
+			for ib = ia + 1, #idxs do
+				local i, j = idxs[ia], idxs[ib]
+				local key = i < j and (i * 1048576 + j) or (j * 1048576 + i)
+				if not seen[key] then
+					seen[key] = true
+					local a, b = list[i], list[j]
+					if a.lo.X < b.hi.X - ZF_TOL and b.lo.X < a.hi.X - ZF_TOL and a.lo.Y < b.hi.Y - ZF_TOL and b.lo.Y < a.hi.Y - ZF_TOL
+						and a.lo.Z < b.hi.Z - ZF_TOL and b.lo.Z < a.hi.Z - ZF_TOL then
+						local small = (a.vol <= b.vol) and a or b
+						for _, ax in AX do
+							if math.abs(a.hi[ax] - b.hi[ax]) < ZF_TOL then
+								pull(small, ax, 1)
+								fixed += 1
+							end
+							if math.abs(a.lo[ax] - b.lo[ax]) < ZF_TOL then
+								pull(small, ax, -1)
+								fixed += 1
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	return fixed
+end
+
 local function endMap(id, mapModel)
+	local zf = World.fixCoplanar(mapModel)
+	print(string.format("[ZR] %s: %d coplanar faces pulled back (z-fighting)", id, zf))
 	local m = { id = id, model = mapModel }
 	for _, k in PER_MAP do
 		m[k] = World[k]
@@ -470,6 +559,11 @@ local function buildSafehouse()
 	local Relay7 = require(script.Parent.Parent.Maps.Relay7)
 	World.safehouse = Relay7.build(root, Config.SAFEHOUSE_ORIGIN)
 	World.Relay7 = Relay7
+	local sh = World.safehouse
+	local shellModel = sh and (sh.model or sh.shell)
+	if typeof(shellModel) == "Instance" then
+		print(string.format("[ZR] relay7: %d coplanar faces pulled back (z-fighting)", World.fixCoplanar(shellModel)))
+	end
 end
 
 -- is a world position inside the safehouse bunker?
@@ -674,12 +768,27 @@ local function buildPumpAnnex(map)
 		cyl(pa, 18, 1.6, CFrame.new(px, 16, 70 - 2) * CFrame.Angles(0, math.rad(90), 0), C.rust, M.Metal)
 	end
 	cyl(pa, 78, 1.6, CFrame.new(cx, 17.5, 61), C.rust, M.Metal)
+	-- the turbine hall's lamps (hung from the roof trusses) and the workshop's under the mezzanine
+	for i, lp in { { 58, 64, H - 3 }, { 80, 64, H - 3 }, { 102, 64, H - 3 }, { 58, 94, H - 3 }, { 80, 94, H - 3 }, { 102, 94, H - 3 }, { 62, 106, 9 }, { 90, 106, 9 } } do
+		local head = box(pa, 2.4, 0.4, 1.2, lp[1], lp[3], lp[2], hex("FFE6C0"), M.Neon)
+		head.CastShadow = false
+		head.Name = "HallLamp"
+		if lp[3] > 10 then
+			box(pa, 0.12, 2.6, 0.12, lp[1], lp[3] + 1.5, lp[2], C.metalDark, M.Metal)
+		end
+		if i == 5 then
+			head.Color, head.Material = hex("6F6C64"), M.SmoothPlastic -- a dead tube
+		else
+			light(head, Color3.fromRGB(255, 226, 184), lp[3] > 10 and 36 or 18, 1.5, i == 2)
+		end
+	end
 	-- mezzanine along south wall with stairs on the west side
 	local mzY = 10
 	box(pa, 78, 0.8, 14.5, 80, mzY - 0.4, 106.75, C.metal, M.DiamondPlate) -- x 41..119, z 99.5..114
 	box(pa, 68, 3, 0.3, 85, mzY + 1.5, 99.6, C.metalDark, M.Metal) -- rail leaves the stair landing open
-	for k = 0, 9 do
-		box(pa, 6, 1, 1.9, 46, k + 0.5, 81 + k * 1.9, C.metal, M.DiamondPlate)
+	-- open steel stairs, real-size steps (20 x 0.48 studs up to the mezzanine deck at 10)
+	for i = 1, 20 do
+		box(pa, 6, 0.5, 0.95, 46, 0.4 + i * 0.48 - 0.25, 80.525 + (i - 1) * 0.95, C.metal, M.DiamondPlate)
 	end
 	box(pa, 6, mzY - 0.8, 1, 46, (mzY - 0.8) / 2, 100.2, C.metalDark, M.Metal)
 	local booth = box(pa, 10, 7, 8, 104, mzY + 3.5, 109, C.olive, M.Metal)
@@ -738,20 +847,23 @@ local function buildFreightDepot(map)
 	ramp(x0 - 6, -94, 12, 12, 90)
 	ramp(x0 - 6, -130, 12, 8, 90)
 	ramp(x1 + 6, -94, 12, 12, -90)
-	-- interior racks
-	for _, rz in { -150, -138 } do
-		for rx = 60, 108, 16 do
-			local rack = model("Rack", fd)
-			for _, sx in { -7, 7 } do
-				for _, sz in { -2, 2 } do
-					box(rack, 0.4, 14, 0.4, rx + sx, F + 7, rz + sz, C.orange, M.Metal)
-				end
+	-- interior racks (Blender kit pallet racks, two rows facing the aisle between them) and the hall's lamps
+	do
+		local Kit = require(script.Parent.Parent:WaitForChild("Maps"):WaitForChild("Kit"))
+		for _, row in { { -150, 180 }, { -138, 0 } } do
+			for _, rx in { 59.5, 76, 92.5, 109 } do
+				Kit.place(fd, "PalletRack", CFrame.new(rx, F, row[1]) * CFrame.Angles(0, math.rad(row[2]), 0), { shadows = false })
 			end
-			for k = 0, 2 do
-				box(rack, 14.4, 0.3, 4.4, rx, F + 1 + k * 5, rz, C.metalDark, M.Metal)
-				if rng:NextNumber() > 0.35 then
-					Props.crate(rack, CFrame.new(rx + rng:NextNumber(-4, 4), F + 1.15 + k * 5, rz))
-				end
+		end
+		for i, lp in { { 66, -128 }, { 92, -128 }, { 118, -128 }, { 66, -112 }, { 92, -112 }, { 118, -112 }, { 84, -144 } } do
+			local head = box(fd, 2.4, 0.4, 1.2, lp[1], F + 17, lp[2], hex("FFE6C0"), M.Neon)
+			head.CastShadow = false
+			head.Name = "HallLamp"
+			box(fd, 0.12, 2.6, 0.12, lp[1], F + 18.5, lp[2], C.metalDark, M.Metal)
+			if i ~= 5 then
+				light(head, Color3.fromRGB(255, 226, 184), 34, 1.5, i == 2)
+			else
+				head.Color, head.Material = hex("6F6C64"), M.SmoothPlastic -- a dead tube
 			end
 		end
 	end
@@ -807,7 +919,7 @@ local function buildFreightDepot(map)
 	addContainerSpot(fd, "FD2", "crate", "Freight crate", CFrame.new(84, F, -93))
 	loose(70, F + 0.05, -96, "junk", 0.35, "depot")
 	loose(128, F + 0.05, -97, "junk", 0.35, "depot")
-	loose(96, F + 1.15, -150, "junk", 0.3, "depot")
+	loose(96, F + 0.05, -144.5, "junk", 0.3, "depot")
 	for _, p in { { 110, -92 }, { 116, -93 }, { 58, -120 } } do
 		Props.pallet(fd, CFrame.new(p[1], F, p[2]))
 	end
@@ -839,9 +951,9 @@ local function buildDormitory(map)
 	for px = X0 + 1, X1 + 1, 4 do
 		box(dm, 0.2, 3.4, 0.2, px, H + 0.3 + 1.7, Z1 + 4.35, C.metalDark, M.Metal)
 	end
-	-- stairs: east end, rising north from the ground to the balcony (1-stud steps like the annex)
-	for k = 0, 9 do
-		box(dm, 4, 1, 1.9, -22, k + 0.5, 80.05 - k * 1.9, C.concreteLight, M.Concrete)
+	-- stairs: east end, rising north from the ground to the balcony (real-size half-stud steps like the annex)
+	for i = 1, 20 do
+		box(dm, 4, 0.5, 0.95, -22, i * 0.5 - 0.25, 80.525 - (i - 1) * 0.95, C.concreteLight, M.Concrete)
 	end
 	for _, sx in { -24.15, -19.85 } do
 		local bottom, top = Vector3.new(sx, 4, 80.5), Vector3.new(sx, H + 3.6, 62.6)
@@ -873,23 +985,14 @@ local function buildDormitory(map)
 			local rcx = rx0 + 5.5
 			local fy = yb + (floor == 0 and 0.4 or 0.3)
 			local locked = (num == 104) or (num == 203)
-			-- bunk bed against the west side
-			for _, by in { 1.3, 4.3 } do
-				box(dm, 3.1, 0.45, 7, rx0 + 2, fy + by, Z0 + 4.3, C.olive, M.Fabric)
+			-- bunk bed against the west side, a table along the east partition with its chair (Blender kit pieces)
+			do
+				local Kit = require(script.Parent.Parent:WaitForChild("Maps"):WaitForChild("Kit"))
+				local messy = num % 2 == 0
+				Kit.place(dm, messy and "BunkBedMessy" or "BunkBed", CFrame.new(rx0 + (messy and 2.4 or 2), fy, Z0 + 4.3) * CFrame.Angles(0, math.rad(90), 0), { shadows = false })
+				Kit.place(dm, "Table", CFrame.new(rx0 + 9, fy, Z0 + 6.8) * CFrame.Angles(0, math.rad(90), 0), { shadows = false })
+				Kit.place(dm, "Chair", CFrame.new(rx0 + 6.9, fy, Z0 + 6.8) * CFrame.Angles(0, math.rad(-90), 0), { shadows = false })
 			end
-			for _, px in { rx0 + 0.55, rx0 + 3.45 } do
-				for _, pz in { Z0 + 0.9, Z0 + 7.7 } do
-					box(dm, 0.25, 5, 0.25, px, fy + 2.5, pz, C.metalDark, M.Metal)
-				end
-			end
-			-- desk along the east partition with a chair block
-			box(dm, 2.2, 0.25, 3.6, rx0 + 9.6, fy + 2.6, Z0 + 6.8, C.wood, M.WoodPlanks)
-			for _, dx in { -0.85, 0.85 } do
-				for _, dz in { -1.5, 1.5 } do
-					box(dm, 0.22, 2.5, 0.22, rx0 + 9.6 + dx, fy + 1.25, Z0 + 6.8 + dz, C.metalDark, M.Metal)
-				end
-			end
-			box(dm, 1.4, 1.6, 1.4, rx0 + 7.7, fy + 0.8, Z0 + 6.8, C.metal, M.Metal)
 			-- locker by the door (even rooms) or a drawer under the window (odd rooms)
 			local cid = "DM" .. num
 			if i % 2 == 0 then
@@ -907,11 +1010,11 @@ local function buildDormitory(map)
 				lp.Color = hex("8D8A80")
 			end
 			-- loose loot: desk, bunk, floor (locked rooms hold better things)
-			loose(rx0 + 9.6, fy + 2.74, Z0 + 6.2, locked and "dorm_good" or "dorm", locked and 0.85 or 0.55, "dorm")
-			loose(rx0 + 2, fy + 1.55, Z0 + 2.8, locked and "dorm_good" or "dorm", locked and 0.6 or 0.3, "dorm")
+			loose(rx0 + 9.6, fy + 3.15, Z0 + 6.2, locked and "dorm_good" or "dorm", locked and 0.85 or 0.55, "dorm", true)
+			loose(rx0 + 2, fy + 1.65, Z0 + 2.8, locked and "dorm_good" or "dorm", locked and 0.6 or 0.3, "dorm", true)
 			loose(rx0 + 5.5, fy + 0.05, Z0 + 9.5, locked and "dorm" or "junk", locked and 0.5 or 0.25, "dorm")
 			if num == 101 or num == 202 then
-				loose(rx0 + 9.6, fy + 2.74, Z0 + 7.6, "keys", 0.35, "dorm")
+				loose(rx0 + 9.6, fy + 3.15, Z0 + 7.6, "keys", 0.35, "dorm", true)
 			end
 			-- door
 			World.doors["DORM" .. num] = {
@@ -928,6 +1031,77 @@ local function buildDormitory(map)
 	nameplate.CFrame = CFrame.new(X1 + 0.36, 2 * H - 2, cz) * CFrame.Angles(0, math.rad(90), 0)
 	sign(nameplate, Enum.NormalId.Back, "CREW BLOCK B", C.pale)
 	World.patrols.DM = { Vector3.new(-74, 0, 62), Vector3.new(-48, 0, 61), Vector3.new(-20, 0, 70), Vector3.new(-48, H + 0.3, 60.5), Vector3.new(-66, H + 0.3, 60.5) }
+end
+
+-- furnishing and damage pass (2026-11-01): Blender kit props in the pump annex, the freight depot and its office,
+-- and the crew rooms, the way Tarkov's interiors are filled (benches, racks, cabinets, valves, debris)
+local function buildQuayDressing(map)
+	local Kit = require(script.Parent.Parent:WaitForChild("Maps"):WaitForChild("Kit"))
+	local dr = model("Dressing", map)
+	local n = 0
+	local function P(name, x, y, z, ry)
+		local cf = CFrame.new(x, y, z) * CFrame.Angles(0, math.rad(ry or 0), 0)
+		if Kit.place(dr, name, cf, { shadows = false }) then
+			n += 1
+		end
+	end
+	-- pump annex (floor 0.4, mezzanine 10): workshop under the mezzanine, forklift and pallets, valves by the pumps
+	local AF, MZ = 0.4, 10
+	P("StorageRack", 60, AF, 113.25, 0)
+	P("StorageRack", 70, AF, 113.25, 0)
+	P("ToolChest", 80, AF, 113, 0)
+	P("CraftBench", 90, AF, 112.5, 0)
+	P("WallShelfTools", 100, AF, 112.25, 0)
+	P("FuseBox", 42.3, AF, 108, -90)
+	P("Forklift", 88, AF, 92, 90)
+	P("PalletBoxes", 110, AF, 92)
+	P("PalletBoxes", 113.4, AF, 87.6, 20)
+	P("Drum", 44, AF, 66)
+	P("Drum", 45.9, AF, 64.5)
+	P("JerryCans", 44.5, AF, 70.2, 80)
+	for _, px in { 58, 80, 102 } do
+		P("PipeValve", px + 5.5, AF, 70)
+	end
+	P("CableTray", 55, 8, 56.75, 180)
+	P("CableTray", 95, 8, 56.75, 180)
+	P("OilStain", 70, AF + 0.02, 85)
+	P("OilStain", 95, AF + 0.02, 66, 40)
+	P("RubbleA", 116.5, AF, 60, 20)
+	P("Table", 85, MZ, 110)
+	P("Chair", 83.5, MZ, 107.4, 180)
+	P("Chair", 86.5, MZ, 112.7, 0)
+	P("Lockers", 72, MZ, 112.6, 0)
+	P("StorageShelf", 115, MZ, 113.2, 0)
+	P("WallClock", 85, 15, 114.1, 0)
+	-- freight depot (floor 4): the forklift aisle, pallets, the office's chair, shelf, boards and bin
+	local F = 4
+	P("Forklift", 85, F, -120, 90)
+	P("PalletBoxes", 62, F, -112)
+	P("PalletBoxes", 66.5, F, -111.4, 20)
+	P("PalletBoxes", 118, F, -118)
+	P("PalletBoxes", 121.2, F, -122.4, 45)
+	P("Trolley", 100, F, -126, 30)
+	P("TyreStack", 140, F, -104)
+	P("JerryCans", 146, F, -112)
+	P("OilStain", 76, F + 0.02, -124, 15)
+	P("Chair", 141, F, -143.9, 0)
+	P("StorageShelf", 148.5, F, -150, 90)
+	P("Whiteboard", 142, F + 3.5, -138.6, 180)
+	P("CorkBoard", 123.45, F + 3, -150, -90)
+	P("Pigeonholes", 145, F, -158.9, 0)
+	P("Bin", 125, F, -140)
+	-- crew rooms (dormitory x -70..-26, z 40..58, storeys at 0.4 and 10.3): a bin by each door, boxes in the odd rooms
+	for floor = 0, 1 do
+		local fy = floor * 10 + (floor == 0 and 0.4 or 0.3)
+		for i = 1, 4 do
+			local rx0 = -70 + (i - 1) * 11
+			P("Bin", rx0 + 1.3, fy, 56.7)
+			if i % 2 == 1 then
+				P("CardboardPile", rx0 + 2.7, fy, 52.5, 90)
+			end
+		end
+	end
+	print(string.format("[ZR] Quay 7 dressing: %d kit props", n))
 end
 
 local function buildLandmarksAndRoutes(map)
@@ -1139,6 +1313,7 @@ function World.build()
 	buildFreightDepot(map)
 	buildDormitory(map)
 	buildLandmarksAndRoutes(map)
+	buildQuayDressing(map)
 	-- extract rules (Tarkov): open, paid (MK on exit), key (carry the key), chance (rolled per raid), scav-only
 	addExtract(map, "A", "RELAY GATE", Vector3.new(184, 0, -184), Vector3.new(18, 12, 16), { kind = "open" })
 	addExtract(map, "B", "PIER 3 BOAT", Vector3.new(236, 0, 150), Vector3.new(16, 12, 14), { kind = "paid", cost = 8000 })
@@ -1236,6 +1411,7 @@ function World.build()
 	end
 	moduleMap("smelter", "Smelter")
 	moduleMap("meridian", "MeridianMall")
+	moduleMap("border", "BorderYard")
 	-- parked for now (owner's call, M13): moduleMap("pinewatch", "Pinewatch")
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
 	for _, d in World.doors do

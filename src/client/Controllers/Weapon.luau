@@ -10,6 +10,8 @@ local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local UIS = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
+local Ballistics = require(Shared.Ballistics)
+local Progress = require(Shared.Progress)
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
@@ -25,6 +27,9 @@ local Weapon = {
 	aiming = false, reloading = false, healing = false, drawing = false, checking = false, light = false, scoped = false,
 	ammo = 0, spare = 0, mode = 1, modeName = "SEMI", hasWeapon = false, melee = false, lastShot = 0,
 	weaponName = nil, slot = nil,
+	-- Relay 7 firing range (lobby L5): { slot, cap } while you stand in a booth (Lobby controller). Your gun comes up
+	-- with free practice ammo; shots go to the Range service, which only scores the targets (no damage anywhere).
+	practice = nil,
 }
 local ctx
 local player = Players.LocalPlayer
@@ -92,6 +97,11 @@ local tubeT0, tubePeriod = nil, 0.55
 local cycleT0, cycleDur, cycleKind = nil, 0, nil -- pump / bolt cycling after a shot
 local slashT0, slashSent = nil, false
 local checkT0, checkDur = nil, 1.1
+local HEAT = { rifle = 0.011, smg = 0.009, pistol = 0.012, shotgun = 0.03, bolt = 0.035 } -- as Combat.luau
+local heat, heatT = 0, 0
+local MODE_NAMES = { AUTO = "FULL AUTO", SEMI = "SINGLE", BURST = "BURST", PUMP = "PUMP-ACTION", BOLT = "BOLT-ACTION" }
+local inspectT0 = nil -- L: Tarkov's weapon inspection (the gun turned to show one side, then the other)
+local INSPECT_TIME = 2.6
 local drawT0, drawDur = -10, 0.6
 local switching = nil -- { slot, t0 } while the server swaps weapons
 local lastActiveG = nil
@@ -119,12 +129,26 @@ local function alive()
 end
 
 -- ── snapshot helpers ──────────────────────────────────────────────────────────
+Weapon.zeros = {} -- [weapon guid] = zeroing distance (m) the server set
+local zoomSel = {} -- [sight guid] = chosen magnification index (variable scopes)
+local function practicing()
+	return Weapon.practice ~= nil and not ctx.State.inRaid()
+end
+-- a gun in your hands: in a raid, or at the range in the lobby
+local function armed()
+	return ctx.State.inRaid() or practicing()
+end
+
 local function activeItem()
 	local d = ctx.State.data
-	if not d or not d.slots or not d.active then
+	local slot = d and d.active
+	if practicing() then
+		slot = Weapon.practice.slot
+	end
+	if not d or not d.slots or not slot then
 		return nil, d, nil
 	end
-	local g = d.slots[d.active]
+	local g = d.slots[slot]
 	return g and d.items[g], d, g
 end
 
@@ -147,6 +171,9 @@ local function computeAmmo(predicted)
 	local def, idef = weaponDef(it)
 	if not def then
 		return 0, 0, false, nil
+	end
+	if practicing() and not def.melee then
+		return Weapon.practice.cap, 99, true, def -- practice ammo: a full magazine on every reload
 	end
 	if def.melee then
 		return 0, 0, true, def
@@ -241,6 +268,15 @@ local function buildVm(it, d, g)
 		anchors = b.anchors, ms = WeaponModels.modStats(d.items, it), eye = b.eye * VMS, muzzle = b.muzzle * VMS,
 		zoom = b.zoom, reflex = b.reflex == true, magParts = {}, magHidden = false, grip = CFrame.identity,
 	}
+	-- a variable scope (Tarkov's Alt + right mouse): its magnifications, starting at the lowest
+	local sp = o.ms and o.ms.sight and d.items[o.ms.sight]
+	local zl = sp and WP.parts[sp.id] and WP.parts[sp.id].zooms
+	if zl then
+		-- the chosen magnification stays with the scope when the view model is rebuilt
+		o.zooms, o.sightG = zl, o.ms.sight
+		o.zoomI = zoomSel[o.sightG] or 1
+		o.zoom = zl[o.zoomI]
+	end
 	local tag = {}
 	for name, list in b.moving do
 		for _, p in list do
@@ -539,7 +575,7 @@ end
 
 -- ── optics ───────────────────────────────────────────────────────────────────
 function Weapon.aimFov(base)
-	if vm and vm.zoom and aimA > 0.5 then
+	if vm and vm.zoom and vm.zoom > 1 and aimA > 0.5 and not (ctx.NightVision and ctx.NightVision.blocksOptics()) then
 		return math.deg(2 * math.atan(math.tan(math.rad(base) / 2) / vm.zoom))
 	end
 	return base * Config.AIM_FOV_MUL
@@ -605,8 +641,9 @@ local function updateOptics(show)
 	if not scopeGui then
 		return
 	end
-	local scoped = show and vm ~= nil and vm.zoom ~= nil and aimA > 0.85
-	local dotOn = show and vm ~= nil and vm.reflex and aimA > 0.8
+	local scoped = show and vm ~= nil and vm.zoom ~= nil and vm.zoom > 1 and aimA > 0.85 and not (ctx.NightVision and ctx.NightVision.blocksOptics())
+	-- a variable scope at 1x reads like a red dot (the whole view, a lit reticle)
+	local dotOn = show and vm ~= nil and (vm.reflex or vm.zoom == 1) and aimA > 0.8
 	Weapon.scoped = scoped
 	scopeGui.Enabled = scoped or dotOn
 	scopeImg.Visible = scoped
@@ -632,7 +669,7 @@ local function canAim()
 		return false -- stance transitions, vaults; no ADS while crawling (Tarkov)
 	end
 	return vm ~= nil and not Weapon.melee and not Weapon.reloading and not Weapon.checking and not Weapon.healing
-		and switching == nil and ctx.State.inRaid() and not ctx.Input.isMenu() and not (ctx.Grenade and ctx.Grenade.busy())
+		and switching == nil and armed() and not ctx.Input.isMenu() and not (ctx.Grenade and ctx.Grenade.busy())
 end
 
 function Weapon.cancelAim()
@@ -646,7 +683,7 @@ end
 
 local function canFire()
 	local M = ctx.Movement
-	if not (ctx.State.inRaid() and vm and Weapon.hasWeapon and not Weapon.melee) then
+	if not (armed() and vm and Weapon.hasWeapon and not Weapon.melee) then
 		return false
 	end
 	if (Weapon.reloading and not tubeT0) or Weapon.healing or Weapon.drawing or Weapon.checking or switching or cycleT0 then
@@ -666,6 +703,14 @@ local function fireOnce()
 	local def = o.def
 	local t = os.clock()
 	if t - Weapon.lastShot < 60 / def.rpm then
+		return
+	end
+	-- M11 part B: a malfunctioning gun clicks (L identifies it, Shift+T clears it)
+	if Weapon.malf and not practicing() then
+		if not dryLatch then
+			dryLatch = true
+			ctx.Effects.sound(Sounds.DRY_FIRE, SoundService, 0.6)
+		end
 		return
 	end
 	-- M14: a gun missing a required part does not fire (the server refuses the shot too)
@@ -690,11 +735,22 @@ local function fireOnce()
 	end
 	Weapon.lastShot = t
 	seq += 1
-	Weapon.ammo -= 1
+	if not practicing() then
+		Weapon.ammo -= 1
+	else
+		Weapon.ammo = math.max(0, Weapon.ammo - 1)
+	end
 	local M = ctx.Movement
 	local crouch = M and M.crouching
 	local camCF = ctx.Camera.aimCFrame or cam.CFrame -- free look does not move the weapon
 	local spread = (Weapon.aiming and def.aimSpread or def.hipSpread) * (Weapon.aiming and (o.ms.acc or 1) or 1)
+	-- M11 part B: a hot barrel throws shots wider (medium overheating and up; the server keeps the real heat)
+	local t0 = os.clock()
+	heat = heat * math.exp(-(t0 - heatT) / 30) + (HEAT[def.class] or 0.012)
+	heatT = t0
+	if heat > 0.6 then
+		spread *= 1 + (heat - 0.6) * 1.5
+	end
 	if ctx.Camera.speed > 2 then
 		spread += def.moveSpread * (Weapon.aiming and 0.35 or 1)
 	end
@@ -704,7 +760,12 @@ local function fireOnce()
 	local r = math.rad(spread) * 0.5
 	local dir = (camCF * CFrame.Angles((math.random() * 2 - 1) * r, (math.random() * 2 - 1) * r, 0)).LookVector
 	local origin = camCF.Position
-	ctx.State.shoot(seq, origin, dir)
+	if practicing() then
+		-- (act payloads carry plain numbers only)
+		ctx.State.act("range", { s = seq, ox = origin.X, oy = origin.Y, oz = origin.Z, dx = dir.X, dy = dir.Y, dz = dir.Z, slot = Weapon.practice.slot })
+	else
+		ctx.State.shoot(seq, origin, dir)
+	end
 	rayParams.FilterDescendantsInstances = { player.Character, o.model, workspace:FindFirstChild("ZR_Fx") }
 	local res = workspace:Raycast(origin, dir * def.range, rayParams)
 	local hit = res and res.Position or (origin + dir * def.range)
@@ -728,6 +789,9 @@ local function fireOnce()
 	end
 	ctx.Effects.gunSound(def.id, SoundService, o.ms.suppressed, false)
 	local k = (Weapon.aiming and 0.72 or 1) * (crouch and 0.85 or 1) * o.ms.recoil
+	-- the weapon class's skill (Tarkov's weapon skills): less recoil
+	local econ = ctx.State.data and ctx.State.data.econ
+	k *= 1 - Progress.bonus(econ and econ.skills, Progress.WEAPON_SKILL[def.class] or "")
 	ctx.Camera.kick(def.recoilV * k, (math.random() * 2 - 1) * def.recoilH * k)
 	kickZ += 0.045 * k
 	kickRot += math.rad(2.2) * k
@@ -753,7 +817,33 @@ end
 
 function Weapon.startReload()
 	local o = vm
-	if not o or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing or nadeBusy() then
+	if not o or Weapon.melee or not armed() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing or nadeBusy() then
+		return
+	end
+	if practicing() then
+		-- practice ammo: the usual reload, then a full magazine (nothing is asked of the server)
+		if Weapon.ammo >= Weapon.practice.cap then
+			return
+		end
+		Weapon.reloading = true
+		reloadT0 = os.clock()
+		reloadDur = ((Weapon.ammo > 0) and o.def.reload or o.def.reloadEmpty) or 2.4
+		joltDone = false
+		local token = reloadT0
+		for _, e in { { 0.14, "mag_out" }, { 0.45, "cloth_1" }, { 0.76, "mag_in" } } do
+			task.delay(reloadDur * e[1], function()
+				if reloadT0 == token then
+					ctx.Effects.sfx(e[2], SoundService, 0.55)
+				end
+			end)
+		end
+		task.delay(reloadDur, function()
+			if reloadT0 == token and Weapon.practice then
+				Weapon.reloading = false
+				reloadT0 = nil
+				Weapon.ammo = Weapon.practice.cap
+			end
+		end)
 		return
 	end
 	if o.def.internal then
@@ -792,13 +882,14 @@ function Weapon.startReload()
 	end)
 end
 
-function Weapon.magCheck()
+function Weapon.magCheck(chamber)
 	if not vm or Weapon.melee or not ctx.State.inRaid() or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing or nadeBusy() then
 		return
 	end
 	Weapon.checking = true
+	inspectT0 = nil
 	checkT0 = os.clock()
-	ctx.State.act("magcheck")
+	ctx.State.act("magcheck", chamber and { chamber = true } or nil)
 	ctx.Effects.sfx("mag_out", SoundService, 0.25, 1.15)
 	local token = checkT0
 	task.delay(checkDur + 1.4, function()
@@ -807,6 +898,23 @@ function Weapon.magCheck()
 			checkT0 = nil
 		end
 	end)
+end
+
+-- the fire mode as Tarkov names it (FULL AUTO, SINGLE...)
+function Weapon.modeLabel()
+	return Weapon.modeName and (MODE_NAMES[Weapon.modeName] or Weapon.modeName) or nil
+end
+
+-- L: look the weapon over (any time it is up and not busy; aiming, firing or reloading ends it)
+function Weapon.inspect()
+	if not vm or Weapon.reloading or Weapon.drawing or Weapon.checking or switching or Weapon.healing or aimWanted or nadeBusy() then
+		return
+	end
+	inspectT0 = os.clock()
+	-- a malfunction is identified by looking the gun over (Tarkov)
+	if Weapon.malf == "?" and ctx.State.inRaid() then
+		ctx.State.act("inspect")
+	end
 end
 
 function Weapon.slash()
@@ -862,7 +970,7 @@ function Weapon.cycleWeapon()
 end
 
 function Weapon.toggleLight()
-	if not vm or not vm.ms.light or not ctx.State.inRaid() then
+	if not vm or not vm.ms.light or not armed() then
 		return
 	end
 	Weapon.light = not Weapon.light
@@ -898,7 +1006,7 @@ end
 -- ── frame update ─────────────────────────────────────────────────────────────
 local function handleFire()
 	local fireDown = ctx.Input.down("Fire")
-	if vm and fireDown and ctx.State.inRaid() then
+	if vm and fireDown and armed() then
 		if Weapon.melee then
 			if not fireLatch then
 				fireLatch = true
@@ -946,7 +1054,7 @@ local function update(dt)
 	handleFire()
 	Weapon.aiming = aimWanted and canAim()
 	local o = vm
-	local show = o ~= nil and inRaid and hum ~= nil and not ctx.Input.isMenu() and not ctx.Camera.orbit
+	local show = o ~= nil and (inRaid or practicing()) and hum ~= nil and not ctx.Input.isMenu() and not ctx.Camera.orbit
 	-- local player's own third-person weapon light stays off (the viewmodel lamp lights the scene)
 	if now - tpLightT > 0.25 and char then
 		tpLightT = now
@@ -960,7 +1068,8 @@ local function update(dt)
 		end
 	end
 	-- pose blends
-	local ergo = o and (o.def.ergo + o.ms.ergo) or 50
+	local gear = ctx.Movement and ctx.Movement.gear
+	local ergo = (o and (o.def.ergo + o.ms.ergo) or 50) * (1 + (gear and gear.ergo or 0) / 100)
 	aimA += ((Weapon.aiming and 1 or 0) - aimA) * math.min(1, dt * (6 + ergo / 10))
 	local M = ctx.Movement
 	sprintA += (((M and M.sprinting) and 1 or 0) - sprintA) * math.min(1, dt * 9)
@@ -1009,6 +1118,18 @@ local function update(dt)
 			base = P.windup:Lerp(P.follow, ease((p - 0.25) / 0.25))
 		else
 			base = P.follow:Lerp(base, ease((p - 0.5) / 0.5))
+		end
+	end
+	if inspectT0 then
+		local p = (now - inspectT0) / INSPECT_TIME
+		if p >= 1 or aimWanted or Weapon.reloading or Weapon.checking or switching then
+			inspectT0 = nil
+		else
+			-- turn the left side up, then the right side
+			local a1 = math.sin(math.pi * math.clamp(p / 0.52, 0, 1))
+			local a2 = math.sin(math.pi * math.clamp((p - 0.48) / 0.52, 0, 1))
+			base = base * CFrame.new(0.03 * (a1 - a2), 0.05 * (a1 + a2), -0.04 * (a1 + a2))
+				* CFrame.Angles(math.rad(10) * (a1 + a2), math.rad(26) * a1 - math.rad(20) * a2, math.rad(-46) * a1 + math.rad(36) * a2)
 		end
 	end
 	base = P.low:Lerp(base, raise)
@@ -1171,11 +1292,17 @@ local function resetActions()
 	Weapon.cancelAim()
 end
 
+local MALF_NAMES = { misfire = "MISFIRE", eject = "FAILURE TO EJECT", feed = "FAILURE TO FEED", jam = "JAMMED BOLT" }
 local function onSnapshot()
 	local it, d, g = activeItem()
 	local cur, better, has, def = computeAmmo()
 	Weapon.spare = better
-	if not ctx.State.inRaid() or not has then
+	-- the malfunction belongs to the gun: follow the active gun's record (notes update it between snapshots)
+	if it and not practicing() then
+		Weapon.malf = it.mf and (it.mfk and it.mf or "?") or nil
+		Weapon.malfName = it.mf and it.mfk and MALF_NAMES[it.mf] or nil
+	end
+	if not armed() or not has then
 		Weapon.hasWeapon = false
 		destroyVm()
 		lastActiveG = nil
@@ -1199,15 +1326,30 @@ local function onSnapshot()
 		end
 		Weapon.ammo = cur
 		dryLatch = false
-	elseif os.clock() - Weapon.lastShot > 0.6 and not Weapon.reloading then
+	elseif os.clock() - Weapon.lastShot > 0.6 and not Weapon.reloading and not practicing() then
 		Weapon.ammo = cur
 	end
 	Weapon.melee = def.melee == true
-	Weapon.slot = d.active
+	Weapon.slot = practicing() and Weapon.practice.slot or d.active
 	local mass = (Items.defs[it.id].mass or 3) + WP.sum(d.items, g).mass
 	Weapon.mass = mass
 	Weapon.weaponName = string.upper(Items.defs[it.id].name)
 	Weapon.modeName = def.modes[Weapon.mode] or def.modes[1]
+end
+
+-- the Lobby controller puts you at the range (practice = { slot, cap }) or takes you off it (nil)
+function Weapon.setPractice(p)
+	local was = Weapon.practice
+	if (was == nil) == (p == nil) and (not was or (was.slot == p.slot and was.cap == p.cap)) then
+		return
+	end
+	Weapon.practice = p
+	lastActiveG = nil
+	resetActions()
+	onSnapshot()
+	if p then
+		Weapon.ammo = p.cap
+	end
 end
 
 function Weapon.init(c)
@@ -1247,10 +1389,13 @@ function Weapon.init(c)
 			Weapon.mode = Weapon.mode % #modes + 1
 			Weapon.modeName = modes[Weapon.mode]
 			c.Effects.sfx("selector", SoundService, 0.5)
-			c.State.toast("FIRE MODE: " .. Weapon.modeName)
+			c.State.toast("FIRE MODE: " .. (MODE_NAMES[Weapon.modeName] or Weapon.modeName))
 		end
 	end)
 	Input.on("Fire", function(down)
+		if down then
+			inspectT0 = nil
+		end
 		if down and c.Movement and c.Movement.sprinting then
 			c.Movement.stopSprint()
 		end
@@ -1258,6 +1403,57 @@ function Weapon.init(c)
 	Input.on("MagCheck", function(down)
 		if down then
 			Weapon.magCheck()
+		end
+	end)
+	Input.on("ChamberCheck", function(down)
+		if down then
+			Weapon.magCheck(true)
+		end
+	end)
+	Input.on("InspectWeapon", function(down)
+		if down then
+			Weapon.inspect()
+		end
+	end)
+	-- Alt+B: check the fire mode without changing it (Tarkov)
+	Input.on("FireModeCheck", function(down)
+		if down and vm and not Weapon.melee and Weapon.modeName then
+			c.Effects.sfx("selector", SoundService, 0.25, 1.1)
+			c.State.toast("FIRE MODE: " .. (MODE_NAMES[Weapon.modeName] or Weapon.modeName))
+		end
+	end)
+	-- zeroing: the server keeps the zero per weapon and says what it set
+	local function zeroStep(dir)
+		local list = Ballistics.ZEROS
+		local cur = Weapon.zeros[vm.g] or Ballistics.DEFAULT_ZERO
+		local i = table.find(list, cur) or 2
+		local nxt = list[math.clamp(i + dir, 1, #list)]
+		if nxt ~= cur then
+			c.State.act("zero", { d = nxt })
+		end
+	end
+	Input.on("ZeroUp", function(down)
+		if down and vm then
+			zeroStep(1)
+		end
+	end)
+	Input.on("ZeroDown", function(down)
+		if down and vm then
+			zeroStep(-1)
+		end
+	end)
+	c.State.on("zero", function(d)
+		Weapon.zeros[d.g or ""] = d.d
+		c.Effects.sfx("selector", SoundService, 0.18, 1.6)
+		c.State.toast(d.max and string.format("ZEROING %d M  (SIGHTS GO TO %d M)", d.d, d.max) or string.format("ZEROING %d M", d.d))
+	end)
+	Input.on("SightMode", function(down)
+		if down and vm and vm.zooms then
+			vm.zoomI = vm.zoomI % #vm.zooms + 1
+			vm.zoom = vm.zooms[vm.zoomI]
+			zoomSel[vm.sightG] = vm.zoomI
+			c.Effects.sfx("selector", SoundService, 0.2, 1.4)
+			c.State.toast(string.format("SCOPE %dx", vm.zoom))
 		end
 	end)
 	Input.on("Light", function(down)
@@ -1313,6 +1509,28 @@ function Weapon.init(c)
 	c.State.on("draw", function(d)
 		if type(d) == "table" then
 			drawT0, drawDur = os.clock(), d.t or 0.6
+		end
+	end)
+	-- M11 part B malfunctions: "?" until inspected, then the kind; clearing plays the check motion
+	c.State.on("malf", function(d)
+		if type(d) ~= "table" then
+			return
+		end
+		if d.state == "on" then
+			Weapon.malf = Weapon.malf or "?"
+			if Weapon.malf == "?" then
+				Weapon.malfName = nil
+			end
+		elseif d.state == "known" then
+			Weapon.malf = d.kind or "?"
+			Weapon.malfName = d.name
+		elseif d.state == "fixing" then
+			Weapon.checking = true
+			checkT0, checkDur = os.clock(), d.t or 1.2
+		elseif d.state == "off" then
+			Weapon.malf, Weapon.malfName = nil, nil
+			Weapon.checking = false
+			checkT0 = nil
 		end
 	end)
 	c.State.on("magcheck", function(d)

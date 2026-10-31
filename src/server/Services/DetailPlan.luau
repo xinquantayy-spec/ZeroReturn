@@ -61,7 +61,11 @@ end
 local function decal(tex, c, n, w, h, lod, spin, tu, tv, alpha, ou)
 	add({ 1, tex, r2(c.X), r2(c.Y), r2(c.Z), r2(n.X), r2(n.Y), r2(n.Z), r2(w), r2(h), math.floor(spin or 0), lod, tu and r2(tu) or 0, tv and r2(tv) or 0, r2(alpha or 0), ou and r2(ou) or 0 }, c, "dec:" .. (DEC_NAME[tex] or "?"))
 end
+local meshesOff = false -- set while reading a decals-only model (the lobby bunker: lived-in, not ruined)
 local function mesh(key, pos, yaw, lod, s, col, pitch, roll)
+	if meshesOff then
+		return
+	end
 	add({ 2, key, r2(pos.X), r2(pos.Y), r2(pos.Z), math.floor(yaw or 0), math.floor(pitch or 0), math.floor(roll or 0), lod, s and r2(s.X) or 1, s and r2(s.Y) or 1, s and r2(s.Z) or 1, col or 0 }, pos, key)
 end
 
@@ -269,8 +273,10 @@ local function wallFace(p, f, sign, mat)
 			local u = (rng:NextNumber() < 0.5 and -1 or 1) * (len / 2 - 0.55)
 			mount("ZR_WK_Downpipe", u, floorY, 1.0, 2, Vector3.new(1, (f.top - floorY - 0.3) / 10.1, 1))
 		end
-		if rng:NextNumber() < 0.13 and len >= 3.4 then
-			mount("ZR_WK_AC", rng:NextNumber(-len / 2 + 1.4, len / 2 - 1.4), f.bottom + rng:NextNumber(4.6, math.min(hgt - 1.1, 7.6)), 1.4, 2)
+		if rng:NextNumber() < 0.13 and len >= 4.6 then
+			-- a commercial condensing unit at its real size (owner, 2026-11-01: the old one read as too small): about
+			-- 1.15 m wide and 1.5 m with its brackets, 0.4 m deep (the kit mesh is a 0.77 m domestic unit)
+			mount("ZR_WK_AC", rng:NextNumber(-len / 2 + 2, len / 2 - 2), f.bottom + rng:NextNumber(5.2, math.min(hgt - 1.6, 8.2)), 1.8, 2, Vector3.new(1.5, 1.5, 1.15))
 		end
 		if rng:NextNumber() < 0.11 and onFloor and len >= 2 then
 			mount("ZR_WK_ElecBox", rng:NextNumber(-len / 2 + 0.8, len / 2 - 0.8), floorY + 3.6, 0.8, 3)
@@ -559,10 +565,15 @@ function Plan.generate(list, seed, avoidList, nature)
 	op.RespectCanCollide = true
 	local t0 = os.clock()
 	local parts = {}
+	local decalsOnly = {} -- parts of models marked DetailDecalsOnly get wall and floor decals but no clutter meshes
 	for _, m in list do
+		local only = m:GetAttribute("DetailDecalsOnly") == true
 		for _, d in m:GetDescendants() do
 			if d:IsA("BasePart") then
 				table.insert(parts, d)
+				if only then
+					decalsOnly[d] = true
+				end
 			end
 		end
 	end
@@ -581,6 +592,7 @@ function Plan.generate(list, seed, avoidList, nature)
 		if p:GetAttribute("NoDetail") then
 			continue
 		end
+		meshesOff = decalsOnly[p] == true
 		if p:IsA("MeshPart") and p.Name == "ZR_ENV_Container20" then
 			container(p)
 			continue
@@ -604,6 +616,7 @@ function Plan.generate(list, seed, avoidList, nature)
 			task.wait()
 		end
 	end
+	meshesOff = false
 	table.clear(noWireCache)
 	-- keep every cell (each map publishes its own share when it is activated)
 	Plan.allCells = {}
@@ -633,8 +646,14 @@ function Plan.generate(list, seed, avoidList, nature)
 	return Plan.count
 end
 
--- the cells inside `bounds` (a map's play area, with a cell of margin) replace ReplicatedStorage.ZR_DetailPlan;
--- clients clear their detail and rebuild from the new set. nil bounds publish everything.
+-- areas published with every map (the lobby bunker): { { x0, z0, x1, z1 } } in world studs
+Plan.always = {}
+local function inArea(x, z, b)
+	return x >= b.x0 - CELL and x <= b.x1 + CELL and z >= b.z0 - CELL and z <= b.z1 + CELL
+end
+-- the cells inside `bounds` (a map's play area, with a cell of margin) and the always-areas replace
+-- ReplicatedStorage.ZR_DetailPlan; clients clear their detail and rebuild from the new set. nil bounds publish
+-- everything.
 function Plan.publish(bounds)
 	if not Plan.allCells then
 		return 0
@@ -649,7 +668,11 @@ function Plan.publish(bounds)
 	for k, c in Plan.allCells do
 		local cx, cz = string.match(k, "^(-?%d+)_(-?%d+)")
 		local x, z = (tonumber(cx) + 0.5) * CELL, (tonumber(cz) + 0.5) * CELL
-		if not bounds or (x >= bounds.x0 - CELL and x <= bounds.x1 + CELL and z >= bounds.z0 - CELL and z <= bounds.z1 + CELL) then
+		local keep = not bounds or inArea(x, z, bounds)
+		for _, a in Plan.always do
+			keep = keep or inArea(x, z, a)
+		end
+		if keep then
 			local sv = Instance.new("StringValue")
 			sv.Name = k
 			sv.Value = c.json

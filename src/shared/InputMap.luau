@@ -2,29 +2,55 @@
 -- Single source of truth for action bindings (PC keys, gamepad, touch label). Movement/jump/look stay
 -- with Roblox's PlayerModule + our camera. Interact uses ProximityPrompts (F / ButtonX / tap); Q/E lean (Tarkov).
 -- Gamepad D-down is shared: a tap shows the extracts, a hold readies a grenade (Grenade controller).
+-- PC keys are Tarkov's defaults (docs/design/EFT_PARITY.md section 4): `mod` makes a chord with Alt, Shift or
+-- Ctrl (Alt+T checks the magazine, Shift+T the chamber, Alt+B the fire mode); a key's plain action only fires
+-- when none of its chord modifiers is held. Players can rebind PC keys (Settings, CONTROLS); Esc stays Roblox's
+-- menu, so the settings open on P.
+local K = Enum.KeyCode
 return {
-	Fire = { keys = { Enum.KeyCode.MouseLeftButton }, pad = { Enum.KeyCode.ButtonR2 }, touch = "FIRE", context = "play" },
-	Aim = { keys = { Enum.KeyCode.MouseRightButton }, pad = { Enum.KeyCode.ButtonL2 }, touch = "ADS", context = "play" },
-	Reload = { keys = { Enum.KeyCode.R }, pad = { Enum.KeyCode.ButtonX }, touch = "RLD", context = "play" },
-	Sprint = { keys = { Enum.KeyCode.LeftShift }, pad = { Enum.KeyCode.ButtonL3 }, touch = "RUN", context = "play" },
-	Crouch = { keys = { Enum.KeyCode.C, Enum.KeyCode.LeftControl }, pad = { Enum.KeyCode.ButtonB }, touch = "CRCH", context = "play" },
-	Heal = { keys = { Enum.KeyCode.H }, pad = { Enum.KeyCode.DPadUp }, touch = "MED", context = "play" },
-	FireMode = { keys = { Enum.KeyCode.V }, pad = { Enum.KeyCode.DPadRight }, context = "play" },
-	Extracts = { keys = { Enum.KeyCode.O }, pad = { Enum.KeyCode.DPadDown }, touch = "EXIT", context = "play" },
-	Inventory = { keys = { Enum.KeyCode.Tab, Enum.KeyCode.I }, pad = { Enum.KeyCode.ButtonY }, touch = "BAG", context = "global" },
-	Settings = { keys = { Enum.KeyCode.P }, pad = { Enum.KeyCode.ButtonSelect }, touch = "SET", context = "global" },
-	Back = { keys = { Enum.KeyCode.Backspace }, pad = { Enum.KeyCode.ButtonB }, context = "menu" },
-	Primary = { keys = { Enum.KeyCode.One }, pad = {}, context = "play" },
-	Secondary = { keys = { Enum.KeyCode.Two }, pad = {}, context = "play" },
-	Sidearm = { keys = { Enum.KeyCode.Three }, pad = {}, context = "play" },
-	Knife = { keys = { Enum.KeyCode.Four }, pad = {}, context = "play" },
-	CycleWeapon = { keys = {}, pad = { Enum.KeyCode.DPadLeft }, touch = "SWAP", context = "play" },
-	MagCheck = { keys = { Enum.KeyCode.T }, pad = { Enum.KeyCode.ButtonR3 }, context = "play" },
-	Light = { keys = { Enum.KeyCode.L }, pad = {}, context = "play" },
-	LeanLeft = { keys = { Enum.KeyCode.Q }, pad = { Enum.KeyCode.ButtonL1 }, touch = "LN-L", context = "play" },
-	LeanRight = { keys = { Enum.KeyCode.E }, pad = { Enum.KeyCode.ButtonR1 }, touch = "LN-R", context = "play" },
-	Prone = { keys = { Enum.KeyCode.Z }, pad = {}, touch = "PRN", context = "play" },
-	FreeLook = { keys = { Enum.KeyCode.LeftAlt }, pad = {}, context = "play" },
+	Fire = { keys = { K.MouseLeftButton }, pad = { K.ButtonR2 }, touch = "FIRE", context = "play" },
+	Aim = { keys = { K.MouseRightButton }, pad = { K.ButtonL2 }, touch = "ADS", context = "play" },
+	Reload = { keys = { K.R }, pad = { K.ButtonX }, touch = "RLD", context = "play" },
+	Sprint = { keys = { K.LeftShift }, pad = { K.ButtonL3 }, touch = "RUN", context = "play" },
+	Crouch = { keys = { K.C }, pad = { K.ButtonB }, touch = "CRCH", context = "play" },
+	-- Tarkov heals from quick slots (4 to 0) or the inventory; gamepad and touch keep a MED button
+	Heal = { keys = {}, pad = { K.DPadUp }, touch = "MED", context = "play" },
+	FireMode = { keys = { K.B }, pad = { K.DPadRight }, context = "play" },
+	FireModeCheck = { keys = { K.B }, mod = "Alt", pad = {}, context = "play" },
+	Extracts = { keys = { K.O }, pad = { K.DPadDown }, touch = "EXIT", context = "play" },
+	Inventory = { keys = { K.Tab }, pad = { K.ButtonY }, touch = "BAG", context = "global" },
+	Settings = { keys = { K.P }, pad = { K.ButtonSelect }, touch = "SET", context = "global" },
+	Back = { keys = { K.Backspace }, pad = { K.ButtonB }, context = "menu" },
+	-- Tarkov: 1 sidearm (holster), 2 weapon on sling, 3 weapon on back, V melee
+	Sidearm = { keys = { K.One }, pad = {}, context = "play" },
+	Primary = { keys = { K.Two }, pad = {}, context = "play" },
+	Secondary = { keys = { K.Three }, pad = {}, context = "play" },
+	Knife = { keys = { K.V }, pad = {}, context = "play" },
+	CycleWeapon = { keys = {}, pad = { K.DPadLeft }, touch = "SWAP", context = "play" },
+	MagCheck = { keys = { K.T }, mod = "Alt", pad = { K.ButtonR3 }, context = "play" },
+	ChamberCheck = { keys = { K.T }, mod = "Shift", pad = {}, context = "play" },
+	Light = { keys = { K.T }, pad = {}, context = "play" },
+	-- Tarkov: N flips the goggles (or a face shield) up and down
+	ToggleNVG = { keys = { K.N }, pad = {}, touch = "NV", context = "play" },
+	-- Tarkov: Alt + right mouse changes a sight's mode (a variable scope's magnification)
+	SightMode = { keys = { K.MouseRightButton }, mod = "Alt", pad = {}, context = "play" },
+	-- Tarkov: Page Up / Page Down set the sight's zeroing distance
+	ZeroUp = { keys = { K.PageUp }, pad = {}, context = "play" },
+	ZeroDown = { keys = { K.PageDown }, pad = {}, context = "play" },
+	InspectWeapon = { keys = { K.L }, pad = {}, context = "play" },
+	LeanLeft = { keys = { K.Q }, pad = { K.ButtonL1 }, touch = "LN-L", context = "play" },
+	LeanRight = { keys = { K.E }, pad = { K.ButtonR1 }, touch = "LN-R", context = "play" },
+	Prone = { keys = { K.X }, pad = {}, touch = "PRN", context = "play" },
+	FreeLook = { keys = { K.LeftAlt }, pad = {}, context = "play" },
 	-- G: hold to pull the pin, release to throw (hold aim for underhand). Gamepad: hold D-down (a tap is Extracts).
-	Grenade = { keys = { Enum.KeyCode.G }, pad = { Enum.KeyCode.DPadDown }, touch = "NADE", context = "play" },
+	Grenade = { keys = { K.G }, pad = { K.DPadDown }, touch = "NADE", context = "play" },
+	-- Tarkov's quick slots: hover an item in your pockets or rig in the inventory and press the key to bind it;
+	-- in a raid the key uses it (meds, food) or readies it (grenades). Global, so binding works with the inventory open.
+	Quick4 = { keys = { K.Four }, pad = {}, context = "global" },
+	Quick5 = { keys = { K.Five }, pad = {}, context = "global" },
+	Quick6 = { keys = { K.Six }, pad = {}, context = "global" },
+	Quick7 = { keys = { K.Seven }, pad = {}, context = "global" },
+	Quick8 = { keys = { K.Eight }, pad = {}, context = "global" },
+	Quick9 = { keys = { K.Nine }, pad = {}, context = "global" },
+	Quick0 = { keys = { K.Zero }, pad = {}, context = "global" },
 }

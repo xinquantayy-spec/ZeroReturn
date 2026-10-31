@@ -14,6 +14,9 @@ local ctx, K
 local gui, exitGui
 
 local function closeModal()
+	if ctx.Inspect then
+		ctx.Inspect.closeAll()
+	end
 	if Screens.modal then
 		Screens.modal:Destroy()
 		Screens.modal = nil
@@ -67,7 +70,8 @@ local function matchText(m)
 		end
 		if m.state == "MATCHING" then
 			local w = Env.WEATHER[e.w] or Env.WEATHER.clear
-			return string.format("\nINSERTION AT %02d:%02d LOCAL  ·  %s", math.floor(e.clock0), math.floor((e.clock0 % 1) * 60), w.name)
+			local snowy = e.season == "winter" and e.w == "rain"
+			return string.format("\nINSERTION AT %02d:%02d LOCAL  ·  %s  ·  %s", math.floor(e.clock0), math.floor((e.clock0 % 1) * 60), snowy and "SNOW" or w.name, Env.SEASONS[e.season or "summer"] and Env.SEASONS[e.season or "summer"].name or "SUMMER")
 		end
 		return "\n" .. Maps.nameOf(m.map) .. " LOCAL TIME " .. Env.label(e, now)
 	end
@@ -93,6 +97,10 @@ Screens.matchText = matchText
 
 local deployMode = "pmc"
 local deployVote = nil -- map this player votes for (nil = any map)
+-- the map you picked at the ops table (the van takes it with your boarding)
+function Screens.vote()
+	return deployVote
+end
 
 local function scroller(parent, x, y, w, h)
 	local sf = K.new("ScrollingFrame", {
@@ -118,7 +126,7 @@ function Screens.deploy()
 	if not d or ctx.State.inRaid() then
 		return
 	end
-	local f, w, h = modal(820, 500, "DEPLOYMENT TERMINAL")
+	local f, w, h = modal(820, 500, "OPS TABLE  ·  DEPLOYMENT")
 	local me = Players.LocalPlayer
 	local mode = deployMode
 	-- mode tabs
@@ -574,50 +582,185 @@ function Screens.summary(s)
 	K.focus(b)
 end
 
-local SETTING_ROWS = {
-	{ "GRAPHICS", "quality", "enum", { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }, 0 },
-	{ "FIELD OF VIEW", "fov", "num", 65, 100, 5, "%d" },
-	{ "SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },
-	{ "SCREEN SHAKE", "shake", "num", 0, 1, 0.25, "pct" },
-	{ "FILM GRAIN", "grain", "num", 0, 1, 0.1, "pct" },
-	{ "HUD SCALE", "hudScale", "num", 0.7, 1.4, 0.1, "pct" },
-	{ "LENS EFFECTS", "lens", "bool" },
-	{ "CURVED HUD", "curve", "bool" },
-	{ "MOTION BLUR", "mblur", "bool" },
-	{ "RECORDER OVERLAY", "film", "bool" },
-	{ "REDUCE MOTION", "reduceMotion", "bool" },
-	{ "CENTER DOT", "reticle", "bool" },
-	{ "HIT FEEDBACK", "hitfx", "bool" },
-	{ "AIM MODE", "adsToggle", "bool", "TOGGLE", "HOLD" },
+-- Tarkov's settings tabs (docs/design/EFT_PARITY.md section 5). Rows: label, key, kind (enum / num / bool), then
+-- enum: names, first index; num: min, max, step, format ("pct", "spct" signed, or a format string); bool: on, off text.
+-- GRAPHICS covers what the game controls; resolution, frame cap, anti-aliasing and texture or shadow quality belong
+-- to Roblox's own graphics slider.
+local SETTING_TABS = {
+	{ "GAME", {
+		{ "FIELD OF VIEW", "fov", "num", 50, 100, 5, "%d" },
+		{ "HEAD BOBBING", "headBob", "num", 0.2, 1, 0.1, "pct" },
+		{ "SCREEN SHAKE", "shake", "num", 0, 1, 0.25, "pct" },
+		{ "REDUCE MOTION", "reduceMotion", "bool" },
+		{ "AIM MODE", "adsToggle", "bool", "TOGGLE", "HOLD" },
+		{ "QUICK SLOTS", "quickBar", "enum", { "AUTO-HIDE", "ALWAYS", "NEVER" }, 1 },
+		{ "CENTER DOT", "reticle", "bool" },
+		{ "HIT FEEDBACK", "hitfx", "bool" },
+		{ "HUD SCALE", "hudScale", "num", 0.7, 1.4, 0.1, "pct" },
+		{ "CURVED HUD", "curve", "bool" },
+	} },
+	{ "GRAPHICS", {
+		{ "GRAPHICS", "quality", "enum", { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }, 0 },
+		{ "FILM GRAIN", "grain", "num", 0, 1, 0.1, "pct" },
+		{ "LENS EFFECTS", "lens", "bool" },
+		{ "MOTION BLUR", "mblur", "bool" },
+		{ "RECORDER OVERLAY", "film", "bool" },
+	} },
+	{ "POSTFX", {
+		{ "BRIGHTNESS", "pfxBright", "num", -0.5, 0.5, 0.05, "spct" },
+		{ "SATURATION", "pfxSat", "num", -1, 1, 0.1, "spct" },
+		{ "CLARITY", "pfxClarity", "num", -0.5, 0.5, 0.05, "spct" },
+		{ "COLOR GRADING", "pfxGrade", "enum", { [0] = "NONE", "STEEL", "EMBER", "MOSS", "DUSK" }, 0 },
+		{ "GRADING INTENSITY", "pfxGradeK", "num", 0, 1, 0.1, "pct" },
+	} },
+	{ "SOUND", {
+		{ "OVERALL VOLUME", "volMaster", "num", 0, 1, 0.1, "pct" },
+		{ "EFFECTS", "volFx", "num", 0, 1, 0.1, "pct" },
+		{ "INTERFACE", "volUi", "num", 0, 1, 0.1, "pct" },
+		{ "AMBIENCE", "volAmb", "num", 0, 1, 0.1, "pct" },
+	} },
+	{ "CONTROLS", {
+		{ "SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },
+		{ "AIM SENSITIVITY", "aimSens", "num", 0.2, 3, 0.1, "%.1f" },
+	} },
 }
+-- the PC keys a player can rebind, in Tarkov's order and wording
+local BIND_ROWS = {
+	{ "Reload", "RELOAD" }, { "Sprint", "SPRINT" }, { "Crouch", "CROUCH" }, { "Prone", "PRONE" }, { "LeanLeft", "LEAN LEFT" },
+	{ "LeanRight", "LEAN RIGHT" }, { "FreeLook", "FREE LOOK" }, { "FireMode", "FIRE MODE" }, { "FireModeCheck", "CHECK FIRE MODE" },
+	{ "MagCheck", "CHECK MAGAZINE" }, { "ChamberCheck", "CHECK CHAMBER" }, { "Light", "TACTICAL DEVICE" }, { "InspectWeapon", "INSPECT WEAPON" },
+	{ "Sidearm", "SIDEARM" }, { "Primary", "WEAPON ON SLING" }, { "Secondary", "WEAPON ON BACK" }, { "Knife", "MELEE WEAPON" },
+	{ "Grenade", "GRENADE" }, { "Extracts", "TIME (TWICE: EXITS)" }, { "Inventory", "INVENTORY" }, { "Settings", "SETTINGS" },
+	{ "Quick4", "QUICK SLOT 4" }, { "Quick5", "QUICK SLOT 5" }, { "Quick6", "QUICK SLOT 6" }, { "Quick7", "QUICK SLOT 7" },
+	{ "Quick8", "QUICK SLOT 8" }, { "Quick9", "QUICK SLOT 9" }, { "Quick0", "QUICK SLOT 0" },
+}
+local settingsTab = "GAME"
+local capture -- the keybind being changed: { action, conns }
 
-function Screens.settings()
-	local f, w, h = modal(820, 470, "RECORDER SETTINGS")
+local function endCapture()
+	if capture then
+		for _, cn in capture.conns do
+			cn:Disconnect()
+		end
+		capture = nil
+	end
+end
+
+local MODS = {
+	[Enum.KeyCode.LeftAlt] = "Alt", [Enum.KeyCode.RightAlt] = "Alt", [Enum.KeyCode.LeftShift] = "Shift", [Enum.KeyCode.RightShift] = "Shift",
+	[Enum.KeyCode.LeftControl] = "Ctrl", [Enum.KeyCode.RightControl] = "Ctrl",
+}
+-- wait for the next key (with Alt, Shift or Ctrl held it becomes a chord; a modifier alone binds itself)
+local function startCapture(action)
+	endCapture()
+	local UIS = game:GetService("UserInputService")
+	capture = { action = action, conns = {} }
+	local pendingMod
+	local function finish(keyName, mod)
+		endCapture()
+		local S = ctx.Settings
+		for _, r in BIND_ROWS do
+			local keys, m = ctx.Input.keysOf(r[1])
+			if r[1] ~= action and keys[1] and keys[1].Name == keyName and m == mod then
+				ctx.State.toast("ALSO BOUND TO " .. r[2], "warn")
+			end
+		end
+		S.setBind(action, keyName, mod)
+		Screens.settings()
+	end
+	table.insert(capture.conns, UIS.InputBegan:Connect(function(input)
+		if not (Screens.modal and Screens.modal.Parent) then
+			endCapture() -- the settings were closed while waiting
+			return
+		end
+		if input.UserInputType ~= Enum.UserInputType.Keyboard then
+			return
+		end
+		local k = input.KeyCode
+		if k == Enum.KeyCode.Backspace then
+			endCapture()
+			Screens.settings()
+			return
+		end
+		if MODS[k] then
+			pendingMod = k
+			return
+		end
+		local mod
+		for mk, name in MODS do
+			if UIS:IsKeyDown(mk) then
+				mod = name
+				break
+			end
+		end
+		finish(k.Name, mod)
+	end))
+	table.insert(capture.conns, UIS.InputEnded:Connect(function(input)
+		if pendingMod and input.KeyCode == pendingMod then
+			finish(pendingMod.Name, nil)
+		end
+	end))
+end
+
+local function fmtValue(r, v)
+	local kind = r[3]
+	if kind == "enum" then
+		return r[4][v] or tostring(v)
+	elseif kind == "num" then
+		if r[7] == "pct" then
+			return string.format("%d%%", math.floor((v or 0) * 100 + 0.5))
+		elseif r[7] == "spct" then
+			return string.format("%+d%%", math.floor((v or 0) * 100 + ((v or 0) >= 0 and 0.5 or -0.5)))
+		end
+		return string.format(r[7], v or 0)
+	end
+	return v and (r[4] or "ON") or (r[5] or "OFF")
+end
+
+function Screens.settings(tab, keepCapture)
+	if not keepCapture then
+		endCapture()
+	end
+	settingsTab = tab or settingsTab
+	local f, w, h = modal(900, 560, "RECORDER SETTINGS")
 	local S = ctx.Settings
 	local d = S.data
+	-- Tarkov's tabs
+	local tabs = K.frame(f, { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 30) })
+	K.list(tabs, Enum.FillDirection.Horizontal, 6)
+	local rows, first
+	for _, t in SETTING_TABS do
+		local on = settingsTab == t[1]
+		if on then
+			rows = t[2]
+		end
+		local b = K.button(tabs, t[1], { Size = UDim2.fromOffset(120, 30), TextSize = 13, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+		b.Name = "Tab_" .. t[1]
+		b.Activated:Connect(function()
+			if settingsTab ~= t[1] then
+				Screens.settings(t[1])
+			end
+		end)
+		first = first or b
+	end
+	rows = rows or SETTING_TABS[1][2]
 	local cols = w >= 600 and 2 or 1
 	local colW = (w - (cols - 1) * 16) / cols
+	local binds = settingsTab == "CONTROLS"
+	local rowsH = math.ceil(#rows / cols) * 40
+	local bindsH = binds and (math.ceil(#BIND_ROWS / cols) * 36 + 70) or 0
 	local scroll = K.new("ScrollingFrame", {
-		BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 32), Size = UDim2.new(1, 0, 1, -76),
-		ScrollBarThickness = 4, CanvasSize = UDim2.fromOffset(0, math.ceil(#SETTING_ROWS / cols) * 40), ScrollingDirection = Enum.ScrollingDirection.Y,
+		Name = "Rows", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, 0, 1, -114),
+		ScrollBarThickness = 4, CanvasSize = UDim2.fromOffset(0, rowsH + bindsH), ScrollingDirection = Enum.ScrollingDirection.Y,
 	}, f)
-	local first
-	for i, r in SETTING_ROWS do
+	for i, r in rows do
 		local label, key, kind = r[1], r[2], r[3]
 		local col = (i - 1) % cols
 		local rowI = math.floor((i - 1) / cols)
 		local row = K.frame(scroll, { BackgroundTransparency = 1, Position = UDim2.fromOffset(col * (colW + 16), rowI * 40), Size = UDim2.fromOffset(colW, 34) })
 		K.label(row, label, 13, { Size = UDim2.new(0.5, 0, 1, 0) })
-		local value
 		local v = d[key]
-		if kind == "enum" then
-			value = r[4][v] or tostring(v)
-		elseif kind == "num" then
-			value = r[7] == "pct" and string.format("%d%%", math.floor((v or 0) * 100 + 0.5)) or string.format(r[7], v or 0)
-		else
-			value = v and (r[4] or "ON") or (r[5] or "OFF")
-		end
-		K.label(row, value, 13, { Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0.2, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
+		K.label(row, fmtValue(r, v), 13, { Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0.2, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
 		local function bump(dir)
 			if kind == "enum" then
 				local lo = r[5] or 1 -- first index (0 when the list starts at [0])
@@ -642,7 +785,41 @@ function Screens.settings()
 				bump(1)
 			end)
 		end
-		first = first or b1
+	end
+	if binds then
+		-- key bindings (PC): CHANGE waits for a key, Alt / Shift / Ctrl held make a chord; BKSP cancels
+		local y0 = rowsH + 8
+		K.label(scroll, "KEY BINDINGS  ·  CHANGE, then press a key (hold ALT, SHIFT or CTRL for a combination; BACKSPACE cancels)", 12, {
+			Position = UDim2.fromOffset(0, y0), Size = UDim2.new(1, -150, 0, 24), TextColor3 = K.C.dim,
+		})
+		local reset = K.button(scroll, "RESET ALL", { Name = "ResetBinds", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, y0), Size = UDim2.fromOffset(130, 24), TextSize = 11 })
+		reset.Activated:Connect(function()
+			S.resetBinds()
+			Screens.settings()
+		end)
+		for i, r in BIND_ROWS do
+			local action, name = r[1], r[2]
+			local col = (i - 1) % cols
+			local rowI = math.floor((i - 1) / cols)
+			local row = K.frame(scroll, { Name = "Bind_" .. action, BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.3, Position = UDim2.fromOffset(col * (colW + 16), y0 + 32 + rowI * 36), Size = UDim2.fromOffset(colW - 8, 32) })
+			K.label(row, name, 12, { Position = UDim2.fromOffset(8, 0), Size = UDim2.new(0.46, -8, 1, 0) })
+			local waiting = capture and capture.action == action
+			local custom = d.binds and d.binds[action]
+			K.label(row, waiting and "PRESS A KEY" or ctx.Input.pcLabel(action), 13, {
+				Name = "Key", Position = UDim2.fromScale(0.46, 0), Size = UDim2.new(0.22, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center,
+				FontFace = K.bold, TextColor3 = waiting and K.C.ochre or (custom and K.C.green or K.C.text),
+			})
+			local ch = K.button(row, "CHANGE", { Name = "Change", Position = UDim2.fromScale(0.69, 0.1), Size = UDim2.new(0.15, -4, 0.8, 0), TextSize = 10 })
+			ch.Activated:Connect(function()
+				startCapture(action)
+				Screens.settings(nil, true)
+			end)
+			local df = K.button(row, "DEFAULT", { Name = "Default", Position = UDim2.fromScale(0.84, 0.1), Size = UDim2.new(0.16, -4, 0.8, 0), TextSize = 10, TextColor3 = custom and K.C.text or K.C.dim })
+			df.Activated:Connect(function()
+				S.setBind(action, nil)
+				Screens.settings()
+			end)
+		end
 	end
 	local close = K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(closeModal)
@@ -687,6 +864,9 @@ function Screens.init(c)
 		end
 	end)
 	c.Input.on("Settings", function(down)
+		if down and capture then
+			return -- waiting for a key to bind: P is the key, not the menu
+		end
 		if down then
 			if Screens.modal then
 				closeModal()
@@ -696,10 +876,18 @@ function Screens.init(c)
 		end
 	end)
 	-- gamepad D-down also readies a grenade when held: there the list opens on a short tap (on release)
-	local exDown = 0
+	local exDown, lastO = 0, 0
 	c.Input.on("Extracts", function(down)
 		if c.Input.device() ~= "Gamepad" then
 			if down then
+				-- Tarkov: O checks the time, a double tap lists the exits (the touch button lists them at once)
+				local t = os.clock()
+				if c.Input.device() == "KBM" and t - lastO > 0.45 then
+					lastO = t
+					c.Hud.timeCheck()
+					return
+				end
+				lastO = 0
 				Screens.exits()
 			end
 			return

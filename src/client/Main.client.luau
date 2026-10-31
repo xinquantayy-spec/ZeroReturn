@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "Atmos", "Detail", "Interact", "Touch", "Inventory", "Modding", "Screens", "Trade" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "NightVision", "Atmos", "Detail", "Interact", "Touch", "Inventory", "Character", "QuickSlots", "Modding", "Inspect", "Screens", "Trade", "Menus", "Lobby" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -40,7 +40,7 @@ end)
 if RunService:IsStudio() then
 	local bf = Instance.new("BindableFunction")
 	bf.Name = "ZR_ClientDev"
-	bf.OnInvoke = function(cmd, a)
+	bf.OnInvoke = function(cmd, a, b)
 		if cmd == "state" then
 			local W, M = ctx.Weapon, ctx.Movement
 			local vmModel = workspace.CurrentCamera:FindFirstChild("ZR_Viewmodel")
@@ -65,7 +65,27 @@ if RunService:IsStudio() then
 			ctx.Screens.deploy()
 			return "ok"
 		elseif cmd == "traders" then
-			ctx.Trade.traders(a)
+			ctx.Trade.traders(a, b)
+			return "ok"
+		elseif cmd == "inspect" then
+			-- a = an equipment slot ("primary") or an item id in the stash: Tarkov's INSPECT window for it
+			local d = ctx.State.data
+			local g = d and d.slots and d.slots[a]
+			if not g and d then
+				for sg in (d.grids and d.grids.stash) or {} do
+					if d.items[sg] and d.items[sg].id == a then
+						g = sg
+						break
+					end
+				end
+			end
+			if not g then
+				return "no item"
+			end
+			ctx.Inspect.open(d.items, g, { key = "dev:" .. g })
+			return "ok"
+		elseif cmd == "inspectClose" then
+			ctx.Inspect.closeAll()
 			return "ok"
 		elseif cmd == "hideout" then
 			ctx.Trade.hideout()
@@ -134,6 +154,9 @@ if RunService:IsStudio() then
 				a.model = (ai and ai:FindFirstChild(a.target)) or (cp and cp:FindFirstChild(a.target)) or (sr and sr:FindFirstChild(a.target)) or (pl and pl.Character) or nil
 			end
 			ctx.Camera.orbit = a
+			return "ok"
+		elseif cmd == "action" then
+			ctx.Input.press(a, b)
 			return "ok"
 		elseif cmd == "firemode" then
 			ctx.Input.trigger("FireMode", true)

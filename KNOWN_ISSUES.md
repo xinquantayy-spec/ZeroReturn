@@ -71,6 +71,10 @@
 55. **No sight zeroing or variable zoom (M14 gap).** Scopes have one fixed zoom (the V6 is shown as 6x) and no zeroing distance.
 56. **3D inspect only for guns (M14 gap).** The modding screen shows a gun in 3D; other items have only their picture.
 57. **Part grid sizes are hand-set.** Only the pistol grips (1x1) were checked against Tarkov's wiki; barrels, handguards, stocks and sights keep sizes chosen to look like Tarkov's.
+58. **At the range others do not see the gun in your hands (lobby gap).** Practice mode raises your gun on your own screen; other players hear the shots and see the impacts and the targets react, but your character keeps its weapons slung.
+59. **No lobby sounds yet.** The design calls for the generator's hum once you have built it, radio chatter at the ops table, pipes knocking and the van idling through the countdown; there is no synthesized lobby audio yet (doors slam with a metal impact sound).
+60. **Squads board the van one by one.** Each member walks in and boards; the squad still deploys together and wears one armband colour.
+61. **Lobby frame rates on phones are unknown.** Measured only in Studio on the T490 (the bunker draws fewer calls and triangles than Quay 7).
 44. **Syncing to the laptop without the shell tool.** When the laptop's shell tool is unavailable, files reach the PC as one bundle (`tools/pc_patch.py`) run through Blender's Python. Each sync shows up as a file card in the chat. Rojo then updates Studio as usual.
 33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.

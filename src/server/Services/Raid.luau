@@ -8,6 +8,8 @@ local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
+local InputMap = require(Shared.InputMap)
+local TD = require(Shared.TraderData)
 local Grid = require(Shared.Grid)
 local WP = require(Shared.WeaponParts)
 local Inv = require(script.Parent.Inv)
@@ -80,6 +82,22 @@ local function claimsInfo(prof)
 	return { ready = ready, waiting = waiting, nextIn = nextAt and (nextAt - t) or nil }
 end
 
+-- the messenger's insurance dialog: each return with its items and when it is ready
+local function claimList(prof)
+	local out, t = {}, os.time()
+	for _, c in prof.claims or {} do
+		local ids = {}
+		for i, b in c.bundles or {} do
+			if i > 12 then
+				break
+			end
+			table.insert(ids, b.it and b.it.id or "?")
+		end
+		table.insert(out, { readyIn = math.max(0, (c.readyAt or 0) - t), ids = ids, n = #(c.bundles or {}) })
+	end
+	return out
+end
+
 function Raid.state(player)
 	local prof = ctx.Profiles.get(player)
 	if not prof then
@@ -102,6 +120,8 @@ function Raid.state(player)
 		persistence = ctx.Store.mode,
 		raid = s and Raid.raidInfo(s) or nil,
 		claims = claimsInfo(prof),
+		claimList = (not s) and claimList(prof) or nil,
+		msgs = (not s) and prof.msgs or nil,
 		insureAll = (not s) and Settle.insureQuote(prof, player.UserId) or nil,
 		scavReadyAt = prof.scavReadyAt or 0,
 		serverTime = os.time(),
@@ -109,8 +129,9 @@ function Raid.state(player)
 		stashH = prof.stashH,
 		econ = ctx.Economy.stateFor(prof),
 		-- hideout-only blocks (traders, tasks, modules) are left out of the frequent in-raid snapshots
-		quests = (not s) and ctx.Quests.stateFor(prof) or nil,
+		quests = ctx.Quests.stateFor(prof), -- in a raid too: the inventory's TASKS tab (Tarkov)
 		hideout = (not s) and ctx.Hideout.stateFor(prof) or nil,
+		flea = (not s) and ctx.Flea.stateFor(prof) or nil,
 	}
 end
 
@@ -152,6 +173,14 @@ end
 
 -- your bunk in Relay 7: each player keeps one spot for the session (twelve bunks, two per bunk unit)
 local bunkOf = {}
+function Raid.bedOf(player)
+	local i = bunkOf[player]
+	if i and not player.Parent then
+		bunkOf[player] = nil
+		return nil
+	end
+	return i
+end
 function Raid.safeSpawnCF(player: Player?)
 	local sh = ctx.World.safehouse
 	local list = sh.spawns
@@ -176,6 +205,9 @@ function Raid.safeSpawnCF(player: Player?)
 		end
 		i = i or math.random(1, #list)
 		bunkOf[player] = i
+		if typeof(player) == "Instance" then
+			player:SetAttribute("Bed", i) -- your locker card and your pigeonhole (Lobby)
+		end
 	end
 	return list[i or math.random(1, #list)]
 end
@@ -185,6 +217,7 @@ function Raid.resetWorld()
 	Raid.world.resets += 1
 	ctx.Loot.reset(Raid.world.seed)
 	ctx.Doors.reset()
+	ctx.Hazards.reset()
 	ctx.AI.reset()
 	Raid.world.status = "RUNNING"
 end
@@ -475,7 +508,9 @@ function Raid.deathInfo(char)
 	if lh and os.clock() - lh.at < 30 then
 		local a = lh.attacker
 		local name = "UNKNOWN"
-		if typeof(a) == "Instance" then
+		if type(a) == "string" then
+			name = a -- a map hazard (the border sniper)
+		elseif typeof(a) == "Instance" then
 			if a:IsA("Player") then
 				name = a.DisplayName
 			elseif a:IsA("Model") then
@@ -569,7 +604,7 @@ local function examine(player, h, g, c)
 		return fail("BUSY")
 	end
 	local d = Items.defs[it.id]
-	local t = 1.2 + (Items.RARITY[d.rarity] or 0) * 0.7
+	local t = (1.2 + (Items.RARITY[d.rarity] or 0) * 0.7) * (1 - Progress.bonus(prof.skills, "intellect"))
 	examining[player] = true
 	ctx.Remotes.note(player, "progress", { label = "EXAMINING", t = t })
 	task.delay(t, function()
@@ -584,6 +619,8 @@ local function examine(player, h, g, c)
 		end
 		prof.known[it.id] = true
 		ctx.Economy.addXp(prof, Progress.XP.examine)
+		ctx.Economy.skillUp(player, prof, "intellect", 2)
+		ctx.Economy.skillUp(player, prof, "attention", 0.5)
 		ctx.Profiles.markDirty(player)
 		ctx.Remotes.note(player, "toast", { text = "EXAMINED: " .. string.upper(d.name) .. "  +" .. Progress.XP.examine .. " XP", tone = "good" })
 		Raid.push(player)
@@ -799,6 +836,48 @@ function Raid.inv(player, p)
 			return res
 		end
 		done = true
+	elseif op == "repairKit" then
+		-- the gunsmith repair kit on a weapon, out of raid: its points restore condition with little wear (Tarkov)
+		if inRaid or sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		if type(p.kit) ~= "string" or #p.kit > 40 then
+			return fail("BAD_INPUT")
+		end
+		local it, kit = me.items[g or ""], me.items[p.kit]
+		local kd = kit and Items.defs[kit.id]
+		local d = it and Items.defs[it.id]
+		if not it or not kd or not kd.repair then
+			return fail("NO_ITEM")
+		end
+		if not (d.kind == "weapon" or d.kind == "pistol") then
+			return fail("NOT_REPAIRABLE", "The kit is for weapons.")
+		end
+		local cur, max = TD.condition(it)
+		local left = kit.pts or kd.repair.points
+		local pts = math.min(max - cur, left)
+		if pts < 0.5 then
+			return fail("NOTHING_TO_REPAIR", "It is in full condition.")
+		end
+		kit.pts = left - pts
+		local newMax = max - pts * TD.KIT_DEGRADE * (1 - Progress.bonus(prof.skills, "intellect"))
+		ctx.Economy.skillUp(player, prof, "intellect", 3)
+		it.wear, it.wmax = math.min(newMax, cur + pts), newMax
+		it.mf, it.mfk, it.mfh = nil, nil, nil
+		if kit.pts < 1 then
+			Inv.take(me, p.kit)
+		end
+		done = true
+		ctx.Remotes.note(player, "toast", { text = string.format("REPAIRED %s  +%.1f", string.upper(d.name), pts), tone = "good" })
+	elseif op == "sort" then
+		-- Tarkov's stash SORT (out of raid)
+		if inRaid or sc then
+			return fail("NOT_AUTHORIZED")
+		end
+		done, err = Inv.sortStash(me)
+		if not done then
+			return fail(err or "FAILED", err == "NO_SPACE" and "The stash can't be sorted with this much in it." or nil)
+		end
 	elseif op == "discard" then
 		if inRaid or sc then
 			return fail("NOT_AUTHORIZED")
@@ -939,12 +1018,66 @@ local function saveSettings(player, p)
 		end
 		return true
 	end
-	if not (num("fov", 65, 100) and num("sens", 0.2, 3) and num("quality", 0, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
+	if not (num("headBob", 0.2, 1) and num("quickBar", 1, 3) and num("aimSens", 0.2, 3) and num("pfxBright", -0.5, 0.5) and num("pfxSat", -1, 1)
+		and num("pfxClarity", -0.5, 0.5) and num("pfxGrade", 0, 4) and num("pfxGradeK", 0, 1) and num("volMaster", 0, 1) and num("volFx", 0, 1)
+		and num("volUi", 0, 1) and num("volAmb", 0, 1)) then
+		return fail("BAD_INPUT")
+	end
+	if not (num("fov", 50, 100) and num("sens", 0.2, 3) and num("quality", 0, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
 		and bool("reduceMotion") and bool("film") and bool("reticle") and bool("adsToggle") and bool("lens") and bool("mblur") and bool("curve") and bool("hitfx")) then
 		return fail("BAD_INPUT")
 	end
 	if s.quality then
 		s.quality = math.floor(s.quality + 0.5) -- graphics preset: 0 POTATO, 1 LOW, 2 MEDIUM, 3 HIGH
+	end
+	-- key rebinding, one action per request: { bind = { action, key (KeyCode name, nil = default), mod } }
+	if p.bindsReset == true then
+		s.binds = {}
+	end
+	if p.bind ~= nil then
+		local b = p.bind
+		if type(b) ~= "table" or type(b.action) ~= "string" or not InputMap[b.action] then
+			return fail("BAD_INPUT")
+		end
+		s.binds = s.binds or {}
+		if b.key == nil then
+			s.binds[b.action] = nil
+		else
+			local okKey = type(b.key) == "string" and #b.key <= 24 and pcall(function()
+				return Enum.KeyCode[b.key]
+			end)
+			if not okKey or (b.mod ~= nil and b.mod ~= "Alt" and b.mod ~= "Shift" and b.mod ~= "Ctrl") then
+				return fail("BAD_INPUT")
+			end
+			s.binds[b.action] = { key = b.key, mod = b.mod }
+		end
+	end
+	-- Tarkov's wish list: { wish = { id = item id, on = bool } }
+	if p.wish ~= nil then
+		local wq = p.wish
+		if type(wq) ~= "table" or type(wq.id) ~= "string" or not Items.defs[wq.id] or type(wq.on) ~= "boolean" then
+			return fail("BAD_INPUT")
+		end
+		s.wish = s.wish or {}
+		s.wish[wq.id] = wq.on or nil
+	end
+	-- Tarkov quick slots 4 to 0: { quick = { slot = "4", g = item guid or "" to clear } }; one key per item
+	if p.quick ~= nil then
+		local q = p.quick
+		if type(q) ~= "table" or type(q.slot) ~= "string" or not string.match(q.slot, "^[4-90]$") or (q.g ~= nil and (type(q.g) ~= "string" or #q.g > 40)) then
+			return fail("BAD_INPUT")
+		end
+		s.quick = s.quick or {}
+		if q.g == nil or q.g == "" then
+			s.quick[q.slot] = nil
+		else
+			for k, v in s.quick do
+				if v == q.g then
+					s.quick[k] = nil
+				end
+			end
+			s.quick[q.slot] = q.g
+		end
 	end
 	ctx.Profiles.markDirty(player)
 	return ok()
@@ -958,6 +1091,9 @@ local function onPlayerAdded(player)
 			player:Kick("Zero Return: profile unavailable (" .. tostring(recovered) .. "). Please rejoin in a minute.")
 		end
 		return
+	end
+	if not prof.msgs then
+		ctx.Economy.mail(prof, "system", "Welcome to Relay 7. Trade at the counters, plan at the ops table, board the van. Insurance returns and task rewards are reported here.")
 	end
 	ctx.Chars.spawn(player, Raid.safeSpawnCF(player), nil)
 	Raid.push(player)

@@ -340,7 +340,7 @@ function Animator.init(c)
 				consider(char, camPos)
 			end
 		end
-		for _, folderName in { "ZR_AI", "ZR_Showroom" } do
+		for _, folderName in { "ZR_AI", "ZR_Showroom", "ZR_Traders" } do
 			local folder = workspace:FindFirstChild(folderName)
 			if folder then
 				for _, model in folder:GetChildren() do

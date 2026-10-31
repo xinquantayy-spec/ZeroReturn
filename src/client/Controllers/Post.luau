@@ -16,6 +16,7 @@ local Textures = require(Shared.Textures)
 -- smoke (0..1) is set by the Grenade controller while the camera is inside a cloud
 local Post = {
 	dmg = 0, pain = 0, burstAmt = 0, low = 0, envExposure = 0, grainMul = 1, flash = 0, smoke = 0,
+	nvExposure = 0, nvGrain = 1, nvBloom = 0, -- set by NightVision while goggles are down
 	lum = 1, hazeTint = Color3.fromRGB(64, 70, 68), -- set by Atmos from the light and fog
 }
 local ctx
@@ -160,7 +161,8 @@ end
 
 local function updateGrain()
 	-- grain halved on owner request (setting 0.5 -> ~15% opacity by day, ~21% at night)
-	local a = math.clamp(grainBase * 0.3 * Post.grainMul, 0, 0.6)
+	local base = Post.nvGrain > 1 and math.max(grainBase, 0.6) or grainBase -- a tube's noise shows whatever the setting
+	local a = math.clamp(base * 0.3 * Post.grainMul * Post.nvGrain, 0, 0.6)
 	if math.abs(a - grainShown) > 0.004 then
 		grainShown = a
 		grainA.ImageTransparency = 1 - a
@@ -275,10 +277,10 @@ local function step(dt)
 	Post.burstAmt = math.max(0, Post.burstAmt - dt * 4)
 	Post.flash = math.max(0, Post.flash - dt * 5)
 	updateGrain()
-	exposure = baseExposure + Post.envExposure + indoor * 0.55 + Post.burstAmt * 0.6 + Post.flash * 2.2
+	exposure = baseExposure + Post.envExposure + indoor * 0.55 + Post.burstAmt * 0.6 + Post.flash * 2.2 + Post.nvExposure
 	Lighting.ExposureCompensation = exposure
 	if bloom and bloom.Enabled then
-		bloom.Intensity = 0.55 + Post.burstAmt * 1.2
+		bloom.Intensity = 0.55 + Post.burstAmt * 1.2 + Post.nvBloom
 	end
 	-- damage / pain / low health (from the server health model)
 	local v = ctx.State.vitals

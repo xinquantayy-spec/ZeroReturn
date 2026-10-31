@@ -4,13 +4,10 @@
 -- equipment; their pockets/rig/backpack are searched the same way. Dropped gear forms ground piles.
 -- All moves go through Raid.inv (holder refs "c:<cid>"); this module owns access checks and views.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
+local Progress = require(Shared.Progress)
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
-local WeaponModels = require(Shared.WeaponModels)
 local GunBuild = require(Shared.GunBuild)
-local ItemMeta = require(Shared.ItemMeta)
-local Equipment = require(Shared.Equipment)
-local AssetMeta = require(Shared.AssetMeta)
 local Inv = require(script.Parent.Inv)
 local WP = require(Shared.WeaponParts)
 
@@ -73,6 +70,8 @@ local POOLS = {
 		{ id = "KST_MAG", w = 6, a = { 0, 30 }, at = "A76_PS" }, { id = "SPARROW_MAG", w = 5, a = { 0, 30 }, at = "A9_PST" },
 		{ id = "P9_PISTOL", w = 4 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "KST_RIFLE", w = 1 },
 		{ id = "GREN_RK5", w = 6 }, { id = "GREN_F7", w = 2 }, { id = "GREN_STUN", w = 3 }, { id = "GREN_SMOKE", w = 4 },
+		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then)
+		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		-- M14 weapon parts (Tarkov weapon boxes hold mods too)
 		{ id = "GRIP_V", w = 3 }, { id = "GRIP_STUB", w = 2 }, { id = "GRIP_ANG", w = 1 }, { id = "LIGHT_T", w = 3 }, { id = "LASER_DOT", w = 2 },
 		{ id = "RED_DOT", w = 2 }, { id = "SIGHT_MICRO", w = 1 }, { id = "MNT_RISER", w = 2 }, { id = "R17_FH_A2", w = 3 }, { id = "R17_COMP", w = 2 },
@@ -121,11 +120,12 @@ local POOLS = {
 	vault = {
 		{ id = "GOLD_CHAIN", w = 8 }, { id = "BRASS_LION", w = 3 }, { id = "COLD_WALLET", w = 3 }, { id = "MIL_CIRCUIT", w = 4 },
 		{ id = "SEALED_DRIVE", w = 5 }, { id = "INTEL_FOLDER", w = 6 }, { id = "CAPT_WATCH", w = 6 }, { id = "LEDGER", w = 2 },
-		{ id = "FLASH_MODULE", w = 5 }, { id = "GREN_F7", w = 2 },
+		{ id = "FLASH_MODULE", w = 5 }, { id = "GREN_F7", w = 2 }, { id = "TH_T7", w = 0.3 }, { id = "NV_QUAD", w = 0.6 },
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_MALL_STAFF", w = 3 }, { id = "KEY_MEDIQ", w = 2 }, { id = "KEY_MALL_SECURITY", w = 1 },
+		{ id = "KEY_BY_314", w = 3 }, { id = "KEY_BY_RECORDS", w = 4 }, { id = "KEY_BY_BOILER", w = 2 },
 	},
 	-- M13 Meridian Mall
 	register = {
@@ -136,7 +136,7 @@ local POOLS = {
 		{ id = "WIRES", w = 10 }, { id = "CAPACITOR", w = 8 }, { id = "LOGIC_BOARD", w = 8 }, { id = "HDD", w = 8 },
 		{ id = "RAM_STICK", w = 8 }, { id = "POWER_BANK", w = 8 }, { id = "PHONE", w = 6 }, { id = "SIGNAL_COIL", w = 6 },
 		{ id = "BATTERY", w = 4 }, { id = "FLASH_MODULE", w = 5 }, { id = "GPU_CARD", w = 3 }, { id = "SEALED_DRIVE", w = 2 },
-		{ id = "DECK_TRANSCEIVER", w = 2 }, { id = "MIL_CIRCUIT", w = 1 },
+		{ id = "DECK_TRANSCEIVER", w = 2 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "NV_MONO", w = 0.4 }, { id = "NV_QUAD", w = 0.1 },
 	},
 	pharmacy = {
 		{ id = "BANDAGE", w = 18 }, { id = "PAINKILLERS", w = 16 }, { id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 },
@@ -385,7 +385,10 @@ local function searchLoop(player, c)
 	local list = units(c)
 	while (c.revealed[player] or 0) < #list do
 		local nextUnit = list[(c.revealed[player] or 0) + 1]
-		local t = revealCost(c, nextUnit)
+		-- Attention and Search shorten every reveal (at most by half)
+		local sprof = ctx.Profiles and ctx.Profiles.get(player)
+		local sk = sprof and sprof.skills
+		local t = revealCost(c, nextUnit) * math.max(0.5, 1 - Progress.bonus(sk, "attention") - Progress.bonus(sk, "search"))
 		ctx.Remotes.note(player, "search", { cid = c.id, t = t, label = c.label })
 		task.wait(t)
 		if containers[c.id] ~= c or not c.viewers[player] or not reach(player, c, 2) then
@@ -396,6 +399,9 @@ local function searchLoop(player, c)
 		c.revealed[player] = (c.revealed[player] or 0) + 1
 		if ctx.Economy then
 			ctx.Economy.raidXp(player, 4)
+			ctx.Economy.skillUp(player, sprof, "search", 0.4)
+			ctx.Economy.skillUp(player, sprof, "attention", 0.25)
+			ctx.Economy.skillUp(player, sprof, "perception", 0.15)
 		end
 		list = units(c)
 		send(player, c)
@@ -635,103 +641,8 @@ end
 
 local THICK = { ammo = 0.35, mag = 0.5, med = 0.4, food = 0.55, key = 0.1, loot = 0.3, quest = 0.18, mod = 0.3, rig = 0.5, backpack = 0.8, armor = 0.6, helmet = 0.8 }
 local M = Enum.Material
--- item model material key (build_items_*.py) -> Roblox material, reflectance, transparency
-local IT_MAT = {
-	metal = { M.Metal }, gunmetal = { M.Metal }, brass = { M.Metal, 0.05 }, copper = { M.Metal, 0.05 }, gold = { M.Foil, 0.08 },
-	chrome = { M.Metal, 0.15 }, plastic = { M.SmoothPlastic }, polymer = { M.Plastic }, rubber = { M.Rubber }, fabric = { M.Fabric },
-	leather = { M.Leather }, paper = { M.SmoothPlastic }, cardboard = { M.Cardboard }, wood = { M.Wood }, ceramic = { M.SmoothPlastic, 0.02 },
-	glass = { M.Glass, 0.05, 0.45 }, emissive = { M.Neon }, foil = { M.Foil },
-}
--- worn equipment lying around: which slot shows it, and how it lies (armour and rigs front up)
-local WEAR_SLOT = { helmet = "head", headwear = "head", headset = "ears", facecover = "face", armor = "armor", rig = "rig", backpack = "back" }
-local WEAR_LIE = { armor = CFrame.Angles(-math.pi / 2, 0, 0), rig = CFrame.Angles(-math.pi / 2, 0, 0) }
-
-local function assetLib()
-	return game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
-end
-
-local function quietPart(p)
-	p.Anchored = true
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	p.Massless = true
-end
-
--- the item's Blender model (ItemMeta pieces) at surface cf; returns its bounding box (size, centre CFrame) or nil
-local function placeItemModel(model, id, cf)
-	local meta = ItemMeta[id]
-	local lib = assetLib()
-	if not meta or not lib then
-		return nil
-	end
-	local n = 0
-	for _, pc in meta.pieces do
-		local src = lib:FindFirstChild("ZR_IT_" .. id .. "__" .. pc[1])
-		if src then
-			local p = src:Clone()
-			quietPart(p)
-			local mm = IT_MAT[pc[1]] or IT_MAT.plastic
-			p.Material = mm[1]
-			p.Reflectance = mm[2] or 0
-			p.Transparency = mm[3] or 0
-			p.Color = Color3.new(1, 1, 1)
-			p.CastShadow = meta.size.Magnitude > 0.5 and pc[1] ~= "glass"
-			p.CFrame = cf * CFrame.new(pc[2])
-			p.Parent = model
-			n += 1
-		end
-	end
-	if n == 0 then
-		return nil
-	end
-	return meta.size, cf * CFrame.new(meta.center)
-end
-
--- worn equipment: the same meshes the characters wear, tinted, lying on the surface
-local function placeWearModel(model, d, cf)
-	local slot = WEAR_SLOT[d.kind]
-	local vis = slot and Equipment.visualOf(slot, d.id)
-	local lib = assetLib()
-	if not vis or not lib then
-		return nil
-	end
-	local host = vis.pieces[1] and vis.pieces[1].host
-	local lie = WEAR_LIE[d.kind] or CFrame.new()
-	local parts, lo, hi = {}, nil, nil
-	for _, pc in vis.pieces do
-		local src = pc.host == host and lib:FindFirstChild(pc.key)
-		if src then
-			local off = AssetMeta[pc.key] or Vector3.zero
-			table.insert(parts, { src = src, off = off, pc = pc })
-			for _, sx in { -1, 1 } do
-				for _, sy in { -1, 1 } do
-					for _, sz in { -1, 1 } do
-						local c = (lie * CFrame.new(off + src.Size * 0.5 * Vector3.new(sx, sy, sz))).Position
-						lo = lo and lo:Min(c) or c
-						hi = hi and hi:Max(c) or c
-					end
-				end
-			end
-		end
-	end
-	if #parts == 0 then
-		return nil
-	end
-	-- the host frame sits so that the lowest corner touches the surface, centred over the spot
-	local mid = (lo + hi) / 2
-	local base = cf * CFrame.new(-mid.X, -lo.Y, -mid.Z) * lie
-	for _, e in parts do
-		local p = e.src:Clone()
-		quietPart(p)
-		p.Color = e.pc.tint and Color3.fromHex(e.pc.tint) or Color3.new(1, 1, 1)
-		p.Material = (e.pc.mat and Enum.Material[e.pc.mat]) or M.SmoothPlastic
-		p.CastShadow = true
-		p.CFrame = base * CFrame.new(e.off)
-		p.Parent = model
-	end
-	return hi - lo, cf * CFrame.new(0, (hi.Y - lo.Y) / 2, 0)
-end
+local ItemModel = require(Shared.ItemModel)
+local quietPart, placeItemModel, placeWearModel = ItemModel.quiet, ItemModel.placeMeta, ItemModel.placeWear
 local MAT = { med = Enum.Material.Fabric, rig = Enum.Material.Fabric, backpack = Enum.Material.Fabric, armor = Enum.Material.Fabric, key = Enum.Material.Metal, mag = Enum.Material.Metal, ammo = Enum.Material.Metal, mod = Enum.Material.Metal }
 
 -- an item lying at surface cf: weapons are built from the shared weapon spec lying on their side, other items
@@ -752,19 +663,8 @@ local function looseModel(holder, g, it, cf)
 	-- guns and gun parts lie on their right side, built from their Blender parts as they are put together
 	local lie = cf * CFrame.Angles(0, 0, math.rad(90))
 	local pieces
-	if d.kind == "weapon" or d.kind == "pistol" then
-		local wspec = WeaponModels.build(holder.items, it, lie, 1)
-		if wspec then
-			pieces = {}
-			for _, p in wspec.parts do
-				table.insert(pieces, p)
-			end
-			for _, p in wspec.mag do
-				table.insert(pieces, p)
-			end
-		end
-	elseif d.kind == "mod" or d.kind == "mag" then
-		pieces = GunBuild.pieces(holder.items, g, lie, 1)
+	if d.kind == "weapon" or d.kind == "pistol" or d.kind == "mod" or d.kind == "mag" then
+		pieces = ItemModel.gunPieces(holder.items, g, lie)
 	end
 	if pieces and #pieces > 0 then
 		-- settle the build on the surface, centred over the spot (box in the spot's own yaw frame)

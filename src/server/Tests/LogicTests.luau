@@ -131,6 +131,186 @@ function T.run(ctx)
 	local sg = findId(h, "A62_FMJ")
 	check("split stack", (Inv.split(h, sg, 10, { c = "stash", x = 5, y = 5, r = 0 })) and countId(h, "A62_FMJ") == 80 and inv(h))
 
+	-- Tarkov stash SORT: by kind, larger first, nothing overlaps, nothing lost
+	do
+		local sh = Inv.newHolder("profile")
+		for _, e in { { "BANDAGE", 1 }, { "R17_RIFLE", 1 }, { "A62_FMJ", 40 }, { "ARMOR_C2", 1 }, { "WATER", 1 }, { "R17_MAG", 1 } } do
+			local ng, ni = Inv.newItem(e[1], e[2])
+			Inv.place(sh, ng, ni, { "stash" })
+		end
+		local before = 0
+		for _ in sh.grids.stash do
+			before += 1
+		end
+		local okSort = Inv.sortStash(sh)
+		local after, first = 0, nil
+		for gg, pp in sh.grids.stash do
+			after += 1
+			if pp.x == 1 and pp.y == 1 then
+				first = sh.items[gg].id
+			end
+		end
+		check("stash sort keeps every item, no overlaps", okSort and before == after and before == 6 and inv(sh))
+		check("stash sort puts weapons first", first == "R17_RIFLE")
+	end
+	-- Tarkov's default PC keys: no two actions on the same key and modifier; chords only on Alt, Shift or Ctrl
+	do
+		local IM = require(Shared.InputMap)
+		local seen, dup, badMod = {}, nil, false
+		for action, spec in IM do
+			if spec.mod ~= nil and spec.mod ~= "Alt" and spec.mod ~= "Shift" and spec.mod ~= "Ctrl" then
+				badMod = true
+			end
+			for _, k in spec.keys do
+				local id = k.Name .. "+" .. tostring(spec.mod)
+				if seen[id] then
+					dup = action .. "/" .. seen[id]
+				end
+				seen[id] = action
+			end
+		end
+		check("input map: one action per key and modifier" .. (dup and (" (" .. dup .. ")") or ""), dup == nil and not badMod)
+		check("input map: Tarkov keys (X prone, B fire mode, Alt+T magazine, Shift+T chamber, V melee, 4 quick slot)",
+			IM.Prone.keys[1] == Enum.KeyCode.X and IM.FireMode.keys[1] == Enum.KeyCode.B and IM.MagCheck.mod == "Alt"
+			and IM.ChamberCheck.mod == "Shift" and IM.Knife.keys[1] == Enum.KeyCode.V and IM.Quick4.keys[1] == Enum.KeyCode.Four)
+	end
+	-- M11 part B (Tarkov): no mechanical malfunctions above 93 % condition, likelier as it wears; big magazines feed badly
+	do
+		local C = ctx.Combat
+		local m95 = C.malfChance(95, nil, 0)
+		local m50 = C.malfChance(50, nil, 0)
+		local m20 = C.malfChance(20, nil, 0)
+		local _, f60 = C.malfChance(100, Items.defs.R17_MAG60, 0)
+		local m50hot = C.malfChance(50, nil, 0.7)
+		check("malfunctions: none above 93%, rising with wear, x2 when hot, drums feed badly", m95 == 0 and m50 > 0 and m20 > m50 and f60 > 0 and math.abs(m50hot - 2 * m50) < 1e-9)
+		local TDm = require(Shared.TraderData)
+		local pts, cost, newMax = TDm.repairQuote("vos", { id = "R17_RIFLE", wear = 60 })
+		check("trader repair: 40 points, a cost, the maximum drops", pts == 40 and cost and cost > 0 and newMax and newMax < 100 and newMax > 90)
+		check("trader repair: VOS does not repair armour", TDm.repairQuote("vos", { id = "ARMOR_C4", dur = 10 }) == nil and TDm.repairQuote("tilda", { id = "ARMOR_C4", dur = 10 }) ~= nil)
+		local gp = Items.gearPenalties({ slots = { armor = "a", head = "h" }, items = { a = { id = "ARMOR_C4" }, h = { id = "HELMET_C3" } } })
+		check("gear penalties add up (movement, turn, ergonomics)", gp.speed == -4 and gp.turn == -5 and gp.ergo == -8)
+	end
+	-- Tarkov's messenger keeps the last 40 messages, newest last
+	do
+		local fake = {}
+		for i = 1, 45 do
+			ctx.Economy.mail(fake, "vos", "message " .. i)
+		end
+		check("messenger keeps the last 40 messages", #fake.msgs == 40 and fake.msgs[40].x == "message 45" and fake.msgs[1].x == "message 6")
+	end
+	-- the flea market (Tarkov's rules): fee formula, offer slots by rating, banned kinds, offers sell or come back
+	do
+		local FR = require(Shared.FleaRules)
+		local even, over, under = FR.fee(10000, 1, 10000), FR.fee(10000, 1, 20000), FR.fee(10000, 1, 5000)
+		check("flea fee: 6 % at the base value, steeper when overpriced", even == 600 and over == 1075 and under == 538)
+		check("flea offer slots by rating", FR.slots(0.19) == 1 and FR.slots(0.2) == 2 and FR.slots(7) == 3 and FR.slots(150) == 8 and FR.slots(1000) == 10)
+		check("flea bans secure containers", not FR.tradeable("SECURE_S") and FR.tradeable("R17_RIFLE"))
+		local o1, o2 = FR.offersFor("R17_RIFLE", 77), FR.offersFor("R17_RIFLE", 77)
+		local same, sorted = #o1 > 0 and #o1 == #o2, true
+		for i, o in o1 do
+			same = same and o.price == o2[i].price and o.stock == o2[i].stock
+			sorted = sorted and (i == 1 or o.price >= o1[i - 1].price)
+		end
+		check("flea operator offers are the same on every server and cheapest first", same and sorted)
+		local now = os.time()
+		local fp = Inv.newHolder("profile")
+		fp.money, fp.known = 0, {}
+		local mp = FR.marketPrice("R17_RIFLE")
+		local sg, si = Inv.newItem("R17_RIFLE", 1, { fir = true })
+		local eg, ei = Inv.newItem("A62_FMJ", 30, { fir = true })
+		Inv.place(fp, sg, si, { "stash" })
+		Inv.place(fp, eg, ei, { "stash" })
+		fp.flea = { rating = 0.2, offers = {
+			cheap = { id = "R17_RIFLE", n = 1, price = math.floor(mp * 0.5), t = now - 3600, b = Inv.take(fp, sg) },
+			dear = { id = "A62_FMJ", n = 30, price = FR.marketPrice("A62_FMJ") * 30 * 100, t = now - FR.DURATION - 60, b = Inv.take(fp, eg) },
+		} }
+		ctx.Flea.resolve(nil, fp, now)
+		check("flea: a cheap offer sells (money, rating, mail), an overpriced one expires back to the stash",
+			fp.money == math.floor(mp * 0.5) and math.abs(fp.flea.rating - (0.18 + math.floor(mp * 0.5) / 50000 * 0.01)) < 1e-9 and next(fp.flea.offers) == nil and fp.items[eg] ~= nil and Inv.locate(fp, eg) == "grid" and #fp.msgs == 2)
+	end
+	-- goggles (Tarkov): a gear component that goes on a helmet's or strap's mount, not on every helmet
+	do
+		local WPm = require(Shared.WeaponParts)
+		check("goggles are gear (kind nvg) with a tube record", Items.defs.NV_BINO.kind == "nvg" and Items.defs.TH_T7.part.nv.thermal == true)
+		check("goggles fit mounted helmets and the strap, not the shell helmet", WPm.fits("HELMET_C3", "mount", "NV_BINO") and WPm.fits("NV_STRAP", "mount", "NV_QUAD") and not WPm.fits("HELMET_C2", "mount", "NV_BINO"))
+		local nh = Inv.newHolder("profile")
+		local hg, hi = Inv.newItem("HELMET_C4", 1)
+		local ng, ni = Inv.newItem("NV_MONO", 1)
+		Inv.place(nh, hg, hi, { "stash" })
+		Inv.place(nh, ng, ni, { "stash" })
+		local okA = Inv.attachPart(nh, hg, "mount", ng, { "stash" })
+		local okI = Inv.check(nh)
+		local okD = Inv.detachPart(nh, hg, "mount", { "stash" })
+		check("goggles go on a helmet's mount and come off again", okA and okI and okD and not (nh.items[hg].mods and nh.items[hg].mods.mount) and Inv.locate(nh, ng) == "grid")
+	end
+	-- ballistics (Tarkov): drop grows with distance; a zeroed arc meets the line of sight at the zero distance
+	do
+		local Bl = require(Shared.Ballistics)
+		local v0, k = Bl.muzzle({ velocity = 880 }, 1), Bl.drag({ class = "rifle" })
+		local a100, a300 = Bl.zeroAngle(100, v0, k), Bl.zeroAngle(300, v0, k)
+		check("ballistics: zeroing further tilts the bore more", a100 > 0 and a300 > a100 * 2)
+		local sky = RaycastParams.new()
+		sky.FilterType = Enum.RaycastFilterType.Include
+		sky.FilterDescendantsInstances = {}
+		local o = Vector3.new(0, 3000, 0)
+		local _, endPos = Bl.trace(o, Bl.tilt(Vector3.new(1, 0, 0), a100), v0, k, 100 * Bl.STUDS_PER_M, sky)
+		local _, endFlat = Bl.trace(o, Vector3.new(1, 0, 0), v0, k, 100 * Bl.STUDS_PER_M, sky)
+		check("ballistics: a 100 m zero crosses the sight line at 100 m; an untilted shot has dropped", math.abs(endPos.Y - o.Y) < 0.06 and (o.Y - endFlat.Y) > 0.15)
+		-- a bullet in flight (server, real time) reaches what is in its path
+		local box = Instance.new("Part")
+		box.Anchored, box.Size, box.Position = true, Vector3.new(4, 6, 1), Vector3.new(5000, 3000, -100)
+		box.Parent = workspace
+		local only = RaycastParams.new()
+		only.FilterType = Enum.RaycastFilterType.Include
+		only.FilterDescendantsInstances = { box }
+		local got
+		Bl.fly(Vector3.new(5000, 3000, 0), Vector3.new(0, 0, -1), v0, k, 400, only, function(res)
+			got = res.Instance
+		end)
+		local t0 = os.clock()
+		while not got and os.clock() - t0 < 1 do
+			task.wait()
+		end
+		box:Destroy()
+		check("ballistics: a bullet in flight hits what is in its path", got == box)
+	end
+	-- propane cylinders (Customs): a hit bursts one, a neighbour goes with it, a new raid puts them back
+	do
+		local H = ctx.Hazards
+		local holder = Instance.new("Folder")
+		holder.Parent = workspace
+		local a = H.register(holder, CFrame.new(6000, 2000, 0))
+		local b = H.register(holder, CFrame.new(6004, 2000, 0))
+		local burst = H.hit(a.model.PrimaryPart, nil)
+		task.wait(0.8)
+		local gone = a.model == nil and b.model == nil
+		H.reset()
+		local back = a.model ~= nil and b.model ~= nil
+		for i = #H.spots, 1, -1 do
+			if H.spots[i] == a or H.spots[i] == b then
+				table.remove(H.spots, i)
+			end
+		end
+		holder:Destroy()
+		check("propane: a hit bursts it and its neighbour; a new raid restores both", burst and gone and back)
+	end
+	-- border snipers: Border Yard registers edge strips, with its spawns left clear
+	check("border sniper strips on Border Yard", #ctx.Hazards.zones >= 4)
+	-- seasons (Tarkov 0.16): by the calendar, and every rolled raid carries one
+	do
+		local Env = require(Shared.Env)
+		check("seasons by month", Env.seasonOf(1) == "winter" and Env.seasonOf(4) == "spring" and Env.seasonOf(7) == "summer" and Env.seasonOf(10) == "autumn" and Env.seasonOf(12) == "winter")
+		local e = Env.roll(Random.new(5))
+		check("a rolled raid has a season", Env.SEASONS[e.season] ~= nil)
+	end
+	-- the movement guard: a sprint and a vault fit in a sample, a 30-stud jump does not
+	do
+		local h, up = ctx.Guard.limits(18, 0.25)
+		check("movement guard limits: sprint plus vault allowed, teleports caught", h > 18 * 0.25 + 3 and h < 30 and up > 7 and up < 30)
+	end
+	-- the INSPECT window's per-class penetration chances use the same formula as hits (Health.luau)
+	check("penetration chance formula shared", math.abs(Items.penChance(26, 2, 1) - 0.75) < 1e-6 and Items.penChance(26, 4, 1) == 0 and Items.penChance(72, 6, 1) == 1)
+
 	-- ammo + magazines
 	local mg, mi = Inv.newItem("R17_MAG", 1, { a = 0 })
 	Inv.place(h, mg, mi, { "stash" })
@@ -523,7 +703,13 @@ function T.run(ctx)
 		local QD = require(Shared.QuestData)
 		local HD = require(Shared.HideoutData)
 		check("xp curve", P.levelOf(0) == 1 and P.levelOf(999) == 1 and P.levelOf(1000) == 2 and P.xpFor(3) > P.xpFor(2))
-		check("skill levels", P.skillLevel(0) == 0 and P.skillLevel(250) == 2 and P.skillLevel(5000) == 10 and math.abs(P.bonus({ endurance = 500 }, "endurance") - 0.15) < 1e-6)
+		check("skill levels (Tarkov: level n costs min(10n, 100), elite at 51)", P.skillLevel(0) == 0 and P.skillLevel(10) == 1 and P.skillLevel(29) == 1 and P.skillLevel(30) == 2 and P.skillLevel(550) == 10 and P.skillLevel(4649) == 50 and P.skillLevel(4650) == 51 and P.skillLevel(99999) == 51 and math.abs(P.bonus({ endurance = 550 }, "endurance") - 0.06) < 1e-6)
+		local m1 = ctx.Economy.fatigueMul("t", "endurance", 0)
+		local _, ff = ctx.Economy.fatigueMul("t", "endurance", 0)
+		ff.n, ff.fresh = 3, false
+		local m3 = ctx.Economy.fatigueMul("t", "endurance", 10)
+		local m4 = ctx.Economy.fatigueMul("t", "endurance", 300)
+		check("skill fatigue: 129% fresh, 36% after three points, 100% after 200 s idle", math.abs(m1 - 1.29) < 1e-9 and math.abs(m3 - 0.36) < 1e-9 and m4 == 1)
 		local rifle = TD.offers.vos[1]
 		check("loyalty discounts prices", TD.price("vos", rifle, 2) < TD.price("vos", rifle, 1) and TD.price("vos", rifle, 1) > Items.defs[rifle.id].value)
 		check("ammo offers sell a stack", TD.price("vos", TD.offers.vos[9], 1) == math.ceil(Items.defs["A62_FMJ"].value * 60 * 1.25))
@@ -841,6 +1027,90 @@ function T.run(ctx)
 		S.serverId = mine
 		check("lock blocks other server", d1 ~= nil and not w2ok and w2err == "LOCK_LOST")
 		check("release ok", (S.write(key, { v = 3 }, true)))
+	end
+
+	-- Relay 7 lobby (L1-L7): the bunker as built, the station prompts, the screens, the range rules
+	if ctx and ctx.World and ctx.World.safehouse and ctx.World.safehouse.model and ctx.Lobby and ctx.Range then
+		local sh = ctx.World.safehouse
+		local R7 = ctx.World.Relay7
+		local kits, fallback, shadows, prompts, losOff = 0, 0, 0, 0, 0
+		local screensSeen = {}
+		for _, d in sh.model:GetDescendants() do
+			if d:IsA("Model") and d:GetAttribute("Kit") then
+				kits += 1
+				if d:FindFirstChild("KitFallback") then
+					fallback += 1
+				end
+			elseif d:IsA("Light") and d.Shadows then
+				shadows += 1
+			elseif d:IsA("ProximityPrompt") then
+				prompts += 1
+				if not d.RequiresLineOfSight then
+					losOff += 1
+				end
+				local sc = string.match(d:GetAttribute("Screen") or "", "^([^:]+)")
+				if sc then
+					screensSeen[sc] = true
+				end
+			end
+		end
+		check("lobby: under 300 kit props", kits > 200 and kits < 300)
+		check("lobby: at most 6 shadow-casting lights", shadows <= 6)
+		local lib = game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+		if lib and lib:FindFirstChild("ZR_MK_Van__paint") then
+			check("lobby: every kit prop built from its meshes", fallback == 0)
+		end
+		check("lobby: no prompt reaches through a wall", prompts >= 25 and losOff == 0)
+		local missing = {}
+		for _, k in { "stash", "mirror", "deploy", "squad", "tasks", "insurance", "trader", "mail", "hideout", "modding", "van", "scav" } do
+			if not screensSeen[k] then
+				table.insert(missing, k)
+			end
+		end
+		check("lobby: every station has its prompt", #missing == 0)
+		check("lobby: twelve beds, lockers and spawns", #sh.spawns == 12 and #sh.lockers == 12)
+		local row = ctx.Lobby.row("NO RAID", "RELAY 7")
+		check("lobby: departure rows are 24 flaps", #row == 24 and string.sub(row, -7) == "RELAY 7" and #ctx.Lobby.row(string.rep("X", 30), "LIVE 12:00") == 24)
+		local rowsOk = true
+		for _, st in { { state = "IDLE", inQueue = 0 }, { state = "MATCHING", inQueue = 2, votes = { quay7 = 2 } }, { state = "RUNNING", inRaid = 3 } } do
+			for _, r in ctx.Lobby.departure(st, workspace:GetServerTimeNow()) do
+				rowsOk = rowsOk and #r == 24
+			end
+		end
+		check("lobby: departure board fills all four rows", rowsOk)
+		-- the range: a booth gives its lane, downrange of the line or behind the booths gives none
+		local laneOk = true
+		for i, l in R7.LANES do
+			laneOk = laneOk and ctx.Range.laneAt(R7.P(R7.FIRING_LINE + 4, 4, (l[1] + l[2]) / 2)) == i
+		end
+		check("range: each booth is its lane", laneOk)
+		check("range: no lane downrange or outside", ctx.Range.laneAt(R7.P(R7.FIRING_LINE - 3, 4, 90)) == nil and ctx.Range.laneAt(R7.P(60, 4, 20)) == nil)
+		-- from each booth no target hides another (their faces do not overlap in bearing)
+		local hidden = false
+		local byLane = {}
+		for _, t in R7.targets() do
+			byLane[t.lane] = byLane[t.lane] or {}
+			table.insert(byLane[t.lane], t)
+		end
+		for lane, list in byLane do
+			local mid = (R7.LANES[lane][1] + R7.LANES[lane][2]) / 2
+			for i = 1, #list do
+				for j = i + 1, #list do
+					local a, b = list[i], list[j]
+					local w = 0.6
+					local function span(t)
+						local dx = (R7.FIRING_LINE + 4) - t.x
+						return (t.z - w - mid) / dx, (t.z + w - mid) / dx
+					end
+					local a0, a1 = span(a)
+					local b0, b1 = span(b)
+					if math.min(a1, b1) - math.max(a0, b0) > 0.004 then
+						hidden = true
+					end
+				end
+			end
+		end
+		check("range: thirteen targets, none hidden behind another", #R7.targets() == 13 and not hidden)
 	end
 
 	local summary = string.format("%d passed, %d failed", passed, failed)

@@ -119,20 +119,23 @@ return function(kit, O)
 		end
 	end
 	-- straight stairs: n steps of 1 stud, each `run` deep, from (x, y0, z) along dir; solid down to yBase
+	-- real-size steps (owner, 2026-11-01: real-world scale): each stud of rise is two 0.5-stud steps (16 cm, a real
+	-- stair's rise) over the same footprint, so the flights keep their length and height
 	function H.stairs(parent, x, z, y0, n, run, w, dir, yBase, color, mat)
 		local c, m = color or C.concrete, mat or M.Concrete
-		for k = 1, n do
-			local top = y0 + k
+		local r = run / 2
+		for k = 1, n * 2 do
+			local top = y0 + k * 0.5
 			local h = top - yBase
-			local off = (k - 0.5) * run
+			local off = (k - 0.5) * r
 			if dir == "+x" then
-				B(parent, run, h, w, x + off, yBase + h / 2, z, c, m)
+				B(parent, r, h, w, x + off, yBase + h / 2, z, c, m)
 			elseif dir == "-x" then
-				B(parent, run, h, w, x - off, yBase + h / 2, z, c, m)
+				B(parent, r, h, w, x - off, yBase + h / 2, z, c, m)
 			elseif dir == "+z" then
-				B(parent, w, h, run, x, yBase + h / 2, z + off, c, m)
+				B(parent, w, h, r, x, yBase + h / 2, z + off, c, m)
 			else
-				B(parent, w, h, run, x, yBase + h / 2, z - off, c, m)
+				B(parent, w, h, r, x, yBase + h / 2, z - off, c, m)
 			end
 		end
 	end

@@ -229,7 +229,7 @@ local function updateDeaf()
 		deafEq.LowGain = -6 * k
 	end
 	if world then
-		world.Volume = 1 - 0.5 * k
+		world.Volume = (1 - 0.5 * k) * (ctx.Settings.fxVolume and ctx.Settings.fxVolume() or 1)
 	end
 	if tinnitus then
 		tinnitus.Volume = (tinnitusGain or 0.5) * 1.2 * k

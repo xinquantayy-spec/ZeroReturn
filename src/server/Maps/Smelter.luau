@@ -109,19 +109,21 @@ return function(kit, root)
 	end
 	-- straight stairs: n steps of 1 stud, each `run` deep, from (x, y0, z) along dir ("+x", "-x", "+z", "-z"),
 	-- `w` wide; solid blocks down to yBase so nothing can be walked under
+	-- real-size steps: each stud of rise is two 0.5-stud steps over the same footprint (owner, 2026-11-01)
 	local function stairs(parent, x, z, y0, n, run, w, dir, yBase, color)
-		for k = 1, n do
-			local top = y0 + k
+		local r = run / 2
+		for k = 1, n * 2 do
+			local top = y0 + k * 0.5
 			local h = top - yBase
-			local off = (k - 0.5) * run
+			local off = (k - 0.5) * r
 			if dir == "+x" then
-				B(parent, run, h, w, x + off, yBase + h / 2, z, color, M.Concrete)
+				B(parent, r, h, w, x + off, yBase + h / 2, z, color, M.Concrete)
 			elseif dir == "-x" then
-				B(parent, run, h, w, x - off, yBase + h / 2, z, color, M.Concrete)
+				B(parent, r, h, w, x - off, yBase + h / 2, z, color, M.Concrete)
 			elseif dir == "+z" then
-				B(parent, w, h, run, x, yBase + h / 2, z + off, color, M.Concrete)
+				B(parent, w, h, r, x, yBase + h / 2, z + off, color, M.Concrete)
 			else
-				B(parent, w, h, run, x, yBase + h / 2, z - off, color, M.Concrete)
+				B(parent, w, h, r, x, yBase + h / 2, z - off, color, M.Concrete)
 			end
 		end
 	end
@@ -382,7 +384,6 @@ return function(kit, root)
 	-- furniture with loot surfaces
 	desk(ob, -104, 0, -27, 5, 2.6) -- break room table
 	desk(ob, -80, 0, -48, 5, 2.4) -- records desk
-	B(ob, 6, 0.6, 1.6, -104, 0.9, -50.5, C.wood, M.WoodPlanks) -- locker room bench
 	desk(ob, -104, FH1 + 0.3, -48, 5, 2.4) -- manager's desk
 	desk(ob, -85, FH1 + 0.3, -46, 5, 2.4) -- office 2
 	B(ob, 1.6, 0.2, 8, -110.6, FH1 + 0.3 + 2.4, -26, C.metalDark, M.Metal) -- archive shelf
@@ -550,6 +551,130 @@ return function(kit, root)
 		Props.cover(yard, c[1], CF(c[2], 0, c[3], c[4]), c[5])
 	end
 
+	-- ── furnishing and damage pass (Blender kit props; Tarkov's Factory is dense: machines, racks, lockers, desks,
+	-- pipes and valves, debris; 2026-11-01) ───────────────────────────────────────────────────────────────
+	local Kit = require(script.Parent.Kit)
+	local nProps = 0
+	local function P(parent, name, x, y, z, ry, opts)
+		opts = opts or {}
+		if opts.shadows == nil then
+			opts.shadows = false
+		end
+		if Kit.place(parent, name, CF(x, y, z, ry), opts) then
+			nProps += 1
+		end
+	end
+	local F1 = FH1 + 0.3
+	-- office block, ground floor: locker room (lockers, bench), records, corridor, break room, stair hall
+	P(ob, "Lockers", -104, 0, -51.9, 180)
+	P(ob, "LockerOpen", -99, 0, -51.7, 180)
+	P(ob, "Bench", -107, 0, -43.5, 90)
+	P(ob, "JunctionBox", -111.2, 2.5, -49, -90)
+	P(ob, "StorageShelf", -86.8, 0, -46, -90)
+	P(ob, "Chair", -80, 0, -45.4, 0)
+	P(ob, "Extinguisher", -90, 0, -37.4, 180)
+	P(ob, "WallPhone", -95, 3.2, -34.5, 0)
+	P(ob, "Vending", -96.5, 0, -22.1, 0)
+	for _, c in { { -106, -24.9, 0 }, { -102, -24.9, 0 }, { -106, -29.1, 180 }, { -102, -29.1, 180 } } do
+		P(ob, "Chair", c[1], 0, c[2], c[3])
+	end
+	P(ob, "Sofa", -110, 0, -30, -90)
+	P(ob, "WallClock", -108.5, 6, -33.7, 180)
+	P(ob, "CorkBoard", -97, 3.5, -33.75, 180)
+	P(ob, "Bin", -93.4, 0, -32.4)
+	P(ob, "FirstAid", -91.6, 3.4, -24, -90)
+	-- first floor: manager's office, office 2, the archive's shelf rows
+	P(ob, "Chair", -104, F1, -50.4, 180)
+	P(ob, "Sofa", -95.7, F1, -46, 90)
+	P(ob, "WallShelfBooks", -98.3, F1, -52.45, 180)
+	P(ob, "Whiteboard", -107, F1 + 3, -38.5, 0)
+	P(ob, "OfficeDesk", -89.5, F1, -50.6, 180)
+	P(ob, "Chair", -85, F1, -43.8, 0)
+	P(ob, "Pigeonholes", -77.1, F1, -41.4, 90)
+	for _, sx in { -96, -88 } do
+		P(ob, "StorageShelf", sx, F1, -29.5, 0)
+		P(ob, "StorageShelfEmpty", sx, F1, -24.4, 180)
+	end
+	P(ob, "CardboardPile", -108, F1, -31)
+	P(ob, "FluoroDead", -88, F1 + 8.2, -27, 0)
+	-- furnace hall: the blower set between the furnaces, racks and pallets under the catwalks, the forklift
+	-- bay by the south doors, cabinets and valves on the walls, pipe runs, debris and oil
+	P(fh, "Generator", 0, 0, -48, 180)
+	P(fh, "StorageRack", -57.9, 0, -40, -90)
+	P(fh, "PalletBoxes", -56.5, 0, -31.5)
+	P(fh, "PalletBoxes", 56.5, 0, -33, 0, { tint = hex("C9C2B0") })
+	P(fh, "Drum", 57.6, 0, -29.6)
+	for _, pb in { { -40, -56.5, 0 }, { -35.4, -56.8, 20 }, { 30, -56.3, 0 } } do
+		P(fh, "PalletBoxes", pb[1], 0, pb[2], pb[3])
+	end
+	P(fh, "TyreStack", 36, 0, -57.4)
+	P(fh, "Trolley", 41, 0, -55.6, 30)
+	for _, px in { -44, -28, 28, 44 } do
+		P(fh, px < 0 and "PipeRunRust" or "PipeRun", px, 5, -58.9, 180)
+	end
+	P(fh, "JunctionBox", 4, 3, -59.2, 180)
+	P(fh, "Forklift", 20, 0, -6, 90)
+	P(fh, "CraftBench", -8, 0, -2.3, 0)
+	P(fh, "ToolChest", -45, 0, -1.8, 0)
+	P(fh, "PalletBoxes", -2, 0, -4.5)
+	P(fh, "PalletBoxes", 2.6, 0, -4.2, 15)
+	for _, d in { { 5.1, -7.2 }, { 7.6, -6.3 }, { 6.1, -9.5 } } do
+		P(fh, "Drum", d[1], 0, d[2])
+	end
+	P(fh, "JerryCans", 10.4, 0, -8.1, 30)
+	P(fh, "ElectricCabinet", 58.0, 0, -14, 90)
+	P(fh, "FuseBox", 58.05, 0, -19.6, 90)
+	P(fh, "PipeValve", 58.7, 0, -8, 90)
+	P(fh, "WorkLight", -56, 0, -10, -60)
+	for _, d in { { -57.5, -4 }, { -57.8, -6.4 } } do
+		P(fh, "Drum", d[1], 0, d[2])
+	end
+	P(fh, "HoseReel", -59.1, 2, -14, -90)
+	for _, o in { { -5, -8.5, 0 }, { 25, -2.5, 40 }, { -30, -50, 10 }, { 14, -30, 70 } } do
+		P(fh, "OilStain", o[1], 0.02, o[2], o[3])
+	end
+	P(fh, "RubbleA", -58, 0, -24.5, 90)
+	P(fh, "Rubble", 8, 0, -57.6)
+	P(fh, "CeilingDebris", -45, 0, -30, 25)
+	P(fh, "SteelPlate", -47, 0, -6, 80)
+	-- casting shed: a pallet rack, the tool wall and bench, plates, drums
+	P(cs, "PalletRack", -38, 0, 37.27, 0)
+	P(cs, "WallShelfTools", -24, 0, 37.5, 0)
+	P(cs, "CraftBench", -2.3, 0, 20, 90)
+	P(cs, "Pegboard", -0.85, 7.4, 20, 90)
+	P(cs, "Trolley", -12, 0, 24, 30)
+	P(cs, "JerryCans", -55, 0, 6)
+	for _, d in { { -57.5, 9 }, { -57, 11.6 } } do
+		P(cs, "Drum", d[1], 0, d[2])
+	end
+	P(cs, "SteelPlate", -20, 0, 20, 90)
+	P(cs, "SteelPlate", -21.6, 0, 21.4, 84)
+	P(cs, "WorkLight", -45, 0, 20, 180)
+	P(cs, "OilStain", -30, 0.02, 4)
+	P(cs, "GlassShards", -2.5, 0.02, 12.5)
+	-- pump house: the switch room side
+	P(ph, "ElectricCabinet", 88, 0, 60.65, 0)
+	P(ph, "FuseBox", 82, 0, 60.05, 0)
+	P(ph, "PipeValve", 98.75, 0, 55, 90)
+	P(ph, "WaterTank", 95, 0, 41.5, 180)
+	P(ph, "HoseReel", 73, 2, 56, -90)
+	-- tunnels: cable trays, cabinets, drums, debris
+	for _, tx in { -70, -40, -10, 20 } do
+		P(tun, "CableTray", tx, -3.6, -0.5, 0)
+	end
+	P(tun, "FuseBox", 38.5, -9, -7.05, 180)
+	P(tun, "Drum", 48, -9, -6)
+	P(tun, "Drum", 48.6, -9, -3.8)
+	P(tun, "JerryCans", 37.5, -9, 2)
+	P(tun, "Rubble", -60, -9, -1.5)
+	P(tun, "RubbleA", -20, -9, -5.2, 10)
+	P(tun, "Rubble", 2, -9, 30)
+	P(tun, "RubbleA", -1.4, -9, 50, 30)
+	P(tun, "Drum", 45, -9, 20)
+	P(tun, "PalletBoxes", 41.6, -9, 35)
+	P(tun, "WorkLight", -80, -9, -1.2, 180)
+	print(string.format("[ZR] Smelter: %d kit props", nProps))
+
 	-- ── loot ─────────────────────────────────────────────────────────────────────────────────────────────
 	kit.container(cs, "SM1", "crate", "Ingot crate", CF(-52, 0, 4))
 	kit.container(cs, "SM2", "toolbox", "Moulder's toolbox", CF(-5, 0, 36))
@@ -568,7 +693,7 @@ return function(kit, root)
 		{ -45, 1.65, 12, "junk", 0.4 }, { -25, 1.65, 28, "junk", 0.4 }, { -50, 2.76, -48, "junk", 0.45 }, { -40, DY + 0.05, -56, "junk", 0.35 },
 		{ 45, DY + 0.05, -55, "junk", 0.35 }, { -32, DY + 0.05, -29, "junk", 0.3 }, { 43, TF + 0.05, 30, "junk", 0.35 },
 		{ -60, TF + 0.05, -3, "junk", 0.3 }, { 0, TF + 0.05, 45, "keys", 0.25 }, { -104, 2.76, -27, "office", 0.5 },
-		{ -80, 2.76, -48, "office", 0.5 }, { -104, 1.25, -50.5, "junk", 0.35 }, { -104, FH1 + 0.3 + 2.76, -48, "office", 0.75 },
+		{ -80, 2.76, -48, "office", 0.5 }, { -104, 0.05, -48.6, "junk", 0.35 }, { -104, FH1 + 0.3 + 2.76, -48, "office", 0.75 },
 		{ -106, FH1 + 0.3 + 2.76, -48.4, "keys", 0.35 }, { -85, FH1 + 0.3 + 2.76, -46, "office", 0.5 }, { -110.6, FH1 + 0.3 + 2.56, -26, "office", 0.45 },
 		{ -84, 2.76, 83.4, "junk", 0.4 }, { 98.8, 3.35, 41, "junk", 0.4 }, { 85, 0.05, -64, "junk", 0.35 }, { -32, 2.45, 63, "junk", 0.3 },
 		{ 44.5, 2.76, 82.8, "office", 0.4 },

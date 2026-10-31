@@ -19,6 +19,12 @@ local ui = { tab = "vos", scroll = {} }
 local live = {} -- { label, at (server os.time), fmt }
 local dirty = false
 
+-- the Charisma discount on trader prices (the server charges the same)
+local function charisma()
+	local d = ctx.State.data
+	return P.bonus(d and d.econ and d.econ.skills, "charisma")
+end
+
 local function data()
 	return ctx.State.data
 end
@@ -134,52 +140,486 @@ local function loyaltyText(econ, tid)
 		st.ll, nextL.level, econ.level or 1, Util.commas(nextL.spent), Util.commas(math.floor(st.spent or 0)), nextL.rep, st.rep or 0)
 end
 
-local function traderPanel(f, x, y, w, h, d, tid)
+-- ── Tarkov's TRADE screen: the trader's goods as a grid with prices, your stash beside it, the deal below ──
+local CAT = {
+	weapon = "WEAPONS", pistol = "WEAPONS", melee = "WEAPONS", mod = "PARTS", mag = "MAGAZINES", ammo = "AMMO", grenade = "GRENADES",
+	armor = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", secure = "GEAR", nvg = "GEAR",
+	med = "MEDICAL", food = "PROVISIONS",
+}
+local CAT_ORDER = { "ALL", "WEAPONS", "PARTS", "MAGAZINES", "AMMO", "GRENADES", "GEAR", "MEDICAL", "PROVISIONS", "OTHER" }
+local COLS = 10
+ui.mode, ui.cat, ui.sub, ui.qty, ui.basket = "buy", "ALL", "trade", 1, {}
+
+local function catOf(id)
+	local def = Items.defs[id]
+	return (def and CAT[def.kind]) or "OTHER"
+end
+
+local function knownId(d, id)
+	return (d.known and d.known[id]) or Items.knownByDefault(id)
+end
+
+local function sizeOf(it)
+	if it.sz then
+		return it.sz[1], it.sz[2]
+	end
+	local def = Items.defs[it.id]
+	return def.w, def.h
+end
+
+-- an offer's item table (a gun offer is its preset build) and its size in cells
+local function offerItems(o)
+	local items, g = K.iconItems(o.id, o.preset)
+	local it = items[g]
+	local sw, sh = Items.defs[o.id].w, Items.defs[o.id].h
+	if it and it.sz then
+		sw, sh = it.sz[1], it.sz[2]
+	end
+	return items, g, sw, sh
+end
+
+-- first-fit packing of w x h tiles into COLS columns: positions { x, y, w, h } and the rows used
+local function pack(sizes)
+	local occ, out, rows = {}, {}, 0
+	local function free(x, y, w, h)
+		for yy = y, y + h - 1 do
+			for xx = x, x + w - 1 do
+				if occ[yy * 100 + xx] then
+					return false
+				end
+			end
+		end
+		return true
+	end
+	for i, sz in sizes do
+		local w, h = math.min(sz[1], COLS), sz[2]
+		local y = 1
+		while not out[i] do
+			for x = 1, COLS - w + 1 do
+				if free(x, y, w, h) then
+					for yy = y, y + h - 1 do
+						for xx = x, x + w - 1 do
+							occ[yy * 100 + xx] = true
+						end
+					end
+					out[i] = { x, y, w, h }
+					rows = math.max(rows, y + h - 1)
+					break
+				end
+			end
+			y += 1
+		end
+	end
+	return out, rows
+end
+
+-- what the trader pays for a stash item with its parts and magazine (Economy.quote); nil if not buying
+local function subItems(items, g, out)
+	local it = items[g]
+	for _, cg in (it and it.mods) or {} do
+		table.insert(out, cg)
+		subItems(items, cg, out)
+	end
+	if it and it.mag then
+		table.insert(out, it.mag)
+		subItems(items, it.mag, out)
+	end
+	return out
+end
+
+local function quote(d, g, tid)
+	local it = d.items[g]
+	if not it or not knownId(d, it.id) or (d.grids[g] and next(d.grids[g])) then
+		return nil
+	end
+	local karma = d.econ and d.econ.karma
+	local price = TD.sellPrice(tid, it, karma)
+	if not price then
+		return nil
+	end
+	for _, sg in subItems(d.items, g, {}) do
+		local sub = d.items[sg]
+		price += (sub and (TD.sellPrice(tid, sub, karma) or TD.sellPrice("fence", sub, karma))) or 0
+	end
+	return price
+end
+
+local function gridScroller(parent, x, y, w, h, key, canvasH)
+	local sf = K.new("ScrollingFrame", {
+		Name = key, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h),
+		CanvasSize = UDim2.fromOffset(0, canvasH), ScrollBarThickness = 4, Selectable = false, ScrollingDirection = Enum.ScrollingDirection.Y,
+	}, parent)
+	task.defer(function()
+		sf.CanvasPosition = ui.scroll[key] or Vector2.zero
+	end)
+	sf:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+		ui.scroll[key] = sf.CanvasPosition
+	end)
+	return sf
+end
+
+-- the empty grid: one panel with cell lines
+local function drawCells(parent, cols, rows, cell)
+	local bg = K.frame(parent, { Name = "Cells", BackgroundColor3 = K.C.panel, Size = UDim2.fromOffset(cols * cell, rows * cell) })
+	K.stroke(bg, K.C.line, 0.6)
+	for i = 1, cols - 1 do
+		K.frame(bg, { BackgroundColor3 = K.C.line, BackgroundTransparency = 0.7, Position = UDim2.fromOffset(i * cell, 0), Size = UDim2.new(0, 1, 1, 0) })
+	end
+	for j = 1, rows - 1 do
+		K.frame(bg, { BackgroundColor3 = K.C.line, BackgroundTransparency = 0.7, Position = UDim2.fromOffset(0, j * cell), Size = UDim2.new(1, 0, 0, 1) })
+	end
+end
+
+-- one item tile: picture, short name top right, opts.topLeft, opts.corner bottom right, opts.price along the bottom,
+-- opts.overlay darkens it (locked, sold out, not wanted)
+local function itemTile(parent, items, g, px, py, pw, ph, opts)
+	local it = items[g]
+	local def = Items.defs[it.id]
+	local b = K.new("TextButton", {
+		Name = opts.name or ("Tile_" .. it.id), Text = "", AutoButtonColor = false, BorderSizePixel = 0, ZIndex = 2,
+		BackgroundColor3 = K.C.panel2, BackgroundTransparency = 0.1, Position = UDim2.fromOffset(px, py), Size = UDim2.fromOffset(pw, ph),
+		Selectable = true, SelectionImageObject = K.selection(),
+	}, parent)
+	K.stroke(b, opts.stroke or K.C.line, opts.stroke and 0 or 0.6, opts.stroke and 2 or 1)
+	local pic = K.frame(b, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1) })
+	if not opts.unknown and K.isBuild(items, g) then
+		K.gunPicture(pic, items, g, pw, ph, opts.r == 1, 2)
+	else
+		K.itemIcon(pic, it.id, pw, ph, opts.r == 1, opts.unknown, 2)
+	end
+	K.label(b, opts.unknown and "?" or (def.short or def.name), 10, {
+		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 1), Size = UDim2.new(1, -6, 0, 12), TextXAlignment = Enum.TextXAlignment.Right,
+		TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 3,
+	})
+	if opts.topLeft then
+		K.label(b, opts.topLeft, 10, { Position = UDim2.fromOffset(3, 13), Size = UDim2.fromOffset(40, 12), TextColor3 = K.C.dim, ZIndex = 3 })
+	end
+	if opts.corner and opts.corner ~= "" then
+		K.label(b, opts.corner, 10, {
+			AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, opts.price and -15 or -1), Size = UDim2.new(1, -6, 0, 12),
+			TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 3,
+		})
+	end
+	if opts.price then
+		local strip = K.frame(b, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 14), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.2, ZIndex = 3 })
+		K.label(strip, opts.price, 10, { Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = opts.priceColor or K.C.ochre, FontFace = K.bold, ZIndex = 4 })
+	end
+	if opts.overlay then
+		local ov = K.frame(b, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.4, ZIndex = 5 })
+		K.label(ov, opts.overlay, 11, { Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = opts.overlayColor or K.C.orange, FontFace = K.bold, ZIndex = 6 })
+	end
+	return b
+end
+
+local function inspect(items, g, key, unknown)
+	if ctx.Inspect then
+		ctx.Inspect.open(items, g, { key = key, unknown = unknown })
+	end
+end
+
+local function tradeTab(f, x, y, w, h, d, tid)
 	local econ = d.econ or {}
 	local st = econ.traders and econ.traders[tid] or { ll = 1 }
-	local tr = TD.defs[tid]
-	local lw = math.floor(w * 0.56)
-	local left = scroller(f, x, y, lw, h, "Shop_" .. tid)
-	local right = scroller(f, x + lw + 12, y, w - lw - 12, h, "Tasks_" .. tid)
-	text(left, tr.title .. ".  " .. tr.desc, K.C.dim, 12)
-	text(left, loyaltyText(econ, tid), K.C.text, 11)
-	section(left, "FOR SALE")
-	for i, o in TD.offers[tid] or {} do
-		local def = Items.defs[o.id]
-		local locked = o.ll > st.ll
-		local left_ = o.limit - ((econ.bought and econ.bought[tid .. ":" .. i]) or 0)
-		local price = TD.price(tid, o, st.ll)
-		local info = locked and ("LOYALTY " .. o.ll) or string.format("%s %s  ·  %d LEFT", Util.commas(price), Config.CURRENCY, math.max(0, left_))
-		local can = not locked and left_ > 0 and (d.money or 0) >= price
-		-- a gun sold as a preset shows the preset's name and its build (Tarkov's trader presets)
-		local oname = o.preset and WP.PRESET_NAMES[o.preset] or def.name
-		local _, b = row(left, oname .. ((o.n > 1) and (" x" .. o.n) or ""), info, locked and "LOCKED" or (left_ > 0 and "BUY" or "SOLD OUT"), can, function()
-			req("trade", { op = "buy", trader = tid, i = i })
-		end, (not locked and (d.money or 0) < price) and K.C.red or nil, o.preset and (o.id .. "#" .. o.preset) or o.id)
-		if b then
-			b.Name = "Buy_" .. o.id
+	local stash = (d.grids and d.grids.stash) or {}
+	for i = #ui.basket, 1, -1 do
+		if not (stash[ui.basket[i]] and quote(d, ui.basket[i], tid)) then
+			table.remove(ui.basket, i)
 		end
 	end
-	if #(TD.barters[tid] or {}) > 0 then
-		section(left, "BARTER")
-		for i, bt in TD.barters[tid] do
-			local def = Items.defs[bt.id]
-			local locked = bt.ll > st.ll
-			local used = (econ.bought and econ.bought["b:" .. tid .. ":" .. i]) or 0
-			local parts, ok = {}, true
-			for _, need in bt.give do
-				local n = stashCount(d, need[1])
-				ok = ok and n >= need[2]
-				table.insert(parts, Items.defs[need[1]].short .. " " .. have(n, need[2]))
+	local leftW = math.floor((w - 12) * 0.5)
+	local rightW = w - leftW - 12
+	local dealH = h < 420 and 64 or 92
+	local gridH = h - dealH - 8
+	-- BUY / SELL, then the categories this trader stocks
+	local modes = K.frame(f, { BackgroundTransparency = 1, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(leftW, 26) })
+	K.list(modes, Enum.FillDirection.Horizontal, 4)
+	for _, m in { "buy", "sell" } do
+		local on = ui.mode == m
+		local b = K.button(modes, string.upper(m) .. (m == "sell" and #ui.basket > 0 and (" (" .. #ui.basket .. ")") or ""), {
+			Size = UDim2.fromOffset(84, 26), TextSize = 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim,
+		})
+		b.Name = "Mode_" .. string.upper(m)
+		b.Activated:Connect(function()
+			if ui.mode ~= m then
+				ui.mode = m
+				Trade.refresh()
 			end
-			row(left, def.name, locked and ("LOYALTY " .. bt.ll) or table.concat(parts, "  "), locked and "LOCKED" or (used < bt.limit and "TRADE" or "SOLD OUT"), ok and not locked and used < bt.limit, function()
-				req("trade", { op = "barter", trader = tid, i = i })
-			end, nil, bt.id)
+		end)
+	end
+	local gy = y + 30
+	local cellW = math.floor((leftW - 6) / COLS)
+	if ui.mode == "buy" then
+		local has = { ALL = true }
+		for _, o in TD.offers[tid] or {} do
+			has[catOf(o.id)] = true
+		end
+		for _, bt in TD.barters[tid] or {} do
+			has[catOf(bt.id)] = true
+		end
+		if not has[ui.cat] then
+			ui.cat = "ALL"
+		end
+		local cats = K.frame(f, { BackgroundTransparency = 1, Position = UDim2.fromOffset(x, gy), Size = UDim2.fromOffset(leftW, 22) })
+		K.list(cats, Enum.FillDirection.Horizontal, 3)
+		for _, c in CAT_ORDER do
+			if has[c] then
+				local on = ui.cat == c
+				local b = K.button(cats, c, { Size = UDim2.fromOffset(#c * 7 + 14, 22), TextSize = 10, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+				b.Name = "Cat_" .. c
+				b.Activated:Connect(function()
+					ui.cat = c
+					Trade.refresh()
+				end)
+			end
+		end
+		gy += 26
+		-- the assortment: offers and barters packed like a stash, price under each
+		local entries = {}
+		for i, o in TD.offers[tid] or {} do
+			if ui.cat == "ALL" or catOf(o.id) == ui.cat then
+				table.insert(entries, { kind = "offer", i = i, o = o })
+			end
+		end
+		for i, bt in TD.barters[tid] or {} do
+			if ui.cat == "ALL" or catOf(bt.id) == ui.cat then
+				table.insert(entries, { kind = "barter", i = i, o = bt })
+			end
+		end
+		local sizes = {}
+		for k, e in entries do
+			local items, g, sw, sh = offerItems(e.o)
+			e.items, e.g = items, g
+			sizes[k] = { sw, sh }
+		end
+		local pos, rows = pack(sizes)
+		local viewH = y + gridH - gy
+		local sf = gridScroller(f, x, gy, leftW, viewH, "Shop_" .. tid, math.max(rows * cellW, viewH))
+		drawCells(sf, COLS, math.max(rows, math.floor(viewH / cellW)), cellW)
+		for k, e in entries do
+			local p, o = pos[k], e.o
+			local locked = o.ll > st.ll
+			local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
+			local left = o.limit - used
+			local price = e.kind == "offer" and TD.price(tid, o, st.ll, charisma()) or nil
+			local on = ui.sel and ui.sel.kind == e.kind and ui.sel.i == e.i
+			local t = itemTile(sf, e.items, e.g, (p[1] - 1) * cellW + 1, (p[2] - 1) * cellW + 1, p[3] * cellW - 2, p[4] * cellW - 2, {
+				name = (e.kind == "offer" and "Offer_" or "Barter_") .. o.id,
+				topLeft = (not locked and left > 0) and ("x" .. left) or nil,
+				corner = (o.n or 1) > 1 and tostring(o.n) or nil,
+				price = price and Util.commas(price) or "BARTER",
+				priceColor = price and (((d.money or 0) >= price) and K.C.ochre or K.C.red) or K.C.green,
+				overlay = locked and ("LL" .. o.ll) or (left <= 0 and "SOLD OUT" or nil),
+				stroke = on and K.C.ochre or nil,
+			})
+			t.Activated:Connect(function()
+				ui.sel, ui.qty = { kind = e.kind, i = e.i }, 1
+				Trade.refresh()
+			end)
+			t.MouseButton2Click:Connect(function()
+				inspect(e.items, e.g, "offer:" .. tid .. ":" .. e.kind .. e.i)
+			end)
+		end
+	else
+		-- SELL: the items picked from the stash, with what this trader pays for each
+		local sizes = {}
+		for k, g in ui.basket do
+			sizes[k] = { sizeOf(d.items[g]) }
+		end
+		local pos, rows = pack(sizes)
+		local viewH = y + gridH - gy
+		local sf = gridScroller(f, x, gy, leftW, viewH, "Sell_" .. tid, math.max(rows * cellW, viewH))
+		drawCells(sf, COLS, math.max(rows, math.floor(viewH / cellW)), cellW)
+		if #ui.basket == 0 then
+			K.label(sf, "Click items in your stash to sell them to " .. TD.defs[tid].name .. ".\nClick them again to take them back.", 12, {
+				Position = UDim2.fromOffset(0, 12), Size = UDim2.new(1, 0, 0, 40), TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = K.C.dim, TextWrapped = true, ZIndex = 3,
+			})
+		end
+		for k, g in ui.basket do
+			local p = pos[k]
+			local t = itemTile(sf, d.items, g, (p[1] - 1) * cellW + 1, (p[2] - 1) * cellW + 1, p[3] * cellW - 2, p[4] * cellW - 2, {
+				name = "Selling_" .. d.items[g].id, price = "+" .. Util.commas(quote(d, g, tid) or 0), priceColor = K.C.green,
+				corner = ctx.Inventory.cornerText and ctx.Inventory.cornerText(d, d.items[g]) or nil,
+			})
+			t.Activated:Connect(function()
+				local i = table.find(ui.basket, g)
+				if i then
+					table.remove(ui.basket, i)
+				end
+				Trade.refresh()
+			end)
+			t.MouseButton2Click:Connect(function()
+				inspect(d.items, g, "stash:" .. g)
+			end)
 		end
 	end
-	text(left, "Sell from your stash: right-click (or select) an item and choose SELL. The best-paying trader buys it.", K.C.dim, 11)
-	-- tasks
-	section(right, "TASKS")
+	-- your stash: click to put an item in the sell deal; what this trader will not buy is dimmed
+	local rx = x + leftW + 12
+	local stashH = d.stashH or Config.STASH_H
+	local scell = math.floor((rightW - 6) / Config.STASH_W)
+	K.label(f, string.format("STASH  %dx%d  ·  %s %s", Config.STASH_W, stashH, Util.commas(d.money or 0), Config.CURRENCY), 11, {
+		Position = UDim2.fromOffset(rx, y + 6), Size = UDim2.fromOffset(rightW, 16), TextColor3 = K.C.dim,
+	})
+	local ss = gridScroller(f, rx, y + 30, rightW, gridH - 30, "Stash_trade", stashH * scell)
+	drawCells(ss, Config.STASH_W, stashH, scell)
+	local inDeal = {}
+	for _, g in ui.basket do
+		inDeal[g] = true
+	end
+	for g, p in stash do
+		local it = d.items[g]
+		if it then
+			local iw, ih = sizeOf(it)
+			if p.r == 1 then
+				iw, ih = ih, iw
+			end
+			local kn = knownId(d, it.id)
+			local price = quote(d, g, tid)
+			local t = itemTile(ss, d.items, g, (p.x - 1) * scell + 1, (p.y - 1) * scell + 1, iw * scell - 2, ih * scell - 2, {
+				name = "Stash_" .. it.id, r = p.r, unknown = not kn, stroke = inDeal[g] and K.C.green or nil,
+				corner = kn and ctx.Inventory.cornerText and ctx.Inventory.cornerText(d, it) or nil,
+				overlay = (not price) and "" or nil,
+			})
+			t.Activated:Connect(function()
+				if not price then
+					ctx.State.toast(not kn and "EXAMINE IT FIRST" or (d.grids[g] and next(d.grids[g])) and "EMPTY IT FIRST" or (TD.defs[tid].name .. " DOESN'T BUY THAT"), "warn")
+					return
+				end
+				local i = table.find(ui.basket, g)
+				if i then
+					table.remove(ui.basket, i)
+				elseif #ui.basket < 40 then
+					table.insert(ui.basket, g)
+				end
+				ui.mode = "sell"
+				Trade.refresh()
+			end)
+			t.MouseButton2Click:Connect(function()
+				inspect(d.items, g, "stash:" .. g, not kn)
+			end)
+		end
+	end
+	-- the deal
+	local deal = K.frame(f, { Name = "Deal", BackgroundColor3 = K.C.panel, Position = UDim2.fromOffset(x, y + h - dealH), Size = UDim2.fromOffset(w, dealH) })
+	K.stroke(deal, K.C.line, 0.6)
+	local function dealButton(textValue, enabled, onClick, xFromRight, width)
+		local b = K.button(deal, textValue, {
+			AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -xFromRight, 0.5, 0), Size = UDim2.fromOffset(width or 120, math.min(40, dealH - 16)), TextSize = 14,
+			TextColor3 = enabled and K.C.green or K.C.dim, AutoButtonColor = enabled,
+		})
+		if enabled then
+			b.Activated:Connect(onClick)
+		end
+		return b
+	end
+	if ui.mode == "sell" then
+		local total, n = 0, 0
+		for _, g in ui.basket do
+			total += quote(d, g, tid) or 0
+			n += 1
+		end
+		K.label(deal, n == 0 and "SELL" or string.format("SELL %d ITEM%s TO %s", n, n == 1 and "" or "S", TD.defs[tid].name), 15, { FontFace = K.bold, Position = UDim2.fromOffset(10, 8), Size = UDim2.new(0.6, 0, 0, 20) })
+		K.label(deal, string.format("YOU RECEIVE  +%s %s", Util.commas(total), Config.CURRENCY), 13, { Position = UDim2.fromOffset(10, 30), Size = UDim2.new(0.6, 0, 0, 18), TextColor3 = n > 0 and K.C.green or K.C.dim })
+		local b = dealButton("DEAL!", n > 0, function()
+			local gs = table.clone(ui.basket)
+			local res = req("trade", { op = "sellmany", trader = tid, gs = gs })
+			if res and res.ok then
+				table.clear(ui.basket)
+				Trade.refresh()
+			end
+		end, 10)
+		b.Name = "Deal"
+		if n > 0 then
+			local c = dealButton("CLEAR", true, function()
+				table.clear(ui.basket)
+				Trade.refresh()
+			end, 140, 90)
+			c.Name = "Clear"
+		end
+		return
+	end
+	local e
+	if ui.sel then
+		local list = ui.sel.kind == "offer" and TD.offers[tid] or TD.barters[tid]
+		local o = list and list[ui.sel.i]
+		if o then
+			e = { kind = ui.sel.kind, i = ui.sel.i, o = o }
+		end
+	end
+	if not e then
+		K.label(deal, "Select an item to buy it, or click items in your stash to sell them. Right-click any item to inspect it.", 12, {
+			Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -20, 1, 0), TextColor3 = K.C.dim, TextWrapped = true,
+		})
+		return
+	end
+	local o = e.o
+	local items, g, sw, sh = offerItems(o)
+	local ph = dealH - 12
+	local pw = math.floor(math.min(150, ph * sw / sh))
+	local box = K.frame(deal, { Name = "Picture", BackgroundColor3 = K.C.panel2, Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(pw, ph) })
+	if K.isBuild(items, g) then
+		K.gunPicture(box, items, g, pw, ph, false, 2)
+	else
+		K.itemIcon(box, o.id, pw, ph, false, false, 2)
+	end
+	local tx = pw + 16
+	local oname = (o.preset and WP.PRESET_NAMES[o.preset]) or Items.defs[o.id].name
+	K.label(deal, string.upper(oname) .. ((o.n or 1) > 1 and ("  x" .. o.n) or ""), 14, { FontFace = K.bold, Position = UDim2.fromOffset(tx, 6), Size = UDim2.fromOffset(math.max(80, w - 380 - tx), 18), TextTruncate = Enum.TextTruncate.AtEnd })
+	local locked = o.ll > st.ll
+	local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
+	local left = math.max(0, o.limit - used)
+	if e.kind == "offer" then
+		local unit = TD.price(tid, o, st.ll, charisma())
+		ui.qty = math.clamp(ui.qty, 1, math.max(1, math.min(10, left)))
+		local total = unit * ui.qty
+		local afford = (d.money or 0) >= total
+		K.label(deal, locked and ("REQUIRES LOYALTY LEVEL " .. o.ll) or string.format("%s %s EACH  ·  %d LEFT UNTIL RESTOCK", Util.commas(unit), Config.CURRENCY, left), 12, {
+			Position = UDim2.fromOffset(tx, 26), Size = UDim2.fromOffset(math.max(80, w - 380 - tx), 16), TextColor3 = locked and K.C.orange or K.C.dim,
+		})
+		K.label(deal, string.format("TOTAL  %s %s", Util.commas(total), Config.CURRENCY), 13, {
+			Name = "Total", Position = UDim2.fromOffset(tx, 44), Size = UDim2.fromOffset(math.max(80, w - 380 - tx), 18), TextColor3 = afford and K.C.text or K.C.red, FontFace = K.bold,
+		})
+		-- quantity
+		local qx = 270
+		local minus = dealButton("-", ui.qty > 1, function()
+			ui.qty -= 1
+			Trade.refresh()
+		end, qx + 70, 30)
+		minus.Name = "QtyDown"
+		local ql = K.label(deal, tostring(ui.qty), 14, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -(qx + 34), 0.5, 0), Size = UDim2.fromOffset(36, 30), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
+		ql.Name = "Qty"
+		local plus = dealButton("+", ui.qty < math.min(10, left), function()
+			ui.qty += 1
+			Trade.refresh()
+		end, qx, 30)
+		plus.Name = "QtyUp"
+		local b = dealButton("DEAL!", not locked and left > 0 and afford, function()
+			req("trade", { op = "buy", trader = tid, i = e.i, qty = ui.qty })
+		end, 10)
+		b.Name = "Deal"
+	else
+		local parts, ok = {}, true
+		for _, need in o.give do
+			local n = stashCount(d, need[1])
+			ok = ok and n >= need[2]
+			table.insert(parts, Items.defs[need[1]].short .. " " .. have(n, need[2]))
+		end
+		K.label(deal, locked and ("REQUIRES LOYALTY LEVEL " .. o.ll) or ("BARTER FOR  " .. table.concat(parts, "   ")), 12, {
+			Position = UDim2.fromOffset(tx, 26), Size = UDim2.new(1, -tx - 280, 0, 34), TextColor3 = locked and K.C.orange or K.C.text, RichText = true, TextWrapped = true,
+		})
+		local b = dealButton("DEAL!", ok and not locked and left > 0, function()
+			req("trade", { op = "barter", trader = tid, i = e.i })
+		end, 10)
+		b.Name = "Deal"
+	end
+	local insp = dealButton("INSPECT", true, function()
+		inspect(items, g, "offer:" .. tid .. ":" .. e.kind .. e.i)
+	end, 140, 110)
+	insp.Name = "Inspect"
+end
+
+local function tasksTab(f, x, y, w, h, d, tid)
+	local econ = d.econ or {}
+	local right = scroller(f, x, y, w, h, "Tasks_" .. tid)
 	local any = false
 	for _, q in QD.list do
 		if q.trader == tid then
@@ -243,6 +683,69 @@ local function traderPanel(f, x, y, w, h, d, tid)
 	end
 end
 
+
+-- SERVICES: repairs (VOS weapons, TILDA armour); each repair costs some maximum durability (Tarkov)
+local function servicesTab(f, x, y, w, h, d, tid)
+	local sf = scroller(f, x, y, w, h, "Services_" .. tid)
+	section(sf, "REPAIRS")
+	text(sf, TD.defs[tid].name .. (TD.REPAIRS[tid].kinds.weapon and " repairs weapons." or " repairs body armour, armoured rigs and helmets.")
+		.. " Every repair lowers the item's maximum durability a little; a repair kit wears it less.", K.C.dim, 11)
+	local any = false
+	for g, it in d.items or {} do
+		local pts, cost, newMax = TD.repairQuote(tid, it)
+		if pts then
+			any = true
+			local def = Items.defs[it.id]
+			local cur, max = TD.condition(it)
+			local info = string.format("%.1f / %.1f  ·  REPAIR TO %.1f  ·  %s %s", cur, max, newMax, Util.commas(cost), Config.CURRENCY)
+			local _, b = row(sf, def.name, info, "REPAIR", (d.money or 0) >= cost, function()
+				req("trade", { op = "repair", trader = tid, g = g })
+			end, (d.money or 0) < cost and K.C.red or nil, it.id)
+			if b then
+				b.Name = "Repair_" .. it.id
+			end
+		end
+	end
+	if not any then
+		text(sf, "Nothing of yours needs " .. TD.defs[tid].name .. "'s repairs.", K.C.dim, 12)
+	end
+end
+
+local function traderPanel(f, x, y, w, h, d, tid)
+	local econ = d.econ or {}
+	local tr = TD.defs[tid]
+	K.label(f, tr.title .. ".  " .. tr.desc, 12, { Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w - 310, 16), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd })
+	K.label(f, loyaltyText(econ, tid), 11, { Position = UDim2.fromOffset(x, y + 17), Size = UDim2.fromOffset(w - 310, 15), TextTruncate = Enum.TextTruncate.AtEnd })
+	-- Tarkov's trader tabs: TRADE and TASKS
+	local list = { "trade", "tasks" }
+	if TD.REPAIRS[tid] then
+		table.insert(list, "services")
+	end
+	if not table.find(list, ui.sub) then
+		ui.sub = "trade"
+	end
+	local subs = K.frame(f, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(x + w, y), Size = UDim2.fromOffset(#list * 101, 30) })
+	K.list(subs, Enum.FillDirection.Horizontal, 6)
+	for _, s in list do
+		local on = ui.sub == s
+		local b = K.button(subs, string.upper(s), { Size = UDim2.fromOffset(95, 30), TextSize = 13, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+		b.Name = "Sub_" .. string.upper(s)
+		b.Activated:Connect(function()
+			if ui.sub ~= s then
+				ui.sub = s
+				Trade.refresh()
+			end
+		end)
+	end
+	if ui.sub == "tasks" then
+		tasksTab(f, x, y + 38, w, h - 38, d, tid)
+	elseif ui.sub == "services" then
+		servicesTab(f, x, y + 38, w, h - 38, d, tid)
+	else
+		tradeTab(f, x, y + 38, w, h - 38, d, tid)
+	end
+end
+
 local function profilePanel(f, x, y, w, h, d)
 	local econ = d.econ or {}
 	local sf = scroller(f, x, y, w, h, "Profile")
@@ -258,7 +761,8 @@ local function profilePanel(f, x, y, w, h, d)
 		local def = P.SKILLS[id]
 		local pts = (econ.skills and econ.skills[id]) or 0
 		local sl = P.skillLevel(pts)
-		text(sf, string.format("%s  ·  LEVEL %d%s  ·  %s", def.name, sl, sl >= 10 and " (ELITE)" or string.format(" (%d/100)", math.floor(pts % 100)), def.desc), K.C.text, 12)
+		local _, into, cost = P.skillProgress(pts)
+		text(sf, string.format("%s  ·  LEVEL %d%s  ·  %s", def.name, sl, sl >= P.SKILL_MAX and " (ELITE)" or string.format(" (%d/%d)", math.floor(into), cost), def.desc), K.C.text, 12)
 	end
 	section(sf, "FENCE KARMA")
 	local karma = econ.karma or 0
@@ -270,15 +774,20 @@ local function profilePanel(f, x, y, w, h, d)
 		s.raids or 0, s.survived or 0, s.kia or 0, s.mia or 0, s.kills or 0, s.pmcKills or 0, s.scavKills or 0, s.bossKills or 0, s.scavRaids or 0), K.C.text, 12)
 end
 
-function Trade.traders(tab)
+function Trade.traders(tab, sub)
 	local d = data()
 	if not d or ctx.State.inRaid() then
 		return
 	end
+	if tab and tab ~= ui.tab then
+		ui.sel, ui.cat, ui.mode = nil, "ALL", "buy"
+		table.clear(ui.basket)
+	end
 	ui.tab = tab or ui.tab
+	ui.sub = sub or ui.sub
 	order = 0
 	table.clear(live)
-	local f, w, h = ctx.Screens.openModal(980, 600, "RELAY RADIO  //  TRADERS")
+	local f, w, h = ctx.Screens.openModal(1180, 700, "RELAY RADIO  //  TRADERS")
 	Trade.open = "traders"
 	Trade.frame = f
 	local econ = d.econ or {}
@@ -294,12 +803,12 @@ function Trade.traders(tab)
 	local tabs = K.frame(f, { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 32) })
 	K.list(tabs, Enum.FillDirection.Horizontal, 6)
 	local first
-	for _, id in { "vos", "hale", "tilda", "fence", "profile" } do
+	for _, id in { "vos", "hale", "tilda", "fence", "flea", "messenger", "handbook" } do
 		local st = econ.traders and econ.traders[id]
-		local label = (id == "profile") and "PROFILE" or string.format("%s  ·  LL%d", TD.defs[id].name, st and st.ll or 1)
+		local label = (id == "flea" and "FLEA MARKET") or (id == "messenger" or id == "handbook") and string.upper(id) or string.format("%s  ·  LL%d", TD.defs[id].name, st and st.ll or 1)
 		local sel = ui.tab == id
 		local b = K.button(tabs, label, {
-			Size = UDim2.fromOffset(math.min(170, math.floor((w - 24) / 5)), 32), TextSize = 13,
+			Size = UDim2.fromOffset(math.min(170, math.floor((w - 36) / 7)), 32), TextSize = 13,
 			BackgroundColor3 = sel and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = sel and K.C.ochre or K.C.dim,
 		})
 		b.Name = "Tab_" .. string.upper(id)
@@ -314,7 +823,13 @@ function Trade.traders(tab)
 	end
 	local top = 88
 	local bodyH = h - top - 42
-	if ui.tab == "profile" then
+	if ui.tab == "messenger" and ctx.Menus then
+		ctx.Menus.messenger(f, 0, top, w, bodyH, d, Trade.refresh)
+	elseif ui.tab == "handbook" and ctx.Menus then
+		ctx.Menus.handbook(f, 0, top, w, bodyH, d, Trade.refresh)
+	elseif ui.tab == "flea" and ctx.Menus then
+		ctx.Menus.flea(f, 0, top, w, bodyH, d, Trade.refresh)
+	elseif ui.tab == "profile" then
 		profilePanel(f, 0, top, w, bodyH, d)
 	else
 		traderPanel(f, 0, top, w, bodyH, d, ui.tab)

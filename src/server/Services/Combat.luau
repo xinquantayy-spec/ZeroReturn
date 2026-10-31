@@ -4,6 +4,8 @@
 local Players = game:GetService("Players")
 local STUDIO = game:GetService("RunService"):IsStudio()
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
+local Ballistics = require(Shared.Ballistics)
+local Progress = require(Shared.Progress)
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
 local Util = require(Shared.Util)
@@ -115,6 +117,95 @@ function Combat.damage(model, hum, amount, attacker, fromPos)
 	return res and res.killed or false
 end
 
+-- ── M11 part B: wear, heat and malfunctions (Tarkov; docs/design/EFT_PARITY.md) ─────────────────────────────
+-- Every shot wears the gun (more when hot). Mechanical malfunctions only below 93 % condition, likelier the worse it
+-- is; big magazines cause feed failures at any condition; medium heat doubles the chance, maximum heat jams the bolt.
+-- The malfunction stays with the gun until cleared: L (inspect) identifies it, then Shift+T clears it. A misfire
+-- loses the round; a hard jam (5 % condition or less) may take more than one try.
+Combat.BURN = { rifle = 0.05, smg = 0.04, pistol = 0.035, shotgun = 0.08, bolt = 0.07 } -- condition points per shot
+local HEAT = { rifle = 0.011, smg = 0.009, pistol = 0.012, shotgun = 0.03, bolt = 0.035 } -- heat per shot (1 = max)
+local HEAT_TAU = 30 -- seconds for the heat to fall to 1/e
+Combat.FIX_TIME = { misfire = 0.9, eject = 1.3, feed = 1.6, jam = 2.2 }
+Combat.MALF_NAMES = { misfire = "MISFIRE", eject = "FAILURE TO EJECT", feed = "FAILURE TO FEED", jam = "JAMMED BOLT" }
+local heatOf = {} -- [weapon guid] = { h, t }
+
+function Combat.heat(wg, t)
+	local e = heatOf[wg]
+	return e and e.h * math.exp(-((t or os.clock()) - e.t) / HEAT_TAU) or 0
+end
+
+-- per-shot chances: mechanical (by condition) and magazine (by capacity)
+function Combat.malfChance(wear, magDef, heat)
+	local mech = wear < 93 and 0.01 * ((93 - wear) / 93) ^ 1.5 or 0
+	local feed = 0
+	if magDef and (magDef.capacity or 0) >= 40 then
+		feed = (magDef.capacity >= 50) and 0.003 or 0.002
+	end
+	if (heat or 0) >= 0.6 then
+		mech, feed = mech * 2, feed * 2
+	end
+	return mech, feed
+end
+
+local function setMalf(player, wit, kind, hard)
+	wit.mf, wit.mfk, wit.mfh = kind, nil, hard or nil
+	ctx.Remotes.note(player, "malf", { state = "on" })
+end
+
+-- L: inspecting the gun identifies its malfunction
+function Combat.inspect(player)
+	local s = ctx.Raid.session(player)
+	if not s or s.done or not alive(player) then
+		return
+	end
+	local _, wit = Combat.activeWeapon(s)
+	if not wit or not wit.mf or wit.mfk then
+		return
+	end
+	local w = ws(player)
+	if w.fixing then
+		return
+	end
+	w.fixing = true
+	ctx.Chars.gesture(player.Character, "check", 1.2)
+	task.delay(1.2, function()
+		w.fixing = nil
+		if wit.mf then
+			wit.mfk = true
+			ctx.Remotes.note(player, "malf", { state = "known", kind = wit.mf, name = Combat.MALF_NAMES[wit.mf], hard = wit.mfh })
+		end
+	end)
+end
+
+-- Shift+T on a malfunctioning gun: clear it (once identified)
+function Combat.clearMalf(player, s, w, wg, wit)
+	if not wit.mfk then
+		ctx.Remotes.note(player, "toast", { text = "INSPECT THE WEAPON FIRST", tone = "warn" })
+		return
+	end
+	if w.fixing then
+		return
+	end
+	w.fixing = true
+	local tprof = ctx.Profiles.get(player)
+	local dur = (Combat.FIX_TIME[wit.mf] or 1.2) * (wit.mfh and 1.6 or 1) * (1 - Progress.bonus(tprof and tprof.skills, "troubleshooting"))
+	ctx.Remotes.note(player, "malf", { state = "fixing", t = dur })
+	ctx.Chars.gesture(player.Character, "reload", dur)
+	task.delay(dur, function()
+		w.fixing = nil
+		if not wit.mf or ctx.Raid.session(player) ~= s or s.done or not s.inv.items[wg] then
+			return
+		end
+		if wit.mfh and math.random() < 0.5 then
+			ctx.Remotes.note(player, "malf", { state = "known", kind = wit.mf, name = Combat.MALF_NAMES[wit.mf], hard = true, again = true })
+			return
+		end
+		wit.mf, wit.mfk, wit.mfh = nil, nil, nil
+		ctx.Remotes.note(player, "malf", { state = "off" })
+		ctx.Economy.skillUp(player, tprof, "troubleshooting", 2)
+	end)
+end
+
 function Combat.shoot(player, seq, origin, dir)
 	if type(seq) ~= "number" or not Util.finite(seq) or not Util.vec(origin) or not Util.vec(dir) then
 		return reject("malformed shot", player)
@@ -169,6 +260,13 @@ function Combat.shoot(player, seq, origin, dir)
 		ctx.Remotes.note(player, "ammo", { a = 0 })
 		return reject("empty", nil)
 	end
+	if wit and wit.mf then
+		if t - (w.malfNote or 0) > 1.5 then
+			w.malfNote = t
+			ctx.Remotes.note(player, "malf", { state = "on" })
+		end
+		return reject("malfunction", nil)
+	end
 	local m = dir.Magnitude
 	if m < 0.5 or m > 1.5 then
 		return reject("bad direction", player)
@@ -186,54 +284,90 @@ function Combat.shoot(player, seq, origin, dir)
 	if mag.a <= 0 then
 		mag.at = nil
 	end
+	-- wear, heat, malfunctions (M11 part B)
+	local malf
+	if wg and wit and not wdef.melee then
+		local h = Combat.heat(wg, t) + (HEAT[wdef.class] or 0.012)
+		heatOf[wg] = { h = h, t = t }
+		local wear = wit.wear or 100
+		wit.wear = math.max(0, wear - (Combat.BURN[wdef.class] or 0.05) * (h >= 0.6 and 1.5 or 1))
+		local mech, feed = Combat.malfChance(wear, mag ~= wit and Items.defs[mag.id] or nil, h)
+		if h >= 1 then
+			malf = "jam"
+		elseif math.random() < feed then
+			malf = "feed"
+		elseif math.random() < mech then
+			local r = math.random()
+			malf = r < 0.25 and "misfire" or r < 0.55 and "eject" or r < 0.7 and "feed" or "jam"
+		end
+		if malf == "misfire" then
+			-- the primer fails: the round is lost and nothing leaves the barrel
+			setMalf(player, wit, "misfire")
+			return
+		end
+	end
 	Combat.stats.accepted += 1
 	local ballistic = ammoDef and ammoDef.ammo or { dmg = 40, pen = 20 }
 	local pellets = ballistic.pellets or 1
-	local hit, killed = false, false
+	local ms = Inv.modStats(s.inv, wg)
+	-- ballistics (Tarkov): the bullet flies with drop and travel time; the bore is tilted for the sight's zero
+	local v0, k = Ballistics.muzzle(wdef, ms.vel), Ballistics.drag(wdef)
+	local zeroM = (s.zero and s.zero[wg]) or Ballistics.DEFAULT_ZERO
+	local bore = Ballistics.tilt(dir, Ballistics.zeroAngle(zeroM, v0, k))
+	local params = filter(char)
+	local wskill = Progress.WEAPON_SKILL[wdef.class]
+	local prof = ctx.Profiles.get(player)
+	ctx.Economy.skillUp(player, prof, wskill, 0.08)
+	local predHit = false
 	local firstPos, firstNormal, firstMat
 	for i = 1, pellets do
-		local d2 = dir
+		local d2 = bore
 		if pellets > 1 then
 			local sp = math.rad(wdef.pelletSpread or 2.5)
-			d2 = (CFrame.lookAt(Vector3.zero, dir) * CFrame.Angles((math.random() * 2 - 1) * sp, (math.random() * 2 - 1) * sp, 0)).LookVector
+			d2 = (CFrame.lookAt(Vector3.zero, bore) * CFrame.Angles((math.random() * 2 - 1) * sp, (math.random() * 2 - 1) * sp, 0)).LookVector
 		end
-		local res = workspace:Raycast(origin, d2 * wdef.range, filter(char))
-		local hitPos = res and res.Position or (origin + d2 * wdef.range)
+		-- the shot's effects follow the arc as the world stands now
+		local pres, ppos = Ballistics.trace(origin, d2, v0, k, wdef.range, params)
 		if i == 1 then
-			firstPos, firstNormal, firstMat = hitPos, res and res.Normal or nil, res and res.Material or nil
+			firstPos, firstNormal, firstMat = ppos, pres and pres.Normal or nil, pres and pres.Material or nil
 		end
-		if res then
+		local pm = pres and pres.Instance:FindFirstAncestorOfClass("Model")
+		predHit = predHit or (pm ~= nil and pm:FindFirstChildOfClass("Humanoid") ~= nil)
+		-- the damage comes from the bullet in flight
+		Ballistics.fly(origin, d2, v0, k, wdef.range, params, function(res, hitPos, dist)
+			if ctx.Hazards.hit(res.Instance, player) then
+				return
+			end
 			local model = res.Instance:FindFirstAncestorOfClass("Model")
 			local thum = model and model:FindFirstChildOfClass("Humanoid")
-			if thum and thum.Health > 0 then
-				local dist = (hitPos - origin).Magnitude
-				local fs = wdef.range * Weapons.FALLOFF_START
-				local fall = 1
-				if dist > fs then
-					fall = math.max(Weapons.FALLOFF_MIN, 1 - (dist - fs) / (wdef.range - fs) * (1 - Weapons.FALLOFF_MIN))
-				end
-				local r = Combat.hitModel(model, {
-					dmg = ballistic.dmg * fall, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall), armorDmg = ballistic.armorDmg,
-					bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = res.Instance, hitPos = hitPos, attacker = player,
-					from = origin, weapon = wd.name, ammo = ammoDef and ammoDef.name or "?",
-				})
-				if r then
-					hit = true
-					killed = killed or r.killed
-				end
+			if not (thum and thum.Health > 0) then
+				return
 			end
-		end
+			local fs = wdef.range * Weapons.FALLOFF_START
+			local fall = 1
+			if dist > fs then
+				fall = math.max(Weapons.FALLOFF_MIN, 1 - (dist - fs) / (wdef.range - fs) * (1 - Weapons.FALLOFF_MIN))
+			end
+			local r = Combat.hitModel(model, {
+				dmg = ballistic.dmg * fall, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall), armorDmg = ballistic.armorDmg,
+				bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = res.Instance, hitPos = hitPos, attacker = player,
+				from = origin, weapon = wd.name, ammo = ammoDef and ammoDef.name or "?",
+			})
+			if r and player.Parent then
+				ctx.Remotes.note(player, "hit", { kill = r.killed })
+				ctx.Economy.skillUp(player, prof, wskill, 0.4)
+			end
+		end)
 	end
 	local hitPos = firstPos
-	if hit then
-		ctx.Remotes.note(player, "hit", { kill = killed })
-	end
-	local ms = Inv.modStats(s.inv, wg)
 	local loud = (wdef.loudness or 1) * ms.loud * ((ammoDef and ammoDef.ammo.subsonic and ms.suppressed) and 0.6 or 1)
 	ctx.AI.hearShot(origin, player, nil, loud)
 	ctx.AI.bulletPassed(origin, hitPos, char)
 	local tracer = ammoDef and ammoDef.ammo and ammoDef.ammo.tracer or nil
-	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = hit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat }, player)
+	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = predHit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat }, player)
+	if malf then
+		setMalf(player, wit, malf, malf == "jam" and (wit.wear or 100) <= 5)
+	end
 end
 
 -- tube-fed weapons: shells go in one at a time from rig/pockets/backpack; firing interrupts
@@ -420,7 +554,8 @@ local function estimate(a, cap)
 	return "ALMOST EMPTY"
 end
 
-function Combat.magCheck(player)
+-- Alt+T checks the magazine (an estimate), Shift+T the chamber (Tarkov)
+function Combat.magCheck(player, chamber)
 	local s = ctx.Raid.session(player)
 	if not s or s.done or not alive(player) then
 		return
@@ -434,9 +569,10 @@ function Combat.magCheck(player)
 		return
 	end
 	w.checking = true
-	ctx.Remotes.note(player, "magcheck", { state = "start", t = 1.1 })
-	ctx.Chars.gesture(player.Character, "check", 1.1)
-	task.delay(1.1, function()
+	local dur = chamber and 0.8 or 1.1
+	ctx.Remotes.note(player, "magcheck", { state = "start", t = dur, chamber = chamber })
+	ctx.Chars.gesture(player.Character, "check", dur)
+	task.delay(dur, function()
 		w.checking = nil
 		local _, _, _, wd2, r2 = Combat.activeWeapon(s)
 		if not wd2 then
@@ -445,7 +581,12 @@ function Combat.magCheck(player)
 		local cap = (wd2.family and r2 and Items.defs[r2.id].capacity) or (wg and Inv.capacityOf(s.inv, wg)) or wd2.capacity or 1
 		local text = r2 and estimate(r2.a or 0, cap) or "NO MAGAZINE"
 		local ammo = r2 and r2.at and Items.defs[r2.at] and Items.defs[r2.at].short or nil
-		ctx.Remotes.note(player, "magcheck", { state = "done", text = text, ammo = ammo })
+		if chamber then
+			local loaded = r2 and (r2.a or 0) > 0
+			text = loaded and "ROUND IN CHAMBER" or "CHAMBER EMPTY"
+			ammo = loaded and ammo or nil
+		end
+		ctx.Remotes.note(player, "magcheck", { state = "done", text = text, ammo = ammo, chamber = chamber })
 	end)
 end
 
@@ -477,7 +618,9 @@ function Combat.melee(player, dir)
 		local model = res.Instance:FindFirstAncestorOfClass("Model")
 		local thum = model and model:FindFirstChildOfClass("Humanoid")
 		if thum and thum.Health > 0 then
-			local r = Combat.hitModel(model, { dmg = wdef.damage, pen = wdef.pen, armorDmg = 0.1, bleedL = 0.45, bleedH = 0.25, part = res.Instance, hitPos = res.Position, attacker = player, from = head.Position, weapon = "KNIFE", ammo = "BLADE" })
+			local mprof = ctx.Profiles.get(player)
+			ctx.Economy.skillUp(player, mprof, "melee", 1)
+			local r = Combat.hitModel(model, { dmg = wdef.damage * (1 + Progress.bonus(mprof and mprof.skills, "melee")), pen = wdef.pen, armorDmg = 0.1, bleedL = 0.45, bleedH = 0.25, part = res.Instance, hitPos = res.Position, attacker = player, from = head.Position, weapon = "KNIFE", ammo = "BLADE" })
 			if r then
 				ctx.Remotes.note(player, "hit", { kill = r.killed })
 			end
@@ -502,8 +645,46 @@ function Combat.init(c)
 			Combat.setLight(player, p.on)
 		end
 	end, 3, 4)
-	ctx.Remotes.onAct("magcheck", function(player)
-		Combat.magCheck(player)
+	ctx.Remotes.onAct("magcheck", function(player, p)
+		local chamber = type(p) == "table" and p.chamber == true
+		local s = chamber and ctx.Raid.session(player)
+		if s and not s.done and alive(player) then
+			local wg, wit = Combat.activeWeapon(s)
+			if wit and wit.mf then
+				Combat.clearMalf(player, s, ws(player), wg, wit)
+				return
+			end
+		end
+		Combat.magCheck(player, chamber)
+	end, 1, 2)
+	-- a face shield raised or lowered (Tarkov's N): raised, the face is open to hits (Health)
+	ctx.Remotes.onAct("visor", function(player, p)
+		local char = player.Character
+		if char and type(p) == "table" and type(p.up) == "boolean" then
+			char:SetAttribute("VisorUp", p.up or nil)
+		end
+	end, 4, 4)
+	-- zeroing (Tarkov's Page Up / Page Down): the zero of the weapon in hand, in Tarkov's steps up to its sights' range
+	ctx.Remotes.onAct("zero", function(player, p)
+		local s = ctx.Raid.session(player)
+		if not s or type(p) ~= "table" or type(p.d) ~= "number" or not table.find(Ballistics.ZEROS, p.d) then
+			return
+		end
+		local wg = Combat.activeWeapon(s)
+		if not wg then
+			return
+		end
+		local maxM = Inv.modStats(s.inv, wg).range or 400
+		if p.d > maxM then
+			ctx.Remotes.note(player, "zero", { d = (s.zero and s.zero[wg]) or Ballistics.DEFAULT_ZERO, max = maxM, g = wg })
+			return
+		end
+		s.zero = s.zero or {}
+		s.zero[wg] = p.d
+		ctx.Remotes.note(player, "zero", { d = p.d, g = wg })
+	end, 8, 8)
+	ctx.Remotes.onAct("inspect", function(player)
+		Combat.inspect(player)
 	end, 1, 2)
 	ctx.Remotes.onAct("melee", function(player, p)
 		if type(p) == "table" and type(p.x) == "number" and type(p.y) == "number" and type(p.z) == "number" then

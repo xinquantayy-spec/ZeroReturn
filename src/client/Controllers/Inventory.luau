@@ -16,12 +16,18 @@ local Util = require(Shared.Util)
 local Maps = require(Shared.Maps)
 local TD = require(Shared.TraderData)
 
-local Inventory = { open = false }
+local Inventory = { open = false, tab = "GEAR" }
 local ctx, K
 local gui, panel, menu, ghost
 local loot = nil
 local selected = nil -- { g, ref }
 local rot = 0
+local searchText = "" -- the stash search (Tarkov 0.16.7): non-matching items are dimmed
+local SEARCH_CAT = {
+	weapon = "weapons", pistol = "weapons", melee = "weapons", mod = "parts", mag = "magazines", ammo = "ammo", grenade = "grenades",
+	armor = "gear armor", helmet = "gear helmets", rig = "gear rigs", backpack = "gear backpacks", headwear = "gear", headset = "gear headsets",
+	facecover = "gear", secure = "gear", med = "medical meds", food = "provisions food", key = "keys", loot = "barter", quest = "quest",
+}
 local gridTargets, slotTargets = {}, {}
 local drag = nil
 local busy = false
@@ -50,11 +56,15 @@ local function sizeOf(it)
 	local d = it and defs[it.id]
 	return d and d.w or 1, d and d.h or 1
 end
+-- Tarkov's gear column, in slot cells (7 wide): earpiece, headwear, face cover; body armour; the weapons on sling and
+-- on back; holster and scabbard. The rig, backpack and secure container head their grids in the middle column.
 local SLOT_LAYOUT = {
-	{ "head", 0, 0, 2, 2 }, { "ears", 0, 2, 1, 1 }, { "face", 1, 2, 1, 1 }, { "armor", 2, 0, 3, 3 }, { "rig", 5, 0, 3, 3 }, { "back", 8, 0, 3, 3 },
-	{ "primary", 0, 3, 5, 2 }, { "holster", 5, 3, 2, 2 }, { "melee", 7, 3, 1, 2 }, { "secure", 8, 3, 3, 2 },
-	{ "secondary", 0, 5, 5, 2 },
+	{ "ears", 0, 0, 2, 2 }, { "head", 2, 0, 3, 2 }, { "face", 5, 0, 2, 2 },
+	{ "armor", 2, 2, 3, 3 },
+	{ "primary", 0, 5, 7, 2 }, { "secondary", 0, 7, 7, 2 },
+	{ "holster", 0, 9, 4, 2 }, { "melee", 4, 9, 3, 2 },
 }
+local SLOT_ROWS = 11
 
 -- ── helpers ────────────────────────────────────────────────────────────────────
 local function data()
@@ -183,6 +193,13 @@ local function cornerText(view, it)
 		return tostring(it.uses)
 	end
 	return ""
+end
+
+Inventory.cornerText = cornerText
+
+-- the item under the mouse ({ g, ref }), for quick-slot binding
+function Inventory.hovered()
+	return hoverG
 end
 
 local function findFree(view, cid, w, h)
@@ -332,6 +349,18 @@ local function actionsFor(ref, g)
 			req({ op = "use", g = g })
 		end, "good")
 	end
+	-- M11 part B: the gunsmith repair kit on a worn weapon (out of raid)
+	if mine and not inRaid and (d.kind == "weapon" or d.kind == "pistol") and (it.wear or 100) < (it.wmax or 100) - 0.5 then
+		for kg, kit in view.items do
+			local kd = defs[kit.id]
+			if kd and kd.repair and (kit.pts or kd.repair.points) >= 1 then
+				add(string.format("REPAIR (KIT %d)", math.floor(kit.pts or kd.repair.points)), function()
+					req({ op = "repairKit", g = g, kit = kg })
+				end, "good")
+				break
+			end
+		end
+	end
 	if mine and (d.kind == "mag" or ((d.kind == "weapon" or d.kind == "pistol") and d.capacity and not d.family)) then
 		if (it.a or 0) > 0 then
 			add("UNLOAD AMMO", function()
@@ -357,10 +386,26 @@ local function actionsFor(ref, g)
 	end
 	-- weapon modding (M14, Tarkov): the modding screen for a gun (or a part with slots); a loose part goes
 	-- straight onto a gun you have where a slot takes it
-	if mine and (WP.isBase(it.id) or WP.SLOTS[it.id]) and ctx.Modding then
+	if mine and (WP.isBase(it.id) or (WP.SLOTS[it.id] and d.kind == "mod")) and ctx.Modding then
 		add("MODDING", function()
 			ctx.Modding.open(g)
 		end, "good")
+	end
+	-- goggles (Tarkov): onto a helmet's or head strap's night-vision mount, and off again
+	if mine and d.kind == "nvg" and locate(view, g) == "grid" then
+		for hg, h in view.items do
+			if h ~= it and WP.SLOTS[h.id] and WP.SLOTS[h.id].mount and locate(view, hg) ~= nil and WP.fits(h.id, "mount", it.id) then
+				local cur = h.mods and h.mods.mount
+				add((cur and "SWAP ONTO " or "INSTALL ON ") .. defs[h.id].short, function()
+					req({ op = "mod", g = hg, slot = "mount", mod = g })
+				end, "good")
+			end
+		end
+	end
+	if mine and WP.SLOTS[it.id] and WP.SLOTS[it.id].mount and it.mods and it.mods.mount and view.items[it.mods.mount] then
+		add("REMOVE " .. defs[view.items[it.mods.mount].id].short, function()
+			req({ op = "unmod", g = g, slot = "mount" })
+		end)
 	end
 	if mine and d.kind == "mod" and locate(view, g) == "grid" then
 		for wg, w in view.items do
@@ -440,6 +485,12 @@ end
 local function openMenu(ref, g, pos)
 	closeMenu()
 	local list = actionsFor(ref, g)
+	local v = viewOf(ref)
+	if v and v.items[g] and known(v.items[g].id) and Inventory.inspect then
+		table.insert(list, 1, { label = "INSPECT", fn = function()
+			Inventory.inspect({ ref = ref, g = g })
+		end })
+	end
 	if #list == 0 then
 		return
 	end
@@ -498,6 +549,15 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 		Size = UDim2.fromOffset(pw, ph), BackgroundColor3 = base, ZIndex = 4, Selectable = true, SelectionImageObject = K.selection(),
 	}, parent)
 	K.stroke(t, isSel and K.C.ochre or K.C.line, isSel and 0 or 0.72, isSel and 2 or 1)
+	-- Tarkov marks wish-listed items
+	if isKnown and ctx.Settings.data.wish and ctx.Settings.data.wish[it.id] then
+		K.label(t, "W", 10, { Name = "Wish", Position = UDim2.fromOffset(3, 2), Size = UDim2.fromOffset(10, 12), TextColor3 = K.C.ochre, FontFace = K.bold, ZIndex = 7 })
+	end
+	-- Tarkov marks a quick-slot item with its key
+	local qs = ref == "me" and ctx.QuickSlots and ctx.QuickSlots.slotOf(g)
+	if qs then
+		K.label(t, qs, 11, { Name = "Quick", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 3, 1, -1), Size = UDim2.fromOffset(12, 12), TextColor3 = K.C.ochre, FontFace = K.bold, ZIndex = 7 })
+	end
 	local iw, ih = sizeOf(it)
 	local rotated = iw ~= ih and ((pw > ph) ~= (iw > ih))
 	if K.isBuild(view.items, g) then
@@ -507,7 +567,7 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 		K.itemIcon(t, it.id, pw, ph, rotated, not isKnown, 4)
 	end
 	local small = math.min(pw, ph) < 40
-	K.label(t, isKnown and d.short or "?", small and 10 or 12, { Position = UDim2.fromOffset(3, 2), Size = UDim2.new(1, -5, 0, 13), FontFace = K.bold, ZIndex = 5, TextTruncate = Enum.TextTruncate.AtEnd })
+	K.label(t, isKnown and d.short or "?", small and 10 or 12, { Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -5, 0, 13), FontFace = K.bold, ZIndex = 5, TextTruncate = Enum.TextTruncate.AtEnd, TextXAlignment = Enum.TextXAlignment.Right })
 	local corner = cornerText(view, it)
 	if corner ~= "" then
 		K.label(t, corner, small and 10 or 11, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, -1), Size = UDim2.new(1, -6, 0, 13), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 5 })
@@ -560,6 +620,11 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 	end)
 	t.MouseEnter:Connect(function()
 		hoverG = { g = g, ref = ref }
+	end)
+	t.MouseLeave:Connect(function()
+		if hoverG and hoverG.g == g and hoverG.ref == ref then
+			hoverG = nil
+		end
 	end)
 	if dropAs then
 		hoverOn(t, dropAs)
@@ -621,6 +686,15 @@ local function drawGrid(parent, view, ref, cid, title, cw, ch, cell, x0, y0, cli
 				iw, ih = ih, iw
 			end
 			tile(g, view, ref, guid, (p.x - 1) * cell + 1, (p.y - 1) * cell + 1, iw * cell - 2, ih * cell - 2, cell, { kind = "cell", ref = ref, cid = cid, x = p.x, y = p.y, occupied = guid })
+			if cid == "stash" and searchText ~= "" then
+				local q = string.lower(searchText)
+				local hit = known(it.id) and (string.find(string.lower(d.name), q, 1, true) or string.find(string.lower(d.short or ""), q, 1, true)
+					or string.find(SEARCH_CAT[d.kind] or "", q, 1, true))
+				local t = g:FindFirstChild("Tile_" .. guid)
+				if t and not hit then
+					K.frame(t, { Name = "SearchDim", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.3, ZIndex = 9 })
+				end
+			end
 		end
 	end
 	table.insert(gridTargets, { ref = ref, cid = cid, frame = g, cell = cell, w = cw, h = ch, clip = clip })
@@ -691,59 +765,108 @@ local function drawHealth(parent, width)
 end
 
 -- equipment layout + pockets + container grids for any holder view (mine or a body)
-local function drawGear(parent, view, ref, cell, width)
+-- the gear column: health (yours), then the slots (Tarkov's arrangement)
+local function drawSlots(parent, view, ref, cell, width)
 	local y = 0
 	if ref == "me" then
 		local hf = K.frame(parent, { Name = "Health", BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 64) })
 		y += drawHealth(hf, width - 12)
 	end
-	local slotCell = math.floor(math.min(cell * 1.05, (width - 10) / 11))
-	local y0 = y
+	local slotCell = math.floor(math.min(cell * 1.15, (width - 6) / 7))
 	for _, e in SLOT_LAYOUT do
 		local slot, sx, sy, sw, sh = e[1], e[2], e[3], e[4], e[5]
-		drawSlot(parent, view, ref, slot, sx * slotCell, y0 + sy * (slotCell + 6), sw * slotCell - 6, sh * slotCell - 2, slotCell)
+		drawSlot(parent, view, ref, slot, sx * slotCell, y + sy * slotCell + math.floor(sy / 2) * 2, sw * slotCell - 6, sh * slotCell - 18, slotCell)
 	end
-	y += 7 * (slotCell + 6) + 4
-	local ph
-	if view.grids and view.grids.pockets then
-		local _, h0 = drawGrid(parent, view, ref, "pockets", "POCKETS", Config.POCKETS_W, Config.POCKETS_H, cell, 0, y, nil)
-		ph = h0
-	else
-		K.label(parent, "POCKETS  -  NOT SEARCHED", 11, { Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })
-		ph = 20
-	end
-	local secure = view.slots and view.slots.secure
-	if secure and view.grids and view.grids[secure] and view.items[secure] then
-		local sd = defs[view.items[secure].id]
-		drawGrid(parent, view, ref, secure, "SECURE", sd.grid.w, sd.grid.h, cell, (Config.POCKETS_W + 1) * cell, y, nil)
-		ph = math.max(ph, sd.grid.h * cell + 22)
-	end
-	y += ph + 4
-	for _, s in { "rig", "back" } do
-		local cg = view.slots and view.slots[s]
+	return y + SLOT_ROWS * slotCell + 14
+end
+
+-- the container column: each container's slot with its grid beside it (rig, pockets, backpack, secure container)
+local function drawContainers(parent, view, ref, cell, width)
+	local y = 0
+	local box = math.floor(cell * 2)
+	local function container(slot, title)
+		local cg = view.slots and view.slots[slot]
 		local it = cg and view.items[cg]
+		drawSlot(parent, view, ref, slot, 0, y, box, box - 16, cell)
+		local gx = box + 8
 		if it and view.grids and view.grids[cg] then
 			local cd = defs[it.id]
-			local _, gh = drawGrid(parent, view, ref, cg, (s == "rig" and "RIG  " or "BACKPACK  ") .. string.upper(cd.name), cd.grid.w, cd.grid.h, cell, 0, y, nil)
-			y += gh + 4
-		elseif ref ~= "me" and it and defs[it.id].grid then
-			-- body container not yet searched
-			K.label(parent, (s == "rig" and "RIG" or "BACKPACK") .. "  -  NOT SEARCHED", 11, { Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })
-			y += 20
+			local _, gh = drawGrid(parent, view, ref, cg, title .. "  ·  " .. string.upper(cd.short or cd.name), cd.grid.w, cd.grid.h, cell, gx, y, nil)
+			y += math.max(gh, box + 2) + 6
+		else
+			local why = (it and ref ~= "me") and "NOT SEARCHED" or "EMPTY"
+			K.label(parent, title .. "  ·  " .. why, 11, { Position = UDim2.fromOffset(gx, y), Size = UDim2.new(1, -gx, 0, 16), TextColor3 = K.C.dim })
+			y += box + 8
 		end
 	end
+	container("rig", "TACTICAL RIG")
+	-- pockets (no slot of their own)
+	if view.grids and view.grids.pockets then
+		local _, h0 = drawGrid(parent, view, ref, "pockets", "POCKETS", Config.POCKETS_W, Config.POCKETS_H, cell, box + 8, y, nil)
+		y += h0 + 6
+	else
+		K.label(parent, "POCKETS  ·  NOT SEARCHED", 11, { Position = UDim2.fromOffset(box + 8, y), Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })
+		y += 22
+	end
+	container("back", "BACKPACK")
+	container("secure", "SECURE CONTAINER")
 	return y
 end
 
-local function detail(parent, w, h)
+-- a body: its gear and its containers, one under the other (loot side)
+local function drawGear(parent, view, ref, cell, width)
+	local y = drawSlots(parent, view, ref, cell, width)
+	local c = K.frame(parent, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 1600) })
+	return y + drawContainers(c, view, ref, cell, width)
+end
+
+local detail
+-- Tarkov's INSPECT window (Inspect.luau): the item's 3D model and its full attribute sheet
+local function openInspect(sel)
+	local view = viewOf(sel.ref)
+	local it = view and view.items[sel.g]
+	if it and ctx.Inspect then
+		ctx.Inspect.open(view.items, sel.g, { key = tostring(sel.ref) .. ":" .. sel.g, mass = massOf(view, sel.g), unknown = not known(it.id) })
+	end
+end
+Inventory.inspect = openInspect
+
+function detail(parent, w, h, selOverride)
 	local det = K.frame(parent, { Name = "Detail", Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.panel })
 	K.stroke(det, K.C.line, 0.7)
-	K.pad(det, 8)
-	local sel = selected or hoverG
+	K.pad(det, h < 60 and 5 or 8)
+	local sel = selOverride or selected or hoverG
 	local view = sel and viewOf(sel.ref)
 	local it = view and view.items[sel.g]
+	if it and h < 60 then
+		-- the info bar: the item's name and key numbers, its actions in a row (touch and gamepad use these;
+		-- the mouse also has the right-click menu); INSPECT opens the full card
+		local d0 = defs[it.id]
+		local kn = known(it.id)
+		local sw0, sh0 = sizeOf(it)
+		K.label(det, kn and string.upper(d0.name) or "UNKNOWN ITEM", 13, { FontFace = K.bold, Size = UDim2.new(0.34, 0, 0, 15) })
+		K.label(det, kn and string.format("%s %s  ·  %.2f kg  ·  %dx%d%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), sw0, sh0, it.fir and "  ·  FOUND IN RAID" or "") or "Examine it to identify it.", 11, { Position = UDim2.fromOffset(0, 15), Size = UDim2.new(0.34, 0, 0, 14), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd })
+		local row = K.frame(det, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.66, -6, 1, 0) })
+		K.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, row)
+		local list = actionsFor(sel.ref, sel.g)
+		if kn then
+			table.insert(list, 1, { label = "INSPECT", fn = function()
+				openInspect({ ref = sel.ref, g = sel.g })
+			end })
+		end
+		for i, a in list do
+			local b = K.button(row, a.label, { TextSize = 10, LayoutOrder = i, Size = UDim2.fromOffset(math.max(70, #a.label * 7 + 16), h - 10) })
+			if a.tone == "warn" then
+				b.TextColor3 = K.C.orange
+			elseif a.tone == "good" then
+				b.TextColor3 = K.C.green
+			end
+			b.Activated:Connect(a.fn)
+		end
+		return
+	end
 	if not it then
-		K.label(det, ctx.Input.device() == "Gamepad" and "Select an item (A), then a free cell or slot." or "Drag items between grids. Right-click for actions, Ctrl+click quick move, Alt+click equip, R rotates while dragging.", 12, { Size = UDim2.fromScale(1, 1), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Top })
+		K.label(det, ctx.Input.device() == "Gamepad" and "Select an item (A), then a free cell or slot." or "Drag items between grids. Right-click for actions, Ctrl+click quick move, Alt+click equip, R rotates while dragging.", 12, { Size = UDim2.fromScale(1, 1), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Center })
 		return
 	end
 	local d = defs[it.id]
@@ -849,25 +972,55 @@ function Inventory.render()
 	K.label(panel, info, 12, { Position = UDim2.fromOffset(12, 28), Size = UDim2.fromOffset(W - 220, 16), TextColor3 = weight > 40 and K.C.orange or K.C.dim })
 	local close = K.button(panel, "CLOSE [" .. ctx.Input.label("Inventory") .. "]", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(150, 30) })
 	close.Activated:Connect(Inventory.close)
-	local top, detailH = 52, 112
-	local bodyH = H - top - detailH - 14
-	local leftW = math.floor(W * 0.47)
-	local rightW = W - leftW - 30
-	-- cell size from the widest thing on the left (11 slot columns) and the right (stash 10 columns)
-	local cell = math.floor(math.clamp(math.min((leftW - 20) / 11, (rightW - 24) / Config.STASH_W), 24, 46))
-	Inventory.cell = cell
-	-- left: my gear
-	local left = K.new("ScrollingFrame", { Name = "Gear", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(12, top), Size = UDim2.fromOffset(leftW, bodyH), ScrollBarThickness = 5, CanvasSize = UDim2.new(), Selectable = false }, panel)
-	local gh = drawGear(left, d, "me", cell, leftW)
-	left.CanvasSize = UDim2.fromOffset(0, gh + 10)
-	for _, t in gridTargets do
-		t.clip = t.clip or left
+	-- Tarkov's character tabs along the top: GEAR (this screen), HEALTH, SKILLS, then OVERALL out of a raid or TASKS in one
+	local tabs = { "GEAR", "HEALTH", "SKILLS", inRaid and "TASKS" or "OVERALL" }
+	if not table.find(tabs, Inventory.tab) then
+		Inventory.tab = "GEAR"
 	end
-	for _, t in slotTargets do
-		t.clip = t.clip or left
+	local tabBar = K.frame(panel, { Name = "Tabs", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -168, 0, 8), Size = UDim2.fromOffset(4 * 96, 30) })
+	K.list(tabBar, Enum.FillDirection.Horizontal, 4)
+	for _, t in tabs do
+		local on = Inventory.tab == t
+		local b = K.button(tabBar, t, { Name = "Tab_" .. t, Size = UDim2.fromOffset(92, 30), TextSize = 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+		b.Activated:Connect(function()
+			if Inventory.tab ~= t then
+				Inventory.tab = t
+				Inventory.render()
+			end
+		end)
+	end
+	if Inventory.tab ~= "GEAR" and ctx.Character then
+		local body = K.new("ScrollingFrame", {
+			Name = "Character", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(12, 52), Size = UDim2.fromOffset(W - 24, H - 64),
+			ScrollBarThickness = 5, CanvasSize = UDim2.new(), Selectable = false,
+		}, panel)
+		body.CanvasSize = UDim2.fromOffset(0, ctx.Character.draw(Inventory.tab, body, W - 40, H - 64) + 20)
+		return
+	end
+	-- Tarkov's three columns: your gear, your containers, then the stash (or what you are looting)
+	local top, detailH = 52, 40
+	local bodyH = H - top - detailH - 14
+	local cell = math.floor(math.clamp((W - 60) / (8 + 2 + 7 + Config.STASH_W + 1.5), 24, 46))
+	Inventory.cell = cell
+	local leftW = math.floor(cell * 7.6)
+	local midW = math.floor(cell * 8.8)
+	local rightW = W - leftW - midW - 44
+	local function column(name, x, w)
+		return K.new("ScrollingFrame", { Name = name, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(x, top), Size = UDim2.fromOffset(w, bodyH), ScrollBarThickness = 5, CanvasSize = UDim2.new(), Selectable = false }, panel)
+	end
+	local left = column("Gear", 12, leftW)
+	left.CanvasSize = UDim2.fromOffset(0, drawSlots(left, d, "me", cell, leftW) + 10)
+	local mid = column("Containers", 12 + leftW + 10, midW)
+	local n0, s0 = #gridTargets, #slotTargets
+	mid.CanvasSize = UDim2.fromOffset(0, drawContainers(mid, d, "me", cell, midW) + 10)
+	for i, t in gridTargets do
+		t.clip = t.clip or (i > n0 and mid or left)
+	end
+	for i, t in slotTargets do
+		t.clip = t.clip or (i > s0 and mid or left)
 	end
 	-- right: stash / container / body
-	local right = K.new("ScrollingFrame", { Name = "Other", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(leftW + 22, top), Size = UDim2.fromOffset(rightW, bodyH), ScrollBarThickness = 5, CanvasSize = UDim2.new(), Selectable = false }, panel)
+	local right = column("Other", 12 + leftW + midW + 22, rightW)
 	local nG, nS = #gridTargets, #slotTargets
 	if loot and inRaid then
 		local ref = "c:" .. loot.cid
@@ -906,6 +1059,24 @@ function Inventory.render()
 		local stashH = d.stashH or Config.STASH_H
 		local _, sh = drawGrid(right, d, "me", "stash", "STASH  " .. Config.STASH_W .. "x" .. stashH, Config.STASH_W, stashH, cell, 0, 0, nil)
 		right.CanvasSize = UDim2.fromOffset(0, sh + 60)
+		-- Tarkov's stash tools: SORT and SEARCH (by name or category; press Enter)
+		local sx = Config.STASH_W * cell
+		local sortB = K.button(right, "SORT", { Name = "Sort", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(sx, -1), Size = UDim2.fromOffset(64, 17), TextSize = 10 })
+		sortB.Activated:Connect(function()
+			req({ op = "sort" })
+		end)
+		local box = K.new("TextBox", {
+			Name = "Search", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(sx - 70, -1), Size = UDim2.fromOffset(150, 17), Text = searchText,
+			PlaceholderText = "SEARCH", ClearTextOnFocus = false, TextSize = 10, FontFace = K.font, TextColor3 = K.C.text, PlaceholderColor3 = K.C.dim,
+			BackgroundColor3 = K.C.panel2, BorderSizePixel = 0, TextXAlignment = Enum.TextXAlignment.Left,
+		}, right)
+		K.new("UIPadding", { PaddingLeft = UDim.new(0, 5) }, box)
+		box.FocusLost:Connect(function()
+			if box.Text ~= searchText then
+				searchText = box.Text
+				Inventory.render()
+			end
+		end)
 		local row = K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, sh + 6), Size = UDim2.new(1, 0, 0, 32) })
 		K.list(row, Enum.FillDirection.Horizontal, 6)
 		local hasGun = false
@@ -937,7 +1108,7 @@ function Inventory.render()
 	for i = nS + 1, #slotTargets do
 		slotTargets[i].clip = right
 	end
-	-- detail strip
+	-- info bar (the hovered or selected item; INSPECT in its menu opens the full card)
 	local det = K.frame(panel, { BackgroundTransparency = 1, Position = UDim2.new(0, 12, 1, -detailH - 8), Size = UDim2.new(1, -24, 0, detailH) })
 	detail(det, W - 24, detailH)
 	if ctx.Input.device() == "Gamepad" then
@@ -1083,6 +1254,9 @@ function Inventory.close()
 	end
 	Inventory.open = false
 	gui.Enabled = false
+	if ctx.Inspect then
+		ctx.Inspect.closeAll()
+	end
 	selected = nil
 	rot = 0
 	drag = nil

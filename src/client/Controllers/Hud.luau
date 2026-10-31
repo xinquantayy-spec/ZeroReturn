@@ -185,6 +185,13 @@ function Hud.showExits()
 	exitsUntil = os.clock() + 6
 end
 
+-- O: a time check (the raid clock pops; Tarkov 0.16.7 keeps the timer on screen)
+function Hud.timeCheck()
+	if O.clock and ctx.State.inRaid() then
+		O.clock:pop(0.2)
+	end
+end
+
 local function compass(v)
 	local ang = math.deg(math.atan2(v.X, -v.Z)) % 360
 	local names = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" }
@@ -218,7 +225,12 @@ local function slowUpdate()
 	else
 		stamp = os.date("%Y-%m-%d  %H:%M:%S", math.floor(os.time()))
 	end
-	O.rec:set({ { icon = I.DOT, color = C.red, alpha = blink and 0 or 0.85, size = SZ.rec * 0.66 }, { t = "REC", color = C.red }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
+	-- the bodycam stands by in the bunker and starts recording when the van doors slam (Lobby) or in the raid
+	if inRaid or Hud.recording then
+		O.rec:set({ { icon = I.DOT, color = C.red, alpha = blink and 0 or 0.85, size = SZ.rec * 0.66 }, { t = "REC", color = C.red }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
+	else
+		O.rec:set({ { icon = I.DOT, color = C.white, alpha = 0.55, size = SZ.rec * 0.66 }, { t = "STBY", color = C.white }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
+	end
 	O.dev:set({ { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Maps.nameOf(raid and raid.map) or "RELAY 7"), color = C.dim, alpha = 0.2 } })
 	-- clock / money
 	if inRaid and raid then
@@ -265,11 +277,19 @@ local function slowUpdate()
 		O.weapon:set({ { t = (Gr.itemName and Gr.itemName() or "GRENADE") .. "  ·  " .. how, color = C.yellow, alpha = 0.1 } })
 	elseif inRaid and W.hasWeapon then
 		O.weapon:show(true)
-		local line = (W.weaponName or "WEAPON") .. "  ·  " .. (W.modeName or "SEMI")
+		local line = (W.weaponName or "WEAPON") .. "  ·  " .. (W.modeLabel and W.modeLabel() or W.modeName or "SINGLE")
 		if W.light then
 			line ..= "  ·  LIGHT"
 		end
-		O.weapon:set({ { t = line, color = C.dim, alpha = 0.15 } })
+		if W.malf then
+			-- Tarkov flashes the weapon corner on a malfunction; inspecting names it
+			local blink = math.floor(os.clock() * 2.5) % 2 == 0
+			local what = W.malfName and (W.malfName .. "  ·  " .. ctx.Input.label("ChamberCheck") .. " TO CLEAR")
+				or ("MALFUNCTION  ·  " .. ctx.Input.label("InspectWeapon") .. " TO INSPECT")
+			O.weapon:set({ { t = line .. "  ·  ", color = C.dim, alpha = 0.15 }, { t = what, color = C.red, alpha = blink and 0.05 or 0.45 } })
+		else
+			O.weapon:set({ { t = line, color = C.dim, alpha = 0.15 } })
+		end
 	else
 		O.weapon:show(false)
 	end
@@ -339,7 +359,7 @@ function Hud.matchLine(m, now)
 		end
 		return segs
 	end
-	return { { t = "NO RAID IN PROGRESS  ·  DEPLOY FROM THE TERMINAL", color = C.dim } }
+	return { { t = "NO RAID IN PROGRESS  ·  PLAN AT THE OPS TABLE, BOARD THE VAN", color = C.dim } }
 end
 
 local function fastUpdate(dt)
@@ -567,7 +587,7 @@ function Hud.init(c)
 			return
 		end
 		if d.state == "start" then
-			Hud.progress("CHECKING MAGAZINE", d.t or 1.1)
+			Hud.progress(d.chamber and "CHECKING CHAMBER" or "CHECKING MAGAZINE", d.t or 1.1)
 		elseif d.state == "done" then
 			Hud.progress(nil)
 			Hud.notice(d.text or "?", d.ammo and string.upper(d.ammo) or nil, C.white, 2.2)

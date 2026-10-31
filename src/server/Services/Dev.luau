@@ -124,6 +124,7 @@ function C.tp(name, where)
 		return "no target"
 	end
 	char:PivotTo(cf)
+	char:SetAttribute("TP", os.clock())
 	return "ok " .. tostring(cf.Position)
 end
 
@@ -250,6 +251,7 @@ function C.takeLoose(name, id)
 		return "no such loose item"
 	end
 	p.Character:PivotTo(CFrame.new(e.part.Position + Vector3.new(0, 3, 2.5)))
+	p.Character:SetAttribute("TP", os.clock())
 	task.wait(0.2)
 	return tostring(ctx.Loot.takeLoose(p, id))
 end
@@ -400,7 +402,29 @@ function C.place(name, pos, lookAt)
 		return "no char"
 	end
 	char:PivotTo(CFrame.lookAt(pos, Vector3.new(lookAt.X, pos.Y, lookAt.Z)))
+	char:SetAttribute("TP", os.clock())
 	return "ok"
+end
+
+-- M11 part B: set the active gun's condition and/or give it a malfunction (misfire / eject / feed / jam)
+function C.weaponState(name, wear, malf)
+	local p = plr(name)
+	local s = p and ctx.Raid.session(p)
+	if not s then
+		return "not in raid"
+	end
+	local _, wit = ctx.Combat.activeWeapon(s)
+	if not wit then
+		return "no weapon"
+	end
+	if type(wear) == "number" then
+		wit.wear = wear
+	end
+	if type(malf) == "string" then
+		wit.mf, wit.mfk, wit.mfh = malf, nil, nil
+		ctx.Remotes.note(p, "malf", { state = "on" })
+	end
+	return string.format("wear %.1f/%.1f malf %s known %s", wit.wear or 100, wit.wmax or 100, tostring(wit.mf), tostring(wit.mfk))
 end
 
 -- M16 character / equipment checks (C01-C12 server side)
@@ -430,6 +454,28 @@ function C.xp(name, n)
 	ctx.Economy.addXp(prof, n or 1000)
 	ctx.Raid.push(p)
 	return "level " .. ctx.Economy.level(prof) .. " xp " .. prof.xp
+end
+
+-- flea market (Tarkov): age the player's offers by some minutes and let the market resolve them
+function C.flea(name, minutes)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	local f = prof and prof.flea
+	if not f then
+		return "no flea state"
+	end
+	local sec = (minutes or 10) * 60
+	for _, o in f.offers do
+		o.chk = (o.chk or o.t) - sec
+		o.t -= sec
+	end
+	ctx.Flea.resolve(p, prof, os.time(), ctx.Raid.session(p) ~= nil)
+	ctx.Raid.afterChange(p, false)
+	local n = 0
+	for _ in f.offers do
+		n += 1
+	end
+	return string.format("rating %.4f offers %d money %d", f.rating or 0, n, prof.money)
 end
 
 function C.money(name, n)
@@ -479,17 +525,18 @@ end
 
 -- raid time of day and weather (M10): env(hour, "clear"|"overcast"|"fog"|"rain", rain 0..1). Applies to the
 -- running raid at once (the clock jumps to `hour`) and to the next ones; env() with no hour goes back to random.
-function C.env(hour, weather, rain)
+function C.env(hour, weather, rain, season)
 	if hour == nil then
 		ctx.Match.forceEnv = nil
 		return "random"
 	end
-	local e = { clock0 = hour % 24, w = weather or "clear", rain = rain or ((weather == "rain") and 1 or 0) }
+	local e = { clock0 = hour % 24, w = weather or "clear", rain = rain or ((weather == "rain") and 1 or 0), season = season }
 	ctx.Match.forceEnv = e
 	if ctx.Match.state == "RUNNING" and ctx.Match.env then
 		local t = workspace:GetServerTimeNow()
 		local cur = ctx.Match.env
 		cur.w, cur.rain = e.w, e.rain
+		cur.season = season or cur.season
 		cur.clock0 = (e.clock0 - (t - (cur.t0 or t)) * 7 / 3600) % 24
 		for p, s in ctx.Raid.sessions() do
 			if not s.done then
@@ -784,6 +831,7 @@ function C.nadeDrill(name, kind, seconds)
 	end
 	local stats0 = HttpService:JSONEncode(ctx.AI.nadeStats)
 	char:PivotTo(CFrame.new(found.O + Vector3.new(0, 3.3, 0)))
+	char:SetAttribute("TP", os.clock())
 	local u = ctx.AI.spawn(kind or "boss", found.B, {})
 	if not u then
 		return "spawn failed"
@@ -800,6 +848,7 @@ function C.nadeDrill(name, kind, seconds)
 	task.wait(4)
 	local engaged = u.state
 	char:PivotTo(CFrame.new(found.H + Vector3.new(0, 3.3, 0)))
+	char:SetAttribute("TP", os.clock())
 	local thrown0 = ctx.Grenades.stats.thrown
 	local log = {}
 	for i = 1, seconds or 20 do
@@ -1026,6 +1075,7 @@ function C.showroomGo(name)
 	local p = plr(name)
 	if p.Character then
 		p.Character:PivotTo(CFrame.new(SHOW_ORIGIN + Vector3.new(0, RigSpec.hrp.center.Y, -14)))
+		p.Character:SetAttribute("TP", os.clock())
 	end
 	return "ok"
 end

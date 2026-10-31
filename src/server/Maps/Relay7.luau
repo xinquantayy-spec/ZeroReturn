@@ -54,22 +54,45 @@ Relay7.WALLS = {
 }
 -- stations (plan coordinates; the kit dressing places its props on the same spots)
 Relay7.BUNKS = { 7, 11.5, 16, 20.5, 25, 29.5 } -- bunk units along the west wall (x 1.5..8.5), 3 deep each
+Relay7.LOCKER_X0, Relay7.LOCKER_W = 1.4, 1.95 -- the locker row on the bunk room's north wall (12 lockers)
 Relay7.TRADERS = {
 	{ id = "vos", label = "VOS", x0 = 95, x1 = 107 },
 	{ id = "hale", label = "HALE", x0 = 110, x1 = 122 },
 	{ id = "tilda", label = "TILDA", x0 = 125, x1 = 137 },
 }
 Relay7.HIDEOUT = {
-	{ id = "generator", label = "Generator", x0 = 3, z0 = 45, x1 = 15, z1 = 50 },
-	{ id = "workbench", label = "Workbench", x0 = 35.5, z0 = 45, x1 = 44.5, z1 = 49 },
-	{ id = "medstation", label = "Medstation", x0 = 46.5, z0 = 53, x1 = 51, z1 = 71 },
-	{ id = "water", label = "Water collector", x0 = 1, z0 = 58.5, x1 = 6, z1 = 65.5 },
-	{ id = "storage", label = "Storage racks", x0 = 9, z0 = 72, x1 = 37, z1 = 75.4 },
+	{ id = "generator", label = "Generator", x0 = 3, z0 = 45, x1 = 15, z1 = 50, face = "S" },
+	{ id = "workbench", label = "Workbench", x0 = 35.5, z0 = 45, x1 = 44.5, z1 = 49, face = "S" },
+	{ id = "medstation", label = "Medstation", x0 = 46.5, z0 = 53, x1 = 51, z1 = 71, face = "W" },
+	{ id = "water", label = "Water collector", x0 = 1, z0 = 58.5, x1 = 6, z1 = 65.5, face = "E" },
+	{ id = "storage", label = "Storage racks", x0 = 9, z0 = 72, x1 = 37, z1 = 75.4, face = "N" },
 }
 Relay7.FIRING_LINE = 82 -- x of the booths' front edge; lanes run west
 Relay7.LANES = { { 82, 87.5 }, { 87.5, 93 }, { 93, 98.5 }, { 98.5, 104 } } -- z bands; lane 4 runs into the tunnel
 Relay7.STUDS_PER_M = 3.125
 Relay7.PLATES = { 10, 25, 50 } -- metres from the firing line
+-- targets per lane: a paper target at 5 m, steel at 10 and 25 m, and 50 m down the tunnel on lane 4. dz is the
+-- offset from the lane's middle, chosen so that from the booth no target hides another one behind it.
+Relay7.TARGETS = {
+	{ kind = "paper", m = 5, dz = 1.5 },
+	{ kind = "steel", m = 10, dz = -1.4 },
+	{ kind = "steel", m = 25, dz = 0.2, dz4 = -0.2 },
+	{ kind = "steel", m = 50, dz4 = 1.1 }, -- lane 4 only
+}
+-- every target in plan coordinates: { lane, kind, m, x, z }
+function Relay7.targets()
+	local out = {}
+	for i, l in Relay7.LANES do
+		local mid = (l[1] + l[2]) / 2
+		for _, t in Relay7.TARGETS do
+			local dz = (i == 4 and t.dz4) or t.dz
+			if dz then
+				table.insert(out, { lane = i, kind = t.kind, m = t.m, x = Relay7.FIRING_LINE - t.m * Relay7.STUDS_PER_M, z = mid + dz })
+			end
+		end
+	end
+	return out
+end
 
 local O = Vector3.zero
 -- plan point -> world
@@ -125,8 +148,10 @@ local function prompt(anchor, action, object, screen, range)
 	pp.Parent = anchor
 	return pp
 end
--- an invisible, non-colliding box that carries a station's prompt
-local function station(parent, name, x0, y0, z0, x1, y1, z1, action, object, screen, range)
+-- an invisible, non-colliding box that marks a station; its prompt sits on an attachment just outside the box on
+-- the side you use it from (face N/E/S/W, or U: above it) and needs a line of sight, so no prompt reaches through
+-- a wall and the station's own furniture never hides it
+local function station(parent, name, x0, y0, z0, x1, y1, z1, action, object, screen, range, face)
 	local s = block(parent, x0, y0, z0, x1, y1, z1, C.paper, M.SmoothPlastic, nil, name)
 	s.Transparency = 1
 	s.CanCollide = false
@@ -134,12 +159,31 @@ local function station(parent, name, x0, y0, z0, x1, y1, z1, action, object, scr
 	s.CanTouch = false
 	s:SetAttribute("NoDetail", true)
 	if action then
-		prompt(s, action, object, screen, range)
+		local px, pz = (x0 + x1) / 2, (z0 + z1) / 2
+		local y = math.clamp(4.5, math.min(y0, y1) + 0.5, math.max(y0, y1))
+		if face == "N" then
+			pz = math.min(z0, z1) - 0.4
+		elseif face == "S" then
+			pz = math.max(z0, z1) + 0.4
+		elseif face == "E" then
+			px = math.max(x0, x1) + 0.4
+		elseif face == "W" then
+			px = math.min(x0, x1) - 0.4
+		elseif face == "U" then
+			y = math.max(y0, y1) + 0.6
+		end
+		local att = Instance.new("Attachment")
+		att.Name = "PromptPoint"
+		att.Parent = s
+		att.WorldPosition = P(px, y, pz)
+		local pp = prompt(att, action, object, screen, range)
+		pp.RequiresLineOfSight = true
 	end
 	return s
 end
 
--- the painted band on a wall face: olive paint to 4.5 studs, a dark line on top (peeling: ZR_PlasterPeel)
+-- the painted band on a wall face: olive paint to 4.5 studs, a dark line on top (plain surfaces: the wear is in
+-- the decals - cracks, scuffs, bullet holes - not in a noisy texture)
 local BAND, LINE = 4.5, 0.28
 local function band(parent, axis, at, s0, s1, side)
 	if s1 - s0 < 0.05 then
@@ -159,7 +203,7 @@ local function band(parent, axis, at, s0, s1, side)
 		p.CastShadow = false
 		p:SetAttribute("NoDetail", true)
 	end
-	slab(0, BAND, C.band, M.Plaster, "ZR_PlasterPeel", "PaintBand")
+	slab(0, BAND, C.band, M.SmoothPlastic, nil, "PaintBand")
 	slab(BAND, BAND + LINE, C.bandLine, M.SmoothPlastic, nil, "PaintLine")
 end
 
@@ -176,9 +220,9 @@ local function wall(parent, w)
 		end
 		local p
 		if axis == "x" then
-			p = block(parent, s0, y0, at - T / 2, s1, y1, at + T / 2, C.concrete, M.Concrete, "ZR_ConcreteWorn", "Wall")
+			p = block(parent, s0, y0, at - T / 2, s1, y1, at + T / 2, C.concrete, M.Concrete, nil, "Wall")
 		else
-			p = block(parent, at - T / 2, y0, s0, at + T / 2, y1, s1, C.concrete, M.Concrete, "ZR_ConcreteWorn", "Wall")
+			p = block(parent, at - T / 2, y0, s0, at + T / 2, y1, s1, C.concrete, M.Concrete, nil, "Wall")
 		end
 		p:SetAttribute("Wall", true)
 		if y0 < 0.01 then
@@ -206,11 +250,12 @@ function Relay7.build(root, origin)
 	f.Parent = root
 	local shell = Instance.new("Model")
 	shell.Name = "Shell"
+	shell:SetAttribute("DetailDecalsOnly", true) -- the detail plan adds grime, cracks and leaks, no clutter
 	shell.Parent = f
 	-- floor (one slab under everything, the tunnel included) and ceilings per room
-	block(shell, -78, -2, 0, 140, 0, 104, C.floor, M.Concrete, "ZR_ConcreteWorn", "Floor")
+	block(shell, -78, -2, 0, 140, 0, 104, C.floor, M.Concrete, nil, "Floor")
 	for name, r in Relay7.ROOMS do
-		local c = block(shell, r[1], r[5], r[2], r[3], r[5] + 1, r[4], C.ceiling, M.Concrete, "ZR_ConcreteWorn", "Ceiling_" .. name)
+		local c = block(shell, r[1], r[5], r[2], r[3], r[5] + 1, r[4], C.ceiling, M.Concrete, nil, "Ceiling_" .. name)
 		c:SetAttribute("Ceiling", true)
 	end
 	for _, w in Relay7.WALLS do
@@ -223,44 +268,51 @@ function Relay7.build(root, origin)
 	st.Parent = f
 	local out = { center = origin, stations = {}, bunks = {}, spawns = {} }
 
-	-- bunk room: six double bunks with a locker each (every locker opens your stash), the mirror
-	for i, z in Relay7.BUNKS do
-		out.bunks[i] = station(st, "Locker" .. i, 9.5, 0, z + 0.5, 11.5, 7, z + 2.5, "Open stash", "Locker", "stash", 7)
-		for _, x in { 14.2, 16.8 } do
-			table.insert(out.spawns, CFrame.lookAt(P(x, 3.2, z + 1.5), P(x + 10, 3.2, z + 1.5)))
-		end
+	-- bunk room: six double bunks along the west wall (each player gets a bed and spawns at its foot) and a row of
+	-- twelve lockers on the north wall, one per bed with its owner's callsign (every locker opens your stash)
+	out.lockers = {}
+	for k = 1, 12 do
+		local x0 = Relay7.LOCKER_X0 + (k - 1) * Relay7.LOCKER_W
+		out.lockers[k] = station(st, "Locker" .. k, x0, 0, 0.6, x0 + Relay7.LOCKER_W, 7, 2.6, "Open stash", "Locker", "stash", 7, "S")
+		out.lockers[k]:SetAttribute("Bed", k)
 	end
-	out.stash = out.bunks[1]
-	out.stations.mirror = station(st, "Mirror", 31.5, 3.5, 0.6, 35.5, 8, 2.2, "Check your kit", "Mirror", "mirror")
+	for i, z in Relay7.BUNKS do
+		for _, zc in { z + 0.75, z + 2.25 } do
+			table.insert(out.spawns, CFrame.lookAt(P(12.6, 3.2, zc), P(22.6, 3.2, zc)))
+		end
+		out.bunks[i] = out.lockers[(i - 1) * 2 + 1]
+	end
+	out.stash = out.lockers[1]
+	out.stations.mirror = station(st, "Mirror", 31.5, 3.5, 0.6, 35.5, 8, 2.2, "Check your kit", "Mirror", "mirror", 7, "S")
 
 	-- ops room: the map table (deploy), departure board, roster, task board, insurance window
-	out.deploy = station(st, "DeployPrompt", 56, 0, 12, 80, 4.5, 22, "Plan deployment", "Map table", "deploy", 9)
+	out.deploy = station(st, "DeployPrompt", 56, 0, 12, 80, 4.5, 22, "Plan deployment", "Map table", "deploy", 13, "U")
 	out.stations.departure = station(st, "DepartureBoard", 69, 5.2, 0.6, 81, 11, 1.4)
-	out.stations.roster = station(st, "Roster", 40.6, 3.2, 24, 41.4, 7.4, 30)
-	out.stations.tasks = station(st, "TaskBoard", 90.6, 3, 24, 91.4, 7.2, 32, "Read tasks", "Task board", "tasks", 8)
-	out.stations.insurance = station(st, "InsuranceWindow", 44, 2, 33.5, 54, 7, 35.4, "Insure kit", "Insurance window", "insurance", 8)
+	out.stations.roster = station(st, "Roster", 40.6, 3.2, 24, 41.4, 7.4, 30, "Squad up", "Roster", "squad", 8, "E")
+	out.stations.tasks = station(st, "TaskBoard", 90.6, 3, 24, 91.4, 7.2, 32, "Read tasks", "Task board", "tasks", 8, "W")
+	out.stations.insurance = station(st, "InsuranceWindow", 44, 2, 33.5, 54, 7, 35.4, "Insure kit", "Insurance window", "insurance", 8, "N")
 
 	-- traders' hall: three counters, the Fence by the south wall, the mail pigeonholes
 	for _, t in Relay7.TRADERS do
-		out.stations["trader_" .. t.id] = station(st, "Counter_" .. t.id, t.x0, 0, 9, t.x1, 4, 12, "Trade", t.label, "trader:" .. t.id, 9)
+		out.stations["trader_" .. t.id] = station(st, "Counter_" .. t.id, t.x0, 0, 9, t.x1, 4, 12, "Trade", t.label, "trader:" .. t.id, 9, "S")
 	end
-	out.stations.trader_fence = station(st, "FenceStall", 114.8, 0, 31, 119.2, 3.5, 35.4, "Trade", "The Fence", "trader:fence", 8)
-	out.stations.mail = station(st, "Pigeonholes", 138.2, 1.5, 19.5, 139.4, 7.2, 25.5, "Collect mail", "Pigeonholes", "mail", 8)
+	out.stations.trader_fence = station(st, "FenceStall", 121.2, 0, 31, 125.6, 3.5, 35.4, "Trade", "The Fence", "trader:fence", 8, "N")
+	out.stations.mail = station(st, "Pigeonholes", 138.2, 1.5, 19.5, 139.4, 7.2, 25.5, "Collect mail", "Pigeonholes", "mail", 8, "W")
 
 	-- hideout wing: one bay per module
 	for _, b in Relay7.HIDEOUT do
-		out.stations["hideout_" .. b.id] = station(st, "Bay_" .. b.id, b.x0, 0, b.z0, b.x1, 5, b.z1, "Manage", b.label, "hideout:" .. b.id, 9)
+		out.stations["hideout_" .. b.id] = station(st, "Bay_" .. b.id, b.x0, 0, b.z0, b.x1, 5, b.z1, "Manage", b.label, "hideout:" .. b.id, 9, b.face)
 	end
 
 	-- gunsmith bench
-	out.stations.gunsmith = station(st, "GunsmithBench", 59, 0, 44.6, 73, 4, 48, "Modify weapon", "Gunsmith bench", "modding", 9)
+	out.stations.gunsmith = station(st, "GunsmithBench", 59, 0, 44.6, 73, 4, 48, "Modify weapon", "Gunsmith bench", "modding", 9, "S")
 
 	-- firing range: lanes run west from the firing line (lane 4 on into the tunnel); the kit puts booths and plates
 	out.range = { x0 = -78, x1 = 92, z0 = 76, z1 = 104, line = Relay7.FIRING_LINE }
 
 	-- motor pool: the van (deploy), the ramp up to the roller door, the scav hatch
-	out.stations.van = station(st, "VanRear", 114, 0, 79.4, 122, 7, 83, "Board the van", "PMC van", "van", 8)
-	out.stations.scav = station(st, "ScavHatch", 96.4, 0, 95.4, 100.6, 3, 99.6, "Scav run", "Manhole hatch", "scav", 8)
+	out.stations.van = station(st, "VanRear", 114, 0, 79.4, 122, 7, 83, "Board the van", "PMC van", "van", 8, "S")
+	out.stations.scav = station(st, "ScavHatch", 96.4, 0, 95.4, 100.6, 3, 99.6, "Scav run", "Manhole hatch", "scav", 8, "U")
 	-- the ramp's slope (the kit Ramp is only the look): 13 wide, rising 9 over 36 toward the south wall
 	local rp = P(132.8, 4.5, 85.4)
 	local wedge = Instance.new("WedgePart")
@@ -279,6 +331,7 @@ function Relay7.build(root, origin)
 
 	out.spawn = out.spawns[1]
 	out.model = f
+	out.shell = shell
 	-- the bunker's bounds (world), for "is this player in the safehouse"
 	out.lo, out.hi = P(-80, -4, -2), P(142, 26, 106)
 	return out

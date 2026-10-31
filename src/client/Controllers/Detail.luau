@@ -389,7 +389,7 @@ local function treeShadows(camPos, force)
 	end
 end
 
--- ── potato: plain materials, no shadows, no cloud layer (local only, reversible) ───
+-- ── potato: plain materials, no shadows, no cloud layer, no fill lights (local only, reversible) ───
 -- Fog, light levels and exposure stay the same on every preset, so no setting sees further or through more.
 -- strong keys: a weak-keyed table would drop Instance keys (their Lua handles get collected while the parts live on),
 -- and leaving POTATO would then not restore the materials
@@ -399,6 +399,9 @@ local function strip(d)
 	if d:IsA("BasePart") and d.MaterialVariant ~= "" then
 		stripped[d] = d.MaterialVariant
 		d.MaterialVariant = ""
+	elseif d:IsA("Light") and d.Enabled and d:GetAttribute("Fill") then
+		stripped[d] = true -- extra fill lights (the lobby bunker) go out on POTATO
+		d.Enabled = false
 	end
 end
 local function setPotato(on)
@@ -424,7 +427,11 @@ local function setPotato(on)
 		end
 		for p, v in stripped do
 			if p.Parent then
-				p.MaterialVariant = v
+				if v == true then
+					p.Enabled = true
+				else
+					p.MaterialVariant = v
+				end
 			end
 		end
 		table.clear(stripped)

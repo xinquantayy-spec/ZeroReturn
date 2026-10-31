@@ -124,7 +124,9 @@ local function update(dt)
 	UIS.MouseIconEnabled = menu
 	local S = ctx.Settings.data
 	local aiming = ctx.Weapon.aiming
-	local sens = (S.sens or 1) * (aiming and (ctx.Weapon.aimSens and ctx.Weapon.aimSens() or 0.62) or 1)
+	-- turn speed: heavy armour and helmets slow turning when not aiming (Tarkov's turn speed penalty)
+	local gear = ctx.Movement and ctx.Movement.gear
+	local sens = (S.sens or 1) * (aiming and (ctx.Weapon.aimSens and ctx.Weapon.aimSens() or 0.62) * (S.aimSens or 1) or (1 + (gear and gear.turn or 0) / 100))
 	local free = not menu and ctx.Input.down("FreeLook") and not aiming
 	if not menu then
 		local md = UIS:GetMouseDelta()
@@ -205,7 +207,7 @@ local function update(dt)
 		Camera.bobPhase += dt * (4.4 + flatSpeed * 0.36)
 	end
 	-- footfall bob: a dip on every step (|sin|), lateral sway once per stride, plus a little step roll
-	local amp = math.clamp(flatSpeed / 14, 0, 1.3) * 0.085 * motion * (aiming and 0.35 or 1)
+	local amp = math.clamp(flatSpeed / 14, 0, 1.3) * 0.085 * motion * (aiming and 0.35 or 1) * (S.headBob or 1)
 	local stepS = math.sin(Camera.bobPhase)
 	local bobY = (0.5 - math.abs(stepS)) * amp * 1.3
 	local bobX = math.cos(Camera.bobPhase) * amp * 0.55

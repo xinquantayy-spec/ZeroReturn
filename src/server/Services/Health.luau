@@ -123,7 +123,8 @@ function Health.attach(model, opts)
 					end
 				end)
 			elseif new == Enum.HumanoidStateType.Landed and peak > 62 and not hs.dead then
-				local dmg = (peak - 62) * 1.1
+				local fprof = hs.player and ctx.Profiles.get(hs.player)
+				local dmg = (peak - 62) * 1.1 * (1 - (fprof and Progress.bonus(fprof.skills, "health") or 0))
 				Health.applyDamage(hs, "lleg", dmg * 0.5)
 				Health.applyDamage(hs, "rleg", dmg * 0.5)
 				if peak > 78 then
@@ -216,7 +217,7 @@ local function armorFor(hs, key, hitPos, partInst)
 		end
 		local covered
 		if face then
-			covered = d.armor.face == true
+			covered = d.armor.face == true and not (partInst.Parent and partInst.Parent:GetAttribute("VisorUp"))
 		else
 			covered = math.random() < math.min(1, (d.armor.coverage or 0.6) + 0.3)
 		end
@@ -253,8 +254,7 @@ function Health.hit(model, info)
 	if g then
 		local a = d.armor
 		local durFrac = math.clamp(it.dur / a.dur, 0, 1)
-		local eff = a.class * 10 * (0.55 + 0.45 * durFrac)
-		local chance = math.clamp(((info.pen or 0) - eff + 12) / 24, 0, 1)
+		local chance = Items.penChance(info.pen or 0, a.class, durFrac)
 		local pen = math.random() < chance
 		res.armor, res.penetrated = d.id, pen
 		if key == "head" and not pen and a.ricochet and math.random() < a.ricochet * 0.5 then
@@ -280,6 +280,7 @@ function Health.hit(model, info)
 	local bleedMul = 1 - (prof and Progress.bonus(prof.skills, "vitality") or 0)
 	if prof and dmg > 0 and ctx.Economy then
 		ctx.Economy.skillUp(hs.player, prof, "vitality", dmg * 0.04)
+		ctx.Economy.skillUp(hs.player, prof, "stress", dmg * 0.02)
 	end
 	if wounds and dmg > 0 and not hs.dead then
 		if math.random() < (info.bleedH or 0.05) * bleedMul then
@@ -287,7 +288,7 @@ function Health.hit(model, info)
 		elseif math.random() < (info.bleedL or 0.12) * bleedMul then
 			hs.bleedL[key] = true
 		end
-		if LIMB[key] and math.random() < 0.05 + dmg / 280 then
+		if LIMB[key] and math.random() < (0.05 + dmg / 280) * (1 - (prof and Progress.bonus(prof.skills, "health") or 0)) then
 			hs.fract[key] = true
 		end
 	end
@@ -431,7 +432,8 @@ local function plan(hs, d, it, part)
 	local label = "USING " .. string.upper(d.name)
 	if m.pain and not m.hp then
 		return { time = m.time or 1.5, label = label, apply = function()
-			hs.painUntil = now() + (m.duration or 120)
+			local pprof = hs.player and ctx.Profiles.get(hs.player)
+			hs.painUntil = now() + (m.duration or 120) * (1 + (pprof and Progress.bonus(pprof.skills, "stress") or 0))
 			return 1
 		end }
 	end
@@ -448,7 +450,11 @@ local function plan(hs, d, it, part)
 		if not target then
 			return nil, "NOTHING_TO_TREAT"
 		end
-		return { time = m.time or 12, label = "SURGERY  ·  " .. Health.NAMES[target], apply = function()
+		local sprof = hs.player and ctx.Profiles.get(hs.player)
+		return { time = (m.time or 12) * (1 - (sprof and Progress.bonus(sprof.skills, "surgery") or 0)), label = "SURGERY  ·  " .. Health.NAMES[target], apply = function()
+			if hs.player then
+				ctx.Economy.skillUp(hs.player, sprof, "surgery", 5)
+			end
 			local p = hs.parts[target]
 			p.max = math.max(1, math.floor(p.max * 0.6))
 			p.hp = 1

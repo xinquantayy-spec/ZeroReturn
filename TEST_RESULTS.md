@@ -8,6 +8,23 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Lobby: Relay 7 bunker (2026-10-31)
+
+Studio on the T490, one client, in-memory store.
+
+| Check | How | Result |
+|---|---|---|
+| Automated | `dev:Invoke("tests")` | LogicTests 195/195 (11 new: under 300 kit props, at most 6 shadow lights, every prop built from its meshes, no prompt through a wall, every station has its prompt, 12 beds/lockers/spawns, departure rows 24 flaps, all four rows filled, each booth is its lane, no lane downrange, 13 targets none hidden), CharTests 38/38, LookTests 19/19, MapTests 32/32 |
+| The bunker built | Server count | 293 kit props, 0 fallback boxes, 30 lights (6 casting shadows) |
+| Rooms | Screenshots of every room | Bunks and locker row, ops room with boards and table, traders' hall with NPCs, corridor, hideout (dark with emergency light at generator level 0), gunsmith, range, motor pool with van and ramp |
+| Shared screens | Server read-back and screenshots | Departure board "NO RAID ... RELAY 7 / NEXT RAID ... BOARD THE VAN"; roster "1/12 ON SERVER"; map sheets readable from the south side; locker card shows the callsign |
+| Your side | Screenshots | Mirror orbit; R-17 clamped in the vise by its magwell; four stash guns in the rack; hideout labels "YOUR WORKBENCH · NOT BUILT" |
+| Range | Fired from booth 2 | Practice ammo 25 then reload to full; display "HITS 1/8 · TIME 00:01.1", then "GROUP 26.5 CM · TIME 00:00.8"; shots outside a booth are not scored |
+| Van | Boarded with the prompt | Queued, dashboard countdown, toast "IN THE VAN · STEP OUT TO LEAVE THE QUEUE", departure fade, landed on Quay 7 with REC on |
+| Frame rate | RenderStepped count, render quality 21 | Bunker 20 fps (212 draw calls, 53k triangles) against Quay 7 12 fps (572, 107k) at the same moment; lights or props off changed it by under 2 fps. Indicative only |
+
+**Not verified:** two clients (shared screens, squads boarding, others seeing the doors slam), phones, the scav hatch run to the end, a full hideout with every module built.
+
 ## M14 Weapon modding and guns as parts (2026-10-29)
 
 Studio on the owner's T490 laptop, one client. Design and fidelity check: `docs/weapons/WEAPON_MODDING.md`.

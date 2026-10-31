@@ -24,7 +24,8 @@ local function hex(h)
 end
 local STENCIL = hex("D9D2BC") -- off-white stencil paint
 local YELLOW = hex("C9A13C")
-local WARM, COLD, AMBER = hex("FFD9A8"), hex("D8E6FF"), hex("FFB070")
+local WARM, COLD, AMBER = hex("FFD9A8"), hex("D8E6FF"), hex("FFC490")
+local DUCT = { metal = hex("8E8F8A") } -- galvanised sheet gone dull: the baked colour times this
 
 -- ── placing ────────────────────────────────────────────────────────────────────────────────────────────────
 -- a facing: N/E/S/W or degrees clockwise from north (north is -z on the plan)
@@ -44,9 +45,20 @@ local function at(x, y, z, f)
 	return CFrame.lookAt(p, p + dirOf(f))
 end
 -- a kit prop with its origin (bottom centre) at plan (x, y, z), front toward f
+-- plain surfaces in the bunker (no speckled MaterialVariants): the baked chips and the decals carry the wear
+local CLEAN = { paint = false, concrete = false, plaster = false }
+local function place(parent, name, cf, opts)
+	opts = opts or {}
+	if opts.variants == nil then
+		opts = table.clone(opts)
+		opts.variants = CLEAN
+	end
+	return Kit.place(parent, name, cf, opts)
+end
 local function put(parent, name, x, y, z, f, opts)
 	count += 1
-	return Kit.place(parent, name, at(x, y, z, f), opts)
+	local cf = at(x, y, z, f)
+	return place(parent, name, cf, opts), cf
 end
 -- a prop against a wall: (x, z) on the wall's surface, the prop facing f away from it, its back flat on the wall
 local function wall(parent, name, x, y, z, f, opts)
@@ -65,7 +77,7 @@ end
 local function run(parent, name, axis, a, b, cross, y, f, how, opts)
 	local size = Kit.size(name)
 	local len = b - a
-	local n = math.max(1, math.floor(len / size.X + 0.5))
+	local n = (opts and opts.segs) or math.max(1, math.floor(len / size.X + 0.5))
 	local seg = len / n
 	opts = table.clone(opts or {})
 	opts.scale = V(seg / size.X, 1, 1)
@@ -107,6 +119,28 @@ local function lamp(parent, name, x, y, z, color, range, brightness, shadows)
 	pl.Range = range
 	pl.Brightness = brightness
 	pl.Shadows = shadows == true
+	if not shadows then
+		pl:SetAttribute("Fill", true) -- POTATO turns the fill lights off (client Detail)
+	end
+	pl.Parent = a
+	a.Parent = parent
+	return a
+end
+-- a small warm lamp at a point of a prop (its frame cf, offset in prop space): desk lamps, bench lamps
+local function propLamp(parent, cf, off, color, range, brightness)
+	local p = (cf * CFrame.new(off)).Position
+	local a = Instance.new("Part")
+	a.Name = "PropLamp"
+	a.Size = V(0.2, 0.2, 0.2)
+	a.Transparency = 1
+	quiet(a)
+	a.CFrame = CFrame.new(p)
+	local pl = Instance.new("PointLight")
+	pl.Color = color
+	pl.Range = range
+	pl.Brightness = brightness
+	pl.Shadows = false
+	pl:SetAttribute("Fill", true)
 	pl.Parent = a
 	a.Parent = parent
 	return a
@@ -163,10 +197,11 @@ end
 local function floorText(parent, text, x, z, w, h, f, color)
 	local p = Instance.new("Part")
 	p.Name = "FloorText"
-	p.Size = V(w, 0.05, h)
+	-- a Top-face gui reads up along the plate's -X: point that the way the reader faces (f)
+	p.Size = V(h, 0.05, w)
 	p.Transparency = 1
 	quiet(p)
-	p.CFrame = at(x, 0.03, z, f or "N")
+	p.CFrame = CFrame.fromMatrix(P(x, 0.03, z), -dirOf(f or "N"), Vector3.yAxis)
 	local g = Instance.new("SurfaceGui")
 	g.Face = Enum.NormalId.Top
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
@@ -239,6 +274,42 @@ local function hazard(parent, x, y0, y1, z, f, w)
 	p.Parent = parent
 	return p
 end
+-- a screen: an invisible plate at `cf` (w x h, its front along cf.LookVector, or its top when top = true) carrying a
+-- SurfaceGui the game writes on (boards, cards, map sheets). Returns the plate and the gui.
+local function screen(parent, name, cf, w, h, top, ppsd, maxDist)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = top and V(w, 0.04, h) or V(w, h, 0.04)
+	p.Transparency = 1
+	quiet(p)
+	p.CFrame = cf
+	local g = Instance.new("SurfaceGui")
+	g.Name = "Gui"
+	g.Face = top and Enum.NormalId.Top or Enum.NormalId.Front
+	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g.PixelsPerStud = ppsd or 40
+	g.LightInfluence = 0.75
+	g.MaxDistance = maxDist or 70
+	g.Parent = p
+	p.Parent = parent
+	return p, g
+end
+local function label(parent, name, text, size, pos, color, font, align)
+	local t = Instance.new("TextLabel")
+	t.Name = name
+	t.BackgroundTransparency = 1
+	t.Size = size
+	t.Position = pos or UDim2.new()
+	t.Text = text
+	t.TextColor3 = color or STENCIL
+	t.FontFace = font or OSWALD
+	t.TextScaled = true
+	t.TextXAlignment = align or Enum.TextXAlignment.Center
+	t.Parent = parent
+	return t
+end
+local MONO = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold)
+local MARKER = Font.fromEnum(Enum.Font.PermanentMarker)
 -- a wear-kit piece (litter, chips, puddles: ZR_WK_*) on the floor
 local function wk(parent, key, x, z, yaw, s)
 	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
@@ -279,10 +350,28 @@ local function bunkRoom(g, R)
 	-- six double bunks head to the west wall, a locker at each foot (every locker opens your stash)
 	for i, z in R.BUNKS do
 		put(g, (i % 2 == 0) and "BunkBedMessy" or "BunkBed", 5.0, 0, z + 1.5, 180 + ((i * 37) % 5 - 2) * 0.6)
-		put(g, (i == 5) and "LockerOpen" or "Locker", 10.5, 0, z + 1.5, "E")
 	end
+	-- the locker row on the north wall: one per bed, the owner's callsign on the card (Lobby service), and a spare
+	-- standing open at the end of the row
+	local cards = {}
+	for k = 1, 12 do
+		local x = R.LOCKER_X0 + (k - 0.5) * R.LOCKER_W
+		local _, cf = wall(g, "Locker", x, 0, 0.6, "S", { name = "Locker" .. k })
+		local card, gui = screen(g, "Card" .. k, cf * CFrame.new(0, 5.1, -1.02), 0.78, 0.34, false, 60, 26)
+		card:SetAttribute("Bed", k)
+		local bg = Instance.new("Frame")
+		bg.Size = UDim2.fromScale(1, 1)
+		bg.BackgroundColor3 = hex("D8D2BE")
+		bg.BorderSizePixel = 0
+		bg.Parent = gui
+		label(bg, "Name", "", UDim2.fromScale(0.92, 0.8), UDim2.fromScale(0.04, 0.1), hex("1E1E1A"), MONO)
+		cards[k] = card
+	end
+	wall(g, "LockerOpen", R.LOCKER_X0 + 12.5 * R.LOCKER_W, 0, 0.6, "S")
+	Dress.cards = cards
+	stencil(g, "LOCKERS", R.LOCKER_X0 + 6 * R.LOCKER_W, 8.0, 0.6, "S", 3.6, 0.8)
 	-- the mirror (check your kit), first aid, the pipe drop by the corner
-	wall(g, "MirrorSink", 33.5, 0, 0.6, "S")
+	wall(g, "MirrorSink", 33.5, 0, 0.6, "S", { mats = { glass = { M.Glass, nil, 0.05, 0.32, false } }, tint = { glass = hex("B9C3C6") } })
 	wall(g, "FirstAid", 28.6, 4.6, 0.6, "S")
 	wall(g, "PipeValve", 37.6, 0, 0.6, "S")
 	wall(g, "PipeRun", 8.6, 9.6, 0.6, "S")
@@ -304,7 +393,6 @@ local function bunkRoom(g, R)
 	wall(g, "Extinguisher", 12.4, 0.6, 35.4, "N")
 	wall(g, "CageLamp", 18, 9.0, 35.4, "N", { shadows = false })
 	-- ceiling: two joists, three fittings (the middle one holds the room's light; one tube is dead)
-	run(g, "Beam", "x", 0.6, 39.4, 12, 12, "S", "hang")
 	run(g, "Beam", "x", 0.6, 39.4, 25, 12, "S", "hang")
 	fluoro(g, 21, 18.5, 12, "S", { WARM, 32, 1.25, true })
 	fluoro(g, 21, 6.5, 12, "S", { WARM, 16, 0.35, false })
@@ -316,16 +404,59 @@ local function bunkRoom(g, R)
 end
 
 local function opsRoom(g, R)
-	-- the map table (plan your deployment), chairs round it
-	put(g, "MapTable", 68, 0, 17, "S")
-	for _, c in { { 59.5, 23.7 }, { 66.5, 23.9 }, { 74.0, 23.6 }, { 62.0, 10.3 }, { 75.0, 10.4 }, { 54.4, 17.6 }, { 81.6, 15.8 } } do
+	-- the map table (plan your deployment), chairs round it, its desk lamp
+	local _, tcf = put(g, "MapTable", 68, 0, 17, "S")
+	propLamp(g, tcf, V(9.6, 4.8, 2.9), hex("FFC890"), 12, 0.8)
+	-- the four map sheets: the map, its kind and the votes for the next raid (Lobby service)
+	for i, x in { 8.6, 2.9, -2.9, -8.6 } do
+		-- (a Top-face gui reads up along the plate's -X: turn the plate so that points away from the south side)
+		local turn = CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, -1), Vector3.yAxis)
+		local _, gui = screen(g, "MapSheet" .. i, tcf * CFrame.new(x, 3.47, -0.6) * turn, 4.0, 5.0, true, 40, 50)
+		label(gui, "Name", "", UDim2.fromScale(0.9, 0.2), UDim2.fromScale(0.05, 0.06), hex("2A2A24"), OSWALD)
+		label(gui, "Kind", "", UDim2.fromScale(0.9, 0.1), UDim2.fromScale(0.05, 0.27), hex("5A5546"), OSWALD)
+		label(gui, "Votes", "", UDim2.fromScale(0.9, 0.16), UDim2.fromScale(0.05, 0.5), hex("8E2A22"), MONO)
+		label(gui, "State", "", UDim2.fromScale(0.9, 0.12), UDim2.fromScale(0.05, 0.76), hex("2E4A2E"), OSWALD)
+	end
+	for _, c in { { 61.0, 23.7 }, { 72.5, 23.8 }, { 66.0, 10.3 }, { 54.4, 17.6 }, { 81.6, 15.8 } } do
 		put(g, "Chair", c[1], 0, c[2], toward(c[1], c[2], 68, 17) + ((c[1] * 7) % 11 - 5))
 	end
 	-- boards: departures (north wall), roster (west), tasks (east); the insurance hatch in the south wall
-	wall(g, "DepartureBoard", 75, 5.2, 0.6, "S")
+	local _, dcf = wall(g, "DepartureBoard", 75, 5.2, 0.6, "S")
 	wall(g, "WallClock", 62.5, 8.3, 0.6, "S")
-	wall(g, "Whiteboard", 40.6, 3.2, 27, "E")
-	wall(g, "CorkBoard", 91.4, 3.0, 28, "W")
+	local _, wcf = wall(g, "Whiteboard", 40.6, 3.2, 27, "E")
+	local _, ccf = wall(g, "CorkBoard", 91.4, 3.0, 28, "W")
+	-- the departure board: one character per flap (4 rows of 24), written by the Lobby service
+	do
+		local _, gui = screen(g, "DepartureScreen", dcf * CFrame.new(0.045, 1.98, -0.1), 11.28, 2.88, false, 40, 90)
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.fromScale(1 / 24, 1 / 4)
+		grid.CellPadding = UDim2.new()
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.Parent = gui
+		for r = 1, 4 do
+			for c = 1, 24 do
+				local t = label(gui, ("R%dC%d"):format(r, c), "", UDim2.new(), nil, hex("F2C46A"), MONO)
+				t.LayoutOrder = r * 100 + c
+				local pad = Instance.new("UIPadding")
+				pad.PaddingTop, pad.PaddingBottom = UDim.new(0.12, 0), UDim.new(0.12, 0)
+				pad.Parent = t
+			end
+		end
+	end
+	-- the roster whiteboard (marker): everyone on the server, their squad colour and where they are
+	do
+		local _, gui = screen(g, "RosterScreen", wcf * CFrame.new(0, 2.0, -0.02), 5.7, 3.7, false, 40, 60)
+		gui.LightInfluence = 0.45
+		label(gui, "Count", "", UDim2.fromScale(0.6, 0.1), UDim2.fromScale(0.04, 0.03), hex("6E1E18"), MARKER, Enum.TextXAlignment.Left)
+		for i = 1, 12 do
+			local col = (i - 1) // 6
+			local row = (i - 1) % 6
+			local t = label(gui, "Row" .. i, "", UDim2.fromScale(0.46, 0.12), UDim2.fromScale(0.03 + col * 0.49, 0.16 + row * 0.135), hex("101C30"), MARKER, Enum.TextXAlignment.Left)
+			t.RichText = true
+		end
+	end
+	-- the task board: your own tasks are pinned on it by your client (Lobby controller)
+	screen(g, "TaskScreen", ccf * CFrame.new(0, 2.0, -0.06), 7.8, 3.8, false, 40, 50)
 	wall(g, "InsuranceWindow", 49, 0, 35.4, "N")
 	-- a dark office behind the insurance glass
 	local back = Instance.new("Part")
@@ -350,21 +481,22 @@ local function opsRoom(g, R)
 	wall(g, "PipeRun", 91.4, 9.6, 9.0, "W")
 	wall(g, "PipeRunRust", 91.4, 9.6, 25.0, "W")
 	-- ceiling: the duct along the north side, a cable tray along the south, three fittings over the table
-	run(g, "Duct", "x", 40.6, 91.4, 5.2, 12, "S", "hang")
-	run(g, "CableTray", "x", 40.6, 91.4, 31.0, 12, "S", "hang")
+	run(g, "Duct", "x", 40.6, 91.4, 5.2, 12, "S", "hang", { tint = DUCT })
+	run(g, "CableTray", "x", 40.6, 91.4, 31.0, 12, "S", "hang", { tint = DUCT })
 	fluoro(g, 59.5, 17, 12, "S")
 	fluoro(g, 68, 17, 12, "S", { WARM, 36, 1.4, true })
 	fluoro(g, 76.5, 17, 12, "S")
-	fluoro(g, 84.5, 28, 12, "S", nil, true)
 	wk(g, "ZR_WK_Litter", 85.5, 31.0, 75)
 end
 
 local function tradersHall(g, R)
 	for _, t in R.TRADERS do
 		put(g, "Counter", (t.x0 + t.x1) / 2, 0, 10.5, "S")
+		propLamp(g, at((t.x0 + t.x1) / 2, 0, 10.5, "S"), V(-5.0, 4.6, 0.7), hex("FFC890"), 13, 0.9) -- the desk lamp
 	end
-	-- VOS, the quartermaster: a gun rack and ammunition crates
+	-- VOS, the quartermaster: a gun rack, a wall of parts, ammunition crates
 	wall(g, "GunRack", 101, 1.2, 0.6, "S")
+	wall(g, "Pegboard", 92.6, 2.2, 4.8, "E", { scale = V(0.8, 1, 1) })
 	put(g, "AmmoCrate", 96.6, 0, 6.6, 78)
 	put(g, "AmmoCrate", 96.5, 1.59, 6.4, 84)
 	put(g, "AmmoCrate", 105.6, 0, 3.0, 6)
@@ -382,26 +514,50 @@ local function tradersHall(g, R)
 		local def = ({ vos = "VOS · QUARTERMASTER", hale = "HALE · FIELD MEDIC", tilda = "TILDA · OUTFITTER" })[t.id]
 		stencil(g, def, (t.x0 + t.x1) / 2, 9.4, 0.6, "S", 9, 1.3, STENCIL, board)
 	end
-	-- the Fence's junk stall against the south wall, between the doors
-	wall(g, "FenceStall", 117, 0, 35.4, "N")
-	put(g, "Drum", 121.4, 0, 33.4, 0)
-	put(g, "JerryCans", 112.6, 0, 33.6, 10)
-	stencil(g, "FENCE", 117, 6.2, 35.4, "N", 3.2, 1.0, hex("C2B48E"))
-	-- mail pigeonholes on the east wall
-	wall(g, "Pigeonholes", 139.4, 0, 22.5, "W")
+	-- the Fence's junk stall by the back door (the motor pool side)
+	local _, fcf = wall(g, "FenceStall", 123.4, 0, 35.4, "N")
+	propLamp(g, fcf, V(-1.3, 2.6, 0.3), hex("FFB070"), 9, 0.7)
+	put(g, "Drum", 119.2, 0, 33.4, 0)
+	put(g, "JerryCans", 116.4, 0, 33.6, 10)
+	stencil(g, "FENCE", 123.4, 6.2, 35.4, "N", 3.2, 1.0, hex("C2B48E"))
+	-- mail pigeonholes on the east wall: a cell per bed (4 x 3); your client lights yours when mail is waiting
+	local _, pcf = wall(g, "Pigeonholes", 139.4, 0, 22.5, "W")
+	local lamps = Instance.new("Model")
+	lamps.Name = "MailLamps"
+	lamps.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	for k = 1, 12 do
+		local col, row = (k - 1) % 4, (k - 1) // 4
+		local lamp = Instance.new("Part")
+		lamp.Name = "Cell" .. k
+		lamp.Size = V(1.2, 0.08, 0.06)
+		lamp.Material = M.Neon
+		lamp.Color = hex("FFB24A")
+		lamp.Transparency = 1
+		quiet(lamp)
+		-- cell centres: x 2.25 .. -2.25 across (the viewer's left first), rows from the top (y 6.5, 5.1, 3.7)
+		lamp.CFrame = pcf * CFrame.new(2.25 - col * 1.5, 7.08 - row * 1.4, -0.63)
+		lamp:SetAttribute("Bed", k)
+		lamp.Parent = lamps
+	end
+	lamps.Parent = g
+	do
+		local _, gui = screen(g, "MailNumbers", pcf * CFrame.new(0, 5.1, -0.62), 6.0, 4.2, false, 30, 30)
+		for k = 1, 12 do
+			local col, row = (k - 1) % 4, (k - 1) // 4
+			label(gui, "N" .. k, tostring(k), UDim2.fromScale(0.08, 0.07), UDim2.fromScale(col * 0.25 + 0.085, row / 3 + 0.255), hex("CFC6A8"), MONO)
+		end
+	end
 	stencil(g, "MAIL", 139.4, 8.0, 22.5, "W", 2.6, 0.8)
 	-- a table to wait at
-	put(g, "Table", 125, 0, 22, 92)
-	put(g, "Chair", 122.6, 0, 22.6, 88)
-	put(g, "Chair", 127.4, 0, 21.0, 262)
+	put(g, "Table", 113, 0, 24, 92)
+	put(g, "Chair", 110.6, 0, 24.6, 88)
+	put(g, "Chair", 115.4, 0, 23.0, 262)
 	wall(g, "WallClock", 92.6, 8.6, 28.5, "E")
 	wall(g, "Extinguisher", 126.4, 0.6, 35.4, "N")
-	wall(g, "Speaker", 139.4, 10.3, 33.5, "W")
 	wall(g, "PipeRun", 139.4, 9.6, 9.0, "W")
 	wall(g, "PipeRunRust", 139.4, 9.6, 30.0, "W")
 	-- ceiling
-	run(g, "Beam", "x", 92.6, 139.4, 14, 12, "S", "hang")
-	run(g, "Beam", "x", 92.6, 139.4, 28, 12, "S", "hang")
+	run(g, "Beam", "x", 92.6, 139.4, 21.5, 12, "S", "hang")
 	fluoro(g, 101, 7, 12, "S")
 	fluoro(g, 131, 7, 12, "S")
 	fluoro(g, 116, 17, 12, "S", { WARM, 36, 1.3, true })
@@ -436,13 +592,12 @@ local function corridor(g, R)
 	hazard(g, 99.2, 0, 7, 43.4, "N", 1.6)
 	hazard(g, 124.8, 0, 7, 43.4, "N", 1.6)
 	-- services along the ceiling: a cable tray on the north side, the main duct on the south side
-	run(g, "CableTray", "x", 0.6, 139.4, 38.4, 10, "S", "hang")
-	run(g, "Duct", "x", 0.6, 139.4, 41.7, 10, "S", "hang")
+	run(g, "CableTray", "x", 0.6, 139.4, 38.4, 10, "S", "hang", { segs = 6, tint = DUCT })
+	run(g, "Duct", "x", 0.6, 139.4, 41.7, 10, "S", "hang", { segs = 6, tint = DUCT })
 	for k, x in { 12, 40, 68, 96, 124 } do
-		local dead = (k == 4)
-		local m = fluoro(g, x, 39.9, 10, "S", { COLD, 18, dead and 0.25 or 0.6, false }, dead)
-		if dead then
-			m:SetAttribute("Flicker", true)
+		local m = fluoro(g, x, 39.9, 10, "S", { COLD, 18, 0.6, false })
+		if k == 4 then
+			m:SetAttribute("Flicker", true) -- a failing tube (your client flickers it)
 		end
 	end
 	-- the dead west end: a sandbag wall and rubble
@@ -453,9 +608,7 @@ local function corridor(g, R)
 	wk(g, "ZR_WK_Chips", 8.2, 40.6, 200)
 	-- the east end, safety kit, PA and boxes on the walls
 	wall(g, "FuseBox", 139.4, 0, 40, "W")
-	wall(g, "Extinguisher", 30, 0.6, 36.6, "S")
 	wall(g, "Extinguisher", 80, 0.6, 36.6, "S")
-	wall(g, "Extinguisher", 136.8, 0.6, 43.4, "N")
 	wall(g, "Speaker", 50, 8.6, 36.6, "S")
 	wall(g, "Speaker", 113, 8.6, 36.6, "S")
 	wall(g, "JunctionBox", 46, 2.6, 43.4, "N")
@@ -473,41 +626,74 @@ local function corridor(g, R)
 end
 
 local function hideout(g, R)
+	g.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- your client swaps parts of it (your levels)
 	-- generator (fuel and a fuse panel by it), workbench, medstation, water collector, storage racks
-	wall(g, "HideoutGenerator", 9, 0, 44.6, "S")
+	local _, gcf = wall(g, "HideoutGenerator", 9, 0, 44.6, "S")
+	local glamp = Instance.new("Part")
+	glamp.Name = "GenLamp" -- your client shows it green while your generator runs, red when you have none
+	glamp.Size = V(0.22, 0.22, 0.08)
+	glamp.Material = M.Neon
+	glamp.Color = hex("8A2A20")
+	quiet(glamp)
+	glamp.CFrame = gcf * CFrame.new(-2.4, 3.25, -1.52)
+	glamp.Parent = g
 	put(g, "JerryCans", 15.8, 0, 47.2, 168)
 	put(g, "Drum", 2.6, 0, 47.4, 0)
 	wall(g, "FuseBox", 0.6, 0, 52.5, "E")
-	wall(g, "CraftBench", 40, 0, 44.6, "S")
+	local _, wbcf = wall(g, "CraftBench", 40, 0, 44.6, "S")
+	-- a finished craft waiting on the bench (shown by your client when yours is ready to collect)
+	local crate = place(g, "AmmoCrate", wbcf * CFrame.new(1.6, 3.3, 0.2) * CFrame.Angles(0, math.rad(8), 0), { name = "CraftReady", collide = false, scale = V(0.7, 0.7, 0.7) })
+	count += 1
+	crate:SetAttribute("CraftReady", "workbench")
 	wall(g, "ToolChest", 47.6, 0, 44.6, "S")
 	wall(g, "MedCot", 51.4, 0, 58, "W")
 	wall(g, "MedShelf", 51.4, 0, 67.5, "W")
 	wall(g, "FirstAid", 51.4, 4.6, 63.2, "W")
 	wall(g, "WaterTank", 0.6, 0, 62, "E")
 	wk(g, "ZR_WK_Puddle", 5.6, 66.2, 80, 0.8)
-	wall(g, "StorageRack", 14, 0, 75.4, "N")
-	wall(g, "StorageRack", 23, 0, 75.4, "N")
-	wall(g, "StorageRackEmpty", 32, 0, 75.4, "N")
+	-- three rack bays: full or bare by your storage level (both stand here; your client hides one of each pair)
+	for t, x in { 14, 23, 32 } do
+		local full = wall(g, "StorageRack", x, 0, 75.4, "N", { name = "RackFull" .. t })
+		local bare = wall(g, "StorageRackEmpty", x, 0, 75.4, "N", { name = "RackBare" .. t, collide = false })
+		full:SetAttribute("Rack", t)
+		full:SetAttribute("Full", true)
+		bare:SetAttribute("Rack", t)
+		bare:SetAttribute("Full", false)
+	end
 	-- labels over the modules (the hideout screen shows their levels)
-	stencil(g, "GENERATOR", 9, 7.6, 44.6, "S", 4.2, 0.8)
-	stencil(g, "WORKBENCH", 40, 8.4, 44.6, "S", 4.2, 0.8)
-	stencil(g, "MEDSTATION", 51.4, 8.2, 62.5, "W", 4.6, 0.8)
-	stencil(g, "WATER", 0.6, 8.2, 62, "E", 2.6, 0.8)
-	stencil(g, "STORAGE", 23, 8.4, 75.4, "N", 3.6, 0.8)
-	-- the middle of the room: a table to sit at
-	put(g, "Table", 25, 0, 62, 4)
-	put(g, "Chair", 22.6, 0, 63.6, 60)
-	put(g, "Chair", 27.6, 0, 60.2, 236)
+	-- your client writes your own level on each module's label ("YOUR GENERATOR · LV 1")
+	for _, m in { { "generator", "GENERATOR", 9, 7.6, 44.6, "S" }, { "workbench", "WORKBENCH", 40, 8.4, 44.6, "S" },
+		{ "medstation", "MEDSTATION", 51.4, 8.2, 62.5, "W" }, { "nutrition", "WATER COLLECTOR", 0.6, 8.2, 62, "E" },
+		{ "storage", "STORAGE RACKS", 23, 8.4, 75.4, "N" } } do
+		local st = stencil(g, m[2], m[3], m[4], m[5], m[6], 8.4, 0.8)
+		st:SetAttribute("Module", m[1])
+	end
+	-- the middle of the room: bays painted out for the modules still to come
+	for k, name in { "LAVATORY", "SCAV CASE", "INTEL CENTRE" } do
+		local x0 = 10 + (k - 1) * 10
+		local x1, z0, z1 = x0 + 8, 55, 65
+		local c = hex("A89A6A")
+		paint(g, x0, z0, x1, z0 + 0.25, c)
+		paint(g, x0, z1 - 0.25, x1, z1, c)
+		paint(g, x0, z0, x0 + 0.25, z1, c)
+		paint(g, x1 - 0.25, z0, x1, z1, c)
+		floorText(g, name, (x0 + x1) / 2, (z0 + z1) / 2 - 0.6, 7.2, 1.7, "N", c)
+		floorText(g, "NOT BUILT", (x0 + x1) / 2, (z0 + z1) / 2 + 1.4, 4.6, 1.0, "N", c)
+	end
+	put(g, "AmmoCrate", 34.2, 0, 58.0, 12) -- materials waiting in the intel bay
 	-- generator cable along the ceiling, joists, fittings (cold light)
-	run(g, "CableTray", "x", 0.6, 51.4, 50.5, 12, "S", "hang")
-	run(g, "Beam", "x", 0.6, 51.4, 58, 12, "S", "hang")
-	run(g, "Beam", "x", 0.6, 51.4, 70, 12, "S", "hang")
-	fluoro(g, 26, 63.5, 12, "S", { COLD, 32, 1.1, true })
-	fluoro(g, 12, 54, 12, "S")
-	fluoro(g, 40, 54, 12, "S")
+	run(g, "CableTray", "x", 0.6, 51.4, 50.5, 12, "S", "hang", { tint = DUCT })
+	run(g, "Beam", "x", 0.6, 51.4, 69, 12, "S", "hang")
+	-- the wing's lights run off your generator (your client turns them off while you have none); a red
+	-- emergency lamp stays on either way
+	for _, f in { fluoro(g, 26, 63.5, 12, "S", { COLD, 32, 1.1, true }), fluoro(g, 12, 54, 12, "S"), fluoro(g, 40, 54, 12, "S") } do
+		f:SetAttribute("Powered", true)
+	end
 	fluoro(g, 12, 68, 12, "S", nil, true)
+	wall(g, "CageLampRed", 51.4, 9.6, 46.0, "W", { shadows = false })
+	lamp(g, "Emergency", 50.4, 9.8, 46.0, hex("FF5A40"), 34, 0.85, false)
+	lamp(g, "Emergency2", 1.6, 9.8, 56.0, hex("FF5A40"), 30, 0.7, false)
 	wall(g, "Vent", 0.6, 9.4, 70.5, "E")
-	wall(g, "Speaker", 51.4, 10.3, 46.4, "W")
 	wall(g, "Extinguisher", 18.6, 0.6, 44.6, "S")
 	wk(g, "ZR_WK_Litter", 31.0, 69.5, 200)
 	wk(g, "ZR_WK_Cardboard", 42.2, 73.6, 15)
@@ -515,10 +701,13 @@ end
 
 local function gunsmith(g, R)
 	-- the bench (your gun goes in its vise), the pegboard of parts over it, racks of builds on the west wall
-	wall(g, "GunBench", 66, 0, 44.6, "S")
+	local _, bcf = wall(g, "GunBench", 66, 0, 44.6, "S")
+	Dress.benchCF = bcf -- the vise (L4 clamps your gun in it)
+	propLamp(g, bcf, V(-4.0, 5.6, 0.4), hex("FFD8A8"), 12, 0.9)
 	wall(g, "Pegboard", 66, 5.4, 44.6, "S")
-	wall(g, "GunRack", 52.6, 1.0, 53.5, "E")
-	wall(g, "GunRack", 52.6, 1.0, 66.5, "E")
+	local _, r1 = wall(g, "GunRack", 52.6, 1.0, 53.5, "E")
+	local _, r2 = wall(g, "GunRack", 52.6, 1.0, 66.5, "E")
+	Dress.racks = { r1, r2 }
 	wall(g, "ToolChest", 76.2, 0, 44.6, "S")
 	put(g, "WorkLight", 77.5, 0, 52.5, toward(77.5, 52.5, 68, 47))
 	-- a cleaning table, crates of ammunition, a parts rack
@@ -551,8 +740,21 @@ local function range(g, R)
 	for i, l in R.LANES do
 		put(g, "RangeBooth", line + 5, 0, l[1], "S")
 		local mid = (l[1] + l[2]) / 2
-		-- the lane's display over the line, on a hanger from the ceiling
-		put(g, "RangeDisplay", line + 0.4, 7.4, mid, "E", { shadows = false })
+		-- the lane's display over the line, on a hanger from the ceiling (the Range service writes your string on it)
+		local _, dcf = put(g, "RangeDisplay", line + 0.4, 7.4, mid, "E", { shadows = false })
+		do
+			local _, gui = screen(g, "LaneScreen" .. i, dcf * CFrame.new(0, 1.1, -0.06), 2.1, 1.9, false, 50, 45)
+			local bg = Instance.new("Frame")
+			bg.Size = UDim2.fromScale(1, 1)
+			bg.BackgroundColor3 = hex("0E1210")
+			bg.BorderSizePixel = 0
+			bg.Parent = gui
+			local green = hex("7CE08A")
+			label(bg, "Who", "LANE " .. i, UDim2.fromScale(0.9, 0.2), UDim2.fromScale(0.05, 0.04), green, MONO)
+			label(bg, "Hits", "READY", UDim2.fromScale(0.9, 0.22), UDim2.fromScale(0.05, 0.28), green, MONO)
+			label(bg, "Group", "", UDim2.fromScale(0.9, 0.18), UDim2.fromScale(0.05, 0.54), green, MONO)
+			label(bg, "Time", "", UDim2.fromScale(0.9, 0.18), UDim2.fromScale(0.05, 0.76), green, MONO)
+		end
 		local rod = Instance.new("Part")
 		rod.Name = "Hanger"
 		rod.Size = V(0.08, 11 - 9.6, 0.08)
@@ -564,17 +766,17 @@ local function range(g, R)
 		-- free range ammunition behind each booth
 		wall(g, "AmmoCrate", 91.4, 0, mid, "W")
 		floorText(g, tostring(i), line + 3.4, mid, 1.6, 1.6, "W")
-		-- steel at 10 and 25 m (and 50 m down the tunnel on lane 4)
-		for k, m in R.PLATES do
-			if m < 50 or i == 4 then
-				local dz = (k == 1) and -1.2 or (k == 2 and 1.2 or 0)
-				put(g, "SteelPlate", line - m * spm, 0, mid + dz, "E")
-			end
-		end
 	end
-	-- paper at 5 m on lanes 2 and 3
-	put(g, "PaperTarget", line - 5 * spm, 0, (R.LANES[2][1] + R.LANES[2][2]) / 2 + 0.6, "E")
-	put(g, "PaperTarget", line - 5 * spm, 0, (R.LANES[3][1] + R.LANES[3][2]) / 2 - 0.6, "E")
+	-- targets (Relay7.targets: paper at 5 m, steel at 10 and 25 m, and 50 m down the tunnel on lane 4)
+	local targets = {}
+	for _, t in R.targets() do
+		local m, cf = put(g, t.kind == "paper" and "PaperTarget" or "SteelPlate", t.x, 0, t.z, "E", { name = ("Target_%d_%d"):format(t.lane, t.m) })
+		m:SetAttribute("Lane", t.lane)
+		m:SetAttribute("Metres", t.m)
+		m:SetAttribute("Frame", cf)
+		table.insert(targets, m)
+	end
+	Dress.targets = targets
 	-- the firing line and distance marks
 	paint(g, line - 0.2, 76.6, line + 0.2, 103.4, YELLOW)
 	for _, m in { 10, 25 } do
@@ -599,44 +801,58 @@ local function range(g, R)
 	baffle.CFrame = CFrame.new(P(2.6 + (line - 2.6) / 2, 1.6, 81.5))
 	baffle.Color = hex("6A675F")
 	baffle.Material = M.Concrete
-	baffle.MaterialVariant = "ZR_ConcreteWorn"
 	baffle:SetAttribute("NoDetail", true)
 	baffle.Parent = g
-	for k, x in { 44.0, 46.6, 49.2 } do
+	for k, x in { 44.0, 46.6 } do
 		local cf = at(x, 0, 77.4, "S") * CFrame.new(0, 0, -0.9) * CFrame.Angles(math.rad(-10 - k), 0, 0)
 		count += 1
-		Kit.place(g, "PaperTarget", cf)
+		place(g, "PaperTarget", cf)
 	end
 	put(g, "AmmoCrate", 60.0, 0, 78.4, 2)
 	put(g, "Drum", 64.0, 0, 78.2, 0)
 	-- light: fittings down the range, one over the booths, cage lamps in the tunnel
-	for _, x in { 20, 50, 74 } do
-		fluoro(g, x, 92.5, 11, "S", { COLD, 26, 0.8, false })
+	for k, x in { 20, 50, 74 } do
+		local m = fluoro(g, x, 92.5, 11, "S", { COLD, 26, 0.8, false })
+		if k == 2 then
+			m:SetAttribute("Flicker", true)
+		end
 	end
 	fluoro(g, line + 5.5, 90.5, 11, "E", { WARM, 22, 0.9, false })
 	wall(g, "CageLampRed", line + 5, 8.4, 76.6, "S", { shadows = false })
 	wall(g, "Speaker", 91.4, 9.4, 80, "W")
-	for _, x in { -12, -40, -66 } do
+	for _, x in { -20, -56 } do
 		wall(g, "CageLamp", x, 6.2, 98.6, "S", { shadows = false })
 	end
 	lamp(g, "LampTunnel", -40, 6.4, 101, COLD, 24, 0.5, false)
-	run(g, "PipeRunRust", "x", -77.4, -0.2, 98.6, 5.6, "S", "wall")
-	run(g, "Beam", "z", 76.6, 103.4, 12, 11, "E", "hang")
-	run(g, "Beam", "z", 76.6, 103.4, 36, 11, "E", "hang")
-	run(g, "Beam", "z", 76.6, 103.4, 62, 11, "E", "hang")
+	run(g, "PipeRunRust", "x", -77.4, -0.2, 98.6, 5.6, "S", "wall", { segs = 3 })
+	run(g, "Beam", "z", 76.6, 103.4, 42, 11, "E", "hang")
 	wk(g, "ZR_WK_Chips", 86.6, 85.0, 30, 0.6)
 	wk(g, "ZR_WK_Chips", 87.4, 96.0, 110, 0.6)
 end
 
 local function motorPool(g, R)
 	-- the van, rear doors open (the deploy screen swings them shut), nose toward the corridor opening
-	local van = put(g, "Van", 118, 0, 69.5, "N")
-	local vcf = at(118, 0, 69.5, "N")
+	local van, vcf = put(g, "Van", 118, 0, 69.5, "N")
+	Dress.vanCF = vcf
+	-- the dashboard on the bulkhead inside the cargo box: the matching countdown (Lobby service)
+	do
+		local _, gui = screen(g, "VanScreen", vcf * CFrame.new(0, 5.4, -2.62) * CFrame.Angles(0, math.pi, 0), 2.6, 1.3, false, 50, 30)
+		local bg = Instance.new("Frame")
+		bg.Size = UDim2.fromScale(1, 1)
+		bg.BackgroundColor3 = hex("120E0A")
+		bg.BorderSizePixel = 0
+		bg.Parent = gui
+		local amber = hex("FFB04A")
+		label(bg, "State", "STANDBY", UDim2.fromScale(0.9, 0.3), UDim2.fromScale(0.05, 0.06), amber, MONO)
+		label(bg, "Clock", "--:--", UDim2.fromScale(0.9, 0.36), UDim2.fromScale(0.05, 0.36), amber, MONO)
+		label(bg, "Info", "", UDim2.fromScale(0.9, 0.2), UDim2.fromScale(0.05, 0.76), hex("C98A3A"), MONO)
+		lamp(g, "VanDash", 118, 5.2, 69.5 - 2.0, hex("FFB04A"), 9, 0.6, false)
+	end
 	local doors = {}
 	for _, d in { { "VanDoor", 3.25, 1 }, { "VanDoorR", -3.25, -1 } } do
 		local hinge = vcf * CFrame.new(d[2], 1.4, 9.63)
 		count += 1
-		local m = Kit.place(g, d[1], hinge * CFrame.Angles(0, math.rad(105 * d[3]), 0), { name = d[1] })
+		local m = place(g, d[1], hinge * CFrame.Angles(0, math.rad(105 * d[3]), 0), { name = d[1] })
 		m:SetAttribute("Hinge", hinge)
 		m:SetAttribute("OpenYaw", 105 * d[3])
 		table.insert(doors, m)
@@ -644,12 +860,33 @@ local function motorPool(g, R)
 	-- the ramp up to the roller door, sandbags facing it, a red lamp over the door
 	put(g, "Ramp", 132.8, 0, 85.4, "N")
 	wall(g, "RollerDoor", 132.8, 9.0, 103.4, "N")
-	wall(g, "CageLampRed", 132.8, 20.2, 103.4, "N", { shadows = false })
+	-- a cold glow from the top of the ramp (light leaking past the shutter)
+	lamp(g, "RampGlow", 132.8, 11.5, 100.5, hex("9FB8D8"), 26, 0.7, false)
+	local leak = Instance.new("Part")
+	leak.Name = "ShutterLeak"
+	leak.Size = V(12.4, 0.12, 0.3)
+	leak.Color = hex("B8CCE0")
+	leak.Material = M.Neon
+	leak.Transparency = 0.35
+	quiet(leak)
+	leak.CFrame = CFrame.new(P(132.8, 9.08, 102.9))
+	leak.Parent = g
+	-- the red work light on the west wall by the van
+	wall(g, "CageLampRed", 92.6, 7.5, 76, "E", { shadows = false })
+	lamp(g, "RedWork", 94.0, 7.8, 76, hex("FF5A40"), 24, 0.9, false)
 	put(g, "Sandbags", 131.0, 0, 60.6, 176)
 	put(g, "SandbagsLow", 124.4, 0, 63.4, 140)
 	-- the scav hatch in the south-west corner and its board
 	put(g, "Manhole", 98.5, 0, 97.5, "N")
-	put(g, "SignPost", 103.6, 0, 99.6, "N")
+	local _, scf = put(g, "SignPost", 103.6, 0, 99.6, "N")
+	Dress.hatchCF = at(98.5, 0, 97.5, "N")
+	-- the scav sign: your cooldown (your client writes it)
+	do
+		local _, gui = screen(g, "ScavSign", scf * CFrame.new(0, 4.6, -0.13), 2.8, 1.8, false, 50, 40)
+		gui.Parent:SetAttribute("ScavSign", true)
+		label(gui, "Head", "SCAV EXIT", UDim2.fromScale(0.9, 0.36), UDim2.fromScale(0.05, 0.08), hex("1E1E1A"), OSWALD)
+		label(gui, "State", "", UDim2.fromScale(0.9, 0.4), UDim2.fromScale(0.05, 0.5), hex("7A2A24"), MONO)
+	end
 	stencil(g, "SCAV EXIT", 98.5, 6.0, 103.4, "N", 4.4, 1.1, hex("C2B48E"))
 	-- workshop corner on the west wall, tyres, cans, drums
 	wall(g, "ToolChest", 92.6, 0, 57.5, "E")
@@ -664,7 +901,7 @@ local function motorPool(g, R)
 	do -- one drum on its side
 		local cf = at(134.2, 1.0, 51.2, 64) * CFrame.Angles(0, 0, math.rad(90))
 		count += 1
-		Kit.place(g, "Drum", cf * CFrame.new(0, -1.0, 0))
+		place(g, "Drum", cf * CFrame.new(0, -1.0, 0))
 	end
 	-- work lights on the van
 	for _, w in { { 109.0, 83.0 }, { 104.5, 63.0 } } do
@@ -693,7 +930,7 @@ local function motorPool(g, R)
 	paint(g, 112.0, 57.0, 112.3, 84.0)
 	paint(g, 123.7, 57.0, 124.0, 84.0)
 	paint(g, 112.0, 83.7, 124.0, 84.0)
-	floorText(g, "PMC TRANSPORT", 118, 87.6, 9, 1.8, "N")
+	floorText(g, "PMC TRANSPORT", 118, 55.6, 9, 1.8, "S")
 	wk(g, "ZR_WK_Puddle", 103, 76, 10, 1.4)
 	wk(g, "ZR_WK_Puddle", 128, 64, 200)
 	wk(g, "ZR_WK_Chips", 95.5, 90.0, 40)
@@ -704,13 +941,13 @@ local function motorPool(g, R)
 	wall(g, "Speaker", 92.6, 12.5, 80, "E")
 	wall(g, "FuseBox", 92.6, 0, 86, "E")
 	run(g, "PipeRun", "z", 46, 94, 92.6, 12.5, "E", "wall")
-	for _, z in { 52, 68, 84, 100 } do
+	for _, z in { 60, 86 } do
 		run(g, "Beam", "x", 92.6, 139.4, z, 22, "S", "hang")
 	end
 	fluoro(g, 104, 58, 22, "S")
 	fluoro(g, 104, 88, 22, "S")
 	fluoro(g, 128, 58, 22, "S", nil, true)
-	fluoro(g, 118, 72, 22, "S", { AMBER, 44, 1.2, true })
+	fluoro(g, 118, 72, 22, "S", { AMBER, 44, 1.05, true })
 	return doors
 end
 
@@ -729,7 +966,36 @@ function Dress.build(f, plan, R)
 	gunsmith(group(root, "Gunsmith"), R)
 	range(group(root, "Range"), R)
 	local doors = motorPool(group(root, "MotorPool"), R)
-	return { model = root, props = count, vanDoors = doors }
+	-- frames your client needs whatever has streamed in: the vise, the gun racks (Lobby controller)
+	local refs = Instance.new("Model")
+	refs.Name = "LobbyRefs"
+	refs.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	local anchor = Instance.new("Part")
+	anchor.Name = "Anchor"
+	anchor.Size = V(0.2, 0.2, 0.2)
+	anchor.Transparency = 1
+	quiet(anchor)
+	anchor.CFrame = CFrame.new(P(70, 0, 52))
+	anchor.Parent = refs
+	refs:SetAttribute("ViseCF", Dress.benchCF * CFrame.new(0, 3.95, -0.2))
+	refs:SetAttribute("VanCF", Dress.vanCF)
+	refs:SetAttribute("HatchCF", Dress.hatchCF)
+	for i, l in R.LANES do
+		local z = Instance.new("Part")
+		z.Name = "BoothZone" .. i
+		z.Transparency = 1
+		quiet(z)
+		local a, b = P(R.FIRING_LINE + 0.3, 0, l[1] + 0.15), P(91.6, 9, math.min(l[2], 103.4) - 0.15)
+		z.Size = (b - a):Abs()
+		z.CFrame = CFrame.new((a + b) / 2)
+		z:SetAttribute("Lane", i)
+		z.Parent = refs
+	end
+	for i, r in Dress.racks do
+		refs:SetAttribute("Rack" .. i, r)
+	end
+	refs.Parent = root
+	return { model = root, props = count, vanDoors = doors, cards = Dress.cards }
 end
 
 return Dress

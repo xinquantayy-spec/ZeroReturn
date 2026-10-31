@@ -28,7 +28,26 @@ Env.WEATHER = {
 } :: { [string]: Weather }
 Env.ORDER = { "clear", "overcast", "fog", "rain" }
 
-export type State = { clock0: number, w: string, rain: number, t0: number? }
+export type State = { clock0: number, w: string, rain: number, t0: number?, season: string? }
+
+-- seasons (Tarkov 0.16): the world turns with the calendar (Russia: winter Dec-Feb, spring Mar-May, summer
+-- Jun-Aug, autumn Sep-Nov). Winter brings snow (rain falls as snow), autumn turns the foliage and wets the ground.
+Env.SEASONS = {
+	summer = { name = "SUMMER", rainW = 1 },
+	autumn = { name = "AUTUMN", rainW = 1.6 },
+	winter = { name = "WINTER", rainW = 1.3 },
+	spring = { name = "SPRING", rainW = 1.3 },
+}
+function Env.seasonOf(month: number): string
+	if month == 12 or month <= 2 then
+		return "winter"
+	elseif month <= 5 then
+		return "spring"
+	elseif month <= 8 then
+		return "summer"
+	end
+	return "autumn"
+end
 
 local function pick(list: { any }, weight: (any) -> number, r: number): any
 	local total = 0
@@ -54,13 +73,16 @@ function Env.roll(rng: Random): State
 	for _, id in Env.ORDER do
 		table.insert(ws, Env.WEATHER[id])
 	end
+	local season = Env.seasonOf(os.date("!*t").month)
+	local sw = Env.SEASONS[season].rainW
 	local w = pick(ws, function(x)
-		return x.w
+		return x.w * ((x.rain > 0) and sw or 1)
 	end, rng:NextNumber())
 	return {
 		clock0 = (slot.h + rng:NextNumber(-0.25, 0.25)) % 24,
 		w = w.id,
 		rain = (w.rain > 0) and rng:NextNumber(0.45, 1) or 0,
+		season = season,
 	}
 end
 

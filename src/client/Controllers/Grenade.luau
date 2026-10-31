@@ -153,7 +153,8 @@ local function throw()
 	nextAllowed = os.clock() + THROW_T + 0.35
 end
 
-function Grenade.begin()
+-- want: a grenade's guid from a quick slot (Tarkov 4 to 0); without it the first in the rig or pockets (G)
+function Grenade.begin(want)
 	if Grenade.state or not ctx.State.inRaid() or ctx.Input.isMenu() or not alive() or os.clock() < nextAllowed then
 		return false
 	end
@@ -161,7 +162,12 @@ function Grenade.begin()
 	if W.healing or W.reloading or W.checking or W.drawing or (M and M.busy and M.busy()) then
 		return false
 	end
-	local id = firstGrenade()
+	local d = ctx.State.data
+	local wantIt = want and d and d.items and d.items[want]
+	local id = (wantIt and Items.defs[wantIt.id] and Items.defs[wantIt.id].kind == "grenade") and wantIt.id or firstGrenade()
+	if not (wantIt and id == wantIt.id) then
+		want = nil
+	end
 	if not id then
 		ctx.State.toast("NO GRENADES IN RIG OR POCKETS", "warn")
 		return false
@@ -174,7 +180,7 @@ function Grenade.begin()
 	if M and M.stopSprint then
 		M.stopSprint()
 	end
-	ctx.State.act("nade", { op = "pull" })
+	ctx.State.act("nade", { op = "pull", g = want })
 	task.delay(0.36, function()
 		if Grenade.state == "pull" or Grenade.state == "ready" then
 			ctx.Effects.sfx("nade_pin", SoundService, 0.55)

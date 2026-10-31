@@ -10,6 +10,7 @@
 -- AI throw through Grenades.throwFrom and run from grenades that land near them (AI.luau).
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
+local Progress = require(Shared.Progress)
 local Items = require(Shared.Items)
 local G = require(Shared.Grenades)
 local Util = require(Shared.Util)
@@ -191,6 +192,10 @@ local function explode(n)
 		loud = 0.35
 		table.insert(Grenades.smokes, { id = n.id, pos = center + Vector3.new(0, 4, 0), t0 = os.clock(), spec = spec })
 	end
+	-- a blast sets off propane cylinders nearby (Hazards)
+	if spec.type == "frag" and ctx.Hazards then
+		ctx.Hazards.blast(center, math.max(6, spec.blastR * 2.5), n.thrower)
+	end
 	local smodel = n.thrower
 	if typeof(smodel) == "Instance" and smodel:IsA("Player") then
 		smodel = smodel.Character
@@ -200,11 +205,29 @@ end
 
 -- ── throwing ─────────────────────────────────────────────────────────────────
 -- thrower: Player or AI Model; origin/vel in world space; returns the live grenade
+-- an explosion that is not a thrown grenade (a propane cylinder): the same blast at center
+function Grenades.blastAt(center, itemId, attacker)
+	local def = Items.defs[itemId]
+	if not (def and def.nade) or not setWorld() then
+		return
+	end
+	seq += 1
+	explode({ id = seq, item = itemId, spec = def.nade, thrower = attacker, pos = center - Vector3.new(0, 0.35, 0) })
+end
+
 function Grenades.throwFrom(thrower, origin, vel, itemId)
 	local def = Items.defs[itemId]
 	local spec = def and def.nade
 	if not spec or not setWorld() then
 		return nil
+	end
+	-- a player's Throwables skill: the grenade flies further; throwing trains it
+	if typeof(thrower) == "Instance" and thrower:IsA("Player") and ctx and ctx.Economy then
+		local tprof = ctx.Profiles.get(thrower)
+		if tprof then
+			vel *= 1 + Progress.bonus(tprof.skills, "throwables")
+			ctx.Economy.skillUp(thrower, tprof, "throwables", 1.5)
+		end
 	end
 	local path = G.simulate(origin, vel, spec.fuse, ray)
 	seq += 1
@@ -254,7 +277,8 @@ function Grenades.releaseFrom(eye, look, under)
 	return origin
 end
 
-local function pull(player)
+-- want: a grenade's guid from a quick slot (it must be in the rig or pockets), else the first one (Tarkov's G)
+local function pull(player, want)
 	local ps, s = stateOf(player)
 	if not s or s.done then
 		return
@@ -272,7 +296,17 @@ local function pull(player)
 	if hs and hs.using then
 		return
 	end
-	local g = Grenades.pick(s.inv)
+	local g
+	if type(want) == "string" then
+		local inv = s.inv
+		local it = inv.items[want]
+		local rig = inv.slots and inv.slots.rig
+		local onYou = (inv.grids.pockets and inv.grids.pockets[want]) or (rig and inv.grids[rig] and inv.grids[rig][want])
+		if it and onYou and Items.defs[it.id] and Items.defs[it.id].kind == "grenade" then
+			g = want
+		end
+	end
+	g = g or Grenades.pick(s.inv)
 	if not g then
 		ctx.Remotes.note(player, "nadeFail", { why = "none" })
 		return
@@ -374,7 +408,7 @@ function Grenades.init(c)
 			return
 		end
 		if p.op == "pull" then
-			pull(player)
+			pull(player, p.g)
 		elseif p.op == "throw" and type(p.x) == "number" and type(p.y) == "number" and type(p.z) == "number" then
 			throw(player, p)
 		end

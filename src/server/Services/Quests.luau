@@ -210,6 +210,11 @@ local function questReq(player, p)
 		end
 		prof.quests[q.id].s = "claimed"
 		local r = q.reward or {}
+		local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
+		for _, e in r.items or {} do
+			table.insert(rew, Items.defs[e[1]].name .. (((e[2] or 1) > 1) and (" x" .. e[2]) or ""))
+		end
+		ctx.Economy.mail(prof, q.trader, "Task complete: " .. q.name .. ". Your reward: " .. table.concat(rew, ", ") .. ".")
 		prof.money += r.money or 0
 		local up = ctx.Economy.addXp(prof, r.xp or 0)
 		if r.rep then

@@ -92,6 +92,8 @@ T.offers = {
 		o("RIG_CHEST", 2, 2), o("CANVAS_BAG", 2, 2), o("ARMOR_C3", 2, 2), o("HELMET_C3", 2, 1),
 		o("BAG_PATROL", 3, 1), o("ARMOR_C4", 3, 1), o("HELMET_C4", 3, 1), o("RIG_PLATE", 3, 1),
 		o("BAG_RAID", 4, 1), o("ARMOR_C5", 4, 1),
+		-- goggles (Tarkov: the cheap binoculars early, the monocular later, panoramic and thermal at the top)
+		o("NV_STRAP", 1, 2), o("NV_BINO", 2, 1), o("NV_GREEN", 3, 1), o("NV_MONO", 3, 1), o("NV_QUAD", 4, 1), o("TH_T7", 4, 1),
 	},
 	fence = {
 		o("RIG_BELT", 1, 2), o("BAG_SLING", 1, 2), o("BANDAGE", 1, 4), o("R17_MAG", 1, 4), o("A62_FMJ", 1, 4, 60), o("KEY_OFFICE", 1, 1),
@@ -147,11 +149,12 @@ function T.buildValue(id: string, preset: string?): number
 end
 
 -- price of one purchase at a loyalty level (each level is 5% cheaper)
-function T.price(traderId: string, offer: any, ll: number): number
+function T.price(traderId: string, offer: any, ll: number, discount: number?): number
 	local d = Items.defs[offer.id]
 	local tr = T.defs[traderId]
 	local value = WP.isBase(offer.id) and T.buildValue(offer.id, offer.preset) or d.value
-	return math.max(1, math.ceil(value * (offer.n or 1) * tr.markup * (1 - 0.05 * (math.max(1, ll) - 1))))
+	-- discount: Charisma (Tarkov: better trader prices with the skill)
+	return math.max(1, math.ceil(value * (offer.n or 1) * tr.markup * (1 - 0.05 * (math.max(1, ll) - 1)) * (1 - (discount or 0))))
 end
 
 -- what a trader pays for an item instance (nil = not interested). Fence pays less with bad karma.
@@ -171,6 +174,50 @@ function T.sellPrice(traderId: string, it: any, karma: number?): number?
 		return nil
 	end
 	return math.floor(Items.valueOf(it) * rate)
+end
+
+-- ── repairs (Tarkov: traders restore condition, but every repair costs some maximum durability) ───────────────
+-- VOS repairs weapons, TILDA armour and helmets; the repair kit works on weapons out of raid with less wear.
+T.REPAIRS = {
+	vos = { kinds = { weapon = true, pistol = true }, rate = 0.004 },
+	tilda = { kinds = { armor = true, helmet = true, rig = true }, rate = 0.4 },
+}
+T.KIT_DEGRADE = 0.03
+
+-- condition now / maximum / the design maximum of an item (weapons 0-100, armour in its points)
+function T.condition(it: any): (number?, number?, number?)
+	local d = Items.defs[it.id]
+	if not d then
+		return nil
+	end
+	if d.kind == "weapon" or d.kind == "pistol" then
+		return it.wear or 100, it.wmax or 100, 100
+	elseif d.armor then
+		return it.dur or d.armor.dur, it.dmax or d.armor.dur, d.armor.dur
+	end
+	return nil
+end
+
+-- a trader's repair of an item: points restored, cost, the new maximum (nil = nothing to repair / not theirs)
+function T.repairQuote(traderId: string, it: any): (number?, number?, number?)
+	local r = T.REPAIRS[traderId]
+	local d = Items.defs[it.id]
+	if not r or not d or not r.kinds[d.kind] or (d.kind == "rig" and not d.armor) then
+		return nil
+	end
+	local cur, max, design = T.condition(it)
+	if not cur or max - cur < 0.5 then
+		return nil
+	end
+	local pts = max - cur
+	local deg = d.armor and (0.04 + (d.armor.destr or 0.3) * 0.12) or 0.08
+	local cost
+	if d.armor then
+		cost = math.ceil(pts / design * d.value * r.rate)
+	else
+		cost = math.ceil(pts * d.value * r.rate)
+	end
+	return pts, math.max(1, cost), math.max(1, max - pts * deg)
 end
 
 -- the trader paying the most for an item: id, price

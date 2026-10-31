@@ -130,6 +130,17 @@ local LOOKS: { [string]: any } = {
 		overlays = join({ P("ZR_OV_PaddedJacket", "UpperTorso", "7E5F36", "Fabric", { shell = "jacket" }), P("ZR_OV_FleeceCollar", "UpperTorso", "CFC6B0", "Fabric") },
 			pair("ZR_OV_BootCuffs", "LowerLeg", "8A8478", "Fabric")),
 		covers = { armorVisual = true } },
+	-- Relay 7 traders (lobby NPCs), each in their trade's clothes: VOS the quartermaster (olive, red armband), HALE
+	-- the field medic (pale coat, blue gloves, red-cross armband), TILDA the outfitter (dark, fleece collar), the Fence
+	-- (hooded, shabby)
+	vos = { jacket = "4E5338", pants = "393A31", skin = "B8957A", glove = "2A2B26", boot = "3E3528",
+		overlays = join({ P("ZR_OV_Armband", "LeftUpperArm", "8A3A2E", "Fabric") }, KNEE("33352E")) },
+	hale = { jacket = "C9C4B4", pants = "4A4E52", skin = "C9A58A", glove = "6F94B8", boot = "3A3631",
+		overlays = { P("ZR_OV_Armband", "LeftUpperArm", "B03A2E", "Fabric") } },
+	tilda = { jacket = "3B3530", pants = "2F3133", skin = "D2B092", glove = "2A2522", boot = "2E2925",
+		overlays = { P("ZR_OV_FleeceCollar", "UpperTorso", "9A8F7A", "Fabric") } },
+	fence = { jacket = "57503F", pants = "3A372F", skin = "BF9C80", glove = "3E352B", boot = "3A3128",
+		overlays = { P("ZR_OV_Hood", "UpperTorso", "4F4838", "Fabric", { region = "hood" }) } },
 }
 Equipment.LOOKS = LOOKS
 Equipment.LOOK_ALIAS = { boss = "foreman", follower = "bodyguard", watch = "guard" }
@@ -194,6 +205,7 @@ local VIS: { [string]: any } = {
 	HARDHAT_FOREMAN = { pieces = { P("ZR_EQ_HardHat", "Head", "D4A93A") }, blocks = { ears = "HARD_HAT_BRIM" } },
 	CAP_FIELD = { pieces = { P("ZR_EQ_Cap", "Head", "4A4A3E", "Fabric") } },
 	BEANIE = { pieces = { P("ZR_EQ_Beanie", "Head", "3A3833", "Fabric") } },
+	NV_STRAP = { pieces = { P("ZR_EQ_Beanie", "Head", "23251F", "Fabric") } }, -- stand-in until a harness mesh is made
 	HEADSET_GS1 = { pieces = { P("ZR_EQ_Headset", "Head", "3A3D36") }, underHeadwear = { P("ZR_EQ_HeadsetNeck", "Head", "3A3D36") } },
 	HEADSET_COMM = { pieces = { P("ZR_EQ_Headset", "Head", "2A2C2E"), P("ZR_EQ_BoomMic", "Head", "2A2C2E") },
 		underHeadwear = { P("ZR_EQ_HeadsetNeck", "Head", "2A2C2E"), P("ZR_EQ_BoomMic", "Head", "2A2C2E") } },

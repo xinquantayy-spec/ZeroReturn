@@ -43,6 +43,13 @@ local function capture()
 		gradeSat = grade and grade.Saturation or -0.2, gradeContrast = grade and grade.Contrast or 0.08, gradeTint = grade and grade.TintColor or rgb(236, 239, 232),
 		exposure = 0, grain = 1, wind = Vector3.new(4, 0, 2),
 	}
+	-- the lobby is the Relay 7 bunker: no sky, warm dusty air, the rooms lit by their own fittings
+	local bunker = rgb(78, 74, 68)
+	hideout.Ambient, hideout.OutdoorAmbient = bunker, bunker
+	hideout.EnvironmentDiffuseScale, hideout.EnvironmentSpecularScale = 0.3, 0.2
+	hideout.atmDensity, hideout.atmOffset, hideout.atmHaze, hideout.atmGlare = 0.3, 0.1, 1.2, 0
+	hideout.atmColor, hideout.atmDecay = rgb(138, 128, 112), rgb(70, 64, 54)
+	hideout.gradeSat, hideout.gradeContrast, hideout.gradeTint = -0.16, 0.1, rgb(240, 234, 222)
 end
 
 -- what the raid should look like at in-world hour h under weather w (rain intensity r)
@@ -221,7 +228,7 @@ local function placeRain(intensity, windDrift)
 			c.pe.Acceleration = Vector3.new(windDrift.X, 0, windDrift.Z)
 			local near = math.abs(gx) <= 1 and math.abs(gz) <= 1
 			c.pe.Rate = roof and 0 or (near and 260 or 170) * intensity
-			if hit and not roof and near then
+			if hit and not roof and near and not snowing then
 				c.ground.CFrame = CFrame.new(x, hit.Position.Y + 0.08, z)
 				c.sp.Rate = 70 * intensity
 			else
@@ -233,6 +240,79 @@ local function placeRain(intensity, windDrift)
 		end
 	end
 	return covered
+end
+
+-- seasons (Tarkov 0.16): winter snow falls from the rain cells, terrain and foliage take the season's colours
+local snowing = false
+local function setSnow(on)
+	if on == snowing then
+		return
+	end
+	snowing = on
+	for _, c in cells do
+		local pe = c.pe
+		if on then
+			pe.Orientation = Enum.ParticleOrientation.FacingCamera
+			pe.Speed = NumberRange.new(5, 8)
+			pe.Lifetime = NumberRange.new(5, 7)
+			pe.Size = seq(0.18, 0.12)
+			pe.Transparency = seq(0.08, 0.3)
+			pe.Color = ColorSequence.new(rgb(246, 248, 252))
+			pe.SpreadAngle = Vector2.new(25, 25)
+			pe.RotSpeed = NumberRange.new(-80, 80)
+			c.sp.Rate = 0
+		else
+			pe.Orientation = Enum.ParticleOrientation.VelocityParallel
+			pe.Speed = NumberRange.new(68, 82)
+			pe.Lifetime = NumberRange.new(0.55, 0.7)
+			pe.Size = seq(1.7, 1.7)
+			pe.Transparency = seq(0.45, 0.6)
+			pe.Color = ColorSequence.new(rgb(206, 216, 226))
+			pe.SpreadAngle = Vector2.new(2, 2)
+			pe.RotSpeed = NumberRange.new(0, 0)
+		end
+	end
+end
+
+local TERRAIN_MATS = { Enum.Material.Grass, Enum.Material.LeafyGrass, Enum.Material.Ground, Enum.Material.Mud, Enum.Material.Rock, Enum.Material.Sand }
+local SEASON_TERRAIN = {
+	autumn = { Grass = rgb(140, 126, 74), LeafyGrass = rgb(150, 110, 56), Ground = rgb(104, 86, 64), Mud = rgb(70, 56, 42) },
+	winter = { Grass = rgb(232, 236, 240), LeafyGrass = rgb(226, 230, 236), Ground = rgb(214, 218, 224), Mud = rgb(178, 176, 172), Rock = rgb(176, 178, 182), Sand = rgb(228, 230, 232) },
+	spring = { Grass = rgb(94, 134, 62), LeafyGrass = rgb(82, 122, 56), Mud = rgb(68, 54, 40) },
+}
+local SEASON_FOLIAGE = { autumn = rgb(255, 192, 116), winter = rgb(214, 226, 238), spring = rgb(224, 255, 214) }
+local baseTerrain
+local seasonApplied = "summer"
+local function applySeason(season)
+	season = season or "summer"
+	if season == seasonApplied then
+		return
+	end
+	seasonApplied = season
+	local terrain = workspace.Terrain
+	if not baseTerrain then
+		baseTerrain = {}
+		for _, m in TERRAIN_MATS do
+			baseTerrain[m] = terrain:GetMaterialColor(m)
+		end
+	end
+	local set = SEASON_TERRAIN[season] or {}
+	for _, m in TERRAIN_MATS do
+		terrain:SetMaterialColor(m, set[m.Name] or baseTerrain[m])
+	end
+	-- bushes, grass and tree crowns (the nature kit's pieces) take the season's tint over their own colours
+	local tint = SEASON_FOLIAGE[season]
+	for _, d in workspace:GetDescendants() do
+		if d:IsA("MeshPart") and string.sub(d.Name, 1, 7) == "ZR_NAT_" and not string.find(d.Name, "_T$") and not string.find(d.Name, "Rock") and not string.find(d.Name, "Log") and not string.find(d.Name, "Stump") then
+			local base = d:GetAttribute("BaseColor")
+			if not base then
+				base = d.Color
+				d:SetAttribute("BaseColor", base)
+			end
+			-- winter lays snow on them (toward white); autumn and spring tint them
+			d.Color = (season == "winter" and base:Lerp(rgb(236, 240, 246), 0.6)) or (tint and Color3.new(base.R * tint.R, base.G * tint.G, base.B * tint.B)) or base
+		end
+	end
 end
 
 local function stopRain()
@@ -383,6 +463,10 @@ local function step(dt)
 	local w = e and (Env.WEATHER[e.w] or Env.WEATHER.clear) or nil
 	local rain = e and (e.rain or 0) or 0
 	Atmos.rain = rain
+	-- the season paints the world on deploy; in winter the rain cells drop snow
+	applySeason(e and e.season or nil)
+	setSnow(e ~= nil and e.season == "winter" and rain > 0)
+	local wetRain = snowing and 0 or rain
 	-- rain particles (re-placed a few times a second; the grid follows the camera)
 	placeClock += dt
 	if placeClock > 0.2 then
@@ -412,14 +496,14 @@ local function step(dt)
 	end
 	-- droplets build up on the lens outdoors in the rain and dry off indoors
 	if drops then
-		local target = (rain > 0 and indoor < 0.5) and (0.25 + 0.45 * rain) or 0
+		local target = (wetRain > 0 and indoor < 0.5) and (0.25 + 0.45 * wetRain) or 0
 		wet += (target - wet) * math.min(1, dt * ((target > wet) and 0.08 or 0.04))
 		drops.ImageTransparency = 1 - wet
 	end
 	-- sound beds
 	local inRaid = e ~= nil
-	mix("rain_loop", inRaid and rain * (1 - indoor) * 0.75 or 0, dt)
-	mix("rain_roof_loop", inRaid and rain * indoor * 0.7 or 0, dt)
+	mix("rain_loop", inRaid and wetRain * (1 - indoor) * 0.75 or 0, dt)
+	mix("rain_roof_loop", inRaid and wetRain * indoor * 0.7 or 0, dt)
 	mix("wind_loop", inRaid and (w.wind * (1 - indoor * 0.75)) * 0.45 or 0, dt)
 	mix("crickets_loop", inRaid and math.clamp((Atmos.dark - 0.5) * 2, 0, 1) * (1 - rain) * (1 - indoor * 0.7) * 0.5 or 0, dt)
 	local amb = ctx.Effects.ambience

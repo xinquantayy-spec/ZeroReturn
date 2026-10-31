@@ -24,6 +24,15 @@ local function window(t)
 end
 Economy.window = window
 
+-- the messenger (Tarkov): a message from a trader or the system, newest last, the last 40 kept
+function Economy.mail(prof, from, text)
+	prof.msgs = prof.msgs or {}
+	table.insert(prof.msgs, { f = from, t = os.time(), x = string.sub(text, 1, 240) })
+	while #prof.msgs > 40 do
+		table.remove(prof.msgs, 1)
+	end
+end
+
 function Economy.level(prof)
 	return P.levelOf(prof.xp or 0)
 end
@@ -149,7 +158,7 @@ local function buy(player, prof, p)
 	if boughtCount(prof, key, w) + qty > offer.limit then
 		return fail("OUT_OF_STOCK", "Sold out until the restock.")
 	end
-	local price = TD.price(tid, offer, ll) * qty
+	local price = TD.price(tid, offer, ll, P.bonus(prof.skills, "charisma")) * qty
 	if prof.money < price then
 		return fail("NOT_ENOUGH_MONEY", "Not enough money.")
 	end
@@ -165,11 +174,41 @@ local function buy(player, prof, p)
 	if done == 0 then
 		return fail("NO_SPACE", "No room in your stash.")
 	end
-	local paid = TD.price(tid, offer, ll) * done
+	local paid = TD.price(tid, offer, ll, P.bonus(prof.skills, "charisma")) * done
 	prof.money -= paid
 	standing(prof, tid).spent += paid
 	addBought(prof, key, w, done)
 	ctx.Remotes.note(player, "toast", { text = string.format("BOUGHT %s%s  -%s %s", string.upper(Items.defs[offer.id].name), done > 1 and (" x" .. done) or "", Util.commas(paid), Config.CURRENCY), tone = "good" })
+	return true
+end
+
+-- SERVICES: a trader repairs an item (weapons at VOS, armour at TILDA); each repair lowers the maximum (Tarkov)
+local function repair(player, prof, p)
+	local tid = p.trader
+	if type(tid) ~= "string" or type(p.g) ~= "string" or #p.g > 40 then
+		return fail("BAD_INPUT")
+	end
+	local it = prof.items[p.g]
+	if not it then
+		return fail("NO_ITEM")
+	end
+	local pts, cost, newMax = TD.repairQuote(tid, it)
+	if not pts then
+		return fail("NOT_REPAIRABLE", TD.defs[tid].name .. " can't repair that.")
+	end
+	if prof.money < cost then
+		return fail("NOT_ENOUGH_MONEY", "Not enough money.")
+	end
+	prof.money -= cost
+	standing(prof, tid).spent += cost
+	local d = Items.defs[it.id]
+	if d.armor then
+		it.dur, it.dmax = newMax, newMax
+	else
+		it.wear, it.wmax = newMax, newMax
+		it.mf, it.mfk, it.mfh = nil, nil, nil
+	end
+	ctx.Remotes.note(player, "toast", { text = string.format("REPAIRED %s  -%s %s", string.upper(d.name), Util.commas(cost), Config.CURRENCY), tone = "good" })
 	return true
 end
 
@@ -307,16 +346,53 @@ end
 function Economy.skill(prof, id, pts)
 	if prof and prof.skills and P.SKILLS[id] then
 		local before = P.skillLevel(prof.skills[id])
-		prof.skills[id] = math.min(1000, (prof.skills[id] or 0) + pts)
+		prof.skills[id] = math.min(P.SKILL_CAP, (prof.skills[id] or 0) + pts)
 		return P.skillLevel(prof.skills[id]) > before
 	end
 	return false
 end
 
-local function skillUp(player, prof, id, pts)
-	if Economy.skill(prof, id, pts) then
-		ctx.Remotes.note(player, "toast", { text = string.format("%s RAISED TO %d", P.SKILLS[id].name, P.skillLevel(prof.skills[id])), tone = "good" })
+-- skill fatigue (Tarkov): within a raid a skill trains at 129% until its first point, 100% after, then
+-- 0.6^(points - 1) from the second point on; 200 s without gains brings it back to 100%
+local fatigue = setmetatable({}, { __mode = "k" }) -- [raid session or player][skill] = { n, t, fresh }
+function Economy.fatigueMul(key, id, now)
+	local per = fatigue[key]
+	if not per then
+		per = {}
+		fatigue[key] = per
+	end
+	local f = per[id]
+	if not f then
+		f = { n = 0, t = now, fresh = true }
+		per[id] = f
+	end
+	if now - f.t > 200 then
+		f.n = 0
+	end
+	return f.fresh and 1.29 or (f.n < 2 and 1 or 0.6 ^ (f.n - 1)), f
+end
+
+local function skillUp(player, prof, id, pts, spilled)
+	if not (prof and id and P.SKILLS[id] and pts and pts > 0) then
+		return
+	end
+	local now = os.clock()
+	local mul, f = Economy.fatigueMul(ctx.Raid.session(player) or player, id, now)
+	local gain = pts * mul
+	f.n += gain
+	f.t = now
+	if f.n >= 1 then
+		f.fresh = false
+	end
+	if Economy.skill(prof, id, gain) then
+		local lvl = P.skillLevel(prof.skills[id])
+		ctx.Remotes.note(player, "toast", { text = lvl >= P.SKILL_MAX and (P.SKILLS[id].name .. " IS ELITE") or string.format("%s RAISED TO %d", P.SKILLS[id].name, lvl), tone = "good" })
 		ctx.Raid.push(player)
+	end
+	-- Health grows with the physical skills, Charisma with the mental ones
+	local spill = not spilled and P.SKILL_SPILL[id]
+	if spill then
+		skillUp(player, prof, spill[1], pts * spill[2], true)
 	end
 end
 Economy.skillUp = skillUp
@@ -380,7 +456,13 @@ function Economy.stateFor(prof)
 	local traders = {}
 	for _, id in TD.list do
 		local tr = prof.traders[id] or { spent = 0, rep = 0 }
-		traders[id] = { ll = Economy.loyalty(prof, id), spent = tr.spent or 0, rep = tr.rep or 0 }
+		local ll = Economy.loyalty(prof, id)
+		traders[id] = { ll = ll, spent = tr.spent or 0, rep = tr.rep or 0 }
+		-- a new loyalty level arrives as a message from the trader (Tarkov's messenger)
+		if prof.traders[id] and ll > (tr.llSeen or 1) then
+			tr.llSeen = ll
+			Economy.mail(prof, id, string.format("Loyalty level %d. New goods and better prices are yours.", ll))
+		end
 	end
 	local bought = {}
 	for k, v in prof.bought do
@@ -418,6 +500,8 @@ local function tradeReq(player, p)
 		res = buy(player, prof, p)
 	elseif p.op == "barter" then
 		res = barter(player, prof, p)
+	elseif p.op == "repair" then
+		res = repair(player, prof, p)
 	elseif p.op == "sell" then
 		if type(p.g) ~= "string" or #p.g > 40 then
 			return fail("BAD_INPUT")
@@ -464,6 +548,16 @@ function Economy.start()
 						local v = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z).Magnitude
 						if char:GetAttribute("Sprint") and v > 12 then
 							skillUp(player, prof, "endurance", 0.35)
+						end
+						-- covert movement: moving crouched or prone; the vests: moving in armour of their class
+						local st = char:GetAttribute("Stance")
+						if v > 1.5 and (st == "c" or st == "p") then
+							skillUp(player, prof, "covert", 0.2)
+						end
+						local ag = s.inv.slots and s.inv.slots.armor
+						local ad = ag and s.inv.items[ag] and Items.defs[s.inv.items[ag].id]
+						if v > 2 and ad and ad.armor then
+							skillUp(player, prof, (ad.armor.class or 0) >= 4 and "heavyvests" or "lightvests", 0.08)
 						end
 						if v > 2 then
 							local kg = Inv.weight(s.inv)

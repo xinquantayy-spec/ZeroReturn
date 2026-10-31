@@ -19,6 +19,7 @@ W.CATS = {
 	foregrip = { group = "functional", name = "FOREGRIP" },
 	tactical = { group = "functional", name = "TACTICAL DEVICE" },
 	mount = { group = "gear", name = "MOUNT" },
+	nvg = { group = "gear", name = "NIGHT VISION" },
 	stock = { group = "gear", name = "STOCK" },
 	charge = { group = "gear", name = "CHARGING HANDLE" },
 	tube = { group = "gear", name = "MAGAZINE TUBE" },
@@ -83,6 +84,10 @@ W.SLOTS = {
 	-- mounts
 	MNT_RISER = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	MNT_RINGS = { scope = { fit = "ring30", cats = { sight = true } } },
+	-- helmets with a night-vision mount and the head strap (Tarkov: goggles go on a helmet's mount or a strap)
+	HELMET_C3 = { mount = { fit = "nvg_mount" } },
+	HELMET_C4 = { mount = { fit = "nvg_mount" } },
+	NV_STRAP = { mount = { fit = "nvg_mount" } },
 }
 
 -- the parts: category, what they fit, standalone size, stats. Stats: ergo (points), recoil (%), acc (% spread),
@@ -193,7 +198,7 @@ part("RED_DOT", "RS-1 Reflex Sight", "REFLEX", "sight", "pica", { w = 1, h = 1, 
 part("HOLO_EX", "Mirak HS-3 holographic sight", "HS-3", "sight", "pica", { w = 1, h = 1, mass = 0.32, value = 28000, rarity = "uncommon", ergo = -2, reflex = true, holo = true, range = 200, desc = "Holographic sight with a wide window." })
 part("SIGHT_MICRO", "Mirak MR-1 compact reflex", "MR-1", "sight", { "pica", "p9_optic" }, { w = 1, h = 1, mass = 0.06, value = 18000, ergo = 0, reflex = true, range = 100, desc = "Compact open reflex sight for rails and pistol slides." })
 part("SCOPE_4X", "C4 Combat Scope", "4X", "sight", "pica", { w = 2, h = 1, mass = 0.55, value = 48000, rarity = "uncommon", ergo = -4, zoom = 4, range = 600, desc = "Fixed 4x prism scope with an integrated mount." })
-part("SCOPE_16", "Orsa V6 1-6x scope", "V6", "sight", "ring30", { w = 3, h = 1, mass = 0.6, value = 64000, rarity = "rare", ergo = -5, zoom = 6, range = 800, desc = "Low-power variable scope. Needs a 30 mm mount." })
+part("SCOPE_16", "Orsa V6 1-6x scope", "V6", "sight", "ring30", { w = 3, h = 1, mass = 0.6, value = 64000, rarity = "rare", ergo = -5, zoom = 6, zooms = { 1, 6 }, range = 800, desc = "Low-power variable scope. Needs a 30 mm mount." })
 part("SCOPE_8X", "Orsa L8 8x scope", "L8", "sight", "ring30", { w = 3, h = 1, mass = 0.78, value = 82000, rarity = "rare", ergo = -7, zoom = 8, range = 1000, desc = "Long-range scope with a sunshade. Needs a 30 mm mount." })
 part("MNT_RISER", "Holt RM-1 riser mount", "RISER", "mount", "pica", { w = 1, h = 1, mass = 0.05, value = 3600, desc = "Raises a sight to a comfortable height." })
 part("MNT_RINGS", "Holt 30mm scope mount", "30MM MNT", "mount", "pica", { w = 2, h = 1, mass = 0.18, value = 9800, ergo = -1, desc = "One-piece cantilever mount for 30 mm scopes." })
@@ -222,6 +227,26 @@ W.PRESET_NAMES = {
 
 -- magazines live in it.mag (the "mag" slot of a base): which magazine family a base takes (Items family)
 W.MULTITOOL = "MULTITOOL"
+
+-- ── night vision and thermal goggles (docs/design/EFT_PARITY.md section 6; the four kinds Tarkov has) ─────────
+-- nv: mask (mono = a small circle, bino = a pair, quad = panoramic), phosphor tint, gain (exposure stops added),
+-- grain (noise multiplier), bloom (how badly lights wash out), thermal (heat view: people white on dark brown,
+-- light ignored, magnified optics unusable)
+part("NV_MONO", "Nightjar NV-1 monocular", "NV-1", "nvg", "nvg_mount", { w = 1, h = 2, mass = 0.4, value = 105000, rarity = "rare",
+	nv = { mask = "mono", tint = Color3.fromRGB(176, 255, 196), gain = 2.4, grain = 1.2, bloom = 0.35 },
+	desc = "Single-tube monocular. Clear picture and good with lights, but the view is a small circle." })
+part("NV_BINO", "Nightjar NV-2 binocular", "NV-2", "nvg", "nvg_mount", { w = 2, h = 1, mass = 0.5, value = 32000, rarity = "uncommon",
+	nv = { mask = "bino", tint = Color3.fromRGB(130, 222, 255), gain = 2.1, grain = 2.2, bloom = 1.4 },
+	desc = "Old binocular goggles with a blue-green phosphor. Grainy, and lights flare badly." })
+part("NV_GREEN", "Hollis G-15 binocular", "G-15", "nvg", "nvg_mount", { w = 2, h = 1, mass = 0.45, value = 64000, rarity = "uncommon",
+	nv = { mask = "bino", tint = Color3.fromRGB(150, 255, 150), gain = 2.3, grain = 1.6, bloom = 1.0 },
+	desc = "Green binocular goggles. A fair picture; detail is lost round strong lights." })
+part("NV_QUAD", "Nightjar NV-4 panoramic", "NV-4", "nvg", "nvg_mount", { w = 2, h = 2, mass = 0.9, value = 420000, rarity = "epic",
+	nv = { mask = "quad", tint = Color3.fromRGB(190, 255, 205), gain = 2.6, grain = 0.7, bloom = 0.25 },
+	desc = "Four-tube panoramic goggles: the widest view and the cleanest picture, barely bothered by lights." })
+part("TH_T7", "Ember T-7 thermal goggles", "T-7", "nvg", "nvg_mount", { w = 2, h = 1, mass = 0.6, value = 1200000, rarity = "legendary",
+	nv = { mask = "bino", thermal = true, tint = Color3.fromRGB(214, 168, 128), gain = 0, grain = 1.0, bloom = 0 },
+	desc = "Thermal goggles: bodies glow white against a dark brown world, light or no light. Scopes can't be used with them; iron sights only." })
 
 -- ── builds ───────────────────────────────────────────────────────────────────
 -- A build is an item tree: an item's `mods` maps its slot names to the guids of the parts in them, parts carry

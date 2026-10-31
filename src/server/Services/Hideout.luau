@@ -2,6 +2,7 @@
 -- Hideout (M9): build and upgrade modules with money and items (real-time builds that finish while offline),
 -- start crafts in built modules and collect the results. Effects: more stash rows, faster healing between raids.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
+local Progress = require(Shared.Progress)
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
@@ -108,7 +109,8 @@ local function craft(player, prof, id)
 	for _, it in r.give do
 		ctx.Economy.consumeStash(prof, it[1], it[2])
 	end
-	prof.hideout.crafts[r.module] = { r = r.id, at = os.time() + r.time }
+	local ctime = math.floor(r.time * (1 - Progress.bonus(prof.skills, "crafting")))
+	prof.hideout.crafts[r.module] = { r = r.id, at = os.time() + ctime }
 	ctx.Remotes.note(player, "toast", { text = string.format("CRAFTING %s  ·  %s", string.upper(Items.defs[r.get[1]].name), Util.clock(r.time)), tone = "good" })
 	return true
 end
@@ -126,6 +128,7 @@ local function collect(player, prof, m)
 		return fail("NO_SPACE", "No room in your stash.")
 	end
 	prof.hideout.crafts[m] = nil
+	ctx.Economy.skillUp(player, prof, "crafting", 4)
 	ctx.Remotes.note(player, "toast", { text = string.format("COLLECTED %s x%d", string.upper(Items.defs[r.get[1]].name), r.get[2]), tone = "good" })
 	return true
 end

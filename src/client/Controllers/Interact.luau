@@ -90,12 +90,18 @@ function Interact.init(c)
 		-- Relay 7 stations (docs/maps/RELAY7_LOBBY.md): "kind" or "kind:arg"
 		local kind, arg = string.match(screen, "^([^:]+):?(.*)$")
 		arg = (arg ~= "" and arg) or nil
-		if kind == "stash" or kind == "mail" then
+		if kind == "mail" then
+			c.Trade.traders("messenger") -- the pigeonholes: Tarkov's messenger (insurance returns, task rewards)
+		elseif kind == "stash" then
 			c.Inventory.show("stash")
-		elseif kind == "deploy" or kind == "insurance" or kind == "van" or kind == "scav" then
+		elseif kind == "van" and c.Lobby and c.Lobby.boardVan then
+			c.Lobby.boardVan()
+		elseif kind == "scav" and c.Lobby and c.Lobby.scavHatch then
+			c.Lobby.scavHatch()
+		elseif kind == "deploy" or kind == "insurance" or kind == "van" or kind == "scav" or kind == "squad" then
 			c.Screens.deploy()
 		elseif kind == "traders" or kind == "trader" or kind == "tasks" then
-			c.Trade.traders(arg)
+			c.Trade.traders(arg, kind == "tasks" and "tasks" or "trade")
 		elseif kind == "hideout" then
 			c.Trade.hideout()
 		elseif kind == "modding" then

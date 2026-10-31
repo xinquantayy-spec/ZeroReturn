@@ -22,7 +22,9 @@ local RigMath = require(Shared.RigMath)
 local Inv = require(script.Parent.Inv)
 local Env = require(Shared.Env)
 local GR = require(Shared.Grenades)
-local KARMA_HOSTILE = require(Shared.Progress).KARMA.hostileBelow
+local Ballistics = require(Shared.Ballistics)
+local Progress = require(Shared.Progress)
+local KARMA_HOSTILE = Progress.KARMA.hostileBelow
 
 local AI = {}
 local ctx
@@ -347,7 +349,7 @@ local function exposure(model)
 end
 
 -- footstep loudness 0..1 (server view of what the client plays): sprint > walk > crouch > prone
-local function noiseOf(model)
+local function rawNoise(model)
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return 0
@@ -366,6 +368,14 @@ local function noiseOf(model)
 		return 0.22 * math.min(1, v / 6)
 	end
 	return 0.5 * math.min(1.2, v / Config.WALK_SPEED)
+end
+
+-- a player's Covert Movement skill: footsteps carry less far
+local function noiseOf(model)
+	local n = rawNoise(model)
+	local pl = n > 0 and Players:GetPlayerFromCharacter(model)
+	local prof = pl and ctx.Profiles.get(pl)
+	return prof and n * (1 - Progress.bonus(prof.skills, "covert")) or n
 end
 
 local function visiblePart(u, model, eye)
@@ -780,40 +790,46 @@ local function shoot(u, t)
 	local ballistic = ammoDef and ammoDef.ammo or { dmg = 40, pen = 20 }
 	local pellets = ballistic.pellets or 1
 	local hit, firstPos, firstNormal, firstMat = false, nil, nil, nil
-	local base = CFrame.lookAt(muzzle, aimPos)
+	local ms = Inv.modStats(u.inv, w.g)
+	-- ballistics: the AI holds over for the drop at the target's distance, then the bullet flies like a player's
+	local v0, k = Ballistics.muzzle(w.def, ms.vel), Ballistics.drag(w.def)
+	local aimAt = aimPos + Vector3.new(0, Ballistics.dropAt((aimPos - muzzle).Magnitude, v0, k), 0)
+	local base = CFrame.lookAt(muzzle, aimAt)
+	local shotParams = Ballistics.copyParams(params)
 	for i = 1, pellets do
 		local e = err + ((pellets > 1) and (w.def.pelletSpread or 2.5) or 0)
 		local dir = (base * CFrame.Angles(math.rad((math.random() * 2 - 1) * e * 0.75), math.rad((math.random() * 2 - 1) * e), 0)).LookVector
-		local r = workspace:Raycast(muzzle, dir * w.def.range, params)
-		local hp = r and r.Position or (muzzle + dir * w.def.range)
+		local pr, hp = Ballistics.trace(muzzle, dir, v0, k, w.def.range, shotParams)
 		if i == 1 then
-			firstPos, firstNormal, firstMat = hp, r and r.Normal or nil, r and r.Material or nil
+			firstPos, firstNormal, firstMat = hp, pr and pr.Normal or nil, pr and pr.Material or nil
 		end
-		if r then
+		local pmod = pr and pr.Instance:FindFirstAncestorOfClass("Model")
+		hit = hit or (pmod ~= nil and pmod ~= u.model and pmod:FindFirstChildOfClass("Humanoid") ~= nil)
+		Ballistics.fly(muzzle, dir, v0, k, w.def.range, shotParams, function(r, hitPos, d)
+			if ctx.Hazards.hit(r.Instance, u.model) then
+				return
+			end
 			local model = r.Instance:FindFirstAncestorOfClass("Model")
 			local hum = model and model:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 and model ~= u.model then
-				local d = (hp - muzzle).Magnitude
 				local fs = w.def.range * Weapons.FALLOFF_START
 				local fall = 1
 				if d > fs then
 					fall = math.max(Weapons.FALLOFF_MIN, 1 - (d - fs) / (w.def.range - fs) * (1 - Weapons.FALLOFF_MIN))
 				end
-				local res = ctx.Combat.hitModel(model, {
+				ctx.Combat.hitModel(model, {
 					dmg = ballistic.dmg * fall, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall), armorDmg = ballistic.armorDmg,
-					bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = r.Instance, hitPos = hp, attacker = u.model,
+					bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = r.Instance, hitPos = hitPos, attacker = u.model,
 					from = muzzle, weapon = w.wd.name, ammo = ammoDef and ammoDef.name or "?",
 				})
-				hit = hit or res ~= nil
 			end
-		end
+		end)
 	end
 	m.a -= 1
 	if m.a <= 0 then
 		m.a = 0
 		m.at = nil
 	end
-	local ms = Inv.modStats(u.inv, w.g)
 	ctx.Remotes.fx("shot", { o = muzzle, p = firstPos, n = firstNormal, h = hit, w = w.def.id, s = ms.suppressed or nil, t = ballistic.tracer, m = firstMat, ai = true })
 	AI.hearShot(muzzle, u.model, u, (w.def.loudness or 1) * ms.loud)
 	AI.bulletPassed(muzzle, firstPos, u.model)

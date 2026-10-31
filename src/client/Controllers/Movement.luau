@@ -316,7 +316,8 @@ local function update(dt)
 	if w > wMax then
 		weightMul = 0.3
 	end
-	hum.WalkSpeed = speed * (mods and mods.speed or 1) * weightMul * accel
+	local gear = Movement.gear
+	hum.WalkSpeed = speed * (mods and mods.speed or 1) * weightMul * accel * (1 + (gear and gear.speed or 0) / 100)
 	hum.HipHeight = RigMath.hipFor(Movement.stance, Movement.depth)
 	hum.UseJumpPower = false
 	-- jump / vault (Space): vaulting takes priority over a jump when an obstacle is in front
@@ -397,6 +398,12 @@ function Movement.init(c)
 	end)
 	c.State.changed:Connect(function()
 		Movement.weight = computeWeight()
+		-- Tarkov gear penalties: movement speed, turn speed and weapon ergonomics from what you wear
+		local snap = ctx.State.data
+		local sk = snap.econ and snap.econ.skills
+		Movement.gear = Items.gearPenalties(snap, function(cls)
+			return 1 - Progress.bonus(sk, cls >= 4 and "heavyvests" or "lightvests")
+		end)
 		if not c.State.inRaid() then
 			Movement.sprinting = false
 		end

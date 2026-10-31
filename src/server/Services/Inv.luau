@@ -610,6 +610,61 @@ function Inv.expandBuild(h: any, g: string)
 	Inv.resize(h, g)
 end
 
+-- Tarkov's SORT button: the stash rearranged by kind (weapons, gear, parts, ammo, meds...), larger items first;
+-- all or nothing (the old layout stays if the new one does not fit)
+local SORT_KIND = {
+	weapon = 1, pistol = 2, melee = 3, armor = 4, helmet = 5, rig = 6, backpack = 7, secure = 8, headwear = 9, headset = 10,
+	facecover = 11, mod = 12, mag = 13, ammo = 14, grenade = 15, med = 16, food = 17, repair = 18, key = 19, loot = 20, quest = 21,
+}
+function Inv.sortStash(h: any): (boolean, string?)
+	local pl = h.grids and h.grids.stash
+	if not pl then
+		return false, "NO_ITEM"
+	end
+	local list = {}
+	for g in pl do
+		if h.items[g] then
+			table.insert(list, g)
+		end
+	end
+	local function rank(g)
+		local it = h.items[g]
+		local d = defs[it.id]
+		local w, hh = Inv.sizeOf(it)
+		return SORT_KIND[d.kind] or 50, -(w * hh), d.name
+	end
+	table.sort(list, function(a, b)
+		local a1, a2, a3 = rank(a)
+		local b1, b2, b3 = rank(b)
+		if a1 ~= b1 then
+			return a1 < b1
+		elseif a2 ~= b2 then
+			return a2 < b2
+		elseif a3 ~= b3 then
+			return a3 < b3
+		end
+		return a < b
+	end)
+	local cw, ch = Inv.dims(h, "stash")
+	local fresh = {}
+	local function size(g)
+		return Inv.sizeOf(h.items[g])
+	end
+	for _, g in list do
+		local w, hh = Inv.sizeOf(h.items[g])
+		local x, y, r = Grid.findFree(cw, ch, fresh, size, w, hh)
+		if not x then
+			return false, "NO_SPACE"
+		end
+		fresh[g] = { x = x, y = y, r = r }
+	end
+	table.clear(pl)
+	for g, p in fresh do
+		pl[g] = p
+	end
+	return true, nil
+end
+
 -- Add a new item record (not yet in h). Stacks merge first. Returns ok, info ("MERGED" when fully merged).
 function Inv.place(h: any, g: string, it: any, order: { string }): (boolean, string?)
 	if not defs[it.id] or h.items[g] then

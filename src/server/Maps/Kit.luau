@@ -15,6 +15,7 @@ local KitMeta = require(Shared:WaitForChild("KitMeta"))
 local M = Enum.Material
 local V = Vector3.new
 local Kit = {}
+Kit.GROUND = { Chair = true, JerryCans = true }
 
 -- material key -> { material, variant, transparency, reflectance, castShadow }
 Kit.MATS = {
@@ -53,6 +54,9 @@ Kit.COLL = {
 		bx(2.85, 12, 0.5, 3.58, 6, 0), bx(3, 1.1, 0.5, 6.5, 0.55, 0), bx(3, 4, 0.5, 6.5, 10, 0),
 	},
 	Shutter = { bx(16.4, 12.1, 0.6, 0, 6.05, 0) },
+	-- bunk beds: the lower bed, the upper bed and the four posts, so things can lie on the lower mattress
+	BunkBed = { bx(6.9, 1.6, 2.9, 0, 0.8, 0), bx(6.9, 0.5, 2.9, 0, 4.35, 0), bx(0.2, 6, 0.2, -3.35, 3, -1.35), bx(0.2, 6, 0.2, 3.35, 3, -1.35), bx(0.2, 6, 0.2, -3.35, 3, 1.35), bx(0.2, 6, 0.2, 3.35, 3, 1.35) },
+	BunkBedMessy = { bx(6.9, 1.6, 3, 0, 0.8, -0.41), bx(6.9, 0.5, 3, 0, 4.35, -0.41), bx(0.2, 6, 0.2, -3.35, 3, -1.8), bx(0.2, 6, 0.2, 3.35, 3, -1.8), bx(0.2, 6, 0.2, -3.35, 3, 0.95), bx(0.2, 6, 0.2, 3.35, 3, 0.95) },
 	ShutterHalf = { bx(16.4, 8.8, 0.6, 0, 7.7, 0) }, -- a 3.3 gap at the floor: prone to crawl under
 	ShutterBent = { bx(11.4, 12.1, 0.6, -2.5, 6.05, 0), bx(5, 5.5, 0.6, 5.7, 9.35, 0) }, -- 4.4 x 6.6 gap at x 3.2..7.6
 	CeilingHole = NONE, CeilingCollapse = NONE, CeilingDebris = NONE, BrokenEdge = NONE, GlassShards = NONE, RubbleA = NONE,
@@ -132,13 +136,19 @@ end
 
 -- opts: tint (Color3 for "paint", or { [mat] = Color3 }), variants ({ [mat] = name | false }), collide (false or a
 -- list of { size, centre }), shadows (false: no piece casts a shadow), name, attrs ({ [k] = v } on the model),
--- scale (Vector3 in prop space: stretches the pieces, their offsets and the colliders, e.g. a beam to a span)
+-- scale (Vector3 in prop space: stretches the pieces, their offsets and the colliders, e.g. a beam to a span),
+-- mats ({ [mat] = a Kit.MATS-style entry } for this prop only, e.g. a mirror's glass made opaque and shiny)
 function Kit.place(parent, name, cf, opts)
 	opts = opts or {}
 	local p = KitMeta.props[name]
 	if not p then
 		warn("[ZR] Kit: no prop " .. tostring(name))
 		return nil
+	end
+	-- floor-standing props whose meshes were exported off the origin stand on the floor (the chair's legs ended
+	-- 0.41 above it, the jerry cans sank 0.4 into it); found by the 2026-11-01 overlap and footing check
+	if Kit.GROUND[name] and not opts.scale then
+		cf *= CFrame.new(0, p.size.Y / 2 - p.center.Y, 0)
 	end
 	local m = Instance.new("Model")
 	m.Name = opts.name or ("Kit_" .. name)
@@ -154,7 +164,7 @@ function Kit.place(parent, name, cf, opts)
 		local src = l and l:FindFirstChild("ZR_MK_" .. name .. "__" .. pc.mat)
 		if src then
 			local part = src:Clone()
-			local mm = Kit.MATS[pc.mat] or Kit.MATS.plastic
+			local mm = (opts.mats and opts.mats[pc.mat]) or Kit.MATS[pc.mat] or Kit.MATS.plastic
 			part.Anchored = true
 			part.CanCollide = false
 			part.CanQuery = false

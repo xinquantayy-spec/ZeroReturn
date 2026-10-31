@@ -11,7 +11,7 @@ export type MapDef = {
 
 local Maps = {}
 
-Maps.order = { "quay7", "smelter", "meridian" }
+Maps.order = { "quay7", "smelter", "meridian", "border" }
 
 Maps.defs = {
 	quay7 = {
@@ -34,6 +34,13 @@ Maps.defs = {
 		kind = "SHOPPING MALL",
 		raidTime = 1500,
 		desc = "A dark two-level mall: a supermarket with a car park on its roof, a food court under a cinema, a fountain atrium and loading docks. Start the generator to light it and run the cargo lift; the Caretaker walks the atrium in some raids.",
+	},
+	border = {
+		id = "border",
+		name = "BORDER YARD",
+		kind = "CUSTOMS ZONE",
+		raidTime = 2100,
+		desc = "A customs terminal on a river crossing: the checkpoint and its office, two dormitory blocks, a fuel stop and a tank farm, warehouses and a crane yard, a building site with a boiler house, a trailer lot and the rail line. The Broker keeps the dorms in some raids.",
 	},
 } :: { [string]: MapDef }
 
