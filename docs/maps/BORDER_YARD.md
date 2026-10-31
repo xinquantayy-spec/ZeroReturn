@@ -174,3 +174,106 @@ low-end phone and memory use are untested.
 
 The context `B` every part receives: `kit, W, map, H, Kit, L, O, S, rng, count, ground(x, z)`; Ground adds `inside(x, z)`,
 `riverD(x, z)` (studs inside the river channel, negative on land), `slope(x, z)`, `T` (the TerrainKit result) and `islandTop`.
+
+## Gameplay (part 3 of 3)
+
+Written 2026-11-01 without a Luau runtime: `tools/luau_check.py` (structure only) and an offline Python mirror of the placement tests
+(footprints, roads, fences, rails, forests, rocks, keep-outs; the parts inside the buildings are not in the mirror) have run, nothing has
+run in Studio. The counts below are expectations from that mirror. `Play.luau` keeps part 1's extracts code and adds everything below; it
+publishes its geometry helper as `B.geo` (distances to footprints, roads, fences, rails, forests and the boundary, open-ground and
+footprint tests, keep-outs, the boxes of placed parts) for `Dress.luau`. Both read the buildings' named points from `B.points` and fall
+back to the matching footprint centre in `L.blds` when one is missing (names used: BLOCK_A_LOBBY, BLOCK_A_ROOM314, BLOCK_B_LOBBY,
+BASTION_YARD, FUEL_SHOP, OLD_PUMPS_SHOP, SQUAT, MOTOR_SHOP, RED_STORES, BOILER_CELLAR, DERRICK_TOP, FRAME_TOP, SMUGGLERS_HOLE; every
+point in `B.points` also keeps the dressing 8 studs away). Each step runs under pcall, so one failing step leaves the others standing.
+Look for `[ZR] Border play: ...` and `[ZR] Border dress: ...` in the server output.
+
+### PMC spawns (12)
+
+Six outdoor groups per half, picked farthest-first from the east or west rim (groups inside buildings are skipped: they would fail the
+head-room test in MapTests), each on the reference spawn point with the most room within 30 studs of the group centre. Names come from
+the nearest map label or yard, each used once. Six per side keeps a 12-player raid spread (`Match.pickSpawn` maximises the distance to
+the others). Positions and names below are what the mirror gives; the names are assigned at run time.
+
+| Id | Name | At (x, z) | Id | Name | At (x, z) |
+|---|---|---|---|---|---|
+| E1 | TRAILER LOT | 1511, -590 | W1 | ARMY POST | -1507, 254 |
+| E2 | SCRAP BRIDGE | 555, 489 | W2 | OLD PUMPS | -402, -507 |
+| E3 | MOTOR SHOP FORECOURT | 208, -223 | W3 | FUEL STOP | -616, 592 |
+| E4 | RED STORES | 1180, 108 | W4 | DEPOT | -1063, -78 |
+| E5 | RED STORES YARD | 972, -314 | W5 | PYLON PAD | -1133, 731 |
+| E6 | STORAGE YARD | 1458, -170 | W6 | STORE 3 | -714, -258 |
+
+E6 stands 10 studs from a building (the storage yard is crowded); E1, E4, W2 and W5 lie 20 to 30 studs from the boundary wall.
+
+### Guard routes, posts and the Broker
+
+Six closed routes along roads and yards, checked offline against footprints, fences, the river and the boundary (not against the
+dressing or the real interior walls). A guard with a post stands at it; the others walk their route.
+
+| Id | Where | Points | Guard |
+|---|---|---|---|
+| OC | OLD CHECKPOINT, the west road gate | 4 | post at -1498, 6 |
+| AP | ARMY POST, between the hut and the road | 5 | post at -1256, 118 |
+| BG | THE BASTION, the gravel ring round the bunker yard | 10 | post at `BASTION_YARD` |
+| FS | FUEL STOP forecourt | 4 | walks |
+| S4 | STORE 3-4 apron | 6 | walks |
+| TL | TRAILER LOT | 4 | walks |
+
+THE BROKER (Reshala): home the lobby of BLOCK A (`BLOCK_A_LOBBY`, the dorms; `Maps.defs.border.desc` says he keeps the dorms), a loop of
+nine points round the dorm yard and the road north of it (x -160..-70, z 498..626) that returns to the lobby, four guards waiting at
+(-130, 572), (-110, 572), (-130, 590) and (-110, 590). The reference lists three areas for him (ZoneDormitory, ZoneGasStation,
+ZoneScavBase; his points are in `L.bosses` and `L.scav`); one home is chosen here, so the fuel stop and the Bastion keep plain guards.
+
+Scav zones: the reference's 103 normal points (84 survive the inside, dry and 12-stud spacing tests; points inside a building move to
+the open ground beside it, at most 4 per building), 29 hand-placed anchors (dorms, fuel stop, Bastion, stores, trailer lot, Red Stores,
+old pumps) and six standing points inside the shops, the squat and the dorm lobby: about 118 zones. Visit zones: DORM314 (room 314
+in BLOCK A, r 7), BOILER (the cellar, r 14), DERRICK (the roof, r 12), FRAME (the top floor, r 10), SMUGGLERS (the tunnel room, r 10).
+
+### Hazards and outdoor loot
+
+- Propane: 9 spots (fuel stop, old works, motor shop, Frame site, trailer lot, old pumps, Store 17), two cylinders 3.2 studs apart at
+  six of them: up to 15 cylinders, each on open ground (not near a wall, a road or the boundary) through `Hazards.register`.
+- Border snipers: six stair-step `Hazards.sniperZone` strips over the reference quad `L.sniper` (north tip, -150..25 x -835..-670),
+  height -40 to 130. Spawns, all extracts and points every 24 studs along the rail to NORTH LINE inside the quad are exempt (since
+  1.2.0.0 the sniper no longer fires at players walking along the rails).
+- Loose loot (pool "junk", area "border"): 1 to 5 spots per yard by area (30-stud spacing), one on each pump platform, one on each scrap
+  bridge landing, and up to 14 beside the wrecks: about 45 spots.
+
+### Dressing (`Dress.luau`)
+
+Every piece is tested against the footprints (corners and edge midpoints), roads, fences, rails, forests, rocks, the boundary, the
+solid parts already in the map, a roof overhead, the keep-outs (spawns, extracts with their whole zone, routes, posts, the Broker's
+crew, scav zones, doors, containers, loose loot, propane) and the pieces placed before it. Nothing stands on a road except wrecks.
+Budget 2,450 parts (counted as it goes); the run prints the real count.
+
+| What | Expected | Where |
+|---|---|---|
+| Container stacks | 34 (a third two high) | rows on the open lanes of the STORAGE YARD |
+| Wrecks (cars, vans) | about 55 | 36 on the road shoulders (a third half on the road), about 20 in the yards' car parks |
+| Poles with wires | up to 44 | five small roads (`paved_small_4`, `_2`, `_5`, `_0`, `_3`), 42 studs apart, clear of Ground's pylon lines |
+| Checkpoint props | a few | sandbags, a broken barrier and a drum within 7 to 16 studs of the three guard posts |
+| Cover clusters | about 55 clusters, 100 to 150 pieces | every yard but the scrap bridge landings: sandbags, pallets, tyres, cinder blocks, drums, cable reels, bins, rubble |
+| Broken fence runs | about 30 | 18 to 42 studs long, along the edges of 14 yards |
+| Bushes, grass, rocks | 150 | 6 to 22 studs inside the boundary where Ground left room |
+
+### Gaps (to copy into `docs/design/EFT_PARITY.md`)
+
+- Mounted AGS and NSV style guns are not built: the reference positions are unknown (`L.hazard.mounted` is empty).
+- Co-op extracts and transits: BOILER CELLAR is a plain key extract (a PMC must bring a scav in Tarkov); the transits to Factory,
+  Interchange, Reserve and Shoreline that the reference lists do not exist.
+- Other boss groups are not built: the knight with Big Pipe and Birdeye, the sect priest with four warriors, the partisan.
+- The Broker appears by the global boss chance (`BOSS_CHANCE` 0.5 in the AI config), not the reference's per-map chance (39 to 60 %
+  by source), and always at the dorms.
+- The four marksman perches in `L.snipers` (ARMY POST HUT, BOILER HOUSE ROOF, DEPOT ROOF, DERRICK ROOF) have no AI kind to fill them.
+- Crew slots: `AI.spawn` only separates slot 1 from the others, so guards 2 to 4 start stacked on one offset around the Broker and
+  spread out as they path.
+- The AI director's numbers (`SCAV_START` 4, plus 0.5 per player up to `SCAV_CAP` 10, `AI_MAX` 18) were tuned for the small maps and
+  are low for a map this size; the six guard routes are all the fixed AI the map has besides the Broker.
+- The Voron note, the green flare and the ZB-1013 key still have no items (part 1's list).
+
+Unverified (nothing has run in Studio): every count above; that the spawns, routes and posts sit on walkable ground in the built
+map; the head-room test for the 12 spawns; the Broker's loop with the real dorm walls; `B.points` names against what the buildings
+agents register; the part count and server time of the dressing (the geometry buckets are built from every solid part in the map on
+first use); whether the stand-in blocks (no meshes) or the kit props look right; the frame rate on a low-end phone.
+
+The Files table above still lists `Play.luau` as minimal and `Dress.luau` as a stub: they are the two files this section describes.
