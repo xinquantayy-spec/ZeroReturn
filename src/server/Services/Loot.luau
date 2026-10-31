@@ -129,6 +129,7 @@ local POOLS = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_MALL_STAFF", w = 3 }, { id = "KEY_MEDIQ", w = 2 }, { id = "KEY_MALL_SECURITY", w = 1 },
 		{ id = "KEY_BY_314", w = 3 }, { id = "KEY_BY_RECORDS", w = 4 }, { id = "KEY_BY_BOILER", w = 2 },
+		{ id = "KEY_BY_K11", w = 1.5 }, { id = "KEY_BY_STORE", w = 4 }, { id = "KEY_BY_RED", w = 3 }, { id = "KEY_BY_BASTION", w = 1.5 }, { id = "KEY_BY_MOTOR", w = 4 },
 	},
 	-- M13 Meridian Mall
 	register = {
