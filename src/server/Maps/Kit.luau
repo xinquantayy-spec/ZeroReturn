@@ -1,5 +1,6 @@
 --!nonstrict
--- M13 Blender kit props (ZR_MK_<Prop>__<material> pieces from the ZR_MallKit* batches, see KitMeta.luau).
+-- M13 Blender kit props (ZR_MK_<Prop>__<material> pieces from the ZR_MallKit* and ZR_BunkerKit* batches, see
+-- KitMeta.luau).
 -- Kit.place(parent, name, cf, opts) puts a prop's pieces at cf (origin bottom-centre, front along cf.LookVector):
 --   * each piece gets its Roblox material and, where one fits, a MaterialVariant; colour comes from the baked
 --     vertex colours (the MeshPart colour is white or a tint that multiplies them);
@@ -73,6 +74,29 @@ Kit.COLL = {
 	TrolleyBay = NONE, CardboardPile = NONE,
 	Hoarding = { bx(4, 8, 0.4, -4, 4, 0), bx(4, 8, 0.4, 4, 4, 0), bx(4, 4, 0.4, 0, 6, 0) },
 	MannequinFallen = NONE, ClothesRackFallen = NONE, TrolleyTipped = { bx(3.6, 2, 3.4, 0, 1, 0) },
+	-- Relay 7 bunker kit (ZR_BunkerKitA/B/C): wall and ceiling fittings take no collider (the wall or ceiling behind
+	-- them does the job), furniture keeps its working height, the van is a hollow box you can climb into
+	BlastDoor = { bx(0.6, 8.6, 8.2, -4.41, 4.3, -5.41) }, -- the open leaf (the frame wraps the wall's own ends)
+	DoorFrame = NONE, Beam = NONE, CableTray = NONE, Duct = NONE, Fluoro = NONE, FluoroDead = NONE, CageLamp = NONE,
+	CageLampRed = NONE, Vent = NONE, JunctionBox = NONE, Extinguisher = NONE, FirstAid = NONE, WallPhone = NONE,
+	Speaker = NONE, WallClock = NONE, PipeRun = NONE, PipeRunRust = NONE, PipeValve = NONE, Rubble = NONE,
+	DepartureBoard = NONE, Whiteboard = NONE, CorkBoard = NONE, GunRack = NONE, Pegboard = NONE, RangeDisplay = NONE,
+	Pigeonholes = NONE, HoseReel = NONE, OilStain = NONE, Ramp = NONE, -- the ramp's slope is a WedgePart (Relay7)
+	MapTable = { bx(24, 3.4, 10.1, 0, 1.7, 0.05) },
+	Counter = { bx(12, 3.6, 3, 0, 1.8, 0) },
+	GunBench = { bx(14, 3.3, 3, 0, 1.65, 0) },
+	CraftBench = { bx(8, 3.3, 3.45, 0, 1.65, -0.22) },
+	InsuranceWindow = { bx(10.6, 0.4, 1.6, 0, 2.95, -0.5) }, -- the counter shelf
+	RangeBooth = { bx(10, 7, 0.3, 0, 3.5, 0), bx(1.5, 3.4, 5.2, 4.25, 1.7, -2.6) }, -- divider, shelf at the firing line
+	WorkLight = { bx(1.8, 5.5, 1.8, 0, 2.75, 0) },
+	Manhole = { bx(3.6, 3.6, 0.5, 0, 1.95, 2.6) }, -- the open lid (the shaft is painted on solid floor)
+	Van = {
+		bx(6.8, 7.0, 7.65, 0, 3.5, -6.5), -- bonnet and cab
+		bx(6.6, 1.7, 12.5, 0, 0.85, 3.25), -- chassis and cargo floor
+		bx(0.4, 6.1, 12.5, -3.1, 4.75, 3.25), bx(0.4, 6.1, 12.5, 3.1, 4.75, 3.25), -- cargo sides
+		bx(6.6, 0.4, 12.5, 0, 7.6, 3.25), -- roof
+		bx(1.3, 1.5, 9.5, -2.3, 2.45, 4.25), bx(1.3, 1.5, 9.5, 2.3, 2.45, 4.25), -- bench seats
+	},
 }
 -- the fountain: its ring wall as eight boxes and the plinth (the basin is walkable, shots pass the sculpture)
 do
@@ -107,7 +131,8 @@ function Kit.size(name)
 end
 
 -- opts: tint (Color3 for "paint", or { [mat] = Color3 }), variants ({ [mat] = name | false }), collide (false or a
--- list of { size, centre }), shadows (false: no piece casts a shadow), name, attrs ({ [k] = v } on the model)
+-- list of { size, centre }), shadows (false: no piece casts a shadow), name, attrs ({ [k] = v } on the model),
+-- scale (Vector3 in prop space: stretches the pieces, their offsets and the colliders, e.g. a beam to a span)
 function Kit.place(parent, name, cf, opts)
 	opts = opts or {}
 	local p = KitMeta.props[name]
@@ -124,6 +149,7 @@ function Kit.place(parent, name, cf, opts)
 	end
 	local l = lib()
 	local placed = 0
+	local sc = opts.scale
 	for _, pc in p.pieces do
 		local src = l and l:FindFirstChild("ZR_MK_" .. name .. "__" .. pc.mat)
 		if src then
@@ -150,7 +176,12 @@ function Kit.place(parent, name, cf, opts)
 			else
 				part.Color = Color3.new(1, 1, 1)
 			end
-			part.CFrame = cf * CFrame.new(pc.center)
+			if sc then
+				part.Size = part.Size * sc
+				part.CFrame = cf * CFrame.new(pc.center * sc)
+			else
+				part.CFrame = cf * CFrame.new(pc.center)
+			end
 			part:SetAttribute("NoDetail", true)
 			part:SetAttribute("KitMat", pc.mat)
 			part.Parent = m
@@ -167,8 +198,8 @@ function Kit.place(parent, name, cf, opts)
 		local box = Instance.new("Part")
 		box.Name = "KitFallback"
 		box.Anchored = true
-		box.Size = p.size
-		box.CFrame = cf * CFrame.new(p.center)
+		box.Size = sc and p.size * sc or p.size
+		box.CFrame = cf * CFrame.new(sc and p.center * sc or p.center)
 		box.Color = Color3.fromRGB(110, 112, 108)
 		box.Material = mat0
 		box.CanCollide = false
@@ -183,8 +214,14 @@ function Kit.place(parent, name, cf, opts)
 			local b = Instance.new("Part")
 			b.Name = "KitCollider"
 			b.Anchored = true
-			b.Size = c[1]
-			b.CFrame = cf * ((typeof(c[2]) == "CFrame") and c[2] or CFrame.new(c[2]))
+			local off = (typeof(c[2]) == "CFrame") and c[2] or CFrame.new(c[2])
+			if sc then
+				b.Size = c[1] * sc
+				off = off - off.Position + off.Position * sc
+			else
+				b.Size = c[1]
+			end
+			b.CFrame = cf * off
 			b.Transparency = 1
 			b.CastShadow = false
 			b.Material = mat0

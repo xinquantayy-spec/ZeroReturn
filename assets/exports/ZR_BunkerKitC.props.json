@@ -1,0 +1,219 @@
+{
+ "HoseReel": {
+  "center": [
+   -0.455,
+   0.897,
+   -0.433
+  ],
+  "mats": [
+   "metal",
+   "rubber"
+  ],
+  "size": [
+   2.372,
+   1.806,
+   1.617
+  ]
+ },
+ "JerryCans": {
+  "center": [
+   -0.15,
+   0.95,
+   0.0
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   2.6,
+   2.7,
+   2.1
+  ]
+ },
+ "Manhole": {
+  "center": [
+   -0.0,
+   1.778,
+   0.608
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "plastic"
+  ],
+  "size": [
+   4.2,
+   3.717,
+   5.416
+  ]
+ },
+ "OilStain": {
+  "center": [
+   0.075,
+   0.255,
+   0.021
+  ],
+  "mats": [
+   "fabric",
+   "plastic"
+  ],
+  "size": [
+   3.983,
+   0.49,
+   2.635
+  ]
+ },
+ "Ramp": {
+  "center": [
+   -0.0,
+   4.85,
+   0.0
+  ],
+  "mats": [
+   "concrete",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   13.0,
+   9.7,
+   36.0
+  ]
+ },
+ "RollerDoor": {
+  "center": [
+   -0.0,
+   5.1,
+   0.3
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   14.2,
+   10.6,
+   1.4
+  ]
+ },
+ "SignPost": {
+  "center": [
+   -0.0,
+   2.8,
+   0.2
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   3.0,
+   5.6,
+   0.8
+  ]
+ },
+ "ToolChest": {
+  "center": [
+   -0.0,
+   2.15,
+   -0.34
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   3.0,
+   4.3,
+   2.48
+  ]
+ },
+ "TyreStack": {
+  "center": [
+   -0.093,
+   1.811,
+   0.0
+  ],
+  "mats": [
+   "rubber"
+  ],
+  "size": [
+   3.226,
+   3.449,
+   2.895
+  ]
+ },
+ "Van": {
+  "center": [
+   -0.0,
+   4.425,
+   -0.05
+  ],
+  "mats": [
+   "fabric",
+   "glass",
+   "glow",
+   "metal",
+   "paint",
+   "plastic",
+   "rubber"
+  ],
+  "size": [
+   7.82,
+   8.85,
+   20.6
+  ]
+ },
+ "VanDoor": {
+  "center": [
+   -1.515,
+   3.0,
+   0.058
+  ],
+  "mats": [
+   "glass",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   3.27,
+   6.0,
+   0.365
+  ]
+ },
+ "VanDoorR": {
+  "center": [
+   1.515,
+   3.0,
+   0.058
+  ],
+  "mats": [
+   "glass",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   3.27,
+   6.0,
+   0.365
+  ]
+ },
+ "WorkLight": {
+  "center": [
+   -0.984,
+   2.942,
+   0.671
+  ],
+  "mats": [
+   "glow",
+   "metal",
+   "rubber"
+  ],
+  "size": [
+   4.069,
+   5.916,
+   3.169
+  ]
+ }
+}

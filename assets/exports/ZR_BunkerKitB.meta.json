@@ -1,0 +1,1419 @@
+{
+ "ZR_MK_BunkBed__fabric": {
+  "center": [
+   -0.0,
+   3.4554,
+   0.0
+  ],
+  "size": [
+   6.4403,
+   4.0357,
+   2.6544
+  ],
+  "tris": 264
+ },
+ "ZR_MK_BunkBed__metal": {
+  "center": [
+   -0.0,
+   2.95,
+   0.0
+  ],
+  "size": [
+   5.85,
+   3.05,
+   2.5
+  ],
+  "tris": 216
+ },
+ "ZR_MK_BunkBed__paint": {
+  "center": [
+   -0.05,
+   3.0,
+   0.0
+  ],
+  "size": [
+   6.9,
+   6.0,
+   2.9
+  ],
+  "tris": 344
+ },
+ "ZR_MK_Locker__metal": {
+  "center": [
+   -0.0,
+   2.6375,
+   -0.045
+  ],
+  "size": [
+   1.9,
+   5.275,
+   1.99
+  ],
+  "tris": 36
+ },
+ "ZR_MK_Locker__paint": {
+  "center": [
+   -0.0,
+   3.55,
+   -0.025
+  ],
+  "size": [
+   1.95,
+   7.1,
+   1.95
+  ],
+  "tris": 224
+ },
+ "ZR_MK_LockerOpen__fabric": {
+  "center": [
+   -0.05,
+   4.225,
+   0.1
+  ],
+  "size": [
+   1.3,
+   3.45,
+   0.8
+  ],
+  "tris": 88
+ },
+ "ZR_MK_LockerOpen__metal": {
+  "center": [
+   0.2255,
+   3.4,
+   -0.7714
+  ],
+  "size": [
+   2.351,
+   6.8,
+   3.4429
+  ],
+  "tris": 60
+ },
+ "ZR_MK_LockerOpen__paint": {
+  "center": [
+   0.2003,
+   3.55,
+   -0.8758
+  ],
+  "size": [
+   2.3505,
+   7.1,
+   3.6516
+  ],
+  "tris": 224
+ },
+ "ZR_MK_MirrorSink__fabric": {
+  "center": [
+   -1.9,
+   3.5,
+   0.1782
+  ],
+  "size": [
+   0.8,
+   1.4,
+   0.0873
+  ],
+  "tris": 48
+ },
+ "ZR_MK_MirrorSink__glass": {
+  "center": [
+   -0.0,
+   5.6,
+   0.26
+  ],
+  "size": [
+   3.1,
+   3.9,
+   0.04
+  ],
+  "tris": 12
+ },
+ "ZR_MK_MirrorSink__metal": {
+  "center": [
+   -0.1217,
+   3.85,
+   0.0
+  ],
+  "size": [
+   3.6433,
+   7.7,
+   1.4
+  ],
+  "tris": 140
+ },
+ "ZR_MK_MirrorSink__plastic": {
+  "center": [
+   -0.1888,
+   4.9797,
+   -0.045
+  ],
+  "size": [
+   2.5777,
+   3.6095,
+   0.56
+  ],
+  "tris": 128
+ },
+ "ZR_MK_MapTable__glow": {
+  "center": [
+   9.625,
+   5.07,
+   2.91
+  ],
+  "size": [
+   0.3013,
+   0.2233,
+   0.295
+  ],
+  "tris": 28
+ },
+ "ZR_MK_MapTable__metal": {
+  "center": [
+   -0.0,
+   3.3011,
+   0.0
+  ],
+  "size": [
+   23.15,
+   6.6023,
+   9.15
+  ],
+  "tris": 272
+ },
+ "ZR_MK_MapTable__paint": {
+  "center": [
+   -10.5,
+   3.9,
+   3.4
+  ],
+  "size": [
+   1.8,
+   1.0,
+   1.0
+  ],
+  "tris": 44
+ },
+ "ZR_MK_MapTable__plastic": {
+  "center": [
+   -0.0,
+   4.0,
+   0.4644
+  ],
+  "size": [
+   22.4,
+   1.2,
+   9.2889
+  ],
+  "tris": 1260
+ },
+ "ZR_MK_MapTable__wood": {
+  "center": [
+   -0.0,
+   3.1,
+   0.0
+  ],
+  "size": [
+   24.0,
+   0.6,
+   10.0
+  ],
+  "tris": 56
+ },
+ "ZR_MK_DepartureBoard__glow": {
+  "center": [
+   -5.4,
+   3.85,
+   -0.05
+  ],
+  "size": [
+   0.18,
+   0.18,
+   0.02
+  ],
+  "tris": 12
+ },
+ "ZR_MK_DepartureBoard__metal": {
+  "center": [
+   -0.0,
+   2.9,
+   0.225
+  ],
+  "size": [
+   12.0,
+   5.8,
+   0.55
+  ],
+  "tris": 96
+ },
+ "ZR_MK_DepartureBoard__plastic": {
+  "center": [
+   -0.0,
+   1.9,
+   -0.03
+  ],
+  "size": [
+   11.4,
+   3.2,
+   0.08
+  ],
+  "tris": 1164
+ },
+ "ZR_MK_Whiteboard__metal": {
+  "center": [
+   -0.0,
+   2.0,
+   -0.13
+  ],
+  "size": [
+   6.14,
+   4.14,
+   0.54
+  ],
+  "tris": 60
+ },
+ "ZR_MK_Whiteboard__plastic": {
+  "center": [
+   -0.0,
+   2.0,
+   -0.085
+  ],
+  "size": [
+   6.0,
+   4.0,
+   0.45
+  ],
+  "tris": 220
+ },
+ "ZR_MK_CorkBoard__fabric": {
+  "center": [
+   -0.0,
+   2.0,
+   0.08
+  ],
+  "size": [
+   8.0,
+   4.0,
+   0.12
+  ],
+  "tris": 12
+ },
+ "ZR_MK_CorkBoard__plastic": {
+  "center": [
+   -0.0293,
+   1.8961,
+   -0.0375
+  ],
+  "size": [
+   7.2548,
+   3.8626,
+   0.085
+  ],
+  "tris": 352
+ },
+ "ZR_MK_CorkBoard__wood": {
+  "center": [
+   -0.0,
+   2.0,
+   0.05
+  ],
+  "size": [
+   8.22,
+   4.22,
+   0.2
+  ],
+  "tris": 48
+ },
+ "ZR_MK_InsuranceWindow__glass": {
+  "center": [
+   -0.0,
+   5.0,
+   0.3
+  ],
+  "size": [
+   10.0,
+   4.0,
+   0.06
+  ],
+  "tris": 12
+ },
+ "ZR_MK_InsuranceWindow__metal": {
+  "center": [
+   -0.0,
+   4.6,
+   -0.13
+  ],
+  "size": [
+   10.6,
+   5.4,
+   1.46
+  ],
+  "tris": 200
+ },
+ "ZR_MK_InsuranceWindow__plastic": {
+  "center": [
+   -1.95,
+   3.225,
+   -0.5
+  ],
+  "size": [
+   2.3,
+   0.45,
+   0.9
+  ],
+  "tris": 80
+ },
+ "ZR_MK_InsuranceWindow__wood": {
+  "center": [
+   -0.0,
+   2.95,
+   -0.5
+  ],
+  "size": [
+   10.6,
+   0.15,
+   1.6
+  ],
+  "tris": 44
+ },
+ "ZR_MK_Counter__cardboard": {
+  "center": [
+   0.05,
+   1.7,
+   0.4
+  ],
+  "size": [
+   10.9,
+   1.2808,
+   1.2
+  ],
+  "tris": 264
+ },
+ "ZR_MK_Counter__glow": {
+  "center": [
+   -5.015,
+   4.93,
+   0.715
+  ],
+  "size": [
+   0.2116,
+   0.1715,
+   0.1965
+  ],
+  "tris": 20
+ },
+ "ZR_MK_Counter__metal": {
+  "center": [
+   -0.0,
+   3.2157,
+   0.3
+  ],
+  "size": [
+   11.6,
+   4.1313,
+   2.2
+  ],
+  "tris": 112
+ },
+ "ZR_MK_Counter__paint": {
+  "center": [
+   -0.0,
+   1.68,
+   0.0
+  ],
+  "size": [
+   12.0,
+   3.36,
+   3.0
+  ],
+  "tris": 144
+ },
+ "ZR_MK_Counter__plastic": {
+  "center": [
+   -2.5,
+   3.67,
+   0.0
+  ],
+  "size": [
+   1.6,
+   0.14,
+   1.2
+  ],
+  "tris": 24
+ },
+ "ZR_MK_Counter__wood": {
+  "center": [
+   -0.0,
+   3.48,
+   0.0
+  ],
+  "size": [
+   12.0,
+   0.24,
+   3.0
+  ],
+  "tris": 44
+ },
+ "ZR_MK_GunRack__metal": {
+  "center": [
+   -0.0,
+   5.4547,
+   0.185
+  ],
+  "size": [
+   9.4,
+   0.7107,
+   0.13
+  ],
+  "tris": 96
+ },
+ "ZR_MK_GunRack__wood": {
+  "center": [
+   -0.0,
+   3.0,
+   -0.0
+  ],
+  "size": [
+   10.0,
+   6.0,
+   0.9
+  ],
+  "tris": 192
+ },
+ "ZR_MK_Pegboard__cardboard": {
+  "center": [
+   0.7,
+   0.35,
+   0.0
+  ],
+  "size": [
+   3.6,
+   0.6,
+   0.6
+  ],
+  "tris": 36
+ },
+ "ZR_MK_Pegboard__metal": {
+  "center": [
+   -0.0425,
+   2.45,
+   0.18
+  ],
+  "size": [
+   8.135,
+   3.35,
+   0.25
+  ],
+  "tris": 504
+ },
+ "ZR_MK_Pegboard__wood": {
+  "center": [
+   -0.0,
+   2.5,
+   0.3
+  ],
+  "size": [
+   10.0,
+   5.0,
+   0.12
+  ],
+  "tris": 12
+ },
+ "ZR_MK_Pigeonholes__cardboard": {
+  "center": [
+   -0.0,
+   4.82,
+   0.1
+  ],
+  "size": [
+   2.4,
+   3.3,
+   0.7
+  ],
+  "tris": 36
+ },
+ "ZR_MK_Pigeonholes__plastic": {
+  "center": [
+   -0.0035,
+   4.54,
+   0.1
+  ],
+  "size": [
+   5.6543,
+   2.84,
+   0.8723
+  ],
+  "tris": 84
+ },
+ "ZR_MK_Pigeonholes__wood": {
+  "center": [
+   -0.0,
+   4.35,
+   0.0
+  ],
+  "size": [
+   6.1,
+   5.8,
+   1.2
+  ],
+  "tris": 156
+ },
+ "ZR_MK_FenceStall__fabric": {
+  "center": [
+   -0.0,
+   1.7948,
+   0.0
+  ],
+  "size": [
+   4.4,
+   0.5766,
+   2.4
+  ],
+  "tris": 96
+ },
+ "ZR_MK_FenceStall__glow": {
+  "center": [
+   -1.31,
+   2.72,
+   0.31
+  ],
+  "size": [
+   0.1653,
+   0.1292,
+   0.1532
+  ],
+  "tris": 20
+ },
+ "ZR_MK_FenceStall__metal": {
+  "center": [
+   -0.4772,
+   1.7029,
+   1.1359
+  ],
+  "size": [
+   2.1543,
+   2.5096,
+   3.3318
+  ],
+  "tris": 276
+ },
+ "ZR_MK_FenceStall__plastic": {
+  "center": [
+   1.2,
+   2.35,
+   0.2
+  ],
+  "size": [
+   0.9,
+   0.55,
+   0.5
+  ],
+  "tris": 44
+ },
+ "ZR_MK_FenceStall__wood": {
+  "center": [
+   -0.0,
+   1.0,
+   -0.015
+  ],
+  "size": [
+   4.0,
+   2.0,
+   2.03
+  ],
+  "tris": 158
+ },
+ "ZR_MK_HideoutGenerator__metal": {
+  "center": [
+   -0.0,
+   2.3305,
+   0.0
+  ],
+  "size": [
+   6.2,
+   4.661,
+   2.7
+  ],
+  "tris": 92
+ },
+ "ZR_MK_HideoutGenerator__paint": {
+  "center": [
+   -0.35,
+   1.7,
+   -0.1
+  ],
+  "size": [
+   5.3,
+   2.8,
+   2.4
+  ],
+  "tris": 168
+ },
+ "ZR_MK_HideoutGenerator__plastic": {
+  "center": [
+   -2.4,
+   2.6375,
+   -1.32
+  ],
+  "size": [
+   0.9,
+   0.475,
+   0.04
+  ],
+  "tris": 24
+ },
+ "ZR_MK_HideoutGenerator__rubber": {
+  "center": [
+   -3.6357,
+   0.5318,
+   1.0496
+  ],
+  "size": [
+   1.6433,
+   1.0384,
+   1.2647
+  ],
+  "tris": 24
+ },
+ "ZR_MK_MedCot__fabric": {
+  "center": [
+   -0.0,
+   2.4826,
+   0.0
+  ],
+  "size": [
+   6.303,
+   0.9225,
+   2.315
+  ],
+  "tris": 88
+ },
+ "ZR_MK_MedCot__glass": {
+  "center": [
+   -3.9,
+   5.3,
+   -0.95
+  ],
+  "size": [
+   0.5,
+   0.8,
+   0.15
+  ],
+  "tris": 44
+ },
+ "ZR_MK_MedCot__metal": {
+  "center": [
+   -0.65,
+   3.0,
+   0.15
+  ],
+  "size": [
+   7.9,
+   6.0,
+   3.7
+  ],
+  "tris": 256
+ },
+ "ZR_MK_MedCot__plastic": {
+  "center": [
+   -3.5923,
+   3.7722,
+   0.2151
+  ],
+  "size": [
+   1.4153,
+   2.2644,
+   2.3699
+  ],
+  "tris": 128
+ },
+ "ZR_MK_CraftBench__metal": {
+  "center": [
+   -0.0,
+   3.93,
+   -0.225
+  ],
+  "size": [
+   8.0,
+   6.54,
+   3.45
+  ],
+  "tris": 136
+ },
+ "ZR_MK_CraftBench__paint": {
+  "center": [
+   -0.0,
+   3.25,
+   0.0
+  ],
+  "size": [
+   7.75,
+   6.5,
+   2.75
+  ],
+  "tris": 144
+ },
+ "ZR_MK_CraftBench__plastic": {
+  "center": [
+   0.9,
+   3.38,
+   0.8
+  ],
+  "size": [
+   1.7,
+   0.35,
+   0.5
+  ],
+  "tris": 60
+ },
+ "ZR_MK_CraftBench__wood": {
+  "center": [
+   -0.0,
+   3.05,
+   0.0
+  ],
+  "size": [
+   8.0,
+   0.3,
+   3.0
+  ],
+  "tris": 44
+ },
+ "ZR_MK_WaterTank__glass": {
+  "center": [
+   -2.6,
+   1.9,
+   -0.6
+  ],
+  "size": [
+   0.6848,
+   1.4,
+   0.72
+  ],
+  "tris": 36
+ },
+ "ZR_MK_WaterTank__metal": {
+  "center": [
+   -0.075,
+   3.1315,
+   0.19
+  ],
+  "size": [
+   5.25,
+   6.263,
+   4.18
+  ],
+  "tris": 612
+ },
+ "ZR_MK_WaterTank__paint": {
+  "center": [
+   -0.0,
+   3.85,
+   0.3
+  ],
+  "size": [
+   3.8,
+   5.3,
+   3.8
+  ],
+  "tris": 106
+ },
+ "ZR_MK_WaterTank__plastic": {
+  "center": [
+   -2.6,
+   1.8,
+   -0.6
+  ],
+  "size": [
+   0.6657,
+   3.6,
+   0.7
+  ],
+  "tris": 36
+ },
+ "ZR_MK_StorageRack__cardboard": {
+  "center": [
+   0.0393,
+   3.1809,
+   0.0
+  ],
+  "size": [
+   7.0213,
+   5.8303,
+   1.6
+  ],
+  "tris": 352
+ },
+ "ZR_MK_StorageRack__fabric": {
+  "center": [
+   -0.3485,
+   3.15,
+   0.0
+  ],
+  "size": [
+   7.797,
+   5.3,
+   1.5
+  ],
+  "tris": 308
+ },
+ "ZR_MK_StorageRack__metal": {
+  "center": [
+   -0.0,
+   3.65,
+   0.0
+  ],
+  "size": [
+   8.0,
+   6.6,
+   2.0
+  ],
+  "tris": 48
+ },
+ "ZR_MK_StorageRack__paint": {
+  "center": [
+   -0.0,
+   3.5,
+   0.0
+  ],
+  "size": [
+   7.95,
+   7.0,
+   1.95
+  ],
+  "tris": 92
+ },
+ "ZR_MK_StorageRackEmpty__cardboard": {
+  "center": [
+   -1.5,
+   0.95,
+   0.0
+  ],
+  "size": [
+   1.4,
+   1.0,
+   1.4
+  ],
+  "tris": 12
+ },
+ "ZR_MK_StorageRackEmpty__metal": {
+  "center": [
+   -0.0,
+   3.65,
+   0.0
+  ],
+  "size": [
+   8.0,
+   6.6,
+   2.0
+  ],
+  "tris": 48
+ },
+ "ZR_MK_StorageRackEmpty__paint": {
+  "center": [
+   -0.0,
+   3.5,
+   0.0
+  ],
+  "size": [
+   7.95,
+   7.0,
+   1.95
+  ],
+  "tris": 48
+ },
+ "ZR_MK_GunBench__fabric": {
+  "center": [
+   -0.5504,
+   3.675,
+   -0.3
+  ],
+  "size": [
+   6.1007,
+   0.95,
+   1.8
+  ],
+  "tris": 80
+ },
+ "ZR_MK_GunBench__glow": {
+  "center": [
+   -4.025,
+   5.87,
+   0.425
+  ],
+  "size": [
+   0.2861,
+   0.245,
+   0.2664
+  ],
+  "tris": 20
+ },
+ "ZR_MK_GunBench__metal": {
+  "center": [
+   -0.0,
+   3.4228,
+   0.125
+  ],
+  "size": [
+   13.2,
+   5.7255,
+   2.65
+  ],
+  "tris": 172
+ },
+ "ZR_MK_GunBench__paint": {
+  "center": [
+   -0.0,
+   1.85,
+   0.0
+  ],
+  "size": [
+   13.5,
+   3.7,
+   2.7
+  ],
+  "tris": 116
+ },
+ "ZR_MK_GunBench__plastic": {
+  "center": [
+   -1.85,
+   3.44,
+   0.6
+  ],
+  "size": [
+   0.9,
+   0.1,
+   0.65
+  ],
+  "tris": 72
+ },
+ "ZR_MK_GunBench__wood": {
+  "center": [
+   -0.0,
+   3.0,
+   0.0
+  ],
+  "size": [
+   14.0,
+   0.4,
+   3.0
+  ],
+  "tris": 44
+ },
+ "ZR_MK_RangeBooth__metal": {
+  "center": [
+   -0.7813,
+   2.42,
+   -1.065
+  ],
+  "size": [
+   1.5136,
+   4.84,
+   1.87
+  ],
+  "tris": 88
+ },
+ "ZR_MK_RangeBooth__paint": {
+  "center": [
+   -0.0,
+   3.5,
+   -2.5375
+  ],
+  "size": [
+   10.0,
+   7.0,
+   5.325
+  ],
+  "tris": 36
+ },
+ "ZR_MK_RangeBooth__plastic": {
+  "center": [
+   -1.5,
+   4.5,
+   -0.5495
+  ],
+  "size": [
+   0.86,
+   0.86,
+   0.2511
+  ],
+  "tris": 208
+ },
+ "ZR_MK_SteelPlate__metal": {
+  "center": [
+   -0.0,
+   1.0558,
+   0.0
+  ],
+  "size": [
+   2.1748,
+   2.2884,
+   1.2
+  ],
+  "tris": 72
+ },
+ "ZR_MK_SteelPlate__paint": {
+  "center": [
+   -0.0,
+   3.0,
+   -0.1075
+  ],
+  "size": [
+   1.2,
+   1.8,
+   0.195
+  ],
+  "tris": 224
+ },
+ "ZR_MK_PaperTarget__plastic": {
+  "center": [
+   -0.0,
+   3.035,
+   -0.088
+  ],
+  "size": [
+   2.0,
+   2.67,
+   0.036
+  ],
+  "tris": 192
+ },
+ "ZR_MK_PaperTarget__wood": {
+  "center": [
+   -0.0,
+   2.2,
+   0.0
+  ],
+  "size": [
+   2.4,
+   4.4,
+   0.15
+  ],
+  "tris": 36
+ },
+ "ZR_MK_RangeDisplay__metal": {
+  "center": [
+   -0.0,
+   1.1,
+   0.15
+  ],
+  "size": [
+   2.4,
+   2.2,
+   0.3
+  ],
+  "tris": 56
+ },
+ "ZR_MK_RangeDisplay__plastic": {
+  "center": [
+   -0.0,
+   0.6,
+   -0.01
+  ],
+  "size": [
+   2.1,
+   0.9,
+   0.02
+  ],
+  "tris": 12
+ },
+ "ZR_MK_Table__metal": {
+  "center": [
+   -0.0,
+   1.25,
+   0.0
+  ],
+  "size": [
+   5.65,
+   2.5,
+   2.65
+  ],
+  "tris": 48
+ },
+ "ZR_MK_Table__plastic": {
+  "center": [
+   0.2743,
+   2.9,
+   0.0112
+  ],
+  "size": [
+   3.8909,
+   0.4,
+   2.0773
+  ],
+  "tris": 72
+ },
+ "ZR_MK_Table__wood": {
+  "center": [
+   -0.0,
+   2.6,
+   0.0
+  ],
+  "size": [
+   6.0,
+   0.2,
+   3.0
+  ],
+  "tris": 44
+ },
+ "ZR_MK_Chair__metal": {
+  "center": [
+   -0.0,
+   1.7544,
+   0.0
+  ],
+  "size": [
+   1.17,
+   2.6913,
+   1.3131
+  ],
+  "tris": 72
+ },
+ "ZR_MK_Chair__plastic": {
+  "center": [
+   -0.0,
+   2.295,
+   0.03
+  ],
+  "size": [
+   1.3,
+   1.61,
+   1.36
+  ],
+  "tris": 88
+ },
+ "ZR_MK_AmmoCrate__fabric": {
+  "center": [
+   -0.0,
+   1.0,
+   0.0
+  ],
+  "size": [
+   3.2,
+   0.6,
+   0.5706
+  ],
+  "tris": 160
+ },
+ "ZR_MK_AmmoCrate__paint": {
+  "center": [
+   -0.0,
+   0.9,
+   -0.82
+  ],
+  "size": [
+   1.2,
+   0.35,
+   0.02
+  ],
+  "tris": 12
+ },
+ "ZR_MK_AmmoCrate__wood": {
+  "center": [
+   -0.0,
+   0.7675,
+   0.0
+  ],
+  "size": [
+   3.05,
+   1.585,
+   1.7
+  ],
+  "tris": 80
+ },
+ "ZR_MK_Drum__metal": {
+  "center": [
+   -0.0,
+   1.945,
+   0.0
+  ],
+  "size": [
+   2.0,
+   2.07,
+   2.0
+  ],
+  "tris": 344
+ },
+ "ZR_MK_Drum__paint": {
+  "center": [
+   -0.0,
+   1.45,
+   0.0
+  ],
+  "size": [
+   1.9,
+   2.8,
+   1.9
+  ],
+  "tris": 60
+ },
+ "ZR_MK_BunkBedMessy__fabric": {
+  "center": [
+   -0.0,
+   2.7777,
+   -0.4099
+  ],
+  "size": [
+   6.5497,
+   5.5554,
+   3.827
+  ],
+  "tris": 492
+ },
+ "ZR_MK_BunkBedMessy__metal": {
+  "center": [
+   -0.0,
+   2.95,
+   0.0
+  ],
+  "size": [
+   5.85,
+   3.05,
+   2.5
+  ],
+  "tris": 216
+ },
+ "ZR_MK_BunkBedMessy__paint": {
+  "center": [
+   -0.05,
+   3.0,
+   0.0
+  ],
+  "size": [
+   6.9,
+   6.0,
+   2.9
+  ],
+  "tris": 344
+ },
+ "ZR_MK_MedShelf__cardboard": {
+  "center": [
+   -0.0012,
+   3.6,
+   -0.2
+  ],
+  "size": [
+   3.7803,
+   4.75,
+   0.6
+  ],
+  "tris": 108
+ },
+ "ZR_MK_MedShelf__glass": {
+  "center": [
+   0.0116,
+   4.75,
+   -1.2
+  ],
+  "size": [
+   5.8768,
+   2.4,
+   1.9024
+  ],
+  "tris": 24
+ },
+ "ZR_MK_MedShelf__paint": {
+  "center": [
+   -0.0,
+   3.5,
+   0.0
+  ],
+  "size": [
+   6.0,
+   7.0,
+   1.6
+  ],
+  "tris": 108
+ },
+ "ZR_MK_MedShelf__plastic": {
+  "center": [
+   0.1951,
+   3.6963,
+   -0.2
+  ],
+  "size": [
+   4.4168,
+   4.9127,
+   0.28
+  ],
+  "tris": 392
+ },
+ "ZR_MK_ArmorStand__fabric": {
+  "center": [
+   -0.0,
+   4.7875,
+   -0.1475
+  ],
+  "size": [
+   2.0,
+   2.175,
+   1.445
+  ],
+  "tris": 212
+ },
+ "ZR_MK_ArmorStand__metal": {
+  "center": [
+   -0.0,
+   1.8,
+   0.0
+  ],
+  "size": [
+   1.7119,
+   3.6,
+   1.8
+  ],
+  "tris": 56
+ },
+ "ZR_MK_ArmorStand__plastic": {
+  "center": [
+   -0.0,
+   4.8,
+   0.0
+  ],
+  "size": [
+   1.8,
+   2.6,
+   1.0
+  ],
+  "tris": 88
+ },
+ "ZR_MK_RigStand__fabric": {
+  "center": [
+   -0.0,
+   4.6378,
+   -0.2778
+  ],
+  "size": [
+   1.9,
+   1.6757,
+   1.5345
+  ],
+  "tris": 244
+ },
+ "ZR_MK_RigStand__metal": {
+  "center": [
+   -0.0,
+   1.8,
+   0.0
+  ],
+  "size": [
+   1.7119,
+   3.6,
+   1.8
+  ],
+  "tris": 56
+ },
+ "ZR_MK_RigStand__plastic": {
+  "center": [
+   -0.0,
+   4.8,
+   0.0
+  ],
+  "size": [
+   1.8,
+   2.6,
+   1.0
+  ],
+  "tris": 88
+ }
+}

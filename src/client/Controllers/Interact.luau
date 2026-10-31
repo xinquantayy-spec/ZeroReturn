@@ -84,14 +84,30 @@ function Interact.init(c)
 	end)
 	PPS.PromptTriggered:Connect(function(prompt)
 		local screen = prompt:GetAttribute("Screen")
-		if screen == "stash" then
+		if type(screen) ~= "string" then
+			return
+		end
+		-- Relay 7 stations (docs/maps/RELAY7_LOBBY.md): "kind" or "kind:arg"
+		local kind, arg = string.match(screen, "^([^:]+):?(.*)$")
+		arg = (arg ~= "" and arg) or nil
+		if kind == "stash" or kind == "mail" then
 			c.Inventory.show("stash")
-		elseif screen == "deploy" then
+		elseif kind == "deploy" or kind == "insurance" or kind == "van" or kind == "scav" then
 			c.Screens.deploy()
-		elseif screen == "traders" then
-			c.Trade.traders()
-		elseif screen == "hideout" then
+		elseif kind == "traders" or kind == "trader" or kind == "tasks" then
+			c.Trade.traders(arg)
+		elseif kind == "hideout" then
 			c.Trade.hideout()
+		elseif kind == "modding" then
+			local d = c.State.data
+			local g = d and d.slots and (d.slots.primary or d.slots.secondary or d.slots.holster)
+			if g and c.Modding then
+				c.Modding.open(g)
+			else
+				c.Inventory.show("stash")
+			end
+		elseif kind == "mirror" and c.Lobby and c.Lobby.mirror then
+			c.Lobby.mirror()
 		end
 	end)
 	c.Input.deviceChanged:Connect(render)

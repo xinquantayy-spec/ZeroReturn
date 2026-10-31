@@ -570,7 +570,7 @@ function C.crash(name)
 	ctx.Raid.dropForTest(p)
 	ctx.Profiles.forgetForTest(p)
 	local prof, rec = ctx.Profiles.load(p)
-	ctx.Chars.spawn(p, ctx.Raid.safeSpawnCF(), nil)
+	ctx.Chars.spawn(p, ctx.Raid.safeSpawnCF(p), nil)
 	ctx.Raid.push(p)
 	local after = ctx.Store.peek(key)
 	return HttpService:JSONEncode({

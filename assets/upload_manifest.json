@@ -11,6 +11,24 @@
   "sha1": "5399f60faf3de6e7834ff8963376bbbd3cc10f60",
   "uploaded": "2026-10-28 14:40:37"
  },
+ "ZR_BunkerKitA": {
+  "assetId": "126010320295919",
+  "file": "assets\\exports\\ZR_BunkerKitA.fbx",
+  "sha1": "fd08242e330633e32cdc01d0a3fb0f3a27813196",
+  "uploaded": "2026-10-29 15:08:29"
+ },
+ "ZR_BunkerKitB": {
+  "assetId": "100322751912819",
+  "file": "assets\\exports\\ZR_BunkerKitB.fbx",
+  "sha1": "36e62de7e3b20b777184f892eedbddf559aa06da",
+  "uploaded": "2026-10-29 15:10:42"
+ },
+ "ZR_BunkerKitC": {
+  "assetId": "100282091818165",
+  "file": "assets\\exports\\ZR_BunkerKitC.fbx",
+  "sha1": "b730789d0d0826cf271e441a075a85fb1ab26104",
+  "uploaded": "2026-10-29 15:23:16"
+ },
  "ZR_CharBase": {
   "assetId": "101424875475699",
   "file": "assets\\exports\\ZR_CharBase.fbx",

@@ -1,0 +1,678 @@
+{
+ "ZR_MK_BlastDoor__metal": {
+  "center": [
+   -0.6457,
+   4.155,
+   -4.2598
+  ],
+  "size": [
+   9.2914,
+   8.31,
+   10.5196
+  ],
+  "tris": 424
+ },
+ "ZR_MK_BlastDoor__paint": {
+  "center": [
+   -0.0359,
+   4.8,
+   -4.2563
+  ],
+  "size": [
+   10.2719,
+   9.6,
+   10.5125
+  ],
+  "tris": 372
+ },
+ "ZR_MK_BlastDoor__rubber": {
+  "center": [
+   -4.0535,
+   4.3,
+   -1.3648
+  ],
+  "size": [
+   0.5748,
+   8.4,
+   0.1294
+  ],
+  "tris": 12
+ },
+ "ZR_MK_DoorFrame__metal": {
+  "center": [
+   -0.0,
+   4.465,
+   -0.025
+  ],
+  "size": [
+   8.0,
+   8.93,
+   1.65
+  ],
+  "tris": 24
+ },
+ "ZR_MK_DoorFrame__paint": {
+  "center": [
+   -0.0,
+   4.5,
+   -0.02
+  ],
+  "size": [
+   9.0,
+   9.0,
+   1.64
+  ],
+  "tris": 196
+ },
+ "ZR_MK_PipeRun__metal": {
+  "center": [
+   -0.0,
+   0.8,
+   -0.1025
+  ],
+  "size": [
+   15.94,
+   1.9,
+   1.155
+  ],
+  "tris": 240
+ },
+ "ZR_MK_PipeRun__paint": {
+  "center": [
+   -0.0,
+   1.0001,
+   -0.2
+  ],
+  "size": [
+   16.0,
+   1.4802,
+   0.72
+  ],
+  "tris": 80
+ },
+ "ZR_MK_PipeRunRust__metal": {
+  "center": [
+   -0.0,
+   0.8,
+   -0.1025
+  ],
+  "size": [
+   15.94,
+   1.9,
+   1.155
+  ],
+  "tris": 240
+ },
+ "ZR_MK_PipeRunRust__paint": {
+  "center": [
+   -0.0,
+   1.0001,
+   -0.2
+  ],
+  "size": [
+   16.0,
+   1.4802,
+   0.72
+  ],
+  "tris": 80
+ },
+ "ZR_MK_PipeValve__glass": {
+  "center": [
+   -0.0,
+   6.0,
+   -0.735
+  ],
+  "size": [
+   0.56,
+   0.56,
+   0.03
+  ],
+  "tris": 44
+ },
+ "ZR_MK_PipeValve__metal": {
+  "center": [
+   -0.0,
+   4.0625,
+   -0.2
+  ],
+  "size": [
+   1.0,
+   8.125,
+   1.4
+  ],
+  "tris": 228
+ },
+ "ZR_MK_PipeValve__paint": {
+  "center": [
+   -0.0,
+   5.65,
+   -0.363
+  ],
+  "size": [
+   1.26,
+   10.7,
+   1.3261
+  ],
+  "tris": 220
+ },
+ "ZR_MK_PipeValve__plastic": {
+  "center": [
+   -0.0,
+   6.0,
+   -0.72
+  ],
+  "size": [
+   0.56,
+   0.56,
+   0.04
+  ],
+  "tris": 56
+ },
+ "ZR_MK_CableTray__metal": {
+  "center": [
+   -0.0,
+   0.945,
+   0.0
+  ],
+  "size": [
+   16.0,
+   2.11,
+   1.8
+  ],
+  "tris": 192
+ },
+ "ZR_MK_CableTray__rubber": {
+  "center": [
+   0.0,
+   -0.3252,
+   0.274
+  ],
+  "size": [
+   16.0012,
+   1.4976,
+   1.6881
+  ],
+  "tris": 250
+ },
+ "ZR_MK_Beam__metal": {
+  "center": [
+   0.06,
+   0.6,
+   0.0
+  ],
+  "size": [
+   16.12,
+   1.3,
+   1.1
+  ],
+  "tris": 184
+ },
+ "ZR_MK_Beam__paint": {
+  "center": [
+   -0.0,
+   0.6,
+   0.0
+  ],
+  "size": [
+   16.0,
+   1.2,
+   0.9
+  ],
+  "tris": 72
+ },
+ "ZR_MK_Duct__metal": {
+  "center": [
+   -0.0,
+   1.15,
+   0.0
+  ],
+  "size": [
+   16.0,
+   2.5,
+   2.4
+  ],
+  "tris": 236
+ },
+ "ZR_MK_Fluoro__glow": {
+  "center": [
+   -0.0,
+   0.2,
+   0.0
+  ],
+  "size": [
+   4.0,
+   0.16,
+   0.56
+  ],
+  "tris": 56
+ },
+ "ZR_MK_Fluoro__metal": {
+  "center": [
+   -0.0,
+   0.61,
+   0.0
+  ],
+  "size": [
+   4.4,
+   1.18,
+   0.9
+  ],
+  "tris": 132
+ },
+ "ZR_MK_FluoroDead__metal": {
+  "center": [
+   -0.0,
+   0.61,
+   0.0
+  ],
+  "size": [
+   4.4,
+   1.18,
+   0.9
+  ],
+  "tris": 132
+ },
+ "ZR_MK_FluoroDead__plastic": {
+  "center": [
+   -0.0,
+   0.2,
+   -0.2
+  ],
+  "size": [
+   4.0,
+   0.16,
+   0.16
+  ],
+  "tris": 28
+ },
+ "ZR_MK_CageLamp__glass": {
+  "center": [
+   -0.0,
+   0.6,
+   -0.3
+  ],
+  "size": [
+   0.72,
+   0.72,
+   0.5
+  ],
+  "tris": 44
+ },
+ "ZR_MK_CageLamp__glow": {
+  "center": [
+   -0.0,
+   0.6,
+   -0.225
+  ],
+  "size": [
+   0.3424,
+   0.36,
+   0.35
+  ],
+  "tris": 36
+ },
+ "ZR_MK_CageLamp__metal": {
+  "center": [
+   -0.0,
+   0.6,
+   -0.1175
+  ],
+  "size": [
+   0.9,
+   1.2,
+   0.955
+  ],
+  "tris": 104
+ },
+ "ZR_MK_CageLampRed__glass": {
+  "center": [
+   -0.0,
+   0.6,
+   -0.3
+  ],
+  "size": [
+   0.72,
+   0.72,
+   0.5
+  ],
+  "tris": 44
+ },
+ "ZR_MK_CageLampRed__glow": {
+  "center": [
+   -0.0,
+   0.6,
+   -0.225
+  ],
+  "size": [
+   0.3424,
+   0.36,
+   0.35
+  ],
+  "tris": 36
+ },
+ "ZR_MK_CageLampRed__metal": {
+  "center": [
+   -0.0,
+   0.6,
+   -0.1175
+  ],
+  "size": [
+   0.9,
+   1.2,
+   0.955
+  ],
+  "tris": 104
+ },
+ "ZR_MK_Vent__metal": {
+  "center": [
+   -0.0,
+   1.0,
+   0.0442
+  ],
+  "size": [
+   3.0,
+   2.0,
+   0.3117
+  ],
+  "tris": 188
+ },
+ "ZR_MK_JunctionBox__metal": {
+  "center": [
+   -0.0,
+   2.1,
+   0.17
+  ],
+  "size": [
+   1.1,
+   4.2,
+   0.42
+  ],
+  "tris": 92
+ },
+ "ZR_MK_JunctionBox__paint": {
+  "center": [
+   -0.0,
+   0.8,
+   0.225
+  ],
+  "size": [
+   1.3,
+   1.6,
+   0.55
+  ],
+  "tris": 56
+ },
+ "ZR_MK_FuseBox__metal": {
+  "center": [
+   -0.0,
+   1.6,
+   -0.12
+  ],
+  "size": [
+   2.1,
+   2.9,
+   0.04
+  ],
+  "tris": 12
+ },
+ "ZR_MK_FuseBox__paint": {
+  "center": [
+   0.0282,
+   1.6,
+   -1.0129
+  ],
+  "size": [
+   2.4564,
+   3.2,
+   2.8258
+  ],
+  "tris": 36
+ },
+ "ZR_MK_FuseBox__plastic": {
+  "center": [
+   0.01,
+   1.53,
+   -0.16
+  ],
+  "size": [
+   1.86,
+   2.22,
+   0.08
+  ],
+  "tris": 384
+ },
+ "ZR_MK_FuseBox__rubber": {
+  "center": [
+   -0.0998,
+   3.9525,
+   0.3316
+  ],
+  "size": [
+   1.5327,
+   1.5166,
+   0.276
+  ],
+  "tris": 80
+ },
+ "ZR_MK_Extinguisher__metal": {
+  "center": [
+   -0.05,
+   1.69,
+   0.065
+  ],
+  "size": [
+   0.6,
+   1.58,
+   0.51
+  ],
+  "tris": 36
+ },
+ "ZR_MK_Extinguisher__paint": {
+  "center": [
+   -0.0,
+   1.075,
+   -0.1
+  ],
+  "size": [
+   0.66,
+   2.15,
+   0.66
+  ],
+  "tris": 78
+ },
+ "ZR_MK_Extinguisher__plastic": {
+  "center": [
+   -0.0,
+   3.0,
+   0.29
+  ],
+  "size": [
+   0.9,
+   0.9,
+   0.06
+  ],
+  "tris": 24
+ },
+ "ZR_MK_Extinguisher__rubber": {
+  "center": [
+   0.2742,
+   1.7898,
+   -0.2389
+  ],
+  "size": [
+   0.388,
+   1.186,
+   0.3219
+  ],
+  "tris": 20
+ },
+ "ZR_MK_FirstAid__paint": {
+  "center": [
+   -0.0,
+   0.7,
+   0.2
+  ],
+  "size": [
+   1.6,
+   1.4,
+   0.4
+  ],
+  "tris": 44
+ },
+ "ZR_MK_FirstAid__plastic": {
+  "center": [
+   -0.0,
+   0.7,
+   -0.015
+  ],
+  "size": [
+   0.9,
+   0.9,
+   0.03
+  ],
+  "tris": 48
+ },
+ "ZR_MK_WallPhone__metal": {
+  "center": [
+   -0.25,
+   0.73,
+   -0.02
+  ],
+  "size": [
+   0.08,
+   0.44,
+   0.02
+  ],
+  "tris": 36
+ },
+ "ZR_MK_WallPhone__plastic": {
+  "center": [
+   -0.0,
+   0.8,
+   0.035
+  ],
+  "size": [
+   0.8,
+   1.4,
+   0.53
+  ],
+  "tris": 88
+ },
+ "ZR_MK_WallPhone__rubber": {
+  "center": [
+   0.0007,
+   -0.2018,
+   -0.1185
+  ],
+  "size": [
+   0.2153,
+   0.8635,
+   0.2052
+  ],
+  "tris": 80
+ },
+ "ZR_MK_Speaker__metal": {
+  "center": [
+   -0.0,
+   0.3,
+   0.175
+  ],
+  "size": [
+   0.5,
+   0.6,
+   0.55
+  ],
+  "tris": 60
+ },
+ "ZR_MK_Speaker__paint": {
+  "center": [
+   -0.0,
+   0.0,
+   -0.5132
+  ],
+  "size": [
+   1.24,
+   1.1764,
+   1.1656
+  ],
+  "tris": 44
+ },
+ "ZR_MK_WallClock__glass": {
+  "center": [
+   -0.0,
+   0.7,
+   -0.09
+  ],
+  "size": [
+   1.24,
+   1.24,
+   0.02
+  ],
+  "tris": 60
+ },
+ "ZR_MK_WallClock__metal": {
+  "center": [
+   -0.0439,
+   0.7978,
+   -0.085
+  ],
+  "size": [
+   0.4146,
+   0.3103,
+   0.02
+  ],
+  "tris": 24
+ },
+ "ZR_MK_WallClock__plastic": {
+  "center": [
+   -0.0,
+   0.7,
+   0.0125
+  ],
+  "size": [
+   1.4,
+   1.4,
+   0.175
+  ],
+  "tris": 264
+ },
+ "ZR_MK_Sandbags__fabric": {
+  "center": [
+   0.0298,
+   1.1646,
+   0.0007
+  ],
+  "size": [
+   5.9801,
+   2.3862,
+   1.9429
+  ],
+  "tris": 1232
+ },
+ "ZR_MK_SandbagsLow__fabric": {
+  "center": [
+   -0.0372,
+   0.5967,
+   -0.0022
+  ],
+  "size": [
+   6.0082,
+   1.2308,
+   1.9365
+  ],
+  "tris": 616
+ },
+ "ZR_MK_Rubble__concrete": {
+  "center": [
+   0.0149,
+   0.2576,
+   -0.0425
+  ],
+  "size": [
+   3.3761,
+   0.9322,
+   3.0434
+  ],
+  "tris": 460
+ }
+}

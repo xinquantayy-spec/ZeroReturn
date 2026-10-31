@@ -68,7 +68,7 @@ local Config = {
 	AUTOSAVE = 60,
 	FINALIZED_LOG = 20,
 
-	SAFEHOUSE_ORIGIN = Vector3.new(0, -300, 0),
+	SAFEHOUSE_ORIGIN = Vector3.new(0, -300, 4000), -- Relay 7, far from every map: no map streams in while you are in the bunker
 }
 
 return Config

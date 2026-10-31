@@ -465,101 +465,17 @@ local function setupLighting()
 	terrain:FillBlock(CFrame.new(0, -24, 0), Vector3.new(1600, 36, 1600), M.Water)
 end
 
--- ── safehouse ─────────────────────────────────────────────────────────────────
+-- ── safehouse: Relay 7, the bunker lobby (Maps/Relay7.luau) ───────────────────────────
 local function buildSafehouse()
-	local f = model("Safehouse", root)
-	local o = Config.SAFEHOUSE_ORIGIN
-	local function b(sx, sy, sz, x, y, z, col, mat)
-		return box(f, sx, sy, sz, o.X + x, o.Y + y, o.Z + z, col, mat)
-	end
-	b(44, 2, 34, 0, -1, 0, C.floor, M.Concrete)
-	b(44, 1, 34, 0, 12.5, 0, C.concreteDark, M.Concrete)
-	b(1, 12, 34, -22, 6, 0, C.interior, M.Plaster)
-	b(1, 12, 34, 22, 6, 0, C.interior, M.Plaster)
-	b(44, 12, 1, 0, 6, -17, C.interior, M.Plaster)
-	b(44, 12, 1, 0, 6, 17, C.interior, M.Plaster)
-	-- wainscot band + pipes
-	b(43.6, 3.2, 0.3, 0, 1.6, -16.4, C.olive, M.SmoothPlastic)
-	b(43.6, 3.2, 0.3, 0, 1.6, 16.4, C.olive, M.SmoothPlastic)
-	cyl(f, 43, 0.7, CFrame.new(o.X, o.Y + 11, o.Z - 16), C.rust, M.Metal)
-	cyl(f, 43, 0.5, CFrame.new(o.X, o.Y + 10.2, o.Z - 16.1), C.metal, M.Metal)
-	for _, x in { -11, 11 } do
-		local lampPart = b(4, 0.3, 1.2, x, 11.8, 0, hex("FFE3B3"), M.Neon)
-		lampPart.CastShadow = false
-		light(lampPart, hex("FFCF94"), 30, 1.3, true)
-	end
-	-- stash lockers (north wall)
-	local stash = model("StashLockers", f)
-	for i = 0, 3 do
-		b(3, 8, 2.4, -16 + i * 3.1, 4, -15.4, C.olive, M.Metal)
-		b(0.2, 0.9, 0.1, -15 + i * 3.1, 4.4, -14.15, C.metalDark, M.Metal)
-	end
-	local stashAnchor = b(12, 8, 1, -11.35, 4, -14.3, C.olive, M.Metal)
-	stashAnchor.Transparency = 1
-	stashAnchor.CanCollide = false
-	stashAnchor.Name = "StashPrompt"
-	stashAnchor.Parent = stash
-	-- deploy map table
-	local tbl = model("DeployTable", f)
-	b(10, 0.4, 6, 8, 3.4, 2, C.wood, M.WoodPlanks).Parent = tbl
-	for _, sx in { -4.5, 4.5 } do
-		for _, sz in { -2.5, 2.5 } do
-			b(0.4, 3.2, 0.4, 8 + sx, 1.6, 2 + sz, C.metalDark, M.Metal).Parent = tbl
-		end
-	end
-	local mapSheet = b(8.6, 0.05, 4.8, 8, 3.63, 2, hex("C9C2A8"), M.SmoothPlastic)
-	mapSheet.Parent = tbl
-	sign(mapSheet, Enum.NormalId.Top, "QUAY 7 // EXCLUSION ZONE\nHARBOR STACK · PUMP ANNEX · FREIGHT DEPOT", hex("3A3A34"))
-	local deployAnchor = b(10, 3, 6, 8, 4.5, 2, C.pale, M.SmoothPlastic)
-	deployAnchor.Transparency = 1
-	deployAnchor.CanCollide = false
-	deployAnchor.Name = "DeployPrompt"
-	deployAnchor.Parent = tbl
-	-- radio desk (traders) + hideout workbench + cot + shelving + posters
-	b(6, 0.3, 3, 17, 3, -12, C.wood, M.WoodPlanks)
-	b(2.2, 1.6, 1.6, 17, 4, -12, C.metalDark, M.Metal)
-	local radioLamp = b(0.3, 0.3, 0.3, 17.7, 4.95, -11.3, hex("6CC27A"), M.Neon)
-	radioLamp.CastShadow = false
-	local radioAnchor = b(6, 4, 3, 17, 4.5, -12, C.pale, M.SmoothPlastic)
-	radioAnchor.Transparency = 1
-	radioAnchor.CanCollide = false
-	radioAnchor.Name = "TraderPrompt"
-	b(3.2, 0.3, 8, -19.8, 3, -3, C.wood, M.WoodPlanks)
-	for _, z in { -6.6, 0.6 } do
-		b(0.3, 3, 0.3, -18.6, 1.5, z, C.metalDark, M.Metal)
-	end
-	b(2.4, 2.4, 2.4, -19.6, 1.2, 4.2, C.olive, M.Metal)
-	b(0.6, 0.6, 1.6, -19.6, 2.7, 4.2, C.metalDark, M.Metal)
-	local benchAnchor = b(3.5, 4, 9, -19.6, 4.2, -2, C.pale, M.SmoothPlastic)
-	benchAnchor.Transparency = 1
-	benchAnchor.CanCollide = false
-	benchAnchor.Name = "HideoutPrompt"
-	b(7, 1.2, 3.4, -15, 1, 12, C.olive, M.Fabric)
-	b(1, 7, 6, 21, 3.5, 8, C.metal, M.Metal)
-	for k = 0, 2 do
-		b(1.2, 0.2, 5.6, 21, 1.6 + k * 2.2, 8, C.metalDark, M.Metal)
-	end
-	local poster = b(5, 3.4, 0.1, 0, 7.5, 16.3, hex("BDB59C"), M.SmoothPlastic)
-	sign(poster, Enum.NormalId.Front, "RELAY 7 SAFEHOUSE\nREPORT ALL EXFIL TIMES", hex("3A3A34"))
-	World.safehouse = {
-		spawn = CFrame.new(o + Vector3.new(-6, 3.2, 8)) * CFrame.Angles(0, math.rad(-120), 0),
-		stash = stashAnchor,
-		deploy = deployAnchor,
-		center = o,
-	}
-	for _, spec in { { stashAnchor, "Open stash", "Stash lockers", "stash" }, { deployAnchor, "Plan deployment", "Quay 7 map", "deploy" },
-		{ radioAnchor, "Call traders", "Relay radio", "traders" }, { benchAnchor, "Manage hideout", "Workbench", "hideout" } } do
-		local pp = Instance.new("ProximityPrompt")
-		pp.KeyboardKeyCode = Enum.KeyCode.F -- Tarkov interact key (Q/E lean)
-		pp.ActionText = spec[2]
-		pp.ObjectText = spec[3]
-		pp.HoldDuration = 0
-		pp.MaxActivationDistance = 9
-		pp.RequiresLineOfSight = false
-		pp.Style = Enum.ProximityPromptStyle.Custom
-		pp:SetAttribute("Screen", spec[4])
-		pp.Parent = spec[1]
-	end
+	local Relay7 = require(script.Parent.Parent.Maps.Relay7)
+	World.safehouse = Relay7.build(root, Config.SAFEHOUSE_ORIGIN)
+	World.Relay7 = Relay7
+end
+
+-- is a world position inside the safehouse bunker?
+function World.inSafehouse(pos: Vector3): boolean
+	local R = World.Relay7
+	return R ~= nil and R.inside(World.safehouse, pos)
 end
 
 -- ── Quay 7 ────────────────────────────────────────────────────────────────────

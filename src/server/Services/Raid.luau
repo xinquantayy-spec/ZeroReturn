@@ -150,8 +150,34 @@ function Raid.push(player)
 	end
 end
 
-function Raid.safeSpawnCF()
-	return ctx.World.safehouse.spawn * CFrame.new(math.random(-2, 2), 0, math.random(-2, 2))
+-- your bunk in Relay 7: each player keeps one spot for the session (twelve bunks, two per bunk unit)
+local bunkOf = {}
+function Raid.safeSpawnCF(player: Player?)
+	local sh = ctx.World.safehouse
+	local list = sh.spawns
+	if not list or #list == 0 then
+		return sh.spawn * CFrame.new(math.random(-2, 2), 0, math.random(-2, 2))
+	end
+	local i = player and bunkOf[player]
+	if player and not i then
+		local used = {}
+		for p, k in bunkOf do
+			if p.Parent then
+				used[k] = true
+			else
+				bunkOf[p] = nil
+			end
+		end
+		for k = 1, #list do
+			if not used[k] then
+				i = k
+				break
+			end
+		end
+		i = i or math.random(1, #list)
+		bunkOf[player] = i
+	end
+	return list[i or math.random(1, #list)]
 end
 
 function Raid.resetWorld()
@@ -205,7 +231,7 @@ function Raid.deploy(player, p)
 	if not hum or hum.Health <= 0 or not root then
 		return fail("NOT_AUTHORIZED")
 	end
-	if (root.Position - Config.SAFEHOUSE_ORIGIN).Magnitude > 80 then
+	if not ctx.World.inSafehouse(root.Position) then
 		return fail("NOT_AUTHORIZED")
 	end
 	-- p.map: the map this player votes for if the request queues (ignored when joining a running raid)
@@ -283,6 +309,8 @@ function Raid.enter(player, kind, spawn, idx)
 	-- squad members fan out around the insertion point
 	local i = (idx or 1) - 1
 	local cf = spawn.cf * CFrame.new((i % 3 - 1) * 4 + math.random() * 1.5, 0, math.floor(i / 3) * 4 + math.random() * 1.5)
+	-- the bunker is far from the maps (streaming): load the insertion point before the character lands there
+	pcall(player.RequestStreamAroundAsync, player, cf.Position, 4)
 	ctx.Chars.spawn(player, cf, s.inv, s.active, { scav = scav })
 	s.gearKey = gearKey(s.inv, s.active)
 	Raid.push(player)
@@ -395,7 +423,7 @@ function Raid.finalize(player, outcome)
 		ctx.Remotes.note(player, "summary", summary)
 		task.delay((outcome == "KIA") and Config.RESPAWN_DELAY or 0.6, function()
 			if player.Parent and not sessions[player] then
-				ctx.Chars.spawn(player, Raid.safeSpawnCF(), nil)
+				ctx.Chars.spawn(player, Raid.safeSpawnCF(player), nil)
 				Raid.push(player)
 			end
 		end)
@@ -414,7 +442,7 @@ function Raid.onDied(player, char)
 	elseif not s then
 		task.delay(2, function()
 			if player.Parent and player.Character == char and not sessions[player] then
-				ctx.Chars.spawn(player, Raid.safeSpawnCF(), nil)
+				ctx.Chars.spawn(player, Raid.safeSpawnCF(player), nil)
 				Raid.push(player)
 			end
 		end)
@@ -931,7 +959,7 @@ local function onPlayerAdded(player)
 		end
 		return
 	end
-	ctx.Chars.spawn(player, Raid.safeSpawnCF(), nil)
+	ctx.Chars.spawn(player, Raid.safeSpawnCF(player), nil)
 	Raid.push(player)
 	ctx.Remotes.note(player, "match", ctx.Match.status(player))
 	if type(recovered) == "table" then

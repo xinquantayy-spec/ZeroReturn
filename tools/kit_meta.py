@@ -20,6 +20,8 @@ def main(batches):
         meta = json.load(open(os.path.join(ROOT, "assets", "exports", b + ".meta.json")))
         pj = json.load(open(os.path.join(ROOT, "assets", "exports", b + ".props.json")))
         for name, p in pj.items():
+            if name in props:  # piece MeshParts are looked up by name, so a clash would swap meshes between kits
+                raise SystemExit("kit prop %s is in both %s and %s: rename one in its build script" % (name, props[name][0], b))
             pieces = []
             for mat in p["mats"]:
                 key = "ZR_MK_%s__%s" % (name, mat)

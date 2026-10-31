@@ -1,0 +1,573 @@
+{
+ "AmmoCrate": {
+  "center": [
+   -0.0,
+   0.767,
+   0.0
+  ],
+  "mats": [
+   "fabric",
+   "paint",
+   "wood"
+  ],
+  "size": [
+   3.2,
+   1.585,
+   1.7
+  ]
+ },
+ "ArmorStand": {
+  "center": [
+   -0.0,
+   3.05,
+   0.0
+  ],
+  "mats": [
+   "fabric",
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   2.0,
+   6.1,
+   1.8
+  ]
+ },
+ "BunkBed": {
+  "center": [
+   -0.05,
+   3.0,
+   0.0
+  ],
+  "mats": [
+   "fabric",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   6.9,
+   6.0,
+   2.9
+  ]
+ },
+ "BunkBedMessy": {
+  "center": [
+   -0.05,
+   3.0,
+   -0.41
+  ],
+  "mats": [
+   "fabric",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   6.9,
+   6.0,
+   3.827
+  ]
+ },
+ "Chair": {
+  "center": [
+   -0.0,
+   1.754,
+   0.027
+  ],
+  "mats": [
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   1.3,
+   2.691,
+   1.367
+  ]
+ },
+ "CorkBoard": {
+  "center": [
+   -0.0,
+   2.0,
+   0.035
+  ],
+  "mats": [
+   "fabric",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   8.22,
+   4.22,
+   0.23
+  ]
+ },
+ "Counter": {
+  "center": [
+   -0.0,
+   2.641,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "glow",
+   "metal",
+   "paint",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   12.0,
+   5.281,
+   3.0
+  ]
+ },
+ "CraftBench": {
+  "center": [
+   -0.0,
+   3.6,
+   -0.225
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   8.0,
+   7.2,
+   3.45
+  ]
+ },
+ "DepartureBoard": {
+  "center": [
+   -0.0,
+   2.9,
+   0.215
+  ],
+  "mats": [
+   "glow",
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   12.0,
+   5.8,
+   0.57
+  ]
+ },
+ "Drum": {
+  "center": [
+   -0.0,
+   1.515,
+   0.0
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   2.0,
+   2.93,
+   2.0
+  ]
+ },
+ "FenceStall": {
+  "center": [
+   -0.0,
+   1.479,
+   0.801
+  ],
+  "mats": [
+   "fabric",
+   "glow",
+   "metal",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   4.4,
+   2.958,
+   4.002
+  ]
+ },
+ "GunBench": {
+  "center": [
+   -0.0,
+   3.143,
+   0.0
+  ],
+  "mats": [
+   "fabric",
+   "glow",
+   "metal",
+   "paint",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   14.0,
+   6.286,
+   3.0
+  ]
+ },
+ "GunRack": {
+  "center": [
+   -0.0,
+   3.0,
+   -0.0
+  ],
+  "mats": [
+   "metal",
+   "wood"
+  ],
+  "size": [
+   10.0,
+   6.0,
+   0.9
+  ]
+ },
+ "HideoutGenerator": {
+  "center": [
+   -0.679,
+   2.33,
+   0.166
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "plastic",
+   "rubber"
+  ],
+  "size": [
+   7.557,
+   4.661,
+   3.032
+  ]
+ },
+ "InsuranceWindow": {
+  "center": [
+   -0.0,
+   4.6,
+   -0.35
+  ],
+  "mats": [
+   "glass",
+   "metal",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   10.6,
+   5.4,
+   1.9
+  ]
+ },
+ "Locker": {
+  "center": [
+   -0.0,
+   3.55,
+   -0.045
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   1.95,
+   7.1,
+   1.99
+  ]
+ },
+ "LockerOpen": {
+  "center": [
+   0.213,
+   3.55,
+   -0.876
+  ],
+  "mats": [
+   "fabric",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   2.376,
+   7.1,
+   3.652
+  ]
+ },
+ "MapTable": {
+  "center": [
+   -0.0,
+   3.301,
+   0.054
+  ],
+  "mats": [
+   "glow",
+   "metal",
+   "paint",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   24.0,
+   6.602,
+   10.109
+  ]
+ },
+ "MedCot": {
+  "center": [
+   -0.65,
+   3.0,
+   0.15
+  ],
+  "mats": [
+   "fabric",
+   "glass",
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   7.9,
+   6.0,
+   3.7
+  ]
+ },
+ "MedShelf": {
+  "center": [
+   -0.0,
+   3.5,
+   -0.676
+  ],
+  "mats": [
+   "cardboard",
+   "glass",
+   "paint",
+   "plastic"
+  ],
+  "size": [
+   6.0,
+   7.0,
+   2.951
+  ]
+ },
+ "MirrorSink": {
+  "center": [
+   -0.3,
+   3.85,
+   0.0
+  ],
+  "mats": [
+   "fabric",
+   "glass",
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   4.0,
+   7.7,
+   1.4
+  ]
+ },
+ "PaperTarget": {
+  "center": [
+   -0.0,
+   2.2,
+   -0.016
+  ],
+  "mats": [
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   2.4,
+   4.4,
+   0.181
+  ]
+ },
+ "Pegboard": {
+  "center": [
+   -0.0,
+   2.5,
+   0.03
+  ],
+  "mats": [
+   "cardboard",
+   "metal",
+   "wood"
+  ],
+  "size": [
+   10.0,
+   5.0,
+   0.66
+  ]
+ },
+ "Pigeonholes": {
+  "center": [
+   -0.0,
+   4.35,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   6.1,
+   5.8,
+   1.2
+  ]
+ },
+ "RangeBooth": {
+  "center": [
+   -0.0,
+   3.5,
+   -2.537
+  ],
+  "mats": [
+   "metal",
+   "paint",
+   "plastic"
+  ],
+  "size": [
+   10.0,
+   7.0,
+   5.325
+  ]
+ },
+ "RangeDisplay": {
+  "center": [
+   -0.0,
+   1.1,
+   0.14
+  ],
+  "mats": [
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   2.4,
+   2.2,
+   0.32
+  ]
+ },
+ "RigStand": {
+  "center": [
+   -0.0,
+   3.05,
+   -0.073
+  ],
+  "mats": [
+   "fabric",
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   1.9,
+   6.1,
+   1.945
+  ]
+ },
+ "SteelPlate": {
+  "center": [
+   -0.0,
+   1.906,
+   0.0
+  ],
+  "mats": [
+   "metal",
+   "paint"
+  ],
+  "size": [
+   2.175,
+   3.988,
+   1.2
+  ]
+ },
+ "StorageRack": {
+  "center": [
+   -0.124,
+   3.5,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "fabric",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   8.247,
+   7.0,
+   2.0
+  ]
+ },
+ "StorageRackEmpty": {
+  "center": [
+   -0.0,
+   3.5,
+   0.0
+  ],
+  "mats": [
+   "cardboard",
+   "metal",
+   "paint"
+  ],
+  "size": [
+   8.0,
+   7.0,
+   2.0
+  ]
+ },
+ "Table": {
+  "center": [
+   -0.0,
+   1.55,
+   0.0
+  ],
+  "mats": [
+   "metal",
+   "plastic",
+   "wood"
+  ],
+  "size": [
+   6.0,
+   3.1,
+   3.0
+  ]
+ },
+ "WaterTank": {
+  "center": [
+   -0.196,
+   3.25,
+   0.19
+  ],
+  "mats": [
+   "glass",
+   "metal",
+   "paint",
+   "plastic"
+  ],
+  "size": [
+   5.492,
+   6.5,
+   4.18
+  ]
+ },
+ "Whiteboard": {
+  "center": [
+   -0.0,
+   2.0,
+   -0.13
+  ],
+  "mats": [
+   "metal",
+   "plastic"
+  ],
+  "size": [
+   6.14,
+   4.14,
+   0.54
+  ]
+ }
+}
