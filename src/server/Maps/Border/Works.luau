@@ -1963,12 +1963,14 @@ return function(B)
 
 	-- ═══ THE BASTION (id 28): two storeys and a walkable roof over BUNKER K-13, a double-height drill hall in the north,
 	-- a corridor with rooms on both sides, two dog-leg stair halls and the strongroom (KEY_BY_BASTION) ═══════════════
-	-- the two K-13 flights as rectangles of the current frame: A (solid, climbing toward +v, foot 2 studs in from the end of
-	-- its pit) and B (open treads, climbing toward -v); pit = the whole shaft
+	-- the two K-13 flights as rectangles of the current frame: A (solid, climbing toward +v) and B (open treads, climbing
+	-- toward -v); pit = the whole shaft. Each foot stops LANDING studs short of its pit's end, so you can step off and turn
+	-- into the hall (B's foot used to run into the west wall between its rails: players were boxed in at the bottom)
+	local LANDING = 4.5
 	local function k13Flights()
 		local a, c = pitRect(stairsEntry("ladder-19")), pitRect(stairsEntry("ladder-38"))
-		return { u0 = a.u0 + 0.4, u1 = a.u0 + 5.6, v0 = a.v0 + 2.0, v1 = a.v1 - 0.1, pit = a },
-			{ u0 = c.u0 + 0.3, u1 = c.u1 - 0.3, v0 = c.v0 + 0.1, v1 = c.v1 - 0.2, pit = c }
+		return { u0 = a.u0 + 0.4, u1 = a.u0 + 5.6, v0 = a.v0 + LANDING, v1 = a.v1 - 0.1, pit = a },
+			{ u0 = c.u0 + 0.3, u1 = c.u1 - 0.3, v0 = c.v0 + 0.1, v1 = c.v1 - LANDING, pit = c }
 	end
 	-- an opening list entry replaces whatever it overlaps
 	local function put(list, e)

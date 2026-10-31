@@ -36,6 +36,13 @@ One PMC raid on Border Yard (night, rain, autumn, the Broker forced on), five mi
 
 **Not verified:** fights on the new map (AI combat is covered by LogicTests elsewhere), phones, two clients.
 
+### Border Yard underground entries (2026-11-01, later)
+
+| Check | How | Result |
+|---|---|---|
+| BUNKER K-13 | Lever thrown, bunker doors opened; pathfinding and a walk with `Humanoid:MoveTo` from the top of each flight to the exit zone | **Bug found and fixed:** the open-tread flight ran into the west wall between its handrails, so a player walking down was boxed in at the bottom (pathfinding: no path). Both flights now stop 4.5 studs short of their shaft's end. After the fix: paths from the tops of both flights; the walk down the open flight reached the exit zone (30 waypoints, none missed) and the extract ran (raid report: extracted) |
+| BOILER CELLAR | Boiler house door opened; pathfinding from the cabin to the exit zone | A path exists (37 waypoints down the dog-leg stair). The walk itself could not be checked: in that play session the character ignored `MoveTo` everywhere, the open cellar hall included, so it was a test-harness state, not the map. Still to check by walking it |
+
 ### Item pictures, sheet 4 (2026-11-01, later)
 
 | Check | How | Result |
