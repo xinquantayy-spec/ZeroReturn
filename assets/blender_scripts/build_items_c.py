@@ -708,3 +708,49 @@ def multitool(I):
     m.box((0.0, 0.054, 0.0125), (0.004, 0.02, 0.0012), shade(STEELC, 1.12), bevel=0.0004)
     m.cyl((0.0, 0.05, 0.006), (0.0, 0.05, 0.0135), 0.003, shade(STEELC, 0.7), seg=10)
     label_band(I("paper"), (0.0, 0.01, 0.0125), (0.006, 0.03, 0.0), col("2A2C2C"), axis="z", sign=1)
+
+
+# ── Border Yard keys (2026-11-01): dorm rooms brass with a coloured tag, works and strongrooms steel with a rubber
+# head, fuel stop and watchhouse brass with a rubber head, sheds and trailers old pressed keys. Colours as in Items.luau.
+_BY_KEYS = [
+    ("KEY_BY_314", "dorm", "8C7A4E"), ("KEY_BY_RECORDS", "works", "7A6E50"), ("KEY_BY_BOILER", "works", "6F5F45"),
+    ("KEY_BY_K11", "works", "5B6066"), ("KEY_BY_STORE", "works", "7A6A4A"), ("KEY_BY_RED", "works", "8C3A30"),
+    ("KEY_BY_BASTION", "works", "4E5248"), ("KEY_BY_MOTOR", "works", "6A5A40"), ("KEY_BY_A103", "dorm", "7E8A6B"),
+    ("KEY_BY_A125", "dorm", "7A8466"), ("KEY_BY_A128", "dorm", "6E7C8A"), ("KEY_BY_A201", "dorm", "8A7E5E"),
+    ("KEY_BY_A212", "dorm", "7B8A6E"), ("KEY_BY_A225", "dorm", "8A6E5E"), ("KEY_BY_A228", "dorm", "6E8A7E"),
+    ("KEY_BY_A229", "dorm", "7E6E8A"), ("KEY_BY_A303", "dorm", "8A8A5E"), ("KEY_BY_A310", "dorm", "5E7E8A"),
+    ("KEY_BY_A317", "dorm", "8A5E6E"), ("KEY_BY_A325", "dorm", "6E8A5E"), ("KEY_BY_B103", "dorm", "7A8A72"),
+    ("KEY_BY_B111", "dorm", "8A7A6A"), ("KEY_BY_B116", "dorm", "6A7A8A"), ("KEY_BY_B124", "dorm", "8A6A7A"),
+    ("KEY_BY_B223", "dorm", "7A6A8A"), ("KEY_BY_FUELSTORE", "shop", "8A7A3E"), ("KEY_BY_FUELTILL", "shop", "7A6A3E"),
+    ("KEY_BY_WATCHROOM", "shop", "5E4E6A"), ("KEY_BY_WATCHSTORE", "shop", "6A5E4E"), ("KEY_BY_ARMYHUT", "works", "5E6648"),
+    ("KEY_BY_HUTSKIOSK", "old", "7A7E5E"), ("KEY_BY_TRAILERA", "old", "7E6A4E"), ("KEY_BY_TRAILERB", "old", "6E7E4E"),
+    ("KEY_BY_SHACK4", "old", "6A6E5A"), ("KEY_BY_ROADSHACK", "old", "706A56"), ("KEY_BY_SQUAT", "old", "7A4E42"),
+    ("KEY_BY_PUMPS", "old", "7E6E44"),
+]
+for _iid, _style, _hex in _BY_KEYS:
+    if _style == "dorm":
+        key_item(_iid, None, BRASSC, tag=col(_hex))
+    elif _style == "works":
+        key_item(_iid, col(_hex), STEELC)
+    elif _style == "shop":
+        key_item(_iid, col(_hex), BRASSC)
+    else:
+        key_item(_iid, None, mixc(col(_hex), col("8A8478"), 0.55), old=True)
+
+
+@item("PROPANE_TANK", 1, 2, view="front", margin=0.1)
+def propane_tank(I):
+    """household propane cylinder: rounded steel body, foot ring, collar with hand holes round the valve"""
+    m = I("metal")
+    body = col("C45C22")
+    lathe(m, [(0.0, 0.0), (0.1, 0.0), (0.104, 0.012), (0.104, 0.03)], shade(body, 0.8), seg=28)  # foot ring
+    lathe(m, [(0.0, 0.03), (0.13, 0.04), (0.15, 0.07), (0.15, 0.36), (0.13, 0.4), (0.07, 0.425), (0.0, 0.43)], body, seg=32)
+    lathe(m, [(0.088, 0.425), (0.092, 0.425), (0.092, 0.5), (0.088, 0.5)], shade(body, 0.9), seg=28, cap_top=False, cap_bottom=False)  # collar
+    for a in (0.0, math.pi):
+        m.box((math.cos(a) * 0.09, math.sin(a) * 0.09, 0.478), (0.012, 0.04, 0.022), col("1E1E1C"))  # hand holes
+    b = I("brass")
+    b.cyl((0.0, 0.0, 0.43), (0.0, 0.0, 0.47), 0.016, col("B89A4A"), seg=12)  # valve
+    b.cyl((0.0, 0.0, 0.47), (0.0, 0.0, 0.485), 0.026, col("2A2C2C"), seg=14)  # hand wheel
+    b.cyl((0.0, -0.015, 0.455), (0.0, -0.04, 0.455), 0.007, col("B89A4A"), seg=8)  # outlet
+    label_band(I("paper"), (0.0, -0.1505, 0.22), (0.07, 0, 0.05), col("E8E2D0"))
+    m.box((0.0, -0.151, 0.13), (0.16, 0.003, 0.004), shade(body, 0.7))  # weld seam

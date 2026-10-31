@@ -154,3 +154,42 @@ def secure_l(I):
     p.tube([(-0.05, 0, 0.34), (-0.05, 0, 0.37), (0.05, 0, 0.37), (0.05, 0, 0.34)], 0.009, col("1E2020"), seg=8)  # handle
     m.box((0.0, -0.053, 0.27), (0.03, 0.008, 0.03), col("B89A4A"), bevel=0.002)  # lock
     label_band(I("paper"), (0.0, -0.0525, 0.1), (0.1, 0, 0.03), col("C9C2A8"))
+
+
+# eyewear, the gas mask and the goggle head strap: the meshes characters wear (build_eyewear.py), at the size and
+# shape they have on the head. Glasses and the mask carry their own colours (the game tints them white); the strap
+# is tinted with its Equipment.luau colour like the other head gear.
+_EYE = None
+
+
+def eye_ns():
+    """build_eyewear.py's piece builders without running its export"""
+    global _EYE
+    if _EYE is None:
+        g = {"ZR_NO_EXPORT": True, "__name__": "zr_eye_ns"}
+        exec(open(os.path.join(HERE, "build_eyewear.py")).read(), g)
+        g["PIECE_FN"] = dict(g["PIECES"])
+        _EYE = g
+    return _EYE
+
+
+def eyewear(item_id, w, h, piece, hexcol, mat, view="front_hi", margin=0.06):
+    @item(item_id, w, h, view=view, margin=margin, raw=True)
+    def fn(coll):
+        g = eye_ns()
+        b = g["CB"]("ZR_IT_%s__g0" % item_id)
+        g["PIECE_FN"][piece](b)
+        g["fit_at"](b, piece)
+        o = b.finish(coll)
+        tint(o, hexcol)
+        o["zr_mat"] = mat
+        return [o]
+    return fn
+
+
+eyewear("GLASSES_SUN", 2, 1, "ZR_EQ_GlassSun", "FFFFFF", "plastic")
+eyewear("GLASSES_RANGE", 1, 1, "ZR_EQ_GlassRange", "FFFFFF", "plastic", margin=0.08)
+eyewear("GLASSES_BG1", 2, 1, "ZR_EQ_GlassBallistic", "FFFFFF", "plastic")
+eyewear("GLASSES_AF2", 2, 1, "ZR_EQ_GlassFrag", "FFFFFF", "plastic")
+eyewear("GAS_MASK", 2, 2, "ZR_EQ_GasMask", "FFFFFF", "rubber", view="three_q", margin=0.08)
+eyewear("NV_STRAP", 2, 1, "ZR_EQ_NvStrap", "42443A", "fabric")
