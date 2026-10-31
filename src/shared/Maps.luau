@@ -39,8 +39,8 @@ Maps.defs = {
 		id = "border",
 		name = "BORDER YARD",
 		kind = "CUSTOMS ZONE",
-		raidTime = 2100,
-		desc = "A customs terminal on a river crossing: the checkpoint and its office, two dormitory blocks, a fuel stop and a tank farm, warehouses and a crane yard, a building site with a boiler house, a trailer lot and the rail line. The Broker keeps the dorms in some raids.",
+		raidTime = 2400,
+		desc = "A customs zone on a river crossing at full scale: two dormitory blocks, a fuel stop and a tank farm, the derrick and the frame, big warehouses, the red stores and a trailer lot in the trees, bunkers under the yards, the main bridge and the rail lines. Long raids; the Broker keeps the dorms in some raids.",
 	},
 } :: { [string]: MapDef }
 

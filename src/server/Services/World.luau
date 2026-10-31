@@ -1440,7 +1440,7 @@ function World.build()
 	end
 	moduleMap("smelter", "Smelter")
 	moduleMap("meridian", "MeridianMall")
-	moduleMap("border", "BorderYard")
+	moduleMap("border", "Border")
 	-- parked for now (owner's call, M13): moduleMap("pinewatch", "Pinewatch")
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
 	for _, d in World.doors do

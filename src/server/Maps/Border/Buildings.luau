@@ -1,0 +1,12 @@
+--!nonstrict
+-- Border Yard buildings (owner: the buildings agent, part 2 of 3). Stub: foundation only.
+-- The buildings agent adds here, on the spots and footprints in B.L (L.blds with L.outline / L.upper / L.locked, L.under,
+-- L.stairs, L.floors, L.yards): every structure with floors, stairs, roofs, doors and windows, interiors furnished with
+-- the Blender kit (B.Kit.place) and MapKit furniture, containers and loose loot inside (kit.container, kit.loose), the
+-- underground rooms in the voids Ground has dug (floor lo = -16, ceiling hi = -4 and open shafts for the level-0 stairs),
+-- and the K-13 power lever (W.switches.BORDER_STORE4) in Store 4.
+-- Ground has already made the plain flat at y 0 under every building and yard (a pad blended out over 16 to 22 studs), so
+-- B.ground(cx, cz) is the floor level of a building on the plain; elsewhere it is the pad height at the building's centre.
+-- Heights are local y (world y, since the map origin has y 0). Budgets: under about 18,000 building parts, under 900
+-- Blender props, at most 40 shadow-casting lights (docs/maps/BORDER_CUSTOMS_BUILD.md).
+return function(B) end
