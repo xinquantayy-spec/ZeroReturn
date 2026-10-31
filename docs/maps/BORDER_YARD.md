@@ -134,7 +134,8 @@ Part 2 (buildings agent): all 67 building spots in `L.blds` are empty ground (fl
 rooms are dug as voids (`L.under`: the K-11 and SMUGGLERS' HOLE tunnels, the OLD PUMPS cellar, the STORE 4 basement, the BUNKER K-13
 room, the BOILER CELLAR) with their level-0 shafts, but have no walls, floors or loot. Stairs, floors, containers and loose loot
 inside buildings, and the K-13 lever `W.switches.BORDER_STORE4` in Store 4 (until it exists BUNKER K-13 stays closed with the text
-"NO POWER  ·  THROW THE LEVER IN STORE 4").
+"NO POWER  ·  THROW THE LEVER IN STORE 4"). This paragraph is part 1's state: `Living.luau` (part 2a) and `Works.luau` (part 2b) have
+since filled the spots, and their sections below say what is built.
 
 Part 3 (gameplay agent): AI routes and watch posts (`W.patrols` and `W.watchPosts` are empty, so the MapTests check for watch
 posts and routes fails until they exist), the Broker and his crew (`W.boss` is none; reference: 40 %, zones BLOCKS, FUEL STOP,
@@ -165,7 +166,8 @@ low-end phone and memory use are untested.
 | `src/server/Maps/Border/init.luau` | entry: model "Border", the context `B`, calls the four parts under pcall, sets `W.bounds`, prints counts |
 | `src/server/Maps/Border/Layout.luau` | generated layout data (do not edit) |
 | `src/server/Maps/Border/Ground.luau` | terrain, river, roads, rails, bridges, fences, power lines, boundary, nature |
-| `src/server/Maps/Border/Buildings.luau` | stub for part 2 |
+| `src/server/Maps/Border/Buildings.luau` | dispatcher: runs `Living.luau` and `Works.luau` under pcall, creates `B.points` |
+| `src/server/Maps/Border/Living.luau` | part 2a: the 43 dorm, station, house, cabin, kiosk, garage and shed footprints (see "Living quarters") |
 | `src/server/Maps/Border/Play.luau` | extracts, PMC spawns, scav zones (minimal); part 3 grows it |
 | `src/server/Maps/Border/Dress.luau` | stub for part 3 |
 | `src/server/Maps/TerrainKit.luau` | shared terrain writer, now time-sliced, with an optional prebuilt grid and per-column water |
@@ -174,6 +176,140 @@ low-end phone and memory use are untested.
 
 The context `B` every part receives: `kit, W, map, H, Kit, L, O, S, rng, count, ground(x, z)`; Ground adds `inside(x, z)`,
 `riverD(x, z)` (studs inside the river channel, negative on land), `slope(x, z)`, `T` (the TerrainKit result) and `islandTop`.
+
+## Living quarters (part 2a, `Living.luau`)
+
+Written 2026-11-01 without a Luau runtime. `tools/luau_check.py` (structure only) passes, and an offline Lua 5.4 mock ran the module
+against stand-ins for the kit, `MapKit` and `Layout` (the mock is not in the repo). Nothing has run in Studio: every count and check below
+is the mock's, not the game's. `Buildings.luau` calls `Living.luau` under pcall and each building runs under its own pcall, so a failure
+is one `warn` and the rest still stand. The server prints one line, `[ZR] Border living: ...`, with the counts. The other 24 footprints
+(warehouses, the complex, big buildings, towers, tanks, platforms, bunker sheds) are `Works.luau`'s.
+
+Each building stands on its `L.blds` footprint in its own frame (u along the width, v along the depth, y above `ground` at the centre).
+The module reads only `L.blds` (centre, size, yaw). The traced outlines, locked rooms and stair footprints (`L.outline`, `L.locked`,
+`L.stairs`) were worked into each builder's numbers by hand; checked offline for BLOCK A and BLOCK B: their outline corners and the
+13 + 5 locked room numbers come out of those tables. After a change to `tools/customs_layout.py` the builders need a second look.
+Walls are thin Block parts (0.8 to 1.2 studs): brick or concrete panel outside, plaster inside, with real door holes (3.9 x 7.5) and
+window holes (mostly 2.6 to 3.6 wide, shop fronts and service windows 5 to 8), slab floors and roofs, stairs and railings.
+Indoor props cast no shadow; only the bigger rooms get a shadow-casting lamp. Containers are kit props or small stand-ins (medical bag,
+toolbox, weapon case, coat). Loose loot lies on a surface under it (pools `dorm`, `dorm_good`, `office`, `vault`, `grocery`, `drinks`,
+`register`, `junk`, `tech`, `toolbox`, `weaponbox`; area `border`). Door ids start with `LV_`; the dormitory test in `LogicTests` counts
+ids that start with `DORM`.
+
+### The 43 buildings
+
+| Kind | Buildings | Built as |
+|---|---|---|
+| dorm (2) | 26 BLOCK A, 25 BLOCK B | see below |
+| station (2) | 24 FUEL STOP, 44 OLD PUMPS | see below |
+| house (4) | 29 THE SQUAT, 18 WATCHHOUSE, 36 ARMY POST HUT, 37 ARMY POST BARRACKS | see below |
+| kiosk, booths (11) | 38 PYLON PAD, 39 and 40 BUS STOP A and B, 42 and 43 HUTS KIOSK A and B, 45 WORKS, 47 HILL ROADBLOCK, 48 STORE 17, 49 RIDGE, 61 SQUAT, 62 FRAME | one room: a service window with a counter and a till behind it, a shelf, an end door. 39 and 40 have a bus shelter, 47 sandbags. 43 is locked (`KEY_BY_HUTSKIOSK`) and holds a toolbox, a medical bag and a coat |
+| kiosk, huts (6) | 41 BLOCK A GATEHOUSE, 46 ROADSIDE HUT, 52 and 53 BRIDGE BOOTH A and B, 54 RED STORES BOOTH, 55 TRAILER LOT SHACK | cabin-sized with their own furniture: guard desk, lockers and bench (41); a small shop with till, gondola and drinks fridge (46); checkpoint offices (52, 53); a foreman's office with a safe (54); bunks, a sofa and a table (55, the TRAILER_LOT point) |
+| cabin (6) | 5 and 6 RED STORES CABIN A and B, 56 and 57 TRAILER A and B, 58 and 60 TRAILER C and D | steel cabins under a shallow gable: offices (5, 6: desk, pigeonholes, locker) and bunk cabins (bed, table, locker). 56 and 57 are locked (`KEY_BY_TRAILERA`, `KEY_BY_TRAILERB`) and add a hidden safe, a weapon case and a coat |
+| shed (6) | 35 and 66 OLD PUMPS SHED A and B, 59 TRAILER LOT SHED, 63 STORE 4 SHACK, 64 and 65 ROADSIDE SHACK W and E | corrugated sheds: a tool chest or workbench with drums and tyres or pallets (35, 66); a van, pallets and a bench (59); stock shelves and a toolbox, locked (63, `KEY_BY_SHACK4`); tyres, pallets and cardboard (64); a safe, a weapon case and a coat, locked (65, `KEY_BY_ROADSHACK`) |
+| garage (2), garage_row (4) | 0 and 1 STORE 17 GARAGE A and B, 2 TRAILER LOT GARAGES, 3 and 4 STORAGE YARD EAST and WEST ROW, 7 STORAGE YARD DIAGONAL ROW | 50 bays with party walls (one per 19 studs or so of length); shut bays have a fixed roller slab, 13 stand open with a car, the odd-numbered ones also with a tool chest |
+
+**BLOCK A** (id 26, three storeys of 11 studs, the traced L-shaped outline): a main block of 131 x 51 studs with a corridor down the
+middle and 13 slots on each side, and a side wing of 52 x 40 studs with its own corridor and four rooms either side. The stairwell takes
+the place of room 109 (the dog-leg stair, `ladder-25`, the same footprint on every level) and the passage into the wing that of room
+116, which leaves 32 rooms a floor, numbered 101 to 134, 201 to 234 and 301 to 334. Two end towers (`ladder-26`, `ladder-27`, outer
+doors `LV_A_TN` and `LV_A_TS`), a wing exit (`LV_A_WX`) and a roof hut (`LV_A_ROOF`) with two HVAC units and two vents. The rooms are
+furnished from fixed seeds (2601 for A, 2602 for B), so every raid gets the same dorm: 62 % are stripped (a chair or a bin at most), the
+rest hold a bed, a wardrobe or a table, a desk with drawers, or bunks, plus up to two loose items; one in four has a hinged door, the
+others are open doorways. 13 rooms are locked (103, 125, 128, 201, 212, 225, 228, 229, 303, 310, 314, 317, 325, at the positions of
+`L.locked`): each holds a bed, a wardrobe, a desk with drawers, a coat and three `dorm_good` spots, and 7 of them also a medical bag
+(310, 201, 212), a weapon case (317, 228) or a toolbox (225, 103). ROOM 314 (`KEY_BY_314`) has no wardrobe; it keeps a safe, a weapon
+case and six `dorm_good` spots. The ground-floor lobby by the north tower has a guard desk, cloakroom lockers, a vending machine and a
+bin; boot-room lockers and a bench stand at the other end. **BLOCK B** (id 25, two storeys, brick, 131 x 52 studs): rows of 13 rooms
+(101 to 113) and 12 rooms (114 to 126 without 122, which is the stairwell with `ladder-24`), 25 a floor and 50 in all; a west tower
+(`LV_B_TW`, `ladder-28`), an east exit (`LV_B_TE`), a roof hut (`LV_B_ROOF`), the warden's desk and cloakroom lockers by the west door,
+and five locked rooms (103, 111, 116, 124, 223, at the positions of `L.locked`), four of them with a medical bag (103, 116), a toolbox
+(124) or a weapon case (223).
+
+**FUEL STOP** (24): a shop (counter and till, three gondolas, two drinks fridges, wall shelves) with a locked till office
+(`KEY_BY_FUELTILL`: desk, safe, staff locker) and a locked storeroom (`KEY_BY_FUELSTORE`: two stock shelves, a pallet, a toolbox) behind
+it, a washroom with a cubicle and its own outer door, a staff door, a canopy on six columns over two pump islands (four pumps), three
+cars (one smashed in the car park), a FUEL sign on a pole and a car park with bay lines. **OLD PUMPS** (44): a small brick shop (old till,
+dusty display table, vending machine, tool chest), a locked back room (`KEY_BY_PUMPS`: mechanic's locker, drum, loose tools), a rusty
+canopy on four columns over two pumps, a smashed car, jerry cans and a tyre stack. **THE SQUAT** (29): a gutted two-storey brick house
+with a hall down the middle (living room, kitchen, stairs room with a dog-leg stair, party room, bedroom and junk room off it; a bunk
+room, lounge, party floor and bedrooms upstairs), an iron stair (diamond plate) up the outside of one end wall to an upper door, and a
+rusty gable over a flat roof deck. The stash room (hidden safe, weapon case, medical bag, shelf, leather coat) opens only through
+the locked back door (`KEY_BY_SQUAT`). **WATCHHOUSE** (18): two brick wings of two floors round a lower hall whose roof is a terrace
+level with both upper floors (stairs `ladder-15`, `ladder-16` and, inside the west wing, `ladder-31`); a reception desk with CCTV in the
+hall, the mess, kitchen and lockers in the west wing, the briefing room and the barracks in the east wing, a watch post on the
+terrace. Two rooms of the west wing are locked: the watch room (`KEY_BY_WATCHROOM`, rare: safe, weapon case, duty coat, duty desk) and
+the store room (`KEY_BY_WATCHSTORE`: stock shelf, medical shelf). **ARMY POST**: the hut (36: a duty room with desk and locker, an
+armoury behind `KEY_BY_ARMYHUT` with a gun rack, two ammo crates, an armour stand and a safe, a guard room above with a radio desk, and a
+stair up to a roof perch) and the barracks (37: one long corridor, four rooms on each side with bunks, a store, a mess, a kitchen, an
+office and a sofa room, three outer doors).
+
+### Keys (29 new items in `Items.luau`, all in the `keys` pool of `Loot.luau`)
+
+| Key | Door |
+|---|---|
+| `KEY_BY_A103`, `A125`, `A128`, `A201`, `A212`, `A225`, `A228`, `A229`, `A303`, `A310`, `A317`, `A325` (12) | the BLOCK A room of that number |
+| `KEY_BY_B103`, `B111`, `B116`, `B124`, `B223` | the BLOCK B room of that number |
+| `KEY_BY_FUELTILL`, `KEY_BY_FUELSTORE` | FUEL STOP till office, storeroom |
+| `KEY_BY_PUMPS`, `KEY_BY_SQUAT` | OLD PUMPS back room, THE SQUAT back door |
+| `KEY_BY_WATCHROOM` (rare), `KEY_BY_WATCHSTORE` | WATCHHOUSE watch room, store room |
+| `KEY_BY_ARMYHUT` | ARMY POST HUT armoury |
+| `KEY_BY_HUTSKIOSK`, `KEY_BY_TRAILERA`, `KEY_BY_TRAILERB`, `KEY_BY_SHACK4`, `KEY_BY_ROADSHACK` | HUTS KIOSK B, TRAILER A, TRAILER B, STORE 4 SHACK, ROADSIDE SHACK E |
+
+That makes 30 locked doors with `KEY_BY_314`, which already existed. The five keys of `Works.luau` (`K11`, `STORE`, `RED`, `BASTION`, `MOTOR`)
+were not touched. The new keys carry the same fields as the existing ones (name, short name, value, rarity, `key.uses`, description); no
+per-key art was made. They weigh 1 to 2 in the `keys` pool, which every map's key spots share, so they thin out the other maps' key
+rolls (the five of `Works.luau` did the same).
+
+### `B.points` (11)
+
+Map-local studs (x, y, z) from the flat mock; y is the floor plus 0.5 above the ground at the building centre. BLOCK_A_LOBBY (-35, 1,
+578), BLOCK_A_ROOM314 (-64, 23, 690), BLOCK_A_STAIRS (-33, 1, 615), BLOCK_A_ROOF (-39, 34, 614), BLOCK_B_LOBBY (-219, 1, 629),
+BLOCK_B_STAIRS (-217, 1, 557), FUEL_SHOP (-773, 1, 228), OLD_PUMPS_SHOP (-587, 1, -422), SQUAT (249, 1, -379), WATCHHOUSE_TOP (-1274, 12,
+-108; on the terrace), TRAILER_LOT (1093, 1, -476; inside the shack, 55). `Play.luau` reads six of them: BLOCK_A_LOBBY (the Broker's
+home), BLOCK_A_ROOM314 (the DORM314 visit zone), FUEL_SHOP, OLD_PUMPS_SHOP, SQUAT and BLOCK_B_LOBBY (scav zones). The other five are
+not read by any module yet.
+
+### Counts (offline mock, not Studio)
+
+43 buildings (0 failed), 3,728 parts of its own plus 436 kit props (the props add their own mesh parts), 152 lamps (12 with shadows; 57
+of the lamps are in the two dorms), 129 doors (30 locked), 231 containers, 346 loose spots (0 without room), 0 props rejected for
+overlap. The brief's ceilings are about 9,000 parts, 450 props and 20 shadow lamps; the module's own prop cap is 440 and it builds the
+dorms, stations and houses first, so the cap would cut small buildings, not those. Biggest, props and parts: BLOCK A 128 and about
+1,010, BLOCK B 55 and 514, THE SQUAT 47 and 306, WATCHHOUSE 44 and 395, FUEL STOP 23 and 104. Containers by kind: drawer 48, locker 46,
+jacket 41, toolbox 19, grocery 18, register 14, medbag 11, crate 9, safe 9, weaponbox 9, cooler 6, techbox 1. The `Works.luau` section
+counts 8,249 parts in its own mock run, so the two modules together come to about 12,000 mock parts before the kit meshes.
+
+What the mock checks (clean at the end): every key a door names is an item with `kind == "key"`, no door id starts with `DORM`; every
+door slab stands in a real opening (no solid part inside it); a landing of 3.3 x 4.8 x 3.4 studs on both sides of every door and open
+doorway is free of furniture and walls; no kit prop's collider overlaps a wall or another prop; no container centre lies inside a wall,
+and container ids are unique; every pool and container kind exists; every loose spot has a surface within the 7-stud drop that
+`snapLooseSpots` casts from 2.5 studs above it (so M04 should hold) and does not start inside a solid; none of the 11 points lies
+inside a solid part (a 2.4 x 5 x 2.4 stud capsule). It ran on flat ground and on a sloped ground function.
+
+### Gaps (to copy into `docs/design/EFT_PARITY.md`)
+
+- Furniture: about one prop a room and 62 % of the dorm rooms bare; Tarkov's dorm rooms are fuller (beds, wardrobes, books, bags, rubbish).
+- Interior doors: one in four unlocked dorm rooms has a hinged door, the rest are open doorways. The garage roller doors are fixed slabs
+  and cannot open.
+- No shared washrooms, showers or kitchens on the dorm floors (to check against the reference); the only washroom is the fuel stop's,
+  and kitchens exist only in the squat, the watchhouse and the army barracks.
+- Windows are open holes: no glass, blinds or curtains. No light switches or power state; the lamps are always on.
+- Stairs are straight or dog-leg approximations on the reference stair footprints (5.5 studs of rise per half flight, about 30
+  degrees). Roofs are flat with a parapet (dorms, stations) or a low gable (cabins, sheds, the squat), without the reference's detail.
+- Room numbers follow our own column grid and the locked set follows `L.locked`; the key-to-room assignments and the loot per room are
+  our own (only room 314 and `KEY_BY_314` predate this build). Loot comes from the project's pools by container kind, not from
+  per-room tables; the 29 keys are our own items and prices.
+- No quest items or co-op specifics inside the buildings.
+
+Unverified (nothing has run in Studio): every count above; the look of the kit props and stand-ins (a prop's mesh can be larger than its
+collider); the gable wedges and roofs; frame rate on a low-end phone with 152 lamps; whether the AI paths through the 3.9-wide dorm
+doorways; the part count with the kit's own meshes; `LogicTests` expects exactly 4 keyed doors among those with `d.map == nil or
+"quay7"` and `MapTests` M05 wants `d.part`, `d.prompt` and `d.map` on every door (Border doors should carry a map tag, not run). Top-down
+plans drawn from the mock's parts were reviewed for most of the larger buildings; no building has been seen in Studio. OLD PUMPS
+CELLAR and its stair (`ladder-39`, between OLD PUMPS SHED A and B) are `Works.luau`'s; the two sheds here have no floor, keep the
+stair's footprint clear and have a wall opening toward it, and whether those openings line up with Works' stair is unchecked on both sides. RED STORES CABIN A and B overlap by 0.23 studs in the
+traced layout (grade B); cabin A is turned half a revolution so that its door faces away from cabin B.
 
 ## Gameplay (part 3 of 3)
 

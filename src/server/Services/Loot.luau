@@ -130,6 +130,14 @@ local POOLS = {
 		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_MALL_STAFF", w = 3 }, { id = "KEY_MEDIQ", w = 2 }, { id = "KEY_MALL_SECURITY", w = 1 },
 		{ id = "KEY_BY_314", w = 3 }, { id = "KEY_BY_RECORDS", w = 4 }, { id = "KEY_BY_BOILER", w = 2 },
 		{ id = "KEY_BY_K11", w = 1.5 }, { id = "KEY_BY_STORE", w = 4 }, { id = "KEY_BY_RED", w = 3 }, { id = "KEY_BY_BASTION", w = 1.5 }, { id = "KEY_BY_MOTOR", w = 4 },
+		{ id = "KEY_BY_A103", w = 1.5 }, { id = "KEY_BY_A125", w = 1.5 }, { id = "KEY_BY_A128", w = 1.5 }, { id = "KEY_BY_A201", w = 1.5 },
+		{ id = "KEY_BY_A212", w = 1.5 }, { id = "KEY_BY_A225", w = 1.5 }, { id = "KEY_BY_A228", w = 1.5 }, { id = "KEY_BY_A229", w = 1.5 },
+		{ id = "KEY_BY_A303", w = 1.5 }, { id = "KEY_BY_A310", w = 1.5 }, { id = "KEY_BY_A317", w = 1.5 }, { id = "KEY_BY_A325", w = 1.5 },
+		{ id = "KEY_BY_B103", w = 1.5 }, { id = "KEY_BY_B111", w = 1.5 }, { id = "KEY_BY_B116", w = 1.5 }, { id = "KEY_BY_B124", w = 1.5 },
+		{ id = "KEY_BY_B223", w = 1.5 }, { id = "KEY_BY_FUELSTORE", w = 2 }, { id = "KEY_BY_FUELTILL", w = 2 }, { id = "KEY_BY_WATCHROOM", w = 1 },
+		{ id = "KEY_BY_WATCHSTORE", w = 2 }, { id = "KEY_BY_ARMYHUT", w = 1.5 }, { id = "KEY_BY_HUTSKIOSK", w = 2 }, { id = "KEY_BY_TRAILERA", w = 2 },
+		{ id = "KEY_BY_TRAILERB", w = 2 }, { id = "KEY_BY_SHACK4", w = 2 }, { id = "KEY_BY_ROADSHACK", w = 2 }, { id = "KEY_BY_SQUAT", w = 2 },
+		{ id = "KEY_BY_PUMPS", w = 2 },
 	},
 	-- M13 Meridian Mall
 	register = {
