@@ -36,6 +36,12 @@ One PMC raid on Border Yard (night, rain, autumn, the Broker forced on), five mi
 
 **Not verified:** fights on the new map (AI combat is covered by LogicTests elsewhere), phones, two clients.
 
+### Item pictures, sheet 4 (2026-11-01, later)
+
+| Check | How | Result |
+|---|---|---|
+| Pictures | Rendered in Blender, review sheet by eye; then the stash in Studio with the items given and examined | All 44 new pictures (five eyewear items, the goggle strap, the propane cylinder, 37 Border Yard keys) show in the stash at their grid size with durability bars; unexamined keys show as dark silhouettes, as designed; every item in `Items.luau` now has a picture (258 in 4 sheets) |
+
 ## Bunker graphics: clean shell, grime where it gathers, no flicker (2026-11-01)
 
 Studio on the T490, one client, in-memory store. Before and after captures B01 to B04 were taken in the session (not kept as files).
