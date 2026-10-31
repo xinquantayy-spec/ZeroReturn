@@ -22,6 +22,20 @@ Studio on the T490, one client, in-memory store.
 
 **Not verified:** a full raid on Border Yard with AI walking the new routes through the buildings, frame rates there and on phones (343 lamps across the buildings), two clients.
 
+### Border Yard raid with AI (2026-11-01, later)
+
+One PMC raid on Border Yard (night, rain, autumn, the Broker forced on), five minutes of AI time, player in god mode at the Bastion.
+
+| Check | How | Result |
+|---|---|---|
+| Spawns | `dev:Invoke("ai")` 20 s in | 6 watch guards (3 posted: checkpoint, army post, Bastion; 3 on routes: fuel stop, stores, trailers), the Broker with 4 guards at the dorms, 4 scavs; a scav wave added 3 more by minute 5; 10,139 cover points ready |
+| Movement | Positions after 304 s, ray down from every unit | Scavs walked 119 to 1,058 studs, route guards 69 to 136, posted guards held their posts, the Broker group stayed round the dorms; every unit stood on ground (terrain or a floor, 3.2 studs above it); none stuck or fallen through |
+| Errors | Output window | None from the game (only the known Baseplate texture warning) |
+| Server cost | Stats on the server, Script Profiler | Lua heartbeat 0.7 ms a frame, physics step 8.3 ms (761 moving parts, all characters); scripts are not the bottleneck |
+| Frame rate | RenderStepped count, Studio (client and server in one process), Studio quality 10, same night and rain | Border Yard centre 13.2 to 13.6 fps (18,653 parts streamed in, 205 lights), 18.6 looking at the sky; Quay 7 16.4 and 22.4 at the same moment (2,516 parts). Lights, particles, post effects, water and the detail layer off each changed it by under 1 fps; shadows off gave +2. The laptop ran about half as fast as in earlier sessions (Quay 7 was 36.8), so only the ratio means anything: Border Yard costs about 20% more than Quay 7 |
+
+**Not verified:** fights on the new map (AI combat is covered by LogicTests elsewhere), phones, two clients.
+
 ## Bunker graphics: clean shell, grime where it gathers, no flicker (2026-11-01)
 
 Studio on the T490, one client, in-memory store. Before and after captures B01 to B04 were taken in the session (not kept as files).

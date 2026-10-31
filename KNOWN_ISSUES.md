@@ -91,6 +91,8 @@
     - Not modelled: lens cracks, fogging and raindrops, the mask's filter. The gas mask blocking glasses was asked for in the brief; Tarkov's own rule for gas masks could not be checked (see `docs/design/EFT_PARITY.md`, section 6).
     - The night-vision key N still has no gamepad binding (the touch button exists).
 
+65. **Border Yard streams in many parts at once.** At the map centre the client holds about 18,600 parts (Quay 7: 2,500), with the default streaming radius. In Studio it ran about 20% slower than Quay 7 (TEST_RESULTS, Border Yard raid with AI). Phones are unmeasured, and the 30 fps rule makes this the main risk on the map. Levers, in order: a smaller `StreamingTargetRadius` (set in Studio's Workspace properties; scripts cannot read it), `Model.LevelOfDetail = StreamingMesh` on building models so distant ones draw as simple meshes, fewer separate parts per building (merge plain walls), then lamps.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.
