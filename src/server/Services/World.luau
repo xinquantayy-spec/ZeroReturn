@@ -436,6 +436,29 @@ local function snapLooseSpots()
 			end
 		end
 	end
+	-- every spot must rest on something. One that floats (its shelf or mezzanine was not built, a slope moved the
+	-- floor) drops onto the solid surface just below it, or is removed when there is none (MapTests M04). In
+	-- place, so the active map's list stays the same table.
+	local dropped = 0
+	for _, m in World.maps do
+		local list = m.looseSpots
+		for i = #list, 1, -1 do
+			local sp = list[i]
+			if not workspace:Raycast(sp.pos + Vector3.new(0, 0.3, 0), Vector3.new(0, -0.8, 0), rp) then
+				local hit = workspace:Raycast(sp.pos + Vector3.new(0, 0.3, 0), Vector3.new(0, -4.5, 0), rp)
+				if hit and hit.Instance.CanCollide then
+					sp.pos = hit.Position + Vector3.new(0, 0.05, 0)
+					moved += 1
+				else
+					table.remove(list, i)
+					dropped += 1
+				end
+			end
+		end
+	end
+	if dropped > 0 then
+		print(string.format("[ZR] loose loot: %d floating spots removed", dropped))
+	end
 	return moved
 end
 
