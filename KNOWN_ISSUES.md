@@ -91,7 +91,7 @@
     - Not modelled: lens cracks, fogging and raindrops, the mask's filter. The gas mask blocking glasses was asked for in the brief; Tarkov's own rule for gas masks could not be checked (see `docs/design/EFT_PARITY.md`, section 6).
     - The night-vision key N still has no gamepad binding (the touch button exists).
 
-65. **Border Yard streams in many parts at once.** At the map centre the client holds about 18,600 parts (Quay 7: 2,500), with the default streaming radius. In Studio it ran about 20% slower than Quay 7 (TEST_RESULTS, Border Yard raid with AI). Phones are unmeasured, and the 30 fps rule makes this the main risk on the map. Levers, in order: a smaller `StreamingTargetRadius` (set in Studio's Workspace properties; scripts cannot read it), `Model.LevelOfDetail = StreamingMesh` on building models so distant ones draw as simple meshes, fewer separate parts per building (merge plain walls), then lamps.
+65. **Border Yard streams in many parts at once.** At the map centre the client holds about 18,600 parts (Quay 7: 2,500), with the default streaming radius. In Studio it ran about 20% slower than Quay 7 (TEST_RESULTS, Border Yard raid with AI). Phones are unmeasured, and the 30 fps rule makes this the main risk on the map. Levers, in order: a smaller `StreamingTargetRadius` (set in Studio's Workspace properties; scripts cannot read it), fewer separate parts per building (merge plain walls into meshes), then lamps. Roblox's distant-model meshes (`LevelOfDetail = StreamingMesh`) are made when a place is published, so they do not help maps built by script at server start.
 
 ## Tool limitations (not game bugs)
 
