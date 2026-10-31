@@ -2,7 +2,7 @@
 -- Relay 7 dressing (lobby L3): the Blender bunker kit (ZR_BunkerKitA/B/C, see KitMeta.luau and Kit.luau) placed on
 -- the plan the shell and the stations use (Relay7.luau: x east 0..140, z south 0..104, floor y 0). The stations keep
 -- the prompts; this module is what you see and bump into: furniture with box colliders, fittings without, painted
--- signs and floor lines, a little wear, and the lights.
+-- signs and floor lines, a little lived-in litter (no rubble: the bunker is kept), and the lights.
 -- Budget (owner: top detail without costing frames): under 300 kit props, six shadow-casting lights (one per main
 -- room, each just under its own fitting, and fittings never cast shadows), the rest soft fill without shadows.
 -- Without the kit (asset batch not loaded) every prop is a plain box of its size, so the bunker still plays the same.
@@ -400,7 +400,6 @@ local function bunkRoom(g, R)
 	put(g, "Rubble", 37.4, 0, 4.0, 210)
 	wk(g, "ZR_WK_Litter", 30.5, 26.5, 40)
 	wk(g, "ZR_WK_Litter", 20.0, 33.0, 160)
-	wk(g, "ZR_WK_Chips", 2.2, 34.0, 15)
 end
 
 local function opsRoom(g, R)
@@ -604,8 +603,6 @@ local function corridor(g, R)
 	put(g, "Sandbags", 2.4, 0, 40, "E")
 	put(g, "SandbagsLow", 2.4, 2.39, 40.2, 92)
 	put(g, "Rubble", 5.6, 0, 42.0, 120)
-	wk(g, "ZR_WK_RubbleLarge", 6.4, 38.2, 60)
-	wk(g, "ZR_WK_Chips", 8.2, 40.6, 200)
 	-- the east end, safety kit, PA and boxes on the walls
 	wall(g, "FuseBox", 139.4, 0, 40, "W")
 	wall(g, "Extinguisher", 80, 0.6, 36.6, "S")
@@ -621,7 +618,6 @@ local function corridor(g, R)
 	paint(g, 0.6, 42.65, 100, 42.9, YELLOW)
 	paint(g, 124, 42.65, 139.4, 42.9, YELLOW)
 	wk(g, "ZR_WK_Litter", 34, 42.0, 110)
-	wk(g, "ZR_WK_Litter", 72, 37.8, 300)
 	wk(g, "ZR_WK_Puddle", 110, 41.2, 30)
 end
 
@@ -730,7 +726,6 @@ local function gunsmith(g, R)
 	fluoro(g, 66, 49.5, 12, "S", { WARM, 28, 1.3, true })
 	fluoro(g, 66, 62, 12, "S")
 	fluoro(g, 83, 60, 12, "E")
-	wk(g, "ZR_WK_Chips", 62.5, 48.5, 30, 0.7)
 	wk(g, "ZR_WK_Litter", 80.0, 70.0, 140)
 end
 
@@ -826,8 +821,6 @@ local function range(g, R)
 	lamp(g, "LampTunnel", -40, 6.4, 101, COLD, 24, 0.5, false)
 	run(g, "PipeRunRust", "x", -77.4, -0.2, 98.6, 5.6, "S", "wall", { segs = 3 })
 	run(g, "Beam", "z", 76.6, 103.4, 42, 11, "E", "hang")
-	wk(g, "ZR_WK_Chips", 86.6, 85.0, 30, 0.6)
-	wk(g, "ZR_WK_Chips", 87.4, 96.0, 110, 0.6)
 end
 
 local function motorPool(g, R)

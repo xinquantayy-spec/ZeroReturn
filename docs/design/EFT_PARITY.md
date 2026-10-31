@@ -61,7 +61,7 @@ and an attribute list (icon, name, value; handling stats with a bar). Unknown it
 | Messenger: one chat per trader, insurance returns, task rewards, receive all | Pigeonhole lamp only | Messenger |
 | Handbook: every item by category with its description | Missing | Handbook |
 | Wish list: items flagged for tasks, hideout or trading | Missing | Wish list |
-| Hideout: modules, crafts, shooting range, customisation (0.16) | Have (in the bunker) | Customisation later |
+| Hideout: modules, crafts, shooting range, customisation (0.16: wall finishes "Blue paint", "Factory walls", "Modest wallpaper"; floors "Small tiles", "Factory floor"; a "Factory ceiling"; unlocked by level, tasks, achievements and prestige; posters as hideout upgrades and loot; range targets by leveling the range) | Have (in the bunker); the bunker is one shared, kept relay station (painted walls, grime only where it gathers, 2026-11-01) | Customisation: per-player finishes drawn on each client (the bunker is shared), unlocked by level and tasks; posters; range targets |
 
 ## 4. In-raid information and controls
 

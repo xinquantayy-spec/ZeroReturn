@@ -75,11 +75,14 @@
 59. **No lobby sounds yet.** The design calls for the generator's hum once you have built it, radio chatter at the ops table, pipes knocking and the van idling through the countdown; there is no synthesized lobby audio yet (doors slam with a metal impact sound).
 60. **Squads board the van one by one.** Each member walks in and boards; the squad still deploys together and wears one armband colour.
 61. **Lobby frame rates on phones are unknown.** Measured only in Studio on the T490 (the bunker draws fewer calls and triangles than Quay 7).
-44. **Syncing to the laptop without the shell tool.** When the laptop's shell tool is unavailable, files reach the PC as one bundle (`tools/pc_patch.py`) run through Blender's Python. Each sync shows up as a file card in the chat. Rojo then updates Studio as usual.
+44. **Syncing to the laptop without the shell tool.** Sessions linked to the laptop through the desktop app reach the project folder with the file bridge (stage and write files); there is no shell on the laptop then. The git repository lives in the session's cloud workspace, rebuilt from `backup/` (the full bundle, then the newest incremental bundle); changes are committed there, written to the laptop and carried into Studio by Rojo, and a new incremental bundle is written to `backup/` at each milestone. The incrementals `83cca47-23cdad8`, `23cdad8-221ba9f` and `221ba9f-c2ccd5d` need commit 83cca47, which was never bundled, so that stretch of history (2026-10-31 20:23 to 2026-11-01 00:30) is one sync commit (`c20bb53`).
 33. **Unpublished place: profiles are in memory.** `Zero Return.rbxl` is not published, so Studio cannot reach DataStores and every play session starts a fresh profile. Publishing (owner's decision) restores the DEV DataStore.
 24. **Task objectives are basic.** Eliminate / hand in / extract / visit only; no "plant or mark an item", weapon or gear conditions, or time-of-day conditions yet.
 18. **Late entry is a compromise.** Tarkov PMCs only spawn at raid start; here PMCs may join for the first 5 minutes so nobody waits a full 25-minute raid on a one-raid server. `Config.LATE_JOIN` controls it.
 19. **Insurance timing** is 15 real minutes (`Config.INSURANCE_DELAY`). Returns reach the stash automatically when there is space; otherwise use COLLECT INSURANCE in the stash. Items mailed to offline owners need the real DataStore.
+
+62. **No scratch, dent or paint-chip decals yet.** The owner wants small details (scratches, dents, bullet holes) rather than noisy textures. The decal set has cracks, spalling, bullet holes, scuffs and stains; a set of scratches, dents and paint chips needs new textures (`assets/textures/gen_wear.py`) and an upload.
+63. **Bunker flicker is fixed by analysis, not by eye on every screen.** In Studio no two decals in the bunker overlap within 0.02 studs any more, and the paint is in the walls. Flicker is a moving effect, so the owner's own walk-through is the final check.
 
 ## Tool limitations (not game bugs)
 
@@ -87,8 +90,18 @@
 - `execute_luau` cannot read some protected properties, such as `Lighting.Technology`.
 - Studio Place1 and Place2 contain scripts from a separate project. Never connect this Rojo session to them.
 - The Baseplate texture warning `rbxassetid://203785492` comes from the default template and is harmless.
+- Write files to the laptop only while Studio is in edit mode. A file written during a play session, or while it stops, is not picked up by Rojo until it changes again.
+- Downloading tools from outside (for example the Luau analyzer from GitHub releases) is refused in the cloud workspace; `tools/luau_check.py` is the structural check.
 
 ## Fixed this session
+
+- Bunker graphics (owner, 2026-11-01: "glitching textures", "too dirty for the whole bunker"):
+  - The olive paint band was a thin slab 0.06 studs in front of every wall, and the detail decals sat at the same depth (one layer exactly level with it), so they flickered as the camera moved. The paint is now part of the wall blocks (olive plaster, a dark line, light plaster above).
+  - Every concrete surface in the bunker had a worn texture variant, and every wall got streaks, peeling and cracks. The shell is now plain painted plaster and concrete, and the detail plan's new "clean" profile adds only a soft strip of grime along the foot of each wall and an occasional hairline crack.
+  - Grime is placed where it builds up (197 spots): corners, doorways (hand marks, scuffs, worn thresholds), oil and soot at the generator and benches, damp at the water collector and in the old tunnel, old hits on the range backstop, boot dust where people stand, oil and tyre marks in the motor pool.
+  - The z-fighting pass shrank parts even where the shared face was hidden (a wall top under the ceiling, a foot on the floor), opening hairline slits; it now skips covered faces (bunker 175 pulls to 43, Quay 7 211 to 108, Smelter 459 to 273, Meridian 1327 to 513, Border Yard 825 to 203).
+  - Decal layers on every map now sit at least 0.025 studs apart (thinner carriers), so overlapping layers no longer fight in the depth buffer.
+  - Rubble and chips were removed from the bunker's rooms and corridor; the lived-in litter, cardboard and puddles stay.
 
 - M13 items (owner request): loose loot was a block in the item's colour (old issue 27). Every item now has a Blender model and a picture: 124 inventory pictures in two atlas sheets, and loose loot lies as the real model (95 items from three new batches, worn gear as the character meshes, guns as before). See `docs/items/ITEM_ART.md`.
 

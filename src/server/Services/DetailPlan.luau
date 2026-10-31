@@ -62,6 +62,15 @@ local function decal(tex, c, n, w, h, lod, spin, tu, tv, alpha, ou)
 	add({ 1, tex, r2(c.X), r2(c.Y), r2(c.Z), r2(n.X), r2(n.Y), r2(n.Z), r2(w), r2(h), math.floor(spin or 0), lod, tu and r2(tu) or 0, tv and r2(tv) or 0, r2(alpha or 0), ou and r2(ou) or 0 }, c, "dec:" .. (DEC_NAME[tex] or "?"))
 end
 local meshesOff = false -- set while reading a decals-only model (the lobby bunker: lived-in, not ruined)
+local clean = false -- set while reading a model with DetailProfile "clean" (the bunker: kept, grime only where it
+-- builds up; its corners, doorways and machines bring their own DetailSpots)
+-- depth layers off a surface (carrier centres; client carriers are 0.02 thick, so each decal sits 0.01 further
+-- out). Layers that can overlap are at least 0.025 apart so they never fight in the depth buffer as the camera
+-- moves (owner, 2026-11-01: flicker near corners and in the bunker); spot marks cycle through three depths.
+local L_STREAK, L_BASE, L_PEEL, L_SPOT = 0.03, 0.055, 0.08, 0.105
+local function spotDepth(i)
+	return L_SPOT + (i % 3) * 0.025
+end
 local function mesh(key, pos, yaw, lod, s, col, pitch, roll)
 	if meshesOff then
 		return
@@ -200,16 +209,28 @@ local function wallFace(p, f, sign, mat)
 	local function at(u, y, off)
 		return Vector3.new(fc.X, y, fc.Z) + right * u + n * off
 	end
+	if clean then
+		-- a kept wall: a soft strip of grime along the foot, now and then a hairline crack
+		if onFloor then
+			local hb = math.min(hgt, rng:NextNumber(1.1, 1.8))
+			decal(D.BaseGrime, at(0, f.bottom + hb / 2, L_BASE), n, len, hb, 1, 0, rng:NextNumber(7, 10), hb, rng:NextNumber(0.38, 0.52), u0)
+		end
+		if hgt >= 3 and len >= 6 and rng:NextNumber() < 0.14 then
+			local s = rng:NextNumber(2, 3.4)
+			decal(D.Crack, at(rng:NextNumber(-len / 2 + s / 2, len / 2 - s / 2), rng:NextNumber(f.bottom + s / 2, f.top - s / 2), L_SPOT), n, s, s, 2, rng:NextInteger(0, 3) * 90, nil, nil, rng:NextNumber(0.3, 0.5))
+		end
+		return
+	end
 	-- 1. streaks hanging from the top edge, the whole face (texture strip); indoors only now and then (they are
 	-- rain marks, and a whole-face alpha layer on every inside wall is the most expensive detail there is)
 	if hgt >= 2.5 and len >= 2.4 and rng:NextNumber() < (ext and 0.85 or 0.15) then
-		decal(D.Streaks, at(0, mid, 0.02), n, len, hgt, 1, 0, rng:NextNumber(6, 9), hgt * 1.02, ext and rng:NextNumber(0.05, 0.3) or rng:NextNumber(0.35, 0.55), u0)
+		decal(D.Streaks, at(0, mid, L_STREAK), n, len, hgt, 1, 0, rng:NextNumber(6, 9), hgt * 1.02, ext and rng:NextNumber(0.05, 0.3) or rng:NextNumber(0.35, 0.55), u0)
 	end
 	-- 2. dirt rising from the floor
 	if onFloor then
 		local hb = math.min(hgt, rng:NextNumber(2.4, 4.2))
 		local damp = ext and rng:NextNumber() < 0.3
-		decal(damp and D.BaseDamp or D.BaseGrime, at(0, f.bottom + hb / 2, 0.03), n, len, hb, 1, 0, rng:NextNumber(7, 10), hb, ext and rng:NextNumber(0, 0.2) or rng:NextNumber(0.25, 0.45), u0)
+		decal(damp and D.BaseDamp or D.BaseGrime, at(0, f.bottom + hb / 2, L_BASE), n, len, hb, 1, 0, rng:NextNumber(7, 10), hb, ext and rng:NextNumber(0, 0.2) or rng:NextNumber(0.25, 0.45), u0)
 	end
 	-- 3. interior plaster peels in patches (water damage), not over whole walls
 	if plaster and not ext and hgt >= 3 and rng:NextNumber() < 0.4 then
@@ -217,12 +238,12 @@ local function wallFace(p, f, sign, mat)
 		local ph = math.min(hgt, rng:NextNumber(3, 6))
 		local pu = rng:NextNumber(-len / 2 + pw / 2, len / 2 - pw / 2)
 		local py = rng:NextNumber(f.bottom + ph / 2, f.top - ph / 2)
-		decal(D.Peel, at(pu, py, 0.04), n, pw, ph, 2, 0, rng:NextNumber(5, 8), rng:NextNumber(5, 8), rng:NextNumber(0.1, 0.35), u0 + len / 2 + pu - pw / 2)
+		decal(D.Peel, at(pu, py, L_PEEL), n, pw, ph, 2, 0, rng:NextNumber(5, 8), rng:NextNumber(5, 8), rng:NextNumber(0.1, 0.35), u0 + len / 2 + pu - pw / 2)
 	end
 	-- 4. spot marks
 	local spots = math.floor(len / 8 + rng:NextNumber())
 	for i = 1, spots do
-		local off = 0.05 + i * 0.006
+		local off = spotDepth(i)
 		local roll = rng:NextNumber()
 		if roll < 0.32 then
 			local s = rng:NextNumber(2.4, 5)
@@ -346,7 +367,7 @@ local function opening(p, f)
 		local base = Vector3.new(p.Position.X, 0, p.Position.Z) + n * (f.thin / 2 + 0.06)
 		for _, side in { 1, -1 } do
 			local corner = base + right * (side * f.len / 2)
-			if rng:NextNumber() < 0.35 then
+			if rng:NextNumber() < (clean and 0.15 or 0.35) then
 				local s = rng:NextNumber(1.8, 2.8)
 				local c = corner + right * (side * s / 2) + Vector3.new(0, f.bottom + s / 2, 0)
 				decal(D.CornerCrack, c, n, s, s, 2, side == 1 and 0 or 90)
@@ -400,21 +421,21 @@ local function container(p)
 		end
 		local u0 = fc:Dot(right) - len / 2
 		if rng:NextNumber() < 0.75 then
-			decal(D.Streaks, at(0, (bottom + top) / 2, 0.03), n, len * 0.98, hgt * 0.96, 2, 0, rng:NextNumber(6, 9), hgt, rng:NextNumber(0.3, 0.55), u0)
+			decal(D.Streaks, at(0, (bottom + top) / 2, L_STREAK), n, len * 0.98, hgt * 0.96, 2, 0, rng:NextNumber(6, 9), hgt, rng:NextNumber(0.3, 0.55), u0)
 		end
 		for _ = 1, rng:NextInteger(1, 3) do
 			local w, h = rng:NextNumber(0.9, 1.6), rng:NextNumber(2.4, 4.2)
-			decal(D.RustRun, at(rng:NextNumber(-len / 2 + 1, len / 2 - 1), top - h / 2 - rng:NextNumber(0.2, 0.8), 0.04), n, w, h, 2, 0)
+			decal(D.RustRun, at(rng:NextNumber(-len / 2 + 1, len / 2 - 1), top - h / 2 - rng:NextNumber(0.2, 0.8), L_PEEL), n, w, h, 2, 0)
 		end
 		if rng:NextNumber() < 0.25 then
 			local w = rng:NextNumber(3, 5)
 			local tag = pick({ { D.Tag1, 3 }, { D.Tag3, 2 }, { D.Stencil, 2 } })
-			decal(tag, at(rng:NextNumber(-len / 2 + w / 2, len / 2 - w / 2), bottom + rng:NextNumber(2.4, 4.4), 0.05), n, w, w / 2, 3, 0, nil, nil, rng:NextNumber(0.1, 0.35))
+			decal(tag, at(rng:NextNumber(-len / 2 + w / 2, len / 2 - w / 2), bottom + rng:NextNumber(2.4, 4.4), L_SPOT), n, w, w / 2, 3, 0, nil, nil, rng:NextNumber(0.1, 0.35))
 		end
 		local fh = floorAt(at(0, bottom + 0.6, 1.4), 1.2)
 		if fh then
 			local hb = rng:NextNumber(1.6, 2.6)
-			decal(D.BaseGrime, at(0, bottom + hb / 2, 0.035), n, len * 0.98, hb, 2, 0, rng:NextNumber(7, 10), hb, rng:NextNumber(0.1, 0.35), u0)
+			decal(D.BaseGrime, at(0, bottom + hb / 2, L_BASE), n, len * 0.98, hb, 2, 0, rng:NextNumber(7, 10), hb, rng:NextNumber(0.1, 0.35), u0)
 		end
 	end
 end
@@ -466,6 +487,9 @@ end
 
 -- horizontal surfaces: ground marks, puddles, debris outside; dust, papers, a fallen tile, hanging wires inside
 local function floorPart(p)
+	if clean then
+		return -- the bunker's floors get their dust and stains from its DetailSpots
+	end
 	if not p:IsA("BasePart") or p.Transparency > 0.05 or not p.CanCollide or p:IsA("MeshPart") or p:IsA("WedgePart") then
 		return
 	end
@@ -566,14 +590,22 @@ function Plan.generate(list, seed, avoidList, nature)
 	local t0 = os.clock()
 	local parts = {}
 	local decalsOnly = {} -- parts of models marked DetailDecalsOnly get wall and floor decals but no clutter meshes
+	local cleanPart = {} -- parts of models marked DetailProfile = "clean"
+	local spots = {} -- art-directed DetailSpot attachments
 	for _, m in list do
 		local only = m:GetAttribute("DetailDecalsOnly") == true
+		local isClean = m:GetAttribute("DetailProfile") == "clean"
 		for _, d in m:GetDescendants() do
 			if d:IsA("BasePart") then
 				table.insert(parts, d)
 				if only then
 					decalsOnly[d] = true
 				end
+				if isClean then
+					cleanPart[d] = true
+				end
+			elseif d:IsA("Attachment") and d.Name == "DetailSpot" then
+				table.insert(spots, d)
 			end
 		end
 	end
@@ -593,6 +625,7 @@ function Plan.generate(list, seed, avoidList, nature)
 			continue
 		end
 		meshesOff = decalsOnly[p] == true
+		clean = cleanPart[p] == true
 		if p:IsA("MeshPart") and p.Name == "ZR_ENV_Container20" then
 			container(p)
 			continue
@@ -616,7 +649,30 @@ function Plan.generate(list, seed, avoidList, nature)
 			task.wait()
 		end
 	end
-	meshesOff = false
+	meshesOff, clean = false, false
+	-- art-directed spots: a map module places an Attachment named "DetailSpot" on a surface (LookVector = the
+	-- surface's outward normal) with Kind (a Wear.DEC name), W, H and optional Spin, Alpha, Lod, Off (depth off
+	-- the surface), TileU and TileV; it becomes a decal like any other detail
+	table.sort(spots, function(a, b)
+		local pa, pb = a.WorldPosition, b.WorldPosition
+		if pa.X ~= pb.X then
+			return pa.X < pb.X
+		end
+		if pa.Z ~= pb.Z then
+			return pa.Z < pb.Z
+		end
+		return pa.Y < pb.Y
+	end)
+	for _, a in spots do
+		local tex = D[a:GetAttribute("Kind")]
+		if tex then
+			local cf = a.WorldCFrame
+			local n = cf.LookVector
+			local tu = a:GetAttribute("TileU")
+			decal(tex, cf.Position + n * (a:GetAttribute("Off") or 0.085), n, a:GetAttribute("W") or 2, a:GetAttribute("H") or 2, a:GetAttribute("Lod") or 2,
+				a:GetAttribute("Spin") or 0, tu, tu and (a:GetAttribute("TileV") or a:GetAttribute("H")), a:GetAttribute("Alpha") or 0, 0)
+		end
+	end
 	table.clear(noWireCache)
 	-- keep every cell (each map publishes its own share when it is activated)
 	Plan.allCells = {}

@@ -63,7 +63,8 @@ local function makeDecal(e)
 	quiet(p)
 	p.CastShadow = false
 	p.Transparency = 1
-	p.Size = Vector3.new(math.max(0.05, e[9]), math.max(0.05, e[10]), 0.05)
+	-- a thin carrier keeps the decal close to the depth the plan chose for it (DetailPlan layers)
+	p.Size = Vector3.new(math.max(0.05, e[9]), math.max(0.05, e[10]), 0.02)
 	p.CFrame = cf
 	local d
 	if e[13] > 0 then

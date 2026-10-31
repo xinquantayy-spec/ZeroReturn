@@ -60,7 +60,7 @@ function World.fixCoplanar(model)
 			end
 			if ok then
 				local e = ((cf.RightVector * p.Size.X):Abs() + (cf.UpVector * p.Size.Y):Abs() + (cf.LookVector * p.Size.Z):Abs()) / 2
-				table.insert(list, { p = p, lo = cf.Position - e, hi = cf.Position + e, vol = p.Size.X * p.Size.Y * p.Size.Z })
+				table.insert(list, { p = p, lo = cf.Position - e, hi = cf.Position + e, vol = p.Size.X * p.Size.Y * p.Size.Z, solid = p.Transparency < 0.05 })
 			end
 		end
 	end
@@ -75,7 +75,36 @@ function World.fixCoplanar(model)
 		end
 	end
 	local AX = { "X", "Y", "Z" }
+	local OTHER = { X = { "Y", "Z" }, Y = { "X", "Z" }, Z = { "X", "Y" } }
 	local seen, fixed = {}, 0
+	-- a shared face that something else sits flush against (a wall's top under the ceiling, its foot on the floor,
+	-- the inside of a junction) is never seen, so it cannot flicker, and pulling it back would only open a hairline
+	-- slit along the whole part (owner, 2026-11-01: glitching in the bunker). Covered = five points of the overlap,
+	-- just outside the face, all inside another solid block of the same map. (The map is not in the workspace yet
+	-- while it is built, so this tests the blocks collected above, not a spatial query.)
+	local function inside(x, y, z, a, b)
+		local k = math.floor(x / ZF_CELL) * 65536 + math.floor(z / ZF_CELL)
+		for _, idx in cells[k] or {} do
+			local c = list[idx]
+			if c ~= a and c ~= b and c.solid and x > c.lo.X and x < c.hi.X and y > c.lo.Y and y < c.hi.Y and z > c.lo.Z and z < c.hi.Z then
+				return true
+			end
+		end
+		return false
+	end
+	local function covered(a, b, ax, side)
+		local o = OTHER[ax]
+		local u0, u1 = math.max(a.lo[o[1]], b.lo[o[1]]), math.min(a.hi[o[1]], b.hi[o[1]])
+		local v0, v1 = math.max(a.lo[o[2]], b.lo[o[2]]), math.min(a.hi[o[2]], b.hi[o[2]])
+		local plane = (side > 0 and a.hi[ax] or a.lo[ax]) + side * 0.02
+		for _, f in { { 0.5, 0.5 }, { 0.2, 0.2 }, { 0.8, 0.2 }, { 0.2, 0.8 }, { 0.8, 0.8 } } do
+			local c = { [ax] = plane, [o[1]] = u0 + (u1 - u0) * f[1], [o[2]] = v0 + (v1 - v0) * f[2] }
+			if not inside(c.X, c.Y, c.Z, a, b) then
+				return false
+			end
+		end
+		return true
+	end
 	-- pull face (axis, side) of part b back by ZF_EPS
 	local function pull(b, axis, side)
 		local p = b.p
@@ -109,11 +138,11 @@ function World.fixCoplanar(model)
 						and a.lo.Z < b.hi.Z - ZF_TOL and b.lo.Z < a.hi.Z - ZF_TOL then
 						local small = (a.vol <= b.vol) and a or b
 						for _, ax in AX do
-							if math.abs(a.hi[ax] - b.hi[ax]) < ZF_TOL then
+							if math.abs(a.hi[ax] - b.hi[ax]) < ZF_TOL and not covered(a, b, ax, 1) then
 								pull(small, ax, 1)
 								fixed += 1
 							end
-							if math.abs(a.lo[ax] - b.lo[ax]) < ZF_TOL then
+							if math.abs(a.lo[ax] - b.lo[ax]) < ZF_TOL and not covered(a, b, ax, -1) then
 								pull(small, ax, -1)
 								fixed += 1
 							end

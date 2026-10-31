@@ -8,6 +8,20 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Bunker graphics: clean shell, grime where it gathers, no flicker (2026-11-01)
+
+Studio on the T490, one client, in-memory store. Before and after captures B01 to B04 were taken in the session (not kept as files).
+
+| Check | How | Result |
+|---|---|---|
+| Automated | `dev:Invoke("tests")` | LogicTests 224/224 (2 new: shell plain with the paint in the walls and no slits; grime placed with the clean profile), CharTests 38/38, LookTests 19/19, MapTests 38/38 |
+| Shell | Server count | 98 shell parts, 0 with a worn MaterialVariant, 0 paint slabs, 197 DetailSpots |
+| Decal depth | Client audit of every decal face in the bunker (260) | 0 overlapping pairs closer than 0.02 studs (3 found and fixed in the first pass: two tunnel damp strips level with the corner bands, a crack level with a doorway scuff) |
+| z-fighting pass | Server log | Pulls skip hidden faces: relay7 175 to 43, quay7 211 to 108, smelter 459 to 273, meridian 1327 to 513, border 825 to 203; WallPaint and WallLine keep their full height |
+| Look | Screenshots of the corridor (same spot, before and after), the ops room and the hideout | Painted walls (olive band, dark line, light plaster), plain floor and ceilings; grime in the corners and along the wall feet, soot over the generator, oil in front of it |
+
+**Not verified:** flicker by eye while walking (a moving effect; the audit is geometric), phones.
+
 ## Lobby: Relay 7 bunker (2026-10-31)
 
 Studio on the T490, one client, in-memory store.

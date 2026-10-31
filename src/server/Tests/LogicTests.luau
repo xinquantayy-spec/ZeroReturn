@@ -1069,6 +1069,25 @@ function T.run(ctx)
 		end
 		check("lobby: every station has its prompt", #missing == 0)
 		check("lobby: twelve beds, lockers and spawns", #sh.spawns == 12 and #sh.lockers == 12)
+		-- owner, 2026-11-01: the bunker is kept, not dirty all over, and nothing flickers
+		local worn, slabs, spotsN, shrunk = 0, 0, 0, 0
+		for _, d in sh.shell:GetDescendants() do
+			if d:IsA("BasePart") then
+				if d.MaterialVariant ~= "" then
+					worn += 1
+				end
+				if not d.CanCollide and d.Transparency < 1 then
+					slabs += 1 -- paint slabs in front of a wall face (what the decals used to fight with)
+				end
+				if (d.Name == "WallPaint" and math.abs(d.Size.Y - 4.5) > 0.001) or (d.Name == "WallLine" and math.abs(d.Size.Y - 0.28) > 0.001) then
+					shrunk += 1 -- a band pulled back by the z-fighting pass would open a slit
+				end
+			elseif d:IsA("Attachment") and d.Name == "DetailSpot" then
+				spotsN += 1
+			end
+		end
+		check("lobby: shell plain (no worn variants), paint in the walls, no slits", worn == 0 and slabs == 0 and shrunk == 0)
+		check("lobby: grime placed where it builds up", spotsN >= 150 and sh.shell:GetAttribute("DetailProfile") == "clean")
 		local row = ctx.Lobby.row("NO RAID", "RELAY 7")
 		check("lobby: departure rows are 24 flaps", #row == 24 and string.sub(row, -7) == "RELAY 7" and #ctx.Lobby.row(string.rep("X", 30), "LIVE 12:00") == 24)
 		local rowsOk = true

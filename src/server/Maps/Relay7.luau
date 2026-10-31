@@ -7,8 +7,9 @@
 --   the scav hatch).
 -- Design: docs/maps/RELAY7_LOBBY.md. Plan coordinates are studs: x east 0..140, z south 0..104, floor at y 0; the
 -- plan's centre (70, 52) sits on Config.SAFEHOUSE_ORIGIN, far from every map so no map streams in while you are here.
--- This module owns the layout and builds the shell (concrete, painted wall bands) and the stations (invisible boxes
--- carrying the prompts); Relay7Dress.luau places the Blender bunker kit on the same plan.
+-- This module owns the layout and builds the shell (painted plaster walls with an olive lower band, plain concrete
+-- floor and ceilings, grime only where it gathers) and the stations (invisible boxes carrying the prompts);
+-- Relay7Dress.luau places the Blender bunker kit on the same plan.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
@@ -31,7 +32,8 @@ Relay7.ROOMS = {
 	motor = { 92, 44, 140, 104, 22 }, -- high bay: the ramp climbs 9 to the roller door in the south wall
 }
 -- walls: axis "x" runs along x at z = at (from a to b); "z" runs along z at x = at. gaps = { { from, to, top } };
--- the last field says which face is indoors ("+": toward +z / +x, "-": the other side, nil: both) for the paint band
+-- the last field says which face is indoors ("+": toward +z / +x, "-": the other side, nil: both); the paint is in
+-- the wall itself now, so it is only a note
 local DOOR = 8.5
 Relay7.DOOR = DOOR
 Relay7.WALLS = {
@@ -107,10 +109,16 @@ local function hex(h)
 	return Color3.fromHex(h)
 end
 local C = {
-	concrete = hex("6F6C64"), concreteDark = hex("4C4A45"), floor = hex("54524C"), ceiling = hex("5C5A55"),
+	concrete = hex("6F6C64"), concreteDark = hex("4C4A45"), floor = hex("5A5852"), ceiling = hex("6B6963"),
 	olive = hex("5B5F45"), steel = hex("4A4D4F"), rust = hex("7A4B32"), wood = hex("6E5A44"), paper = hex("C9C2A8"),
-	yellow = hex("C9A13C"), red = hex("8A3A2E"), band = hex("4F5A47"), bandLine = hex("2A2D27"),
+	yellow = hex("C9A13C"), red = hex("8A3A2E"), band = hex("55604B"), bandLine = hex("2A2D27"), upper = hex("A39F90"),
 }
+-- the shell is painted and kept (owner, 2026-11-01: "too dirty for the whole bunker"): plain surfaces, no worn
+-- MaterialVariant (World.applyWear skips Wear = ""); the dirt goes where it builds up (Relay7.grime below)
+local function plain(p)
+	p:SetAttribute("Wear", "")
+	return p
+end
 
 local function part(parent, size, cf, color, mat, variant, name)
 	local p = Instance.new("Part")
@@ -182,55 +190,37 @@ local function station(parent, name, x0, y0, z0, x1, y1, z1, action, object, scr
 	return s
 end
 
--- the painted band on a wall face: olive paint to 4.5 studs, a dark line on top (plain surfaces: the wear is in
--- the decals - cracks, scuffs, bullet holes - not in a noisy texture)
+-- walls carry their paint in the block itself: olive to 4.5 studs, a dark line, then the light upper wall, all
+-- painted plaster. (The paint used to be slabs 0.06 in front of the face; the detail decals sat at the same depth
+-- and flickered against them as the camera moved.) The outer faces of the perimeter walls are never seen.
 local BAND, LINE = 4.5, 0.28
-local function band(parent, axis, at, s0, s1, side)
-	if s1 - s0 < 0.05 then
-		return
-	end
-	local off = side * (0.6 + 0.03)
-	local function slab(y0, y1, color, mat, variant, name)
-		local p
-		if axis == "x" then
-			p = block(parent, s0, y0, at + off - 0.03, s1, y1, at + off + 0.03, color, mat, variant, name)
-		else
-			p = block(parent, at + off - 0.03, y0, s0, at + off + 0.03, y1, s1, color, mat, variant, name)
-		end
-		p.CanCollide = false
-		p.CanQuery = false
-		p.CanTouch = false
-		p.CastShadow = false
-		p:SetAttribute("NoDetail", true)
-	end
-	slab(0, BAND, C.band, M.SmoothPlastic, nil, "PaintBand")
-	slab(BAND, BAND + LINE, C.bandLine, M.SmoothPlastic, nil, "PaintLine")
-end
-
+local CUTS = {
+	{ 0, BAND, "band", M.Plaster, "WallPaint" },
+	{ BAND, BAND + LINE, "bandLine", M.SmoothPlastic, "WallLine" },
+	{ BAND + LINE, math.huge, "upper", M.Plaster, "Wall" },
+}
 local function wall(parent, w)
-	local axis, at, a, b, h, gaps, faces = w[1], w[2], w[3], w[4], w[5], w[6] or {}, w[7]
+	local axis, at, a, b, h, gaps = w[1], w[2], w[3], w[4], w[5], w[6] or {}
 	local T = 1.2
 	table.sort(gaps, function(g1, g2)
 		return g1[1] < g2[1]
 	end)
 	local cur = a
 	local function seg(s0, s1, y0, y1)
-		if s1 - s0 < 0.05 or y1 - y0 < 0.05 then
+		if s1 - s0 < 0.05 then
 			return
 		end
-		local p
-		if axis == "x" then
-			p = block(parent, s0, y0, at - T / 2, s1, y1, at + T / 2, C.concrete, M.Concrete, nil, "Wall")
-		else
-			p = block(parent, at - T / 2, y0, s0, at + T / 2, y1, s1, C.concrete, M.Concrete, nil, "Wall")
-		end
-		p:SetAttribute("Wall", true)
-		if y0 < 0.01 then
-			if faces ~= "-" then
-				band(parent, axis, at, s0, s1, 1)
-			end
-			if faces ~= "+" then
-				band(parent, axis, at, s0, s1, -1)
+		for _, c in CUTS do
+			local lo, hi = math.max(y0, c[1]), math.min(y1, c[2])
+			if hi - lo >= 0.05 then
+				local p
+				if axis == "x" then
+					p = block(parent, s0, lo, at - T / 2, s1, hi, at + T / 2, C[c[3]], c[4], nil, c[5])
+				else
+					p = block(parent, at - T / 2, lo, s0, at + T / 2, hi, s1, C[c[3]], c[4], nil, c[5])
+				end
+				p:SetAttribute("Wall", true)
+				plain(p)
 			end
 		end
 	end
@@ -242,6 +232,170 @@ local function wall(parent, w)
 	seg(cur, b, 0, h)
 end
 
+-- ── where the dirt builds up ──────────────────────────────────────────────────────
+-- A kept bunker is clean where people keep it clean. Grime gathers in the corners and along the foot of the walls
+-- (the detail plan's "clean" profile lays the floor-edge strip on every wall), around the doorways (hands on the
+-- frame, boots on the threshold), under and behind the machines, where water gets in (the old range tunnel) and
+-- where the shooting is (the range backstop). Each spot is an attachment the detail plan turns into a decal
+-- (DetailPlan: "DetailSpot"), so the client builds it at its graphics level like any other detail.
+-- off: depth layer off the surface. Walls: the clean floor strip is at 0.055 and hairline cracks at 0.105 (DetailPlan),
+-- so corners go between them (0.085) and the other wall marks in front (0.135, 0.16). Floors: dust 0.085 / 0.11,
+-- stains 0.11 / 0.135, all clear of the painted floor lines (top at 0.03 and 0.055).
+local function spot(host, kind, pos, n, w, h, o)
+	o = o or {}
+	local a = Instance.new("Attachment")
+	a.Name = "DetailSpot"
+	a.Parent = host
+	a.WorldCFrame = CFrame.lookAt(pos, pos + n, math.abs(n.Y) > 0.9 and Vector3.zAxis or Vector3.yAxis)
+	a:SetAttribute("Kind", kind)
+	a:SetAttribute("W", w)
+	a:SetAttribute("H", h)
+	a:SetAttribute("Spin", o.spin or 0)
+	a:SetAttribute("Alpha", o.alpha or 0)
+	a:SetAttribute("Lod", o.lod or 2)
+	a:SetAttribute("Off", o.off or 0.085)
+	if o.tu then
+		a:SetAttribute("TileU", o.tu)
+		a:SetAttribute("TileV", o.tv or h)
+	end
+	return a
+end
+-- is there wall at floor level on the wall line (axis, at) at position s along it?
+local function wallAt(axis, at, s)
+	for _, w in Relay7.WALLS do
+		if w[1] == axis and math.abs(w[2] - at) < 0.01 and s >= w[3] - 0.01 and s <= w[4] + 0.01 then
+			local open = false
+			for _, g in w[6] or {} do
+				if s > g[1] - 0.01 and s < g[2] + 0.01 then
+					open = true
+				end
+			end
+			if not open then
+				return true
+			end
+		end
+	end
+	return false
+end
+-- screen-right for someone facing a surface with outward normal n
+local function rightOf(n)
+	return (-n):Cross(Vector3.yAxis).Unit
+end
+local UPV = Vector3.yAxis
+
+function Relay7.grime(host)
+	local n = 0
+	local function add(kind, x, y, z, nrm, w, h, o)
+		spot(host, kind, P(x, y, z), nrm, w, h, o)
+		n += 1
+	end
+	-- 1. corners: a soft vertical band of grime into every inside corner of every room (BaseGrime turned on its
+	-- side, dark edge in the corner), up to 9 studs
+	for _, r in Relay7.ROOMS do
+		local x0, z0, x1, z1, h = r[1], r[2], r[3], r[4], r[5]
+		for _, cx in { x0, x1 } do
+			for _, cz in { z0, z1 } do
+				local dx, dz = (cx == x0) and 1 or -1, (cz == z0) and 1 or -1
+				if wallAt("x", cz, cx + dx * 1.5) and wallAt("z", cx, cz + dz * 1.5) then
+					local hc = math.min(h, 9) - 0.2
+					local wdt = 2.2
+					-- on the x-running wall (face normal along z) and on the z-running wall (normal along x)
+					for _, f in { { V(0, 0, dz), V(cx + dx * (0.6 + wdt / 2), hc / 2, cz + dz * 0.6), V(-dx, 0, 0) }, { V(dx, 0, 0), V(cx + dx * 0.6, hc / 2, cz + dz * (0.6 + wdt / 2)), V(0, 0, -dz) } } do
+						local nrm, c, toCorner = f[1], f[2], f[3]
+						local spin = (toCorner:Dot(rightOf(nrm)) > 0) and 90 or 270
+						add("BaseGrime", c.X, c.Y, c.Z, nrm, hc, wdt, { spin = spin, alpha = 0.48, lod = 2, tu = 8, tv = wdt })
+					end
+				end
+			end
+		end
+	end
+	-- 2. doorways: hand marks on the frame, scuffs at the foot, a worn threshold
+	for _, w in Relay7.WALLS do
+		local axis, at = w[1], w[2]
+		for _, g in w[6] or {} do
+			local width = g[2] - g[1]
+			if g[3] and g[3] < 13 then
+				local mid = (g[1] + g[2]) / 2
+				for _, side in { 1, -1 } do
+					local nrm = axis == "x" and V(0, 0, side) or V(side, 0, 0)
+					for _, edge in { g[1] - 0.8, g[2] + 0.8 } do
+						local px, pz
+						if axis == "x" then
+							px, pz = edge, at + side * 0.6
+						else
+							px, pz = at + side * 0.6, edge
+						end
+						if width <= 10 then
+							add("Grime", px, 3.7, pz, nrm, 1.3, 2, { alpha = 0.5, lod = 3, off = 0.135 })
+						end
+						add("BaseGrime", px, 0.6, pz, nrm, 1.6, 1.2, { alpha = 0.32, lod = 2, off = 0.16 })
+					end
+				end
+				-- the threshold: boot dust across the opening and a little into both rooms
+				local fx, fz, fw, fh
+				if axis == "x" then
+					fx, fz, fw, fh = mid, at, width + 1, 4.2
+				else
+					fx, fz, fw, fh = at, mid, 4.2, width + 1
+				end
+				add("FloorDust", fx, 0, fz, UPV, fw, fh, { alpha = 0.4, lod = 2, off = 0.085, tu = 4, tv = 4 })
+			end
+		end
+	end
+	-- 3. machines and benches: oil and soot at the generator, damp at the water collector, hands and drips at the
+	-- benches, dust in front of the storage racks
+	add("Soot", 9, 9.6, 44.6, V(0, 0, 1), 5, 5, { alpha = 0.4, off = 0.135 })
+	add("Oil", 8, 0, 51.4, UPV, 3.2, 3.2, { spin = 30, alpha = 0.25, off = 0.11 })
+	add("Oil", 12.6, 0, 50.9, UPV, 1.8, 1.8, { spin = 200, alpha = 0.4, off = 0.135 })
+	add("BaseDamp", 0.6, 1.2, 62, V(1, 0, 0), 9, 2.4, { alpha = 0.25, off = 0.135, tu = 8, tv = 2.4 })
+	add("Wet", 7.6, 0, 62.4, UPV, 4.2, 3.2, { spin = 10, alpha = 0.35, off = 0.11 })
+	add("Grime", 40, 6.2, 44.6, V(0, 0, 1), 7, 2.4, { alpha = 0.6, lod = 3, off = 0.135 })
+	add("Oil", 40, 0, 50.4, UPV, 2.2, 2.2, { spin = 120, alpha = 0.45, off = 0.11 })
+	add("Grime", 66, 6.4, 44.6, V(0, 0, 1), 9, 2.2, { alpha = 0.62, lod = 3, off = 0.135 })
+	add("Oil", 63, 0, 49.6, UPV, 2, 2, { spin = 60, alpha = 0.5, off = 0.11 })
+	add("Oil", 69.5, 0, 49.2, UPV, 1.4, 1.4, { spin = 300, alpha = 0.55, off = 0.11 })
+	add("FloorDust", 23, 0, 70.2, UPV, 26, 3.5, { alpha = 0.55, off = 0.11, tu = 6, tv = 3.5 })
+	-- 4. where people stand: at the counters, round the map table, down the bunk aisle, along the corridor
+	for _, t in Relay7.TRADERS do
+		add("FloorDust", (t.x0 + t.x1) / 2, 0, 14, UPV, t.x1 - t.x0, 3.5, { alpha = 0.55, off = 0.11, tu = 6, tv = 3.5 })
+	end
+	add("FloorDust", 123.4, 0, 29.4, UPV, 4.5, 3, { alpha = 0.5, off = 0.11, tu = 4, tv = 3 })
+	add("FloorDust", 68, 0, 10.8, UPV, 24, 2.6, { alpha = 0.58, off = 0.11, tu = 6, tv = 2.6 })
+	add("FloorDust", 68, 0, 23.2, UPV, 24, 2.6, { alpha = 0.58, off = 0.11, tu = 6, tv = 2.6 })
+	add("FloorDust", 16, 0, 18, UPV, 6, 28, { alpha = 0.6, off = 0.11, tu = 6, tv = 6 })
+	add("Wet", 33.5, 0, 2.6, UPV, 2.2, 1.6, { alpha = 0.45, off = 0.11 })
+	for _, x in { 14, 42, 98, 126 } do
+		add("FloorDust", x, 0, 40, UPV, 10, 4.5, { alpha = 0.6, lod = 3, off = 0.11, tu = 6, tv = 4.5 })
+	end
+	add("Wet", 60, 10, 40, -UPV, 3, 2.2, { alpha = 0.5, off = 0.06 }) -- a water stain on the corridor ceiling
+	-- 5. the range: old hits round the plates on the backstop (lanes 1-3 end at the west wall, lane 4 in the tunnel),
+	-- the firing line worn by boots
+	for i = 1, 3 do
+		local l = Relay7.LANES[i]
+		local mid = (l[1] + l[2]) / 2
+		add("Holes", 0.6, 3.4, mid - 1.1, V(1, 0, 0), 2.4, 2.4, { spin = i * 90, lod = 3, off = 0.135 })
+		add("Holes", 0.6, 4.6, mid + 1.3, V(1, 0, 0), 2.1, 2.1, { spin = i * 90 + 180, lod = 3, off = 0.16 })
+	end
+	add("Holes", -77.4, 3.8, 101.2, V(1, 0, 0), 2.6, 2.6, { spin = 90, lod = 3, off = 0.135 })
+	add("FloorDust", Relay7.FIRING_LINE + 2, 0, 90, UPV, 4, 27, { alpha = 0.5, off = 0.11, tu = 4, tv = 6 })
+	-- 6. the tunnel: older and damp; a drip from the roof onto the floor
+	add("BaseDamp", -39, 1.3, 98.6, V(0, 0, 1), 76, 2.6, { alpha = 0.2, off = 0.135, tu = 8, tv = 2.6 })
+	add("BaseDamp", -39, 1.3, 103.4, V(0, 0, -1), 76, 2.6, { alpha = 0.2, off = 0.135, tu = 8, tv = 2.6 })
+	add("Leak", -55, 6.6, 98.6, V(0, 0, 1), 3, 3, { alpha = 0.25, off = 0.16 })
+	add("Wet", -40, 9, 101, -UPV, 3.5, 2.5, { alpha = 0.4, off = 0.06 })
+	add("Wet", -40, 0, 101, UPV, 3, 2.4, { alpha = 0.3, off = 0.11 })
+	-- 7. the motor pool: oil under the van's engine, tyre marks toward the ramp, dust, a damp patch on the roof
+	add("Oil", 118, 0, 69, UPV, 3.6, 3.6, { spin = 45, alpha = 0.2, off = 0.11 })
+	add("Oil", 117, 0, 74.5, UPV, 1.6, 1.6, { spin = 160, alpha = 0.45, off = 0.135 })
+	add("Skid", 125, 0, 63.5, UPV, 10, 2.4, { spin = 70, alpha = 0.55, off = 0.11 })
+	add("Skid", 128, 0, 60.5, UPV, 9, 2.2, { spin = 75, alpha = 0.6, off = 0.135 })
+	for _, p in { { 104, 58 }, { 106, 92 }, { 120, 98 } } do
+		add("FloorDust", p[1], 0, p[2], UPV, 8, 8, { alpha = 0.5, lod = 3, off = 0.085, tu = 6, tv = 6 })
+	end
+	add("Wet", 130, 22, 55, -UPV, 4, 3, { alpha = 0.45, off = 0.06 })
+	return n
+end
+
 -- build the bunker under `root` around `origin`; returns the safehouse table World keeps
 function Relay7.build(root, origin)
 	O = origin
@@ -250,17 +404,19 @@ function Relay7.build(root, origin)
 	f.Parent = root
 	local shell = Instance.new("Model")
 	shell.Name = "Shell"
-	shell:SetAttribute("DetailDecalsOnly", true) -- the detail plan adds grime, cracks and leaks, no clutter
+	shell:SetAttribute("DetailDecalsOnly", true) -- decals only, no clutter meshes
+	shell:SetAttribute("DetailProfile", "clean") -- kept, not ruined: grime only where it builds up (Relay7.grime)
 	shell.Parent = f
-	-- floor (one slab under everything, the tunnel included) and ceilings per room
-	block(shell, -78, -2, 0, 140, 0, 104, C.floor, M.Concrete, nil, "Floor")
+	-- floor (one slab under everything, the tunnel included) and ceilings per room: plain concrete
+	local floor = plain(block(shell, -78, -2, 0, 140, 0, 104, C.floor, M.Concrete, nil, "Floor"))
 	for name, r in Relay7.ROOMS do
-		local c = block(shell, r[1], r[5], r[2], r[3], r[5] + 1, r[4], C.ceiling, M.Concrete, nil, "Ceiling_" .. name)
+		local c = plain(block(shell, r[1], r[5], r[2], r[3], r[5] + 1, r[4], C.ceiling, M.Concrete, nil, "Ceiling_" .. name))
 		c:SetAttribute("Ceiling", true)
 	end
 	for _, w in Relay7.WALLS do
 		wall(shell, w)
 	end
+	Relay7.grime(floor)
 
 	-- stations: invisible boxes that carry the prompts (the kit dressing below is what you see and bump into)
 	local st = Instance.new("Model")

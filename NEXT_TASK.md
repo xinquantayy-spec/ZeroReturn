@@ -1,10 +1,17 @@
 # Next Task
 
-**The Relay 7 lobby is done (2026-10-31).** See `docs/maps/RELAY7_LOBBY.md`. Follow-ups (KNOWN_ISSUES 58-61): your gun in your hands seen by others at the range, lobby sounds (generator hum, radio, van engine), the squad boarding together, Border Yard on the fourth map sheet once it is built.
+**Standing rule (owner, 2026-10-31):** as close as possible to Escape from Tarkov in every aspect, less the exceptions in `docs/design/EFT_PARITY.md`. Research how Tarkov does it before each task; check the result against it before moving on; log the gaps in `EFT_PARITY.md`.
 
-**Standing rule (owner, 2026-10-31):** as close as possible to Escape from Tarkov in every aspect, less the exceptions in `docs/design/EFT_PARITY.md` (also in `CLAUDE.md`). That file lists every gap found in item information, inventory quality of life, controls, settings and visuals, and the order of work.
+**Done 2026-11-01:** the bunker graphics pass (painted walls, grime only where it gathers, no flicker; `docs/maps/RELAY7_LOBBY.md`), and before it the z-fighting pass, real-size air-con and stairs, Quay 7 interiors, bullet drop and zeroing, seasons, propane cylinders and border snipers on Border Yard.
 
-**Next:** Tarkov-layout inventory, stash and trader screens (item 5 below), now with Tarkov's INSPECT window (the full attribute sheet for every item kind: fire rate, damage, penetration, armor material and penalties, med effects...), tile counters, stash search and sort. Then controls and settings parity, M11 part B, the character tabs / messenger / handbook / wish list, then Border Yard, the flea market and the Quay 7 and Smelter furnishing pass (`EFT_PARITY.md`, "Order of work").
+**Now, in order (owner, 2026-11-01):**
+1. **Border Yard on Tarkov's Customs layout**, current (post-0.16) version: same map, own buildings and names. A layout reference sheet (areas, footprints, roads, river, extracts, spawns, the boss, snipers) comes first; the tarkov.dev SVG maps on GitHub are v0.12.12 and must be corrected to the rework.
+2. **Meridian Mall on Interchange's layout**, the same way. Pinewatch stays parked (owner: not coming back).
+3. **Eyewear slot** with Blender models for night-vision goggles worn on characters, glasses and a gas mask, and their overlays.
+4. **Border Yard extras:** mounted machine guns, more propane spots (2 of 9 placed).
+5. Then the remaining parity list in `EFT_PARITY.md` (hideout customisation, the rest of the controls, PiP gaps, MASTERING...).
+
+**Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file). Decisions that can wait: publishing, a cross-server flea market (MemoryStore).
 
 **M14 weapon modding is done (part A, 2026-10-29).** Follow-ups from the fidelity check (KNOWN_ISSUES 52–57): laser beams and device modes, folding stocks, saved builds with buying missing parts, sight zeroing and variable zoom, 3D inspect for every item, part sizes against Tarkov's.
 
@@ -55,5 +62,5 @@ Maps are original. They are the same kinds of places as Tarkov's with their own 
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open `Zero Return.rbxl` and connect the Rojo plugin.
-3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **167/167**, CharTests **38/38**, LookTests **19/19**, MapTests 32/32 (30 during a raid).
-4. If the laptop's shell tool is missing, sync files with `tools/pc_patch.py` (a bundle run through Blender's Python). Rojo then carries `src/` into Studio. `tools/studio_patch.py` can patch Studio directly for quick tests; sync the PC afterwards.
+3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **224/224**, CharTests **38/38**, LookTests **19/19**, MapTests **38/38**.
+4. Without a shell on the laptop (a cloud session linked through the desktop app): rebuild the git repository in the cloud workspace from `backup/` (join the three parts of `ZeroReturn_2026-10-31.gitbundle`, clone, then pull the newest incremental bundle whose base is in it), work there, write changed files to the laptop with the file bridge while Studio is in edit mode (Rojo carries them in), and write a new incremental bundle to `backup/` at each milestone (KNOWN_ISSUES 44).

@@ -24,14 +24,19 @@ so no map streams in while you are here. Plan coordinates: x east 0..140, z sout
 ## How it is built
 
 - `src/server/Maps/Relay7.luau`: the layout tables (rooms, walls with doors, bunks, traders, hideout bays, lanes and
-  targets), the shell (plain concrete, olive wall band), and the stations: invisible boxes carrying the prompts. A
-  prompt sits on an attachment on the side you use the station from and needs a line of sight, so no prompt reaches
-  through a wall.
+  targets), the shell, the grime spots and the stations: invisible boxes carrying the prompts. A prompt sits on an
+  attachment on the side you use the station from and needs a line of sight, so no prompt reaches through a wall.
+- The shell is kept, not ruined (owner, 2026-11-01): walls are painted plaster with the paint in the wall blocks
+  themselves (olive to 4.5 studs, a dark line, light plaster above), the floor and ceilings plain concrete, and no
+  worn MaterialVariants (`Wear = ""`). The detail plan reads the shell with the "clean" profile: a soft strip of grime
+  along the foot of each wall and now and then a hairline crack. `Relay7.grime` places about 200 `DetailSpot`s where
+  dirt really gathers: every inside corner, every doorway (hand marks, scuffs, a worn threshold), the generator (oil,
+  soot), the water collector (damp), the benches, the storage racks, the counters, the map table, the bunk aisle,
+  the corridor, the range backstop (old hits), the tunnel (damp, a drip) and the motor pool (oil, tyre marks).
 - `src/server/Maps/Relay7Dress.luau`: the Blender kit on the plan, about 290 props (budget under 300), signs, floor
   paint, a little wear, and the lights: six that cast shadows (one per main room, each just under its own fitting, and
   fittings never cast shadows) and soft fill lights that POTATO turns off. Surfaces are plain (no speckled
-  MaterialVariants); the wear is baked chips on the props and the detail plan's cracks, scuffs, bullet holes, grime and
-  leaks on walls and floors (decals only, no clutter meshes: the bunker is lived in, not ruined).
+  MaterialVariants); the wear is baked chips on the props, a little lived-in litter (no rubble) and the decals above.
 - Blender kit: `assets/blender_scripts/build_bunker_kit_a.py` (structure and fittings), `_b.py` (furnishings and
   stations), `_c.py` (motor pool); batches `ZR_BunkerKitA/B/C`, 70 props, 4 to 2900 triangles each.
 - `src/server/Services/Lobby.luau`: the shared screens, written once a second: departure board (one character per flap,
