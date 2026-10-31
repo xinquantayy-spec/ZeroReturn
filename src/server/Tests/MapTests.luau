@@ -178,7 +178,7 @@ function T.run(ctx)
 	-- M08 the AI has cover points on every map; M09 the detail plan covers every map
 	local AI = ctx.AI
 	local t0 = os.clock()
-	while AI.cover and not AI.cover.ready and os.clock() - t0 < 20 do
+	while AI.cover and not AI.cover.ready and os.clock() - t0 < 150 do -- Border Yard is big: sampling takes a while
 		task.wait(0.5)
 	end
 	local found = {}

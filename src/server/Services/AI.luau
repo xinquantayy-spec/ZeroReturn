@@ -203,8 +203,21 @@ local function buildCover()
 	op.FilterDescendantsInstances = models
 	local count = 0
 	-- every map has its own area, floor range and sample step (Quay 7: yard to mezzanine; Smelter: tunnels to
-	-- catwalks; Pinewatch: a big open map, sampled more coarsely)
-	for _, m in ctx.World.maps do
+	-- catwalks; Border Yard: Customs at real scale, sampled every 8 studs). The map in play goes first, so its AI
+	-- have cover while the big maps are still being sampled.
+	local order = {}
+	for id, m in ctx.World.maps do
+		table.insert(order, { id = id, m = m })
+	end
+	local active = ctx.World.activeMap
+	table.sort(order, function(a, b)
+		if (a.id == active) ~= (b.id == active) then
+			return a.id == active
+		end
+		return a.id < b.id
+	end)
+	for _, entry in order do
+		local m = entry.m
 		local b = m.bounds
 		if not b then
 			continue
@@ -246,7 +259,7 @@ local function buildCover()
 					end
 				end
 				count += 1
-				if count % 150 == 0 then
+				if count % 300 == 0 then
 					task.wait()
 				end
 			end
