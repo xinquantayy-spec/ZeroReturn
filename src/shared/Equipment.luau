@@ -91,17 +91,10 @@ Equipment.SIZE = {
 	ZR_OV_ShoulderMarker = Vector3.new(1.09, 0.43, 1.09),
 }
 
--- meshes of assets/blender_scripts/build_eyewear.py (batch ZR_EyeGear) that are not uploaded to the asset library yet: the game
--- shows neutral boxes of Equipment.SIZE in their `fb` colour for them. Set this to {} once the batch is uploaded and its id is in
--- AssetIds (CharTests lists these as pending, and fails if a key stays here after its mesh is in the library).
+-- meshes not uploaded to the asset library yet: the game shows neutral boxes of Equipment.SIZE in their `fb` colour for
+-- them (CharTests lists these as pending, and fails if a key stays here after its mesh is in the library). Empty: the
+-- eyewear batch ZR_EyeGear (build_eyewear.py) was uploaded 2026-11-01.
 local pending: { [string]: boolean } = {}
-for _, key in {
-	"ZR_EQ_GasMask", "ZR_EQ_GlassBallistic", "ZR_EQ_GlassFrag", "ZR_EQ_GlassRange", "ZR_EQ_GlassSun", "ZR_EQ_NvStrap",
-	"ZR_EQ_NvBinoDown", "ZR_EQ_NvBinoUp", "ZR_EQ_NvGreenDown", "ZR_EQ_NvGreenUp", "ZR_EQ_NvMonoDown", "ZR_EQ_NvMonoUp",
-	"ZR_EQ_NvQuadDown", "ZR_EQ_NvQuadUp", "ZR_EQ_NvThermalDown", "ZR_EQ_NvThermalUp",
-} do
-	pending[key] = true
-end
 Equipment.PENDING = pending
 
 -- fb: colour of the neutral box shown while the mesh is missing (meshes that carry their own colours are placed with a white tint)
