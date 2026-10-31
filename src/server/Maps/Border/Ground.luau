@@ -668,7 +668,7 @@ return function(B)
 		elseif c == 5 then
 			return PAL.Asphalt
 		elseif c == 4 or c == 2 then
-			return PAL.Pebble
+			return PAL.Basalt -- gravel and ballast (Pebble is not a terrain material)
 		elseif c == 3 then
 			return PAL.Concrete
 		elseif slope > 1.0 then
@@ -676,15 +676,17 @@ return function(B)
 		elseif slope > 0.62 then
 			return PAL.Slate
 		elseif c == 1 then
-			if math.noise(x / 21 + 3.1, z / 21 + 7.7, 0.5) > 0.18 then
-				return PAL.Mud
+			-- forest floor: leafy grass, bare earth in the hollows (Customs' woods are not swamps)
+			if math.noise(x / 21 + 3.1, z / 21 + 7.7, 0.5) > 0.38 then
+				return PAL.Ground
 			end
 			return PAL.LeafyGrass
 		end
-		if math.noise(x / 46, z / 46, 0.37) > 0.08 then
-			return PAL.Grass
+		-- open ground is grass, worn to earth here and there (the old camouflage of mud and grass read as fake)
+		if math.noise(x / 46, z / 46, 0.37) > 0.34 then
+			return PAL.Ground
 		end
-		return PAL.Ground
+		return PAL.Grass
 	end
 
 	local T = nil
@@ -694,7 +696,7 @@ return function(B)
 			hg = HG, waterAt = waterAt, material = matAt, cave = caveAt,
 			colors = {
 				[PAL.Asphalt] = "3B3B38", [PAL.Concrete] = "75726B", [PAL.Ground] = "5A5040", [PAL.Grass] = "5D6A3D",
-				[PAL.Mud] = "463C30", [PAL.Sand] = "7A6E56", [PAL.LeafyGrass] = "4C5A33", [PAL.Pebble] = "77736A",
+				[PAL.Mud] = "463C30", [PAL.Sand] = "7A6E56", [PAL.LeafyGrass] = "4C5A33", [PAL.Basalt] = "77736A",
 				[PAL.Rock] = "6A675F", [PAL.Slate] = "55595A",
 			},
 		})
@@ -843,6 +845,7 @@ return function(B)
 	-- ── rails: a ballast bed, a sleeper strip and two rails per piece; a plate at each level crossing ─────
 	step("rails", function()
 		local rm = kit.model("Rails", map)
+		rm:SetAttribute("NoWire", true) -- the detail plan would crown long high parts with barbed wire
 		local BALLAST, SLEEP, STEEL = hex("5C574E"), hex("4B3F33"), hex("6A5A4E")
 		for _, rl in L.rails do
 			local pts = rl[3]
@@ -908,6 +911,7 @@ return function(B)
 	-- ── the two bridges ──────────────────────────────────────────────────────────────────────────────────
 	step("bridges", function()
 		local bm = kit.model("Bridges", map)
+		bm:SetAttribute("NoWire", true) -- the detail plan would crown long high parts with barbed wire
 		local CONC, CONC_D = C.concreteLight, C.concreteDark
 		-- MAIN BRIDGE: a concrete deck with an asphalt surface, parapets, two piers and abutments; it runs 13 studs past
 		-- each bank edge so it overlaps the road boards, which stop 10 studs from the water
@@ -1026,6 +1030,7 @@ return function(B)
 	-- ── power lines: lattice pylons where a tower stands inside the map, sagging wires between them ───────
 	step("power", function()
 		local pm = kit.model("Power", map)
+		pm:SetAttribute("NoWire", true) -- the detail plan would crown long high parts with barbed wire
 		local STEEL, WIRE = hex("6E7370"), hex("23262A")
 		local function beam(parent, p, q, th)
 			local len = (q - p).Magnitude
@@ -1158,6 +1163,7 @@ return function(B)
 	-- ── the boundary: invisible walls along the polygon (the berm and cliff outside is the visible edge) ───
 	step("boundary", function()
 		local bm = kit.model("Boundary", map)
+		bm:SetAttribute("NoWire", true) -- the detail plan would crown long high parts with barbed wire
 		local area = 0
 		local nb = #BP / 2
 		for e = 1, nb do

@@ -46,7 +46,7 @@ return function(kit, root)
 	local bx = L.box
 	W.bounds = {
 		x0 = ORIGIN.X + bx[1], x1 = ORIGIN.X + bx[3], z0 = ORIGIN.Z + bx[2], z1 = ORIGIN.Z + bx[4],
-		yMin = -60, yMax = 180, step = 4,
+		yMin = -30, yMax = 110, step = 8, -- 8: the map is about 12 times the area of Quay 7
 	}
 	-- clients scatter grass, ferns and reeds over this terrain (Detail controller)
 	table.insert(W.natureRegions, { ORIGIN.X + bx[1] - 24, ORIGIN.Z + bx[2] - 24, ORIGIN.X + bx[3] + 24, ORIGIN.Z + bx[4] + 24, -62, 70 })
