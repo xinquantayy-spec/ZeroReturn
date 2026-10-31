@@ -1,11 +1,14 @@
 --!strict
 -- Item definitions (read-only, original names). Instances/ownership are server truth (server Services/Inv).
 -- kinds: weapon | pistol | melee | mag | ammo | helmet | armor | rig | backpack | secure | med | food | key | loot | quest
---        | grenade | repair
+--        | grenade | repair | headwear | headset | facecover | eyewear | nvg
 -- Values are in MK (Tarkov-like magnitudes). Optional blocks by kind:
 --   caliber (weapon/pistol/mag/ammo), weapon (Weapons key), family (mag compatibility), capacity (mag / internal tube)
 --   ammo = { dmg, pen, armorDmg, pellets, bleedL, bleedH, frag, subsonic }
---   armor = { class, dur, zones, blunt, destr, coverage?, ricochet?, face? }   (helmets/armor/armored rigs)
+--   armor = { class, dur, zones, blunt, destr, coverage?, ricochet?, face? }   (helmets/armor/armored rigs/ballistic glasses;
+--           zones: thorax | stomach | arms | legs | head | eyes)
+--   eye = { flash, tint, shade, lens }   (eyewear and gas masks: flash = the share of a stun charge's white-out the lenses stop
+--           (Tarkov's blindness protection), tint = lens colour, shade = 0..1 how strongly it tints the view, lens = its name)
 --   grid = { w, h }   (rigs / backpacks / secure containers)
 --   med = { light, heavy, fracture, pain, surgery, hp, uses, time, duration }
 --   food = { energy, water, time, stamina }
@@ -91,6 +94,27 @@ add("BEANIE", { name = "Knit Beanie", short = "BEANIE", kind = "headwear", w = 1
 add("HEADSET_GS1", { name = "GS-1 Active Headset", short = "GS-1", kind = "headset", w = 2, h = 1, mass = 0.35, value = 21000, rarity = "uncommon", desc = "Electronic hearing protection: quiet sounds carry further, blasts and stun charges deafen you less. Fits under cut helmets, caps and beanies, not full-cut shells or a hard hat.", color = c("#3A3D36") })
 add("HEADSET_COMM", { name = "Comms Headset", short = "COMMS", kind = "headset", w = 2, h = 1, mass = 0.4, value = 34000, rarity = "rare", desc = "Hearing protection with a boom microphone. Same hearing as the GS-1. Fits under cut helmets and caps.", color = c("#2A2C2E") })
 add("GAITER", { name = "Field Gaiter", short = "GAITER", kind = "facecover", w = 1, h = 1, mass = 0.08, value = 1500, desc = "Fabric neck gaiter worn over the mouth and nose. Cosmetic.", color = c("#6B6B5E") })
+
+-- ── eyewear and the gas mask (Tarkov: the EYEWEAR slot, EFT_PARITY.md section 6) ────────────────────────────
+-- Glasses shorten a stun charge's white-out (blindness protection: sport sunglasses 15 %, safety glasses 15 %, ballistic
+-- glasses 10-15 %). Only ballistic glasses have armour (class 1-2, zone EYES) and so a durability; the rest have none, as in
+-- Tarkov. Weights, values and the trader levels follow the wiki's rows (docs/design/EFT_PARITY.md, sources). A gas mask is a
+-- face cover with no armour that leaves no room for glasses (Equipment.VIS blocks).
+add("GLASSES_SUN", { name = "Sport Sunglasses", short = "SUNGLASSES", kind = "eyewear", w = 2, h = 1, mass = 0.05, value = 2250,
+	eye = { flash = 0.15, tint = c("#6B4A2C"), shade = 0.14, lens = "BROWN" },
+	desc = "Wrap-around sport sunglasses with brown lenses; the view darkens a little. A stun charge blinds you a little less; they stop nothing.", color = c("#4A3828") })
+add("GLASSES_RANGE", { name = "Range Glasses", short = "RANGE", kind = "eyewear", w = 1, h = 1, mass = 0.03, value = 6900,
+	eye = { flash = 0.15, tint = c("#E0BE3A"), shade = 0.1, lens = "YELLOW" },
+	desc = "Shooting glasses with yellow lenses; the view takes a warm tint. A stun charge blinds you a little less; they stop nothing.", color = c("#C4A63C") })
+add("GLASSES_BG1", { name = "BG-1 Ballistic Glasses", short = "BG-1", kind = "eyewear", w = 2, h = 1, mass = 0.11, value = 20000, rarity = "uncommon",
+	armor = { class = 1, dur = 25, zones = { eyes = true }, blunt = 0.35, destr = 0.1 }, eye = { flash = 0.1, tint = c("#C9D6DC"), shade = 0.03, lens = "CLEAR" },
+	desc = "Clear class 1 ballistic glasses. They stop fragments, buckshot and weak rounds that hit the eyes; a rifle bullet goes straight through.", color = c("#5C666B") })
+add("GLASSES_AF2", { name = "AF-2 Anti-Fragmentation Glasses", short = "AF-2", kind = "eyewear", w = 2, h = 1, mass = 0.27, value = 40000, rarity = "rare",
+	armor = { class = 2, dur = 30, zones = { eyes = true }, blunt = 0.3, destr = 0.1 }, eye = { flash = 0.15, tint = c("#4678C8"), shade = 0.1, lens = "BLUE" },
+	desc = "Blue-lens class 2 anti-fragmentation glasses on a head strap. Heavier than the BG-1, and they hold up to a few more hits.", color = c("#3E5E8C") })
+add("GAS_MASK", { name = "Canister Gas Mask", short = "GAS MASK", kind = "facecover", w = 2, h = 2, mass = 0.45, value = 45000, rarity = "uncommon",
+	eye = { flash = 0, tint = c("#3C4B3C"), shade = 0.16, lens = "SMOKED" },
+	desc = "Full-face rubber mask with two lenses and a filter canister. The rubber frames your view and the lenses are smoked; there is no room for glasses under it. It is not armour.", color = c("#4A5240") })
 
 -- ── rigs, backpacks, secure containers ───────────────────────────────────────
 add("RIG_BELT", { name = "Utility Belt", short = "BELT", kind = "rig", w = 2, h = 2, mass = 0.4, value = 6000, grid = { w = 4, h = 1 }, desc = "Four pouches on a belt.", color = c("#5E5A47") })
@@ -220,13 +244,13 @@ local Items = { defs = defs }
 
 -- equipment slots and the kinds each accepts
 Items.SLOTS = {
-	head = { helmet = true, headwear = true }, ears = { headset = true }, face = { facecover = true },
+	head = { helmet = true, headwear = true }, ears = { headset = true }, face = { facecover = true }, eyes = { eyewear = true },
 	armor = { armor = true }, rig = { rig = true }, back = { backpack = true }, secure = { secure = true },
 	primary = { weapon = true }, secondary = { weapon = true }, holster = { pistol = true }, melee = { melee = true },
 }
-Items.SLOT_ORDER = { "head", "ears", "face", "armor", "rig", "back", "secure", "primary", "secondary", "holster", "melee" }
+Items.SLOT_ORDER = { "head", "ears", "face", "eyes", "armor", "rig", "back", "secure", "primary", "secondary", "holster", "melee" }
 Items.SLOT_NAMES = {
-	head = "HEADWEAR", ears = "EARPIECE", face = "FACE COVER", armor = "BODY ARMOR", rig = "TACTICAL RIG", back = "BACKPACK", secure = "SECURE CONTAINER",
+	head = "HEADWEAR", ears = "EARPIECE", face = "FACE COVER", eyes = "EYEWEAR", armor = "BODY ARMOR", rig = "TACTICAL RIG", back = "BACKPACK", secure = "SECURE CONTAINER",
 	primary = "ON SLING", secondary = "ON BACK", holster = "HOLSTER", melee = "SCABBARD",
 }
 Items.RARITY = { common = 0, uncommon = 1, rare = 2, epic = 3, legendary = 4 }
@@ -266,7 +290,7 @@ function Items.valueOf(it: any): number
 end
 
 -- Tarkov's gear penalties: the movement speed, turn speed and ergonomics percentages of everything worn
-local WORN = { "armor", "head", "rig", "back", "ears", "face" }
+local WORN = { "armor", "head", "rig", "back", "ears", "face", "eyes" }
 -- armourMul(class) -> multiplier for an armoured item's penalties (the Light / Heavy Vests skills)
 function Items.gearPenalties(view: any, armourMul: ((number) -> number)?): { speed: number, turn: number, ergo: number }
 	local out = { speed = 0, turn = 0, ergo = 0 }

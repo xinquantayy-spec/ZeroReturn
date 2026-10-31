@@ -8,8 +8,11 @@
 --     each mesh's centre offset), so a piece goes at host.CFrame * CFrame.new(centre * scale + shift).
 --   * Torso layers (outfit overlay -> armour -> chest rig) are scaled about the torso centre by the shells of the
 --     layers worn under them, so they never cut into each other; backpacks move back, the body camera forward.
---   * Compatibility: an item can block another slot (a full-cut helmet leaves no room for a headset); a worn item
---     can cover a region and hide pieces (a backpack covers the chest rig's back harness and a hood worn down).
+--   * Compatibility: an item can block another slot (a full-cut helmet leaves no room for a headset, a gas mask leaves no
+--     room for glasses: Tarkov's "blocks headset / eyewear / face cover"); a worn item can cover a region and hide
+--     pieces (a backpack covers the chest rig's back harness and a hood worn down).
+--   * Eyewear and goggles: the "eyes" slot draws glasses; night-vision goggles are not a slot but the device on the
+--     head item's mount, drawn by the "nvg" group flipped up (default) or down over the eyes (state.nvg.down).
 --   * Item instances may carry a cosmetic `tint` variant set by the server (faction kit); clients never choose it.
 local AssetMeta = require(script.Parent.AssetMeta)
 local Items = require(script.Parent.Items)
@@ -17,7 +20,7 @@ local RigSpec = require(script.Parent.RigSpec)
 
 local Equipment = {}
 Equipment.BODY_VERSION = "ZR_BLOCK_R15_V1"
-Equipment.VISUAL_SLOTS = { "head", "ears", "face", "armor", "rig", "back", "holster" }
+Equipment.VISUAL_SLOTS = { "head", "ears", "face", "eyes", "armor", "rig", "back", "holster" }
 assert(RigSpec.bodyVersion == Equipment.BODY_VERSION, "equipment authored for " .. Equipment.BODY_VERSION)
 
 local TORSO = RigSpec.parts.UpperTorso.size
@@ -35,7 +38,8 @@ Equipment.TINTS = {
 	black = "343A3E", olive = "5F5E46", tan = "8A7A5A", ranger = "4E5442", grey = "55585A", navy = "2E3540", charcoal = "3B3A33",
 }
 
--- mesh bounding-box sizes (assets/exports/ZR_CharGear.meta.json, ZR_CharBase.meta.json): neutral fallback boxes
+-- mesh bounding-box sizes (assets/exports/ZR_CharGear.meta.json, ZR_CharBase.meta.json; the ZR_EyeGear rows are the boxes
+-- assets/blender_scripts/build_eyewear.py forces): neutral fallback boxes
 Equipment.SIZE = {
 	ZR_EQ_HelmetA = Vector3.new(1.65, 1.366, 1.65),
 	ZR_EQ_ArmGuard = Vector3.new(1.18, 0.72, 1.18),
@@ -50,12 +54,28 @@ Equipment.SIZE = {
 	ZR_EQ_ChestRig = Vector3.new(2.25, 1.518, 1.475),
 	ZR_EQ_ChestRigBack = Vector3.new(1.5919, 1.0311, 0.08),
 	ZR_EQ_FacePlate = Vector3.new(1.68, 0.74, 0.58),
+	ZR_EQ_GasMask = Vector3.new(1.37, 0.83, 1.686),
+	ZR_EQ_GlassBallistic = Vector3.new(1.39, 0.325, 0.703),
+	ZR_EQ_GlassFrag = Vector3.new(1.415, 0.373, 1.309),
+	ZR_EQ_GlassRange = Vector3.new(1.39, 0.325, 0.711),
+	ZR_EQ_GlassSun = Vector3.new(1.38, 0.3, 0.707),
 	ZR_EQ_HardHat = Vector3.new(1.96, 0.695, 2.12),
 	ZR_EQ_Headset = Vector3.new(1.74, 1.01, 0.58),
 	ZR_EQ_HeadsetNeck = Vector3.new(1.74, 0.59, 0.945),
 	ZR_EQ_HelmetB = Vector3.new(1.68, 1.4173, 1.66),
 	ZR_EQ_Holster = Vector3.new(1.3, 0.8, 1.12),
 	ZR_EQ_Mask = Vector3.new(1.32, 0.53, 1.243),
+	ZR_EQ_NvBinoDown = Vector3.new(0.78, 0.655, 0.64),
+	ZR_EQ_NvBinoUp = Vector3.new(0.78, 0.765, 0.4),
+	ZR_EQ_NvGreenDown = Vector3.new(0.82, 0.675, 0.64),
+	ZR_EQ_NvGreenUp = Vector3.new(0.82, 0.765, 0.42),
+	ZR_EQ_NvMonoDown = Vector3.new(0.49, 0.675, 0.7),
+	ZR_EQ_NvMonoUp = Vector3.new(0.49, 0.825, 0.45),
+	ZR_EQ_NvQuadDown = Vector3.new(1.432, 0.625, 0.66),
+	ZR_EQ_NvQuadUp = Vector3.new(1.432, 0.785, 0.37),
+	ZR_EQ_NvStrap = Vector3.new(1.375, 0.311, 1.485),
+	ZR_EQ_NvThermalDown = Vector3.new(0.74, 0.695, 0.74),
+	ZR_EQ_NvThermalUp = Vector3.new(0.74, 0.865, 0.47),
 	ZR_EQ_PackA = Vector3.new(1.72, 1.6774, 0.942),
 	ZR_EQ_PackCanvas = Vector3.new(1.32, 1.3434, 0.72),
 	ZR_EQ_PackRaid = Vector3.new(2.0412, 2.4424, 1.1004),
@@ -71,7 +91,21 @@ Equipment.SIZE = {
 	ZR_OV_ShoulderMarker = Vector3.new(1.09, 0.43, 1.09),
 }
 
-type Piece = { key: string, host: string, tint: string?, mat: string?, region: string?, shell: string?, name: string? }
+-- meshes of assets/blender_scripts/build_eyewear.py (batch ZR_EyeGear) that are not uploaded to the asset library yet: the game
+-- shows neutral boxes of Equipment.SIZE in their `fb` colour for them. Set this to {} once the batch is uploaded and its id is in
+-- AssetIds (CharTests lists these as pending, and fails if a key stays here after its mesh is in the library).
+local pending: { [string]: boolean } = {}
+for _, key in {
+	"ZR_EQ_GasMask", "ZR_EQ_GlassBallistic", "ZR_EQ_GlassFrag", "ZR_EQ_GlassRange", "ZR_EQ_GlassSun", "ZR_EQ_NvStrap",
+	"ZR_EQ_NvBinoDown", "ZR_EQ_NvBinoUp", "ZR_EQ_NvGreenDown", "ZR_EQ_NvGreenUp", "ZR_EQ_NvMonoDown", "ZR_EQ_NvMonoUp",
+	"ZR_EQ_NvQuadDown", "ZR_EQ_NvQuadUp", "ZR_EQ_NvThermalDown", "ZR_EQ_NvThermalUp",
+} do
+	pending[key] = true
+end
+Equipment.PENDING = pending
+
+-- fb: colour of the neutral box shown while the mesh is missing (meshes that carry their own colours are placed with a white tint)
+type Piece = { key: string, host: string, tint: string?, mat: string?, region: string?, shell: string?, name: string?, fb: string? }
 
 local function P(key: string, host: string, tint: string?, mat: string?, extra: { [string]: any }?): Piece
 	local p: any = { key = key, host = host, tint = tint, mat = mat }
@@ -205,11 +239,21 @@ local VIS: { [string]: any } = {
 	HARDHAT_FOREMAN = { pieces = { P("ZR_EQ_HardHat", "Head", "D4A93A") }, blocks = { ears = "HARD_HAT_BRIM" } },
 	CAP_FIELD = { pieces = { P("ZR_EQ_Cap", "Head", "4A4A3E", "Fabric") } },
 	BEANIE = { pieces = { P("ZR_EQ_Beanie", "Head", "3A3833", "Fabric") } },
-	NV_STRAP = { pieces = { P("ZR_EQ_Beanie", "Head", "23251F", "Fabric") } }, -- stand-in until a harness mesh is made
+	NV_STRAP = { pieces = { P("ZR_EQ_NvStrap", "Head", "42443A", "Fabric") } },
 	HEADSET_GS1 = { pieces = { P("ZR_EQ_Headset", "Head", "3A3D36") }, underHeadwear = { P("ZR_EQ_HeadsetNeck", "Head", "3A3D36") } },
 	HEADSET_COMM = { pieces = { P("ZR_EQ_Headset", "Head", "2A2C2E"), P("ZR_EQ_BoomMic", "Head", "2A2C2E") },
 		underHeadwear = { P("ZR_EQ_HeadsetNeck", "Head", "2A2C2E"), P("ZR_EQ_BoomMic", "Head", "2A2C2E") } },
 	GAITER = { pieces = { P("ZR_EQ_Mask", "Head", "6B6B5E", "Fabric") } },
+	-- full-face gas mask (FACE COVER slot): blocks the eyewear slot, in both orders (Tarkov: an item that blocks a slot refuses
+	-- to be worn with an item in it). The mesh carries its own colours, so it goes on with a white tint.
+	GAS_MASK = { pieces = { P("ZR_EQ_GasMask", "Head", "FFFFFF", "SmoothPlastic", { fb = "2D342B" }) }, blocks = { eyes = "GAS_MASK_BLOCKS_EYEWEAR" } },
+	-- eyewear (EYEWEAR slot): lenses keep their own colours (white tint). No helmet or face shield of ours blocks eyewear:
+	-- the Tarkov face shields (Altyn, 1SCh, EXFIL) and helmets (Vulkan-5, Kolpak-1S) checked all list "Blocks eyewear: no",
+	-- and our faceplate helmet (HELMET_C5) is the same kind of item, so glasses are worn under its plate.
+	GLASSES_SUN = { pieces = { P("ZR_EQ_GlassSun", "Head", "FFFFFF", "SmoothPlastic", { fb = "5A3A22" }) } },
+	GLASSES_RANGE = { pieces = { P("ZR_EQ_GlassRange", "Head", "FFFFFF", "SmoothPlastic", { fb = "C4A63C" }) } },
+	GLASSES_BG1 = { pieces = { P("ZR_EQ_GlassBallistic", "Head", "FFFFFF", "SmoothPlastic", { fb = "2B3033" }) } },
+	GLASSES_AF2 = { pieces = { P("ZR_EQ_GlassFrag", "Head", "FFFFFF", "SmoothPlastic", { fb = "2F5C9E" }) } },
 	ARMOR_C2 = { layer = "armor", shell = "vest", pieces = { P("ZR_EQ_SoftVest", "UpperTorso", "2E3540", "Fabric") } },
 	ARMOR_C3 = { layer = "armor", shell = "vest", pieces = { P("ZR_EQ_SoftVest", "UpperTorso", "4A5242", "Fabric") } },
 	ARMOR_C4 = { layer = "armor", shell = "carrier", pieces = { P("ZR_EQ_CarrierA", "UpperTorso", "575A47", "Fabric") } },
@@ -227,6 +271,21 @@ local VIS: { [string]: any } = {
 	BAG_RAID = { layer = "pack", pieces = { P("ZR_EQ_PackRaid", "UpperTorso", "53523F", "Fabric") }, covers = { upperBack = true, hood = true }, neckUp = 0.2 },
 }
 Equipment.VIS = VIS
+
+-- night-vision goggles on a head mount (a helmet's NVG mount or the head strap), by device item id: the device is not a slot, it
+-- is items[headGuid].mods.mount; the "nvg" group draws it flipped up on the front of the head (default, like Tarkov's N toggle off)
+-- or down over the eyes (the character's NvDown attribute, set from the owner's "nvg" act)
+local function nvgPair(name: string): { down: Piece, up: Piece }
+	return {
+		down = P("ZR_EQ_Nv" .. name .. "Down", "Head", "FFFFFF", "SmoothPlastic", { fb = "3B4339" }),
+		up = P("ZR_EQ_Nv" .. name .. "Up", "Head", "FFFFFF", "SmoothPlastic", { fb = "3B4339" }),
+	}
+end
+local NVG: { [string]: { down: Piece, up: Piece } } = {
+	NV_MONO = nvgPair("Mono"), NV_BINO = nvgPair("Bino"), NV_GREEN = nvgPair("Green"), NV_QUAD = nvgPair("Quad"), TH_T7 = nvgPair("Thermal"),
+}
+Equipment.NVG = NVG
+
 -- any pistol in the holster slot
 local HOLSTER = { pieces = { P("ZR_EQ_Holster", "RightUpperLeg", "2E3134") } }
 local BODYCAM = P("ZR_EQ_BodyCam", "UpperTorso", "FFFFFF", "SmoothPlastic")
@@ -257,6 +316,10 @@ function Equipment.allKeys(): { string }
 		for _, p in v.underHeadwear or {} do
 			add(p)
 		end
+	end
+	for _, dev in Equipment.NVG do
+		add(dev.down)
+		add(dev.up)
 	end
 	for _, p in HOLSTER.pieces do
 		add(p)
@@ -297,12 +360,15 @@ function Equipment.conflict(slots: { [string]: string }, slot: string, id: strin
 end
 
 -- ── resolve ──────────────────────────────────────────────────────────────────────────────────────────────────
--- state = { look, variant, items = { [slot] = { id = itemId, tint = variantName? } }, bodycam = bool? }
-export type Entry = { group: string, key: string, host: string, offset: Vector3, scale: Vector3?, tint: string, mat: string, name: string }
+-- state = { look, variant, items = { [slot] = { id = itemId, tint = variantName? } }, bodycam = bool?,
+--           nvg = { id = deviceItemId, down = bool }? (goggles on the head item's mount) }
+export type Entry = { group: string, key: string, host: string, offset: Vector3, scale: Vector3?, tint: string, mat: string, name: string, fb: string? }
 
--- authoritative equipment state of a holder (visual slots only)
-function Equipment.stateOf(h: any, look: string?, variant: number?): any
+-- authoritative equipment state of a holder (visual slots, and the goggles on the head item's mount). nvDown: the goggles are
+-- pulled down over the eyes (the character's NvDown attribute); otherwise they are flipped up on the front of the head.
+function Equipment.stateOf(h: any, look: string?, variant: number?, nvDown: boolean?): any
 	local items = {}
+	local nvg: any = nil
 	if h and h.slots then
 		for _, slot in Equipment.VISUAL_SLOTS do
 			local g = h.slots[slot]
@@ -311,8 +377,15 @@ function Equipment.stateOf(h: any, look: string?, variant: number?): any
 				items[slot] = { id = it.id, tint = it.tint }
 			end
 		end
+		local hg = h.slots.head
+		local hit = hg and h.items[hg]
+		local mg = hit and hit.mods and hit.mods.mount
+		local dev = mg and h.items[mg]
+		if dev and Equipment.NVG[dev.id] then
+			nvg = { id = dev.id, down = nvDown == true }
+		end
 	end
-	return { look = Equipment.lookKey(look), variant = variant or 1, items = items }
+	return { look = Equipment.lookKey(look), variant = variant or 1, items = items, nvg = nvg }
 end
 
 local function shellSum(list: { string }): (number, number, number, number)
@@ -368,7 +441,7 @@ function Equipment.resolve(state: any): { Entry }
 		local off = (scale and c * scale or c) + (shift or Vector3.zero)
 		table.insert(out, {
 			group = group, key = p.key, host = p.host, offset = off, scale = scale, tint = tintOf(p, inst), mat = p.mat or "SmoothPlastic",
-			name = p.name or p.key,
+			name = p.name or p.key, fb = p.fb,
 		})
 	end
 	-- torso layer stack: look overlays with a shell, then armour (armour slot, or an armoured rig), then chest rig
@@ -410,6 +483,17 @@ function Equipment.resolve(state: any): { Entry }
 		for _, p in (v and v.pieces or {}) do
 			add("face", p, items.face)
 		end
+	end
+	-- eyewear, then the goggles on the head mount (up on the front of the head, or down over the eyes)
+	if items.eyes then
+		local v = Equipment.visualOf("eyes", items.eyes.id)
+		for _, p in (v and v.pieces or {}) do
+			add("eyes", p, items.eyes)
+		end
+	end
+	local nvDev = state.nvg and Equipment.NVG[state.nvg.id]
+	if nvDev then
+		add("nvg", state.nvg.down and nvDev.down or nvDev.up, nil)
 	end
 	-- armour layer (hidden when the look conceals it: then it adds no shell either)
 	if armorInst and not covered.armorVisual then

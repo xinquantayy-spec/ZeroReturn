@@ -664,6 +664,18 @@ function Combat.init(c)
 			char:SetAttribute("VisorUp", p.up or nil)
 		end
 	end, 4, 4)
+	-- night-vision goggles flipped down over the eyes or up (Tarkov's N): the pose of the device on the head mount shows on the
+	-- character (Equipment "nvg" group) and Raid.syncGear redresses it; no device on the mount keeps the attribute off
+	ctx.Remotes.onAct("nvg", function(player, p)
+		local s = ctx.Raid.session(player)
+		local char = player.Character
+		if s and not s.done and char and alive(player) and type(p) == "table" and type(p.down) == "boolean" then
+			local down = p.down and ctx.Raid.nvgOf(s.inv) ~= nil
+			s.nvDown = down or nil
+			char:SetAttribute("NvDown", down or nil)
+			ctx.Raid.syncGear(player)
+		end
+	end, 4, 4)
 	-- zeroing (Tarkov's Page Up / Page Down): the zero of the weapon in hand, in Tarkov's steps up to its sights' range
 	ctx.Remotes.onAct("zero", function(player, p)
 		local s = ctx.Raid.session(player)

@@ -62,7 +62,7 @@ local function buildPiece(char, e)
 		end
 	end
 	p.Name = "Gear"
-	p.Color = Color3.fromHex(e.tint)
+	p.Color = Color3.fromHex((fallback and e.fb) or e.tint) -- pieces with their own colours show their fb colour as a box
 	p.Material = Enum.Material[e.mat] or Enum.Material.SmoothPlastic
 	p.Anchored = false
 	p.CanCollide = false
@@ -101,7 +101,8 @@ local function weaponSig(h, activeG)
 end
 
 -- spec: { look, variant, holder, active (guid of the weapon in hands), weapons = false (no weapon visuals),
---         items = { [slot] = { id, tint } } (explicit state instead of a holder), keepWeapons = true }
+--         items = { [slot] = { id, tint } } (explicit state instead of a holder), nvg = { id, down } (explicit goggles),
+--         keepWeapons = true }
 -- Returns the appearance revision and whether anything visible changed.
 function Appearance.apply(char, spec)
 	if not char then
@@ -115,8 +116,10 @@ function Appearance.apply(char, spec)
 	end
 	local look = Equipment.lookKey(spec.look or char:GetAttribute("Look"))
 	local variant = spec.variant or char:GetAttribute("LookVariant") or 1
-	rec.spec = { look = look, variant = variant, holder = spec.holder, active = spec.active, weapons = spec.weapons, items = spec.items }
-	local state = spec.items and { look = look, variant = variant, items = spec.items } or Equipment.stateOf(spec.holder, look, variant)
+	rec.spec = { look = look, variant = variant, holder = spec.holder, active = spec.active, weapons = spec.weapons, items = spec.items, nvg = spec.nvg }
+	-- the goggles on the head mount are drawn up or down by the character's NvDown attribute (the owner's "nvg" act)
+	local state = spec.items and { look = look, variant = variant, items = spec.items, nvg = spec.nvg }
+		or Equipment.stateOf(spec.holder, look, variant, char:GetAttribute("NvDown") == true)
 	local entries = Equipment.resolve(state)
 	local sigs = Equipment.signature(entries)
 	local byGroup = {}

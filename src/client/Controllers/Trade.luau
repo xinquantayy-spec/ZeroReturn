@@ -143,7 +143,7 @@ end
 -- ── Tarkov's TRADE screen: the trader's goods as a grid with prices, your stash beside it, the deal below ──
 local CAT = {
 	weapon = "WEAPONS", pistol = "WEAPONS", melee = "WEAPONS", mod = "PARTS", mag = "MAGAZINES", ammo = "AMMO", grenade = "GRENADES",
-	armor = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", secure = "GEAR", nvg = "GEAR",
+	armor = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", eyewear = "GEAR", secure = "GEAR", nvg = "GEAR",
 	med = "MEDICAL", food = "PROVISIONS",
 }
 local CAT_ORDER = { "ALL", "WEAPONS", "PARTS", "MAGAZINES", "AMMO", "GRENADES", "GEAR", "MEDICAL", "PROVISIONS", "OTHER" }
@@ -688,7 +688,7 @@ end
 local function servicesTab(f, x, y, w, h, d, tid)
 	local sf = scroller(f, x, y, w, h, "Services_" .. tid)
 	section(sf, "REPAIRS")
-	text(sf, TD.defs[tid].name .. (TD.REPAIRS[tid].kinds.weapon and " repairs weapons." or " repairs body armour, armoured rigs and helmets.")
+	text(sf, TD.defs[tid].name .. (TD.REPAIRS[tid].kinds.weapon and " repairs weapons." or " repairs body armour, armoured rigs, helmets and ballistic glasses.")
 		.. " Every repair lowers the item's maximum durability a little; a repair kit wears it less.", K.C.dim, 11)
 	local any = false
 	for g, it in d.items or {} do

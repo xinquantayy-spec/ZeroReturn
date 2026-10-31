@@ -20,7 +20,7 @@ local IT_MAT = {
 	glass = { M.Glass, 0.05, 0.45 }, emissive = { M.Neon }, foil = { M.Foil },
 }
 -- worn equipment lying around: which slot shows it, and how it lies (armour and rigs front up)
-local WEAR_SLOT = { helmet = "head", headwear = "head", headset = "ears", facecover = "face", armor = "armor", rig = "rig", backpack = "back" }
+local WEAR_SLOT = { helmet = "head", headwear = "head", headset = "ears", facecover = "face", eyewear = "eyes", armor = "armor", rig = "rig", backpack = "back" }
 local WEAR_LIE = { armor = CFrame.Angles(-math.pi / 2, 0, 0), rig = CFrame.Angles(-math.pi / 2, 0, 0) }
 
 local function assetLib()

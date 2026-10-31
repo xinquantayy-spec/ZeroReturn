@@ -6,7 +6,8 @@
 -- and bloom that floods round lights on the cheaper tubes. The thermal goggles show heat: people and animals glow
 -- white against a dark brown world whatever the light, and magnified optics cannot be used with them.
 -- Without goggles, N raises or lowers a helmet's face shield (the server knows: a raised shield leaves the face
--- open); a lowered shield is a tinted visor round the view.
+-- open); a lowered shield is a tinted visor round the view. The goggles' pose is sent too (act "nvg"): other players see
+-- them down over the eyes or flipped up on the mount. Glasses and the gas mask (Eyewear.luau) step aside while a tube is down.
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -17,6 +18,7 @@ local NV = { down = false, dev = nil, visorUp = false }
 local ctx
 local gui, hole, stroke, visor, cc
 local flipT, FLIP = -10, 0.45
+local wasRaid = false
 local highlights = {}
 local BODY_FOLDERS = { "ZR_AI", "ZR_Traders" }
 local scanT = 0
@@ -119,6 +121,12 @@ local function apply(dt)
 	if not dev and NV.down then
 		NV.down = false
 	end
+	-- goggles pulled down in the lobby are still down when a raid starts: tell the server, so others see the same pose
+	local raid = ctx.State.inRaid()
+	if raid and not wasRaid and NV.down then
+		ctx.State.act("nvg", { down = true })
+	end
+	wasRaid = raid
 	NV.dev = NV.down and dev or nil
 	local t = os.clock() - flipT
 	-- the flip: the view goes black for a moment while the tubes move
@@ -164,6 +172,8 @@ local function toggle()
 	if def then
 		NV.down = not NV.down
 		flipT = os.clock()
+		-- others see the goggles go down over the eyes or up on the mount; the server draws them (Equipment "nvg" group)
+		ctx.State.act("nvg", { down = NV.down })
 		ctx.Effects.sfx("selector", game:GetService("SoundService"), 0.35, NV.down and 0.8 or 0.7)
 		return
 	end

@@ -206,23 +206,32 @@ local function armorFor(hs, key, hitPos, partInst)
 		return nil
 	end
 	if key == "head" then
-		local g, it, d = worn("head")
-		if not g then
-			return nil
-		end
-		local face = false
+		-- face = the front of the head; eyes = its eye band (Tarkov's "Eyes" zone, which the body has no pool of: the band is
+		-- a hit location on the head, so damage still goes to the head)
+		local face, eyes = false, false
 		if partInst and hitPos then
 			local lp = partInst.CFrame:PointToObjectSpace(hitPos)
 			face = lp.Z < -0.2 and lp.Y < 0.25
+			eyes = face and lp.Y > -0.06
 		end
-		local covered
-		if face then
-			covered = d.armor.face == true and not (partInst.Parent and partInst.Parent:GetAttribute("VisorUp"))
-		else
-			covered = math.random() < math.min(1, (d.armor.coverage or 0.6) + 0.3)
+		local g, it, d = worn("head")
+		if g then
+			local covered
+			if face then
+				covered = d.armor.face == true and not (partInst.Parent and partInst.Parent:GetAttribute("VisorUp"))
+			else
+				covered = math.random() < math.min(1, (d.armor.coverage or 0.6) + 0.3)
+			end
+			if covered then
+				return g, it, d
+			end
 		end
-		if covered then
-			return g, it, d
+		-- a face shield that is down (or absent) leaves the eyes to the ballistic glasses behind it
+		if eyes then
+			local eg, eit, ed = worn("eyes")
+			if eg and ed.armor.zones and ed.armor.zones.eyes then
+				return eg, eit, ed
+			end
 		end
 		return nil
 	end

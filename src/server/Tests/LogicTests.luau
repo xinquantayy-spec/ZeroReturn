@@ -1132,6 +1132,185 @@ function T.run(ctx)
 		check("range: thirteen targets, none hidden behind another", #R7.targets() == 13 and not hidden)
 	end
 
+	-- eyewear and the gas mask (Tarkov): the EYEWEAR slot takes only eyewear; a gas mask and glasses refuse each other; ballistic
+	-- glasses carry an eyes zone (Health's side is in CharTests); TILDA sells the glasses; goggles show on the head mount
+	do
+		local Equipment = require(Shared.Equipment)
+		local TDe = require(Shared.TraderData)
+		local function bare()
+			return { slots = {}, items = {}, grids = {} }
+		end
+		local function put(h, slot, id)
+			local g, it = Inv.newItem(id, 1)
+			local okP, err = Inv.placeSlot(h, g, it, slot)
+			return okP, err
+		end
+		-- the slot: after FACE COVER, named EYEWEAR, accepts only eyewear
+		local sk, skN = Items.SLOTS.eyes, 0
+		for _ in sk or {} do
+			skN += 1
+		end
+		check("eyewear: the EYEWEAR slot sits after FACE COVER and accepts only the eyewear kind",
+			sk ~= nil and sk.eyewear == true and skN == 1 and Items.SLOT_NAMES.eyes == "EYEWEAR" and table.find(Items.SLOT_ORDER, "eyes") == table.find(Items.SLOT_ORDER, "face") + 1
+			and table.find(Equipment.VISUAL_SLOTS, "eyes") ~= nil)
+		local h1 = bare()
+		local okSun = put(h1, "eyes", "GLASSES_SUN")
+		local h2 = bare()
+		local _, eHelm = put(h2, "eyes", "HELMET_C2")
+		local _, eGlass = put(h2, "face", "GLASSES_SUN")
+		local _, eMask = put(h2, "eyes", "GAS_MASK")
+		local okMask = put(h2, "face", "GAS_MASK")
+		check("eyewear: glasses fit the eyes slot; a helmet or a mask is refused there and glasses on the face slot", okSun and eHelm == "WRONG_SLOT" and eMask == "WRONG_SLOT" and eGlass == "WRONG_SLOT" and okMask and inv(h1))
+		-- blocking rules: the gas mask and glasses refuse each other in either order
+		local h3 = bare()
+		put(h3, "face", "GAS_MASK")
+		local okE3, e3 = put(h3, "eyes", "GLASSES_SUN")
+		local h4 = bare()
+		put(h4, "eyes", "GLASSES_BG1")
+		local okF4, e4 = put(h4, "face", "GAS_MASK")
+		check("eyewear: a worn gas mask refuses glasses and worn glasses refuse a gas mask (GAS_MASK_BLOCKS_EYEWEAR)",
+			not okE3 and e3 == "GAS_MASK_BLOCKS_EYEWEAR" and not okF4 and e4 == "GAS_MASK_BLOCKS_EYEWEAR"
+			and Equipment.conflict({ face = "GAS_MASK" }, "eyes", "GLASSES_AF2") == "GAS_MASK_BLOCKS_EYEWEAR" and Equipment.conflict({ eyes = "GLASSES_RANGE" }, "face", "GAS_MASK") == "GAS_MASK_BLOCKS_EYEWEAR")
+		-- what does not block: the face-plate helmet (Tarkov's face shields list "blocks eyewear: no"), the gaiter, the headset rule is unchanged
+		local h5 = bare()
+		local okH5 = put(h5, "head", "HELMET_C5")
+		local okG5 = put(h5, "eyes", "GLASSES_AF2")
+		local h6 = bare()
+		put(h6, "head", "HELMET_C5")
+		local okM6 = put(h6, "face", "GAS_MASK")
+		local h7 = bare()
+		put(h7, "face", "GAITER")
+		local okG7 = put(h7, "eyes", "GLASSES_RANGE")
+		local h8 = bare()
+		put(h8, "head", "HELMET_C2")
+		local okE8, e8 = put(h8, "ears", "HEADSET_GS1")
+		check("eyewear: the face-plate helmet takes glasses or a mask, a gaiter takes glasses; the full-cut helmet still blocks the headset",
+			okH5 and okG5 and okM6 and okG7 and not okE8 and e8 == "HELMET_COVERS_EARS")
+		-- the items: plain glasses are unarmoured, ballistic glasses are class 1 and 2 with an eyes zone, the mask is a face cover
+		local D = Items.defs
+		check("eyewear: plain glasses and the mask have no armour; ballistic glasses are class 1 and 2 armoured at the eyes",
+			D.GLASSES_SUN.armor == nil and D.GLASSES_RANGE.armor == nil and D.GAS_MASK.armor == nil and D.GAS_MASK.kind == "facecover"
+			and D.GLASSES_BG1.armor.class == 1 and D.GLASSES_AF2.armor.class == 2 and D.GLASSES_BG1.armor.zones.eyes == true and D.GLASSES_AF2.armor.zones.eyes == true
+			and D.GLASSES_BG1.kind == "eyewear" and D.GLASSES_AF2.kind == "eyewear")
+		local _, bgi = Inv.newItem("GLASSES_BG1", 1)
+		local _, sui = Inv.newItem("GLASSES_SUN", 1)
+		check("eyewear: ballistic glasses start at full durability, plain ones have none (Tarkov shows '---')", bgi.dur == D.GLASSES_BG1.armor.dur and sui.dur == nil)
+		local lensOk = true
+		for _, id in { "GLASSES_SUN", "GLASSES_RANGE", "GLASSES_BG1", "GLASSES_AF2", "GAS_MASK" } do
+			local e = D[id].eye
+			lensOk = lensOk and e ~= nil and e.flash >= 0 and e.flash <= 0.4 and e.shade > 0 and e.shade <= 0.3 and typeof(e.tint) == "Color3" and type(e.lens) == "string"
+		end
+		local tSun, tRng, tFrag = D.GLASSES_SUN.eye.tint, D.GLASSES_RANGE.eye.tint, D.GLASSES_AF2.eye.tint
+		check("eyewear: every lens has a mild tint and a flash share (sunglasses brown, shooting glasses yellow, class 2 blue)",
+			lensOk and tSun.R > tSun.B and tRng.R > tRng.B * 2 and tRng.G > tRng.B * 2 and tFrag.B > tFrag.R)
+		-- TILDA sells the glasses at Tarkov-like loyalty levels (no gas mask: Tarkov gas masks are not sold for cash) and buys eyewear
+		local function offerOf(id)
+			for _, o in TDe.offers.tilda do
+				if o.id == id then
+					return o
+				end
+			end
+			return nil
+		end
+		local oS, oR, oB, oA = offerOf("GLASSES_SUN"), offerOf("GLASSES_RANGE"), offerOf("GLASSES_BG1"), offerOf("GLASSES_AF2")
+		check("eyewear: TILDA sells the sunglasses at LL1, shooting and class 1 glasses at LL3, class 2 at LL4, and no gas mask",
+			oS ~= nil and oS.ll == 1 and oR ~= nil and oR.ll == 3 and oB ~= nil and oB.ll == 3 and oA ~= nil and oA.ll == 4 and offerOf("GAS_MASK") == nil)
+		local sellBg = TDe.sellPrice("tilda", { id = "GLASSES_BG1", n = 1, dur = 25 })
+		check("eyewear: TILDA buys eyewear and VOS does not; prices rise with protection",
+			sellBg ~= nil and sellBg > 0 and TDe.sellPrice("vos", { id = "GLASSES_BG1", n = 1, dur = 25 }) == nil
+			and TDe.price("tilda", oS, 1) < TDe.price("tilda", oR, 3) and TDe.price("tilda", oR, 3) < TDe.price("tilda", oB, 3) and TDe.price("tilda", oB, 3) < TDe.price("tilda", oA, 4))
+		-- TILDA repairs worn ballistic glasses like other armour (each repair lowers the maximum); plain glasses have no condition to restore
+		local rpBg, _, rpMax = TDe.repairQuote("tilda", { id = "GLASSES_BG1", n = 1, dur = 10 })
+		check("eyewear: TILDA repairs worn ballistic glasses (the maximum drops); plain glasses and VOS give no repair",
+			rpBg == 15 and rpMax ~= nil and rpMax < 25 and TDe.repairQuote("tilda", { id = "GLASSES_SUN", n = 1 }) == nil and TDe.repairQuote("vos", { id = "GLASSES_BG1", n = 1, dur = 10 }) == nil)
+		-- the loot tables carry the mask and the glasses
+		local function pooled(pool, id)
+			for _, e in Loot.POOLS[pool] do
+				if e.id == id then
+					return true
+				end
+			end
+			return false
+		end
+		check("eyewear: the gas mask and glasses are in the loot tables",
+			pooled("locker", "GAS_MASK") and pooled("medbag", "GAS_MASK") and pooled("toolbox", "GAS_MASK") and pooled("weaponbox", "GLASSES_BG1") and pooled("weaponbox", "GLASSES_AF2")
+			and pooled("jacket", "GLASSES_SUN") and pooled("locker", "GLASSES_RANGE"))
+		-- AI kits: some wear glasses, a few a gas mask, never both (the slot rule keeps the second one out)
+		local nGlass, nMask, nBoth, nBad = 0, 0, 0, 0
+		for i = 1, 150 do
+			for _, build in { Loot.guardLoadout, Loot.scavLoadout, Loot.crewLoadout } do
+				local kh = build(Random.new(i))
+				local eg, fg = kh.slots.eyes, kh.slots.face
+				local faceId = fg and kh.items[fg] and kh.items[fg].id
+				if eg then
+					nGlass += 1
+				end
+				if faceId == "GAS_MASK" then
+					nMask += 1
+				end
+				if eg and faceId == "GAS_MASK" then
+					nBoth += 1
+				end
+				if not inv(kh) then
+					nBad += 1
+				end
+			end
+		end
+		check("eyewear: AI kits wear glasses now and then and a gas mask rarely, never both, and stay valid", nGlass > 20 and nMask > 0 and nBoth == 0 and nBad == 0)
+		-- goggles on the head item's mount show on the character: flipped up by default, down over the eyes when pulled down
+		local nh = bare()
+		local hg2 = "HG"
+		local ng2 = "NG"
+		nh.items[hg2] = { id = "HELMET_C4", n = 1, dur = 50, mods = { mount = ng2 } }
+		nh.items[ng2] = { id = "NV_MONO", n = 1 }
+		nh.slots.head = hg2
+		local stUp, stDn = Equipment.stateOf(nh, "player", 1, false), Equipment.stateOf(nh, "player", 1, true)
+		local function nvgKeys(st)
+			local list = {}
+			for _, e in Equipment.resolve(st) do
+				if e.group == "nvg" then
+					table.insert(list, e.key)
+				end
+			end
+			return table.concat(list, "+")
+		end
+		local sigUp, sigDn = Equipment.signature(Equipment.resolve(stUp)).nvg, Equipment.signature(Equipment.resolve(stDn)).nvg
+		check("goggles: the device on the worn helmet's mount shows up by default and down when pulled down (two different looks)",
+			stUp.nvg ~= nil and stUp.nvg.id == "NV_MONO" and stUp.nvg.down == false and stDn.nvg.down == true and nvgKeys(stUp) == "ZR_EQ_NvMonoUp" and nvgKeys(stDn) == "ZR_EQ_NvMonoDown"
+			and sigUp ~= nil and sigDn ~= nil and sigUp ~= sigDn)
+		local nb = bare()
+		nb.items.H = { id = "HELMET_C2", n = 1 }
+		nb.slots.head = "H"
+		local nc = bare()
+		nc.items.S = { id = "NV_STRAP", n = 1, mods = { mount = "D" } }
+		nc.items.D = { id = "TH_T7", n = 1 }
+		nc.slots.head = "S"
+		check("goggles: no device on the head item, no goggles drawn; the strap carries them like a helmet does",
+			Equipment.stateOf(nb, "player", 1, true).nvg == nil and Equipment.stateOf(bare(), "player", 1, true).nvg == nil and nvgKeys(Equipment.stateOf(nc, "player", 1, true)) == "ZR_EQ_NvThermalDown")
+		local noNvg = {}
+		for id, d in Items.defs do
+			if d.kind == "nvg" and not Equipment.NVG[id] then
+				table.insert(noNvg, id)
+			end
+		end
+		check("goggles: every night-vision device has an up and a down model", #noNvg == 0 and Equipment.NVG.NV_QUAD.down.key == "ZR_EQ_NvQuadDown" and Equipment.NVG.NV_QUAD.up.key == "ZR_EQ_NvQuadUp")
+		if ctx and ctx.Raid then
+			check("goggles: the server finds the device on the head item's mount", ctx.Raid.nvgOf(nh) == ng2 and ctx.Raid.nvgOf(nb) == nil and ctx.Raid.nvgOf(nc) == "D" and ctx.Raid.nvgOf(bare()) == nil)
+		end
+		-- the pending list names only meshes the game places
+		local known = {}
+		for _, k in Equipment.allKeys() do
+			known[k] = true
+		end
+		local stray = {}
+		for k in Equipment.PENDING do
+			if not known[k] then
+				table.insert(stray, k)
+			end
+		end
+		check("eyewear: Equipment.PENDING lists only meshes the game places", #stray == 0)
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

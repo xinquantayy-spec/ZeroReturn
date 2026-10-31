@@ -3,14 +3,15 @@
 -- scroll to zoom), the description, and the attribute sheet for its kind. Weapons: weight, ergonomics, accuracy,
 -- sighting range, recoil, muzzle velocity, effective distance, fire modes, rate of fire, caliber. Ammo: damage,
 -- penetration and the chance to go through fresh armor of each class, armor damage, fragmentation and bleeding.
--- Armor: class, durability, material, armored areas. Meds, food, grenades, keys, parts, magazines and containers
--- get their own rows. Windows drag by the title bar and up to three stay open, as in Tarkov.
+-- Armor: class, durability, material, armored areas. Eyewear and masks: blindness protection, lens tint and the slots they
+-- block. Meds, food, grenades, keys, parts, magazines and containers get their own rows. Windows drag by the title bar and up to three stay open, as in Tarkov.
 local UIS = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local WP = require(Shared.WeaponParts)
 local Weapons = require(Shared.Weapons)
 local ItemModel = require(Shared.ItemModel)
+local Equipment = require(Shared.Equipment)
 
 local Inspect = {}
 local ctx, K, gui
@@ -30,8 +31,8 @@ for _, d in defs do
 end
 local MODES = { AUTO = "FULL AUTO", SEMI = "SINGLE", BURST = "BURST", PUMP = "PUMP-ACTION", BOLT = "BOLT-ACTION" }
 -- Tarkov's armor materials by how fast they wear (destructibility)
-local MATERIALS = { { 0.25, "ARAMID" }, { 0.45, "UHMWPE" }, { 0.5, "COMBINED MATERIALS" }, { 0.55, "TITAN" }, { 0.6, "ALUMINIUM" }, { 0.7, "ARMORED STEEL" }, { 0.8, "CERAMIC" } }
-local ZONES = { "thorax", "stomach", "arms", "legs", "head" }
+local MATERIALS = { { 0.1, "GLASS" }, { 0.25, "ARAMID" }, { 0.45, "UHMWPE" }, { 0.5, "COMBINED MATERIALS" }, { 0.55, "TITAN" }, { 0.6, "ALUMINIUM" }, { 0.7, "ARMORED STEEL" }, { 0.8, "CERAMIC" } }
+local ZONES = { "thorax", "stomach", "arms", "legs", "head", "eyes" }
 
 local function material(destr)
 	local best, bd = "ARAMID", math.huge
@@ -189,6 +190,21 @@ local function sheet(items, g, it, d, opts)
 		if ar.face then
 			add("FACE PROTECTION", "YES")
 		end
+	end
+	-- eyewear and gas masks: the share of a stun charge's white-out the lenses stop (Tarkov's blindness protection) and the tint
+	if d.eye then
+		add("BLINDNESS PROTECTION", pct(d.eye.flash))
+		add("LENS TINT", d.eye.lens)
+	end
+	-- what a worn item leaves no room for (a full-cut helmet blocks the earpiece, a gas mask blocks eyewear)
+	local vis = Equipment.VIS[d.id]
+	if vis and vis.blocks then
+		local names = {}
+		for slot in vis.blocks do
+			table.insert(names, Items.SLOT_NAMES[slot] or string.upper(slot))
+		end
+		table.sort(names)
+		add("BLOCKS", table.concat(names, ", "), nil, "bad")
 	end
 	if d.grid then
 		add("CAPACITY", string.format("%d SLOTS (%dx%d)", d.grid.w * d.grid.h, d.grid.w, d.grid.h))

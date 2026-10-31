@@ -50,6 +50,25 @@ return {
 	ZR_OV_KneePads = Vector3.new(0, 0.24, -0.066),
 	ZR_OV_PaddedJacket = Vector3.new(0, -0.05, -0.0125),
 	ZR_OV_ShoulderMarker = Vector3.new(0, 0.315, 0),
+	-- eyewear, gas mask, head strap and goggles (ZR_EyeGear, assets/blender_scripts/build_eyewear.py): the centres are the
+	-- designed ones the script forces on every mesh; the export's .meta.json must reproduce them (Equipment.PENDING lists
+	-- the keys whose FBX has not been uploaded yet)
+	ZR_EQ_GasMask = Vector3.new(0, -0.145, -0.207),
+	ZR_EQ_GlassBallistic = Vector3.new(0, 0.082, -0.302),
+	ZR_EQ_GlassFrag = Vector3.new(0, 0.076, -0.016),
+	ZR_EQ_GlassRange = Vector3.new(0, 0.082, -0.305),
+	ZR_EQ_GlassSun = Vector3.new(0, 0.08, -0.303),
+	ZR_EQ_NvBinoDown = Vector3.new(0, 0.218, -1),
+	ZR_EQ_NvBinoUp = Vector3.new(0, 0.838, -0.88),
+	ZR_EQ_NvGreenDown = Vector3.new(0, 0.208, -1),
+	ZR_EQ_NvGreenUp = Vector3.new(0, 0.838, -0.89),
+	ZR_EQ_NvMonoDown = Vector3.new(0.165, 0.208, -1.03),
+	ZR_EQ_NvMonoUp = Vector3.new(0.165, 0.868, -0.875),
+	ZR_EQ_NvQuadDown = Vector3.new(0, 0.233, -1.01),
+	ZR_EQ_NvQuadUp = Vector3.new(0, 0.848, -0.865),
+	ZR_EQ_NvStrap = Vector3.new(0, 0.472, -0.062),
+	ZR_EQ_NvThermalDown = Vector3.new(0, 0.198, -1.05),
+	ZR_EQ_NvThermalUp = Vector3.new(0, 0.887, -0.885),
 	-- M12 wear kit (ZR_WearKit.meta.json)
 	ZR_WK_Rubble = Vector3.new(0.1804, 0.2792, 0.1358),
 	ZR_WK_RubbleLarge = Vector3.new(-0.0671, 0.711, -0.0064),

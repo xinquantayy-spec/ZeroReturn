@@ -32,6 +32,7 @@ and an attribute list (icon, name, value; handling stats with a bar). Unknown it
 | Ammo | Damage and penetration (in the inspector since 0.14.5; hovering shows the effect against armor classes), armor damage, speed, bleeding chance, accuracy and recoil modifiers, tracer, subsonic | Damage, penetration, armor damage as text | Rows plus the per-class effectiveness on hover |
 | Body armor, armored rigs, plates | Armor class, durability (now/max), material, armored areas (thorax, stomach, sides, back, throat, groin), plates with their class and areas, movement speed %, turn speed %, ergonomics % | Class and durability | Material, areas, penalties, plates |
 | Helmets | Class, durability, material, areas (top, nape, ears, eyes, jaws), ricochet chance, sound reduction, what it blocks (earpiece, eyewear, face cover), penalties | Class and durability | The rest |
+| Glasses, ballistic glasses, gas masks | Blindness protection (the share of a flash charge it stops), weight, grid size; ballistic glasses also armor class, durability, material and the eyes area; what the item blocks | Missing (no eyewear slot) | Built 2026-11-01: BLINDNESS PROTECTION, LENS TINT, class, durability, material (GLASS), the EYES area and BLOCKS rows. Plain glasses show no durability, as in Tarkov. Not run in Studio yet |
 | Rigs, backpacks, cases | Grid layout, weight, penalties, what a case accepts | Capacity | Penalties, filters |
 | Meds | HP resource, max per use, use time, what it cures (light and heavy bleeding, fractures) and its cost, painkiller duration, side effects | Description only (the data exists in `Items.luau`) | All rows |
 | Food and drink | Energy, hydration, use time, effects | Description only | All rows |
@@ -78,7 +79,7 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Quick slots | 4 to 0 | Heal on H | Quick slots |
 | Prone | X | Z | Move; double Z drops the backpack |
 | Time and exits | Double O (raid timer on by default since 0.16.7) | O (exits) | Add the time |
-| Head device (NVG, face shield) | N | Missing | With NVG |
+| Head device (NVG, face shield) | N | N flips the goggles or the face shield (`NightVision.luau`; touch button NV, no gamepad binding); since 2026-11-01 the server learns the goggles' pose (act `nvg`) and others see them up or down | Gamepad binding |
 | Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Y and F1 to F12 | Some | The rest |
 | Rebinding with press, double press, hold and release | Settings, Controls | Missing | Keybinding screen |
 
@@ -100,9 +101,63 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Per-material impacts, bullet holes, muzzle flash and smoke, tracers, blood | Have | Check against Tarkov in M15 |
 | Pain darkening, tremor, tunnel vision, contusion, stun and flash white-out | Have | Check durations |
 | Picture-in-picture optics, variable zoom, switch sights | Fixed zoom | Variable zoom and PiP (KNOWN_ISSUES 52-57) |
-| Night vision and thermals | Missing | NVG and thermal sights |
-| Face shield, glasses and gas mask overlays (cracks when hit) | Missing | Overlays |
+| Night vision and thermals | Goggles and thermal goggles built (`NightVision.luau`); since 2026-11-01 other players see them flipped up on the helmet mount or strap, or down over the eyes (meshes pending, KNOWN_ISSUES 64) | Compare the tube numbers with Tarkov; thermal weapon scopes are not built |
+| Face shield, glasses and gas mask overlays (cracks when hit) | Face shield: a tinted visor round the view (N). Glasses and gas mask built 2026-11-01: a mild lens tint per item, blindness protection against stun charges, the mask's rubber frame with smoked lenses; both step aside while night-vision goggles are down | Cracks when hit, the mask's breathing loop, fogging and raindrops (notes below) |
 | Full-body awareness, weapon inertia and sway (0.13.5), visual recoil with bolt movement and camera shake (0.16) | Arms, sway, recoil | Legs in view, bolt movement |
+
+### Eyewear, gas mask and goggles on characters (2026-11-01)
+
+Researched first (sources below), then built. Status: written and passed through `tools/luau_check.py` only. The new
+LogicTests and CharTests checks, the overlays and the 16 character meshes have not been run in Studio, in Blender or on
+a phone or console.
+
+Matched:
+- **EYEWEAR slot** after FACE COVER in the gear column (`Items.SLOTS.eyes`, kind `eyewear`), with the touch and gamepad
+  layout of every other slot. The slot accepts nothing else, and the gas mask is a FACE COVER item.
+- **Items** with Tarkov-like weight, grid size, value order and durability: Sport Sunglasses (brown, 2x1, 0.05 kg), Range
+  Glasses (yellow, 1x1, 0.03 kg), BG-1 Ballistic Glasses (clear, class 1, durability 25, 0.11 kg: the numbers of the 6B34,
+  AFGlass and Condor), AF-2 Anti-Fragmentation Glasses (blue, class 2, durability 30, 0.27 kg: the Caiman's numbers) and
+  the Canister Gas Mask (FACE COVER, 2x2, 0.45 kg: the GP-5's weight). Only the two ballistic glasses have armor and a
+  durability, as in Tarkov.
+- **Blindness protection:** every lens stops a share of a stun charge's white-out (10 to 15 percent; Tarkov's range is
+  5 to 35). Glasses and the mask stack. The share comes from the worn item, never from the client's say-so.
+- **Eyes zone:** a hit on the front of the head at eye height goes to the ballistic glasses (penetration chance by
+  class, durability loss, blunt damage when stopped, nothing once worn out). A face-plate helmet takes the hit first
+  while its plate is down; the glasses sit behind it once it is raised.
+- **What blocks what:** helmets and face shields leave the eyewear slot free (Tarkov's pages for the Kolpak-1S, the
+  EXFIL and the Maska-1SCh list no eyewear block), so HELMET_C5 does not block it. The gas mask and glasses refuse
+  each other either way round (`GAS_MASK_BLOCKS_EYEWEAR`).
+- **Traders and loot:** TILDA (our Ragman) sells the sunglasses at LL1, the range and BG-1 glasses at LL3 and the AF-2 at
+  LL4, buys eyewear and repairs ballistic glasses. The gas mask is loot only (Tarkov's traders do not sell gas masks for
+  cash); some AI wear glasses and a few a gas mask.
+- **INSPECT:** BLINDNESS PROTECTION, LENS TINT, class, durability, material GLASS, the EYES area and BLOCKS.
+- **Overlays** (`Eyewear.luau`, client): its own colour grade per lens and, with the mask, a rubber frame with slightly
+  smoked lenses. They own their instances (`ZR_Eyewear`), so they cannot fight the goggles or the face shield, and
+  they hide while goggles are down. Not quality-gated, like the other grade effects.
+- **On characters:** glasses and mask are drawn on every character; night-vision goggles show on the helmet mount or
+  strap, flipped up by default and down over the eyes after N.
+
+Gaps (not copied):
+- **Eyes are a band, not a hit area of their own.** Tarkov lists the eyes among a head's hit areas (the helmet row
+  above); here the eye band is worked out from where on the head the shot landed (`Health.armorFor`), and the damage
+  goes to the head pool. The body has no separate eyes pool.
+- **No breathing loop for the mask.** The sound atlases hold only the one-shot `breath_heavy` and `breath_release`; a
+  loop needs a new original sample.
+- **Not modelled:** the mask's filter and gas protection, fogging and raindrops on the lenses, cracks on the lenses or
+  glasses when hit, and the glasses' glow in the dark.
+- **Class of the 6B34.** The brief asked for a class 2 pair "like the 6B34", but TarkovForge lists the 6B34 as class 1
+  (durability 25, 0.12 kg) and the Caiman visor as class 2 (durability 30). The clear BG-1 follows the 6B34 and the blue
+  AF-2 the Caiman.
+- **Gas mask blocks eyewear is unverified.** The brief for this feature asked for it. The wiki page of a mask that loaded
+  lists "Blocks Eyewear: No" (Jason mask), and the GP-5 and MSA pages failed to load, so Tarkov's rule for gas masks was
+  not seen. Remove `blocks` from `VIS.GAS_MASK` if Tarkov lets both be worn.
+- **Slot position unverified.** No source showed where Tarkov puts the eyewear slot; it sits beside the body armour, with
+  the cells to its right free for an armband.
+- **Plain glasses have no durability** and so no repair; ballistic glasses repair at TILDA like any armor.
+- **No gamepad binding for N** (the existing head-device key); the touch button exists.
+- **No pictures yet:** the five items have no inventory picture or loose-loot model (the item art set has 124 pictures);
+  their tiles show the item colour and short name, and loose ones lie as a coloured block until an art pass.
+- **Meshes pending:** `build_eyewear.py` has not been run, so characters wear neutral boxes (KNOWN_ISSUES 64).
 
 ## Order of work
 
@@ -122,4 +177,5 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 - [GGRecon: best settings](https://www.ggrecon.com/guides/escape-from-tarkov-best-settings-improve-fps-visibility/) and [TarkovForge: graphics settings 2026](https://tarkovforge.com/blog/best-tarkov-graphics-settings-2025) (settings tabs)
 - [GameSpot: controls and hotkeys](https://www.gamespot.com/articles/escape-from-tarkov-guide-for-controls-and-hotkeys/1100-6472601/), [Prima Games: controls](https://primagames.com/tips/escape-from-tarkov-complete-controls-guide)
 - [TarkovForge: Salewa](https://tarkovforge.com/meds/salewa-first-aid-kit) (med fields), [Gamepressure: health and injuries](https://www.gamepressure.com/escape-from-tarkov/health-and-injuries/z1cf2f)
+- Eyewear and face gear (2026-11-01): [TarkovForge: glasses](https://tarkovforge.com/glasses) (armor, durability, blindness protection), [6B34](https://tarkovforge.com/glasses/6b34-anti-fragmentation-glasses), [AFGlass](https://tarkovforge.com/glasses/anti-fragmentation-glasses), [Caiman visor](https://tarkovforge.com/glasses/galvion-caiman-fixed-arm-visor), [GP-5 gas mask](https://tarkovforge.com/face-covers/gp-5-gas-mask); Wiki: [Eyewear](https://escapefromtarkov.fandom.com/wiki/Eyewear), [RayBench Aviator glasses](https://escapefromtarkov.fandom.com/wiki/RayBench_Aviator_glasses) (Ragman LL4), [Kolpak-1S](https://escapefromtarkov.fandom.com/wiki/Kolpak-1S_riot_helmet), [EXFIL face shield](https://escapefromtarkov.fandom.com/wiki/Team_Wendy_EXFIL_Ballistic_face_shield_(Black)), [Maska-1SCh](https://escapefromtarkov.fandom.com/wiki/Maska-1SCh_face_shield_(Olive_Drab)), [Jason mask](https://escapefromtarkov.fandom.com/wiki/Jason_mask) (blocks lists)
 - Patch notes: [0.16.0.0 (Sportskeeda)](https://sportskeeda.com/esports/escape-tarkov-patch-notes-update-0-16-0-0-new-event-customs-rework-prestige-system), [0.16.7.0 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-0.16.7.0-full-patch-notes-aP2RA1G8vdlq), [1.0.4.5 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-1.0.4.5-improves-performance-reworks-weapon-balance-and-fixes-key-issues-aPJVC8b37l9m)

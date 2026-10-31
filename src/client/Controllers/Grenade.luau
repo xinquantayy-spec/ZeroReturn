@@ -550,6 +550,8 @@ local function localEffects(k, pos, spec)
 	elseif k == "stun" then
 		local facing = (d > 0.1) and cam.CFrame.LookVector:Dot(to.Unit) or 1
 		local b = G.blind(spec, d, facing, los)
+		-- eyewear stops a share of the white-out (Tarkov's blindness protection; the Eyewear controller knows what is worn)
+		b = b * (1 - (ctx.Eyewear and ctx.Eyewear.flash() or 0))
 		local f = G.deaf(spec, d, los)
 		if b > 0.02 then
 			ctx.Post.whiteout(b, 1.5 + 5.5 * b)

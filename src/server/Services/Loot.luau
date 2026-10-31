@@ -43,7 +43,7 @@ local POOLS = {
 		{ id = "SIGNAL_COIL", w = 10 }, { id = "CERAMIC_FUSE", w = 10 }, { id = "A62_FMJ", w = 10, n = { 20, 45 } },
 		{ id = "A76_PS", w = 6, n = { 15, 40 } }, { id = "CAPACITOR", w = 6 }, { id = "BATTERY", w = 4 },
 		{ id = "FUEL_CAN", w = 3 }, { id = "DECK_TRANSCEIVER", w = 3 }, { id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" },
-		{ id = "GREN_RK5", w = 3 }, { id = "GREN_SMOKE", w = 2 },
+		{ id = "GREN_RK5", w = 3 }, { id = "GREN_SMOKE", w = 2 }, { id = "GLASSES_RANGE", w = 2 }, { id = "GAS_MASK", w = 1 },
 	},
 	locker = {
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
@@ -51,6 +51,7 @@ local POOLS = {
 		{ id = "OLD_COIN", w = 5 }, { id = "KEY_OFFICE", w = 3 }, { id = "HELMET_C2", w = 3 }, { id = "RIG_BELT", w = 3 },
 		{ id = "BAG_SLING", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "CAPT_WATCH", w = 1 }, { id = "KEY_DORM_104", w = 2 },
 		{ id = "CAP_FIELD", w = 3 }, { id = "BEANIE", w = 3 }, { id = "GAITER", w = 3 }, { id = "HEADSET_GS1", w = 1 },
+		{ id = "GLASSES_SUN", w = 2 }, { id = "GLASSES_RANGE", w = 1 }, { id = "GAS_MASK", w = 1 },
 		{ id = "GREN_RK5", w = 2 }, { id = "GREN_SMOKE", w = 2 },
 	},
 	drawer = {
@@ -61,7 +62,7 @@ local POOLS = {
 	medbag = {
 		{ id = "BANDAGE", w = 20 }, { id = "TOURNIQUET", w = 12 }, { id = "SPLINT", w = 12 }, { id = "PAINKILLERS", w = 12 },
 		{ id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MEDKIT_L", w = 3 },
-		{ id = "MED_TOOLS", w = 4 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 },
+		{ id = "MED_TOOLS", w = 4 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 }, { id = "GAS_MASK", w = 1 },
 	},
 	weaponbox = {
 		{ id = "A62_FMJ", w = 14, n = { 30, 60 } }, { id = "A62_AP", w = 4, n = { 15, 40 } }, { id = "A76_PS", w = 10, n = { 30, 60 } },
@@ -70,8 +71,9 @@ local POOLS = {
 		{ id = "KST_MAG", w = 6, a = { 0, 30 }, at = "A76_PS" }, { id = "SPARROW_MAG", w = 5, a = { 0, 30 }, at = "A9_PST" },
 		{ id = "P9_PISTOL", w = 4 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "KST_RIFLE", w = 1 },
 		{ id = "GREN_RK5", w = 6 }, { id = "GREN_F7", w = 2 }, { id = "GREN_STUN", w = 3 }, { id = "GREN_SMOKE", w = 4 },
-		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then)
+		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
+		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
 		-- M14 weapon parts (Tarkov weapon boxes hold mods too)
 		{ id = "GRIP_V", w = 3 }, { id = "GRIP_STUB", w = 2 }, { id = "GRIP_ANG", w = 1 }, { id = "LIGHT_T", w = 3 }, { id = "LASER_DOT", w = 2 },
 		{ id = "RED_DOT", w = 2 }, { id = "SIGHT_MICRO", w = 1 }, { id = "MNT_RISER", w = 2 }, { id = "R17_FH_A2", w = 3 }, { id = "R17_COMP", w = 2 },
@@ -82,12 +84,13 @@ local POOLS = {
 	toolbox = {
 		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
 		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "WEAPON_KIT", w = 2 },
-		{ id = "MULTITOOL", w = 3 }, { id = "AR_CH_EXT", w = 1 }, { id = "R17_GAS_LOW", w = 1 },
+		{ id = "MULTITOOL", w = 3 }, { id = "AR_CH_EXT", w = 1 }, { id = "R17_GAS_LOW", w = 1 }, { id = "GAS_MASK", w = 1 },
 	},
 	jacket = {
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
 		{ id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "PAINKILLERS", w = 4 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "KEY_DORM_104", w = 3 }, { id = "KEY_DORM_203", w = 1 }, { id = "GREN_RK5", w = 1 },
+		{ id = "GLASSES_SUN", w = 2 }, { id = "GLASSES_RANGE", w = 1 },
 	},
 	safe = {
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
@@ -154,6 +157,7 @@ local POOLS = {
 		{ id = "MATCHES", w = 6 }, { id = "POWER_BANK", w = 6 }, { id = "LIGHTBULB", w = 6 }, { id = "TOOTHPASTE", w = 5 },
 		{ id = "SOAP", w = 5 }, { id = "PHONE", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "BATTERY", w = 2 },
 		{ id = "WIRES", w = 4 }, { id = "DUCT_TAPE", w = 4 }, { id = "A9_PST", w = 3, n = { 5, 15 } }, { id = "BANDAGE", w = 4 },
+		{ id = "GLASSES_SUN", w = 2 },
 	},
 	mallkeys = {
 		{ id = "KEY_MALL_STAFF", w = 8 }, { id = "KEY_MEDIQ", w = 6 }, { id = "KEY_MALL_SECURITY", w = 3 },
@@ -940,6 +944,17 @@ function Loot.guardLoadout(rand)
 		k.put("GREN_STUN")
 	end
 	k.roll("jacket", rand:NextInteger(0, 2))
+	-- eyewear (EYEWEAR slot): shooting glasses or ballistic glasses on some of the Watch; a gas mask on the face (rare) blocks them
+	if rand:NextNumber() < 0.04 then
+		k.slot("face", "GAS_MASK")
+	end
+	if rand:NextNumber() < 0.22 then
+		if rand:NextNumber() < 0.6 then
+			k.slot("eyes", "GLASSES_RANGE")
+		else
+			k.slot("eyes", "GLASSES_BG1", { dur = rand:NextInteger(12, 25) })
+		end
+	end
 	return k.h
 end
 
@@ -1040,6 +1055,10 @@ function Loot.crewLoadout(rand)
 		k.put("GREN_SMOKE")
 	end
 	k.roll("drawer", rand:NextInteger(0, 2))
+	-- the crew wear class 2 glasses now and then (blocked by a gas mask, which they do not carry)
+	if rand:NextNumber() < 0.3 then
+		k.slot("eyes", "GLASSES_AF2", { dur = rand:NextInteger(15, 30) })
+	end
 	return k.h
 end
 
@@ -1160,6 +1179,13 @@ function Loot.scavLoadout(rand)
 		if g then
 			Inv.place(h, g, it, order)
 		end
+	end
+	-- sunglasses on some, a gas mask on a few; the mask takes the face slot only when no gaiter is worn and refuses glasses
+	if rand:NextNumber() < 0.04 then
+		slot("face", "GAS_MASK")
+	end
+	if rand:NextNumber() < 0.1 then
+		slot("eyes", rand:NextNumber() < 0.7 and "GLASSES_SUN" or "GLASSES_RANGE")
 	end
 	return h
 end

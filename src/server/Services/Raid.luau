@@ -135,7 +135,7 @@ function Raid.state(player)
 	}
 end
 
-local GEAR_SLOTS = { "head", "ears", "face", "armor", "rig", "back", "holster", "primary", "secondary", "melee" }
+local GEAR_SLOTS = { "head", "ears", "face", "eyes", "armor", "rig", "back", "holster", "primary", "secondary", "melee" }
 local DRAW_ORDER = { "primary", "secondary", "holster", "melee" }
 
 local function weaponAt(h, slot)
@@ -145,12 +145,27 @@ local function weaponAt(h, slot)
 	return (d and d.weapon) and g or nil
 end
 
-local function gearKey(h, active)
+-- the night-vision device (guid) on the head item's mount, or nil
+local function nvgOf(h)
+	local hg = h.slots.head
+	local hit = hg and h.items[hg]
+	local mg = hit and hit.mods and hit.mods.mount
+	local it = mg and h.items[mg]
+	local d = it and Items.defs[it.id]
+	return (d and d.kind == "nvg") and mg or nil
+end
+Raid.nvgOf = nvgOf
+
+local function gearKey(h, active, nvDown)
 	local parts = { tostring(active) }
 	for _, slot in GEAR_SLOTS do
 		local g = h.slots[slot]
 		parts[#parts + 1] = (g and h.items[g]) and h.items[g].id or "-"
 	end
+	-- goggles on the head item's mount, and whether they are down over the eyes (others see both)
+	local dg = nvgOf(h)
+	parts[#parts + 1] = dg and h.items[dg].id or "-"
+	parts[#parts + 1] = (dg and nvDown) and "nv" or "-"
 	-- every carried gun's build (M14: the parts show in the hands and slung on the back)
 	for _, slot in DRAW_ORDER do
 		local g = h.slots[slot]
@@ -345,7 +360,8 @@ function Raid.enter(player, kind, spawn, idx)
 	-- the bunker is far from the maps (streaming): load the insertion point before the character lands there
 	pcall(player.RequestStreamAroundAsync, player, cf.Position, 4)
 	ctx.Chars.spawn(player, cf, s.inv, s.active, { scav = scav })
-	s.gearKey = gearKey(s.inv, s.active)
+	s.nvDown = nil
+	s.gearKey = gearKey(s.inv, s.active, s.nvDown)
 	Raid.push(player)
 	ctx.Remotes.note(player, "raid", Raid.raidInfo(s))
 	ctx.Match.touch(player)
@@ -563,7 +579,7 @@ local function resolve(player, ref, inRaid)
 end
 
 local SLOT_FOR = {
-	helmet = "head", headwear = "head", headset = "ears", facecover = "face", armor = "armor", rig = "rig", backpack = "back", secure = "secure",
+	helmet = "head", headwear = "head", headset = "ears", facecover = "face", eyewear = "eyes", armor = "armor", rig = "rig", backpack = "back", secure = "secure",
 	pistol = "holster", melee = "melee",
 }
 
@@ -948,6 +964,14 @@ function Raid.syncGear(player)
 		return
 	end
 	local h = s.inv
+	-- goggles taken off the mount: the down pose goes with them
+	if s.nvDown and not nvgOf(h) then
+		s.nvDown = nil
+		local c = player.Character
+		if c then
+			c:SetAttribute("NvDown", nil)
+		end
+	end
 	if not weaponAt(h, s.active) then
 		s.active = nil
 		for _, slot in DRAW_ORDER do
@@ -958,7 +982,7 @@ function Raid.syncGear(player)
 			end
 		end
 	end
-	local key = gearKey(h, s.active)
+	local key = gearKey(h, s.active, s.nvDown)
 	if key ~= s.gearKey then
 		s.gearKey = key
 		local char = player.Character

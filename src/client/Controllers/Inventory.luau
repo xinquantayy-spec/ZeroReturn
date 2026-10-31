@@ -26,7 +26,7 @@ local searchText = "" -- the stash search (Tarkov 0.16.7): non-matching items ar
 local SEARCH_CAT = {
 	weapon = "weapons", pistol = "weapons", melee = "weapons", mod = "parts", mag = "magazines", ammo = "ammo", grenade = "grenades",
 	armor = "gear armor", helmet = "gear helmets", rig = "gear rigs", backpack = "gear backpacks", headwear = "gear", headset = "gear headsets",
-	facecover = "gear", secure = "gear", med = "medical meds", food = "provisions food", key = "keys", loot = "barter", quest = "quest",
+	facecover = "gear", eyewear = "gear eyewear glasses", secure = "gear", med = "medical meds", food = "provisions food", key = "keys", loot = "barter", quest = "quest",
 }
 local gridTargets, slotTargets = {}, {}
 local drag = nil
@@ -56,11 +56,12 @@ local function sizeOf(it)
 	local d = it and defs[it.id]
 	return d and d.w or 1, d and d.h or 1
 end
--- Tarkov's gear column, in slot cells (7 wide): earpiece, headwear, face cover; body armour; the weapons on sling and
--- on back; holster and scabbard. The rig, backpack and secure container head their grids in the middle column.
+-- Tarkov's gear column, in slot cells (7 wide): earpiece, headwear, face cover; eyewear beside the body armour (the cells on
+-- its right stay free for an armband); the weapons on sling and on back; holster and scabbard. The rig, backpack and secure
+-- container head their grids in the middle column.
 local SLOT_LAYOUT = {
 	{ "ears", 0, 0, 2, 2 }, { "head", 2, 0, 3, 2 }, { "face", 5, 0, 2, 2 },
-	{ "armor", 2, 2, 3, 3 },
+	{ "eyes", 0, 2, 2, 2 }, { "armor", 2, 2, 3, 3 },
 	{ "primary", 0, 5, 7, 2 }, { "secondary", 0, 7, 7, 2 },
 	{ "holster", 0, 9, 4, 2 }, { "melee", 4, 9, 3, 2 },
 }
@@ -339,7 +340,7 @@ local function actionsFor(ref, g)
 		quick(ref, g)
 	end)
 	local k = locate(view, g)
-	if Items.SLOTS and (d.kind == "weapon" or d.kind == "pistol" or d.kind == "melee" or d.kind == "helmet" or d.kind == "headwear" or d.kind == "headset" or d.kind == "facecover" or d.kind == "armor" or d.kind == "rig" or d.kind == "backpack" or (d.kind == "secure" and not inRaid)) and k ~= "slot" then
+	if Items.SLOTS and (d.kind == "weapon" or d.kind == "pistol" or d.kind == "melee" or d.kind == "helmet" or d.kind == "headwear" or d.kind == "headset" or d.kind == "facecover" or d.kind == "eyewear" or d.kind == "armor" or d.kind == "rig" or d.kind == "backpack" or (d.kind == "secure" and not inRaid)) and k ~= "slot" then
 		add("EQUIP", function()
 			req({ op = "equip", g = g, from = ref, to = "me" })
 		end)

@@ -23,8 +23,8 @@ T.defs = {
 	},
 	tilda = {
 		name = "TILDA", title = "Outfitter", markup = 1.25,
-		desc = "Stitches, sells and fits armour, helmets, rigs and packs.",
-		buys = { armor = 0.55, helmet = 0.55, rig = 0.55, backpack = 0.55, headwear = 0.5, headset = 0.55, facecover = 0.5 },
+		desc = "Stitches, sells and fits armour, helmets, rigs, packs, eyewear and night vision.",
+		buys = { armor = 0.55, helmet = 0.55, rig = 0.55, backpack = 0.55, headwear = 0.5, headset = 0.55, facecover = 0.5, eyewear = 0.5 },
 	},
 	fence = {
 		name = "FENCE", title = "Fence", markup = 1.7,
@@ -94,6 +94,9 @@ T.offers = {
 		o("BAG_RAID", 4, 1), o("ARMOR_C5", 4, 1),
 		-- goggles (Tarkov: the cheap binoculars early, the monocular later, panoramic and thermal at the top)
 		o("NV_STRAP", 1, 2), o("NV_BINO", 2, 1), o("NV_GREEN", 3, 1), o("NV_MONO", 3, 1), o("NV_QUAD", 4, 1), o("TH_T7", 4, 1),
+		-- eyewear (Tarkov: the outfitter's plain glasses from LL1, the shooting glasses at LL3, ballistic glasses at LL3-4; gas masks
+		-- are not sold for cash)
+		o("GLASSES_SUN", 1, 3), o("GLASSES_RANGE", 3, 2), o("GLASSES_BG1", 3, 1), o("GLASSES_AF2", 4, 1),
 	},
 	fence = {
 		o("RIG_BELT", 1, 2), o("BAG_SLING", 1, 2), o("BANDAGE", 1, 4), o("R17_MAG", 1, 4), o("A62_FMJ", 1, 4, 60), o("KEY_OFFICE", 1, 1),
@@ -177,10 +180,10 @@ function T.sellPrice(traderId: string, it: any, karma: number?): number?
 end
 
 -- ── repairs (Tarkov: traders restore condition, but every repair costs some maximum durability) ───────────────
--- VOS repairs weapons, TILDA armour and helmets; the repair kit works on weapons out of raid with less wear.
+-- VOS repairs weapons, TILDA armour, helmets and ballistic glasses; the repair kit works on weapons out of raid with less wear.
 T.REPAIRS = {
 	vos = { kinds = { weapon = true, pistol = true }, rate = 0.004 },
-	tilda = { kinds = { armor = true, helmet = true, rig = true }, rate = 0.4 },
+	tilda = { kinds = { armor = true, helmet = true, rig = true, eyewear = true }, rate = 0.4 }, -- plain glasses have no durability: nothing to repair
 }
 T.KIT_DEGRADE = 0.03
 

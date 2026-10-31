@@ -48,7 +48,7 @@
     - Helmet chin straps run through the headset ear cups.
     - The armour collar sits on top of the carrier's shoulder straps.
     - The hard hat refuses headsets, because its brim would cut the ear cups.
-37. **Not built yet (M16 part B).** Eyewear and goggles, the marksman/scout and safehouse-worker presets, a stash character preview (viewport), and per-item first-person gloves (gloves follow the outfit).
+37. **Not built yet (M16 part B).** The marksman/scout and safehouse-worker presets, a stash character preview (viewport), and per-item first-person gloves (gloves follow the outfit). Eyewear, the gas mask and goggles on characters are built; see 64 for what still waits on their meshes.
 38. **Belt rig pouches are at the back.** They sit there to stay clear of the thighs when crouching and of the hands hanging at the sides.
 39. **Worn materials can render black after a fresh upload (Studio).** If a material's textures fail to load once (for example while new images are still processing), Studio keeps rendering that exact set of textures black for the session. Restart Studio, or upload one of the maps again so the set gets a new ID (done for five materials on 2026-10-29).
 40. **Client-side clutter is not identical for everyone.** HIGH draws low clutter (trash bags, cardboard, tipped bins) that POTATO does not, so a player lying prone right beside clutter is slightly easier to see on POTATO. Clutter is kept low and mostly along walls, and fog, light and cover are identical at every level.
@@ -83,6 +83,13 @@
 
 62. **No scratch, dent or paint-chip decals yet.** The owner wants small details (scratches, dents, bullet holes) rather than noisy textures. The decal set has cracks, spalling, bullet holes, scuffs and stains; a set of scratches, dents and paint chips needs new textures (`assets/textures/gen_wear.py`) and an upload.
 63. **Bunker flicker is fixed by analysis, not by eye on every screen.** In Studio no two decals in the bunker overlap within 0.02 studs any more, and the paint is in the walls. Flicker is a moving effect, so the owner's own walk-through is the final check.
+64. **Eyewear, the gas mask and the goggles on characters show plain boxes until their meshes are uploaded.** The EYEWEAR slot, the four glasses, the gas mask and the goggles (flipped up or down on a helmet mount or the head strap) are built, but their 16 meshes come from `assets/blender_scripts/build_eyewear.py`, which has not been run. Nothing in this batch has been run in Blender, in Studio or on a device; the code was only passed through `tools/luau_check.py`.
+    - To finish it: run the script in Blender (the steps are in its docstring), upload `assets/exports/ZR_EyeGear.fbx`, add the batch id as `ZR_EyeGear` in `AssetIds.luau`, check that `ZR_EyeGear.meta.json` matches the centres in `AssetMeta.luau` (the script forces the designed ones), then empty `Equipment.PENDING`. CharTests C01 lists the pending keys and fails if one stays listed after its mesh is in the library.
+    - Until then characters wear neutral boxes in the item's colour (the night-vision head strap, which wore a beanie as a stand-in, is a box too) and loose copies lie as the old coloured block. Protection, the slot rules and the screen overlays do not depend on the meshes.
+    - The five new items have no inventory picture or loose-loot model yet (their tiles show the item colour and name).
+    - The gas mask has no breathing sound: the sound atlases hold only one-shot breaths, no loop.
+    - Not modelled: lens cracks, fogging and raindrops, the mask's filter. The gas mask blocking glasses was asked for in the brief; Tarkov's own rule for gas masks could not be checked (see `docs/design/EFT_PARITY.md`, section 6).
+    - The night-vision key N still has no gamepad binding (the touch button exists).
 
 ## Tool limitations (not game bugs)
 

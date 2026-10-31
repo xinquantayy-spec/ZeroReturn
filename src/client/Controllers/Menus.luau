@@ -137,7 +137,7 @@ end
 -- ── HANDBOOK ─────────────────────────────────────────────────────────────────
 local CAT = {
 	weapon = "WEAPONS", pistol = "WEAPONS", melee = "WEAPONS", mod = "WEAPON PARTS", mag = "MAGAZINES", ammo = "AMMUNITION", grenade = "GRENADES",
-	armor = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", secure = "CONTAINERS",
+	armor = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", eyewear = "GEAR", secure = "CONTAINERS",
 	med = "MEDICATION", food = "PROVISIONS", key = "KEYS", loot = "BARTER ITEMS", repair = "BARTER ITEMS", quest = "INFO ITEMS", nvg = "GEAR",
 }
 local CATS = { "ALL", "WEAPONS", "WEAPON PARTS", "MAGAZINES", "AMMUNITION", "GRENADES", "GEAR", "CONTAINERS", "MEDICATION", "PROVISIONS", "KEYS", "BARTER ITEMS", "INFO ITEMS", "WISH LIST" }

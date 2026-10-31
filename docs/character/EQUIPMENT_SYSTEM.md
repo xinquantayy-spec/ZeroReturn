@@ -66,9 +66,28 @@ just enough to clear it.
 | Full-cut helmet (Shell, Bulwark) leaves no room for a headset | `VIS.HELMET_C2/C5.blocks.ears` | `HELMET_COVERS_EARS` |
 | Hard hat brim blocks a headset | `VIS.HARDHAT_FOREMAN.blocks.ears` | `HARD_HAT_BRIM` |
 | Armoured rig cannot be worn with body armour | `VIS.RIG_PLATE.blocks.armor` and `Inv.canEquip` | `ARMOR_CONFLICT` |
+| A gas mask and glasses leave no room for each other (either way round) | `VIS.GAS_MASK.blocks.eyes` | `GAS_MASK_BLOCKS_EYEWEAR` |
 | Headset band goes behind the neck under any headwear | `VIS.HEADSET_*.underHeadwear` | (variant) |
 | A backpack covers the chest rig's X harness and a hood worn down | `covers = { upperBack, hood }` | (hidden, restored when the pack comes off) |
 | The Foreman's jacket conceals his armour | `LOOKS.foreman.covers.armorVisual` | (internal plates not shown) |
+
+## Eyewear, gas mask and goggles
+
+* **EYEWEAR slot.** `Items.SLOTS.eyes` takes the `eyewear` kind only, and its visual group is `eyes`. The gas mask is a
+  FACE COVER item (group `face`). Face-plate helmets and the gaiter do not block eyewear (Tarkov's face shields list no
+  eyewear block); only the gas mask does.
+* **Protection** is the item's `armor` record (class, durability, zone `eyes`; only the two ballistic glasses have one).
+  `Health.armorFor` looks at where on the head the shot landed: the front of the head at eye height goes to the
+  helmet's face plate while it is down, then to the glasses. The hit is a head hit; there is no eyes health pool.
+* **Goggles are not a slot.** The device sits on the head item's mount (`items[headGuid].mods.mount`, a helmet's NVG mount
+  or the head strap). `Equipment.stateOf` finds it and `resolve` adds an `nvg` group with the device's `Up` model (flipped
+  up on the front of the head) or its `Down` model (over the eyes). The pose is the character attribute `NvDown`: the
+  owner's client sends act `nvg` when N flips the goggles, the server sets the attribute (and clears it when the device
+  is gone) and redresses, because `Raid.gearKey` includes the device and the pose.
+* **Meshes.** 16 meshes from `build_eyewear.py` (batch `ZR_EyeGear`). While the batch is not uploaded,
+  `Equipment.PENDING` names them and characters wear boxes in the piece's `fb` colour.
+* **Screen overlays** (the wearer's own view) are client-only: `Eyewear.luau`, separate from the goggles and the
+  face shield. See `docs/design/EFT_PARITY.md`, section 6.
 
 ## Role presets (`Equipment.PRESETS`)
 

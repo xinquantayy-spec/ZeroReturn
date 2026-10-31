@@ -81,7 +81,7 @@ function CT.run(ctx)
 	end
 
 	-- ── C01: definitions resolve to imported meshes ─────────────────────────────────────────────────────────
-	local missingMeta, missingLib, missingSize = {}, {}, {}
+	local missingMeta, missingLib, missingSize, pendingLib, stalePending = {}, {}, {}, {}, {}
 	for _, key in Equipment.allKeys() do
 		if not AssetMeta[key] then
 			table.insert(missingMeta, key)
@@ -89,15 +89,22 @@ function CT.run(ctx)
 		if not Equipment.SIZE[key] then
 			table.insert(missingSize, key)
 		end
-		if not (lib and lib:FindFirstChild(key) and lib[key]:IsA("MeshPart")) then
-			table.insert(missingLib, key)
+		local imported = lib and lib:FindFirstChild(key) and lib[key]:IsA("MeshPart")
+		if not imported then
+			-- authored in build_eyewear.py but not uploaded yet (Equipment.PENDING): neutral boxes, listed here, not hidden
+			table.insert(Equipment.PENDING[key] and pendingLib or missingLib, key)
+		elseif Equipment.PENDING[key] then
+			table.insert(stalePending, key)
 		end
 	end
 	check("C01", "every equipment mesh key has an AssetMeta offset and a fallback size", #missingMeta == 0 and #missingSize == 0, table.concat(missingMeta, ",") .. table.concat(missingSize, ","))
-	check("C01", "every equipment mesh imported as a MeshPart (ZR_CharGear / ZR_CharBase)", #missingLib == 0, #missingLib > 0 and ("missing " .. table.concat(missingLib, ",")) or (#Equipment.allKeys() .. " meshes"))
+	check("C01", "every equipment mesh imported as a MeshPart (ZR_CharGear / ZR_CharBase), apart from the pending ZR_EyeGear batch", #missingLib == 0,
+		#missingLib > 0 and ("missing " .. table.concat(missingLib, ",")) or (#Equipment.allKeys() - #pendingLib .. " meshes"))
+	check("C01", "pending meshes (build_eyewear.py not uploaded yet) are all of the ZR_EyeGear batch and none is still listed once imported", #stalePending == 0,
+		#stalePending > 0 and ("imported, remove from Equipment.PENDING: " .. table.concat(stalePending, ",")) or (#pendingLib .. " pending: neutral boxes in use, KNOWN_ISSUES 64"))
 	local noVis = {}
 	for id, d in Items.defs do
-		local slotKinds = { helmet = true, headwear = true, headset = true, facecover = true, armor = true, rig = true, backpack = true }
+		local slotKinds = { helmet = true, headwear = true, headset = true, facecover = true, eyewear = true, armor = true, rig = true, backpack = true }
 		if slotKinds[d.kind] and not Equipment.VIS[id] then
 			table.insert(noVis, id)
 		end
@@ -384,6 +391,91 @@ function CT.run(ctx)
 		nd += 1
 	end
 	check("C09", "the five presets look distinct", nd == 5)
+
+	-- ── C13: eyewear, the gas mask and goggles on the mount: visuals through the real path, protection from the item ──
+	local function bareKey(model, group)
+		return (string.gsub(keys(model, group), "%(fallback%)", ""))
+	end
+	local me = dummy("player")
+	local he = holder()
+	give(he, "eyes", "GLASSES_SUN")
+	apply(me, he)
+	local eyesPart = firstOf(me, "eyes")
+	local fbOk = true
+	if eyesPart and not eyesPart:IsA("MeshPart") then
+		-- the mesh is not uploaded yet: a decorative box in the item's fallback colour (protection never depends on it)
+		fbOk = eyesPart.CanQuery == false and eyesPart.CanCollide == false and eyesPart.Massless
+			and string.upper(eyesPart.Color:ToHex()) == Equipment.VIS.GLASSES_SUN.pieces[1].fb
+	end
+	check("C13", "sunglasses in the eyes slot: the eyes group shows ZR_EQ_GlassSun (a fallback box until uploaded) and Gear_eyes is set",
+		bareKey(me, "eyes") == "ZR_EQ_GlassSun" and me:GetAttribute("Gear_eyes") == "GLASSES_SUN" and eyesPart ~= nil and fbOk)
+	local hm = holder()
+	give(hm, "eyes", "GLASSES_BG1")
+	local _, eMaskRefused = give(hm, "face", "GAS_MASK")
+	drop(hm, "eyes")
+	give(hm, "face", "GAS_MASK")
+	local _, eGlassRefused = give(hm, "eyes", "GLASSES_SUN")
+	local mm = dummy("player")
+	apply(mm, hm)
+	check("C13", "gas mask and glasses refuse each other either way round; the mask shows in the face group, the eyes group stays empty",
+		eMaskRefused == "GAS_MASK_BLOCKS_EYEWEAR" and eGlassRefused == "GAS_MASK_BLOCKS_EYEWEAR" and bareKey(mm, "face") == "ZR_EQ_GasMask" and bareKey(mm, "eyes") == "")
+	-- goggles on the helmet's mount: up by default, down when the character's NvDown attribute is set; only that group is rebuilt
+	local mn = dummy("player")
+	local hn = holder()
+	give(hn, "head", "HELMET_C3")
+	local helmItem = hn.items[hn.slots.head]
+	helmItem.mods = { mount = "NVG1" }
+	hn.items.NVG1 = { id = "NV_BINO", n = 1 }
+	apply(mn, hn)
+	local headKeep2 = firstOf(mn, "head")
+	local upKey = bareKey(mn, "nvg")
+	local revUp = mn:GetAttribute("AppearanceRev")
+	mn:SetAttribute("NvDown", true)
+	apply(mn, hn)
+	local downKey = bareKey(mn, "nvg")
+	check("C13", "goggles on the helmet mount: up by default, down when NvDown is set; only the nvg group is rebuilt (helmet kept)",
+		upKey == "ZR_EQ_NvBinoUp" and downKey == "ZR_EQ_NvBinoDown" and firstOf(mn, "head") == headKeep2 and mn:GetAttribute("AppearanceRev") == revUp + 1)
+	helmItem.mods = nil
+	hn.items.NVG1 = nil
+	apply(mn, hn)
+	check("C13", "goggles taken off the mount leave nothing drawn, whatever NvDown says", bareKey(mn, "nvg") == "" and keys(mn, "head") ~= "")
+	-- protection: ballistic glasses guard the eye band; Health decides from the item (the mesh and the fallback never matter)
+	local function hitAt(worn, at, opts)
+		opts = opts or {}
+		local mx = dummy("guard")
+		local hx = holder()
+		for slot, id in worn do
+			give(hx, slot, id)
+		end
+		if opts.dur then
+			hx.items[hx.slots.eyes].dur = opts.dur
+		end
+		ctx.Health.attach(mx, { kind = "ai", holder = function()
+			return hx
+		end })
+		if opts.visorUp then
+			mx:SetAttribute("VisorUp", true)
+		end
+		local r = ctx.Health.hit(mx, { dmg = 4, pen = 6, part = mx.Head, hitPos = mx.Head.CFrame * at })
+		ctx.Health.states[mx] = nil
+		return r, hx
+	end
+	local EYES, JAW, BROW, CROWN = Vector3.new(0.2, 0.07, -0.58), Vector3.new(0, -0.3, -0.58), Vector3.new(0, 0.4, -0.58), Vector3.new(0, 0.5, 0)
+	local rBG, hBG = hitAt({ eyes = "GLASSES_BG1" }, EYES)
+	local rAF = hitAt({ eyes = "GLASSES_AF2" }, EYES)
+	local rSun = hitAt({ eyes = "GLASSES_SUN" }, EYES)
+	check("C13", "a hit on the eye band: ballistic glasses stop it (class 1 and class 2, durability drops); sunglasses protect nothing",
+		rBG ~= nil and rBG.armor == "GLASSES_BG1" and hBG.items[hBG.slots.eyes].dur < Items.defs.GLASSES_BG1.armor.dur and rAF ~= nil and rAF.armor == "GLASSES_AF2" and rSun ~= nil and rSun.armor == nil)
+	local rJaw = hitAt({ eyes = "GLASSES_BG1" }, JAW)
+	local rBrow = hitAt({ eyes = "GLASSES_BG1" }, BROW)
+	local rCrown = hitAt({ eyes = "GLASSES_BG1" }, CROWN)
+	local rBroken = hitAt({ eyes = "GLASSES_BG1" }, EYES, { dur = 0 })
+	check("C13", "glasses guard only the eyes: not the jaw, the brow or the crown, and not once their durability is gone",
+		rJaw ~= nil and rJaw.armor == nil and rBrow ~= nil and rBrow.armor == nil and rCrown ~= nil and rCrown.armor == nil and rBroken ~= nil and rBroken.armor == nil)
+	local rPlate = hitAt({ head = "HELMET_C5", eyes = "GLASSES_BG1" }, EYES)
+	local rOpen = hitAt({ head = "HELMET_C5", eyes = "GLASSES_BG1" }, EYES, { visorUp = true })
+	check("C13", "with a face-plate helmet the plate takes the eye hit while it is down, the glasses behind it once it is raised",
+		rPlate ~= nil and rPlate.armor == "HELMET_C5" and rOpen ~= nil and rOpen.armor == "GLASSES_BG1")
 
 	-- ── C12: equipment churn returns to the baseline (no growing meshes, welds or records) ──────────────────
 	local mc = dummy("player")

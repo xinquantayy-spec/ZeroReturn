@@ -614,7 +614,7 @@ end
 -- all or nothing (the old layout stays if the new one does not fit)
 local SORT_KIND = {
 	weapon = 1, pistol = 2, melee = 3, armor = 4, helmet = 5, rig = 6, backpack = 7, secure = 8, headwear = 9, headset = 10,
-	facecover = 11, mod = 12, mag = 13, ammo = 14, grenade = 15, med = 16, food = 17, repair = 18, key = 19, loot = 20, quest = 21,
+	facecover = 11, eyewear = 12, mod = 13, mag = 14, ammo = 15, grenade = 16, med = 17, food = 18, repair = 19, key = 20, loot = 21, quest = 22,
 }
 function Inv.sortStash(h: any): (boolean, string?)
 	local pl = h.grids and h.grids.stash
