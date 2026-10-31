@@ -695,8 +695,8 @@ return function(B)
 			O = O, extX = EX, extZ = EZ, y0 = Y0, ny = NY,
 			hg = HG, waterAt = waterAt, material = matAt, cave = caveAt,
 			colors = {
-				[PAL.Asphalt] = "3B3B38", [PAL.Concrete] = "75726B", [PAL.Ground] = "5A5040", [PAL.Grass] = "5D6A3D",
-				[PAL.Mud] = "463C30", [PAL.Sand] = "7A6E56", [PAL.LeafyGrass] = "4C5A33", [PAL.Basalt] = "77736A",
+				[PAL.Asphalt] = "3B3B38", [PAL.Concrete] = "75726B", [PAL.Ground] = "6B6350", [PAL.Grass] = "5D6A3D",
+				[PAL.Mud] = "5A5243", [PAL.Sand] = "7A6E56", [PAL.LeafyGrass] = "4C5A33", [PAL.Basalt] = "77736A",
 				[PAL.Rock] = "6A675F", [PAL.Slate] = "55595A",
 			},
 		})
