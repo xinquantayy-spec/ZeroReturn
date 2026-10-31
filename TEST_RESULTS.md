@@ -8,6 +8,20 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Border Yard on Customs, and the eyewear slot (2026-11-01)
+
+Studio on the T490, one client, in-memory store.
+
+| Check | How | Result |
+|---|---|---|
+| Automated | `dev:Invoke("tests")` | LogicTests 241/241, CharTests 46/46, LookTests 19/19, MapTests 38/38 |
+| Border Yard build | Server log | 25,822 parts in 4.8 s: ground (423,000 terrain columns, roads, rail, fences, 700 trees, 780 bushes, bridges, boundary), living quarters (43 buildings, 440 kit props, 127 doors, 223 containers), industrial side (9,357 parts, 428 kit props, 139 doors, 311 containers), gameplay (12 spawns, 6 routes, 6 posts, 118 scav zones, the Broker and 4 guards, 15 propane, 6 sniper strips), dressing (40 wrecks, 134 cover pieces); detail plan 27,586 entries in 10 s; AI cover 8,474 points (map in play first) |
+| Look | Aerial screenshots of the whole map, the industrial centre and the dorms | Customs' layout recognisable: rail lines, the Derrick, the Frame, the stores, Block A and B round the car park, the river |
+| Fixes found by testing | Server log, MapTests | an invalid terrain material (Pebble) stopped the whole terrain; barbed wire on the power cables; the cover test ran before the big map was sampled; 7 loose loot spots floating (now dropped onto the surface or removed) |
+| Eyewear | Showroom dummies | Sunglasses, range glasses, BG-1, AF-2 and the gas mask sit right on the block head; CharTests C01 finds every ZR_EyeGear mesh |
+
+**Not verified:** a full raid on Border Yard with AI walking the new routes through the buildings, frame rates there and on phones (343 lamps across the buildings), two clients.
+
 ## Bunker graphics: clean shell, grime where it gathers, no flicker (2026-11-01)
 
 Studio on the T490, one client, in-memory store. Before and after captures B01 to B04 were taken in the session (not kept as files).

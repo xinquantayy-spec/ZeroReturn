@@ -4,12 +4,14 @@
 
 **Done 2026-11-01:** the bunker graphics pass (painted walls, grime only where it gathers, no flicker; `docs/maps/RELAY7_LOBBY.md`), and before it the z-fighting pass, real-size air-con and stairs, Quay 7 interiors, bullet drop and zeroing, seasons, propane cylinders and border snipers on Border Yard.
 
+**Done 2026-11-01 (later):** Border Yard rebuilt on Customs' layout at real scale (`docs/maps/BORDER_YARD.md`), Tarkov's EYEWEAR slot with glasses, ballistic glasses and a gas mask (meshes uploaded).
+
 **Now, in order (owner, 2026-11-01):**
-1. **Border Yard on Tarkov's Customs layout**, current (post-0.16) version: same map, own buildings and names. A layout reference sheet (areas, footprints, roads, river, extracts, spawns, the boss, snipers) comes first; the tarkov.dev SVG maps on GitHub are v0.12.12 and must be corrected to the rework.
-2. **Meridian Mall on Interchange's layout**, the same way. Pinewatch stays parked (owner: not coming back).
-3. **Eyewear slot** with Blender models for night-vision goggles worn on characters, glasses and a gas mask, and their overlays.
-4. **Border Yard extras:** mounted machine guns, more propane spots (2 of 9 placed).
-5. Then the remaining parity list in `EFT_PARITY.md` (hideout customisation, the rest of the controls, PiP gaps, MASTERING...).
+1. **Meridian Mall on Interchange's layout**, the same way as Border Yard: research the current layout, then foundation, buildings and gameplay (`docs/maps/BORDER_CUSTOMS_BUILD.md` is the template). Pinewatch stays parked.
+2. **Border Yard polish from playtests:** dorm interiors (glass, washrooms, denser furniture), the 0.16 interiors, ladders, the lamp count on phones, the K-13 and boiler cellar entries (KNOWN_ISSUES).
+3. **Inventory pictures for the eyewear items** (item art pipeline, `docs/items/ITEM_ART.md`).
+4. **Mounted machine guns** need a stationary-weapon system first (Customs has them).
+5. Then the remaining parity list in `EFT_PARITY.md` (hideout customisation, MASTERING, co-op extracts and transits, other boss groups).
 
 **Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file). Decisions that can wait: publishing, a cross-server flea market (MemoryStore).
 
@@ -62,5 +64,5 @@ Maps are original. They are the same kinds of places as Tarkov's with their own 
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open `Zero Return.rbxl` and connect the Rojo plugin.
-3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **224/224**, CharTests **38/38**, LookTests **19/19**, MapTests **38/38**.
+3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **241/241**, CharTests **46/46**, LookTests **19/19**, MapTests **38/38**.
 4. Without a shell on the laptop (a cloud session linked through the desktop app): rebuild the git repository in the cloud workspace from `backup/` (join the three parts of `ZeroReturn_2026-10-31.gitbundle`, clone, then pull the newest incremental bundle whose base is in it), work there, write changed files to the laptop with the file bridge while Studio is in edit mode (Rojo carries them in), and write a new incremental bundle to `backup/` at each milestone (KNOWN_ISSUES 44).
