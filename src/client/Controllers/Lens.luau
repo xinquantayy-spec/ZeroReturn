@@ -420,10 +420,17 @@ function TextObj:_step(dt)
 		return
 	end
 	if self.pz ~= 0 or self.popV ~= 0 then
-		local a = -280 * self.pz - 16 * self.popV
-		self.popV += a * dt
-		self.pz += self.popV * dt
-		if math.abs(self.pz) < 0.002 and math.abs(self.popV) < 0.02 then
+		-- the spring runs in steps of at most 1/60 s: one long frame (a hitch while a raid loads, a window in the background)
+		-- made the plain step blow up to NaN, which never settles, and the text vanished for good (the HP row, 2026-11-01)
+		local left = math.min(dt, 0.25)
+		while left > 0 do
+			local h = math.min(left, 1 / 60)
+			left -= h
+			local a = -280 * self.pz - 16 * self.popV
+			self.popV += a * h
+			self.pz += self.popV * h
+		end
+		if self.pz ~= self.pz or self.popV ~= self.popV or (math.abs(self.pz) < 0.002 and math.abs(self.popV) < 0.02) then
 			self.pz, self.popV = 0, 0
 		end
 		self.dirty = true
