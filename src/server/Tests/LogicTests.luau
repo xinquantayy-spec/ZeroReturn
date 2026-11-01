@@ -1815,6 +1815,92 @@ function T.run(ctx)
 		end
 	end
 
+	-- atmosphere pass (docs/look/ATMOSPHERE.md): the ambience atlas, the sound maker (silent while the asset id is empty), the
+	-- published switch state, the skylight tags, the floors that name their reverb. WRITTEN 2026-11-01, NOT RUN yet.
+	do
+		local AmbAtlas = require(Shared.AmbAtlas)
+		local AmbSound = require(Shared.AmbSound)
+		local names = { "room_tone_loop", "elec_hum_loop", "garage_tone_loop", "siren_loop", "generator_loop", "drip_1", "drip_2", "drip_3", "gun_far_1", "gun_far_2", "gun_far_3" }
+		local regions, shapeOk, loopsOk = {}, true, true
+		for _, n in names do
+			local r = AmbAtlas[n]
+			local good = type(r) == "table" and type(r[1]) == "number" and type(r[2]) == "number" and r[2] > 0
+				and type(r[3]) == "number" and r[3] > 0 and r[3] <= 1 and type(r[4]) == "boolean"
+			shapeOk = shapeOk and good
+			if good then
+				regions[#regions + 1] = r
+				loopsOk = loopsOk and (r[4] == (string.find(n, "_loop", 1, true) ~= nil))
+			end
+		end
+		table.sort(regions, function(a, b)
+			return a[1] < b[1]
+		end)
+		local apart = true
+		for i = 2, #regions do
+			apart = apart and regions[i][1] >= regions[i - 1][1] + regions[i - 1][2] - 0.0001
+		end
+		check("atmosphere atlas: 11 regions with start, length, gain (0 to 1) and a loop flag, no overlaps, and exactly the _loop ones loop",
+			shapeOk and loopsOk and apart and #regions == #names)
+		local snd = AmbSound.make("drip_1", {})
+		local none = AmbSound.make("no_such_sound", {})
+		if snd then
+			snd:Destroy()
+		end
+		check("atmosphere sounds: a Sound is made only once Sounds.AMB_ATLAS is set (silent and error-free while it is empty), an unknown name makes none",
+			(snd ~= nil) == AmbSound.ready() and none == nil)
+		local enumOk = true
+		for _, n in { "NoReverb", "Plain", "Alley", "Room", "Hallway", "StoneRoom", "Auditorium", "Hangar", "ParkingLot", "Bathroom", "StoneCorridor" } do
+			enumOk = enumOk and pcall(function()
+				return Enum.ReverbType[n]
+			end)
+		end
+		check("atmosphere reverb: every Enum.ReverbType name the controller and the floor marks use exists", enumOk)
+		if ctx and ctx.World and ctx.World.publishSwitch then
+			local WD = ctx.World
+			local seen = nil
+			local fake = {
+				id = "T_PUB", on = false,
+				onChange = function(on)
+					seen = on
+				end,
+			}
+			WD.publishSwitch("T_PUB", fake)
+			fake.onChange(true)
+			local a1, s1 = workspace:GetAttribute("ZR_Sw_T_PUB"), seen
+			fake.onChange(false)
+			local a2, s2 = workspace:GetAttribute("ZR_Sw_T_PUB"), seen
+			workspace:SetAttribute("ZR_Sw_T_PUB", nil)
+			check("atmosphere switches: onChange publishes the state as workspace attribute ZR_Sw_<id> and still runs the original",
+				a1 == true and s1 == true and a2 == false and s2 == false)
+			local lever = WD.switches.MALL_POWER
+			local attr = workspace:GetAttribute("ZR_Sw_MALL_POWER")
+			check("atmosphere switches: Meridian's power lever is wrapped, and its attribute (once set) matches the lever",
+				lever == nil or (lever.published == true and (attr == nil or attr == (lever.on == true))))
+		end
+		local mm = ctx and ctx.World and ctx.World.maps and ctx.World.maps.meridian
+		local mall = mm and mm.model and mm.model:FindFirstChild("Mall")
+		if mall then
+			local sky, baths, tunnels = 0, 0, 0
+			for _, p in game:GetService("CollectionService"):GetTagged("ZR_Skylight") do
+				if p:IsDescendantOf(mall) then
+					sky += 1
+				end
+			end
+			for _, p in mall:GetDescendants() do
+				if p.Name == "UnitFloor" then
+					local rv = p:GetAttribute("Reverb")
+					if rv == "Bathroom" then
+						baths += 1
+					elseif rv == "StoneCorridor" then
+						tunnels += 1
+					end
+				end
+			end
+			check("atmosphere dust and reverb: the mall's roof glass is tagged ZR_Skylight, a washroom floor says Bathroom, the service tunnel's says StoneCorridor",
+				sky >= 10 and baths >= 1 and tunnels >= 1)
+		end
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

@@ -524,7 +524,22 @@ return function(B)
 		transformer(m, F, -30, -17, 0)
 		transformer(m, F, -16, -17, 0)
 		transformer(m, F, -30, 16, PI)
-		prop(m, F, "Generator", -4, -(hd - t - 3.2), PI, FLOOR)
+		local gen = prop(m, F, "Generator", -4, -(hd - t - 3.2), PI, FLOOR)
+		-- its hum while the mall has power (ZR_SFX_Amb; nothing is created while that asset is not uploaded)
+		step("generator hum", function()
+			local anchor = gen and gen:FindFirstChildWhichIsA("BasePart")
+			local AmbSound = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR"):WaitForChild("AmbSound"))
+			local hum = anchor and AmbSound.make("generator_loop", { parent = anchor, volume = 1, minDist = 7, maxDist = 85, name = "ZR_GeneratorHum" })
+			if hum then
+				B.powerHooks[#B.powerHooks + 1] = function(on)
+					if on then
+						hum:Play()
+					else
+						hum:Stop()
+					end
+				end
+			end
+		end)
 		for _, u in { -37, -29, -21, -13 } do
 			prop(m, F, "ElectricCabinet", u, hd - t - 1.2, 0, FLOOR)
 		end

@@ -4,8 +4,9 @@
 --              mall power and then a lever hidden in the L2 washroom; FENCE GAP needs an empty backpack slot (rule nobag)
 --   power      what MALL_POWER changes: the washroom lever wakes, the electric locks work (the IRONSIGHT doors, the MEDIQ store
 --              room, the shelter's card door, UNIT 14: doors that name KEY_MM_IRON_FRONT / _GRATE, KEY_MEDIQ, CARD_MALL_VAULT or
---              KEY_MM_UNIT14 get `power`), and the IRONSIGHT alarm: about 3 s after its front door opens a red lamp flashes and
---              every AI in earshot comes to look, until the security terminal (switch MM_ALARM) is used
+--              KEY_MM_UNIT14 get `power`), and the IRONSIGHT alarm: about 3 s after its front door opens a red lamp flashes, the
+--              siren sounds (ZR_SFX_Amb, silent until that asset is uploaded) and every AI in earshot comes to look, until the
+--              security terminal (switch MM_ALARM) is used (or 60 s pass)
 --   spawns     one PMC spawn per reference cluster, on the MallNW and MallSE halves of the perimeter (W.spawns, side nw / se)
 --   AI         W.patrols and W.watchPosts (car parks, docks, the substation, the L1 and L2 galleries at their floor heights),
 --              W.scavZones (the reference's points by level plus ours), W.boss = THE CARETAKER (60 %, five zones)
@@ -626,6 +627,7 @@ return function(B)
 		end
 		local ax, az = L.hazard.ironAlarm[1], L.hazard.ironAlarm[2]
 		local lamp = nil
+		local siren = nil -- the shop's alarm bell: a looped Sound on the beacon (atmosphere pass); stays nil while Sounds.AMB_ATLAS is empty
 		if G.floorAt(1, ax, az) then
 			-- a red beacon hung from the ceiling over the shop (dark until the alarm rings)
 			local m = kit.model("IRONSIGHT alarm", map)
@@ -642,10 +644,19 @@ return function(B)
 			lamp.Shadows = false
 			lamp.Enabled = false
 			lamp.Parent = b
+			local okA, AmbSound = pcall(function()
+				return require(game:GetService("ReplicatedStorage"):WaitForChild("ZR"):WaitForChild("AmbSound"))
+			end)
+			if okA and AmbSound then
+				siren = AmbSound.make("siren_loop", { parent = b, volume = 1, minDist = 14, maxDist = 150, name = "ZR_IronsightSiren" })
+			end
 		end
 		local function ring(epoch)
 			local AIm = servicesModule("AI")
 			local t0, nextNoise = os.clock(), 0
+			if siren then
+				siren:Play() -- from the first flash until the terminal switches the alarm off (or after 60 s, like the lamp)
+			end
 			while os.clock() - t0 < 60 and alarm.epoch == epoch and not alarm.off do
 				local t = os.clock() - t0
 				if lamp then
@@ -657,6 +668,9 @@ return function(B)
 					pcall(AIm.hearShot, Vector3.new(O.X + ax, LV[1] + 3, O.Z + az), nil, nil, 1.6)
 				end
 				task.wait(0.25)
+			end
+			if siren then
+				siren:Stop()
 			end
 			if lamp then
 				lamp.Enabled = false

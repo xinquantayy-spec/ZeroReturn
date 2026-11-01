@@ -3,6 +3,7 @@
 -- and the two domes, every wall of the plan (outer walls, galleries, party walls, store fronts with their glass, balustrades round
 -- the voids, the low walls round the decks), the door leaves of the service rooms and the dock bay shutters.
 local PI = math.pi
+local CollectionService = game:GetService("CollectionService")
 
 return function(ctx)
 	local plan, O, W = ctx.plan, ctx.O, ctx.W
@@ -33,6 +34,9 @@ return function(ctx)
 		stock = hex("6C6E68"), security = hex("7C8490"), tunnel = hex("575A56"), shelter = hex("4C4F4B"), unit14 = hex("4C4F4B"),
 		vestibule = hex("575A56"),
 	}
+	-- the reverb a unit's floor plate asks the client for (attribute Reverb, read by Ambience.luau): tiled washrooms ring, the
+	-- service tunnel and the shelter are bare concrete. Every other place is sorted by the client's own space probe.
+	local PLATE_REVERB = { washroom = "Bathroom", tunnel = "StoneCorridor", shelter = "StoneRoom", vestibule = "StoneRoom", unit14 = "StoneRoom" }
 	local function kindColor(kind)
 		return KIND[kind] or hex("62665F")
 	end
@@ -61,6 +65,9 @@ return function(ctx)
 				local p = ab(par, r.x0, y - 0.3, r.z0, r.x1, y + 0.03, r.z1, PLATE[u.kind] or hex("9A9B93"), M.Concrete)
 				if p then
 					p.Name = "UnitFloor"
+					if PLATE_REVERB[u.kind] then
+						p:SetAttribute("Reverb", PLATE_REVERB[u.kind])
+					end
 					u.plates = u.plates or {}
 					u.plates[#u.plates + 1] = p
 				end
@@ -115,9 +122,15 @@ return function(ctx)
 		elseif r.k == 2 then
 			ab(rp, r.x0, CEIL[2], r.z0, r.x1, CEIL[2] + SLAB - 0.04, r.z1, ROOF, M.Concrete)
 		elseif r.k == 3 then
-			glassOf(ab(rp, r.x0, CEIL[1] + 0.1, r.z0, r.x1, CEIL[1] + 0.55, r.z1, ROOF, M.Glass))
+			local sky = glassOf(ab(rp, r.x0, CEIL[1] + 0.1, r.z0, r.x1, CEIL[1] + 0.55, r.z1, ROOF, M.Glass))
+			if sky then
+				CollectionService:AddTag(sky, "ZR_Skylight") -- clients put a little dust in the light under it (Ambience.luau)
+			end
 		elseif r.k == 4 then
-			glassOf(ab(rp, r.x0, CEIL[2] + 0.5, r.z0, r.x1, CEIL[2] + 0.9, r.z1, ROOF, M.Glass))
+			local sky = glassOf(ab(rp, r.x0, CEIL[2] + 0.5, r.z0, r.x1, CEIL[2] + 0.9, r.z1, ROOF, M.Glass))
+			if sky then
+				CollectionService:AddTag(sky, "ZR_Skylight")
+			end
 		end
 	end
 	-- the domes: an octagonal drum of glass on the roof round each atrium and a stepped cap

@@ -155,6 +155,25 @@ function World.fixCoplanar(model)
 	return fixed
 end
 
+-- A switch's state (the Meridian power lever, the IRONSIGHT alarm terminal ...) is published as the workspace attribute
+-- ZR_Sw_<id> (true / false) so clients can react to it: the mall's mains hum follows ZR_Sw_MALL_POWER (Ambience.luau). Doors.luau
+-- calls onChange on every change and at every raid reset, so wrapping it is enough.
+local function publishSwitch(sid, sw)
+	if sw.published then
+		return
+	end
+	sw.published = true
+	local inner = sw.onChange
+	local attr = "ZR_Sw_" .. tostring(sw.id or sid)
+	sw.onChange = function(on)
+		pcall(workspace.SetAttribute, workspace, attr, on == true)
+		if inner then
+			return inner(on)
+		end
+	end
+end
+World.publishSwitch = publishSwitch -- (LogicTests)
+
 local function endMap(id, mapModel)
 	local zf = World.fixCoplanar(mapModel)
 	print(string.format("[ZR] %s: %d coplanar faces pulled back (z-fighting)", id, zf))
@@ -165,8 +184,9 @@ local function endMap(id, mapModel)
 	for _, d in World.doors do
 		d.map = d.map or id
 	end
-	for _, sw in World.switches do
+	for sid, sw in World.switches do
 		sw.map = sw.map or id
+		publishSwitch(sid, sw)
 	end
 	World.maps[id] = m
 	currentMap = nil

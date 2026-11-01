@@ -15,4 +15,8 @@ return {
 	ATLAS = "rbxassetid://117513374968391", -- ZR_SFX_Atlas: 52 short effects played by region (SoundAtlas.luau)
 	ENV_ATLAS = "rbxassetid://111806710801040", -- ZR_SFX_Env: rain/wind/insect loops + world and UI one-shots (EnvAtlas.luau)
 	COMBAT_ATLAS = "rbxassetid://129340593261177", -- ZR_SFX_Combat (M11): grenades, explosions, tinnitus, malfunctions (CombatAtlas.luau)
+	-- ZR_SFX_Amb (atmosphere pass): mall room tone, mains hum, car park tone, drips, distant gunfire, the IRONSIGHT siren, the
+	-- generator (AmbAtlas.luau). assets/audio/out/ZR_SFX_Amb.ogg is NOT uploaded yet: the id goes here once it is. Empty = every
+	-- ambience layer, the siren and the generator stay silent (nothing is created, nothing errors).
+	AMB_ATLAS = "",
 }

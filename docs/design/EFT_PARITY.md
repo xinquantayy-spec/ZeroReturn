@@ -110,6 +110,7 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Night vision and thermals | Goggles done 2026-11-01: four night-vision tubes (monocular circle, two binoculars, panoramic quad; phosphor colour, gain, grain, light flare each) and thermal goggles, on mounted helmets or a head strap, drawn on characters up or down (ZR_EyeGear); the faceplate helmet's shield (raised = face open to hits, lowered = visor tint) | Night-vision and thermal scopes, the flip animation of the mount, AI wearing goggles at night |
 | Face shield, glasses and gas mask overlays (cracks when hit) | Face shield: a tinted visor round the view (N). Glasses and gas mask built 2026-11-01: a mild lens tint per item, blindness protection against stun charges, the mask's rubber frame with smoked lenses; both step aside while night-vision goggles are down | Cracks when hit, the mask's breathing loop, fogging and raindrops (notes below) |
 | Full-body awareness, weapon inertia and sway (0.13.5), visual recoil with bolt movement and camera shake (0.16) | Arms, sway, recoil | Legs in view, bolt movement |
+| Audio: Steam Audio reverb and occlusion from the geometry (0.12.6 on, occlusion reworked in 0.16.7.0); indoor and outdoor sound; Interchange's mall soundscape | Written 2026-11-01, silent until `ZR_SFX_Amb` is uploaded (`Sounds.AMB_ATLAS`): one reverb for the listener's space (7 classes plus marked floors), room tone, mains hum with the power, car park tone, drips, distant gunfire, the IRONSIGHT siren, the substation generator, dust in the skylights (MEDIUM and up) | Per-source occlusion and reverb cannot be done in Roblox (exception 3); levels still to be set by ear once the asset is in; see "Atmosphere and ambience" below |
 
 ### Eyewear, gas mask and goggles on characters (2026-11-01)
 
@@ -196,6 +197,41 @@ Gaps (not copied or not found):
   parts, the shot sound is the rifle recording pitched down and louder.
 - **Not run:** nothing above has been run in Studio, on a phone, on a gamepad or on a console, and no frame rate was measured.
 
+### Atmosphere and ambience (2026-11-01)
+
+Owner request: atmosphere and ambience that improve realism without costing performance (30 fps minimum). Researched first
+(sources below, notes and costs in `docs/look/ATMOSPHERE.md`), then built. Status: written and passed through `tools/luau_check.py`
+only. Nothing has been run in Studio, on a phone or on a console, no frame rate was measured, and no level was set by ear. The
+sound asset `assets/audio/out/ZR_SFX_Amb.ogg` (698 KB, 11 sounds) is **not uploaded**, so all of it is silent until the owner's
+session sets `Sounds.AMB_ATLAS`.
+
+Matched (as far as Roblox allows):
+- **Indoor and outdoor sound:** Tarkov keeps an indoor / outdoor state for sound and runs Steam Audio reverb from the geometry. Here
+  the listener's space is measured with at most 8 raycasts every 0.4 s and `SoundService.AmbientReverb` follows (Plain outdoors,
+  Alley between buildings, Room, Hallway, StoneRoom, Auditorium for the anchor halls, ParkingLot in the car park; Bathroom, StoneCorridor
+  and StoneRoom on marked floors), with hysteresis so it never flickers. POTATO has none, LOW only indoors.
+- **Interchange's switchable parts:** the power lever now also changes sound (the mall hums only with the power on, the substation
+  generator runs), and the Kiba Arms alarm now has its siren: it starts with the red lamp 3 s after the front door opens and stops at
+  the security terminal (existing rule, 60 s cap).
+
+Gaps (not copied or not found):
+- **No per-source reverb or occlusion** (Steam Audio's geometry raycasts per sound, the 0.16.7.0 floor and stairway transmission).
+  Roblox has one reverb for the listener and no occlusion: a shot in a hall heard from a washroom gets the washroom's reverb, and
+  sounds carry through walls within their radius.
+- **Not in any source, so our design:** the mall's room tone, the fluorescent and mains hum, the car park tone, the drips, the dust
+  in the skylights. Tarkov's Interchange soundscape (empty mall, wind, arcade, escalators) was not found documented anywhere.
+- **Distant gunfire is scripted** (a faint burst every 40 to 120 s in raids, 200 to 320 studs away, quieter indoors). In Tarkov a
+  far shot is a real fight; ours is harmless and tied to no one. The rate and level are ours.
+- **Siren length and sound:** how long the Kiba alarm rings is not documented; ours is the existing 60 s. The sound is a procedural
+  warble, not a recording.
+- **Machines with power on** (escalators, arcade cabinets, announcements, lifts) are not built; only the hum.
+- **Dust** is a column under the pane, not the sun's slanted shaft, and not tied to the actual lit floor area.
+- **Levels and thresholds are untested by ear and by frame rate:** the space thresholds (section 3 of `docs/look/ATMOSPHERE.md`), the
+  layer volumes, the Auditorium choice for the biggest halls (Hangar is a one-word change).
+- **Roblox sound API not verified:** the region semantics of `Sound` (`PlaybackRegion`, `LoopRegion`) and `Stop` / `Play` on a region
+  are not described on the Roblox pages that could be read; the code uses them the way the existing atlases do.
+- **Not run:** nothing above has been run in Studio, on a phone or on a console, and no frame rate or memory was measured.
+
 ## Order of work
 
 1. **Now (task #56):** the INSPECT window with the full attribute sheet for every item kind (a turnable 3D view in a
@@ -216,6 +252,7 @@ Gaps (not copied or not found):
 - [TarkovForge: Salewa](https://tarkovforge.com/meds/salewa-first-aid-kit) (med fields), [Gamepressure: health and injuries](https://www.gamepressure.com/escape-from-tarkov/health-and-injuries/z1cf2f)
 - Eyewear and face gear (2026-11-01): [TarkovForge: glasses](https://tarkovforge.com/glasses) (armor, durability, blindness protection), [6B34](https://tarkovforge.com/glasses/6b34-anti-fragmentation-glasses), [AFGlass](https://tarkovforge.com/glasses/anti-fragmentation-glasses), [Caiman visor](https://tarkovforge.com/glasses/galvion-caiman-fixed-arm-visor), [GP-5 gas mask](https://tarkovforge.com/face-covers/gp-5-gas-mask); Wiki: [Eyewear](https://escapefromtarkov.fandom.com/wiki/Eyewear), [RayBench Aviator glasses](https://escapefromtarkov.fandom.com/wiki/RayBench_Aviator_glasses) (Ragman LL4), [Kolpak-1S](https://escapefromtarkov.fandom.com/wiki/Kolpak-1S_riot_helmet), [EXFIL face shield](https://escapefromtarkov.fandom.com/wiki/Team_Wendy_EXFIL_Ballistic_face_shield_(Black)), [Maska-1SCh](https://escapefromtarkov.fandom.com/wiki/Maska-1SCh_face_shield_(Olive_Drab)), [Jason mask](https://escapefromtarkov.fandom.com/wiki/Jason_mask) (blocks lists)
 - Stationary guns (2026-11-01): Wiki [Weapons](https://escapefromtarkov.fandom.com/wiki/Weapons) ("Stationary weapons"), [NSV Utyos](https://escapefromtarkov.fandom.com/wiki/NSV_Utyos_12.7x108_heavy_machine_gun), [AGS-30](https://escapefromtarkov.fandom.com/wiki/AGS-30_30x29_automatic_grenade_launcher); [Dexerto: grenade launchers](https://www.dexerto.com/escape-from-tarkov/how-to-destroy-escape-from-tarkov-players-using-grenade-launchers-1355803/) (arc and zeroing); the rest of the list is in `docs/design/STATIONARY_WEAPONS.md`
+- Atmosphere and ambience (2026-11-01): [Gfinity: 0.12.6 notes](https://www.gfinityesports.com/article/escape-from-tarkov-12-6-patch-notes-update-full-list-changes-wipe-pc) (first Steam Audio, indoor sound fix), [Steamworks: Steam Audio](https://partner.steamgames.com/doc/features/steam_audio), [PCGamesN](https://www.pcgamesn.com/escape-from-tarkov/update-audio-overhaul) and [Insider Gaming](https://insider-gaming.com/tarkov-patch-overhauls-immersive-audio/) (0.16.7.0 occlusion), [Wiki: Interchange](https://escapefromtarkov.fandom.com/wiki/Interchange) (illumination grid, alarm), [TarkovForge: Kiba Arms outer door key](https://tarkovforge.com/keys/kiba-arms-outer-door-key) (alarm 3 s after the door), [Guild Order: audio guide](https://guildorder.com/hi/games/tarkov/guides/audio-fluency-and-sound-triangulation) (distant shots); the rest is in `docs/look/ATMOSPHERE.md`
 - Patch notes: [0.16.0.0 (Sportskeeda)](https://sportskeeda.com/esports/escape-tarkov-patch-notes-update-0-16-0-0-new-event-customs-rework-prestige-system), [0.16.7.0 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-0.16.7.0-full-patch-notes-aP2RA1G8vdlq), [1.0.4.5 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-1.0.4.5-improves-performance-reworks-weapon-balance-and-fixes-key-issues-aPJVC8b37l9m)
 
 ## 7. Maps (owner, 2026-11-01: same map as Tarkov's, own buildings and names)
@@ -339,8 +376,8 @@ Gaps (not copied or not found):
 - **Extract timers**: Tarkov gives each exit its own (3 to 60 s, 60 s shared at the car); here every extract uses the standard hold.
 - **Bands' rules are in no source** ("deadly sniper", "minefield"): the mine radius (3.4 studs), the blast, the lethal wound and the
   sniper strips are ours (the snipers copy Border Yard's).
-- **Alarm details**: no siren sound (the audio atlas has none), the beacon, the 60 s length and the terminal's position are ours (the
-  only source places terminals on a pre-0.12.4 map at grade D).
+- **Alarm details**: the siren (a procedural warble in `ZR_SFX_Amb`, silent until that asset is uploaded), the beacon, the 60 s length
+  and the terminal's position are ours (the only source places terminals on a pre-0.12.4 map at grade D).
 - **Register keys open the till offices**, not the registers (a container cannot be key-locked here).
 - **Killa's AI and gear**: routes, aggro and regeneration are in no source; the existing Caretaker AI and kit stand in.
 - **Mounted guns and propane cylinders**: no source places any on Interchange, so none stand on Meridian.

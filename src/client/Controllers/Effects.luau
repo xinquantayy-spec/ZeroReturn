@@ -9,6 +9,7 @@ local Sounds = require(Shared.Sounds)
 local Atlas = require(Shared.SoundAtlas)
 local EnvAtlas = require(Shared.EnvAtlas)
 local CombatAtlas = require(Shared.CombatAtlas)
+local AmbAtlas = require(Shared.AmbAtlas)
 
 local Effects = {}
 local ctx
@@ -99,6 +100,10 @@ local function region(name)
 	if r and (Sounds.COMBAT_ATLAS or "") ~= "" then
 		return r, Sounds.COMBAT_ATLAS
 	end
+	r = AmbAtlas[name] -- drips and distant gunfire (atmosphere pass; silent until ZR_SFX_Amb is uploaded)
+	if r and (Sounds.AMB_ATLAS or "") ~= "" then
+		return r, Sounds.AMB_ATLAS
+	end
 	return nil, nil
 end
 
@@ -166,6 +171,9 @@ function Effects.loop(name, parent, noGroup)
 	local r, id = EnvAtlas[name], Sounds.ENV_ATLAS
 	if not r then
 		r, id = CombatAtlas[name], Sounds.COMBAT_ATLAS or ""
+	end
+	if not r then
+		r, id = AmbAtlas[name], Sounds.AMB_ATLAS or ""
 	end
 	if not r or id == "" then
 		return nil, 0

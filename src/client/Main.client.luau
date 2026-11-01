@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "NightVision", "Eyewear", "Atmos", "Detail", "Interact", "Stationary", "Touch", "Inventory", "Character", "QuickSlots", "Modding", "Inspect", "Screens", "Trade", "Menus", "Lobby" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "NightVision", "Eyewear", "Atmos", "Ambience", "Detail", "Interact", "Stationary", "Touch", "Inventory", "Character", "QuickSlots", "Modding", "Inspect", "Screens", "Trade", "Menus", "Lobby" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -326,6 +326,9 @@ if RunService:IsStudio() then
 				ctx.Grenade.POSE[k] = v
 			end
 			return "ok"
+		elseif cmd == "ambience" then
+			-- atmosphere pass: a = true forces a probe first; reports the space class, the reverb, the layers, the dust and the ray count
+			return HttpService:JSONEncode(ctx.Ambience.report(a == true))
 		elseif cmd == "stationary" then
 			-- the mounted gun: a = "leave" gets off it; reports the mode (use "action" with MountFire / MountZoom to drive it)
 			local St = ctx.Stationary
