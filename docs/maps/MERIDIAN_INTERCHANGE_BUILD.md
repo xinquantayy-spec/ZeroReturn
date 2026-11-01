@@ -39,7 +39,8 @@ names, logos or fonts: every name below and every store name the agents invent i
   copy cannot be deleted from a cloud session); it is no longer built. Map id stays `meridian`.
 - `src/shared/Maps.luau`: Meridian Mall raid time 2400 s (Interchange is 40 minutes); a new description.
 - The old module is the best example of a mall: `src/server/Maps/MeridianMall.luau` (its Blender mall kit, generator
-  power, the Caretaker, keys, shopfronts, escalators). Border Yard's modules are the best example of the split above and
+  power, the Caretaker, keys, shopfronts, escalators); it is now a stub, read the old code with
+  `git show 42049af:src/server/Maps/MeridianMall.luau`. Border Yard's modules are the best example of the split above and
   of every API (kit.model, MapKit, Kit.place, TerrainKit, kit.extract, kit.loose, kit.container, doors, W.spawns,
   W.sideExtracts, W.patrols, W.watchPosts, W.scavZones, W.visitZones, W.boss, W.switches, hazards and snipers,
   `kit.stationary` for mounted guns).

@@ -32,8 +32,8 @@ Maps.defs = {
 		id = "meridian",
 		name = "MERIDIAN MALL",
 		kind = "SHOPPING MALL",
-		raidTime = 1500,
-		desc = "A dark two-level mall: a supermarket with a car park on its roof, a food court under a cinema, a fountain atrium and loading docks. Start the generator to light it and run the cargo lift; the Caretaker walks the atrium in some raids.",
+		raidTime = 2400,
+		desc = "A three-level mall at full scale: a garage under three anchor stores, the L1 and L2 galleries around the atria, a food court, loading docks, and a service tunnel below. Outside it: the substation, the west camp, the rescue camp and checkpoint, and mined and sniper-covered edges. Long raids. Throw the switch at the substation to power the mall and the hidden shelter exit; the Caretaker walks the mall in some raids.",
 	},
 	border = {
 		id = "border",

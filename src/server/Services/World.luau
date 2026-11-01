@@ -1477,7 +1477,7 @@ function World.build()
 		currentMap = nil
 	end
 	moduleMap("smelter", "Smelter")
-	moduleMap("meridian", "MeridianMall")
+	moduleMap("meridian", "Meridian")
 	moduleMap("border", "Border")
 	-- parked for now (owner's call, M13): moduleMap("pinewatch", "Pinewatch")
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
