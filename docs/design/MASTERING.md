@@ -1,6 +1,22 @@
-# Weapon mastering: research and plan (not built)
+# Weapon mastering
 
-Status 2026-11-01: research done, nothing built (the owner paused the work). Nothing here has run.
+**Status 2026-11-02: built and checked in Studio with one player.** Plan steps 1 to 6 are done (commits dadf46b and
+54c8b8d, then the dev commands and a LogicTests group).
+
+Checked in Studio:
+
+- The ZR_Dev commands `mastery`, `masterySet` and `masteryShow` work.
+- The levels change at Tarkov's thresholds: R-17 level 2 at 1,600 points and level 3 at 2,000.
+- A point through the hit path's call levels the P-9 up at 75 and sends the notice.
+- Level 3 turns on reloading while aiming on the server.
+- The MASTERING tab draws every group under its class, with the bar and the perks (`evidence/MASTERING_tab.jpg`).
+- LogicTests has 9 mastering checks, all passing (341 in all).
+
+**NOT VERIFIED:**
+
+- Points from real hits in a raid.
+- The aimed reload and the level-2 reload motion in first person.
+- The tab with a gamepad or on touch.
 
 ## What Tarkov does
 

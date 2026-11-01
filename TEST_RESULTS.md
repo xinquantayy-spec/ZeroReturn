@@ -8,6 +8,26 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Weapon mastering in Studio (2026-11-02)
+
+The mastering commits (dadf46b, 54c8b8d) had never been synced to the laptop. They were synced and checked with one
+player:
+
+| Check | Result |
+|---|---|
+| `ZR_Dev masterySet R17` 1,599 / 1,600 / 99,999 points | level 1 (next 1,600) / level 2 (next 2,000) / level 3, reload while aiming on |
+| `ZR_Dev mastery P9` from 74 points, one point through `Economy.masteryUp` (the hit path's call) | level 2, next 100 |
+| An unknown weapon | usage text, no change |
+| MASTERING tab (clicked in the inventory) | groups under ASSAULT RIFLE, SMG, SHOTGUN and the rest, "WEAPON MASTERING (02)", bar 1,800 / 2,000, level-2 perk lit (`docs/design/evidence/MASTERING_tab.jpg`) |
+| LogicTests mastering group (9 checks) | passed; LogicTests 341, CharTests 46, LookTests 32, MapTests 38, 0 failed |
+
+**NOT VERIFIED:**
+
+- Points from real hits in a raid.
+- The aimed reload and the level-2 reload motion in first person.
+- The level-up notice on screen.
+- Gamepad and touch on the tab.
+
 ## Placement audit and tidy pass (2026-11-01/02, all four raid maps)
 
 Studio playtests with one player. The audit is ZR_Dev `audit` (`docs/look/PLACEMENT.md`). The first column is the

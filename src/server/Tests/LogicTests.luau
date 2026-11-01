@@ -999,6 +999,44 @@ function T.run(ctx)
 		check("grenade and repair kit crafts", HD.byRecipe.NADE_RK5 ~= nil and HD.byRecipe.GUN_KIT ~= nil and Items.defs[HD.byRecipe.GUN_KIT.get[1]].kind == "repair")
 	end
 
+	-- weapon mastering (Tarkov; docs/design/MASTERING.md): levels at the group's thresholds (running totals), points only
+	-- into a known group, a level-up reported once, reloading while aiming from level 3, saved with the profile
+	do
+		local P = require(Shared.Progress)
+		check("mastering: every weapon group in the order, thresholds rising", #P.MASTERY_ORDER == 6 and (function()
+			for _, gid in P.MASTERY_ORDER do
+				local g = P.MASTERING[gid]
+				if not (g and g.level2 > 0 and g.level3 > g.level2 and P.MASTERY_OF[g.weapons[1]] == gid) then
+					return false
+				end
+			end
+			return true
+		end)())
+		check("mastering: Tarkov's M4 thresholds on the R-17 (1600 / 2000)", P.masteryLevel("R17", 1599) == 1 and P.masteryLevel("R17", 1600) == 2
+			and P.masteryLevel("R17", 1999) == 2 and P.masteryLevel("R17", 2000) == 3 and P.masteryLevel("R17", nil) == 1)
+		local l1, a1, b1 = P.masteryProgress("P9", 10)
+		local l3, a3, b3 = P.masteryProgress("P9", 500)
+		check("mastering: the bar runs from the level's start to the next level, full at 3", l1 == 1 and a1 == 0 and b1 == 75 and l3 == 3 and a3 == 100 and b3 == 100)
+		check("mastering: the knife and unknown weapons have none", P.masteryFor({}, "KNIFE") == 0 and P.masteryFor(nil, "R17") == 1)
+		if ctx and ctx.Economy and ctx.Combat then
+			local prof = {}
+			Settle.progressFields(prof)
+			check("mastering: a fresh profile starts with no points", type(prof.mastering) == "table" and next(prof.mastering) == nil)
+			check("mastering: a point into an unknown group or a bad amount is refused", ctx.Economy.mastery(prof, "NOPE", 1) == false
+				and ctx.Economy.mastery(prof, "P9", 0) == false and ctx.Economy.mastery(prof, "P9", -3) == false and prof.mastering.P9 == nil)
+			local ups = 0
+			for _ = 1, 74 do
+				if ctx.Economy.mastery(prof, "P9", 1) then
+					ups += 1
+				end
+			end
+			check("mastering: no level-up before the threshold", ups == 0 and prof.mastering.P9 == 74 and not ctx.Combat.aimReload(prof, "P9"))
+			check("mastering: the 75th hit levels the P-9 up once", ctx.Economy.mastery(prof, "P9", 1) == true and ctx.Economy.mastery(prof, "P9", 1) == false)
+			ctx.Economy.mastery(prof, "P9", 30)
+			check("mastering: level 3 lets the group reload while aiming, other groups not", ctx.Combat.aimReload(prof, "P9") and not ctx.Combat.aimReload(prof, "R17"))
+		end
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0
