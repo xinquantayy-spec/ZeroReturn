@@ -36,6 +36,16 @@ One PMC raid on Border Yard (night, rain, autumn, the Broker forced on), five mi
 
 **Not verified:** fights on the new map (AI combat is covered by LogicTests elsewhere), phones, two clients.
 
+### Mounted guns (2026-11-01, later)
+
+| Check | How | Result |
+|---|---|---|
+| Automated | `dev:Invoke("tests")` | LogicTests 276/276 (35 new stationary checks), CharTests 46/46, LookTests 19/19, MapTests 38/38 |
+| On the Bastion roof | Raid on Border Yard; real F key and mouse through Studio | The prompt "[F] MAN THE GUN · HMG-12 'BASTION'" shows when you look at the gun; F mounts it (camera at the gun's sights, HUD "HMG-12 'BASTION' · 100 / 100 · F TO LEAVE"); holding the left button fired 15 rounds in about 1.3 s (belt 100 to 85, Tarkov's Utyos is 650 rounds a minute); F leaves and the prompts come back |
+| AI | `dev:Invoke("ai")` with the player on the roof | The two posted gunners fought the player with their own rifles; neither took a gun, as the player stood behind the guns' arcs |
+
+**Not verified:** the grenade launcher by hand, gamepad and touch controls, AI gunners firing a mounted gun at a target in its arc, the sight picture (the receiver block hides part of the view under the reticle; placeholder art).
+
 ### Border Yard underground entries (2026-11-01, later)
 
 | Check | How | Result |
