@@ -9,7 +9,7 @@
 **Done 2026-11-01 (afternoon):** Meridian Mall rebuilt on Interchange's layout at real scale (`docs/maps/MERIDIAN_MALL.md`: ground and outside, the mall shell with the car park, 84 units, both store levels, gameplay with 7 exits and THE CARETAKER), mounted guns on Border Yard's Bastion (`docs/design/STATIONARY_WEAPONS.md`), item pictures for the eyewear and the Border Yard keys, the K-13 stair fix. GitHub `xinquantayy-spec/ZeroReturn` is the remote (owner allowed pushing, 2026-11-01).
 
 **Now, in order:**
-1. **Meridian polish:** per-key loot and the key pictures are done. Fuller small shops are in progress. Lighting in the deep halls with the power on was checked on 2026-11-01 in the separate client: NESTA and KASSA by day, and KASSA at 23:00, all read as lit halls. Still to do: a walk-through of every exit by hand.
+1. **Meridian polish:** per-key loot and the key pictures are done. Fuller small shops are done and checked in Studio (`StoresFill.luau`, +1,938 parts). Lighting in the deep halls with the power on was checked on 2026-11-01 in the separate client: NESTA and KASSA by day, and KASSA at 23:00, all read as lit halls. Still to do: a walk-through of every exit by hand.
 2. **Performance on phones:** Border Yard and Meridian stream 16,000 to 18,600 parts near the player (KNOWN_ISSUES 65); try a smaller streaming radius in Studio's Workspace settings and merge plain walls, then measure in the device emulator.
 3. **Border Yard polish:** dorm interiors (glass, washrooms, denser furniture), the 0.16 interiors, ladders, the boiler cellar walk-through.
 4. **Mounted guns, the rest:** the grenade launcher by hand, gamepad and touch, AI gunners firing a mounted gun, Blender art.

@@ -46,6 +46,17 @@ So in a window that is not in front, Studio draws at most 15 frames a second whi
 
 Benchmark: set the workspace attribute `ZR_Bench` to a map id (`meridian`, `border`) in Edit mode and start a test. Dev.luau deploys the first player and walks the viewpoints. The client holds each view for 4 s, counts frames for 6 s and shows a table. Rows counted while the window was in the background are marked BACKGROUND.
 
+## Meridian small shops filled (2026-11-01)
+
+Studio Play mode on the T490, one client, in-memory store.
+
+| Check | Result |
+|---|---|
+| Automated | LogicTests 293/293, CharTests 46/46, LookTests 19/19, MapTests 38/38 |
+| Build | 45 shops, +1,938 parts against a 2,000 budget (L1 28 shops +1,563, L2 17 shops +375). Fitting rooms 225, wall units 316, posters 248, bands 140, floor fixtures 751, litter 258; 0 shops failed. Meridian is 20,375 parts (was 18,437) and builds in 7.5 s. No errors in the output. |
+| Look | TAILORED (clothing, L1): mannequins, racks, a fitting room, posters, wall bands and a full shelf wall; its right-hand wall is still bare. MICROMART (electronics, L1): display tables with laptops, a TV wall, a shelf of boxed goods, a counter, posters and a stocked back room. |
+| Cost, with the window not in front (indicative) | Hiding the 1,938 new parts on the client: MICROMART 31.8 → 31.7 ms on the render thread (no change). TAILORED 42.2 → 37.5 ms, but the sun's shadow map redrew in the first sample (373 shadow draw calls against 0), so most of that gap is the shadow pass. |
+
 ## Meridian exits on the navigation mesh (2026-11-01)
 
 Server of the same Clients and Servers test, Roblox PathfindingService (agent radius 2, height 5.5, can jump), raid running with the mall's power on.

@@ -297,6 +297,21 @@ Gaps (not copied or not found):
   displays, price tags, posters and signage art (no logos by design), and any sound.
 - **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
 
+### Interchange small shops filled (2026-11-01)
+
+`StoresFill.luau` furnishes 45 small shops by kind, with 1,938 parts (`TEST_RESULTS.md`, Meridian small shops filled):
+- clothing: rails, racks, mannequins and a fitting room;
+- electronics: TV walls and tech tables;
+- sport: shoe walls and weight racks;
+- the rest: shelving, fridges and gondolas;
+- in every shop: posters, wall bands, fallen goods and a toppled rack.
+
+Gaps:
+- No source gives Tarkov's small-shop fixtures, so these are ours by kind and copy no Tarkov shop.
+- Posters are blank coloured sheets.
+- L2's shops and L1's shallow shops (VOYAGE, GERMAN, SPIEL, TEXHO) stayed near their old density, because their recipes already fill the floor.
+- Some side walls are still bare.
+
 ### Interchange upper floor stores and car-park rooms: Meridian Mall, part 4b (2026-11-01)
 
 Researched first (`docs/maps/reference/INTERCHANGE_REFERENCE.md` sections 4.4 and 8.1 to 8.5: the L2 store list and what each sells, the

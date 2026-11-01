@@ -1236,7 +1236,8 @@ So the fixtures are what a shop of that kind has, by general retail knowledge, a
   of any Tarkov shop; posters are blank coloured sheets.
 - **L2 shops stay sparse.** Their recipes already fill the floor, so 17 shops got +369 parts (SARA, ARENA, NA SVYAZI and TARKOVSTAR 7 to 16,
   mostly posters, bands and litter); L1's shallow shops (VOYAGE, GERMAN, SPIEL, TEXHO) did not reach their targets for the same reason.
-- **Unverified in the engine:** the real part count and load time (the pass hands the thread back every 0.04 s), the look and scale of the
+- **Checked in Studio, 2026-11-01:** 1,938 parts and 0 failed shops. The map builds in 7.5 s. TAILORED and MICROMART were screenshotted (`TEST_RESULTS.md`).
+- **Still unverified:** the real part count and load time (the pass hands the thread back every 0.04 s), the look and scale of the
   fixtures (kit meshes in `ZR_Assets`; a missing mesh is skipped), the loot snap and AI paths round them, and frame rate on a low-end
   phone with about 1,900 more parts.
 
