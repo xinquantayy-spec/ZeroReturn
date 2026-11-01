@@ -542,6 +542,18 @@ function Detail.init(c)
 	Players.LocalPlayer.CharacterAdded:Connect(function()
 		calmUntil = os.clock() + 20
 	end)
+	-- only judge the frame rate while the game window is in front: Studio (and a minimised or covered window) slows the frames
+	-- of a window in the background, which once stepped the level down to POTATO during a test (2026-11-01)
+	local UIS = game:GetService("UserInputService")
+	local inFront = true
+	UIS.WindowFocusReleased:Connect(function()
+		inFront = false
+		lowFor = 0
+	end)
+	UIS.WindowFocused:Connect(function()
+		inFront = true
+		calmUntil = math.max(calmUntil, os.clock() + 5)
+	end)
 	local NAMES = { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
@@ -565,7 +577,7 @@ function Detail.init(c)
 			local auto = S and S.autoGfx ~= false
 			local q = S and S.quality or Detail.level
 			if auto and q > 0 then
-				if os.clock() < calmUntil then
+				if not inFront or os.clock() < calmUntil then
 					lowFor = 0
 				elseif fps < 30 then
 					lowFor += 1

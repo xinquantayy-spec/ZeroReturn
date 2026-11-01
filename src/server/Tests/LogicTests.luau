@@ -704,11 +704,12 @@ function T.run(ctx)
 		local HD = require(Shared.HideoutData)
 		check("xp curve", P.levelOf(0) == 1 and P.levelOf(999) == 1 and P.levelOf(1000) == 2 and P.xpFor(3) > P.xpFor(2))
 		check("skill levels (Tarkov: level n costs min(10n, 100), elite at 51)", P.skillLevel(0) == 0 and P.skillLevel(10) == 1 and P.skillLevel(29) == 1 and P.skillLevel(30) == 2 and P.skillLevel(550) == 10 and P.skillLevel(4649) == 50 and P.skillLevel(4650) == 51 and P.skillLevel(99999) == 51 and math.abs(P.bonus({ endurance = 550 }, "endurance") - 0.06) < 1e-6)
-		local m1 = ctx.Economy.fatigueMul("t", "endurance", 0)
-		local _, ff = ctx.Economy.fatigueMul("t", "endurance", 0)
+		local fk = {} -- a fresh key every run: the fatigue table lives for the whole server, so a fixed key failed on a second run
+		local m1 = ctx.Economy.fatigueMul(fk, "endurance", 0)
+		local _, ff = ctx.Economy.fatigueMul(fk, "endurance", 0)
 		ff.n, ff.fresh = 3, false
-		local m3 = ctx.Economy.fatigueMul("t", "endurance", 10)
-		local m4 = ctx.Economy.fatigueMul("t", "endurance", 300)
+		local m3 = ctx.Economy.fatigueMul(fk, "endurance", 10)
+		local m4 = ctx.Economy.fatigueMul(fk, "endurance", 300)
 		check("skill fatigue: 129% fresh, 36% after three points, 100% after 200 s idle", math.abs(m1 - 1.29) < 1e-9 and math.abs(m3 - 0.36) < 1e-9 and m4 == 1)
 		local rifle = TD.offers.vos[1]
 		check("loyalty discounts prices", TD.price("vos", rifle, 2) < TD.price("vos", rifle, 1) and TD.price("vos", rifle, 1) > Items.defs[rifle.id].value)
