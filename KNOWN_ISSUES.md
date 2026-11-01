@@ -141,11 +141,12 @@
     and stream with the map: a client by the mall held 276 cells (274 KB) plus the lobby's 21 KB. Still possible: an
     image index instead of the full id in every entry (about a quarter of the bytes).
 
-71. **Meridian exits: what the walk-through left (2026-11-02).**
-    - **SHELTER EXIT.** In Tarkov you press the lock button by the saferoom door. The door shuts for good and the 3 s
-      timer runs. Here the exit is a zone in the room with the same 3 s hold.
-    - **RIVER PATH.** No toll booth or barricade, and no green flare (the flare is logged in `EFT_PARITY.md`).
-    - **FENCE GAP.** The guides also mention an orange oil tanker nearby. There is no tanker prop.
+71. **Meridian exits: what the walk-through left (2026-11-02).** Three of the four were done the same day:
+    - SHELTER EXIT's button: once inside, pressing it shuts and seals the door, and the exit counts.
+    - RIVER PATH's green flare, and a toll booth with a lowered boom at the flare spot.
+    - FENCE GAP's orange oil tanker.
+
+    Left:
     - **SHELTER gun bench.** It stands 0.30 studs off its wall; the audit flags 0.25.
 
 72. **Grass blades inside STORE 3 along its north wall: fixed 2026-11-02.** The cause was terrain grass decoration from

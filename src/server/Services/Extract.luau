@@ -286,6 +286,8 @@ function Extract.blocked(player, s, e)
 		return "POWER", r.needsAlso or r.needs or "NO POWER"
 	elseif r.kind == "power" and not ctx.World.switchOn(r.switch) then
 		return "POWER", r.needs or "NO POWER"
+	elseif r.kind == "power" and r.last and not ctx.World.switchOn(r.last) then
+		return "POWER", r.needsLast or "NOT READY"
 	elseif r.kind == "nobag" and wearsBackpack(s.inv) then
 		return "BACKPACK", "BACKPACK SLOT MUST BE EMPTY"
 	elseif r.kind == "key" and r.key and not carries(s.inv, r.key) then

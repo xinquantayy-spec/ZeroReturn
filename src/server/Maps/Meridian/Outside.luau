@@ -843,6 +843,60 @@ return function(B)
 		for k, d in { { 4.6, -15.5, GREEN }, { 6.4, -17.4, BROWN }, { 4.2, -18.6, GREEN }, { -3.6, -7.2, BROWN }, { -5.4, -9.0, GREEN }, { -3.2, -10.2, GREEN } } do
 			prop(m, F, "Drum", d[1], d[2], k * 0.7, 0.05, { tint = d[3] })
 		end
+		-- the orange oil tanker the guides put by the hole: an old fuel truck on the field side, parallel to the fence and
+		-- north of the container (u along the fence, toward +z; the cab at the north end)
+		local T = frameOf({ 0, "OIL TANKER", "", "", hx + 11, hz - 52, 34, 8, 90 })
+		local tk = kit.model("FenceGapTanker", om)
+		local ORANGE, RUST, DARK, GRIME = hex("C25E26"), hex("8A4A2A"), hex("2B2C2A"), hex("4A4A44")
+		box(tk, T, 33, 1.0, 5.4, 0, 2.3, 0, DARK, M.Metal) -- the chassis
+		for _, u in { -13.5, 5.5, 9.5, 13.5 } do
+			for _, sv in { -1, 1 } do
+				kit.cyl(tk, 1.3, 3.5, T.base * CFrame.new(u, 1.75, sv * 3.1) * CFrame.Angles(0, PI / 2, 0), hex("1E1E1C"), M.Fabric)
+			end
+		end
+		box(tk, T, 8, 6.6, 7.4, -12.6, 2.8 + 3.3, 0, ORANGE, M.CorrodedMetal) -- the cab
+		box(tk, T, 0.2, 2.4, 6.2, -16.65, 7.0, 0, hex("23292B"), M.Glass) -- the windscreen, dirty
+		box(tk, T, 1.0, 0.8, 7.6, -16.9, 3.2, 0, GRIME, M.Metal) -- the bumper
+		local tank = kit.cyl(tk, 24, 6.8, T.base * CFrame.new(4.2, 6.3, 0), ORANGE, M.CorrodedMetal)
+		tank.Name = "Tank"
+		for _, u in { -7.9, 16.3 } do
+			kit.cyl(tk, 0.4, 7.0, T.base * CFrame.new(u, 6.3, 0), RUST, M.CorrodedMetal) -- the end rings
+		end
+		box(tk, T, 18, 0.25, 1.4, 4.2, 9.85, 0, GRIME, M.DiamondPlate) -- the walkway on top
+		box(tk, T, 0.3, 6.4, 1.2, 16.9, 5.4, 2.2, GRIME, M.Metal) -- the ladder at the back
+		for _, u in { 0, 8 } do
+			kit.cyl(tk, 0.6, 1.6, T.base * CFrame.new(u, 10.0, 0) * CFrame.Angles(0, 0, PI / 2), GRIME, M.Metal) -- hatches
+		end
+		count.struct += 1
+	end)
+	-- RIVER PATH (Tarkov 1.0's Path to River, "Smuggler's Tunnel"): the green flare goes up "between the two power lines
+	-- beside the toll booth" (INTERCHANGE_REFERENCE section 9). A small derelict toll booth stands on the north side of the
+	-- west dirt road at its crossing with the gravel track (poi.FLARE_SPOT), its boom lowered across the road.
+	step("RIVER PATH", function()
+		local fs = L.poi and L.poi.FLARE_SPOT
+		if not fs then
+			return
+		end
+		local rot = 5.2 -- the dirt road here (road 1, east to west), as the long side of the booth
+		local a = math.rad(rot)
+		local du, dv = Vector2.new(math.cos(a), math.sin(a)), Vector2.new(-math.sin(a), math.cos(a))
+		local c = Vector2.new(fs[1], fs[2]) + du * 12 + dv * -13.2
+		local F = frameOf({ 0, "TOLL BOOTH", "", "", c.X, c.Y, 9, 7.5, rot })
+		local m = kit.model("RiverPathTollBooth", om)
+		local o = { t = 0.8, h = 8.4, wall = hex("B4AEA0"), mat = M.Concrete }
+		local holes = newHoles()
+		addHole(holes, wallLen(F, "s", o.t), "s", 0, 5.4, 3.4, 7.0) -- the road window
+		addHole(holes, wallLen(F, "w", o.t), "w", 0, 3.4, 3.4, 7.0)
+		addHole(holes, wallLen(F, "e", o.t), "e", 0, 3.4, 3.4, 7.0)
+		addHole(holes, wallLen(F, "n", o.t), "n", 1.8, 3.2, 0, 7.4) -- the door, at the back
+		floorSlab(m, F, hex("6F6A60"))
+		walls(m, F, o, holes)
+		flatRoof(m, F, o.h, hex("5E5A52"), M.Concrete, false)
+		box(m, F, 6.6, 0.3, 1.6, 0, 3.4, 2.6, hex("6B5A44"), M.Wood) -- the counter under the road window
+		prop(m, F, "Chair", -2.2, 0.4, PI, FLOOR)
+		-- the boom: its post just west of the booth at the road's north edge, the arm lowered south across the road
+		prop(m, F, "ParkingBarrier", -6.2, 5.0, -PI / 2, 0.05)
+		count.struct += 1
 	end)
 	step("sign pylons", function()
 		for _, b in byGroup.tower or {} do

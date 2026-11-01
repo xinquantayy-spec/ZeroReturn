@@ -61,7 +61,8 @@ function Raid.raidInfo(s)
 		-- a car (paid exit with seats) that rolls for being there is listed like a chance exit; one that has left is closed for good
 		local gone = ctx.Extract.carLeft(e)
 		table.insert(ex, {
-			id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key, powered = r.kind == "power" and ctx.World.switchOn(r.switch) or nil,
+			id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key, powered = (r.kind == "power" and ctx.World.switchOn(r.switch) and (not r.also or ctx.World.switchOn(r.also))
+				and (not r.last or ctx.World.switchOn(r.last))) or nil,
 			chance = (r.kind ~= "chance" and ctx.Extract.hasChance(r)) or nil, seats = r.seats, depart = r.depart,
 			flared = (r.kind == "flare" and ctx.Match.flareOpen[id]) or nil, area = r.kind == "flare" and (r.radius or 60) or nil,
 			closed = gone or nil, closedText = gone and "THE CAR HAS LEFT" or nil,

@@ -8,6 +8,28 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Meridian exits: the shelter button, the toll booth, the tanker (2026-11-02)
+
+Meridian raids, one player, god mode.
+
+- **SHELTER EXIT:** the mall power and the washroom valve were on (ZR_Dev `switch`). Standing in the exit zone gave "EXFIL SE · CLOSE THE DOOR WITH THE BUTTON BESIDE IT".
+  - The button: a red push button on the wall beside the card door, inside. The first build found no wall, because raycasts cannot see the map while it is built away from the workspace. It is now placed from the wall part's box.
+  - Pressing it (ZR_Dev `switch("SHELTER_LOCK", true)`, the same change the prompt makes) turned it green, shut the door and changed its prompt to "Sealed". The exit then counted: "EXTRACTING · SHELTER EXIT" (`docs/maps/evidence/MM_shelter_button.jpg`).
+- **RIVER PATH:** a small derelict booth stands at the crossing of the dirt road and the gravel track between the power lines, its boom lowered across the road (`MM_riverpath_tollbooth.jpg`).
+- **FENCE GAP:** an orange fuel tanker stands on the field side, north of the red container (`MM_fencegap_tanker.jpg`).
+- **Tests, all passing:**
+
+  | Suite | Passed | Failed |
+  |---|---|---|
+  | LogicTests | 360 | 0 |
+  | CharTests | 47 | 0 |
+  | LookTests | 33 | 0 |
+  | MapTests | 37 | 0 |
+
+  MapTests ran 37 rather than 38, with the raid on Meridian.
+
+**Not checked:** pressing the prompt by hand, and a second player locked out by the sealed door.
+
 ## No grass through ground floors (2026-11-02)
 
 KNOWN_ISSUES 72, fixed.

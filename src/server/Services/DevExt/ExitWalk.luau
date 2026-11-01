@@ -88,6 +88,11 @@ return function(C, ctx)
 						ctx.Doors.setSwitch(r.switch, true)
 						task.wait(0.8)
 						table.insert(line, "· " .. tostring(r.switch) .. " on: " .. read(e))
+						if r.last then
+							ctx.Doors.setSwitch(r.last, true)
+							task.wait(0.8)
+							table.insert(line, "· " .. r.last .. " on: " .. read(e))
+						end
 					elseif r.kind == "flare" then
 						local names = X.openFlareAt(e.pos)
 						task.wait(0.8)

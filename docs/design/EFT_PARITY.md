@@ -463,16 +463,18 @@ Gaps (not copied or not found):
   and Customs do not exist.
 - **SUBSTATION CAR** was a plain paid exit when part 3 was written; it is a vehicle exit now (see "Car exits" below: 50 % chance, pay at the car, 4 seats, shared countdown, single use). Still a gap: no Scav karma in the price.
 - **Saferoom chain simplified**: the urinal flush that reveals a keypad is a service valve in the washroom; not copied are the keypad,
-  the padlocked door with its inside button, the lever for the Object-14 container, and the Terragroup container (Object #21WS card) in the
-  south-west container yard.
+  the lever for the Object-14 container, and the Terragroup container (Object #21WS card) in the south-west container yard. The inside
+  button was added 2026-11-02: once inside, pressing it shuts and seals the card door for the rest of the raid (`Doors.seal`, switch
+  `SHELTER_LOCK`), and only then does SHELTER EXIT count (rule `last`).
 - **Extract timers: done 2026-11-02.** Each exit has its own timer as in Tarkov (SPT `ExfiltrationTime`): the standard 8 s
   (it was 6), SHELTER EXIT 3 s (the Saferoom), FENCE GAP 10 s (the Hole in the Fence); a car keeps its 60 s shared countdown.
   Still a gap: exits other than Interchange's and Customs' use the standard 8 s without a check against their own data, and
   RIVER PATH's timer is in no source.
 - **Exits as places (walk-through 2026-11-02)**: the Saferoom is a room-sized bunker, not the whole block; the Hole in the
   Fence is a hole in a fence with drums and a red container; the railway leaves through a tunnel portal (our boundary is a
-  hill, where Tarkov's world goes on past a fence). Gaps: no oil tanker at the fence hole, no toll booth or barricade on
-  RIVER PATH, and the Saferoom's exit is a zone held 3 s rather than the lock button by its door.
+  hill, where Tarkov's world goes on past a fence). Added 2026-11-02: an orange oil tanker by the fence hole, a toll booth with
+  a lowered boom at RIVER PATH's flare spot, and the Saferoom's door button. The booth and tanker are built from parts, with
+  positions our own (the guides name them, no source places them).
 - **Bands' rules are in no source** ("deadly sniper", "minefield"): the mine radius (3.4 studs), the blast, the lethal wound and the
   sniper strips are ours (the snipers copy Border Yard's).
 - **Alarm details**: the siren (a procedural warble in `ZR_SFX_Amb`, silent until that asset is uploaded), the beacon, the 60 s length

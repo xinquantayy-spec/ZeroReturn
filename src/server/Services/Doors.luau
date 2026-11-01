@@ -29,7 +29,10 @@ local function refresh(d)
 	if not pp then
 		return
 	end
-	if d.locked then
+	if d.sealed then
+		pp.ActionText = "Sealed"
+		pp.ObjectText = d.label
+	elseif d.locked then
 		pp.ActionText = d.card and "Swipe card" or "Unlock"
 		pp.ObjectText = d.label .. "  ·  " .. keyName(d)
 	else
@@ -75,6 +78,11 @@ local function use(player, d)
 	if not s or s.done or not root or (root.Position - d.cf.Position).Magnitude > 10 then
 		return
 	end
+	if d.sealed then
+		ctx.Remotes.fx("sfx", { n = "door_locked", p = d.cf.Position, v = 0.8 })
+		ctx.Remotes.note(player, "toast", { text = "SEALED FROM THE INSIDE", tone = "warn" })
+		return
+	end
 	if d.locked then
 		-- an electric lock (Interchange's IRONSIGHT doors, the shelter's keycard door): dead until the switch it names is on
 		if d.power and not ctx.World.switchOn(d.power) then
@@ -108,7 +116,7 @@ end
 
 -- AI: open a closed, unlocked door they are walking through (returns true if it started opening)
 function Doors.aiOpen(d)
-	if d.locked or d.open or (os.clock() - (d.changedAt or 0)) < 0.8 then
+	if d.sealed or d.locked or d.open or (os.clock() - (d.changedAt or 0)) < 0.8 then
 		return false
 	end
 	set(d, true)
@@ -190,6 +198,7 @@ end
 -- raid start: every door closed and locked again; some ordinary doors are left ajar; switches off
 function Doors.reset()
 	for _, d in ctx.World.doors do
+		d.sealed = nil
 		d.locked = d.key ~= nil
 		if d.part then
 			set(d, (not d.locked) and math.random() < (d.openChance or 0), true)
@@ -201,6 +210,18 @@ function Doors.reset()
 		if not ok then
 			warn("[ZR] glass reset:", err)
 		end
+	end
+end
+
+-- a door shut and locked from the inside for the rest of the raid (THE SHELTER's button, Tarkov's saferoom): no key opens
+-- it again until the next raid
+function Doors.seal(d)
+	d.sealed = true
+	d.locked = true
+	if d.part then
+		set(d, false)
+	else
+		refresh(d)
 	end
 end
 

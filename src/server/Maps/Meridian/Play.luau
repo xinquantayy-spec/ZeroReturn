@@ -562,6 +562,107 @@ return function(B)
 		leverOk = true
 	end)
 
+	-- THE SHELTER's door button (Tarkov's saferoom: once inside you close the door with the button by it, and only then
+	-- does the exit count; the door stays shut for the rest of the raid, Doors.seal). A switch on the wall beside the card
+	-- door, on the shelter side; SHELTER EXIT's rule reads it last (`last`).
+	local buttonOk = false
+	try("shelter button", function()
+		if not leverOk then
+			return
+		end
+		local door = nil
+		for _, d in W.doors do
+			if d.key == "CARD_MALL_VAULT" and d.cf and d.size then
+				door = d
+				break
+			end
+		end
+		local room = pointOf(points.SHELTER_ROOM)
+		if not (door and room) then
+			return
+		end
+		local dcf = door.cf
+		local n = Vector3.new(dcf.LookVector.X, 0, dcf.LookVector.Z).Unit
+		if (room - dcf.Position):Dot(n) < 0 then
+			n = -n
+		end
+		local right = n:Cross(Vector3.yAxis).Unit
+		local floorY = dcf.Position.Y - door.size.Y / 2
+		-- the wall face beside the door on the shelter side. The map is built away from the workspace, so no raycast:
+		-- find a wall part (inside its box) half a stud behind the spot, then sit the button on that part's face
+		local function solidAt(pt)
+			for _, d in map:GetDescendants() do
+				if d:IsA("BasePart") and d ~= door.part and d.CanCollide and (d.Position - pt).Magnitude < 40 then
+					local lp = d.CFrame:PointToObjectSpace(pt)
+					local h = d.Size / 2
+					if math.abs(lp.X) <= h.X and math.abs(lp.Y) <= h.Y and math.abs(lp.Z) <= h.Z then
+						return d
+					end
+				end
+			end
+			return nil
+		end
+		local wallAt = nil
+		for _, side in { 1, -1 } do
+			local beside = dcf.Position + right * side * (door.size.X / 2 + 1.4)
+			beside = Vector3.new(beside.X, floorY + 4.2, beside.Z)
+			local wall = solidAt(beside + n * 0.5)
+			if wall then
+				-- step out along n until clear of the wall's box: that is its face
+				local face = beside
+				for step = 0.5, 4, 0.1 do
+					local q = beside + n * step
+					local lp = wall.CFrame:PointToObjectSpace(q)
+					local h = wall.Size / 2
+					if not (math.abs(lp.X) <= h.X and math.abs(lp.Y) <= h.Y and math.abs(lp.Z) <= h.Z) then
+						face = q
+						break
+					end
+				end
+				wallAt = face
+				break
+			end
+		end
+		if not wallAt then
+			warn("[ZR] Meridian play: no wall beside the shelter door for its button; SHELTER EXIT keeps two steps")
+			return
+		end
+		local m = kit.model("Shelter door button", map)
+		local face = CFrame.lookAt(wallAt + n * 0.12, wallAt + n * 2)
+		local plate = kit.boxCF(m, 0.9, 1.4, 0.2, face, hex("4B504C"), M.Metal)
+		local btn = kit.boxCF(m, 0.45, 0.45, 0.2, face * CFrame.new(0, 0.2, -0.15), hex("8E2F27"), M.SmoothPlastic)
+		btn.CanCollide = false
+		plate:SetAttribute("NoDetail", true)
+		m:SetAttribute("NoDetail", true)
+		local pp = Instance.new("ProximityPrompt")
+		pp.KeyboardKeyCode = Enum.KeyCode.F
+		pp.ActionText = "Close the door"
+		pp.ObjectText = "Door button"
+		pp.HoldDuration = 0.6
+		pp.MaxActivationDistance = 7
+		pp.RequiresLineOfSight = false
+		pp.Style = Enum.ProximityPromptStyle.Custom
+		pp.Parent = plate
+		local okD, Doors = pcall(function()
+			return require(script.Parent.Parent.Parent:WaitForChild("Services"):WaitForChild("Doors"))
+		end)
+		if not okD then
+			Doors = nil
+		end
+		W.switches.SHELTER_LOCK = {
+			id = "SHELTER_LOCK", label = "Door button", part = plate, prompt = pp, delay = 1.2, startText = "THE DOOR IS CLOSING",
+			doneText = "THE DOOR IS SHUT",
+			onChange = function(on)
+				btn.Color = on and hex("6CC27A") or hex("8E2F27")
+				btn.Material = on and M.Neon or M.SmoothPlastic
+				if on and Doors and Doors.seal then
+					Doors.seal(door)
+				end
+			end,
+		}
+		buttonOk = true
+	end)
+
 	-- ═══════════════════════════════════════════════════════════════════════════════════════════════════
 	-- extracts: the seven (our names); the shelter and the service tunnel stand on the L0 floor under the mall
 	-- ═══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -581,6 +682,7 @@ return function(B)
 				rule = {
 					kind = "power", switch = "SHELTER_SWITCH", also = "MALL_POWER",
 					needs = "SEALED  ·  FIND THE VALVE HIDDEN IN A WASHROOM", needsAlso = rule.needs, time = rule.time,
+					last = buttonOk and "SHELTER_LOCK" or nil, needsLast = "CLOSE THE DOOR WITH THE BUTTON BESIDE IT",
 				}
 			end
 			kit.extract(ex, id, name, V(x, y, z), Vector3.new(e[6], e[7], e[8]), rule, opts)

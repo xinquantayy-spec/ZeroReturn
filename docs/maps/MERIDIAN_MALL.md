@@ -125,7 +125,7 @@ with their positions and rules; Play builds them (`kit.extract`).
 | RS | RAIL SIDING | -1232, -1314 | se | open | north-west corner beside the west double railway, which leaves the map through a tunnel portal |
 | RC | RESCUE CHECKPOINT | 1246, 862 | nw | open | south-east corner beside the checkpoint (moved 8 studs inward from the reference) |
 | SC | SUBSTATION CAR | 1112, -1124 | both (PMCs only) | car: paid 20,000 MK per seat, chance 50 %, 4 seats, 60 s shared countdown | north-east corner by the sniper band; Tarkov's V-Ex (SPT: 50 % chance, 60 s timer, 4 players; wiki: always there); pay at the car, see "Car exits" below; karma pricing is a gap |
-| SE | SHELTER EXIT | 512, 77 | both | power (`MALL_POWER`) | the hidden room east of car park C: power, then a hidden switch in the L2 washroom and a keycard at a panel (Play) |
+| SE | SHELTER EXIT | 512, 77 | both | power (`MALL_POWER`) | the hidden room east of car park C: power, then a hidden switch in the L2 washroom, a keycard at the door, and the button inside that seals the door (Play) |
 | WC | WEST CAMP | 550, -210 | scav | scav | at the reference's co-op position (the service tunnel, L0), not at the huts; the spec name is kept |
 | RP | RIVER PATH | -1372, 286 | both | flare: closed until a green flare goes up within 75 studs (2026-11-02) | far west edge on the dirt road; the likely flare spot is 34 studs east |
 | FG | FENCE GAP | 929, -219 | both | `nobag` (new kind) | a hole in the fence that closes the 46 m gap in the east service lane fence (reference point 947, -219), with drums and a red container; the backpack slot must be empty (grade D) |
@@ -555,7 +555,7 @@ actually built and left out when absent, so the map still builds without `Mall.l
 | RS | RAIL SIDING | MallSE spawners | open |
 | RC | RESCUE CHECKPOINT | MallNW spawners | open |
 | SC | SUBSTATION CAR | both (PMCs only) | car: `paid` 20,000 MK with `chance` 0.5, `seats` 4, `depart` 60 (`Extract.luau`: pay at the car) |
-| SE | SHELTER EXIT | both | `power` with `also`: the mall power (`MALL_POWER`), then the washroom valve (`SHELTER_SWITCH`); a plain `MALL_POWER` rule if the valve could not be built |
+| SE | SHELTER EXIT | both | `power` with `also` and `last`: the mall power (`MALL_POWER`), then the washroom valve (`SHELTER_SWITCH`), then the door button inside (`SHELTER_LOCK`, which seals the card door for the raid); a plain `MALL_POWER` rule if the valve could not be built |
 | WC | WEST CAMP | scavs only | scav |
 | RP | RIVER PATH | both | flare |
 | FG | FENCE GAP | both | `nobag` |
