@@ -483,10 +483,12 @@ function Extract.tick()
 								ctx.Remotes.note(player, "extract", { state = "denied", zone = zone, reason = why, text = text })
 							end
 						else
+							-- each exit's own timer, as in Tarkov (the shelter 3 s, the fence gap 10 s), else the standard 8 s
+							local hold = (e.rule and tonumber(e.rule.time)) or Config.EXTRACT_HOLD
 							s.state = "EXTRACTING"
 							s.exZone = zone
-							s.exEnds = t + Config.EXTRACT_HOLD
-							ctx.Remotes.note(player, "extract", { state = "start", zone = zone, name = e.name, ends = s.exEnds, cost = e.rule.kind == "paid" and e.rule.cost or nil })
+							s.exEnds = t + hold
+							ctx.Remotes.note(player, "extract", { state = "start", zone = zone, name = e.name, ends = s.exEnds, total = hold, cost = e.rule.kind == "paid" and e.rule.cost or nil })
 						end
 					end
 				else

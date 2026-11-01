@@ -8,6 +8,67 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Meridian exit walk-through (2026-11-02)
+
+Every exit, walked from every spawn that may use it and stood in with its rule met, then looked at.
+
+**Paths** (ZR_Dev `exitcheck meridian 99 true`: all 80 map doors unlocked and opened first, since a keyed door on the way
+is the exit's own rule; agent radius 1, height 5.6, can jump). A walk the pathfinder gives up on (it stops at about 3,100
+studs) is tried in two legs through the ground part way along.
+
+| Exit | Rule | Spawns that reach it | Walk |
+|---|---|---|---|
+| FG FENCE GAP | no backpack | 25 of 25 | 35 to 2,279 studs |
+| RC RESCUE CHECKPOINT | open | 13 of 13 | 1,938 to 3,116 |
+| RP RIVER PATH | open | 25 of 25 (2 in two legs) | 782 to 3,193 |
+| RS RAIL SIDING | open | 12 of 12 (4 in two legs) | 2,645 to 3,916 |
+| SC SUBSTATION CAR | car, 20,000 | 24 of 25 (4 in two legs); WEST LOT 3 by hand in two legs through (-383, 8297): 523 + 1,623 | 344 to 3,098 |
+| SE SHELTER EXIT | power, valve, card door | 25 of 25 | 713 to 2,154 |
+| WC WEST CAMP | scavs only | 25 of 25 PMC spawns (no spawn may use it) | 402 to 1,986 |
+
+The first run gave SHELTER EXIT 0 of 25: its card door was locked, which is the rule. RAIL SIDING 8 of 12 and RIVER
+PATH 24 of 25 were the pathfinder's length limit (all reach it in two legs).
+
+**Rules** (ZR_Dev `exitwalk`: the player's character is put in each zone in turn and the server's own extract tick
+decides):
+
+| Exit | In the zone | Rule met | Hold |
+|---|---|---|---|
+| FENCE GAP | refused: BACKPACK SLOT MUST BE EMPTY | backpack off: extracting; put back on mid-hold: refused again | 10 s |
+| RESCUE CHECKPOINT, RIVER PATH, RAIL SIDING | extracting | | 8 s |
+| SUBSTATION CAR | PAY AT THE CAR | (the fare is paid at the car; tested 2026-11-01) | 60 s shared |
+| WEST CAMP | refused: SCAVS ONLY | as a scav: extracting | 8 s |
+| SHELTER EXIT | refused: NO POWER · THROW THE SWITCH AT THE SUBSTATION | power on: SEALED · FIND THE VALVE HIDDEN IN A WASHROOM; valve pulled: extracting | 3 s, then the raid ended in SUCCESS |
+
+Exit timers are now each exit's own, from the reference (SPT `ExfiltrationTime`): the standard 8 s (was 6), the
+saferoom 3 s, the hole in the fence 10 s. The HUD bar runs over each exit's own time.
+
+**Looks** (a camera at each exit, mall power on):
+
+| Exit | Before | Now |
+|---|---|---|
+| SHELTER EXIT | the room was the whole 216 x 201 block: a near-empty concrete hall, the exit marker alone in the middle | a 134 x 89 saferoom around the exit (the rest of the block stays solid): entry benches and boards, gun racks and bench, bunks, lockers, supply racks, kitchen, mess, infirmary, briefing table; 65 kit props placed |
+| FENCE GAP | the marker stood in an open field 19 studs past the end of the fence | the 46 m gap is fenced, with a 5.6-stud hole at the exit; old drums on both sides and a red container on the field side, as the guides describe |
+| RAIL SIDING | the double line ran into the hillside | a concrete tunnel portal with shut steel gates where the rails meet the hill (also at the line's south-west end) |
+| RESCUE CHECKPOINT, SUBSTATION CAR, RIVER PATH, WEST CAMP | | sensible: the barrier and booth; the car on the road; the dirt road; the service tunnel |
+
+Evidence: `docs/maps/evidence/MM_exit_shelter.jpg`, `MM_exit_fence_gap.jpg`, `MM_exit_rail_portal.jpg`.
+
+Audit after the changes (`audit meridian`): one finding, the shelter's gun bench 0.30 studs off its wall (the check
+flags 0.25).
+
+Suites (raid running on Meridian): LogicTests 341/341, CharTests 46/46, MapTests 36/36 (the two map-swap checks skip
+while a raid runs), **LookTests 31/32: L02 fails**. The detail plan published for Meridian is 970 KB in 787 cells,
+against a 400 KB limit. The biggest cell is 12 KB, so these changes do not explain it. It comes from the real-scale
+Meridian (KNOWN_ISSUES 70).
+
+**NOT VERIFIED:**
+
+- A walk by a person: the paths are the pathfinder's, the rules were met by the test bridge.
+- Paying for the car on this run.
+- Two players at the car.
+- The exits on a phone or a gamepad.
+
 ## Weapon mastering in Studio (2026-11-02)
 
 The mastering commits (dadf46b, 54c8b8d) had never been synced to the laptop. They were synced and checked with one

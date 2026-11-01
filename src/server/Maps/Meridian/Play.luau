@@ -580,7 +580,7 @@ return function(B)
 				-- mall power first (the SUBSTATION lever), then the valve in the L2 washroom (Extract.blocked reads `also` first)
 				rule = {
 					kind = "power", switch = "SHELTER_SWITCH", also = "MALL_POWER",
-					needs = "SEALED  ·  FIND THE VALVE HIDDEN IN A WASHROOM", needsAlso = rule.needs,
+					needs = "SEALED  ·  FIND THE VALVE HIDDEN IN A WASHROOM", needsAlso = rule.needs, time = rule.time,
 				}
 			end
 			kit.extract(ex, id, name, V(x, y, z), Vector3.new(e[6], e[7], e[8]), rule, opts)

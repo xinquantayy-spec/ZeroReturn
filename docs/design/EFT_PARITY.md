@@ -451,7 +451,14 @@ Gaps (not copied or not found):
 - **Saferoom chain simplified**: the urinal flush that reveals a keypad is a service valve in the washroom; not copied are the keypad,
   the padlocked door with its inside button, the lever for the Object-14 container, and the Terragroup container (Object #21WS card) in the
   south-west container yard.
-- **Extract timers**: Tarkov gives each exit its own (3 to 60 s, 60 s shared at the car); here every extract but the cars uses the standard hold (a car has its own shared countdown: "Car exits" below).
+- **Extract timers: done 2026-11-02.** Each exit has its own timer as in Tarkov (SPT `ExfiltrationTime`): the standard 8 s
+  (it was 6), SHELTER EXIT 3 s (the Saferoom), FENCE GAP 10 s (the Hole in the Fence); a car keeps its 60 s shared countdown.
+  Still a gap: exits other than Interchange's and Customs' use the standard 8 s without a check against their own data, and
+  RIVER PATH's timer is in no source.
+- **Exits as places (walk-through 2026-11-02)**: the Saferoom is a room-sized bunker, not the whole block; the Hole in the
+  Fence is a hole in a fence with drums and a red container; the railway leaves through a tunnel portal (our boundary is a
+  hill, where Tarkov's world goes on past a fence). Gaps: no oil tanker at the fence hole, no toll booth or barricade on
+  RIVER PATH, and the Saferoom's exit is a zone held 3 s rather than the lock button by its door.
 - **Bands' rules are in no source** ("deadly sniper", "minefield"): the mine radius (3.4 studs), the blast, the lethal wound and the
   sniper strips are ours (the snipers copy Border Yard's).
 - **Alarm details**: the siren (a procedural warble in `ZR_SFX_Amb`, silent until that asset is uploaded), the beacon, the 60 s length

@@ -92,7 +92,7 @@
 
 65. **Frame rate: 30 fps is the floor (owner, 2026-11-01).** HOLD 30 FPS now steps the GRAPHICS level down when a device stays under 30 fps for 8 s. A Studio test window that is not in front is held at 15 drawn frames a second while the game keeps running at 60. That cap is what showed as 15 fps, and the earlier "overhead" was most likely the same cap. In a separate client the render thread needs 10 to 27 ms a frame in Meridian's heaviest views (TEST_RESULTS, frame rate in a separate client window). With the window in front on the T490, Meridian's heaviest views run at 28 to 33 fps at Roblox's top render level (21), 58 fps at level 10, and Roblox's 60 fps cap at level 5 or lower. The sun's shadows are the largest cost at the top level, 4 to 5 ms a frame; the lamps, post effects, glass and HUD cost almost nothing. Phones are still unmeasured. **Border Yard streams in many parts at once.** At the map centre the client holds about 18,600 parts (Quay 7: 2,500), with the default streaming radius. In Studio it ran about 20% slower than Quay 7 (TEST_RESULTS, Border Yard raid with AI). Phones are unmeasured, and the 30 fps rule makes this the main risk on the map. Levers, in order: a smaller `StreamingTargetRadius` (set in Studio's Workspace properties; scripts cannot read it), fewer separate parts per building (merge plain walls into meshes), then lamps. Roblox's distant-model meshes (`LevelOfDetail = StreamingMesh`) are made when a place is published, so they do not help maps built by script at server start.
 
-66. **Meridian Mall: first-pass gaps.** Built and tested in Studio 2026-11-01 (`docs/maps/MERIDIAN_MALL.md`). Still to do: the IRONSIGHT, RESCUE POINT and security keys only drop from a few low-chance loose spots (key tiles roll the whole mall key pool); the small shops hold about 10 props each; the deep halls are very dark even with the power on (149 shell lamps at 0.8 brightness under ceilings 27 studs up); the 10 `KEY_MM_*` keys have no inventory pictures; no exit has been walked by hand yet; the mall streams about 16,800 parts near the player (see 65).
+66. **Meridian Mall: first-pass gaps.** Built and tested in Studio 2026-11-01 (`docs/maps/MERIDIAN_MALL.md`). Still to do: the IRONSIGHT, RESCUE POINT and security keys only drop from a few low-chance loose spots (key tiles roll the whole mall key pool); the small shops hold about 10 props each; the deep halls are very dark even with the power on (149 shell lamps at 0.8 brightness under ceilings 27 studs up); the 10 `KEY_MM_*` keys have no inventory pictures; the mall streams about 16,800 parts near the player (see 65). Every exit was walked and checked on 2026-11-02 (TEST_RESULTS, Meridian exit walk-through).
 
 67. **Draw calls: the detail layer's wear decals are the largest single cost (measured 2026-11-01).** In a wide view over Border (45 studs up), 1,575 draw calls: the client detail layer's 2,210 wear Decals and Textures (only 23 different images) make about 870 of them, map decals 140, terrain and characters about 417. Fog does not help: Roblox draws everything inside fog, and hiding all beyond 500 studs saves only 6 % of draws (TEST_RESULTS, Fog and draw cost). Done: shorter detail rings (HIGH 200 / 175 / 140), which took that view to 1,072 draws. Still open: fewer and larger wear marks per wall (one strip along a whole facade instead of one per wall part), or marks baked into textures. The see-through foliage adds about 40 draws on HIGH; its alpha-test fill cost on phones is not measured.
 
@@ -119,6 +119,23 @@
     - **Still to check by hand:**
       - every re-hung door, and AI paths through them;
       - the fuel stop, where the safe overlaps the office desk.
+
+70. **The detail plan for Meridian is 970 KB (measured 2026-11-02).** The client detail layer's plan is published to
+    ReplicatedStorage for the map in play. For the real-scale Meridian it is 970 KB in 787 cells, against LookTests L02's
+    400 KB limit, so L02 fails while Meridian is in play (it passes on the smaller maps). Every entry repeats its full
+    image id ("rbxassetid://" and 15 digits, about a quarter of the bytes). Ways to cut it:
+    - an index into a shared image list instead of the id;
+    - fewer decimals;
+    - cells sent only near the player.
+
+    It costs replication at raid start, which matters most on phones (see 65).
+
+71. **Meridian exits: what the walk-through left (2026-11-02).**
+    - **SHELTER EXIT.** In Tarkov you press the lock button by the saferoom door. The door shuts for good and the 3 s
+      timer runs. Here the exit is a zone in the room with the same 3 s hold.
+    - **RIVER PATH.** No toll booth or barricade, and no green flare (the flare is logged in `EFT_PARITY.md`).
+    - **FENCE GAP.** The guides also mention an orange oil tanker nearby. There is no tanker prop.
+    - **SHELTER gun bench.** It stands 0.30 studs off its wall; the audit flags 0.25.
 
 ## Tool limitations (not game bugs)
 

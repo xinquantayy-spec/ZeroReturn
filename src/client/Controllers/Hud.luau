@@ -436,7 +436,7 @@ local function fastUpdate(dt)
 			ctx.Effects.sound(Sounds.EXTRACT_BEEP, SoundService, sec <= 1 and 0.55 or 0.4, sec <= 1 and 1.25 or 1)
 			O.notice:pop(0.2)
 		end
-		label, pf, col = "EXTRACTING  ·  " .. string.upper(ex.name or ""), 1 - math.clamp(left / Config.EXTRACT_HOLD, 0, 1), C.green
+		label, pf, col = "EXTRACTING  ·  " .. string.upper(ex.name or ""), 1 - math.clamp(left / (ex.total or Config.EXTRACT_HOLD), 0, 1), C.green
 		O.notice:set({ { t = string.format("%.1f", math.max(0, left)), color = C.green } })
 		O.noticeSub:set({ { t = "HOLD POSITION", color = C.dim } })
 		notice.t, notice.dur = now, 0.3
@@ -573,7 +573,7 @@ function Hud.init(c)
 			Hud.toast("PAID " .. Util.commas(d.cost or 0) .. " " .. Config.CURRENCY .. "  ·  SEAT " .. tostring(d.seat or 1) .. " OF " .. tostring(d.seats or 4), "good")
 			Hud.toast("EXFIL " .. tostring(d.zone) .. "  -  THE CAR LEAVES IN " .. tostring(math.ceil(d.total or 60)) .. " S  ·  STAY BY IT", "good")
 		elseif d.state == "start" then
-			ex = { name = d.name, ends = d.ends }
+			ex = { name = d.name, ends = d.ends, total = d.total }
 			Hud.toast("EXFIL " .. tostring(d.zone) .. "  -  HOLD POSITION" .. (d.cost and ("  ·  PAYING " .. Util.commas(d.cost) .. " " .. Config.CURRENCY) or ""), "good")
 		elseif d.state == "left" then
 			-- the car drove off with the seat paid for and its owner outside the zone: no refund

@@ -130,7 +130,11 @@ return function(C, ctx)
 		end
 		return (r.done and "done" or ("running, " .. #r.out .. " exits so far")) .. "\n" .. table.concat(r.out, "\n")
 	end
-	function C.exitcheck(mapId, maxSpawns)
+	-- openDoors: unlock and open every door of the map first (a keyed door on the way is the exit's own rule, not a
+	-- fault). A walk the pathfinder cannot do in one go (it gives up on long ones) is tried in two legs, through the
+	-- ground half way along or 10, 25 or 50 % of the distance to either side of it (not a roof); those walks are counted as
+	-- "in two legs".
+	function C.exitcheck(mapId, maxSpawns, openDoors)
 		local PFS = game:GetService("PathfindingService")
 		local W = ctx.World
 		local m = W.maps and W.maps[mapId]
@@ -142,6 +146,39 @@ return function(C, ctx)
 		exitRuns[mapId] = run
 		task.spawn(function()
 		local out = run.out
+		if openDoors then
+			local opened = 0
+			for _, d in W.doors or {} do
+				if d.part and (not m.model or d.part:IsDescendantOf(m.model)) then
+					d.locked = false
+					ctx.Doors.aiOpen(d)
+					opened += 1
+				end
+			end
+			table.insert(out, opened .. " doors unlocked and opened")
+			task.wait(2)
+		end
+		local rp = RaycastParams.new()
+		rp.FilterType = Enum.RaycastFilterType.Exclude
+		rp.FilterDescendantsInstances = { workspace:FindFirstChild("ZR_World") and workspace.ZR_World:FindFirstChild("Triggers") }
+		local function walk(a, b)
+			local path = PFS:CreatePath({ AgentRadius = 1.0, AgentHeight = 5.6, AgentCanJump = true, WaypointSpacing = 12 })
+			local good = pcall(function()
+				path:ComputeAsync(a, b)
+			end)
+			if not (good and path.Status == Enum.PathStatus.Success) then
+				return nil
+			end
+			local wps, len = path:GetWaypoints(), 0
+			for i = 2, #wps do
+				len += (wps[i].Position - wps[i - 1].Position).Magnitude
+			end
+			return len
+		end
+		local function groundAt(p)
+			local h = workspace:Raycast(Vector3.new(p.X, 400, p.Z), Vector3.new(0, -800, 0), rp)
+			return h and h.Position + Vector3.new(0, 2.5, 0)
+		end
 		local ids = {}
 		for id in m.extracts or {} do
 			table.insert(ids, id)
@@ -150,20 +187,37 @@ return function(C, ctx)
 		for _, id in ids do
 			local e = m.extracts[id]
 			local goal = (e.pos or e.cf.Position) + Vector3.new(0, 2.5, 0)
-			local ok, fail, lo, hi, n = 0, {}, math.huge, 0, 0
+			local ok, two, fail, lo, hi, n = 0, 0, {}, math.huge, 0, 0
+			-- an exit no PMC spawn may use (a scav exit) is walked from every spawn all the same
+			local anyone = true
 			for _, sp in m.spawns or {} do
-				if n < maxSpawns and (not sp.extracts or table.find(sp.extracts, id)) then
+				if not sp.extracts or table.find(sp.extracts, id) then
+					anyone = false
+				end
+			end
+			for _, sp in m.spawns or {} do
+				if n < maxSpawns and (anyone or not sp.extracts or table.find(sp.extracts, id)) then
 					n += 1
-					local path = PFS:CreatePath({ AgentRadius = 1.0, AgentHeight = 5.6, AgentCanJump = true, WaypointSpacing = 12 })
 					local from = sp.cf.Position
-					local good = pcall(function()
-						path:ComputeAsync(from, goal)
-					end)
-					if good and path.Status == Enum.PathStatus.Success then
-						local wps, len = path:GetWaypoints(), 0
-						for i = 2, #wps do
-							len += (wps[i].Position - wps[i - 1].Position).Magnitude
+					local len = walk(from, goal)
+					if not len then
+						local flat = Vector3.new(goal.X - from.X, 0, goal.Z - from.Z)
+						local side = Vector3.new(-flat.Z, 0, flat.X) * 0.25
+						local top = math.max(from.Y, goal.Y) + 20
+						for _, off in { Vector3.zero, side * 0.4, -side * 0.4, side, -side, side * 2, -side * 2 } do
+							-- the half-way point on the ground, not on a roof
+							local mid = groundAt(from + flat * 0.5 + off)
+							mid = mid and mid.Y <= top and mid or nil
+							local a = mid and walk(from, mid)
+							local b = a and walk(mid, goal)
+							task.wait()
+							if b then
+								len, two = a + b, two + 1
+								break
+							end
 						end
+					end
+					if len then
 						ok += 1
 						lo, hi = math.min(lo, len), math.max(hi, len)
 					else
@@ -173,8 +227,9 @@ return function(C, ctx)
 				end
 			end
 			local rule = e.rule or {}
-			table.insert(out, string.format("%s %s [%s%s]: %d of %d spawns reach it%s%s", id, tostring(e.name), tostring(rule.kind),
-				rule.cost and (" " .. tostring(rule.cost)) or "", ok, n, ok > 0 and string.format(", %.0f to %.0f studs", lo, hi) or "",
+			table.insert(out, string.format("%s %s [%s%s]: %d of %d %sspawns reach it%s%s%s", id, tostring(e.name), tostring(rule.kind),
+				rule.cost and (" " .. tostring(rule.cost)) or "", ok, n, anyone and "PMC " or "", two > 0 and string.format(" (%d in two legs)", two) or "",
+				ok > 0 and string.format(", %.0f to %.0f studs", lo, hi) or "",
 				#fail > 0 and (" · cannot: " .. table.concat(fail, "; ")) or ""))
 		end
 		run.done = true

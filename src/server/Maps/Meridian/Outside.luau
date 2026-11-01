@@ -822,6 +822,28 @@ return function(B)
 	step("RESCUE CHECKPOINT", function()
 		checkpoint(byGroup.check or {})
 	end)
+	-- FENCE GAP (Tarkov's Hole in the Fence): the exit is a hole in the east service lane fence (the gap between the runs
+	-- fence_gap_n and fence_gap_s of Layout L.fences). The guides mark it with old drums behind a red shipping container
+	-- (reexile 2020) and green and brown drums (progameguides 2023): a container on the field side, drums on both sides.
+	step("FENCE GAP", function()
+		local hz = nil
+		for _, e in L.ext do
+			if e[1] == "FG" then
+				hz = e[5]
+			end
+		end
+		if not hz then
+			return
+		end
+		local hx = 927.5 -- the fence line
+		container({ 4, "FENCE GAP CONTAINER", "container", "container", hx + 13, hz - 22, 19, 7.6, 90 })
+		local F = frameOf({ 0, "", "", "", hx, hz, 1, 1, 0 })
+		local m = kit.model("FenceGapDrums", om)
+		local GREEN, BROWN = { metal = hex("4E5A3C") }, { metal = hex("5E4630") }
+		for k, d in { { 4.6, -15.5, GREEN }, { 6.4, -17.4, BROWN }, { 4.2, -18.6, GREEN }, { -3.6, -7.2, BROWN }, { -5.4, -9.0, GREEN }, { -3.2, -10.2, GREEN } } do
+			prop(m, F, "Drum", d[1], d[2], k * 0.7, 0.05, { tint = d[3] })
+		end
+	end)
 	step("sign pylons", function()
 		for _, b in byGroup.tower or {} do
 			if string.find(b[2], "NESTA", 1, true) then

@@ -122,13 +122,13 @@ with their positions and rules; Play builds them (`kit.extract`).
 
 | Id | Name | At (x, z) | Side | Rule here | Reference |
 |---|---|---|---|---|---|
-| RS | RAIL SIDING | -1232, -1314 | se | open | north-west corner beside the west double railway |
+| RS | RAIL SIDING | -1232, -1314 | se | open | north-west corner beside the west double railway, which leaves the map through a tunnel portal |
 | RC | RESCUE CHECKPOINT | 1246, 862 | nw | open | south-east corner beside the checkpoint (moved 8 studs inward from the reference) |
 | SC | SUBSTATION CAR | 1112, -1124 | both (PMCs only) | car: paid 20,000 MK per seat, chance 50 %, 4 seats, 60 s shared countdown | north-east corner by the sniper band; Tarkov's V-Ex (SPT: 50 % chance, 60 s timer, 4 players; wiki: always there); pay at the car, see "Car exits" below; karma pricing is a gap |
 | SE | SHELTER EXIT | 512, 77 | both | power (`MALL_POWER`) | the hidden room east of car park C: power, then a hidden switch in the L2 washroom and a keycard at a panel (Play) |
 | WC | WEST CAMP | 550, -210 | scav | scav | at the reference's co-op position (the service tunnel, L0), not at the huts; the spec name is kept |
 | RP | RIVER PATH | -1372, 286 | both | open | far west edge on the dirt road; the flare is a gap |
-| FG | FENCE GAP | 947, -219 | both | `nobag` (new kind) | the 46 m gap in the east service lane fence; the backpack slot must be empty (grade D) |
+| FG | FENCE GAP | 929, -219 | both | `nobag` (new kind) | a hole in the fence that closes the 46 m gap in the east service lane fence (reference point 947, -219), with drums and a red container; the backpack slot must be empty (grade D) |
 
 Until Play adds the kind `nobag` to `World`/`Raid`, FENCE GAP behaves as an open extract.
 
@@ -262,7 +262,7 @@ of different labels, and what a run is follows from the pair of labels (below). 
 |---|---|
 | Walls | Outer walls 2.4 thick (16.25 high at L0, up to the roof 69.1 above L1 and L2); partitions, party walls and shop fronts 2.0; the parapet round the open L1 decks 1.6 thick, 3.4 high; balustrades where a gallery meets a void (glass 3.5 high, handrail to 4.0). 3,191 wall parts; no wall part is thicker than 2.4 |
 | L0 car park | Floor slab top at **y 0** (1.6 thick), the outline of `L.mall.levels[1].floor`; ceiling 16.25; 305 columns (3.2 square) on a 50-stud grid, kept clear of walls, flights and openings; zones A to D and the three garages as seven parking units with a 10 x 10 floor mark (letter or name); 13 gates in the outer wall (20 or 14 wide, 13 high); the west pad opens into the car park |
-| L0 rooms | THE SHELTER (216 x 201, with columns, arch to its vestibule and the card door `MM_SHELTER` in car park C at (412.5, 175)); UNIT 14 (91 x 69, card door `MM_UNIT14` at (34.4, -818.8)); the SERVICE TUNNEL (297 x 37.5, WEST CAMP's extract inside, open at the west end and through a 19-stud passage at the east end into the KASSA garage) |
+| L0 rooms | THE SHELTER (134 x 89 since 2026-11-02, was the whole 216 x 201 block; with columns, arch to its vestibule and the card door `MM_SHELTER` in car park C at (412.5, 175)); UNIT 14 (91 x 69, card door `MM_UNIT14` at (34.4, -818.8)); the SERVICE TUNNEL (297 x 37.5, WEST CAMP's extract inside, open at the west end and through a 19-stud passage at the east end into the KASSA garage) |
 | L1 | Floor slab top **17.81**, ceiling 45.94 under the L2 floor and 49.69 (up to the roof) elsewhere; the galleries and corridors, 40 units, the three anchor halls, terraces and decks (open air, parapets) with 12 entries (14 x 12) and the dock bays, 71 openings (18 x 13) between halls and galleries |
 | L2 | Floor slab top **47.50**, ceiling 67.50; galleries, 33 units (shops and the food court), the two washrooms (the men's holds the valve spot) |
 | Anchors | KASSA (773 x 304), NESTA (473 x 394) and BOLTWORKS (691 x 351): one open hall each, 28.13 high under a thin roof (top 46.64), columns on a 68.75-stud grid (111), 11, 6 and 14 entrances, eight checkout lanes marked on the floor 26 studs inside the front (the yellow strips are not collidable), back-of-house blocks with keyless doors (see the door table), goods-in |
@@ -326,7 +326,7 @@ doors the leaves in `W.doors` besides its own stock room door. The 57 blank stor
 | `L0_goshan_garage` | KASSA GARAGE | parking | - | 241 x 425 | 16.25 | 0 |  |  |
 | `L0_oli_garage` | BOLTWORKS GARAGE | parking | - | 234 x 375 | 16.25 | 0 |  |  |
 | `L0_scav_camp_tunnel_co_op_extract` | SERVICE TUNNEL | tunnel | W | 35 x 294 | 16.25 | 0 |  |  |
-| `L0_saferoom_exfil_room` | THE SHELTER | shelter | S | 216 x 201 | 16.25 | 0 |  |  |
+| `L0_saferoom_exfil_room` | THE SHELTER | shelter | S | 134 x 89 | 16.25 | 0 |  |  |
 | `SHELTER_VESTIBULE` |  | vestibule | S | 26 x 32 | 16.25 | 0 |  | `MM_SHELTER` |
 | `L0_object_14_container_room` | UNIT 14 | unit14 | S | 91 x 69 | 16.25 | 0 |  | `MM_UNIT14` |
 
@@ -714,7 +714,7 @@ printed as `[ZR] Meridian dress: ... parts`.
 - **SHELTER EXIT is simplified**: mall power, then a hidden valve in the L2 washroom (for the urinal flush that reveals a keypad), then the
   keycard door, then the exit. Not copied: the keypad, the padlocked door with its inside button, the lever that opens Object-14, and
   the Terragroup container with the Object #21WS keycard in the south-west container yard.
-- **Extract timers**: Tarkov gives each exit its own timer (3 to 60 s); here all use the standard hold.
+- **Extract timers**: done 2026-11-02: each exit has its own (8 s standard, SHELTER EXIT 3 s, FENCE GAP 10 s, the car 60 s shared).
 - **FENCE GAP** is built as a grade D optional extract (its 2026 status is uncertain in the sources).
 - **Mines and snipers**: what the bands do is in no source (the reference calls the west band a minefield and the east band "a deadly
   sniper"); the 3.4-stud trigger, the blast and the 400-damage wound, and the sniper strips, are ours.
@@ -1062,12 +1062,14 @@ where the unit has one; Loose is the loose spots in both rooms. Five restaurants
 | `L2_underway` | Underway | CROSSTOWN DELI | food | 76 x 38 | 29 | 5 (4 + 1) | 6 |
 | `L2_urban_clothes` | Urban Clothes | METRO WEAR | clothing | 41 x 25 | 14 | 3 (2 + 1) | 4 |
 
-**THE SHELTER** (`L0_saferoom_exfil_room`, 216 x 201; 87 props, 17 containers, 19 loose spots, 9 lamps): a hidden dormitory hall. Bunks in
-three rows (18) with locker banks on the back wall (3 locker containers and 2 jackets), a supply corner (racks and pallets of boxes, water
-tanks, drums, jerry cans; 3 rack containers), a utility corner (generator with its toolbox, fuse box, electric cabinet), the mess (6 tables
-with 12 chairs, a kitchen run along the wall with a ration fridge, a pantry shelf and a galley counter), a couch with valuables, an infirmary
-(cots, a shelf, two med cases), an armoury on the right wall (gun racks, a bench carrying two weapon cases, armour and rig stands), a briefing
-table in the middle, benches and notices by the entry. The exit marking and beacon (`B.points.SHELTER_ROOM`) and the vestibule arch stay free.
+**THE SHELTER** (`L0_saferoom_exfil_room`, 134 x 89 since 2026-11-02; 65 kit props): the hidden saferoom. The room was the
+whole 216 x 201 block the reference draws solid, which left a near-empty hall around the exit; it is now a bunker around the
+exit icon, and the rest of the block stays solid. Entry wall: two benches, a cork board and a whiteboard, gun racks and a bench
+carrying two weapon cases. Back wall: armour and rig stands, five lockers (3 locker containers), the supply racks (2 rack
+containers), two water tanks, pallets of boxes, drums and jerry cans. Left wall: the kitchen (a ration fridge and a galley
+counter), a couch with valuables, an electric cabinet, a fuse box and the generator with its toolbox. Middle: six mess tables
+with 12 chairs, the infirmary by the front wall (three shelves, three cots, two med cases), a briefing table and two rows of
+four bunks with two jackets between them. The exit zone keeps 24 studs clear around it.
 
 **UNIT 14** (`L0_object_14_container_room`, 91 x 69; 24 props, 17 containers, 18 loose spots, 3 lamps): the best loot of the mall. Six
 walk-in shipping containers in two rows (the kit has no container prop, so each is nine plain parts: roof, two sides, back, four posts and a

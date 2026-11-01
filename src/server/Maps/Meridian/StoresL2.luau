@@ -1456,101 +1456,31 @@ return function(B)
 		return { front = F }
 	end
 
-	-- ── THE SHELTER (L0): a hidden dormitory hall ─────────────────────────────────────────────────────────
+	-- ── THE SHELTER (L0): the hidden saferoom behind the card door ─────────────────────────────────────────
+	-- Tarkov's saferoom is a bunker you can loot in peace once the door is shut: bunks, supply racks, a weapon bench, food
+	-- and medicine. The reference draws the whole block as solid and gives no room size (grade D); the room is about
+	-- 43 x 28 m around the exit icon (Layout service.shelter), the arch from the vestibule at its front-right corner.
+	-- Walls: R (right, the arch's side) entry benches, notice boards and the armoury; B (back) lockers, supply racks and
+	-- tanks; L (left) the kitchen, a sofa and the utility corner. Middle: mess tables, the briefing table and the bunks.
 	local function shelter(u)
 		local F = roomsOf(u, TINT.shelter)
 		local hw, D = F.hw, F.d
-		-- the arch from the vestibule is at the +x end of the front wall; the exit zone's marking and beacon stay free
+		-- the arch from the vestibule; the exit zone's marking and beacon stay free
 		F:keep(hw - 26, hw, 0, 20)
 		local pt = B.points and B.points.SHELTER_ROOM
 		if pt then
 			local lp = F.cf:PointToObjectSpace(pt)
 			F:keep(lp.X - 12, lp.X + 12, lp.Z + F.hd - 12, lp.Z + F.hd + 12)
 		end
-		-- entry: benches and notices on the right wall
-		F:against("R", "Bench", 30)
-		F:against("R", "Bench", 40)
-		F:prop("CorkBoard", "L", hw - 0.3, 52, { hang = true, overlap = true, y = 3.2 })
-		F:prop("Whiteboard", "L", hw - 0.5, 62, { hang = true, overlap = true, y = 3.0 })
-		-- dormitory: bunks in rows at the back-left, lockers on the back wall
-		local bunks = {}
-		for _, row in { 188, 172, 156 } do
-			for _, b in F:row("BunkBed", "F", row, -hw + 8, -hw + 8 + 13 * 5, 13) do
-				bunks[#bunks + 1] = b
-			end
-		end
-		local lockers = F:run("B", "Lockers", -hw + 2, -hw + 40, { gap = 1.2, step = 2 })
-		F:anchor(lockers[1], "locker", "Bunk locker")
-		F:anchor(lockers[3], "locker", "Bunk locker")
-		F:anchor(lockers[5], "locker", "Bunk locker")
-		-- what the sleepers left beside their beds (a bunk is 5 high: nothing can lie on it within reach, so it lies in front)
-		for k = 1, 4 do
-			local b = spread(bunks, k, 4)
-			if b then
-				F:floorSpot(b.x, b.d - 3.2, (k % 2 == 0) and "dorm_good" or "dorm", 0.5)
-			end
-		end
-		F:coat(-hw + 20, 143, 0, "F", "Jacket")
-		F:coat(-hw + 60, 143, 0, "F", "Jacket")
-		-- supplies: racks and stacks at the back-right
-		local racks = F:run("B", { "StorageRack", "StorageShelf", "StorageRack" }, 8, hw - 3, { gap = 3.5, step = 2, max = 7 })
-		F:anchor(racks[1], "crate", "Supply rack")
-		F:anchor(racks[3], "crate", "Supply rack")
-		F:anchor(racks[5], "crate", "Ration rack")
-		for _, x in { 12, 30, 52, 74, 92 } do
-			F:prop("PalletBoxes", "F", x, 160)
-		end
-		F:prop("WaterTank", "F", hw - 6, 140)
-		F:prop("WaterTank", "F", hw - 14, 140)
-		F:row("Drum", "F", 150, 14, 34, 7)
-		F:prop("JerryCans", "F", 60, 150)
-		F:prop("JerryCans", "F", 66, 150)
-		F:topSpot(firstOf(racks, "StorageShelf"), "junk", 0.4)
-		-- the utility corner
-		local gen = F:prop("HideoutGenerator", "L", hw - 3.2, 118)
-		F:against("R", "FuseBox", 108, { y = 1.5 })
-		F:against("R", "ElectricCabinet", 98)
-		F:toolbox(hw - 8, 124, 0, "L", "Generator toolbox")
-		-- the mess: tables and chairs, the kitchen run along the left wall
-		local tables = F:row("Table", "F", 100, -hw + 26, -hw + 26 + 14 * 2, 14)
-		for _, t in F:row("Table", "F", 84, -hw + 26, -hw + 26 + 14 * 2, 14) do
-			tables[#tables + 1] = t
-		end
-		-- a chair each side of a table, turned toward it
-		for _, t in tables do
-			F:prop("Chair", "F", t.x, t.d + 3.2)
-			F:prop("Chair", "B", t.x, t.d - 3.2)
-		end
-		local kit1 = F:run("L", { "Fridge", "Counter", "Counter", "StorageShelf" }, 70, 130, { gap = 0.5, step = 2 })
-		F:anchor(firstOf(kit1, "Fridge"), "cooler", "Ration fridge")
-		F:anchor(firstOf(kit1, "StorageShelf"), "grocery", "Pantry shelf")
-		F:anchor(firstOf(kit1, "Counter"), "grocery", "Galley counter")
-		for _, t in tables do
-			F:topSpot(t, "grocery", 0.3)
-		end
-		-- the couch with valuables (the reference's saferoom has one) at the edge of the mess
-		local couch = nil
-		for _, at in { 150, 160, 62 } do
-			couch = F:against("L", "Sofa", at, { quiet = true })
-			if couch then
-				break
-			end
-		end
-		F:topSpot(couch, "mallgood", 0.6)
-		-- the infirmary at the front-left
-		local cots = F:row("MedCot", "F", 40, -hw + 12, -hw + 12 + 12 * 3, 12)
-		F:prop("FirstAid", "F", -hw + 4, 5, { hang = true, overlap = true, y = 3.4 })
-		local ms = F:run("L", "MedShelf", 20, 44, { gap = 0.5, step = 2 })
-		F:anchor(ms[1], "pharmacy", "Infirmary shelf")
-		F:medbag(-hw + 14, 18, 0, "F", "Med case")
-		F:medbag(-hw + 22, 18, 0, "F", "Med case")
-		F:topSpot(firstOf(cots, "MedCot"), "pharmacy", 0.45)
-		-- the armoury on the right wall: racks of weapons, a bench with cases, kit stands
-		F:run("R", "GunRack", 74, 112, { gap = 1, step = 2 })
-		-- the cases lie on the bench, so they are made only when it fits (the water tanks are close behind it)
+		-- entry wall: benches, notices, then the armoury (racks of weapons, a bench with cases, kit stands)
+		F:against("R", "Bench", 26)
+		F:against("R", "Bench", 34)
+		F:prop("CorkBoard", "L", hw - 0.3, 42, { hang = true, overlap = true, y = 3.2 })
+		F:prop("Whiteboard", "L", hw - 0.5, 50, { hang = true, overlap = true, y = 3.0 })
+		F:run("R", "GunRack", 52, 72, { gap = 1, step = 2 })
 		local gb = nil
-		for _, at in { 130, 129, 131 } do
-			gb = F:prop("GunBench", "L", hw - 3.6, at, { quiet = true })
+		for _, at in { D - 8, D - 9, D - 10 } do
+			gb = F:against("R", "GunBench", at, { quiet = true })
 			if gb then
 				break
 			end
@@ -1559,15 +1489,72 @@ return function(B)
 			F:gunCase(gb.sx, gb.sd - 3.5, 3.4, "L", "Weapon case")
 			F:gunCase(gb.sx, gb.sd + 3.5, 3.4, "L", "Weapon case")
 		end
-		F:prop("ArmorStand", "L", hw - 3, 66)
-		F:prop("ArmorStand", "L", hw - 3, 70)
-		F:prop("RigStand", "L", hw - 3, 150)
-		-- the briefing table in the middle
-		F:prop("MapTable", "F", 6, 118)
-		F:scatter(5, "junk", 0.4, 6, D - 4)
-		F:scatter(3, "mall", 0.4, 6, D - 4)
-		-- the hall is wide: one lamp in each ninth of it
-		F:lightUp(50, 0.9, 72)
+		F:against("B", "ArmorStand", hw - 6)
+		F:against("B", "ArmorStand", hw - 9)
+		F:against("B", "RigStand", hw - 12)
+		-- back wall: the bunk lockers, the supply racks, water and fuel
+		local lockers = F:run("B", "Lockers", 14, hw - 15, { gap = 1.2, step = 2 })
+		F:anchor(lockers[1], "locker", "Bunk locker")
+		F:anchor(lockers[3], "locker", "Bunk locker")
+		F:anchor(lockers[5], "locker", "Bunk locker")
+		local racks = F:run("B", { "StorageRack", "StorageShelf", "StorageRack" }, -24, 12, { gap = 1.5, step = 2 })
+		F:anchor(racks[1], "crate", "Supply rack")
+		F:anchor(racks[3], "crate", "Ration rack")
+		F:topSpot(firstOf(racks, "StorageShelf"), "junk", 0.4)
+		F:against("B", "WaterTank", -hw + 16)
+		F:against("B", "WaterTank", -hw + 23)
+		F:against("B", "PalletBoxes", -hw + 30)
+		F:against("B", "PalletBoxes", -hw + 35)
+		F:row("Drum", "F", D - 8, -hw + 29, -hw + 37, 4)
+		F:prop("JerryCans", "F", -hw + 40, D - 2)
+		-- the utility corner (back-left): the generator, its toolbox, the fuse box and the cabinet
+		F:against("L", "HideoutGenerator", D - 12)
+		F:toolbox(-hw + 6, D - 20, 0, "R", "Generator toolbox")
+		F:against("L", "FuseBox", 64, { y = 1.5 })
+		F:against("L", "ElectricCabinet", 56)
+		-- the sofa with valuables (the reference's saferoom has one)
+		local couch = F:against("L", "Sofa", 46, { quiet = true }) or F:against("L", "Sofa", 50, { quiet = true })
+		F:topSpot(couch, "mallgood", 0.6)
+		-- the kitchen along the left wall and the mess in front of it
+		local kit1 = F:run("L", { "Fridge", "Counter", "Counter" }, 5, 42, { gap = 0.5, step = 2 })
+		F:anchor(firstOf(kit1, "Fridge"), "cooler", "Ration fridge")
+		F:anchor(firstOf(kit1, "Counter"), "grocery", "Galley counter")
+		local tables = F:row("Table", "F", 26, -46, -18, 14)
+		for _, t in F:row("Table", "F", 13, -46, -18, 14) do
+			tables[#tables + 1] = t
+		end
+		for _, t in tables do
+			F:prop("Chair", "F", t.x, t.d + 3.2)
+			F:prop("Chair", "B", t.x, t.d - 3.2)
+			F:topSpot(t, "grocery", 0.3)
+		end
+		-- the infirmary by the front wall
+		local ms = F:run("F", "MedShelf", -2, 22, { gap = 0.5, step = 2 })
+		F:anchor(ms[1], "pharmacy", "Infirmary shelf")
+		local cots = F:row("MedCot", "F", 13, 0, 24, 12)
+		F:medbag(6, 19, 0, "F", "Med case")
+		F:medbag(14, 19, 0, "F", "Med case")
+		F:topSpot(firstOf(cots, "MedCot"), "pharmacy", 0.45)
+		-- the briefing table, and the bunks in two rows
+		F:prop("MapTable", "F", -6, 44)
+		local bunks = {}
+		for _, row in { 72, 58 } do
+			for _, b in F:row("BunkBed", "F", row, 6, 6 + 13 * 3, 13) do
+				bunks[#bunks + 1] = b
+			end
+		end
+		-- what the sleepers left beside their beds (a bunk is 5 high: nothing can lie on it within reach, so it lies in front)
+		for k = 1, 4 do
+			local b = spread(bunks, k, 4)
+			if b then
+				F:floorSpot(b.x, b.d - 3.2, (k % 2 == 0) and "dorm_good" or "dorm", 0.5)
+			end
+		end
+		F:coat(12, 65, 0, "F", "Jacket")
+		F:coat(38, 65, 0, "F", "Jacket")
+		F:scatter(4, "junk", 0.4, 6, D - 4)
+		F:scatter(2, "mall", 0.4, 6, D - 4)
+		F:lightUp(40, 0.9, 36)
 		return F
 	end
 

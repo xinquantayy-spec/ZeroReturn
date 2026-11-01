@@ -310,6 +310,10 @@ L.fences = {
 	{ "fence_32", { -198.1, -1103.8, -198.1, -1118.4 } },
 	{ "fence_33", { -214.4, 758.1, -262.5, 758.1, -262.5, 802.2, -271.2, 808.8, -271.2, 935.3, -262.5, 943.1, -262.5, 970, -157.5, 970 } },
 	{ "fence_34", { -128.8, 970, -56.9, 970, -56.9, 943.1, -47.8, 935.3, -47.8, 808.8, -56.9, 802.2, -56.9, 758.1, -185.9, 758.1 } },
+	-- ours: the 46 m gap between fence_18 and fence_19 closed, leaving the hole of the FENCE GAP exit (z -221.6..-216.0); in Tarkov
+	-- the exit is a hole in this fence that a player only squeezes through without a backpack
+	{ "fence_gap_n", { 927.5, -283.8, 927.5, -221.6 } },
+	{ "fence_gap_s", { 927.5, -216.0, 927.5, -140.6 } },
 }
 L.power = {
 	{ "powerline_0", { -1390.6, 1366.2, -1390.9, 719.4, -1332.8, -342.8, -1369.7, -875, -1369.7, -1370.6 } },
@@ -1071,7 +1075,7 @@ L.mall = {
 	},
 	service = {
 		tunnel = { name = "SERVICE TUNNEL", x0 = 359.4, x1 = 656.2, z0 = -228.1, z1 = -190.6, conf = "C" },
-		shelter = { x0 = 406.2, x1 = 625, z0 = -62.5, z1 = 140.6, door = { 412.5, 171.9 }, conf = "D" }, -- THE SHELTER block (room size not drawn)
+		shelter = { x0 = 406.2, x1 = 540, z0 = 52, z1 = 140.6, door = { 412.5, 171.9 }, conf = "D" }, -- THE SHELTER: the reference draws the block (x 406..625, z -62..141) solid and no room in it; ours is a 43 x 28 m saferoom around the exit icon, the rest stays solid
 		unit14 = { x0 = 0, x1 = 93.8, z0 = -890.6, z1 = -781.2, conf = "D" }, -- UNIT 14 container room
 		back = { -- partitioned back-of-house blocks (grade D); the BOLTWORKS OFFICES hold OFFICE and GOODS-IN
 			{ name = "NESTA STOCK ROOMS", x0 = 500, x1 = 656.2, z0 = -934.4, z1 = -781.2 },
@@ -1094,10 +1098,10 @@ L.ext = {
 	{ "RS", "RAIL SIDING", "se", -1231.6, -1313.8, 30, 12, 30, { kind = "open" }, "B", "north-west corner beside the west double railway; SPT offers it to MallSE spawners, 2026 sources: both" },
 	{ "RC", "RESCUE CHECKPOINT", "nw", 1245.5, 861.8, 30, 12, 30, { kind = "open" }, "B", "moved 8 studs inward (reference position at or past the limit); south-east corner beside the checkpoint buildings; SPT offers it to MallNW spawners, 2026 sources: both" },
 	{ "SC", "SUBSTATION CAR", "both", 1112.2, -1123.8, 26, 12, 26, { kind = "paid", cost = 20000, chance = 0.50, seats = 4, depart = 60 }, "B", "north-east corner by the sniper band; a car: 50% chance (SPT), 4 seats, 60 s shared timer; 20000 is the 2026 figure (SPT/wiki 5000); karma pricing is a gap" },
-	{ "SE", "SHELTER EXIT", "both", 512.5, 77.2, 16, 10, 16, { kind = "power", switch = "MALL_POWER", needs = "NO POWER  ·  THROW THE SWITCH AT THE SUBSTATION" }, "B", "hidden room east of car park C; after power: the hidden switch in the L2 washroom (poi.WASHROOM) and the keycard at the panel, door at poi.SHELTER_DOOR; power is the only rule World supports" },
+	{ "SE", "SHELTER EXIT", "both", 512.5, 77.2, 16, 10, 16, { kind = "power", switch = "MALL_POWER", needs = "NO POWER  ·  THROW THE SWITCH AT THE SUBSTATION", time = 3 }, "B", "hidden room east of car park C; after power: the hidden switch in the L2 washroom (poi.WASHROOM) and the keycard at the panel, door at poi.SHELTER_DOOR; power is the only rule World supports" },
 	{ "WC", "WEST CAMP", "scav", 549.7, -209.7, 22, 10, 22, { kind = "scav" }, "B", "reference position is the service tunnel between car park B/C and the KASSA garage (NOT the west camp huts): co-op (scav + PMC) becomes scav-only; the spec name is kept" },
 	{ "RP", "RIVER PATH", "both", -1371.9, 285.9, 28, 12, 28, { kind = "open" }, "B", "far west edge on the dirt road past the highway; the flare is a gap (plain open exit); likely flare spot poi.FLARE_SPOT" },
-	{ "FG", "FENCE GAP", "both", 946.9, -218.8, 24, 10, 24, { kind = "nobag" }, "D", "grade D: behind the NESTA hall on the east service lane in the 46 m fence gap; the backpack slot must be empty (kind nobag is new)" },
+	{ "FG", "FENCE GAP", "both", 929.0, -218.8, 10, 10, 10, { kind = "nobag", time = 10 }, "D", "grade D: behind the NESTA hall on the east service lane, in the 46 m fence gap (reference 946.9); ours is the hole left in the fence we close the gap with (L.fences fence_gap_n / fence_gap_s); the backpack slot must be empty" },
 }
 L.pmc = {
 	nw = {

@@ -83,6 +83,16 @@ examples with positions. The checks:
 - **Hand-placed props in the motor shop and in STORE 3, 7 and 17.** Benches, chests, crates and lockers that stood
   in each other or in doorways have been moved.
 
+Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit walk-through"):
+
+- **THE SHELTER was the whole block.** The reference draws the block solid and gives no room size, so the builder made
+  the whole 216 x 201 block one room. Its furniture stood along far walls, and the exit sat alone in an empty concrete
+  hall. The room is now a 134 x 89 bunker around the exit, and its furniture was laid out again.
+- **FENCE GAP stood in a field.** The exit marker was 19 studs past the end of a fence, in open grass. The gap is now
+  fenced, with a hole at the exit, drums and a red container.
+- **Rails ran into the hill.** Where the west double line leaves the map, the rails ended in the hillside. A tunnel
+  portal with shut gates now stands where a line meets a rising hill (`Ground.luau`, both ends of the line).
+
 ## Left for later
 
 See `KNOWN_ISSUES.md` 69.

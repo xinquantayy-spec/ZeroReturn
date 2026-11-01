@@ -23,7 +23,8 @@ local Config = {
 	SCAV_CAP = 10,
 	SCAV_WAVE_EVERY = 240, -- seconds between scav waves (2-3 each) while more than 5 minutes remain
 	BOSS_CHANCE = 0.5, -- the Foreman and his crew hold the freight depot in this share of raids
-	EXTRACT_HOLD = 6,
+	EXTRACT_HOLD = 8, -- Tarkov's standard exit timer (SPT ExfiltrationTime); an exit with its own sets rule.time
+
 	SEARCH_TIME = 1.2,
 	INTERACT_RANGE = 10,
 	RESPAWN_DELAY = 4,
