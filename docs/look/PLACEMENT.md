@@ -140,7 +140,9 @@ Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit
   - **MOTOR SHOP stores:** the spares console stood inside the roof stair's solid flight. It is against the east wall
     now.
   - **RED STORES:** a locker stood inside the partition between two bays. It is inside bay 18 now, beside its lockers.
-  - **OLD PUMPS:** the tool chest stood in the back door's swing. It is 0.35 studs further along now.
+  - **OLD PUMPS:** the tool chest stood in the back door's swing. It now stands turned along the counter, clear of both.
+    The first move left it touching the counter, and the builder's overlap check dropped it, container and all; the
+    builder's log line "props rejected for overlap" shows such a case.
   - **Audit before and after:**
 
     | Check | Before | After |
