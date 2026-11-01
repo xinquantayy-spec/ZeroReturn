@@ -163,6 +163,7 @@ return function(B)
 	end
 	-- a wall from (u0, v0) to (u1, v1), foot at y0, height h, thickness t; holes { s, width, bottom, top } with s the
 	-- distance of the opening's centre from the start of the wall
+	local droppedOpenings = {}
 	local function wl(p, u0, v0, u1, v1, y0, h, t, col, mat, holes)
 		local dx, dz = u1 - u0, v1 - v0
 		local len = math.sqrt(dx * dx + dz * dz)
@@ -178,15 +179,15 @@ return function(B)
 			return a[1] < b[1]
 		end)
 		local hs = {}
-		local last = -len / 2
 		for _, o in list do
 			local half = o[2] / 2
+			-- openings sharing a stretch of wall (stacked slit windows, a door by a gate) are all cut: World.wallHoles
 			if o[2] < len - 0.3 then
 				local s = math.clamp(o[1] - len / 2, -len / 2 + half + 0.05, len / 2 - half - 0.05)
-				if s - half >= last - 1e-6 then
-					table.insert(hs, { s, o[2], math.max(o[3], 0), math.min(o[4], h) })
-					last = s + half
-				end
+				table.insert(hs, { s, o[2], math.max(o[3], 0), math.min(o[4], h) })
+			else
+				-- an opening too wide for its wall: the wall is built solid there
+				table.insert(droppedOpenings, string.format("%s (%.1f wide at %.1f of %.1f)", bm and bm.Name or "?", o[2], o[1], len))
 			end
 		end
 		kit.wallHoles(p, c, len, h, t, col, mat, hs)
@@ -461,6 +462,9 @@ return function(B)
 	end
 	-- the look of each container kind: a kit prop whose collider carries the prompt while the building is under its prop
 	-- cap (then, or for the other kinds: World's own crate, drawer, locker or safe)
+	-- desks by where they stand (desk() below): a "drawer" container on the same spot uses the desk as its look (it put
+	-- its own drawer box inside the desk, poking through the top: placement audit, 2026-11-01)
+	local desks = {}
 	local LOOK = { toolbox = "ToolChest", weaponbox = "AmmoCrate", crate = "PalletBoxes", locker = "Locker", techbox = "FuseBox", medbag = "FirstAid" }
 	local function cont(kind, label, u, v, yaw, y, plain)
 		y = y or FY
@@ -468,12 +472,36 @@ return function(B)
 		local id = pre .. "_C" .. contN
 		local anchor = nil
 		local prop = LOOK[kind]
-		if prop and not plain and bProps < bCap then
-			local m = K(prop, u, v, yaw, y)
+		if kind == "drawer" then
+			local here = wp(u, y, v)
+			for _, dk in desks do
+				if dk.m.Parent and (dk.p - here).Magnitude < 1.5 then
+					anchor = dk.m:FindFirstChild("KitCollider")
+					break
+				end
+			end
+		end
+		if anchor then
+			-- the desk is the look
+		elseif prop then
+			-- a container always gets its look (plain ones too), over the building's prop cap: without it every chest,
+			-- radio box and first aid bag was the same 4-stud crate, which stood in benches and hung inside racks
+			-- (placement audit, 2026-11-01)
+			local _ = plain
+			local m = K(prop, u, v, yaw, y, { must = true })
 			if not m then
 				return nil
 			end
 			anchor = m:FindFirstChild("KitCollider")
+			if not anchor then
+				-- a wall fitting without a collider (the first aid box): its biggest piece is the container, not a crate
+				local bv = 0
+				for _, p in m:GetDescendants() do
+					if p:IsA("BasePart") and p.Size.X * p.Size.Y * p.Size.Z > bv then
+						anchor, bv = p, p.Size.X * p.Size.Y * p.Size.Z
+					end
+				end
+			end
 		elseif reserved(u, v, 2) then
 			nSkip += 1
 			return nil
@@ -687,7 +715,11 @@ return function(B)
 		end
 	end
 	local function desk(u, v, yaw, y)
-		K("OfficeDesk", u, v, yaw, y)
+		local m = K("OfficeDesk", u, v, yaw, y)
+		if m then
+			table.insert(desks, { p = wp(u, y or FY, v), m = m })
+		end
+		return m
 	end
 
 	-- ═══ STORE 3 (id 22): the big single hall ═════════════════════════════════════════════════════════════
@@ -753,8 +785,9 @@ return function(B)
 		cont("weaponbox", "Ammunition crate", 52, 36, 0)
 		cont("toolbox", "Workshop chest", -78, -1, -90)
 		cont("toolbox", "Mechanic's chest", 20, -36, 0)
-		cont("locker", "Locker", -83, 40, FACE.w)
-		cont("locker", "Locker", -83, 44, FACE.w)
+		-- the two lockers south of the west door (v 42.3 to 46.3): one stood in it (placement audit, 2026-11-01)
+		cont("locker", "Locker", -83, 36.4, FACE.w)
+		cont("locker", "Locker", -83, 38.6, FACE.w)
 		cont("medbag", "Medical bag", -81, 30, 0, FY)
 		for _, s in { { "junk", 0.5, -70, -49, 6.3 }, { "junk", 0.5, -50, -49, 6.3 }, { "junk", 0.45, -25, 50, 6.3 }, { "junk", 0.45, 10, -50, 6.3 }, { "junk", 0.4, 30, 49, 0.3 },
 			{ "junk", 0.4, -66, 6, 0.3 }, { "junk", 0.4, 45, -38, 0.3 }, { "office", 0.5, 62, -52, 2.9 }, { "keys", 0.25, 75, -52, 2.9 }, { "junk", 0.45, -80, -12, 3.5 },
@@ -1376,7 +1409,7 @@ return function(B)
 		desk(52, 22, 90)
 		K("Chair", 49, 22, FACE.w)
 		K("Lockers", 60, id - 1.6, FACE.s)
-		K("StorageShelf", 46, id - 1.2, FACE.s)
+		K("StorageShelf", 47.8, id - 1.2, FACE.s) -- clear of the safe by the west wall (it stood 1.6 into it)
 		lamp(52, 9.4, 26, 18, 0.7, nil, WARM, 3.2)
 		cont("safe", "Store 7 safe", 62, 18, FACE.n)
 		cont("safe", "Store 7 safe", 42.3, id - 3, FACE.w)
@@ -1494,7 +1527,9 @@ return function(B)
 		end
 		-- openings per edge
 		local holes = { {}, {}, {}, {}, {}, {}, {}, {} }
-		holes[1] = { { 30, 13, 0, 10.4 }, { 75, 13, 0, 10.4 }, { 110, 13, 0, 10.4 }, { 10, 4.2, 0, 7.9 }, { 118, 4.2, 0, 7.9 } }
+		-- the door by the east gate stands at 119.2: at 118 its opening overlapped the gate's (103.5 to 116.5) and was dropped,
+		-- leaving the door in a solid wall (placement audit, 2026-11-01)
+		holes[1] = { { 30, 13, 0, 10.4 }, { 75, 13, 0, 10.4 }, { 110, 13, 0, 10.4 }, { 10, 4.2, 0, 7.9 }, { 119.2, 4.2, 0, 7.9 } }
 		holes[2] = { { 25, 13, 0, 10.4 }, { 60, 4.2, 0, 7.9 } }
 		holes[3] = { { 11, 4.2, 0, 7.9 } }
 		holes[4] = { { 32, 13, 0, 10.4 }, { 8, 4.2, 0, 7.9 } }
@@ -1507,7 +1542,7 @@ return function(B)
 		end
 		outlineWalls(bm, pts, 0, WH, T, PAN, M.Concrete, holes)
 		outlineWalls(bm, pts, WH + 0.8, 3.2, 0.8, PAN, M.Concrete, nil) -- the roof parapet
-		for _, a in { { 1, 10 }, { 1, 118 }, { 2, 60 }, { 3, 11 }, { 4, 8 }, { 5, 20 }, { 5, 80 }, { 6, 20 }, { 6, 105 }, { 7, 25 } } do
+		for _, a in { { 1, 10 }, { 1, 119.2 }, { 2, 60 }, { 3, 11 }, { 4, 8 }, { 5, 20 }, { 5, 80 }, { 6, 20 }, { 6, 105 }, { 7, 25 } } do
 			edgeDoor(pts, a[1], a[2], T, FY)
 		end
 		for _, a in { { 1, 30, "RollerDoor" }, { 4, 32, "RollerDoor" }, { 8, 9, "DockDoor" }, { 8, 28, "DockDoor" } } do
@@ -1561,10 +1596,9 @@ return function(B)
 		cont("techbox", "Radio crate", -56, 26.6, FACE.s, D1)
 		cont("crate", "Stock crate", -40, 12, 0, D1)
 		cont("weaponbox", "Ammunition crate", -30, 22, 90, D1)
-		K("PalletBoxes", -40, 12, 0, D1)
 		K("RollCage", -32, 4, 20, D1)
 		cont("toolbox", "Gallery chest", -72, -20, FACE.w, D2)
-		cont("medbag", "First aid bag", -60, -23.4, FACE.n, D2 + 3)
+		cont("medbag", "First aid bag", -67, -23.6, FACE.n, D2 + 3) -- on the wall beside the rack, not inside it
 		cont("crate", "Gallery crate", -64, -12, 0, D2)
 		K("StorageRack", -60, -23, FACE.n, D2)
 		for _, s in { { "vault", 0.5, -70, 12, D1 + 0.1 }, { "junk", 0.45, -50, 20, D1 + 0.1 }, { "junk", 0.4, -64, -10, D2 + 0.1 }, { "junk", 0.4, -54, -15, D2 + 0.1 } } do
@@ -2860,7 +2894,7 @@ return function(B)
 			K("Generator", 86, 66, FACE.e, FY)
 			K("ElectricCabinet", 90.5, 24, FACE.e, FY)
 			K("ElectricCabinet", 90.5, 32, FACE.e, FY)
-			K("WaterTank", 2, -18.4, FACE.n, FY)
+			K("WaterTank", 2, -17.5, FACE.n, FY) -- its back on the north wall (inner face v -19.6), not 0.8 into it
 			K("Drum", 74, 6, 0, FY)
 			K("Drum", 76, 4, 0, FY)
 			K("WorkLight", 14, 62, 30, FY)
@@ -2908,8 +2942,10 @@ return function(B)
 			})
 			tableP(-90, -83, -18.4, -15.4, FY, 2.8)
 			cont("drawer", "Foreman's desk", -86.5, -16.9, 0, FY, true)
-			cont("safe", "Foreman's safe", -77.4, -8, FACE.e, FY, true)
-			cont("techbox", "Radio crate", -90.6, -8, FACE.w, FY, true)
+			-- the safe in the north-east corner and the radio crate by the west wall: they stood in the lockers and in
+			-- the door's swing (placement audit, 2026-11-01)
+			cont("safe", "Foreman's safe", -79, -17.6, FACE.n, FY, true)
+			cont("techbox", "Radio crate", -90.3, -12.2, FACE.w, FY, true)
 			K("Lockers", -88, -8.4, FACE.s, FY)
 			lamp(-84, 9.6, -13, 18, 0.8, nil, WARM, 3.2)
 			for _, s in { { "vault", 0.6, -84, -16.9, 2.9 }, { "keys", 0.35, -80, -9, FY } } do
@@ -2929,21 +2965,26 @@ return function(B)
 			cont("toolbox", "Mezzanine chest", -70, -14, 0, Y2, true)
 			lt("junk", 0.4, -62, -14, Y2 + 0.1)
 			-- the shop floor: a car on a two-post lift, the benches, tyres, drums
-			K("CarSedan", -50, 0, 90, FY + 3.4)
+			local onLift = K("CarSedan", -50, 0, 90, FY + 3.4)
+			if onLift then
+				onLift:SetAttribute("Raised", true) -- it rests on the lift arms at its ends: the placement audit skips it
+			end
 			for _, u in { -57.5, -42.5 } do
 				ab(bm, u - 0.5, u + 0.5, FY, FY + 8.6, -5.5, -4.5, hex("B0801C"), M.Metal)
 				ab(bm, u - 2.2, u + 2.2, FY + 3.0, FY + 3.4, -5.2, 5.2, STL2, M.Metal)
 			end
-			K("GunBench", -64, 13.6, FACE.s, FY)
-			K("CraftBench", -36, 13.8, FACE.s, FY)
+			-- along the south wall (inner face v 15): the benches' backs against it, the chest and the crate beside them,
+			-- not in them (placement audit, 2026-11-01)
+			K("GunBench", -64, 13.45, FACE.s, FY)
+			K("CraftBench", -36, 13.2, FACE.s, FY)
 			K("ToolChest", -26, 13.6, FACE.s, FY)
 			K("TyreStack", -88, 12, 0, FY)
 			K("TyreStack", -85, 8, 40, FY)
-			K("Drum", -44, 12.6, 0, FY)
-			K("Drum", -46, 12.8, 0, FY)
+			K("Drum", -47.6, 12.6, 0, FY)
+			K("Drum", -49.8, 12.8, 0, FY)
 			K("JerryCans", -90, 3, 20, FY)
-			cont("toolbox", "Mechanic's chest", -40, 13, FACE.s, FY, true)
-			cont("crate", "Spare parts", -72, 12.6, 0, FY, true)
+			cont("toolbox", "Mechanic's chest", -42.6, 13.8, FACE.s, FY, true)
+			cont("crate", "Spare parts", -74.6, 12.6, 0, FY, true)
 			cont("weaponbox", "Locked case", -30, -18, 0, FY, true)
 			cont("locker", "Locker", -91, 12, FACE.w, FY, true)
 			cont("medbag", "First aid bag", -92.6, 6, FACE.w, FY, true)
@@ -3258,9 +3299,11 @@ return function(B)
 			K("Drum", -32, 18, 0, FY)
 			K("JerryCans", -30, 20, 20, FY)
 			for _, c in { { "toolbox", "Pump engineer's chest", -34, 8, FY }, { "techbox", "Pump panel", 30, -6, FY }, { "crate", "Spare seals", 30, 4, FY }, { "locker", "Locker", -hw + 1.8, -12, FY },
-				{ "medbag", "First aid bag", 33, 20, FY }, { "weaponbox", "Locked case", -30, -20, Y2 }, { "toolbox", "Gallery chest", 30, 20, Y2 }, { "techbox", "Valve panel", 0, -21, Y2 },
-				{ "crate", "Gallery crate", 0, 21, Y2 }, { "jacket", "Engineer's coat", hw - T - 1, 6, FY } } do
-				cont(c[1], c[2], c[3], c[4], 0, c[5], true)
+				{ "medbag", "First aid bag", 33, 20, FY }, { "weaponbox", "Locked case", -30, -13.5, Y2 }, { "toolbox", "Gallery chest", 30, 13.5, Y2 },
+				{ "techbox", "Valve panel", 0, -23.4, Y2, FACE.n }, { "crate", "Gallery crate", 0, 21, Y2 }, { "jacket", "Engineer's coat", hw - T - 1, 6, FY } } do
+				-- the gallery case and chest stood over the stair shafts (SH1, SH2), 7.7 studs over the floor below; the valve
+				-- panel faced the wall (placement audit, 2026-11-01)
+				cont(c[1], c[2], c[3], c[4], c[6] or 0, c[5], true)
 			end
 			cont("safe", "Chief engineer's safe", 34, 8, FACE.e, Y2, true)
 			for _, s in { { "junk", 0.5, -26, 12, FY }, { "junk", 0.45, 22, -16, FY }, { "tech", 0.3, 30, -4, 3.1 }, { "junk", 0.45, -10, -21, Y2 }, { "junk", 0.4, 12, 21, Y2 }, { "vault", 0.4, 33, 10, Y2 + 3 } } do
@@ -3386,13 +3429,15 @@ return function(B)
 		local function platform(id, name, prefix)
 			local b = byId[id]
 			site(b, name, prefix, nil, 4)
-			local hw, hd = b[6] / 2, b[7] / 2
+			-- 14.5 long each way: the traced 43 studs reached 6 to 7 studs into the fuel tanks at both ends (31 studs apart
+			-- wall to wall), so the tank walls cut through the deck, its drums and its crate (placement audit, 2026-11-01)
+			local hw, hd = math.min(b[6] / 2, 14.5), b[7] / 2
 			slab(bm, -hw, hw, -hd, hd, FY, 0.9, hex("6F7168"), M.Concrete, nil)
 			for _, s in { -1, 1 } do
 				ab(bm, -hw, -7, FY, FY + 0.7, s * (hd - 0.5) - 0.4, s * (hd - 0.5) + 0.4, PAN2, M.Concrete)
 				ab(bm, 7, hw, FY, FY + 0.7, s * (hd - 0.5) - 0.4, s * (hd - 0.5) + 0.4, PAN2, M.Concrete)
 			end
-			for _, u in { -9, 9 } do
+			for _, u in { -7.5, 7.5 } do
 				ab(bm, u - 4.4, u + 4.4, FY, FY + 0.6, -2.8, 2.8, hex("5C5E58"), M.Concrete)
 				hcyl(bm, u - 0.8, FY + 2.4, 0, 6.4, 3.2, hex("4D5A55"), M.Metal, 0)
 				ab(bm, u + 2.2, u + 4.2, FY + 0.6, FY + 3.4, -1.5, 1.5, hex("3D4543"), M.Metal)
@@ -3402,7 +3447,7 @@ return function(B)
 			for _, v in { -12.4, 12.4 } do
 				ab(bm, -hw + 2, hw - 2, FY + 3.4, FY + 4.0, v - 0.3, v + 0.3, STL2, M.Metal)
 				ab(bm, -hw + 2, hw - 2, FY + 4.4, FY + 5.0, v - 0.3, v + 0.3, STL, M.Metal)
-				for _, u in { -18, -6, 6, 18 } do
+				for _, u in { -hw + 3, -5, 5, hw - 3 } do
 					ab(bm, u - 0.25, u + 0.25, FY, FY + 5.0, v - 0.25, v + 0.25, STL, M.Metal)
 				end
 			end
@@ -3411,17 +3456,19 @@ return function(B)
 				ucyl(bm, u, FY, 5, 4, 0.9, STL, M.Metal)
 				ucyl(bm, u, FY, -5, 4, 0.9, STL, M.Metal)
 			end
-			-- the hut
+			-- the hut, between the north pipe rack (v 12.4) and the west tanks (v 5): it stood across the rack and its post,
+			-- and at 5.4 studs deep its west wall was too short for the door's opening, so the door had a solid wall
+			-- behind it (placement audit, 2026-11-01). 6 x 6.6 now, the door in the east wall opening out onto the deck.
 			room({
-				u0 = -hw + 2.5, u1 = -hw + 8, v0 = hd - 7.4, v1 = hd - 2, y0 = FY, h = 8, ceil = true, finish = "ZR_Whitewash",
-				doors = { w = { { s = 2.7 } } }, windows = { n = { { 2.7, 2.6, 3.5, 6 } } },
+				u0 = -hw + 2.8, u1 = -hw + 8.8, v0 = 5.4, v1 = 12.0, y0 = FY, h = 8, ceil = true, finish = "ZR_Whitewash",
+				doors = { e = { { s = 3.3, dir = "+u" } } }, windows = { n = { { 3.0, 2.6, 3.5, 6 } } },
 			})
-			lamp(-hw + 5.2, FY + 7.4, hd - 4.7, 14, 0.7, nil, WARM, 2.2)
-			cont("techbox", "Pump controls", -hw + 6.6, hd - 3.4, FACE.s, FY, true)
-			cont("toolbox", "Pump chest", -hw + 3.6, hd - 3.4, FACE.s, FY, true)
+			lamp(-hw + 5.8, FY + 7.4, 8.7, 14, 0.7, nil, WARM, 2.2)
+			cont("techbox", "Pump controls", -hw + 4.1, 7.5, FACE.w, FY, true) -- the fuse box's origin is 1 stud behind its middle
+			cont("toolbox", "Pump chest", 2.5, 8.6, 0, FY, true) -- out on the deck between the pumps: the hut has no room
 			for _, u in { -hw + 3, hw - 3 } do
-				colm(bm, u, 0, FY, 13, 0.6, STL, M.Metal)
-				lamp(u, 13.2, 0, 26, 0.9, nil, COLD, 2.4)
+				colm(bm, u, -8, FY, 13, 0.6, STL, M.Metal) -- clear of the pump bases
+				lamp(u, 13.2, -8, 26, 0.9, nil, COLD, 2.4)
 			end
 			K("PipeValve", -hw + 1.6, 10, 0, FY)
 			K("Drum", hw - 3, -10, 0, FY)
@@ -3513,4 +3560,7 @@ return function(B)
 		"[ZR] Border works: %d parts, %d kit props, %d containers, %d loose spots, %d doors, %d lamps, %d lights with shadows, %d props skipped, %d failed",
 		nParts, nProps, nCont, nLoose, nDoors, nLamps, nShadow, nSkip, #failed
 	))
+	if #droppedOpenings > 0 then
+		warn("[ZR] Border works: " .. #droppedOpenings .. " openings left out (wall built solid): " .. table.concat(droppedOpenings, "; "))
+	end
 end

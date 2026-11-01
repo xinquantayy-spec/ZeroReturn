@@ -41,8 +41,12 @@ end
 local function set(d, open, instant)
 	d.open = open
 	d.changedAt = os.clock()
-	local hinge = d.cf * CFrame.new(-d.size.X / 2, 0, 0)
-	local target = open and (hinge * CFrame.Angles(0, math.rad(100), 0) * CFrame.new(d.size.X / 2, 0, 0)) or d.cf
+	-- how the leaf hangs (set by the tidy pass, Maps/Tidy.luau, for the way that opens widest): d.hinge, the end the
+	-- hinge is at (-1: -X, the builders' default; 1: +X); d.turn, the way it opens (1: toward -Z); d.swing, how far
+	-- (100 degrees unless a wall, a column or loot is in the way)
+	local hs, turn = d.hinge or -1, d.turn or 1
+	local hinge = d.cf * CFrame.new(hs * d.size.X / 2, 0, 0)
+	local target = open and (hinge * CFrame.Angles(0, math.rad(turn * (d.swing or 100)), 0) * CFrame.new(-hs * d.size.X / 2, 0, 0)) or d.cf
 	if instant then
 		d.part.CFrame = target
 	else

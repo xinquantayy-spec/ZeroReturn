@@ -575,10 +575,14 @@ return function(B)
 	-- 8. voids: the underground rooms and tunnels, and the open shafts down to them (the buildings agent fills them)
 	local CAVE = {}
 	step("voids", function()
-		local function stamp(cxp, czp, w, d, rot, lo, hi)
+		-- margin: how far past the room's edge the terrain is dug. Smooth terrain slopes over about one 4-stud voxel from a
+		-- full column to an empty one, so with 2 studs the slope stood inside the rooms along every wall, up to 9.5 studs
+		-- over the floor of K-11 (found by the placement audit, 2026-11-01). Rooms get 6 (the slope ends behind the wall
+		-- lining); the open stair shafts keep 2, as a wider cut there would show round the sheds at the surface.
+		local function stamp(cxp, czp, w, d, rot, lo, hi, margin)
 			local a = math.rad(rot)
 			local ca, sa = math.cos(a), math.sin(a)
-			local hw, hd = w / 2 + 2, d / 2 + 2
+			local hw, hd = w / 2 + margin, d / 2 + margin
 			local reach = math.sqrt(hw * hw + hd * hd) + R
 			for i = colOf(cxp - reach), colOf(cxp + reach) do
 				local x = xAt(i)
@@ -595,11 +599,13 @@ return function(B)
 			if u[11] == 1 then
 				hi = 400
 			end
-			stamp(u[4], u[5], u[6], u[7], u[8], u[9], hi)
+			stamp(u[4], u[5], u[6], u[7], u[8], u[9], hi, u[11] == 1 and 2 or 6)
 		end
 		for _, s in L.stairs do
 			if s[2] == 0 then
-				stamp(s[3], s[4], s[5], s[6], s[7], -16, 400)
+				-- underground the shaft gets the rooms' wide cut, open to the sky only its own footprint (+2)
+				stamp(s[3], s[4], s[5], s[6], s[7], -16, -4, 6)
+				stamp(s[3], s[4], s[5], s[6], s[7], -16, 400, 2)
 			end
 		end
 	end)

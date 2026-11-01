@@ -177,6 +177,7 @@ World.publishSwitch = publishSwitch -- (LogicTests)
 local function endMap(id, mapModel)
 	local zf = World.fixCoplanar(mapModel)
 	print(string.format("[ZR] %s: %d coplanar faces pulled back (z-fighting)", id, zf))
+
 	local m = { id = id, model = mapModel }
 	for _, k in PER_MAP do
 		m[k] = World[k]
@@ -412,6 +413,50 @@ local function wallHoles(parent, cf, length, height, thick, color, mat, holes)
 	table.sort(holes, function(a, b)
 		return a[1] < b[1]
 	end)
+	-- openings that share a stretch of the wall (slit windows over one another on each floor of a stair tower, a door
+	-- against a gate): the wall is cut into stretches at every opening's edge, each built round the openings over it.
+	-- Before 2026-11-02 the builders dropped the second of two such openings and left the wall solid there.
+	local shared = false
+	for i = 2, #holes do
+		if holes[i][1] - holes[i][2] / 2 < holes[i - 1][1] + holes[i - 1][2] / 2 - 1e-6 then
+			shared = true
+			break
+		end
+	end
+	if shared then
+		local cuts = { -length / 2, length / 2 }
+		for _, o in holes do
+			table.insert(cuts, math.clamp(o[1] - o[2] / 2, -length / 2, length / 2))
+			table.insert(cuts, math.clamp(o[1] + o[2] / 2, -length / 2, length / 2))
+		end
+		table.sort(cuts)
+		for i = 1, #cuts - 1 do
+			local a, b = cuts[i], cuts[i + 1]
+			if b - a > 1e-3 then
+				local mid = (a + b) / 2
+				local gaps = {}
+				for _, o in holes do
+					if math.abs(mid - o[1]) < o[2] / 2 then
+						table.insert(gaps, { math.max(0, o[3]), math.min(height, o[4]) })
+					end
+				end
+				table.sort(gaps, function(p, q)
+					return p[1] < q[1]
+				end)
+				local y = 0
+				for _, g in gaps do
+					if g[1] > y + 1e-3 then
+						boxCF(parent, b - a, g[1] - y, thick, cf * CFrame.new(mid, (y + g[1]) / 2, 0), color, mat)
+					end
+					y = math.max(y, g[2])
+				end
+				if y < height - 1e-3 then
+					boxCF(parent, b - a, height - y, thick, cf * CFrame.new(mid, (y + height) / 2, 0), color, mat)
+				end
+			end
+		end
+		return
+	end
 	local x = -length / 2
 	for _, o in holes do
 		local left, right = o[1] - o[2] / 2, o[1] + o[2] / 2
@@ -645,8 +690,17 @@ function World.inSafehouse(pos: Vector3): boolean
 end
 
 -- ── Quay 7 ────────────────────────────────────────────────────────────────────
-local function addContainerSpot(parent, id, kind, label, cf, anchorPart)
+local function addContainerSpot(parent0, id, kind, label, cf, anchorPart)
 	local anchor
+	local parent = parent0
+	if not anchorPart then
+		-- its own box and fittings (drawer fronts, a dial, a tag) go in one model, so the placement tidy pass
+		-- (Maps/Tidy.luau) can move the container out of a wall as one piece
+		parent = Instance.new("Model")
+		parent.Name = "Box_" .. id
+		parent:SetAttribute("LootBox", kind)
+		parent.Parent = parent0
+	end
 	if anchorPart then
 		-- M13: an existing prop part is the container (a checkout's till, a fridge, a stock-room shelf)
 		anchor = anchorPart
@@ -1764,6 +1818,22 @@ function World.build()
 	World.activate("quay7")
 	local worn, wornBy = World.applyWear(root)
 	root.Parent = workspace
+	-- props and trees that landed wrong: out of doorways, off water, out of walls and floors (Maps/Tidy.luau). It needs
+	-- the world in the workspace for its rays and box queries, so it runs here, once every map is built; the lobby is
+	-- placed by hand and left alone
+	for id, mm in World.maps do
+		if id ~= "relay7" and mm.model and mm.model:IsDescendantOf(workspace) then
+			local okT, tidy = pcall(function()
+				return require(script.Parent.Parent.Maps.Tidy).run(id, mm.model, World.doors)
+			end)
+			if okT then
+				print(string.format("[ZR] %s tidy: %d out of doorways, %d out of door swings, %d doors re-hung, %d doors open less than 100 degrees, %d twins, %d stacked, %d trees, %d off water (%d big ones kept), %d lifted, %d out of walls (%d removed, %d left), %.2fs",
+					id, tidy.doorways, tidy.swing, tidy.doorsTurned, tidy.doorsShort, tidy.twins, tidy.stacked, tidy.trees, tidy.water, tidy.waterBig, tidy.sunk, tidy.walls, tidy.wallsGone, tidy.wallsLeft, tidy.seconds))
+			else
+				warn("[ZR] " .. id .. " tidy failed: " .. tostring(tidy))
+			end
+		end
+	end
 	snapLooseSpots()
 	local n = 0
 	for _, d in root:GetDescendants() do

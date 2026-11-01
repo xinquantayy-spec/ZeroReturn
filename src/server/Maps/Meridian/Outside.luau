@@ -495,7 +495,10 @@ return function(B)
 			addHole(holes, wlen, "e", s, 5, 11, 15)
 		end
 		floorSlab(m, F, hex("55585A"))
-		box(m, F, 2 * hw + 0.6, 1.4, 2 * hd + 0.6, 0, 0.7, 0, BASE, M.Concrete).Name = "Plinth"
+		-- the concrete plinth the hall stands on: flush with the floor (FLOOR). It stood 1.4 studs high over the whole
+		-- footprint, so the floor inside was 1.15 over FLOOR and every prop, container and transformer in the building
+		-- stood sunk into it (placement audit, 2026-11-01)
+		box(m, F, 2 * hw + 0.6, 0.65, 2 * hd + 0.6, 0, FLOOR - 0.325, 0, BASE, M.Concrete).Name = "Plinth"
 		walls(m, F, { h = h, t = t, wall = WALL, mat = M.Concrete }, holes)
 		flatRoof(m, F, h, hex("5A5E5A"), M.Concrete, true)
 		-- the east rooms: a partition between them and the hall (a doorway into the office) and one between the two rooms
