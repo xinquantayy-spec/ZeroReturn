@@ -441,6 +441,135 @@ local function foliageDress(camPos, force)
 	end
 end
 
+-- ── fog edge (owner 2026-11-01: fog only where it saves drawing, the same on every graphics level). Roblox draws everything
+-- inside fog, even past where the fog is opaque, so in a FOG raid (Atmos: classic distance fog, `Atmos.fogEnd`) the map beyond
+-- the fog's end is hidden on this client. Parts go in 96-stud cells by position (big ones never hide); a cell whose nearest
+-- point lies past the edge hides its parts and their decals. Writes are spread over frames. Nothing changes outside FOG raids.
+local EDGE_CELL, EDGE_MARGIN, EDGE_BUDGET, EDGE_FILE = 96, 24, 2500, 4000
+local edgeCells = {} -- key -> { cx, cz, items = { [Instance] = true }, hidden }
+local edgeOf = {} -- item -> cell key
+local edgeConns = {}
+local edgeTodo = nil -- world descendants still to file, and the next index
+local edgeNext = 1
+local edgeQueue = {} -- { item, hidden } still to write
+local edgeQi = 1
+local edgeR = nil
+local lastEdgePos = nil
+local function edgeFile(x)
+	if edgeOf[x] then
+		return
+	end
+	local p = x
+	if x:IsA("Decal") then -- Texture too: a decal hides with the part it sits on
+		p = x.Parent
+		if not (p and p:IsA("BasePart")) then
+			return
+		end
+	elseif not x:IsA("BasePart") then
+		return
+	end
+	local s = p.Size
+	if math.max(s.X, s.Z) > EDGE_CELL * 1.5 then
+		return -- ground plates, roads and long walls stay (they reach into the fog from nearby)
+	end
+	local pos = p.Position
+	local ix, iz = math.floor(pos.X / EDGE_CELL), math.floor(pos.Z / EDGE_CELL)
+	local key = ix .. ":" .. iz
+	local c = edgeCells[key]
+	if not c then
+		c = { cx = (ix + 0.5) * EDGE_CELL, cz = (iz + 0.5) * EDGE_CELL, items = {}, hidden = false }
+		edgeCells[key] = c
+	end
+	c.items[x] = true
+	edgeOf[x] = key
+	if c.hidden then
+		x.LocalTransparencyModifier = 1
+	end
+end
+local function edgeUnfile(x)
+	local key = edgeOf[x]
+	if key then
+		edgeOf[x] = nil
+		local c = edgeCells[key]
+		if c then
+			c.items[x] = nil
+		end
+	end
+end
+local function edgeQueueCell(c, hidden)
+	for x in c.items do
+		table.insert(edgeQueue, { x, hidden })
+	end
+end
+local function edgeBusy()
+	return edgeTodo ~= nil or edgeQi <= #edgeQueue
+end
+local function edgeStep(camPos, force)
+	local r = ctx and ctx.Atmos and ctx.Atmos.fogEnd or nil
+	local world = workspace:FindFirstChild("ZR_World")
+	if r and world and #edgeConns == 0 then
+		-- a FOG raid began: file the map (in slices) and follow what streams in and out
+		edgeTodo, edgeNext = world:GetDescendants(), 1
+		table.insert(edgeConns, world.DescendantAdded:Connect(edgeFile))
+		table.insert(edgeConns, world.DescendantRemoving:Connect(edgeUnfile))
+	elseif not r and #edgeConns > 0 then
+		-- the fog lifted (or the raid ended): show everything again and forget the cells
+		for _, cn in edgeConns do
+			cn:Disconnect()
+		end
+		table.clear(edgeConns)
+		edgeTodo = nil
+		for _, c in edgeCells do
+			if c.hidden then
+				edgeQueueCell(c, false)
+			end
+		end
+		table.clear(edgeCells)
+		table.clear(edgeOf)
+	end
+	if edgeTodo then
+		local stop = math.min(#edgeTodo, edgeNext + EDGE_FILE - 1)
+		for i = edgeNext, stop do
+			edgeFile(edgeTodo[i])
+		end
+		edgeNext = stop + 1
+		if edgeNext > #edgeTodo then
+			edgeTodo = nil
+			force = true
+		end
+	end
+	if r and (force or r ~= edgeR or not lastEdgePos or (camPos - lastEdgePos).Magnitude > 12) then
+		edgeR, lastEdgePos = r, camPos
+		local reach, half = r + EDGE_MARGIN, EDGE_CELL / 2
+		for _, c in edgeCells do
+			local dx = math.max(0, math.abs(camPos.X - c.cx) - half)
+			local dz = math.max(0, math.abs(camPos.Z - c.cz) - half)
+			local want = dx * dx + dz * dz > reach * reach
+			if want ~= c.hidden then
+				c.hidden = want
+				edgeQueueCell(c, want)
+			end
+		end
+	elseif not r then
+		edgeR, lastEdgePos = nil, nil
+	end
+	-- the writes, a budget a frame
+	local n = 0
+	while edgeQi <= #edgeQueue and n < EDGE_BUDGET do
+		local job = edgeQueue[edgeQi]
+		edgeQi += 1
+		n += 1
+		local x = job[1]
+		if x.Parent then
+			x.LocalTransparencyModifier = job[2] and 1 or 0
+		end
+	end
+	if edgeQi > #edgeQueue then
+		table.clear(edgeQueue)
+		edgeQi = 1
+	end
+end
+
 -- ── potato: plain materials, no shadows, no cloud layer, no fill lights (local only, reversible) ───
 -- Fog, light levels and exposure stay the same on every preset, so no setting sees further or through more.
 -- strong keys: a weak-keyed table would drop Instance keys (their Lua handles get collected while the parts live on),
@@ -523,14 +652,23 @@ function Detail.setLevel(level)
 end
 
 function Detail.stats()
-	local nf, nl = 0, 0
+	local nf, nl, ec, eh, ei = 0, 0, 0, 0, 0
 	for _ in foliage do
 		nf += 1
 	end
 	for _ in leafOn do
 		nl += 1
 	end
-	return { level = Detail.level, foliage = nf, leaves = nl, instances = Detail.instances, cells = Detail.cells, pending = Detail.pending, natureCells = Detail.natureCells or 0, natureItems = Detail.natureItems or 0, planCells = (function()
+	for _, c in edgeCells do
+		ec += 1
+		if c.hidden then
+			eh += 1
+			for _ in c.items do
+				ei += 1
+			end
+		end
+	end
+	return { level = Detail.level, foliage = nf, leaves = nl, fogEnd = edgeR, edgeCells = ec, edgeHiddenCells = eh, edgeHidden = ei, instances = Detail.instances, cells = Detail.cells, pending = Detail.pending, natureCells = Detail.natureCells or 0, natureItems = Detail.natureItems or 0, planCells = (function()
 		local n = 0
 		for _ in cells do
 			n += 1
@@ -644,11 +782,17 @@ function Detail.init(c)
 			if cam then
 				treeShadows(cam.CFrame.Position, false)
 				foliageDress(cam.CFrame.Position, false)
+				edgeStep(cam.CFrame.Position, false)
 			end
-		elseif leafPending then
+		elseif leafPending or edgeBusy() then
 			local cam = workspace.CurrentCamera
 			if cam then
-				foliageDress(cam.CFrame.Position, false)
+				if leafPending then
+					foliageDress(cam.CFrame.Position, false)
+				end
+				if edgeBusy() then
+					edgeStep(cam.CFrame.Position, false)
+				end
 			end
 		end
 		if #queue > 0 then

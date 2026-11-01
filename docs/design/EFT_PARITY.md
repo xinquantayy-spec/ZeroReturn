@@ -306,7 +306,7 @@ Gaps against Tarkov's foliage:
 - No separate LOD meshes or billboards beyond Roblox's automatic ones.
 - One atlas for all trees: four kinds of card, no seasonal leaf colour on the birches (autumn yellow).
 - Birch bark is vertex colour on a ring every 3.5 studs, not a bark texture.
-- Fog: our FOG weather is much thinner than Tarkov's foggy raids (hills 1,500 studs away stay visible).
+- Fog: FOG raids close the view at about 150 m (480 studs) with a flat classic fog. Tarkov's fog also varies in thickness within a raid and lifts over time; ours is one level for the whole raid.
 
 ### Wall finishes (2026-11-01, owner: "walls look repetitive and fake")
 

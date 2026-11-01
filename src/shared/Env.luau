@@ -16,14 +16,17 @@ Env.SLOTS = {
 
 export type Weather = {
 	id: string, name: string, clouds: number, cloudDensity: number, fog: number, haze: number, rain: number,
-	wind: number, sight: number, hear: number, light: number, w: number,
+	wind: number, sight: number, hear: number, light: number, w: number, fogEnd: number?,
 }
 
--- fog = Atmosphere density, light = how much sun gets through, sight/hear = AI sense multipliers
+-- fog = Atmosphere density, light = how much sun gets through, sight/hear = AI sense multipliers. fogEnd (studs): FOG closes the
+-- view like Tarkov's foggy raids (Roblox's Atmosphere cannot: at density 1 the hills 1,500 studs away still show), with classic
+-- distance fog that is opaque from there on; each client also stops drawing the world beyond it (Detail controller). The same
+-- on every graphics level.
 Env.WEATHER = {
 	clear = { id = "clear", name = "CLEAR", clouds = 0.32, cloudDensity = 0.42, fog = 0.3, haze = 1.3, rain = 0, wind = 0.25, sight = 1, hear = 1, light = 1, w = 3 },
 	overcast = { id = "overcast", name = "OVERCAST", clouds = 0.9, cloudDensity = 0.74, fog = 0.42, haze = 2.1, rain = 0, wind = 0.5, sight = 0.95, hear = 1, light = 0.72, w = 3 },
-	fog = { id = "fog", name = "FOG", clouds = 0.96, cloudDensity = 0.6, fog = 0.74, haze = 5, rain = 0, wind = 0.12, sight = 0.55, hear = 1, light = 0.6, w = 1.5 },
+	fog = { id = "fog", name = "FOG", clouds = 0.96, cloudDensity = 0.6, fog = 0.74, haze = 5, rain = 0, wind = 0.12, sight = 0.55, hear = 1, light = 0.6, w = 1.5, fogEnd = 480 },
 	rain = { id = "rain", name = "RAIN", clouds = 1, cloudDensity = 0.95, fog = 0.52, haze = 2.8, rain = 1, wind = 0.85, sight = 0.8, hear = 0.72, light = 0.5, w = 2.5 },
 } :: { [string]: Weather }
 Env.ORDER = { "clear", "overcast", "fog", "rain" }

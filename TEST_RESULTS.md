@@ -96,6 +96,8 @@ Owner: fog only to improve rendering performance, the same on every graphics lev
 
 So a fog wall saves little unless it sits closer than about 500 studs (160 m), which would make every raid a foggy one. Most of the cost is near the player, and the largest single cost is the detail layer's wear decals.
 
+FOG weather made thick (same day). Roblox's Atmosphere cannot close the view: at density 1 with haze 10, the hills 1,500 studs away still showed clearly. So FOG raids now use classic distance fog, clear to 38 studs and opaque at 480 (about 150 m), in the overcast sky's colour, with the Atmosphere parked meanwhile. Each client also hides the map beyond the fog's end (96-stud cells, `LocalTransparencyModifier`), the same on every graphics level. Same wide view as above: clear 1,097 draws and 637k triangles; FOG 1,085 draws and 526k triangles (13,735 parts and decals hidden), so -17 % triangles and about the same draw calls. Switching back to clear lifted the fog, put the Atmosphere back and left nothing hidden.
+
 Follow-up the same day: the far ring held 1,372 of the decals, about 620 draws. Hiding the far ring's decals beyond 200 studs, the medium ring's beyond 175 and the fine ring's beyond 140 took that view from 1,516 to 1,020 draws. The detail rings are now HIGH 200 / 175 / 140 (were 270 / 215 / 150), MEDIUM 165 / 135 (200 / 155) and LOW 120 (135). Measured again in a fresh session from the same view: 1,072 draws (was about 1,516), 648k triangles, 1,267 wear decals (was 2,050). Nothing changes within 140 studs.
 
 ## Wall finishes and indoor light (2026-11-01)

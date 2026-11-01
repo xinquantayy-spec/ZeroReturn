@@ -28,6 +28,9 @@ end
 -- ── lighting targets ─────────────────────────────────────────────────────────
 local hideout -- captured from the server's lighting at start (the safehouse look)
 local atm, clouds, grade
+-- classic distance fog (FOG weather): NO_FOG is "off"; below FOG_ON the fog is drawn and the Atmosphere parked
+local NO_FOG, FOG_ON = 100000, 20000
+local fogParked = false
 
 local function capture()
 	atm = Lighting:FindFirstChildOfClass("Atmosphere")
@@ -41,7 +44,7 @@ local function capture()
 		atmDecay = atm and atm.Decay or rgb(92, 106, 105), atmGlare = atm and atm.Glare or 0, atmHaze = atm and atm.Haze or 2,
 		cloudCover = clouds and clouds.Cover or 0.8, cloudDensity = clouds and clouds.Density or 0.6, cloudColor = clouds and clouds.Color or rgb(199, 205, 203),
 		gradeSat = grade and grade.Saturation or -0.2, gradeContrast = grade and grade.Contrast or 0.08, gradeTint = grade and grade.TintColor or rgb(236, 239, 232),
-		exposure = 0, grain = 1, wind = Vector3.new(4, 0, 2),
+		exposure = 0, grain = 1, wind = Vector3.new(4, 0, 2), fogEnd = NO_FOG,
 	}
 	-- the lobby is the Relay 7 bunker: no sky, warm dusty air, the rooms lit by their own fittings
 	local bunker = rgb(78, 74, 68)
@@ -83,6 +86,7 @@ local function raidTargets(e, now)
 	t.atmOffset = (e.w == "fog") and 0.04 or 0.18
 	t.atmGlare = (e.w == "clear") and gold * 1.4 or 0
 	t.atmHaze = w.haze
+	t.fogEnd = w.fogEnd or NO_FOG
 	t.cloudCover = w.clouds
 	t.cloudDensity = w.cloudDensity
 	t.cloudColor = lerpC(lerpC(rgb(52, 56, 64), rgb(199, 205, 203), d * lerp(0.65, 1, w.light)), rgb(222, 168, 136), gold * 0.5)
@@ -133,6 +137,26 @@ local function blend(target, k)
 	if atm then
 		atm.Density, atm.Offset, atm.Color, atm.Decay, atm.Glare, atm.Haze = cur.atmDensity, cur.atmOffset, cur.atmColor, cur.atmDecay, cur.atmGlare, cur.atmHaze
 	end
+	-- FOG weather: classic distance fog closes the view (opaque from fogEnd on), and the Atmosphere is parked meanwhile, since
+	-- Roblox uses the classic fog only when there is none. The fog takes the overcast sky's colour, so what lies beyond reads as sky
+	local fogOn = cur.fogEnd < FOG_ON
+	if fogOn then
+		local c = cur.cloudColor
+		local k = 0.86
+		Lighting.FogColor = Color3.new(c.R * k, c.G * k, c.B * k)
+		Lighting.FogStart = cur.fogEnd * 0.08
+		Lighting.FogEnd = cur.fogEnd
+	end
+	if fogOn ~= fogParked then
+		fogParked = fogOn
+		if atm then
+			atm.Parent = (not fogOn) and Lighting or nil
+		end
+		if not fogOn then
+			Lighting.FogStart, Lighting.FogEnd = 0, 100000
+		end
+	end
+	Atmos.fogEnd = fogOn and cur.fogEnd or nil
 	if clouds then
 		clouds.Cover, clouds.Density, clouds.Color = cur.cloudCover, cur.cloudDensity, cur.cloudColor
 	end
