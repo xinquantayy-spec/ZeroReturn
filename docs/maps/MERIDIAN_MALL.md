@@ -736,3 +736,220 @@ part and light counts; frame rate on a low-end phone.
 | `src/server/Services/Extract.luau`, `Doors.luau`, `Hazards.luau`, `AI.luau`, `src/client/Controllers/Hud.luau` | the `nobag` and two-step power rules, electric locks, mines, per-zone boss |
 | `src/shared/Items.luau`, `src/server/Services/Loot.luau` | ten key items, key pool, the Caretaker's pockets |
 | `src/server/Tests/LogicTests.luau` | the Meridian rules group |
+
+## Part 4a: main floor stores (the three anchors, the canteen, IRONSIGHT, RESCUE POINT and 29 more units)
+
+Every unit of L1 is furnished: the 35 of `Layout` (NESTA, KASSA, BOLTWORKS, the NESTA CANTEEN, IRONSIGHT, RESCUE POINT and 29 shops) and our
+`BACK_1` to `BACK_4` and `SECURITY_ROOM`. The upper floor is Part 4b (`StoresL2.luau`, another agent). **Nothing here has run in Luau or
+Studio**; the only run was an offline mock (see "Checked offline").
+
+### What is built
+
+`Stores.luau` makes sure `B.points` and `B.powerHooks` exist and runs `StoresL1` and `StoresL2`, each under `pcall` (a failing floor is
+logged, the other still builds). `StoresL1` builds, every unit under its own `pcall`: the 29 shops and their stock rooms, IRONSIGHT, RESCUE
+POINT, the security room, then `StoresL1Halls` (the three anchors), `StoresL1Back` (the canteen and `BACK_1` to `BACK_4`), and last the key
+tiles. It prints `[ZR] Meridian stores L1: ...` (props, parts, containers, loose spots, doors, lamps) and the container kinds, and sets
+`B.count.storesL1` and `B.count.storesL1Props`. All of it is built with `StoresL1Kit`:
+
+- **Frames.** Each unit (and each stock room) gets a frame in its own coordinates (x to the right when facing out through the front, d the
+  depth from the front wall). A prop is placed by its footprint (`KitMeta`) against a list of occupied rectangles. The shell's columns, the
+  door swings, the other L1 units inside it and the floor in front of every opening (9 studs deep) are reserved first, so nothing stands in
+  an entrance, the walkways between props are at least 6 studs wide (checked, see below) and nothing goes through a shell wall. Props stand on
+  the floor at `u.floorY`. Long runs (wall shelves, gondolas, racks, checkout banks) are one kit prop scaled along its length.
+- **Parts.** Kit props (instanced Blender meshes plus invisible `KitCollider` boxes) wherever the kit has a prop. Plain parts only for the
+  cheap aisle shelving of KASSA and BOLTWORKS (a body and two colour bands), room walls, the grilles and the IRONSIGHT grate, and the lamps.
+- **Shops (29).** One recipe per kind (clothing, electronics, sports, books, toys, shoes, homeware, lighting, travel, general, food): wall
+  shelving, island rows across the floor, a cash desk (a register container half the time), a few props at the front, one or two loose spots
+  on the counters and the floor, and a lamp per 70 studs. A prop cap by floor area (area / 360, from 5 to 20) keeps the budget. 24 of
+  the 29 shops have a stock room: racks, a lamp and, if it is at least 40 wide, a container (four narrow ones have none). The unlabelled store north
+  of VIKING is closed: its sign reads `TO LET`, with toppled gondolas, cartons, pallets and an old toolbox.
+- **NESTA** (`L1_idea`): 21 checkout stations in three ranks on the shell's lanes (20 register containers), the locked till office
+  `MM_NESTA_CASH` (two safes, drawers, a desk PC), a furniture showroom (four rows of living, bedroom, dining, work and lounge stations with
+  chests of drawers, wardrobes and coat racks), wall shelving, a kiosk, an ATM and a vending machine, and the warehouse across the back
+  (two rows of pallet racks, pallets, crates, forklifts, roll cages, a toolbox and a locked crate).
+- **KASSA** (`L1_goshan`): 27 checkout stations in four ranks (26 register containers), the till office `MM_KASSA_CASH`, a hypermarket in
+  three blocks of aisles (cheap coloured shelving, every fifth row a run of scaled gondolas, grocery shelves and fridge containers), a fridge
+  wall and wall shelving.
+- **BOLTWORKS** (`L1_oli`): 18 checkouts (18 registers), the till office `MM_BOLT_CASH`, hardware and car-parts aisles in blocks (cheap
+  shelving, every fourth row scaled tool shelving), toolboxes, tool chests, tyre stacks, and the goods-in docks along the back wall.
+- **IRONSIGHT** (`L1_kiba`): the steel front door `MM_IRON_FRONT` in a narrowed opening (leaf, fixed grille panels, header), a sales area
+  with counters, a register, display tables and a range display, then the inner grate across the shop 11.6 studs in with the gate
+  `MM_IRON_GRATE`, and behind it the weapon room: four weapon boxes (one in its stock room), a safe, a clerk's drawer, two gun benches and
+  guns on the walls (scenery). Loose weapon boxes lie on the benches. Its lamps are in the sales area and the weapon room.
+- **RESCUE POINT** (`L1_emercom`): three keyed doors (`MM_RESCUE_N`, `_E`, `_W`; the west one is in the stock room's wall), four medicine
+  shelf containers (`pharmacy`), medbags, a nurse's drawer, a safe, cots, first-aid props, a counter with a register, loose medical items.
+- **NESTA CANTEEN** (`L1_idea_bistro`, open plan): a kitchen along the back (fridges, three coolers, a pantry of grocery shelves, staff locker,
+  drawer, crates), a serving line in two halves with a till at each end and menu boards, about 15 tables with chairs, planters, benches, bins,
+  vending machines, an ATM and a kiosk, 12 pendant lamps on cables (the hall is 49.7 high).
+- **Back-of-house** (our units): `BACK_1` NESTA STOCK ROOMS (pallet racks, crates, lockers, a forklift, roll cages); `BACK_2` KASSA BACK OF
+  HOUSE (a cold room of fridges and coolers, dry-goods racks, grocery shelves, lockers); `BACK_3` BOLTWORKS STOCK BLOCK (the locked goods-in
+  room `MM_BOLT_GOODS`, racks, tyres, drums, tool chests); `BACK_4` BOLTWORKS OFFICES (the locked manager's office `MM_BOLT_OFFICE` with two
+  safes, drawers and a PC, six desks with chairs and PCs, pigeonholes, boards, lockers, a meeting table); `SECURITY_ROOM` (lockers, a safe,
+  a bench; Play puts the alarm terminal there).
+- **Lights.** 109 lamps (a plain housing, `Enabled = false`, dead grey until power), none with shadows, range 40, on cables in the tall halls,
+  every one in a single `B.powerHooks` function that turns it Neon FFE2B0 and lights it when `MALL_POWER` is on.
+- **Loose loot.** 238 spots, each snapped to a surface by `World` (a floating one is dropped): counters and desks (`surfaces`), the floor
+  beside props (`litter`), the stock and warehouse floors. Pools by kind (mall, grocery, tech, office, toolbox, junk, crate, medbag,
+  weaponbox, drinks) and `mallkeys` for keys.
+- **Key tiles.** The reference marks key spawn tiles for the three register keys (`L.keys`): NESTA (162.5, -753.1, on the canteen's east
+  glass wall), KASSA (509.4, -56.2) and the three BOLTWORKS keys at (12.5, 500) in the offices. `World` can only roll a pool at a loose spot,
+  so each tile is a `mallkeys` spot (chance 0.35) on the nearest free floor of the furnished unit within 9 studs: NESTA (157.3, -753) in the
+  canteen, KASSA at its tile, three BOLTWORKS spots side by side in `BACK_4`. The other L1 entries of `L.keys` (IRONSIGHT front and grate,
+  RESCUE POINT, the security key) are door or terminal icons, not key spawns: those keys come only from 16 generic `mallkeys` spots (chance
+  0.08 to 0.15: office desks, back-room corners, IRONSIGHT, the RESCUE POINT stock room, the security room); 3.35 key rolls a raid on L1 in all.
+
+### The units (L1, 40)
+
+Reference name is the reference's own store (from its record id; its plan labels are blank for most). Containers are the sales area, plus
+the stock room after the plus sign. Props are kit props. Counts are the offline mock's.
+
+| Reference id | Reference name | Our name | Kind | Containers | Loose | Props | Lamps |
+|---|---|---|---|---|---|---|---|
+| `L1_idea` | IDEA | NESTA | anchor | 36 | 21 | 159 | 3 |
+| `L1_goshan` | Goshan | KASSA | anchor | 45 | 26 | 111 | 3 |
+| `L1_oli` | OLI | BOLTWORKS | anchor | 33 | 30 | 112 | 3 |
+| `L1_idea_bistro` | IDEA Bistro | NESTA CANTEEN | food | 9 | 12 | 58 | 12 |
+| `L1_kiba` | Kiba Arms Outlet | IRONSIGHT | locked store | 6 + 1 | 6 | 22 | 4 |
+| `L1_emercom` | EMERCOM | RESCUE POINT | locked store | 9 + 1 | 4 | 11 | 2 |
+| `BACK_1` | (ours) | NESTA STOCK ROOMS | stock | 7 | 7 | 29 | 4 |
+| `BACK_2` | (ours) | KASSA BACK OF HOUSE | stock | 10 | 5 | 34 | 4 |
+| `BACK_3` | (ours) | BOLTWORKS STOCK BLOCK | stock | 10 | 11 | 36 | 4 |
+| `BACK_4` | (ours) | BOLTWORKS OFFICES | stock | 13 | 14 | 30 | 3 |
+| `SECURITY_ROOM` | (ours) | SECURITY | security | 3 | 3 | 2 | 1 |
+| `L1_adik` | Adik | SPRINTLINE | sports | 1 + 1 | 4 | 13 | 2 |
+| `L1_avokado` | Avokado | GREENPLATE | food | 2 + 1 | 5 | 13 | 3 |
+| `L1_bizarro` | Bizarro | MOTLEY | clothing | 1 | 2 | 4 | 2 |
+| `L1_book_store` | Book Store | INKWELL | books | 2 + 1 | 6 | 24 | 3 |
+| `L1_boots_4_life` | Boots 4 Life | SOLE TRADE | shoes | 1 | 2 | 8 | 2 |
+| `L1_brutal` | Brutal | IRONSTITCH | clothing | 2 + 1 | 4 | 13 | 2 |
+| `L1_dino_clothes` | Dino Clothes | PIPKINS | clothing | 2 | 3 | 15 | 3 |
+| `L1_dom` | Dom | HOMESTEAD | homeware | 3 + 1 | 5 | 23 | 3 |
+| `L1_generic` | Generic | VARIETY | general | 1 + 1 | 3 | 8 | 2 |
+| `L1_german` | German | CORNER MART | general | 2 | 2 | 5 | 1 |
+| `L1_kostin` | Kostin | TAILORED | clothing | 2 + 1 | 3 | 9 | 2 |
+| `L1_mantis` | Mantis | MICROMART | electronics | 1 + 1 | 5 | 14 | 2 |
+| `L1_mode7` | Mode 7 | ATELIER 9 | clothing | 2 + 1 | 3 | 10 | 2 |
+| `L1_nortex` | Nortex | WOOLHOUSE | clothing | 1 | 2 | 7 | 2 |
+| `L1_pretty_lights` | Pretty Lights | BRIGHTSIDE | lighting | 1 + 1 | 3 | 9 | 2 |
+| `L1_rasmussen` | Rasmussen | GADGETRY | electronics | 2 | 2 | 7 | 2 |
+| `L1_revis` | Revis | DAILY NEEDS | general | 2 + 1 | 3 | 11 | 3 |
+| `L1_spiel` | Spiel | TOYBOX | toys | 2 | 2 | 5 | 1 |
+| `L1_sports` | Sports | FIELD & TRACK | sports | 2 + 1 | 3 | 9 | 3 |
+| `L1_telespot` | Telespot | PIXELPOINT | electronics | 1 | 2 | 6 | 1 |
+| `L1_texho` | Texho | PLUGGED IN | electronics | 2 + 1 | 3 | 8 | 3 |
+| `L1_the_national` | The National | HARTWELL | clothing | 2 + 1 | 5 | 23 | 3 |
+| `L1_top_brand` | Top Brand | HIGHLINE | clothing | 1 + 1 | 5 | 13 | 2 |
+| `L1_trend` | Trend | CUTLINE | clothing | 2 + 1 | 3 | 9 | 3 |
+| `L1_tts` | TTS | BYTEBAY | electronics | 1 + 1 | 3 | 10 | 2 |
+| `L1_unlabelled_store_n_of_viking` | (unlabelled, north of Viking) | TO LET | unlabelled | 2 + 1 | 5 | 20 | 3 |
+| `L1_viking` | Viking | PEAKFORM | sports | 1 + 1 | 5 | 22 | 3 |
+| `L1_voyage` | Voyage | WAYFARE | travel | 1 | 3 | 7 | 2 |
+| `L1_yushka` | Yushka | SABLE | clothing | 1 + 1 | 3 | 10 | 2 |
+| **40 units** | | | | **249** | **238** | **939** | **109** |
+
+### Doors and keys (10 doors)
+
+Each door is in `W.doors` with its key item id in `key`; `Play` matches them by that id and marks the two IRONSIGHT doors electric (dead
+without power). Positions are map-local studs. None has an `openChance`: all are locked until the key is used.
+
+| Door | Key | At | Size | What |
+|---|---|---|---|---|
+| `MM_IRON_FRONT` | `KEY_MM_IRON_FRONT` | (291, -75) | 7.2 x 9 | IRONSIGHT front: a leaf in the 13.5 high opening, fixed grille panels beside it and a header; Play's alarm rings 3 s after it opens |
+| `MM_IRON_GRATE` | `KEY_MM_IRON_GRATE` | (303, -80) | 6 x 9.4 | the gate in the inner grate (a see-through steel grate across the shop) to the weapon room |
+| `MM_RESCUE_N`, `_E`, `_W` | `KEY_MM_RESCUE` | (184, -321), (224, -306), (154, -317) | 7.4, 6.5, 4.2 x 9 | the three doors of RESCUE POINT (the west one in its stock room's wall); the key's uses are shared |
+| `MM_NESTA_CASH` | `KEY_MM_NESTA_REG` | (318, -559) | 5.2 x 8.6 | NESTA till office: two safes, drawers, a desk PC |
+| `MM_KASSA_CASH` | `KEY_MM_KASSA_REG` | (521, -244) | 5.2 x 8.6 | KASSA till office, the same fit |
+| `MM_BOLT_CASH` | `KEY_MM_BOLT_REG` | (410, 290) | 5.2 x 8.6 | BOLTWORKS till office, the same fit |
+| `MM_BOLT_OFFICE` | `KEY_MM_BOLT_OFFICE` | (-14, 553) | 5.2 x 8.6 | the manager's office in `BACK_4`: two safes, three filing drawers, a PC, a locker |
+| `MM_BOLT_GOODS` | `KEY_MM_BOLT_GOODS` | (553, 529) | 5.2 x 8.6 | the goods-in office in `BACK_3`: two pallets, a safe, two tool chests, a PC |
+
+The offices are walled rooms (11.5 high, door on the side facing the hall, a lamp inside) placed on the first free spot of a short list per
+unit, so a layout change can move them; the door ids and keys stay.
+
+### Containers and loot
+
+Only the container kinds and pools that `Loot.luau` already has. 249 containers on L1, ids `MM_L1_<unit>_C<n>` (a stock room adds `_stock`):
+register 81 (64 on the checkouts of the three anchors: 20, 26 and 18; 17 on shop counters, the canteen and IRONSIGHT), toolbox 25, drawer 25,
+locker 23, crate 20, techbox 16, jacket 12, safe 12, grocery 11, cooler 10, weaponbox 6, pharmacy 4, medbag 4. Per place: NESTA 36, KASSA 45,
+BOLTWORKS 33, canteen 9, IRONSIGHT 7, RESCUE POINT 10, the four back blocks 40, the security room 3, the 29 shops 66. A container is
+anchored on a kit prop's collider (a shelf, a counter, a locker, a desk), which `World` names `Loot_<id>`, so its prompt sits on the
+prop; a long scaled run is one prompt at its centre. 238 loose spots on L1, about 97 items a raid (the sum of the chances): mall 64, grocery 38, office 27, toolbox 27,
+junk 23, `mallkeys` 21, tech 18, crate 10, weaponbox 5, medbag 3, drinks 2. These are above the brief's marks (about 150 containers and
+200 loose spots): 64 registers are fixed by the three anchors' checkouts, and the rest is the shops' own counters and corners.
+
+### Counts and budget (the offline mock's, not the engine's)
+
+| | L1 stores | Budget |
+|---|---|---|
+| kit props | 939 (2,774 mesh pieces, 905 colliders by the module's tally) | 1,100 |
+| all parts (the mock's export) | 4,611: 932 own (41 are container anchors), 2,982 kit pieces (208 are container anchors), 697 colliders | 5,000 |
+| own parts (the module's tally) | 784 | |
+| containers, loose spots, doors | 249, 238, 10 | about 150, about 200 |
+| lamps | 109, none shadowed, all in one `B.powerHooks` function | the map's 400 (40 shadowed): the shell 149 and Outside 13 make 162; with `StoresL2`'s 60 (its mock run) the map holds 331 |
+| build time | 0.14 s in the mock (the kit's real mesh placement is slower) | |
+
+The module's own tally leaves out the walls of the offices and a few container stand-ins (about 150 parts); the export's total is the figure
+to hold against the budget. The cheap aisle shelving is the bulk of the own parts (KASSA and BOLTWORKS: 314 runs of three parts).
+
+### Checked offline
+
+A throwaway harness (a translator from this Luau to Lua 5.4 and a mock of parts, CFrames, the kit, `World` and `Random`; it lives in the
+session's scratchpad, not in the repo) ran the shell and then `Stores` with `StoresL1`, the kit, Halls and Back, in a strict environment
+where an undefined global is an error. Results of the last run: no error and no warning; 0 spots refused; every door and key as in the table
+above; none of the 1,680 collidable parts of the stores more than 0.25 studs inside a shell wall; the 115 openings of the L1 units are clear
+(only the grilles of IRONSIGHT's and RESCUE POINT's own doors stand in them); in the three anchors, the canteen and the four back blocks the
+largest connected region of floor with a 6 stud wide walkway holds NESTA 91 %, KASSA 89 %, BOLTWORKS 73 %, the canteen 100 % and the back
+blocks 98 to 100 % of all such floor (what is cut off is the rooms behind the 5.2 wide office doors and short pockets between props), and
+every entrance of those units reaches it except NESTA's north service opening (578, -934) and KASSA's north entrance (691, -531), which open
+onto a 6 stud strip of the shell itself. The small shops were checked only for walls and openings. `python3 tools/luau_check.py src` passes
+(136 files; a structure check only).
+
+### For the main session and Part 4b
+
+1. The key tiles are in `KEYTILES` in `StoresL1.luau` as `{ key id, pool }`. With a pool that holds only that key (a `Loot.POOLS` entry per
+   key, for instance `key_nesta_reg = { { id = "KEY_MM_NESTA_REG", w = 1 } }`) the exact key lies on its tile: change the pool name there.
+2. A shop's prop cap is `cap` in its `SHOPS` entry in `StoresL1.luau` and its look is its recipe in `RECIPES`; the anchors' and the back
+   blocks' layouts are coordinates in `StoresL1Halls.luau` and `StoresL1Back.luau`.
+3. The frame toolkit (`StoresL1Kit.luau`) takes any unit of `B.units`, so a later pass can furnish more with `T.frame(u)`; it reads
+   `B.points.SECURITY_TERMINAL` (Play's) to keep the terminal's floor free, and nothing else outside the shell's `B`.
+4. No file outside `src/server/Maps/Meridian/` and this document was edited.
+
+### Parity gaps from this part (for the main session to copy into `docs/design/EFT_PARITY.md`)
+
+- **Shop interiors are recipes, not copies.** Which shelf, counter and rack stands where in each of the reference's shops is in no source,
+  so a shop is built from its kind, with about ten props (capped by floor area) rather than a shop's worth, to hold 30 fps on a phone.
+  The 29 names, the signs and the sizes are the reference's; the fixtures are ours.
+- **Containers are the existing kinds only.** There are no ammo box, grenade box, duffel bag or PC case kinds, so IRONSIGHT has weapon boxes,
+  a safe, a drawer and a register (no ammo boxes, no grenade box, no armoured mannequins; the guns on its walls are scenery), and the
+  clothing shops' mannequins carry nothing. Container counts per shop are ours (249 on L1, 81 of them registers).
+- **RESCUE POINT** is medicine shelves, medbags, a drawer and a safe, with the three keyed doors; the reference's surgical and stimulant
+  containers are not separate kinds.
+- **Key spawns are pool rolls.** A loose spot can only roll a pool, so the five key tiles (NESTA, KASSA and the three BOLTWORKS keys) each
+  roll the whole mall key pool (any `KEY_MM_*` or older mall key) instead of holding their one key. The IRONSIGHT, RESCUE POINT and security
+  keys have no tile of their own (their `L.keys` positions are door and terminal icons) and come only from 16 low-chance spots; a key's
+  chance is its pool weight, not the reference's per-key rate (about 3.35 key rolls a raid on L1).
+- **Register keys open the till offices, not the registers** (already listed in Part 3; the registers themselves are open containers).
+- **The closed unit** north of VIKING reads `TO LET` on its sign; the reference's unlabelled store has no sign.
+- **The NESTA CANTEEN kitchen has no staff door** (it is open plan; `KEY_MALL_STAFF` opens the L2 food-court kitchen only).
+- **Not built on L1:** loot or props in the concourse, the atria and the halls outside the shops, shop shutters and glass doors, shop-window
+  displays, price tags, posters and signage art (no logos by design), and any sound.
+- **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
+
+### Unverified (part 4a; nothing has run in Luau or Studio)
+
+Everything above: that the modules load and build in the engine at all (the mock stands in for the kit, `World` and the part classes); the
+real part and light counts and the build time at server start; each kit prop's facing and scale in the scene (the yaw conventions come
+from the Border and Living maps and a front line of `KitMeta`, not from a look at the result); the collider boxes under scaled runs
+and their prompts' reach; that the loose spots land on the surfaces meant (the world drops any it cannot snap); the look and brightness of
+the lamps lit at power-on, the grate's transparency and the doors' swing and fit in their openings; the key tiles' places; and frame rate
+and memory on a low-end phone.
+
+### Files (part 4a)
+
+| File | What |
+|---|---|
+| `src/server/Maps/Meridian/Stores.luau` | the dispatcher: `StoresL1` and `StoresL2`, each under `pcall` |
+| `src/server/Maps/Meridian/StoresL1.luau` | the shops and stock rooms, IRONSIGHT, RESCUE POINT, the security room, the key tiles, the totals line |
+| `src/server/Maps/Meridian/StoresL1Kit.luau` | the frame toolkit: placement by footprint, containers, loose spots, doors, offices, lamps |
+| `src/server/Maps/Meridian/StoresL1Halls.luau` | NESTA, KASSA, BOLTWORKS |
+| `src/server/Maps/Meridian/StoresL1Back.luau` | the NESTA CANTEEN, `BACK_1` to `BACK_4` |
