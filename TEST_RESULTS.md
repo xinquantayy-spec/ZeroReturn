@@ -191,7 +191,17 @@ One PMC raid on Border Yard (night, rain, autumn, the Broker forced on), five mi
 | On the Bastion roof | Raid on Border Yard; real F key and mouse through Studio | The prompt "[F] MAN THE GUN · HMG-12 'BASTION'" shows when you look at the gun; F mounts it (camera at the gun's sights, HUD "HMG-12 'BASTION' · 100 / 100 · F TO LEAVE"); holding the left button fired 15 rounds in about 1.3 s (belt 100 to 85, Tarkov's Utyos is 650 rounds a minute); F leaves and the prompts come back |
 | AI | `dev:Invoke("ai")` with the player on the roof | The two posted gunners fought the player with their own rifles; neither took a gun, as the player stood behind the guns' arcs |
 
-**Not verified:** the grenade launcher by hand, gamepad and touch controls, AI gunners firing a mounted gun at a target in its arc, the sight picture (the receiver block hides part of the view under the reticle; placeholder art).
+**The grenade launcher by hand (2026-11-01, evening):**
+- Real F held on the prompt manned the AGL-30 (`Op` = the player).
+- A 1.5 s hold of the left mouse button fired 13 rounds (`Rounds` 30 → 17).
+- A 0.7 s hold fired 8 more, and the client got 8 `nadeX` blast events.
+- The HUD read `AGL-30 · 17 / 30 · F TO LEAVE`, with the reticle and `ARC 0.0 · ZERO 120 M`.
+- F left the gun. No errors.
+
+**Not verified:**
+- gamepad and touch controls;
+- AI gunners firing a mounted gun at a target in its arc: no guard was posted at a gun in that raid; the crew logic is `Stationary.crew`;
+- the sight picture: the receiver block hides part of the view under the reticle; placeholder art.
 
 ### Border Yard underground entries (2026-11-01, later)
 
