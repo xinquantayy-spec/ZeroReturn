@@ -36,30 +36,38 @@ task.spawn(function()
 	end
 end)
 
--- Studio-only benchmark (Dev.luau BENCH): hold each viewpoint the server announces, count frames, show the table
+-- Studio-only benchmark (Dev.luau BENCH): hold each viewpoint the server announces, count frames, show the table.
+-- Studio slows a test window that is not in front (a steady 15 fps whatever the scene), so each row says whether the window
+-- had focus while it counted; only FOCUSED rows are real numbers.
 if RunService:IsStudio() then
 	local lp = Players.LocalPlayer
-	local rows, hold = {}, nil
+	local UIS = game:GetService("UserInputService")
+	local Stats = game:GetService("Stats")
+	local rows, token, focused = {}, 0, nil
+	UIS.WindowFocused:Connect(function()
+		focused = true
+	end)
+	UIS.WindowFocusReleased:Connect(function()
+		focused = false
+	end)
 	local function panel()
 		local gui = lp:WaitForChild("PlayerGui"):FindFirstChild("ZR_Bench") or Instance.new("ScreenGui")
 		gui.Name, gui.ResetOnSpawn, gui.DisplayOrder = "ZR_Bench", false, 50
 		local t = gui:FindFirstChild("T") or Instance.new("TextLabel")
-		t.Name, t.Size, t.Position = "T", UDim2.fromOffset(460, 200), UDim2.fromOffset(20, 220)
+		t.Name, t.Size, t.Position = "T", UDim2.fromOffset(620, 210), UDim2.fromOffset(20, 220)
 		t.BackgroundTransparency, t.BackgroundColor3, t.TextColor3 = 0.2, Color3.new(0, 0, 0), Color3.fromRGB(230, 220, 170)
-		t.Font, t.TextSize, t.TextXAlignment, t.TextYAlignment = Enum.Font.Code, 16, Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
-		t.Text = "ZR BENCH  ·  " .. os.date("%H:%M") .. "\n" .. table.concat(rows, "\n")
+		t.Font, t.TextSize, t.TextXAlignment, t.TextYAlignment = Enum.Font.Code, 15, Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
+		t.Text = "ZR BENCH  ·  keep this window in front (Studio slows background windows)\n" .. table.concat(rows, "\n")
 		t.Parent = gui
 		gui.Parent = lp.PlayerGui
 	end
 	lp:GetAttributeChangedSignal("ZR_BenchView"):Connect(function()
 		local v = lp:GetAttribute("ZR_BenchView")
-		if hold then
-			hold:Disconnect()
-			hold = nil
-		end
-		local cam = workspace.CurrentCamera
+		pcall(function()
+			RunService:UnbindFromRenderStep("ZR_Bench")
+		end)
 		if v == "done" then
-			cam.CameraType = Enum.CameraType.Custom
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 			table.insert(rows, "done")
 			panel()
 			print("[ZR] bench results:\n" .. table.concat(rows, "\n"))
@@ -77,21 +85,37 @@ if RunService:IsStudio() then
 		if ctx.Settings and ctx.Settings.data then
 			ctx.Settings.data.autoGfx = false -- the bench measures the chosen level, not the fallback
 		end
-		hold = RunService.RenderStepped:Connect(function()
+		RunService:BindToRenderStep("ZR_Bench", Enum.RenderPriority.Last.Value + 5, function()
+			local cam = workspace.CurrentCamera
 			cam.CameraType = Enum.CameraType.Scriptable
 			cam.CFrame = cf
 		end)
+		token += 1
+		local my = token
 		task.delay(4, function()
-			local frames, total, worst = 0, 0, 0
+			local dts, away = {}, false
 			local c = RunService.RenderStepped:Connect(function(dt)
-				frames += 1
-				total += dt
-				worst = math.max(worst, dt)
+				dts[#dts + 1] = dt * 1000
+				away = away or focused == false
 			end)
 			task.wait(6)
 			c:Disconnect()
+			if my ~= token or #dts < 3 then
+				return
+			end
+			local total = 0
+			for _, d in dts do
+				total += d
+			end
+			table.sort(dts)
+			local k = #dts
+			local med, p90 = dts[k // 2], dts[math.floor(k * 0.9)]
+			-- a background window runs at a steady ~66.7 ms whatever it draws
+			local capped = dts[math.max(1, math.floor(k * 0.1))] > 60 and p90 < 72
 			local q = ctx.Settings and ctx.Settings.data and ctx.Settings.data.quality or -1
-			table.insert(rows, string.format("%s/%s %-14s %5.1f fps  worst %3.0f ms  (graphics %d)", i, n, name, frames / math.max(total, 1e-3), worst * 1000, q))
+			table.insert(rows, string.format("%s/%s %-13s %5.1f fps  median %3.0f ms  p90 %3.0f  render %4.1f ms  draws %d+%d  gfx %d%s",
+				i, n, name, k / total * 1000, med, p90, Stats.RenderCPUFrameTime * 1000, Stats.SceneDrawcallCount, Stats.ShadowsDrawcallCount, q,
+				(away or capped) and "  BACKGROUND" or (focused and "  FOCUSED" or "")))
 			panel()
 		end)
 	end)
