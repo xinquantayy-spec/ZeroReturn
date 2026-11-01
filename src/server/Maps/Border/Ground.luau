@@ -922,13 +922,21 @@ return function(B)
 						end
 					end
 				end
-				-- a round patch at each bend fills the wedge between the boards
+				-- a round patch at each bend fills the wedge between the boards; not on a concrete yard (the fuel stop's forecourt
+				-- showed the patches' outer halves as black half-discs on its concrete, 2026-11-02)
 				for q = 2, n - 1 do
 					local vx, vz = pts[2 * q - 1], pts[2 * q]
 					local ux, uz = vx - pts[2 * q - 3], vz - pts[2 * q - 2]
 					local wx, wz = pts[2 * q + 1] - vx, pts[2 * q + 2] - vz
 					local cosA = (ux * wx + uz * wz) / math.max(0.01, math.sqrt(ux * ux + uz * uz) * math.sqrt(wx * wx + wz * wz))
-					if cosA < 0.995 and onLand(vx, vz) then
+					local onYard = false
+					for _, y in L.yards do
+						if type(y[8]) == "table" and pointIn(y[8], vx, vz) then
+							onYard = true
+							break
+						end
+					end
+					if cosA < 0.995 and onLand(vx, vz) and not onYard then
 						local disk = kit.vcyl(rm, 0.6, w, O.X + vx, groundAt(vx, vz) - 0.4, O.Z + vz, ASPH, M.Asphalt)
 						disk.CanTouch = false
 						disk.CastShadow = false

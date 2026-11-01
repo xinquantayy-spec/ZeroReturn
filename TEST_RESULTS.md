@@ -8,6 +8,27 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Visual sweep of Border Yard (2026-11-02)
+
+Eight views at eye height or from above, one player, 13:00 clear:
+- the dorms;
+- the fuel stop;
+- OLD PUMPS;
+- THE DERRICK;
+- THE BASTION;
+- the motor shop and boiler house;
+- RED STORES;
+- the bridge booths and a rail portal.
+
+Found and fixed:
+- **Black half-discs on the fuel stop forecourt.** The round patches that fill a road's bends drew their outer halves on the concrete where the access roads turn into the forecourt (`BY_fuelstop_discs_before.jpg`). Patches are now left out on concrete yards (`BY_fuelstop_discs_after.jpg`).
+
+Nothing else looked out of place. Noted, not changed:
+- THE BASTION is a plain two-storey block;
+- one access road still shows a small notch where two of its boards meet at an angle.
+
+Tests: LogicTests 360, CharTests 47, LookTests 33, MapTests 37, all passing.
+
 ## Meridian exits: the shelter button, the toll booth, the tanker (2026-11-02)
 
 Meridian raids, one player, god mode.
