@@ -58,6 +58,7 @@ local POOLS = {
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 12 }, { id = "OLD_COIN", w = 8 }, { id = "FLASH_MODULE", w = 4 },
 		{ id = "INTEL_FOLDER", w = 3 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 }, { id = "SEALED_DRIVE", w = 2 },
 		{ id = "GOLD_CHAIN", w = 3 }, { id = "PAINKILLERS", w = 6 },
+		{ id = "KEY_MM_BOLT_OFFICE", w = 1 }, { id = "KEY_MM_BOLT_GOODS", w = 1 }, { id = "KEY_MM_IRON_GRATE", w = 0.4 },
 	},
 	medbag = {
 		{ id = "BANDAGE", w = 20 }, { id = "TOURNIQUET", w = 12 }, { id = "SPLINT", w = 12 }, { id = "PAINKILLERS", w = 12 },
@@ -91,6 +92,7 @@ local POOLS = {
 		{ id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "PAINKILLERS", w = 4 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "KEY_DORM_104", w = 3 }, { id = "KEY_DORM_203", w = 1 }, { id = "GREN_RK5", w = 1 },
 		{ id = "GLASSES_SUN", w = 2 }, { id = "GLASSES_RANGE", w = 1 },
+		{ id = "KEY_MALL_SECURITY", w = 1 }, { id = "KEY_MM_RESCUE", w = 1 }, { id = "KEY_MM_IRON_FRONT", w = 0.5 },
 	},
 	safe = {
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
@@ -138,6 +140,10 @@ local POOLS = {
 		{ id = "KEY_BY_WATCHSTORE", w = 2 }, { id = "KEY_BY_ARMYHUT", w = 1.5 }, { id = "KEY_BY_HUTSKIOSK", w = 2 }, { id = "KEY_BY_TRAILERA", w = 2 },
 		{ id = "KEY_BY_TRAILERB", w = 2 }, { id = "KEY_BY_SHACK4", w = 2 }, { id = "KEY_BY_ROADSHACK", w = 2 }, { id = "KEY_BY_SQUAT", w = 2 },
 		{ id = "KEY_BY_PUMPS", w = 2 },
+		-- Meridian on Interchange (2026-11-01): its keys turn up anywhere too, the gun shop's and UNIT 14's the rarest
+		{ id = "KEY_MM_RESCUE", w = 1.5 }, { id = "KEY_MM_NESTA_REG", w = 2 }, { id = "KEY_MM_KASSA_REG", w = 2 }, { id = "KEY_MM_BOLT_REG", w = 2 },
+		{ id = "KEY_MM_BOLT_OFFICE", w = 1.5 }, { id = "KEY_MM_BOLT_GOODS", w = 1.5 }, { id = "KEY_MM_SUBSTATION", w = 1 },
+		{ id = "KEY_MM_IRON_FRONT", w = 0.6 }, { id = "KEY_MM_IRON_GRATE", w = 0.6 }, { id = "KEY_MM_UNIT14", w = 0.3 },
 	},
 	-- M13 Meridian Mall
 	register = {
@@ -176,6 +182,12 @@ local POOLS = {
 		{ id = "KEY_MM_BOLT_OFFICE", w = 3 }, { id = "KEY_MM_BOLT_GOODS", w = 3 }, { id = "KEY_MM_SUBSTATION", w = 2.5 },
 		{ id = "KEY_MM_IRON_FRONT", w = 1.5 }, { id = "KEY_MM_IRON_GRATE", w = 1.5 }, { id = "KEY_MM_UNIT14", w = 0.8 },
 	},
+	-- one-key pools: a key tile holds its own key (Tarkov spawns the register keys by their registers)
+	mk_nesta_reg = { { id = "KEY_MM_NESTA_REG", w = 1 } },
+	mk_kassa_reg = { { id = "KEY_MM_KASSA_REG", w = 1 } },
+	mk_bolt_reg = { { id = "KEY_MM_BOLT_REG", w = 1 } },
+	mk_bolt_office = { { id = "KEY_MM_BOLT_OFFICE", w = 1 } },
+	mk_bolt_goods = { { id = "KEY_MM_BOLT_GOODS", w = 1 } },
 	mallgood = {
 		{ id = "GPU_CARD", w = 2 }, { id = "FLASH_MODULE", w = 6 }, { id = "GOLD_CHAIN", w = 6 }, { id = "CAPT_WATCH", w = 4 },
 		{ id = "PHONE", w = 8 }, { id = "HDD", w = 6 }, { id = "RAM_STICK", w = 6 }, { id = "INTEL_FOLDER", w = 3 },

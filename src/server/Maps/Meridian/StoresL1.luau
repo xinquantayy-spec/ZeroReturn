@@ -476,8 +476,8 @@ return function(B)
 	-- the exact key is a logged gap. The tile moves to the nearest free patch of the smallest furnished frame within 9 studs.
 	-- { key id, loose pool }: a pool holding only that key would put the exact key on its tile
 	local KEYTILES = {
-		{ "KEY_MM_NESTA_REG", "mallkeys" }, { "KEY_MM_KASSA_REG", "mallkeys" }, { "KEY_MM_BOLT_REG", "mallkeys" },
-		{ "KEY_MM_BOLT_OFFICE", "mallkeys" }, { "KEY_MM_BOLT_GOODS", "mallkeys" },
+		{ "KEY_MM_NESTA_REG", "mk_nesta_reg" }, { "KEY_MM_KASSA_REG", "mk_kassa_reg" }, { "KEY_MM_BOLT_REG", "mk_bolt_reg" },
+		{ "KEY_MM_BOLT_OFFICE", "mk_bolt_office" }, { "KEY_MM_BOLT_GOODS", "mk_bolt_goods" },
 	}
 	local function keyTiles()
 		local at = {}

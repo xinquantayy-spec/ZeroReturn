@@ -5,7 +5,7 @@
 -- w x h = the item's grid size times the cell).
 return {
 	cell = 64,
-	sheets = { "rbxassetid://87867732430143", "rbxassetid://113186498772250", "rbxassetid://89528084000387", "rbxassetid://120109466637201" },
+	sheets = { "rbxassetid://87867732430143", "rbxassetid://113186498772250", "rbxassetid://89528084000387", "rbxassetid://123998998634756" },
 	items = {
 		A12_BUCK = { 3, 522, 332, 64, 64 },
 		A12_SLUG = { 3, 588, 332, 64, 64 },
@@ -148,6 +148,16 @@ return {
 		KEY_MALL_SECURITY = { 3, 794, 530, 64, 64 },
 		KEY_MALL_STAFF = { 3, 860, 530, 64, 64 },
 		KEY_MEDIQ = { 3, 926, 530, 64, 64 },
+		KEY_MM_BOLT_GOODS = { 4, 266, 264, 64, 64 },
+		KEY_MM_BOLT_OFFICE = { 4, 332, 264, 64, 64 },
+		KEY_MM_BOLT_REG = { 4, 398, 264, 64, 64 },
+		KEY_MM_IRON_FRONT = { 4, 464, 264, 64, 64 },
+		KEY_MM_IRON_GRATE = { 4, 530, 264, 64, 64 },
+		KEY_MM_KASSA_REG = { 4, 596, 264, 64, 64 },
+		KEY_MM_NESTA_REG = { 4, 662, 264, 64, 64 },
+		KEY_MM_RESCUE = { 4, 728, 264, 64, 64 },
+		KEY_MM_SUBSTATION = { 4, 794, 264, 64, 64 },
+		KEY_MM_UNIT14 = { 4, 860, 264, 64, 64 },
 		KEY_OFFICE = { 3, 2, 596, 64, 64 },
 		KEY_PINE_BUNKER = { 3, 68, 596, 64, 64 },
 		KEY_SMELT_OFFICE = { 3, 134, 596, 64, 64 },

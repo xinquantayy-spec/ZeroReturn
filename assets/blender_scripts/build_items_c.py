@@ -754,3 +754,26 @@ def propane_tank(I):
     b.cyl((0.0, -0.015, 0.455), (0.0, -0.04, 0.455), 0.007, col("B89A4A"), seg=8)  # outlet
     label_band(I("paper"), (0.0, -0.1505, 0.22), (0.07, 0, 0.05), col("E8E2D0"))
     m.box((0.0, -0.151, 0.13), (0.16, 0.003, 0.004), shade(body, 0.7))  # weld seam
+
+
+# ── Meridian on Interchange keys (2026-11-01): the gun shop's two heavy steel keys, the anchors' till keys brass with a
+# tag, the offices steel with a rubber head, the substation an old pressed key, UNIT 14 a keycard. Colours as in Items.luau.
+_MM_KEYS = [
+    ("KEY_MM_IRON_FRONT", "works", "8E3B2F"), ("KEY_MM_IRON_GRATE", "works", "7C3A30"), ("KEY_MM_RESCUE", "shop", "B5532E"),
+    ("KEY_MM_NESTA_REG", "dorm", "3E8A8A"), ("KEY_MM_KASSA_REG", "dorm", "8A3E4E"), ("KEY_MM_BOLT_REG", "dorm", "C27A2E"),
+    ("KEY_MM_BOLT_OFFICE", "works", "B8742A"), ("KEY_MM_BOLT_GOODS", "works", "A8682A"), ("KEY_MM_SUBSTATION", "old", "6B7A5E"),
+]
+for _iid, _style, _hex in _MM_KEYS:
+    if _style == "dorm":
+        key_item(_iid, None, BRASSC, tag=col(_hex))
+    elif _style == "works":
+        key_item(_iid, col(_hex), STEELC)
+    elif _style == "shop":
+        key_item(_iid, col(_hex), BRASSC)
+    else:
+        key_item(_iid, None, mixc(col(_hex), col("8A8478"), 0.55), old=True)
+
+
+@item("KEY_MM_UNIT14", 1, 1, view="top_tilt", margin=0.08)
+def unit14_card(I):
+    card(I, col("4E5E8A"), stripe=col("D8D2C0"), chip=GOLDC)

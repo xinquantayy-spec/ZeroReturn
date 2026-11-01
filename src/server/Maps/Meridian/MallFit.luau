@@ -608,9 +608,11 @@ return function(ctx)
 		end
 		return placed
 	end
-	local mainL0 = lamps(0, 52, 0, 0, true, 48, 0.8)
-	local mainL1 = lamps(1, 48, 0, 0, true, 48, 0.8)
-	local mainL2 = lamps(2, 44, 0, 0, true, 44, 0.8)
+	-- with the power on the halls must read (Tarkov's lit Interchange); the lamps hang under ceilings up to 27 studs high,
+	-- so the floors need more than the first pass's 0.8 (tested 2026-11-01: deep halls were black even with power)
+	local mainL0 = lamps(0, 52, 0, 0, true, 52, 1.1)
+	local mainL1 = lamps(1, 48, 0, 0, true, 60, 1.7)
+	local mainL2 = lamps(2, 44, 0, 0, true, 54, 1.5)
 	local emL0 = lamps(0, 70, 22, 30, false, 22, 0.5, 9)
 	local emL1 = lamps(1, 70, 25, 28, false, 22, 0.5, 9)
 	local emL2 = lamps(2, 60, 20, 25, false, 20, 0.5, 6)
