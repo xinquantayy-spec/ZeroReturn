@@ -260,7 +260,7 @@ Gaps (not copied or not found):
 | Tarkov | Zero Return | To do |
 |---|---|---|
 | Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
-| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | The second boss (the hammer boss), airdrops, co-op, flare and transit extracts, the car exit's car and karma, the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
+| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | The second boss (the hammer boss), airdrops, co-op, flare and transit extracts, the car exit's karma pricing (the car itself is built: "Car exits" below), the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
 
@@ -268,7 +268,7 @@ Gaps (not copied or not found):
 
 - Co-op extracts, transits and flares do not exist: WEST CAMP is scav-only at the reference's co-op spot, RIVER PATH is a plain open
   exit, SHELTER EXIT supports only the power rule (the hidden switch and the keycard panel are Play's).
-- SUBSTATION CAR costs 20,000 MK (the 2026 figure; the car, the 50 % chance and karma are gaps); FENCE GAP's `nobag` rule is new.
+- SUBSTATION CAR costs 20,000 MK (the 2026 figure) and is a vehicle exit since the "Car exits" work below (the price still ignores Scav karma); FENCE GAP's `nobag` rule is new.
 - The second boss (the hammer boss in the KASSA garage), mounted guns, propane cylinders, airdrop points and the lethal bands are not built.
 - The ponds and the east canal are dry ditches (the budget allows no terrain water), so there is no wading or swimming; the relief is
   a smooth blend of 31 knots and 155 height samples, so peaks are lower than the reference; the rock mounds and berms are ours.
@@ -425,11 +425,11 @@ Gaps (not copied or not found):
 - **Airdrops** (20 %, 6 or more players, 5 to 15 minutes in): there is no airdrop system; the numbers sit in `L.hazard.airdrop`.
 - **Co-op, flare and transit extracts**: WEST CAMP is scav-only, RIVER PATH is a plain exit (no green flare), and the transits to Streets
   and Customs do not exist.
-- **SUBSTATION CAR** is a plain paid exit (20,000 MK, the 2026 figure): no car, no 50 % chance (SPT), no stay-by-the-car rule, no karma.
+- **SUBSTATION CAR** was a plain paid exit when part 3 was written; it is a vehicle exit now (see "Car exits" below: 50 % chance, pay at the car, 4 seats, shared countdown, single use). Still a gap: no Scav karma in the price.
 - **Saferoom chain simplified**: the urinal flush that reveals a keypad is a service valve in the washroom; not copied are the keypad,
   the padlocked door with its inside button, the lever for the Object-14 container, and the Terragroup container (Object #21WS card) in the
   south-west container yard.
-- **Extract timers**: Tarkov gives each exit its own (3 to 60 s, 60 s shared at the car); here every extract uses the standard hold.
+- **Extract timers**: Tarkov gives each exit its own (3 to 60 s, 60 s shared at the car); here every extract but the cars uses the standard hold (a car has its own shared countdown: "Car exits" below).
 - **Bands' rules are in no source** ("deadly sniper", "minefield"): the mine radius (3.4 studs), the blast, the lethal wound and the
   sniper strips are ours (the snipers copy Border Yard's).
 - **Alarm details**: the siren (a procedural warble in `ZR_SFX_Amb`, silent until that asset is uploaded), the beacon, the 60 s length
@@ -479,3 +479,48 @@ Gaps (not copied or not found):
 - **The atria open down to the car park**: no source says what lies under them.
 - **The stores are empty boxes**: no counters, shelves, stock or loot (the stores agents'); 12 small or open stores have no stock room.
 - **Not run**: nothing above has been run in Luau, Studio, on a phone or on a console.
+
+### Car exits: Tarkov's vehicle extracts (V-Ex), Border Yard and Meridian Mall (2026-11-01)
+
+Researched first (escapefromtarkov.party "Every Extraction Type" and tarkov.help, read 2026-11-01; the maps' own references:
+`docs/maps/reference/CUSTOMS_REFERENCE.md` for the Dorms V-Ex and `docs/maps/reference/INTERCHANGE_REFERENCE.md` for the Power Station
+V-Ex: SPT data, the wiki, re3mr 2026), then built in `src/server/Services/Extract.luau`, `Match.luau` and `Raid.luau` with the HUD in
+`Hud.luau`. The two exits are DORMS CAR (Border Yard `DC`, 25,000 MK) and SUBSTATION CAR (Meridian Mall `SC`, 20,000 MK); their rules in
+`L.ext` are `{ kind = "paid", cost, chance = 0.50, seats = 4, depart = 60 }`. Details: `docs/maps/BORDER_YARD.md` and
+`docs/maps/MERIDIAN_MALL.md`, "Car exits". Status: written and passed through `tools/luau_check.py` only; nothing has run in Luau, Studio,
+on a phone or on a console, and the new LogicTests group ("car ..." checks) has not been run.
+
+Matched:
+- **The car is not there every raid**: its `chance` is rolled at raid start with the chance exits (SPT: 50 % for both cars). An absent car
+  is gone from the map, the zone says "NOT AVAILABLE THIS RAID" and the fare prompt does not exist; the exits list shows the car like a
+  chance exit ("PAY 20,000 MK  ·  MAY BE UNAVAILABLE", red once the zone has told you).
+- **You pay at the car**: a hold-F prompt on the car, "Pay 20,000 MK · SUBSTATION CAR". The fare is taken at once, from each passenger
+  (a squad pays one fare per head), and is never refunded.
+- **Four seats**: the fifth passenger is refused ("THE CAR IS FULL"). No money, not in the raid, the car already gone and a seat
+  already held are also refused, each with a toast and without taking anything.
+- **One countdown for the car**: the first fare starts it, later passengers join the same one, and every seated passenger sees it
+  ("CAR LEAVES IN 0:45", the last ten seconds on the big notice with the extraction beep).
+- **Stay by the car**: when the countdown ends the car leaves; a seated passenger inside the zone extracts (SUCCESS, the usual summary),
+  one outside it is left behind and told "THE CAR HAS LEFT WITHOUT YOU", with no refund.
+- **Single use**: after the departure the exit reads "THE CAR HAS LEFT" for the rest of the raid, in the zone, at the prompt and in
+  every raider's exit list (they all get a fresh snapshot).
+- **PMCs only**: scavs do not get a car in their exit list and cannot pay one.
+- **No normal hold at a car**: standing in the zone without a seat does nothing but say "PAY AT THE CAR".
+- **Reset**: seats, countdown and departure start clean with every raid.
+
+Gaps (not copied or not found):
+- **Price by Scav karma**: Tarkov's fare depends on Scav karma (wiki) and each ride adds karma (+0.2, re3mr 2026). There is no karma
+  here, so the fare is one flat figure per exit: 25,000 MK at DORMS CAR (the old map's price, kept) and 20,000 MK at SUBSTATION CAR (the
+  2026 figure; the wiki and SPT say 5,000 roubles). Check both against the MK scale in the economy.
+- **Countdown length is grade C (from memory, to confirm)**: the sources read for this work do not state it; the maps' references quote a
+  60 s shared timer (SPT data), so each car carries `depart = 60`. It is one field per exit; the default in `Extract.luau` is also 60.
+- **The 50 % chance** is SPT's for both cars; the wiki calls the Power Station car "always" there (the sources disagree; the build follows SPT).
+- **The car itself**: one sedan prop beside the zone's middle for every car (Tarkov's vehicles differ per map), with no engine sound, no
+  doors and no drive-away: it simply disappears when it leaves. Tarkov pays through an interaction at the car; ours is a held prompt on
+  its right flank (1.5 s).
+- **Joining after the first fare**: a later passenger can still pay and take a seat while the countdown runs. The sources read describe
+  no cut-off, so none is built; if Tarkov locks the car shortly before it leaves, this is a gap.
+- **Squad rules**: nothing ties a squad to one car; each member pays and boards on their own.
+- **Not run**: nothing above has been run in Luau, Studio, on a phone or on a console. A second player is needed to see the shared
+  countdown and the "left behind" case. The touch tap on a prompt now holds it for its whole hold time (`Interact.luau`), which also
+  affects the other hold prompts (the Meridian levers, the Border switches); that is untested on a phone too.

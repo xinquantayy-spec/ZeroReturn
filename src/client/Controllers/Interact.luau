@@ -57,8 +57,9 @@ function Interact.init(c)
 		local p = Interact.current
 		if p then
 			p:InputHoldBegin()
-			task.delay(0.05, function()
-				p:InputHoldEnd()
+			-- a tap holds the prompt for its whole hold time (the car's fare, the mall's levers), so those work on a phone too
+			task.delay(0.05 + (p.HoldDuration or 0), function()
+				pcall(p.InputHoldEnd, p)
 			end)
 		end
 	end)

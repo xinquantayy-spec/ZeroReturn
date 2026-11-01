@@ -124,13 +124,21 @@ with their positions and rules; Play builds them (`kit.extract`).
 |---|---|---|---|---|---|
 | RS | RAIL SIDING | -1232, -1314 | se | open | north-west corner beside the west double railway |
 | RC | RESCUE CHECKPOINT | 1246, 862 | nw | open | south-east corner beside the checkpoint (moved 8 studs inward from the reference) |
-| SC | SUBSTATION CAR | 1112, -1124 | both | paid 20,000 MK | north-east corner by the sniper band; the car, 50 % chance and karma are gaps |
+| SC | SUBSTATION CAR | 1112, -1124 | both (PMCs only) | car: paid 20,000 MK per seat, chance 50 %, 4 seats, 60 s shared countdown | north-east corner by the sniper band; Tarkov's V-Ex (SPT: 50 % chance, 60 s timer, 4 players; wiki: always there); pay at the car, see "Car exits" below; karma pricing is a gap |
 | SE | SHELTER EXIT | 512, 77 | both | power (`MALL_POWER`) | the hidden room east of car park C: power, then a hidden switch in the L2 washroom and a keycard at a panel (Play) |
 | WC | WEST CAMP | 550, -210 | scav | scav | at the reference's co-op position (the service tunnel, L0), not at the huts; the spec name is kept |
 | RP | RIVER PATH | -1372, 286 | both | open | far west edge on the dirt road; the flare is a gap |
 | FG | FENCE GAP | 947, -219 | both | `nobag` (new kind) | the 46 m gap in the east service lane fence; the backpack slot must be empty (grade D) |
 
 Until Play adds the kind `nobag` to `World`/`Raid`, FENCE GAP behaves as an open extract.
+
+**Car exits** (`Extract.luau`; the full rules and gaps are in `docs/design/EFT_PARITY.md`, "Car exits"). SUBSTATION CAR is a vehicle exit
+like Tarkov's V-Ex: `{ kind = "paid", cost = 20000, chance = 0.50, seats = 4, depart = 60 }` in `L.ext`. It is rolled at raid start with the
+chance exits (there in half the raids; when it is absent the zone says "NOT AVAILABLE THIS RAID" and the car is gone). A sedan stands west
+of the zone's middle with a hold-F prompt on its right flank ("Pay 20,000 MK · SUBSTATION CAR", 1.5 s hold); the fare is taken at once and
+buys one of four seats. The first fare starts a 60 s countdown that later passengers join; when it ends the car leaves for good, taking the
+seated passengers inside the zone (extracted with SUCCESS), leaving the others behind without a refund, and the exit reads "THE CAR HAS
+LEFT" until the next raid. Standing in the zone without a seat only says "PAY AT THE CAR". Scavs cannot use it (PMCs only).
 
 ## Spawns, AI and bosses (data for Play)
 
@@ -195,7 +203,8 @@ the item exists.
 
 - Co-op extracts, transits and flares do not exist: WEST CAMP is scav-only at the reference's co-op spot, RIVER PATH is a plain open
   exit, SHELTER EXIT supports only the power rule (the hidden switch and the keycard panel are Play's).
-- SUBSTATION CAR costs 20,000 MK (the 2026 figure; the car, the 50 % chance and karma are gaps); FENCE GAP's `nobag` rule is new.
+- SUBSTATION CAR is a vehicle exit now (50 % chance, pay at the car, 4 seats, shared 60 s countdown, single use); it costs 20,000 MK (the
+  2026 figure) and the price does not depend on Scav karma (a gap). FENCE GAP's `nobag` rule is new.
 - The second boss (the hammer boss in the KASSA garage), mounted guns, propane cylinders, airdrop points and the lethal bands are not built.
 - The ponds and the east canal are dry ditches (the budget allows no terrain water), so there is no wading or swimming; the relief is
   a smooth blend of 31 knots and 155 height samples, so peaks are lower than the reference; the rock mounds and berms are ours.
@@ -545,13 +554,13 @@ actually built and left out when absent, so the map still builds without `Mall.l
 |---|---|---|---|
 | RS | RAIL SIDING | MallSE spawners | open |
 | RC | RESCUE CHECKPOINT | MallNW spawners | open |
-| SC | SUBSTATION CAR | both | paid, 20,000 MK |
+| SC | SUBSTATION CAR | both (PMCs only) | car: `paid` 20,000 MK with `chance` 0.5, `seats` 4, `depart` 60 (`Extract.luau`: pay at the car) |
 | SE | SHELTER EXIT | both | `power` with `also`: the mall power (`MALL_POWER`), then the washroom valve (`SHELTER_SWITCH`); a plain `MALL_POWER` rule if the valve could not be built |
 | WC | WEST CAMP | scavs only | scav |
 | RP | RIVER PATH | both | open |
 | FG | FENCE GAP | both | `nobag` |
 
-`W.sideExtracts`: nw = RC, SC, SE, RP, FG; se = RS, SC, SE, RP, FG. Scavs get all seven (existing rule). SE and WC stand on the L0 floor
+`W.sideExtracts`: nw = RC, SC, SE, RP, FG; se = RS, SC, SE, RP, FG. Scavs get all seven except SC (a car is for PMCs). SE and WC stand on the L0 floor
 under the mall (y 0.1, compact boxes). `Extract.blocked` reads `also` first, so before the power is on a player reads the original
 "throw the switch at the substation" text and afterwards "sealed, find the valve hidden in a washroom". FENCE GAP refuses while the
 `back` slot holds a pack and cancels the hold if one is put on during it; the HUD shows "NO BACKPACK".
@@ -699,7 +708,9 @@ printed as `[ZR] Meridian dress: ... parts`.
 - **Airdrops** (20 %, 6 or more players, 5 to 15 minutes in): no airdrop system exists; the numbers are in `L.hazard.airdrop`.
 - **Co-op, flare and transit extracts**: WEST CAMP is scav-only at the co-op spot, RIVER PATH is a plain open exit (no flare), and the two
   transits (Streets, Customs) do not exist.
-- **SUBSTATION CAR** is a plain paid exit (20,000 MK, the 2026 figure): no car, no 50 % chance, no stay-by-the-car rule, no karma.
+- **SUBSTATION CAR** is a vehicle exit (20,000 MK, the 2026 figure; 50 % chance, pay at the car, 4 seats, shared 60 s countdown, stay inside
+  the zone, single use). Still a gap: the price does not depend on Scav karma and the ride gives no karma; the 60 s countdown is grade C
+  (from memory, to confirm).
 - **SHELTER EXIT is simplified**: mall power, then a hidden valve in the L2 washroom (for the urinal flush that reveals a keypad), then the
   keycard door, then the exit. Not copied: the keypad, the padlocked door with its inside button, the lever that opens Object-14, and
   the Terragroup container with the Object #21WS keycard in the south-west container yard.

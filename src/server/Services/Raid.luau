@@ -58,7 +58,13 @@ function Raid.raidInfo(s)
 	for _, id in s.extracts do
 		local e = ctx.World.extracts[id]
 		local r = e.rule or {}
-		table.insert(ex, { id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key, powered = r.kind == "power" and ctx.World.switchOn(r.switch) or nil })
+		-- a car (paid exit with seats) that rolls for being there is listed like a chance exit; one that has left is closed for good
+		local gone = ctx.Extract.carLeft(e)
+		table.insert(ex, {
+			id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key, powered = r.kind == "power" and ctx.World.switchOn(r.switch) or nil,
+			chance = (r.kind ~= "chance" and ctx.Extract.hasChance(r)) or nil, seats = r.seats, depart = r.depart,
+			closed = gone or nil, closedText = gone and "THE CAR HAS LEFT" or nil,
+		})
 	end
 	return {
 		id = s.id, started = s.raidStart or s.started, endsAt = s.endsAt, spawn = s.spawn, extracts = ex, state = s.state,
@@ -235,6 +241,11 @@ function Raid.resetWorld()
 	ctx.Hazards.reset()
 	if ctx.Stationary then
 		ctx.Stationary.reset() -- the mounted guns are full again
+	end
+	-- the cars: no seats, no countdown, no departure; each shown or hidden by the roll Match just made (a failure here must never stop a raid)
+	local okCars, errCars = pcall(ctx.Extract.reset)
+	if not okCars then
+		warn("[ZR] car reset", errCars)
 	end
 	ctx.AI.reset()
 	Raid.world.status = "RUNNING"

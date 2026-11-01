@@ -568,7 +568,7 @@ L.ext = {
 	{ "K11", "BUNKER K-11", "east", -1468.8, -307.2, 16, 10, 16, { kind = "open" }, "B", "none (always open)" },
 	{ "SH", "SMUGGLERS' HOLE", "both", -960.3, -258.8, 14, 10, 14, { kind = "chance", chance = 0.50 }, "B", "secret exfil: needs \"Note with code word Voron\" found in the same raid (item 675" },
 	{ "OP", "OLD PUMPS", "east", -468.8, -450, 14, 10, 14, { kind = "chance", chance = 0.50 }, "B", "SPT chance 50 %; wiki: not always available, opened with a green flare, in the b" },
-	{ "DC", "DORMS CAR", "both", -56.4, 779.2, 26, 12, 26, { kind = "paid", cost = 25000 }, "B", "moved 2 studs inward (reference position at or past the limit); pay 5,000 roubles (item id 5449016a4bdc2d6f028b456f) per player; max 4 players; " },
+	{ "DC", "DORMS CAR", "both", -56.4, 779.2, 26, 12, 26, { kind = "paid", cost = 25000, chance = 0.50, seats = 4, depart = 60 }, "B", "moved 2 studs inward (reference position at or past the limit); pay 5,000 roubles (item id 5449016a4bdc2d6f028b456f) per player; max 4 players; " },
 	{ "K13", "BUNKER K-13", "both", -137.2, -356.6, 16, 10, 16, { kind = "power", switch = "BORDER_STORE4", needs = "NO POWER  ·  THROW THE LEVER IN STORE 4" }, "B", "power lever in Warehouse 4 (power stays on once thrown) + basement door; from 1." },
 	{ "CR", "CROSSROADS", "west", 1511.6, -134.4, 30, 12, 30, { kind = "open" }, "B", "none" },
 	{ "TL", "TRAILER LOT", "west", 1468.1, -592.2, 28, 12, 28, { kind = "open" }, "B", "none (wiki: in the trees)" },

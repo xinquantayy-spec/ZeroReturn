@@ -61,14 +61,15 @@ SNIPER_NAMES = {
     "ZoneSnipeTower": "DERRICK ROOF",
 }
 # reference extract name -> (id, our name, spawn group override or None, rule, zone size (x, y, z) in studs)
-# rule keys follow the game's extract kinds: kind open | paid (cost) | key (key) | chance (chance) | power (switch,
-# needs) | scav. Groups: east / west = the PMC entry half that may use it (the reference's entry_group: east-half
+# rule keys follow the game's extract kinds: kind open | paid (cost; a car also has chance, seats, depart) | key (key) |
+# chance (chance) | power (switch, needs) | scav. Groups: east / west = the PMC entry half that may use it (the reference's entry_group: east-half
 # spawners leave in the WEST), both = shared, scav = scav-only.
 EXTRACTS = {
     "ZB-1011": ("K11", "BUNKER K-11", None, {"kind": "open"}, (16, 10, 16)),
     "Smugglers' Bunker (ZB-1012)": ("SH", "SMUGGLERS' HOLE", None, {"kind": "chance", "chance": 0.5}, (14, 10, 14)),
     "Old Gas Station": ("OP", "OLD PUMPS", None, {"kind": "chance", "chance": 0.5}, (14, 10, 14)),
-    "Dorms V-Ex": ("DC", "DORMS CAR", None, {"kind": "paid", "cost": 25000}, (26, 12, 26)),
+    # a car (Tarkov's V-Ex): chance = the SPT 50 %, seats = max 4 players, depart = the 60 s shared timer (the game's Extract.luau)
+    "Dorms V-Ex": ("DC", "DORMS CAR", None, {"kind": "paid", "cost": 25000, "chance": 0.5, "seats": 4, "depart": 60}, (26, 12, 26)),
     "ZB-013 (also written ZB-1013)": ("K13", "BUNKER K-13", None,
                                       {"kind": "power", "switch": "BORDER_STORE4", "needs": "NO POWER  ·  THROW THE LEVER IN STORE 4"}, (16, 10, 16)),
     "Crossroads": ("CR", "CROSSROADS", None, {"kind": "open"}, (30, 12, 30)),

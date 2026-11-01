@@ -310,17 +310,30 @@ function Match.spawnFor(player, kind)
 	return spawn, 1
 end
 
--- extracts for a session: PMCs get their side's list, scavs every extract including scav-only ones
+-- extracts for a session: PMCs get their side's list, scavs every extract including scav-only ones, except the cars
+-- (Tarkov's vehicle exits are for PMCs only)
 function Match.extractsFor(spawn, scav)
 	if scav then
 		local all = {}
-		for id in ctx.World.extracts do
-			table.insert(all, id)
+		for id, e in ctx.World.extracts do
+			if not ctx.Extract.isCar(e) then
+				table.insert(all, id)
+			end
 		end
 		table.sort(all)
 		return all
 	end
 	return table.clone(spawn.extracts)
+end
+
+-- which exits are there this raid: a chance exit rolls its chance (a paid car too), every other exit is always there.
+-- `roll` (optional, id -> number from 0 to 1) is a test seam.
+function Match.rollExtracts(list, roll)
+	local open = {}
+	for id, e in list do
+		open[id] = ctx.Extract.rollOpen(e.rule, roll and roll(id) or nil)
+	end
+	return open
 end
 
 -- ── queue / lifecycle ────────────────────────────────────────────────────────
@@ -406,10 +419,10 @@ local function startRaid()
 	Match.nextEnv = nil
 	table.clear(Match.usedSpawns)
 	table.clear(Match.squadSpawn)
-	for id, e in ctx.World.extracts do
-		Match.extractOpen[id] = e.rule.kind ~= "chance" or math.random() < (e.rule.chance or 0.5)
+	for id, open in Match.rollExtracts(ctx.World.extracts) do
+		Match.extractOpen[id] = open
 	end
-	ctx.Raid.resetWorld()
+	ctx.Raid.resetWorld() -- (also clears the cars' seats and shows or hides each car by this roll)
 	-- group the queue: squad members of the same kind share a spawn
 	local groups, bySquad = {}, {}
 	for player, q in queue do

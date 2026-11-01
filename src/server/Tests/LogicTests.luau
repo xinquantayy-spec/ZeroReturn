@@ -1816,6 +1816,204 @@ function T.run(ctx)
 		end
 	end
 
+	-- Car exits (Tarkov's V-Ex, docs/design/EFT_PARITY.md "Car exits"): the per-raid roll covers paid cars; the fare is paid at the car
+	-- (refused without the money, for a fifth passenger, for a scav, outside a raid, when the car is not there or has left); the first
+	-- fare starts one countdown that later passengers join; the departure takes the seated passengers inside the zone, leaves the
+	-- others without a refund and closes the exit for good. No raid and no map are needed: the raiders are stand-in tables with a
+	-- profile of their own and a tiny character, the car is a stand-in exit that lives only here (registered in World.extracts for the
+	-- time of the checks, which never yield), and the car state is swapped for a private table. WRITTEN 2026-11-01, NOT RUN yet.
+	if ctx and ctx.Extract and ctx.Match and ctx.Profiles and ctx.World and ctx.Raid then
+		local EX, WD, MT, PF = ctx.Extract, ctx.World, ctx.Match, ctx.Profiles
+		-- the roll
+		local rule = { kind = "paid", cost = 20000, chance = 0.5, seats = 4, depart = 60 }
+		check("car roll: a paid rule with a chance rolls it; a plain paid rule, an open exit and a lucky chance exit are there",
+			EX.rollOpen(rule, 0.3) == true and EX.rollOpen(rule, 0.7) == false and EX.rollOpen({ kind = "paid", cost = 8000 }, 0.99) == true
+			and EX.rollOpen({ kind = "chance", chance = 0.6 }, 0.7) == false and EX.rollOpen({ kind = "chance", chance = 0.6 }, 0.5) == true
+			and EX.rollOpen({ kind = "open" }, 0.99) == true)
+		local sample = { CAR = { rule = rule }, BOAT = { rule = { kind = "paid", cost = 8000 } }, GATE = { rule = { kind = "open" } }, HOLE = { rule = { kind = "chance", chance = 0.5 } } }
+		local lowRoll = MT.rollExtracts(sample, function()
+			return 0.1
+		end)
+		local highRoll = MT.rollExtracts(sample, function()
+			return 0.9
+		end)
+		check("car roll: Match rolls the car with the other chance exits (all there on a low roll; on a high one the car and the chance exit are gone, the boat and the gate stay)",
+			lowRoll.CAR == true and lowRoll.BOAT == true and lowRoll.GATE == true and lowRoll.HOLE == true
+			and highRoll.CAR == false and highRoll.HOLE == false and highRoll.BOAT == true and highRoll.GATE == true)
+		-- the cars as the maps built them (skipped for a map that did not build)
+		for _, spec in { { "border", "DC" }, { "meridian", "SC" } } do
+			local me = WD.maps and WD.maps[spec[1]] and WD.maps[spec[1]].extracts and WD.maps[spec[1]].extracts[spec[2]]
+			if me then
+				local r = me.rule
+				local rig = me.carRig
+				check("car exits: " .. spec[2] .. " is a paid car with a 50 percent chance, 4 seats and a 60 s countdown",
+					r.kind == "paid" and (r.cost or 0) > 0 and r.chance == 0.5 and r.seats == 4 and r.depart == 60 and EX.isCar(me))
+				check("car exits: " .. spec[2] .. " has its car and a held fare prompt that names the fare and the exit",
+					rig ~= nil and rig.prompt ~= nil and rig.prompt.HoldDuration > 0 and string.find(rig.prompt.ActionText, "Pay ", 1, true) == 1
+					and string.find(rig.prompt.ActionText, Config.CURRENCY, 1, true) ~= nil and rig.prompt.ObjectText == me.name)
+			end
+		end
+		-- the stand-ins
+		local zonePos = Vector3.new(9000, 3000, 9000)
+		local car = {
+			id = "T_CAR", name = "TEST CAR", pos = zonePos, size = Vector3.new(26, 12, 26), cf = CFrame.new(zonePos + Vector3.new(0, 6, 0)),
+			rule = { kind = "paid", cost = 20000, chance = 0.5, seats = 4, depart = 60 },
+		}
+		local models, players = {}, {}
+		local function raider(name, money, offset, hp)
+			local model = Instance.new("Model")
+			local hum = Instance.new("Humanoid")
+			hum.Health = hp or 100
+			hum.Parent = model
+			local root = Instance.new("Part")
+			root.Name = "HumanoidRootPart"
+			root.Anchored = true
+			root.Position = zonePos + offset
+			root.Parent = model
+			table.insert(models, model)
+			local p = { Name = name, DisplayName = name, Character = model }
+			PF.attachTest(p, { money = money })
+			table.insert(players, p)
+			return p, { done = false, state = "ACTIVE", scav = false, extracts = { "T_CAR" } }
+		end
+		local sent, finished = {}, {}
+		local realNotify, realFinalize, realCars = EX.notify, ctx.Raid.finalize, EX.cars
+		EX.notify = function(p, kind, data)
+			table.insert(sent, { p = p, kind = kind, data = data })
+		end
+		ctx.Raid.finalize = function(p, outcome)
+			table.insert(finished, { p = p, outcome = outcome })
+		end
+		EX.cars = {}
+		MT.extractOpen.T_CAR = true
+		WD.extracts.T_CAR = car
+		local okCar, errCar = pcall(function()
+			local t0 = 5000
+			local anna, sAnna = raider("Anna", 50000, Vector3.new(2, 1, 3))
+			local boris, sBoris = raider("Boris", 30000, Vector3.new(-3, 1, 1))
+			local dmitri, sDmitri = raider("Dmitri", 50000, Vector3.new(40, 1, 0)) -- pays, then wanders off
+			local elena, sElena = raider("Elena", 50000, Vector3.new(0, 1, -2)) -- pays, then is killed
+			local fyodor, sFyodor = raider("Fyodor", 50000, Vector3.new(1, 1, 1)) -- arrives when the car is full
+			local broke, sBroke = raider("Broke", 100, Vector3.new(1, 1, 1))
+			local infoBefore = ctx.Raid.raidInfo({ extracts = { "T_CAR" } }).extracts[1]
+			check("car list: the exit list shows the car as paid with a chance (like a chance exit), 4 seats, and not closed",
+				infoBefore.rule == "paid" and infoBefore.cost == 20000 and infoBefore.chance == true and infoBefore.seats == 4 and infoBefore.closed == nil)
+			-- a scav's list has every exit but the cars (Tarkov's V-Ex is for PMCs); the stand-in is a car like the real ones
+			local nAll, nCars = 0, 0
+			for _, we in WD.extracts do
+				nAll += 1
+				if EX.isCar(we) then
+					nCars += 1
+				end
+			end
+			local scavList = MT.extractsFor({ extracts = {} }, true)
+			check("car scavs: a scav's exit list has every exit but the cars (the stand-in car is left out)",
+				table.find(scavList, "T_CAR") == nil and #scavList == nAll - nCars and nCars >= 1)
+
+			-- no money, no seat
+			local okBroke, whyBroke = EX.pay(broke, sBroke, car, t0)
+			local cs0 = EX.cars.T_CAR
+			check("car fare: no money, no seat (refused as MONEY, nothing taken, no seat, no countdown started)",
+				okBroke == false and whyBroke == "MONEY" and PF.get(broke).money == 100 and (cs0 == nil or (#cs0.seats == 0 and cs0.departAt == nil)))
+			-- the zone only says where to pay
+			local hint, hintText = EX.blocked(anna, sAnna, car)
+			check("car zone: standing in it without a seat gives the hint PAY AT THE CAR (no hold for a car)", hint == "PAY" and hintText == "PAY AT THE CAR")
+
+			-- the first fare
+			local ok1 = EX.pay(anna, sAnna, car, t0)
+			local cs = EX.cars.T_CAR
+			check("car fare: the money goes at once, the payer holds a seat and the first fare starts the countdown",
+				ok1 == true and PF.get(anna).money == 30000 and cs ~= nil and #cs.seats == 1 and cs.departAt == t0 + 60)
+			local note = sent[#sent]
+			check("car countdown: the payer gets the extract note flagged car, with the shared end time, the length and the seat",
+				note ~= nil and note.p == anna and note.kind == "extract" and note.data.state == "start" and note.data.car == true and note.data.zone == "T_CAR"
+				and note.data.ends == t0 + 60 and note.data.total == 60 and note.data.seat == 1 and note.data.seats == 4)
+			check("car zone: a passenger waiting in the zone is not blocked or told anything", (EX.blocked(anna, sAnna, car)) == nil)
+			-- a later passenger joins the same countdown
+			local ok2 = EX.pay(boris, sBoris, car, t0 + 20)
+			check("car fare: a later passenger joins the same countdown (the end time does not move, theirs is the same)",
+				ok2 == true and PF.get(boris).money == 10000 and #cs.seats == 2 and cs.departAt == t0 + 60 and sent[#sent].p == boris and sent[#sent].data.ends == t0 + 60)
+			local okAgain, whyAgain = EX.pay(anna, sAnna, car, t0 + 21)
+			check("car fare: a passenger who pays again is refused and charged nothing", okAgain == false and whyAgain == "SEATED" and PF.get(anna).money == 30000 and #cs.seats == 2)
+
+			-- four seats
+			EX.pay(dmitri, sDmitri, car, t0 + 30)
+			EX.pay(elena, sElena, car, t0 + 31)
+			local okFull, whyFull = EX.pay(fyodor, sFyodor, car, t0 + 32)
+			check("car seats: four seats, and the fifth fare is refused as FULL and charged nothing",
+				#cs.seats == 4 and okFull == false and whyFull == "FULL" and PF.get(fyodor).money == 50000)
+			check("car zone: a full car says so to the one without a seat", (EX.blocked(fyodor, sFyodor, car)) == "FULL")
+
+			-- the other refusals
+			local _, whyScav = EX.pay(fyodor, { done = false, scav = true, extracts = { "T_CAR" } }, car, t0 + 33)
+			local _, whyNone = EX.pay(fyodor, nil, car, t0 + 33)
+			local _, whyDone = EX.pay(fyodor, { done = true, scav = false, extracts = { "T_CAR" } }, car, t0 + 33)
+			local _, whySide = EX.pay(fyodor, { done = false, scav = false, extracts = { "OTHER" } }, car, t0 + 33)
+			MT.extractOpen.T_CAR = false
+			local _, whyShut = EX.pay(fyodor, sFyodor, car, t0 + 33)
+			local hintShut, textShut = EX.blocked(fyodor, sFyodor, car)
+			MT.extractOpen.T_CAR = true
+			check("car fare: refused for a scav (PMC only), outside a raid or after it, an exit not on the raider's list, and a car that is not there this raid",
+				whyScav == "PMC_ONLY" and whyNone == "NOT_IN_RAID" and whyDone == "NOT_IN_RAID" and whySide == "NOT_OFFERED" and whyShut == "CLOSED"
+				and hintShut == "CLOSED" and textShut == "NOT AVAILABLE THIS RAID" and PF.get(fyodor).money == 50000 and #cs.seats == 4)
+
+			-- Elena is killed before the car leaves (her session ends)
+			sElena.done = true
+			-- nothing happens before the countdown ends
+			EX.carTick(t0 + 59)
+			check("car departure: nothing happens before the countdown ends", cs.left == false and #finished == 0)
+			-- the departure
+			local dmitriPaid = PF.get(dmitri).money
+			EX.carTick(t0 + 60)
+			local leftNotes = {}
+			for _, n in sent do
+				if n.kind == "extract" and n.data.state == "left" then
+					table.insert(leftNotes, n)
+				end
+			end
+			check("car departure: the seated passengers inside the zone extract with SUCCESS (and their session names the exit)",
+				#finished == 2 and finished[1].p == anna and finished[1].outcome == "SUCCESS" and finished[2].p == boris and finished[2].outcome == "SUCCESS"
+				and sAnna.exZone == "T_CAR" and sBoris.exZone == "T_CAR")
+			check("car departure: a passenger outside the zone is left behind and told, with no refund; a dead one is neither taken nor told",
+				#leftNotes == 1 and leftNotes[1].p == dmitri and leftNotes[1].data.car == true and PF.get(dmitri).money == dmitriPaid and sDmitri.exZone == nil
+				and sElena.exZone == nil)
+			-- the exit is closed for the rest of the raid
+			local whyGone, textGone = EX.blocked(fyodor, sFyodor, car)
+			local okGone, whyGone2 = EX.pay(fyodor, sFyodor, car, t0 + 61)
+			local infoAfter = ctx.Raid.raidInfo({ extracts = { "T_CAR" } }).extracts[1]
+			check("car departure: the exit is closed for the rest of the raid (zone, fare and exit list all say the car has left)",
+				cs.left == true and EX.carLeft(car) and whyGone == "LEFT" and textGone == "THE CAR HAS LEFT" and okGone == false and whyGone2 == "LEFT"
+				and PF.get(fyodor).money == 50000 and infoAfter.closed == true and infoAfter.closedText == "THE CAR HAS LEFT")
+			EX.carTick(t0 + 90)
+			local leftAgain = 0
+			for _, n in sent do
+				if n.kind == "extract" and n.data.state == "left" then
+					leftAgain += 1
+				end
+			end
+			check("car departure: it happens once (a later tick takes nobody else and tells nobody again)", #finished == 2 and leftAgain == 1)
+			-- a new raid starts clean
+			EX.reset()
+			check("car reset: a new raid clears the seats, the countdown and the departure", EX.cars.T_CAR == nil and not EX.carLeft(car) and next(EX.cars) == nil)
+		end)
+		-- put everything back
+		WD.extracts.T_CAR = nil
+		MT.extractOpen.T_CAR = nil
+		EX.cars, EX.notify, ctx.Raid.finalize = realCars, realNotify, realFinalize
+		for _, we in WD.extracts do
+			EX.syncCar(we) -- (the reset above showed or hid the real cars by the private state: put them back by the real one)
+		end
+		for _, p in players do
+			PF.detachTest(p)
+		end
+		for _, m in models do
+			m:Destroy()
+		end
+		if not okCar then
+			check("car exits: the checks ran without an error (" .. tostring(errCar) .. ")", false)
+		end
+	end
+
 	-- atmosphere pass (docs/look/ATMOSPHERE.md): the ambience atlas, the sound maker (silent while the asset id is empty), the
 	-- published switch state, the skylight tags, the floors that name their reverb. WRITTEN 2026-11-01, NOT RUN yet.
 	do

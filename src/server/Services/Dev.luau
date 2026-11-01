@@ -97,6 +97,30 @@ function C.setExtracts(name, csv)
 	return table.concat(s.extracts, ",")
 end
 
+-- force a rolling exit (a chance exit, or a car) there or gone for this raid: exitOpen("DC", true); the car is shown or hidden
+function C.exitOpen(id, open)
+	local e = ctx.World.extracts[id]
+	if not e then
+		return "no such exit on the map in play"
+	end
+	ctx.Match.extractOpen[id] = open ~= false
+	ctx.Extract.syncCar(e)
+	return id .. " open=" .. tostring(ctx.Match.extractOpen[id])
+end
+
+-- the cars of this raid: who holds a seat, the countdown left, whether it has gone
+function C.cars()
+	local out, t = {}, workspace:GetServerTimeNow()
+	for id, c in ctx.Extract.cars do
+		local names = {}
+		for _, st in c.seats do
+			table.insert(names, st.player.Name)
+		end
+		table.insert(out, { id = id, seats = names, departIn = c.departAt and math.floor((c.departAt - t) * 10) / 10 or nil, left = c.left })
+	end
+	return HttpService:JSONEncode(out)
+end
+
 -- every insurance claim becomes ready now (the delivery loop runs every 10 s)
 function C.claimNow(name)
 	local prof = ctx.Profiles.get(plr(name))

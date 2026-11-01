@@ -21,6 +21,7 @@ local gui, deathFade
 local O = {}
 local I = Textures.ICON
 local ex, search, heal, progress = nil, nil, nil, nil
+local ride = nil -- a seat in a car exit's car: { name, ends, total } (the shared departure countdown)
 local toasts, toastSlot = {}, 0
 local notice = { t = -10, dur = 0 }
 local exitsUntil, squadUntil = 0, 0
@@ -334,9 +335,10 @@ end
 -- extract requirement text + colour (green open, yellow requirement, red closed)
 function Hud.exitStatus(e)
 	if e.closed then
-		return "UNAVAILABLE", C.red
+		return e.closedText or "UNAVAILABLE", C.red
 	elseif e.rule == "paid" then
-		return "PAY " .. Util.commas(e.cost or 0) .. " " .. Config.CURRENCY, C.yellow
+		-- a car that may not be there this raid reads like a chance exit
+		return "PAY " .. Util.commas(e.cost or 0) .. " " .. Config.CURRENCY .. (e.chance and "  ·  MAY BE UNAVAILABLE" or ""), C.yellow
 	elseif e.rule == "key" then
 		return "KEY REQUIRED", C.yellow
 	elseif e.rule == "chance" then
@@ -419,9 +421,13 @@ local function fastUpdate(dt)
 	else
 		O.status:show(false)
 	end
-	-- progress priority: extract > search > heal > generic (mag loading, examining...)
+	-- progress priority: extract > car seat > search > heal > generic (mag loading, examining...)
 	local label, pf, col = nil, 0, C.yellow
 	local now = os.clock()
+	if ride and ride.ends < workspace:GetServerTimeNow() - 4 then
+		ride = nil -- nothing came after the departure (the news was lost): stop counting
+	end
+	local counting = false -- the car's last ten seconds are on the big notice
 	if ex then
 		local left = ex.ends - workspace:GetServerTimeNow()
 		local sec = math.ceil(left)
@@ -434,6 +440,23 @@ local function fastUpdate(dt)
 		O.notice:set({ { t = string.format("%.1f", math.max(0, left)), color = C.green } })
 		O.noticeSub:set({ { t = "HOLD POSITION", color = C.dim } })
 		notice.t, notice.dur = now, 0.3
+	elseif ride then
+		-- a seat in the car: the shared departure countdown on the progress bar, the last ten seconds out loud like an extraction
+		local left = ride.ends - workspace:GetServerTimeNow()
+		label = "CAR LEAVES IN " .. Util.clock(math.ceil(math.max(0, left))) .. "  ·  " .. string.upper(ride.name or "")
+		pf, col = 1 - math.clamp(left / math.max(1, ride.total or 60), 0, 1), C.yellow
+		if left <= 10 then
+			local sec = math.ceil(math.max(0, left))
+			if sec ~= ride.beep then
+				ride.beep = sec
+				ctx.Effects.sound(Sounds.EXTRACT_BEEP, SoundService, sec <= 1 and 0.55 or 0.4, sec <= 1 and 1.25 or 1)
+				O.notice:pop(0.2)
+			end
+			O.notice:set({ { t = string.format("%.1f", math.max(0, left)), color = C.yellow } })
+			O.noticeSub:set({ { t = "STAY BY THE CAR", color = C.dim } })
+			notice.t, notice.dur = now, 0.3
+			counting = true
+		end
 	elseif search then
 		pf = math.clamp((now - search.t0) / search.dur, 0, 1)
 		label = "SEARCHING  ·  " .. string.upper(search.label or "")
@@ -462,7 +485,7 @@ local function fastUpdate(dt)
 	local age = now - notice.t
 	local showNotice = age < notice.dur + 0.4
 	O.notice:show(showNotice)
-	O.noticeSub:show(showNotice and notice.sub ~= nil or (ex ~= nil))
+	O.noticeSub:show(showNotice and notice.sub ~= nil or (ex ~= nil) or counting)
 	if showNotice then
 		local a = math.clamp((age - notice.dur) / 0.4, 0, 1)
 		O.notice:setAlpha(a)
@@ -544,19 +567,30 @@ function Hud.init(c)
 		Hud.toast(d.text, d.tone)
 	end)
 	c.State.on("extract", function(d)
-		if d.state == "start" then
+		if d.state == "start" and d.car then
+			-- the fare is paid and a seat taken: every passenger counts down to the same departure (extract note, flagged car)
+			ride = { name = d.name, ends = d.ends, total = d.total }
+			Hud.toast("PAID " .. Util.commas(d.cost or 0) .. " " .. Config.CURRENCY .. "  ·  SEAT " .. tostring(d.seat or 1) .. " OF " .. tostring(d.seats or 4), "good")
+			Hud.toast("EXFIL " .. tostring(d.zone) .. "  -  THE CAR LEAVES IN " .. tostring(math.ceil(d.total or 60)) .. " S  ·  STAY BY IT", "good")
+		elseif d.state == "start" then
 			ex = { name = d.name, ends = d.ends }
 			Hud.toast("EXFIL " .. tostring(d.zone) .. "  -  HOLD POSITION" .. (d.cost and ("  ·  PAYING " .. Util.commas(d.cost) .. " " .. Config.CURRENCY) or ""), "good")
+		elseif d.state == "left" then
+			-- the car drove off with the seat paid for and its owner outside the zone: no refund
+			ride = nil
+			Hud.notice("EXFIL " .. tostring(d.zone), d.text or "THE CAR HAS LEFT", C.red, 3.5)
 		elseif d.state == "denied" then
-			-- requirement not met at the zone (closed this raid, key missing, can't pay)
-			ex = nil
+			-- requirement not met at the zone (closed this raid, key missing, can't pay); a car's zone only says where to pay
+			if not d.car then
+				ex = nil
+			end
 			local raid = ctx.State.raid
 			for _, e in raid and raid.extracts or {} do
 				if e.id == d.zone and d.reason == "CLOSED" then
 					e.closed = true
 				end
 			end
-			Hud.notice("EXFIL " .. tostring(d.zone), d.text or "UNAVAILABLE", C.red, 2.6)
+			Hud.notice("EXFIL " .. tostring(d.zone), d.text or "UNAVAILABLE", d.reason == "PAY" and C.yellow or C.red, 2.6)
 		else
 			ex = nil
 			Hud.toast("EXTRACTION INTERRUPTED", "warn")
@@ -606,12 +640,12 @@ function Hud.init(c)
 		end
 	end)
 	c.State.on("raid", function(r)
-		ex, search, heal = nil, nil, nil
+		ex, ride, search, heal = nil, nil, nil, nil
 		squadUntil = os.clock() + 8
 		Hud.notice(Maps.nameOf(r and r.map), (r and r.scav) and "INSERTION CONFIRMED  ·  SCAV" or "INSERTION CONFIRMED", C.white, 3)
 	end)
 	c.State.on("summary", function()
-		ex, search, heal = nil, nil, nil
+		ex, ride, search, heal = nil, nil, nil, nil
 	end)
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt

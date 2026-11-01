@@ -83,15 +83,15 @@ ZONE_NAMES = {
 # reference extract name -> (id, our name, spawn group, rule, zone size (x, y, z) in studs, note). Groups: nw / se = the PMC
 # entry half that is OFFERED the extract in the SPT data (MallNW spawners are offered the south-east exit, MallSE spawners
 # the north-west one; the 2026 sources call both corner exits neutral: Play decides), both, scav = scav-only. Rule kinds are
-# World's extract rules: open | paid (cost) | key (key) | chance (chance) | power (switch, needs) | scav, plus nobag (new:
+# World's extract rules: open | paid (cost; a car also has chance, seats, depart) | key (key) | chance (chance) | power (switch, needs) | scav, plus nobag (new:
 # the backpack slot must be empty).
 EXTRACTS = {
     "Railway Exfil": ("RS", "RAIL SIDING", "se", {"kind": "open"}, (30, 12, 30),
                       "north-west corner beside the west double railway; SPT offers it to MallSE spawners, 2026 sources: both"),
     "Emercom Checkpoint": ("RC", "RESCUE CHECKPOINT", "nw", {"kind": "open"}, (30, 12, 30),
                            "south-east corner beside the checkpoint buildings; SPT offers it to MallNW spawners, 2026 sources: both"),
-    "Power Station V-Ex": ("SC", "SUBSTATION CAR", "both", {"kind": "paid", "cost": 20000}, (26, 12, 26),
-                           "north-east corner by the sniper band; 20000 is the 2026 figure (SPT/wiki 5000); the car, 50% chance and karma are gaps"),
+    "Power Station V-Ex": ("SC", "SUBSTATION CAR", "both", {"kind": "paid", "cost": 20000, "chance": 0.5, "seats": 4, "depart": 60}, (26, 12, 26),
+                           "north-east corner by the sniper band; a car: 50% chance (SPT), 4 seats, 60 s shared timer; 20000 is the 2026 figure (SPT/wiki 5000); karma pricing is a gap"),
     "Saferoom Exfil": ("SE", "SHELTER EXIT", "both",
                        {"kind": "power", "switch": "MALL_POWER", "needs": "NO POWER  ·  THROW THE SWITCH AT THE SUBSTATION"}, (16, 10, 16),
                        "hidden room east of car park C; after power: the hidden switch in the L2 washroom (poi.WASHROOM) and the keycard at the panel, door at poi.SHELTER_DOOR; power is the only rule World supports"),

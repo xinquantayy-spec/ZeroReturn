@@ -87,7 +87,7 @@ serves both; "scav" is for scavs only. All 26 exist as `kit.extract` zones with 
 | K11 | BUNKER K-11 | -1469, -307 | east | open | always open; underground exit at the end of the tunnel |
 | SH | SMUGGLERS' HOLE | -960, -259 | both | chance 50 % | secret exit; needs the Voron note found in the same raid |
 | OP | OLD PUMPS | -469, -450 | east | chance 50 % | in the basement; not always available, opened with a green flare |
-| DC | DORMS CAR | -56, 779 | both | paid 25,000 MK | 5,000 roubles per player, up to 4 players, 60 s shared timer |
+| DC | DORMS CAR | -56, 779 | both (PMCs only) | car: paid 25,000 MK per seat, chance 50 %, 4 seats, 60 s shared countdown | Tarkov's V-Ex: 5,000 roubles per player (wiki: depends on Scav karma), up to 4 players, 60 s shared timer, 50 % chance (SPT). Pay at the car (hold F on its prompt); see "Car exits" below |
 | K13 | BUNKER K-13 | -137, -357 | both | power: lever `BORDER_STORE4` in Store 4 | lever in Store 4 (power stays on once thrown), then the basement door |
 | CR | CROSSROADS | 1512, -134 | west | open | |
 | TL | TRAILER LOT | 1468, -592 | west | open | in the trees |
@@ -102,10 +102,19 @@ serves both; "scav" is for scavs only. All 26 exist as `kit.extract` zones with 
 | PG | PUMPS GATE | -469, -494 | scav | scav | name is ours; not always available in the reference (grade D) |
 
 Every PMC side has an open exit (east K-11; west CROSSROADS, TRAILER LOT, ARMY ROADBLOCK). The five underground exits stand on
-their room's floor (y -16). Scavs may use every extract. The reference puts four exit icons on or past the traced limit (ARMY GATE,
+their room's floor (y -16). Scavs may use every extract except DORMS CAR (Tarkov's vehicle exits are for PMCs). The reference puts four exit icons on or past the traced limit (ARMY GATE,
 ARMY ROADBLOCK, OFFICE GATE, CITY LINE), which the invisible wall would make unreachable, and DORMS CAR 12 studs from it: the
 generator pulls each in until its whole zone lies inside the wall (72, 91, 30, 15 and 2 studs; the note in `L.ext` says so).
 STORE 17 GATE (352, -151) lies inside STORE 17's footprint: the building needs a gate bay there.
+
+**Car exits** (`Extract.luau`; the full rules and gaps are in `docs/design/EFT_PARITY.md`, "Car exits"). DORMS CAR is a vehicle exit like
+Tarkov's V-Ex: `{ kind = "paid", cost = 25000, chance = 0.50, seats = 4, depart = 60 }` in `L.ext`. The roll at raid start puts the car
+there in half the raids (rolled with the chance exits; when it is absent the car is gone, the zone says "NOT AVAILABLE THIS RAID" and the
+exit list, which always shows it as "PAY 25,000 MK  ·  MAY BE UNAVAILABLE", turns red once the zone has told you). A sedan stands west of the zone's middle with a hold-F prompt on its
+right flank ("Pay 25,000 MK · DORMS CAR", 1.5 s hold); the fare is taken at once and buys one of four seats. The first fare starts a
+60 s countdown that later passengers join; when it ends the car leaves for good, taking every seated passenger who is inside the zone
+(extracted with SUCCESS); passengers outside the zone are left behind and not refunded, and the exit reads "THE CAR HAS LEFT" for the rest of
+the raid. Standing in the zone without a seat only says "PAY AT THE CAR". Everything resets at the next raid start.
 
 ## Spawns
 
@@ -147,7 +156,10 @@ Parity gaps (to copy into `docs/design/EFT_PARITY.md`, which was outside part 1'
 - Co-op extracts and transits do not exist here yet (BOILER CELLAR is a plain key extract; in Tarkov a PMC must bring a scav).
 - The Voron note for SMUGGLERS' HOLE and SMUGGLERS' BOAT, the green flare for NORTH LINE and OLD PUMPS, and the ZB-1013 key for the
   K-13 basement door have no items; the three exits are plain 50 % chance extracts and the bunker door is not locked.
-- DORMS CAR costs 25,000 MK (the old map's price, kept); Tarkov charges 5,000 roubles, so check the MK scale in the economy.
+- DORMS CAR is a vehicle exit now (50 % chance, pay at the car, 4 seats, shared 60 s countdown, single use). Still gaps: it costs 25,000 MK (the old
+  map's price, kept) against Tarkov's 5,000 roubles, so check the MK scale in the economy; the price does not depend on Scav karma and
+  using the car gives no karma; the 60 s countdown is grade C (from memory, to confirm: the wiki pages read do not state it, the map
+  references quote a 60 s shared timer from SPT data).
 - Mounted weapons (AGS, NSV): built later with positions of our own (see "Gun nests" under the guard routes); propane cylinders and
   the three other boss groups the reference lists (a knight with two escorts, a sect priest with four warriors, a partisan) are not built.
 - Five scav exit names are ours (STORE 4 GATE, HUTS GATE, STORE 17 GATE, SHACK GATE, PUMPS GATE).
