@@ -703,8 +703,9 @@ printed as `[ZR] Meridian dress: ... parts`.
 
 ### Parity gaps from this part (copied to `docs/design/EFT_PARITY.md`)
 
-- **Second boss**: Tagilla (the hammer boss in the KASSA garage, 35 % in the 2026 sources, absent from SPT) is not built; the AI supports one
-  boss per map.
+- **Second boss: built 2026-11-02** as THE STOKER, our Tagilla (`docs/design/BOSS_STOKER.md`). He is rolled at 35 %, on his own beside THE
+  CARETAKER's 60 %, and walks a six-point route in the KASSA GARAGE from the reference's hammer marker (L0 756, -431). The gaps are in
+  `EFT_PARITY.md`.
 - **Airdrops** (20 %, 6 or more players, 5 to 15 minutes in): no airdrop system exists; the numbers are in `L.hazard.airdrop`.
 - **Co-op, flare and transit extracts**: WEST CAMP is scav-only at the co-op spot, RIVER PATH is a plain open exit (no flare), and the two
   transits (Streets, Customs) do not exist.

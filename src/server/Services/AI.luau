@@ -1203,6 +1203,119 @@ local function shouldHeal(u, t, exposed)
 	return hurt and not exposed
 end
 
+-- ── THE STOKER's sledgehammer (Tarkov's Tagilla; docs/design/BOSS_STOKER.md) ─────────────────────────────────
+-- Within 15 m of a target he can see, with nothing in the way, he runs straight at it with the hammer and swings
+-- within reach; shots do not stop the run, broken legs slow it (Health.mods). Otherwise he fights with his gun. The
+-- hammer cannot be looted: it is a few parts in his hand, on his back while he shoots.
+local CHARGE_RANGE, CHARGE_SPEED, HAMMER_REACH = 47, 18, 4.6
+local HAMMER = { dmg = 110, pen = 35, armorDmg = 0.8, bleedL = 0.3, bleedH = 0.1 }
+local hammerTo
+local function makeHammer(u)
+	local m = Instance.new("Model")
+	m.Name = "Sledgehammer"
+	local function piece(size, color, mat)
+		local p = Instance.new("Part")
+		p.Size = size
+		p.Color = color
+		p.Material = mat
+		p.CanCollide, p.CanQuery, p.CanTouch, p.Massless, p.CastShadow = false, false, false, true, false
+		p.Parent = m
+		return p
+	end
+	local handle = piece(Vector3.new(0.22, 3.1, 0.22), Color3.fromRGB(92, 70, 48), Enum.Material.Wood)
+	handle.Name = "Handle"
+	local head = piece(Vector3.new(1.05, 0.58, 0.58), Color3.fromRGB(58, 60, 62), Enum.Material.Metal)
+	head.CFrame = handle.CFrame * CFrame.new(0, -1.55, 0)
+	local hw = Instance.new("WeldConstraint")
+	hw.Part0, hw.Part1 = handle, head
+	hw.Parent = head
+	local grip = Instance.new("Weld")
+	grip.Name = "Grip"
+	grip.Part1 = handle
+	grip.Parent = handle
+	m.Parent = u.model
+	u.hammer = { model = m, grip = grip }
+	hammerTo(u, false)
+end
+-- in hand (the head below the fist) or slung across the back
+hammerTo = function(u, inHand)
+	local hm = u.hammer
+	if not hm or hm.inHand == inHand then
+		return
+	end
+	local hand, torso = u.model:FindFirstChild("RightHand"), u.model:FindFirstChild("UpperTorso")
+	if inHand and hand then
+		hm.grip.Part0 = hand
+		hm.grip.C0 = CFrame.new(0, -0.9, -0.2)
+	elseif torso then
+		hm.grip.Part0 = torso
+		hm.grip.C0 = CFrame.new(0, 0.2, 0.75) * CFrame.Angles(0, 0, math.rad(35))
+	end
+	hm.inHand = inHand
+end
+local function swing(u, tm)
+	ctx.Chars.gesture(u.model, "slash", 0.6)
+	ctx.Remotes.fx("sfx", { n = "knife_whoosh", p = u.root.Position, v = 1 })
+	task.delay(0.3, function()
+		if not (u.alive and alive(tm)) then
+			return
+		end
+		local tor = tm:FindFirstChild("UpperTorso") or tm:FindFirstChild("HumanoidRootPart")
+		if not tor or flat(tor.Position - u.root.Position).Magnitude > HAMMER_REACH + 1.2 then
+			return -- stepped out of reach during the wind-up
+		end
+		-- he swings at the head more often than not (Tarkov: the hammer kills in one hit on contact)
+		local part = (math.random() < 0.6 and tm:FindFirstChild("Head")) or tor
+		ctx.Combat.hitModel(tm, {
+			dmg = HAMMER.dmg, pen = HAMMER.pen, armorDmg = HAMMER.armorDmg, bleedL = HAMMER.bleedL, bleedH = HAMMER.bleedH,
+			part = part, hitPos = part.Position, attacker = u.model, from = u.head and u.head.Position or u.root.Position,
+			weapon = "SLEDGEHAMMER", ammo = "BLUNT",
+		})
+		ctx.Remotes.fx("sfx", { n = "knife_hit", p = part.Position, v = 1 })
+	end)
+end
+-- the charge for this tick; true when he is running at the target (the rest of combat is skipped)
+local function chargeTick(u, t, tm, tpos, dist)
+	if not u.charge then
+		return false
+	end
+	local clear = u.visible and dist <= (u.charging and CHARGE_RANGE + 10 or CHARGE_RANGE)
+		and worldClear(u.root.Position + Vector3.new(0, 1.5, 0), tpos + Vector3.new(0, 0.5, 0))
+	if not clear then
+		if u.charging then
+			u.charging = false
+			hammerTo(u, false)
+		end
+		return false
+	end
+	if not u.charging then
+		u.charging = true
+		hammerTo(u, true)
+		if u.cover then
+			u.cover.c.owner = nil
+			u.cover = nil
+		end
+		ctx.Remotes.fx("sfx", { n = "breath_heavy", p = u.root.Position, v = 1.4 }) -- no yell in the atlases yet (logged)
+	end
+	local hs = ctx.Health.get(u.model)
+	local mods = hs and ctx.Health.mods(hs)
+	setStance(u, "s")
+	face(u, tpos)
+	u.wantFire = false
+	if dist > HAMMER_REACH - 1.6 then
+		u.hum.WalkSpeed = CHARGE_SPEED * (mods and mods.speed or 1) * ((mods and not mods.sprint) and 0.6 or 1)
+		u.moving = true
+		u.hum:MoveTo(tpos)
+	else
+		stop(u) -- at arm's length: no running into the target (or up onto it)
+	end
+	if dist <= HAMMER_REACH and t >= (u.nextSwing or 0) then
+		u.nextSwing = t + 1.3
+		swing(u, tm)
+	end
+	return true
+end
+
 local function combat(u, t)
 	local tm = u.target
 	local w = tm and who(tm)
@@ -1237,6 +1350,9 @@ local function combat(u, t)
 	local thead = tm:FindFirstChild("Head")
 	local threatEye = (u.visible and thead and thead.Position) or (tpos + Vector3.new(0, 1.3, 0))
 	local dist = flat(tpos - u.root.Position).Magnitude
+	if chargeTick(u, t, tm, tpos, dist) then
+		return
+	end
 	-- out of ammo: reload, switch to the sidearm, or break off
 	if roundsOf(u) <= 0 and not u.reloadUntil then
 		if not startReload(u, t) and not rearm(u) then
@@ -1670,13 +1786,17 @@ function AI.spawn(kind, pos, opts)
 		state = (opts.route or opts.post or opts.leader) and "PATROL" or "WANDER", route = opts.route, wp = opts.wp or 1,
 		post = opts.post, leader = opts.leader, slot = opts.slot,
 		aware = {}, lastPos = {}, seen = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
-		useCover = math.random() < SKILL[kind].cover, turn = turn,
+		useCover = math.random() < SKILL[kind].cover, turn = turn, charge = opts.charge,
 	}
 	u.w = weaponIn(u, "primary") or weaponIn(u, "secondary") or weaponIn(u, "holster")
 	table.insert(units, u)
-	ctx.Health.attach(model, { kind = "ai", scale = SKILL[kind].hp, holder = function()
+	-- a boss may bring its own health (THE STOKER: Tarkov's Tagilla has 1,220 to a PMC's 440)
+	ctx.Health.attach(model, { kind = "ai", scale = opts.hp or SKILL[kind].hp, holder = function()
 		return u.inv
 	end })
+	if u.charge then
+		makeHammer(u)
+	end
 	hum.Died:Connect(function()
 		ctx.Chars.ragdoll(model)
 		AI.onKilled(model, nil)
@@ -1990,11 +2110,29 @@ function AI.reset()
 	director.nextTopUp = t + 6
 	task.spawn(function()
 		local W = ctx.World
-		-- a map's boss may carry its own chance and a list of zones to pick from (Interchange's Killa: 60 %, five zones)
-		local bossChance = (W.boss and W.boss.chance) or Config.BOSS_CHANCE
-		local bossRaid = W.boss ~= nil and ((AI.forceBoss ~= nil) and AI.forceBoss or (math.random() < bossChance))
+		-- every boss of the map rolls on its own (Interchange: THE CARETAKER 60 %, THE STOKER 35 %); a map with one boss
+		-- gives it as W.boss. A boss may carry its own chance and a list of zones to pick from. AI.forceBoss forces them
+		-- all, AI.forceBossId[label] one of them (Dev "boss").
+		local bosses = W.bosses or (W.boss and { W.boss }) or {}
+		local rolled = {}
+		for _, b in bosses do
+			local forced = AI.forceBoss
+			if AI.forceBossId and AI.forceBossId[b.label] ~= nil then
+				forced = AI.forceBossId[b.label]
+			end
+			if forced ~= nil then
+				rolled[b] = forced
+			else
+				rolled[b] = math.random() < (b.chance or Config.BOSS_CHANCE)
+			end
+		end
+		local bossRaid = false
+		for _, on in rolled do
+			bossRaid = bossRaid or on
+		end
 		AI.bossThisRaid = bossRaid
 		AI.bossZone = nil
+		AI.bossesThisRaid = {}
 		for _, wp in W.watchPosts or {} do
 			if myGen ~= gen then
 				return
@@ -2005,18 +2143,25 @@ function AI.reset()
 				AI.spawn("watch", wp.post or route[idx], { route = (not wp.post) and route or nil, wp = idx, post = wp.post, label = wp.label, name = wp.label })
 			end
 		end
-		if bossRaid and W.boss then
-			local zones = W.boss.zones
-			local zone = (zones and #zones > 0) and zones[math.random(1, #zones)] or nil
-			AI.bossZone = zone and zone.name or nil
-			local boss = AI.spawn("boss", zone and zone.home or W.boss.home, { route = zone and zone.route or W.boss.route, wp = 1, label = W.boss.label or "Foreman", name = W.boss.label, look = W.boss.look, loadout = W.boss.loadout })
-			for i, p in W.boss.crew or {} do
-				if myGen ~= gen then
-					return
+		for _, b in bosses do
+			if rolled[b] then
+				local zones = b.zones
+				local zone = (zones and #zones > 0) and zones[math.random(1, #zones)] or nil
+				AI.bossZone = AI.bossZone or (zone and zone.name) or nil
+				table.insert(AI.bossesThisRaid, b.label or "Foreman")
+				local boss = AI.spawn("boss", zone and zone.home or b.home, {
+					route = zone and zone.route or b.route, wp = 1, label = b.label or "Foreman", name = b.label, look = b.look,
+					loadout = b.loadout, hp = b.hp, charge = b.charge,
+				})
+				for i, p in b.crew or {} do
+					if myGen ~= gen then
+						return
+					end
+					AI.spawn("follower", p, { leader = boss, slot = i })
 				end
-				AI.spawn("follower", p, { leader = boss, slot = i })
 			end
-		elseif W.patrols.FD then
+		end
+		if not bossRaid and W.patrols.FD then
 			AI.spawn("watch", W.patrols.FD[1], { route = W.patrols.FD, wp = 1 })
 		end
 		for _ = 1, Config.SCAV_START do

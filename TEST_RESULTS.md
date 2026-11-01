@@ -8,6 +8,34 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## THE STOKER, Meridian's second boss (2026-11-02)
+
+Meridian raid, the boss forced in with ZR_Dev `boss(true, "Stoker")`.
+
+- **Spawn:** he spawns at the KASSA GARAGE marker (L0 756, -431) with 1,220 health, the sledgehammer on his back, the welding mask, the carrier and the shotgun.
+  - Picture: `docs/maps/evidence/MM_boss_stoker.jpg`. It was taken under a temporary light that was removed afterwards.
+- **Charge:** with god mode off, the player stood in the open 26 studs away. He took the hammer into his hand, ran at speed 18 and killed the player with one swing.
+  - The raid report read "KILLED BY STOKER · SLEDGEHAMMER · BLUNT · HEAD · 0 M".
+- **Found and fixed:** against a god-mode player standing still, he ran up onto the player's head. He now stops running when the player is within 3 studs.
+- **Re-checked after the fix, god mode on:**
+  - With the player 22 studs ahead, he took the hammer into his hand and ran at 18. He stopped body to body (2 studs apart, 0.3 higher) and swung 4 times in 5 s.
+  - With the player 22 studs behind him, he did not notice the player and walked on.
+- **Tests, all passing:**
+
+  | Suite | Passed | Failed | New |
+  |---|---|---|---|
+  | LogicTests | 345 | 0 | 4 in "stoker": two bosses rolled on their own; his route, health and charge; his kit; his look |
+  | CharTests | 47 | 0 | C13: the welding mask takes jaw and eye hits but not the crown; the gas mask is no armour |
+  | LookTests | 33 | 0 | |
+  | MapTests | 38 | 0 | |
+
+**Not checked:**
+- looting his body;
+- the mask worn by a player;
+- him fighting AI;
+- two clients;
+- phones.
+
 ## Border Yard exit walk-through (2026-11-02)
 
 The same checks as Meridian's, on all 26 Border Yard exits.

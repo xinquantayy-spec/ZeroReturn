@@ -115,6 +115,11 @@ add("GLASSES_AF2", { name = "AF-2 Anti-Fragmentation Glasses", short = "AF-2", k
 add("GAS_MASK", { name = "Canister Gas Mask", short = "GAS MASK", kind = "facecover", w = 2, h = 2, mass = 0.45, value = 45000, rarity = "uncommon",
 	eye = { flash = 0, tint = c("#3C4B3C"), shade = 0.16, lens = "SMOKED" },
 	desc = "Full-face rubber mask with two lenses and a filter canister. The rubber frames your view and the lenses are smoked; there is no room for glasses under it. It is not armour.", color = c("#4A5240") })
+-- THE STOKER's welding mask (Tarkov: Tagilla's welding masks, face cover class 5, durability 40, 50 % blindness protection,
+-- 1.5 kg): a steel face cover that is armour for the face (Health.armorFor reads face covers with zones.face)
+add("MASK_WELDER", { name = "Stoker's Welding Mask", short = "WELD MASK", kind = "facecover", w = 2, h = 2, mass = 1.5, value = 95000, rarity = "epic",
+	armor = { class = 5, dur = 40, zones = { face = true }, blunt = 0.2, destr = 0.5 }, eye = { flash = 0.5, tint = c("#2A2C26"), shade = 0.32, lens = "SMOKED" },
+	desc = "A boiler stoker's steel welding mask with a dark slit. Class 5 for the face; the view through the slit is narrow and dim, and a stun charge's flash blinds you half as much.", color = c("#3A3B35") })
 
 -- ── rigs, backpacks, secure containers ───────────────────────────────────────
 add("RIG_BELT", { name = "Utility Belt", short = "BELT", kind = "rig", w = 2, h = 2, mass = 0.4, value = 6000, grid = { w = 4, h = 1 }, desc = "Four pouches on a belt.", color = c("#5E5A47") })

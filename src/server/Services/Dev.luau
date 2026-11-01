@@ -580,7 +580,14 @@ function C.map(id)
 end
 
 -- force the Foreman on (true), off (false) or back to chance (nil) for the next raids
-function C.boss(on)
+-- boss(true|false|nil) forces every boss of the map in or out of the next raid (nil: rolled); boss(on, label) one of
+-- them by its label ("Caretaker", "Stoker"); boss(nil, label) gives that one back to the roll
+function C.boss(on, label)
+	if label then
+		ctx.AI.forceBossId = ctx.AI.forceBossId or {}
+		ctx.AI.forceBossId[label] = on
+		return "forceBossId[" .. tostring(label) .. "]=" .. tostring(on)
+	end
 	ctx.AI.forceBoss = on
 	return "forceBoss=" .. tostring(on)
 end

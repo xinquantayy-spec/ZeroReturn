@@ -1,6 +1,7 @@
-# Meridian's second boss (THE STOKER, our Tagilla): research and plan (not built)
+# Meridian's second boss (THE STOKER, our Tagilla)
 
-Status 2026-11-01: research done, nothing built (the owner paused the work). Nothing here has run.
+Status 2026-11-02: **built and checked in Studio with one player** (TEST_RESULTS "THE STOKER"). The research and the
+plan below are from 2026-11-01. What was built, and what is left, follows the plan.
 
 ## What Tarkov does
 
@@ -17,3 +18,37 @@ Status 2026-11-01: research done, nothing built (the owner paused the work). Not
 2. **The hammer charge in `AI.luau`** (no change to `Combat.luau` or `Weapons.luau`): sprint straight at the target, swing within reach with the existing "slash" gesture, deal the hit through `ctx.Combat.hitModel`. The hammer is a few cosmetic parts in his hand (the animator only has the knife's one-hand pose). The shotgun at range or with no path. Health scale about 2.77 (1,220 / 440).
 3. **Open decision, the mask:** `Health.luau` only takes face armour from the head slot. Either the mask is a head-slot item, or `Health.luau` lets the face-cover slot protect the face (Tarkov's way).
 4. Items in `Items.luau`, a `stokerLoadout` in `Loot.luau` (we only have a pump shotgun, so the semi-auto is a gap), his look in `Equipment.luau`, the KASSA GARAGE entry and route in Meridian's `Play.luau` at 35 % (`Layout.luau` is generated, not edited by hand), LogicTests, then the docs.
+
+## Built (2026-11-02)
+
+- **Two bosses on Meridian, each rolled on its own.** `W.bosses` is a list, and `AI.reset` rolls every entry on its
+  own: THE CARETAKER at 60 %, THE STOKER at 35 %. `W.boss` stays the Caretaker for the old readers.
+  - `ZR_Dev boss(on, label)` forces one boss in or out; `boss(on)` still forces all.
+  - The per-map fields include `bosses`.
+- **THE STOKER** (`Meridian/Play.luau`): alone in the KASSA GARAGE on a six-point route from the reference's hammer
+  marker (L0 756, -431).
+  - Health 1,220 (`hp` = 1,220 / 440 on the body's parts).
+  - Look `stoker` (`Equipment.luau`): navy work clothes, a scorched leather vest, knee pads.
+  - Kit `Loot.stokerLoadout`: the welding mask, a class 6 carrier, a chest rig, the Harrow-12 with slugs (70 %) or
+    buckshot, meds and a little mall loot.
+- **The welding mask** `MASK_WELDER`: a face cover, class 5, durability 40, 1.5 kg, blindness protection 50 %.
+  `Health.armorFor` now lets a face cover with `zones.face` take hits on the face (jaw and eyes, not the crown), as
+  Tarkov's face covers do (CharTests C13).
+- **The hammer charge** (`AI.luau`):
+  - Within 15 m (47 studs) of a target he can see, with nothing between them, he takes the sledgehammer off his back
+    and runs straight at the target at 18. Shots do not stop him; broken legs slow him (`Health.mods`).
+  - Within 4.6 studs he swings: the knife's "slash" gesture, the blow 0.3 s later if the target is still in reach,
+    60 % at the head, 110 damage at pen 35 through `Combat.hitModel`.
+  - The raid report reads "KILLED BY STOKER · SLEDGEHAMMER · BLUNT · HEAD".
+  - Otherwise he fights with the shotgun. The hammer is not in his kit, so it cannot be looted.
+
+## Gaps (logged in `EFT_PARITY.md`)
+
+- **No mesh for the mask yet.** New meshes are uploaded from the owner's machine, so it wears the faceplate helmet's
+  plate in blackened steel. A player who loots and wears the mask sees the gas mask's frame, not a welding slit.
+- **The hammer is three parts.** It goes into his hand when he charges, but the arms keep the shotgun pose.
+- **His gun is the pump Harrow-12.** Tarkov's is a semi-auto 12 gauge.
+- **No flechette rounds.**
+- **No yell.** A heavy breath plays when he starts to run.
+- **Health spread.** The body's parts scale evenly (thorax 235). Tarkov's thorax is 320.
+- **Ambush and breaching are not built.**

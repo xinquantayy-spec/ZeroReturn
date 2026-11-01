@@ -43,10 +43,10 @@ Next round (`KNOWN_ISSUES` 69):
    - trees cleared off the rail beds;
    - client clutter kept out of door swings;
    - the detail plan streamed with the map (Meridian's is 970 KB).
-2. **THE STOKER (Meridian's second boss, our Tagilla), started 2026-11-02 03:00 SGT** (the phone work below waits on the owner's emulator). The plan is in `docs/design/BOSS_STOKER.md`. Decisions taken:
+2. **THE STOKER (Meridian's second boss, our Tagilla): done 2026-11-02**, checked in Studio with one player (TEST_RESULTS "THE STOKER"; gaps in `docs/design/BOSS_STOKER.md`). Decisions taken:
    - the welding mask is a face cover (`kind = "facecover"`), and `Health.armorFor` lets a face cover with `zones.face` protect the face, as in Tarkov;
    - `W.bosses` is a list, each boss rolled on its own (`AI.reset`), and `W.boss` stays for the old readers;
-   - the hammer charge goes in `AI.combat`: within 15 m with a clear line, sprint (17) straight at the target and swing with the "slash" gesture, the blow through `Combat.hitModel`;
+   - the hammer charge goes in `AI.combat`: within 15 m with a clear line, sprint (18) straight at the target and swing with the "slash" gesture, the blow through `Combat.hitModel`;
    - health through `opts.hp` (1,220 / 440 = 2.77).
 
    No new meshes can be uploaded from the cloud (Open Cloud needs the owner's key), so his look reuses existing gear, logged as a gap.

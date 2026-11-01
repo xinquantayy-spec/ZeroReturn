@@ -157,6 +157,10 @@ local LOOKS: { [string]: any } = {
 		overlays = join({ P("ZR_OV_PaddedJacket", "UpperTorso", "7E5F36", "Fabric", { shell = "jacket" }), P("ZR_OV_FleeceCollar", "UpperTorso", "CFC6B0", "Fabric") },
 			pair("ZR_OV_BootCuffs", "LowerLeg", "8A8478", "Fabric")),
 		covers = { armorVisual = true } },
+	-- THE STOKER (Meridian's garage boss, our Tagilla): a boiler stoker in navy work clothes and a scorched leather
+	-- apron-vest, knee pads; his plate carrier and welding mask are items and stay in view
+	stoker = { jacket = "2E3742", pants = "2A2D30", skin = "B8957A", glove = "4A3A2A", boot = "2A2622",
+		overlays = join({ P("ZR_OV_PaddedJacket", "UpperTorso", "4A3B2C", "Fabric", { shell = "jacket" }) }, KNEE("2A2622")) },
 	-- Relay 7 traders (lobby NPCs), each in their trade's clothes: VOS the quartermaster (olive, red armband), HALE
 	-- the field medic (pale coat, blue gloves, red-cross armband), TILDA the outfitter (dark, fleece collar), the Fence
 	-- (hooded, shabby)
@@ -240,6 +244,9 @@ local VIS: { [string]: any } = {
 	-- full-face gas mask (FACE COVER slot): blocks the eyewear slot, in both orders (Tarkov: an item that blocks a slot refuses
 	-- to be worn with an item in it). The mesh carries its own colours, so it goes on with a white tint.
 	GAS_MASK = { pieces = { P("ZR_EQ_GasMask", "Head", "FFFFFF", "SmoothPlastic", { fb = "2D342B" }) }, blocks = { eyes = "GAS_MASK_BLOCKS_EYEWEAR" } },
+	-- THE STOKER's welding mask (FACE COVER slot): no mesh of its own yet (new meshes are uploaded from the owner's machine),
+	-- so it wears the faceplate helmet's plate in blackened steel
+	MASK_WELDER = { pieces = { P("ZR_EQ_FacePlate", "Head", "2B2C28", "Metal") } },
 	-- eyewear (EYEWEAR slot): lenses keep their own colours (white tint). No helmet or face shield of ours blocks eyewear:
 	-- the Tarkov face shields (Altyn, 1SCh, EXFIL) and helmets (Vulkan-5, Kolpak-1S) checked all list "Blocks eyewear: no",
 	-- and our faceplate helmet (HELMET_C5) is the same kind of item, so glasses are worn under its plate.

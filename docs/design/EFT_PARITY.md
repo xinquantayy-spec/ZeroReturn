@@ -443,7 +443,15 @@ Matched:
 - **The west band is a minefield and the east band is a sniper band**, both outside the playable area as in the reference.
 
 Gaps (not copied or not found):
-- **Second boss**: Tagilla (hammer boss, KASSA garage, 35 % in the 2026 sources, absent from SPT) is not built; the AI keeps one boss per map.
+- **Second boss: built 2026-11-02** as THE STOKER (`docs/design/BOSS_STOKER.md`). He is rolled at 35 % on his own beside
+  THE CARETAKER, alone in the KASSA GARAGE. He has 1,220 health, a class 6 carrier, the welding mask (a face cover that stops face hits),
+  and a shotgun. Within 15 m of a target he can see, he charges with a sledgehammer that cannot be looted. Gaps:
+  - his gun is a pump, not a semi-auto, and there are no flechette rounds;
+  - no yell;
+  - the mask reuses the faceplate mesh, and a player wearing it sees the gas mask frame;
+  - the body's health scales evenly (thorax 235 against 320);
+  - the arms keep the gun pose while he swings;
+  - no ambush or breaching.
 - **Airdrops** (20 %, 6 or more players, 5 to 15 minutes in): there is no airdrop system; the numbers sit in `L.hazard.airdrop`.
 - **Co-op, flare and transit extracts**: WEST CAMP is scav-only, RIVER PATH is a plain exit (no green flare), and the transits to Streets
   and Customs do not exist.

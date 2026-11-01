@@ -476,6 +476,15 @@ function CT.run(ctx)
 	local rOpen = hitAt({ head = "HELMET_C5", eyes = "GLASSES_BG1" }, EYES, { visorUp = true })
 	check("C13", "with a face-plate helmet the plate takes the eye hit while it is down, the glasses behind it once it is raised",
 		rPlate ~= nil and rPlate.armor == "HELMET_C5" and rOpen ~= nil and rOpen.armor == "GLASSES_BG1")
+	-- THE STOKER's welding mask: a face cover that is armour takes hits on the face (jaw and eyes), not on the crown; a
+	-- gas mask in the same slot is no armour
+	local rMaskJaw = hitAt({ face = "MASK_WELDER" }, JAW)
+	local rMaskEyes = hitAt({ face = "MASK_WELDER" }, EYES)
+	local rMaskCrown = hitAt({ face = "MASK_WELDER" }, CROWN)
+	local rGas = hitAt({ face = "GAS_MASK" }, JAW)
+	check("C13", "the welding mask (face cover, class 5) takes face hits, not the crown; a gas mask is no armour",
+		rMaskJaw ~= nil and rMaskJaw.armor == "MASK_WELDER" and rMaskEyes ~= nil and rMaskEyes.armor == "MASK_WELDER"
+			and rMaskCrown ~= nil and rMaskCrown.armor == nil and rGas ~= nil and rGas.armor == nil)
 
 	-- ── C12: equipment churn returns to the baseline (no growing meshes, welds or records) ──────────────────
 	local mc = dummy("player")

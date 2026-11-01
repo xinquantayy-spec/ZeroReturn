@@ -894,6 +894,22 @@ return function(B)
 		}
 	end)
 
+	-- ── THE STOKER (Interchange's Tagilla; docs/design/BOSS_STOKER.md): 35 % (2026 Season 1 sources), alone, in the KASSA
+	-- GARAGE under the hypermarket (the reference's hammer marker at L0 756, -431). 1,220 health, the hammer charge, the
+	-- welding mask and a 12 gauge. Each boss rolls on its own (AI.reset reads W.bosses); W.boss stays the Caretaker.
+	try("stoker", function()
+		local r = buildRoute({ 0, { { 756.2, -431.2 }, { 840, -431 }, { 840, -300 }, { 760, -250 }, { 680, -300 }, { 680, -420 } } })
+		if not r or #r < 3 then
+			warn("[ZR] Meridian play: no floor for THE STOKER's garage route; he is left out")
+			return
+		end
+		local stoker = {
+			name = "THE STOKER", label = "Stoker", home = r[1], route = r, look = "stoker", loadout = "stokerLoadout", crew = {},
+			chance = 0.35, hp = 1220 / 440, charge = true, zones = { { name = "KASSA GARAGE", home = r[1], route = r } },
+		}
+		W.bosses = W.boss and { W.boss, stoker } or { stoker }
+	end)
+
 	-- ── scav spawn zones ─────────────────────────────────────────────────────────────────────────────────
 	local ZONE_SRC = {} -- local x, z of the ground-level zones, for the keep-outs
 	try("scav", function()
@@ -1213,8 +1229,9 @@ return function(B)
 		return c
 	end
 	print(string.format(
-		"[ZR] Meridian play: %d spawns, %d patrol routes, %d watch posts, %d scav zones, boss %s (%d zones), %d visit zones, %d sniper strips, %d mines, %d electric locks, %d loose spots, lever %s",
+		"[ZR] Meridian play: %d spawns, %d patrol routes, %d watch posts, %d scav zones, boss %s (%d zones)%s, %d visit zones, %d sniper strips, %d mines, %d electric locks, %d loose spots, lever %s",
 		n.spawn, count(W.patrols), count(W.watchPosts), count(W.scavZones), W.boss and W.boss.name or "none", W.boss and #W.boss.zones or 0,
+		(W.bosses and W.bosses[2]) and (", " .. W.bosses[2].name .. " (" .. #W.bosses[2].route .. " route points)") or "",
 		count(W.visitZones), n.strip, n.mine, n.door, n.loose, leverOk and "built" or "missing"
 	))
 end

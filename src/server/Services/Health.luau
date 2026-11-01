@@ -226,6 +226,14 @@ local function armorFor(hs, key, hitPos, partInst)
 				return g, it, d
 			end
 		end
+		-- a face cover that is armour (THE STOKER's welding mask) takes a hit on the front of the head: Tarkov's face
+		-- protection from the face-cover slot
+		if face then
+			local fg, fit, fd = worn("face")
+			if fg and fd.armor.zones and fd.armor.zones.face then
+				return fg, fit, fd
+			end
+		end
 		-- a face shield that is down (or absent) leaves the eyes to the ballistic glasses behind it
 		if eyes then
 			local eg, eit, ed = worn("eyes")

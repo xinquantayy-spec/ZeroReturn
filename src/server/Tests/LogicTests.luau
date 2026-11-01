@@ -1037,6 +1037,28 @@ function T.run(ctx)
 		end
 	end
 
+	-- THE STOKER (Meridian's second boss, our Tagilla): Meridian rolls two bosses on their own; his kit and his look
+	if ctx and ctx.World and ctx.Loot then
+		local mm = ctx.World.maps and ctx.World.maps.meridian
+		local bl = mm and mm.bosses
+		local care, stok = bl and bl[1], bl and bl[2]
+		check("stoker: Meridian has two bosses, each with its own chance (the Caretaker 60 %, the Stoker 35 %)",
+			bl ~= nil and #bl == 2 and care.label == "Caretaker" and care.chance == 0.6 and stok.label == "Stoker" and stok.chance == 0.35,
+			bl and #bl)
+		check("stoker: he charges with the hammer, has Tagilla's 1,220 health (x 2.77) and his garage route",
+			stok ~= nil and stok.charge == true and math.abs(stok.hp * 440 - 1220) < 0.5 and stok.route ~= nil and #stok.route >= 3)
+		local h = ctx.Loot.stokerLoadout(Random.new(7))
+		local function at(slot)
+			local g = h.slots[slot]
+			return g and h.items[g] and h.items[g].id
+		end
+		check("stoker: his kit is the welding mask (face cover, class 5 for the face), a class 6 carrier and a 12 gauge; no helmet",
+			at("face") == "MASK_WELDER" and at("armor") == "ARMOR_C6" and at("primary") == "HARROW12" and at("head") == nil
+				and Items.defs.MASK_WELDER.armor.class == 5 and Items.defs.MASK_WELDER.armor.zones.face == true)
+		local Equipment = require(game:GetService("ReplicatedStorage").ZR.Equipment)
+		check("stoker: he has a look of his own", Equipment.LOOKS.stoker ~= nil and Equipment.lookKey("stoker") == "stoker")
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0

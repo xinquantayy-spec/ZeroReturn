@@ -1057,6 +1057,26 @@ function Loot.caretakerLoadout(rand)
 	return k.h
 end
 
+-- THE STOKER (Meridian's KASSA GARAGE boss, our Tagilla; docs/design/BOSS_STOKER.md): a class 6 plate carrier, his
+-- welding mask (class 5 for the face), no helmet, a 12 gauge with slugs (Tarkov's is a semi-auto; ours is the pump, a
+-- logged gap). His sledgehammer is in his hands, not in his kit: it cannot be looted (as in Tarkov).
+function Loot.stokerLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 80, 100 }
+	k.slot("armor", "ARMOR_C6", { dur = rand:NextInteger(55, 80), tint = "black" })
+	k.slot("face", "MASK_WELDER", { dur = rand:NextInteger(28, 40) })
+	k.slot("rig", "RIG_CHEST", { tint = "charcoal" })
+	k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.7 and "A12_SLUG" or "A12_BUCK", 3)
+	k.put("MEDKIT_L")
+	k.put("PAINKILLERS")
+	if rand:NextNumber() < 0.5 then
+		k.put("HEMOSTAT")
+	end
+	k.roll("mallgood", rand:NextInteger(0, 2))
+	return k.h
+end
+
 -- the Foreman's crew: plate carriers, AP or PS rounds, plenty of magazines
 function Loot.crewLoadout(rand)
 	rand = rand or Random.new()
