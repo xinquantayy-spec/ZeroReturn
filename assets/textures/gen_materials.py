@@ -695,10 +695,11 @@ def pat_b(x, y, k, match):
     return lattice(x, y + match)
 
 
-def wallpaper(out, name, pattern, ink_tone, ink_rough, stripe, emboss):
+def wallpaper(out, name, pattern, ink_tone, ink_rough, stripe, emboss, stains=False):
     """shared by the two wallpapers: four 0.5 m rolls hung side by side (a 2 m, 6.25 stud tile). Each seam shows as a dark
-    line with a lifted edge, the rolls differ a little in dye lot and in how the print was matched, patches have faded in the
-    light, water has run down and left tide marks, and two seams have come unstuck at the top and hang curled"""
+    line with a lifted edge, and the rolls differ a little in dye lot and in how the print was matched. With stains, patches
+    have also faded in the light, water has run down and left tide marks, and two seams hang curled; those repeated every 2 m
+    on a long wall (WALLS.md, pattern repeat), so the shipped tiles are clean and the stains come from the wall decals"""
     r = rng_for(name)
     y, x = np.mgrid[0:N, 0:N]
     k = x // STRIP
@@ -706,23 +707,25 @@ def wallpaper(out, name, pattern, ink_tone, ink_rough, stripe, emboss):
     match = r.integers(-4, 5, 4)[k]
     ink = pattern(x, y, k, match)
     paper = 0.92 + dye + fbm(r, f0=120, beta=0.3, fmax=420) * 0.012 - stripe * (((x // 32) % 2) * 0.03)
-    fade = smoothstep(0.1, 1.5, band(r, 300))
+    fade = smoothstep(0.1, 1.5, band(r, 300)) if stains else np.zeros((N, N))
     amt = ink * (0.88 + 0.12 * fbm(r, f0=40, beta=0.8)) * (1 - 0.6 * fade)
     v = paper * (1 - amt) + ink_tone * amt + fade * 0.025
     dx = ((x + STRIP // 2) % STRIP) - STRIP // 2
     seam = np.exp(-(dx / 0.9) ** 2)
     lip = np.exp(-((dx - 2.4) / 1.5) ** 2)
     v = v - seam * 0.2 + lip * 0.045
-    w1, e1 = water_mark(r, 2.4, 1.35)
-    w2, e2 = water_mark(r, 4.0, 1.7)
-    water, tide = np.maximum(w1, w2), np.maximum(e1, e2)
-    runs = streaks(r, 8, (150, 500), (2, 6)) * 0.07
+    water, tide, runs = np.zeros((N, N)), np.zeros((N, N)), np.zeros((N, N))
+    if stains:
+        w1, e1 = water_mark(r, 2.4, 1.35)
+        w2, e2 = water_mark(r, 4.0, 1.7)
+        water, tide = np.maximum(w1, w2), np.maximum(e1, e2)
+        runs = streaks(r, 8, (150, 500), (2, 6)) * 0.07
     v = v - water * 0.04 - tide * 0.1 - runs
     rag = fbm(r, f0=60, beta=1.0)
     bare = np.zeros((N, N))
     flap = np.zeros((N, N))
-    for xs, y0, length, wmax in zip(r.choice([STRIP, 2 * STRIP, 3 * STRIP], 2, replace=False), r.uniform(0.05 * N, 0.55 * N, 2),
-                                    r.uniform(240, 420, 2), r.uniform(24, 38, 2)):
+    for xs, y0, length, wmax in (zip(r.choice([STRIP, 2 * STRIP, 3 * STRIP], 2, replace=False), r.uniform(0.05 * N, 0.55 * N, 2),
+                                     r.uniform(240, 420, 2), r.uniform(24, 38, 2)) if stains else ()):
         t = (y - y0 + rag * 5) / length
         inside = ((t >= 0) & (t <= 1)).astype(float)
         w = wmax * np.clip(1 - t, 0, 1) ** 0.7
