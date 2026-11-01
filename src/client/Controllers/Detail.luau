@@ -533,8 +533,16 @@ function Detail.init(c)
 	end)
 	Detail.setLevel(c.Settings.data.quality)
 	local acc = 0
-	-- HIGH is everyone's default (phones too); if a device keeps struggling, say once where to turn it down
+	-- HIGH is everyone's default (phones too). The frame rate floor is 30 (owner, 2026-11-01): with HOLD 30 FPS on (the
+	-- default) a device that stays under 30 for 8 seconds steps down one GRAPHICS level (never during the first 20 s of a
+	-- life or right after a step, while things stream in); with it off, a one-time hint under 24 fps for 20 s as before
 	local frames, window, lowFor, hinted = 0, 0, 0, false
+	local calmUntil = os.clock() + 20
+	local Players = game:GetService("Players")
+	Players.LocalPlayer.CharacterAdded:Connect(function()
+		calmUntil = os.clock() + 20
+	end)
+	local NAMES = { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
 		if acc >= 0.4 then
@@ -553,7 +561,26 @@ function Detail.init(c)
 		if window >= 1 then
 			local fps = frames / window
 			frames, window = 0, 0
-			if not hinted and Detail.level > 0 and fps < 24 then
+			local S = ctx.Settings and ctx.Settings.data
+			local auto = S and S.autoGfx ~= false
+			local q = S and S.quality or Detail.level
+			if auto and q > 0 then
+				if os.clock() < calmUntil then
+					lowFor = 0
+				elseif fps < 30 then
+					lowFor += 1
+					if lowFor >= 8 then
+						lowFor = 0
+						calmUntil = os.clock() + 15 -- let the lighter level settle before judging it
+						ctx.Settings.set("quality", q - 1)
+						if ctx.Hud and ctx.Hud.toast then
+							ctx.Hud.toast("GRAPHICS " .. (NAMES[q - 1] or "LOWER") .. " TO HOLD 30 FPS  ·  SETTINGS TO CHANGE", "warn")
+						end
+					end
+				else
+					lowFor = 0
+				end
+			elseif not auto and not hinted and Detail.level > 0 and fps < 24 then
 				lowFor += 1
 				if lowFor >= 20 then
 					hinted = true

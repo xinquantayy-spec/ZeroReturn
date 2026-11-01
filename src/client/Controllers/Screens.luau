@@ -601,6 +601,7 @@ local SETTING_TABS = {
 	} },
 	{ "GRAPHICS", {
 		{ "GRAPHICS", "quality", "enum", { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }, 0 },
+		{ "HOLD 30 FPS", "autoGfx", "bool" },
 		{ "FILM GRAIN", "grain", "num", 0, 1, 0.1, "pct" },
 		{ "LENS EFFECTS", "lens", "bool" },
 		{ "MOTION BLUR", "mblur", "bool" },

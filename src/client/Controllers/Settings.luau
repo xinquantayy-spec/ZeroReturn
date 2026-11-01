@@ -7,7 +7,7 @@ local Config = require(Shared.Config)
 
 local Settings = {
 	data = {
-		fov = Config.FOV, sens = 1, quality = 3, shake = 1, reduceMotion = false, film = true, reticle = false, adsToggle = false,
+		fov = Config.FOV, sens = 1, quality = 3, autoGfx = true, shake = 1, reduceMotion = false, film = true, reticle = false, adsToggle = false,
 		grain = 0.5, lens = true, mblur = true, curve = false, hudScale = 1, hitfx = false,
 		wish = {}, -- Tarkov's wish list (item ids)
 		binds = {}, quick = {}, -- rebound PC keys (Input.setBinds) and Tarkov quick slots 4 to 0 (item guids)
