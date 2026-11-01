@@ -8,6 +8,29 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Placement round 5 on Border Yard (2026-11-02)
+
+The six builder faults fixed are listed in `docs/look/PLACEMENT.md` ("Furniture through walls, racks and stairs"). Each was checked in a Border raid with ZR_Dev `audit` and `tidylog`.
+
+**Audit before and after:**
+
+| Check | Before | After |
+|---|---|---|
+| clipping | 5 | 1 (0.3 studs, at the threshold) |
+| door | 1 | 0 |
+| gap | 11 | 8 |
+| props the tidy pass leaves | 7 | 2 (BLOCK A chairs, 0.4 studs) |
+
+The earlier run with every door opened (after `exitcheck`) also flagged desks touching open leaves; doors left in their raid state do not.
+
+**Pictures (before, after):**
+- `BY_fuel_office_before.jpg` / `BY_fuel_office_after.jpg`: the fuel stop's till office.
+- `BY_store3_office_before.jpg` / `BY_store3_office_after.jpg`: STORE 3's office. A rack came through the wall and pallets stood between the desks.
+
+**Tests:** Logic 345, Char 47, Look 33 and Map 36, all passing in the Border raid. The road audit is unchanged.
+
+**Seen and not fixed:** grass blades at the foot of STORE 3's north wall inside (KNOWN_ISSUES 72).
+
 ## Road beds on Border Yard and Meridian Mall (2026-11-02)
 
 The owner asked for nothing placed abnormally or glitching. From a roof or a hill, Border's roads looked broken.
@@ -48,7 +71,9 @@ The main bridge, the level crossing on main_0 and the highway junction by the ea
 | Border Yard | 345 | 47 | 33 | 36 |
 | Meridian Mall | 345 | 47 | 33 | 36 |
 
-**Exits re-checked on Meridian** with ZR_Dev `exitcheck` (doors opened): see "Meridian exit walk-through".
+**Exits re-checked after the change** with ZR_Dev `exitcheck` (doors opened):
+- **Meridian:** all 7 exits are reached from every spawn that may use them.
+- **Border Yard:** 25 of 26 exits are reached from every spawn that may use them. BOILER CELLAR still is not: the pathfinder does not get onto its narrow stair (KNOWN_ISSUES 68; a player walks it).
 
 ## THE STOKER, Meridian's second boss (2026-11-02)
 

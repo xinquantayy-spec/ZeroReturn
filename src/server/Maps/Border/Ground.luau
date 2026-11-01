@@ -696,13 +696,15 @@ return function(B)
 			end
 		end
 		-- under every building: concrete (class 3), so terrain grass never grows up through a ground floor (tall grass stood in
-		-- BLOCK A's ground-floor rooms, seen in Studio 2026-11-01); one stud of margin round the footprint
+		-- BLOCK A's ground-floor rooms, seen in Studio 2026-11-01). Three studs of margin round the footprint: a 4-stud
+		-- column straddling a wall line is concrete too (with one stud, grass blades stood along the inside of STORE 3's
+		-- north wall, 2026-11-02)
 		for _, b in L.blds do
 			local cxp, czp, w, d, rot = b[4], b[5], b[6], b[7], b[8]
 			if type(cxp) == "number" and type(czp) == "number" and type(w) == "number" and type(d) == "number" then
 				local a = math.rad(tonumber(rot) or 0)
 				local ca, sa = math.cos(a), math.sin(a)
-				local hw, hd = w / 2 + 1, d / 2 + 1
+				local hw, hd = w / 2 + 3, d / 2 + 3
 				local reach = math.sqrt(hw * hw + hd * hd)
 				for i = colOf(cxp - reach), colOf(cxp + reach) do
 					local col = CL[i]

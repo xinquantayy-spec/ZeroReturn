@@ -554,6 +554,28 @@ return function(B)
 		fillPoly(MO, function(i, k)
 			paint(i, k, 3)
 		end)
+		-- under every other building: concrete, three studs past the walls, so terrain grass never grows through a ground
+		-- floor (a 4-stud column straddling a wall line is concrete too; as on Border Yard, 2026-11-02)
+		for _, b in L.blds do
+			if b[4] ~= "mall" then
+				local cxp, czp, w, d, rot = b[5], b[6], b[7], b[8], b[9]
+				if type(cxp) == "number" and type(czp) == "number" and type(w) == "number" and type(d) == "number" then
+					local a = math.rad(tonumber(rot) or 0)
+					local ca, sa = math.cos(a), math.sin(a)
+					local hw, hd = w / 2 + 3, d / 2 + 3
+					local reach = math.sqrt(hw * hw + hd * hd)
+					for i = colOf(cxp - reach), colOf(cxp + reach) do
+						local x = xAt(i)
+						for k = rowOf(czp - reach), rowOf(czp + reach) do
+							local dx, dz = x - cxp, zAt(k) - czp
+							if math.abs(dx * ca + dz * sa) <= hw and math.abs(dz * ca - dx * sa) <= hd then
+								paint(i, k, 3)
+							end
+						end
+					end
+				end
+			end
+		end
 		for _, pd in L.mall.pads do
 			if pd.id == "west_pad" then
 				fillPoly(pd.pts, function(i, k)

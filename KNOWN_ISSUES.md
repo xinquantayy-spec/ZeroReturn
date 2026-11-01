@@ -99,7 +99,8 @@
 68. **BOILER CELLAR: the AI may not path down the cabin stair (checked 2026-11-01 night; 2026-11-02: a player walks it by keyboard, the pathfinder still finds no way onto the first step, which is about 3 studs wide between the shaft rail and the stair).** The cellar is lit (13 lamps within 60 studs), and the dog-leg looks complete: two flights of 0.5-stud risers on 0.8-stud treads, a landing, the exit radio below. With the boiler door opened, PathfindingService with the AI agent (radius 1.6, height 5.6, no jumping) found no path from the cabin to the top step, down either flight, or to the cellar. Inside the cellar it did (17 waypoints). An earlier session found 37 waypoints from the cabin to the exit zone. One suspect: the cabin door opens inward into the 4-stud gap between the cabin wall and the shaft (open panel at 136.6, -5267.9). Not checked by hand: the movement controller ignores `Humanoid:MoveTo`, and the Studio navigation tool reports no route. Five probes from Block A's ground floor to floor-2 rooms also gave NoPath, but those goal points may have been inside furniture: retest along the corridors with `aiGoto`.
 
 69. **Placement: what the tidy pass leaves (2026-11-02).** `docs/look/PLACEMENT.md` describes the pass and the audit.
-    - **Furniture touching walls.** After round 2, the pass leaves 7 props on Border:
+    - **Furniture touching walls: 5 of the 7 fixed at their builders, 2026-11-02** (PLACEMENT.md, round 5). Two BLOCK A
+      dorm chairs (0.4 studs into a wall) are left. The list as it was after round 2, 7 props on Border:
       - 2 dorm chairs pushed under part-built desks;
       - a STORE 3 rack 0.8 studs into a ceiling;
       - a motor shop fuse box against a stepped gable;
@@ -118,7 +119,7 @@
       into both tanks. Check this against the reference when the fuel yard is next compared with Tarkov.
     - **Still to check by hand:**
       - every re-hung door, and AI paths through them;
-      - the fuel stop, where the safe overlaps the office desk.
+      - ~~the fuel stop, where the safe overlaps the office desk~~: fixed 2026-11-02 (the office is larger now).
     - **Road boards: fixed 2026-11-02.** From above, Border's roads looked broken: terrain stood over the asphalt on
       slopes and banks covered road edges. Roads now follow the smoothed relief and lie level across (`Maps/RoadBeds.luau`).
       What is left are small patches at steep junctions:
@@ -138,6 +139,22 @@
     - **RIVER PATH.** No toll booth or barricade, and no green flare (the flare is logged in `EFT_PARITY.md`).
     - **FENCE GAP.** The guides also mention an orange oil tanker nearby. There is no tanker prop.
     - **SHELTER gun bench.** It stands 0.30 studs off its wall; the audit flags 0.25.
+
+72. **Grass blades inside STORE 3 along its north wall (seen 2026-11-02; cause not found).** Yellow grass blades stand
+    on the floor inside the office corner, at the foot of the north wall, by the roller door and the personnel door
+    (`docs/maps/evidence/BY_store3_wall_grass.jpg`). What was ruled out:
+    - The client's ground cover: none of its grass meshes stand inside the building.
+    - Terrain grass under the floor: the voxels inside are concrete. The concrete under buildings now reaches 3 studs
+      past the walls, and the blades are still there.
+    - The wall's foot grime decal: it is a flat texture, and the blades have depth.
+
+    The next suspects are:
+    - Roblox's terrain grass decoration, from the grass 4 studs outside the wall: its surface stands higher than the
+      floor inside, so a gap under the wall or the doors would let it show;
+    - something the doors draw.
+
+    Check the Terrain's Decoration and GrassLength settings in Studio. Hiding the wall part for a moment would show
+    where the blades grow from.
 
 ## Tool limitations (not game bugs)
 

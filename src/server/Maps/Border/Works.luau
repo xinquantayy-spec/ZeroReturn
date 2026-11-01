@@ -747,10 +747,11 @@ return function(B)
 		rackRow(-77, -42.5, 5, 0)
 		rackRow(-36, 55.5, 4, 0)
 		rackRow(-36, 42.5, 4, 180)
-		rackRow(14, -55.5, 3, 180)
-		rackRow(14, -42.5, 3, 0)
+		rackRow(14, -55.5, 2, 180) -- two racks: a third ran 3 studs through the office wall and up into its ceiling
+		rackRow(14, -42.5, 2, 0)
 		-- stacks, cages, drums
-		for _, p in { { "PalletBoxes", 66, -50, 10 }, { "PalletBoxes", 72, -50, -5 }, { "PalletBoxes", 68, -44, 0 }, { "CardboardPile", 78, -42, 30 },
+		-- (the first four stood inside the office between its desks until 2026-11-02; they are in the hall beside it now)
+		for _, p in { { "PalletBoxes", 63, -27, 10 }, { "PalletBoxes", 63, -21, -5 }, { "PalletBoxes", 77, -26, 0 }, { "CardboardPile", 77, -20, 30 },
 			{ "PalletBoxes", 78, 50, 0 }, { "PalletBoxes", 70, 52, 15 }, { "CardboardPile", 62, 54, -20 }, { "TyreStack", -78, 46, 0 }, { "TyreStack", -74, 52, 40 },
 			{ "RollCage", -62, 8, 25 }, { "RollCage", -62, 14, -15 }, { "RollCage", -57, 4, 0 }, { "Drum", -80, -22, 0 }, { "Drum", -77.5, -22, 0 },
 			{ "Drum", -80, -19, 0 }, { "JerryCans", -77, -17, 30 }, { "Forklift", 27, -30, 160 }, { "Forklift", -20, 22, 40 }, { "PalletBoxes", -8, 30, 90 } } do
@@ -1426,9 +1427,10 @@ return function(B)
 		rackRow(-60, -34, 4, 180)
 		rackRow(-60, -29.5, 4, 0)
 		rackRow(-58, 33, 3, FACE.s)
-		for _, p in { { "Forklift", 20, 28, 40 }, { "Forklift", -10, -30, 200 }, { "RollCage", 30, -10, 10 }, { "RollCage", 33, -6, -20 }, { "PalletBoxes", 44, -30, 0 },
+		-- (the second forklift stood in the pallet racks at -10, -30 until 2026-11-02; it is parked in the aisle in front of them)
+		for _, p in { { "Forklift", 20, 28, 40 }, { "Forklift", -12, -23.4, 96 }, { "RollCage", 30, -10, 10 }, { "RollCage", 33, -6, -20 }, { "PalletBoxes", 44, -30, 0 },
 			{ "PalletBoxes", 52, -32, 20 }, { "PalletBoxes", 58, -28, -10 }, { "CardboardPile", 48, -4, 0 }, { "Drum", 62, -8, 0 }, { "Drum", 60, -10, 0 }, { "Drum", 62, -12, 0 },
-			{ "TyreStack", -60, 8, 0 }, { "TyreStack", -62, 14, 0 }, { "CraftBench", -62, -4, FACE.w }, { "ToolChest", -61, 4, FACE.w }, { "PalletBoxes", 10, 30, 90 },
+			{ "TyreStack", -60, 8, 0 }, { "TyreStack", -62, 14, 0 }, { "CraftBench", -62, -4, FACE.w }, { "ToolChest", -61, 4.9, FACE.w }, { "PalletBoxes", 10, 30, 90 },
 			{ "ElectricCabinet", -iw + 0.8, 24, FACE.w }, { "JerryCans", 36, 20, 30 } } do
 			K(p[1], p[2], p[3], p[4])
 		end
@@ -1436,7 +1438,7 @@ return function(B)
 		cont("crate", "Pallet of parts", -20, 30, 0)
 		cont("crate", "Pallet of parts", 10, 30, 90)
 		cont("weaponbox", "Ammunition crate", 22, -16, 0)
-		cont("toolbox", "Mechanic's chest", -62, 0, FACE.w)
+		cont("toolbox", "Mechanic's chest", -62, 1.8, FACE.w) -- clear of the workbench (v -8 to 0)
 		cont("locker", "Locker", iw - 1, -4, FACE.e)
 		cont("locker", "Locker", iw - 1, -8, FACE.e)
 		cont("medbag", "Medical bag", -62, 22, 0)
@@ -1944,7 +1946,7 @@ return function(B)
 		cont("techbox", "Wireless set", -22, 46.6, FACE.s)
 		cont("toolbox", "Shopkeeper's chest", -2, 44, FACE.s)
 		cont("weaponbox", "Hidden crate", -10, 40, 0)
-		cont("locker", "Locker", 24, 46.4, FACE.s)
+		cont("locker", "Locker", 22.5, 47.2, FACE.s) -- inside bay 18, beside its lockers (at u 24 it stood in the partition)
 		cont("medbag", "First aid bag", 13, 42, 0, FY + 3)
 		cont("crate", "Shop stock", 42, 44, 0)
 		cont("safe", "Shop safe", 58, 46, FACE.s)
@@ -3032,7 +3034,7 @@ return function(B)
 			K("RollCage", 52, -66, 10, FY)
 			cont("crate", "Spare parts", 40, -84, 0, FY, true)
 			cont("toolbox", "Storeman's chest", 62, -90, FACE.n, FY, true)
-			cont("techbox", "Spares console", 84, -66, FACE.e, FY, true)
+			cont("techbox", "Spares console", 83.6, -69.5, FACE.e, FY, true) -- against the east wall, clear of the roof stair (v -66.5 to -61.9)
 			cont("weaponbox", "Locked case", 72, -34, 0, FY, true)
 			cont("medbag", "First aid bag", 70, -26, 0, FY, true)
 			cont("drawer", "Storeman's desk", 34, -72, 90, FY, true)

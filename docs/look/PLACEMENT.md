@@ -126,6 +126,33 @@ Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit
   - `Maps/RoadBeds.luau` grades roads along the smoothed relief and levels the ground across every road last.
   - Ground over the asphalt by a stud or more: Border 203 to 1 samples, Meridian 86 to 3 (TEST_RESULTS "Road beds").
 
+- **Furniture through walls, racks and stairs (Border, placement round 5, 2026-11-02):**
+  - **FUEL STOP till office:** the safe stood in the desk's chair, and the staff locker stood in the door's swing. The
+    office was 11 by 6 studs. The partition to the storeroom now stands at 26.4, which makes the office 11 by 8.8.
+    The desk is at the front wall, the safe in the back corner, and the locker on the back wall clear of the door. The
+    storeroom shelf, pallet, loot spots and lamp moved with the wall.
+  - **STORE 3:** the east rack block ran 3 studs through the office wall and up into its ceiling. It now has 2 racks
+    per row instead of 3. Three pallet stacks and a cardboard pile stood inside the office between its desks; they are
+    in the hall beside it now.
+  - **STORE 7:**
+    - a forklift stood inside the pallet racks; it is parked in the aisle in front of them;
+    - the mechanic's chest ran 1.5 studs into the workbench; it and the spare chest moved clear.
+  - **MOTOR SHOP stores:** the spares console stood inside the roof stair's solid flight. It is against the east wall
+    now.
+  - **RED STORES:** a locker stood inside the partition between two bays. It is inside bay 18 now, beside its lockers.
+  - **OLD PUMPS:** the tool chest stood in the back door's swing. It is 0.35 studs further along now.
+  - **Audit before and after:**
+
+    | Check | Before | After |
+    |---|---|---|
+    | clipping | 5 | 1 (0.3 studs, at the threshold) |
+    | door | 1 | 0 |
+    | gap | 11 | 8 |
+    | props the tidy pass leaves | 7 | 2 (BLOCK A chairs, 0.4 studs) |
+
+  - **Concrete under buildings:** it now reaches 3 studs past the walls, not 1, so a 4-stud terrain column straddling a
+    wall line is concrete too. Meridian's buildings, apart from the mall, now get it as well.
+
 ## Left for later
 
 See `KNOWN_ISSUES.md` 69.
