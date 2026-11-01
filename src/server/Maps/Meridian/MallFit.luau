@@ -12,6 +12,17 @@ return function(ctx)
 	local nx, nz = g.nx, g.nz
 	local mk, ab, boxCF = ctx.mk, ctx.ab, ctx.boxCF
 	local n = ctx.n
+	-- wall finishes (docs/look/WALLS.md): an abandoned modern mall is painted, not papered. Every plaster wall of the mall
+	-- takes whitewash (each unit and floor its own hue); the washroom stalls are gloss-painted panels.
+	if ctx.m and ctx.m.root then
+		ctx.m.root:SetAttribute("Finish", "ZR_Whitewash")
+	end
+	local function stall(p)
+		if p then
+			p:SetAttribute("Finish", "ZR_PaintGloss")
+		end
+		return p
+	end
 	local OPEN, HALL, VOID, OUT = Plan.OPEN, Plan.HALL, Plan.VOID, Plan.OUT
 	local FRONT = { N = { 0, -1 }, S = { 0, 1 }, W = { -1, 0 }, E = { 1, 0 } }
 	local OPP = { N = "S", S = "N", E = "W", W = "E" }
@@ -502,9 +513,9 @@ return function(ctx)
 		local par = ctx.m[2]
 		for q = 0, 3 do
 			local z = iz0 + 14 + q * 6.5
-			ab(par, ix0, y0, z - 0.2, ix0 + 7.5, y0 + 7.5, z + 0.2, TILE, M.Plaster)
+			stall(ab(par, ix0, y0, z - 0.2, ix0 + 7.5, y0 + 7.5, z + 0.2, TILE, M.Plaster))
 		end
-		ab(par, ix0, y0, iz0 + 14 + 4 * 6.5 - 0.2, ix0 + 7.5, y0 + 7.5, iz0 + 14 + 4 * 6.5 + 0.2, TILE, M.Plaster)
+		stall(ab(par, ix0, y0, iz0 + 14 + 4 * 6.5 - 0.2, ix0 + 7.5, y0 + 7.5, iz0 + 14 + 4 * 6.5 + 0.2, TILE, M.Plaster))
 		local sink = ab(par, ix1 - 3.2, y0, iz0 + 12, ix1, y0 + 3.2, iz0 + 30, hex("8C9694"), M.Concrete)
 		if sink then
 			sink.Name = "Sinks"
@@ -523,7 +534,7 @@ return function(ctx)
 		local par = ctx.m[2]
 		for q = 0, 5 do
 			local z = iz0 + 12 + q * 5.2
-			ab(par, ix0, y0, z - 0.2, ix0 + 7.5, y0 + 7.5, z + 0.2, TILE, M.Plaster)
+			stall(ab(par, ix0, y0, z - 0.2, ix0 + 7.5, y0 + 7.5, z + 0.2, TILE, M.Plaster))
 		end
 		local sink = ab(par, ix1 - 3.2, y0, iz0 + 10, ix1, y0 + 3.2, iz0 + 28, hex("8C9694"), M.Concrete)
 		if sink then
