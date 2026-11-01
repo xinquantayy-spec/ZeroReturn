@@ -546,7 +546,7 @@ return function(B)
 		for _, u in { -37, -29, -21, -13 } do
 			prop(m, F, "ElectricCabinet", u, hd - t - 1.2, 0, FLOOR)
 		end
-		prop(m, F, "FuseBox", u1 - 1.6, 5, PI / 2, 5)
+		prop(m, F, "FuseBox", u1 - 1.6, 5, PI / 2, FLOOR) -- a floor-standing box: at height 5 it hung in the air
 		prop(m, F, "JunctionBox", u1 - 1.2, -17, PI / 2, 5)
 		prop(m, F, "Extinguisher", u1 - 1.0, -3, PI / 2, 3)
 		prop(m, F, "PipeRun", -22, -(hd - t - 1), PI, 15)

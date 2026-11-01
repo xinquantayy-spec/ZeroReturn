@@ -1095,17 +1095,20 @@ return function(B)
 			ab(bm, uu - 0.4, uu + 0.4, UC - 0.7, UC, -hd, hd, hex("5C4A38"), M.WoodPlanks)
 		end
 		tunnelLamps(-hw, hw, 0, 12, nil, true, 20)
-		for _, p in { { "PalletBoxes", -14, 5, 10 }, { "PalletBoxes", -17, 5.6, -20 }, { "Drum", -12, -5.5, 0 }, { "Drum", -10, -5.8, 0 }, { "JerryCans", -11, -4, 40 },
-			{ "PalletBoxes", 2, 5.2, 0 }, { "CardboardPile", 8, 5.4, 30 }, { "Drum", 14, -5.5, 0 }, { "PalletBoxes", 18, -4.8, 15 }, { "RollCage", 22, 4.5, 90 },
-			{ "StorageShelf", 0, -5.3, FACE.n }, { "Lockers", 22, -5.4, FACE.n } } do
+		-- the tunnel is 12.8 studs wide (walls at v -6.4 and 6.4): crates, drums and lockers along both walls, a walkway
+		-- of about 4.8 down the middle. The first layout ran pallets and lockers 1 to 2 studs into the walls and into each
+		-- other, and doubled two crates (placement audit, 2026-11-02).
+		for _, p in { { "PalletBoxes", -14, 4.0, 10 }, { "PalletBoxes", -18.9, 3.75, -20 }, { "Drum", -12, -5.3, 0 }, { "Drum", -10, -5.3, 0 }, { "JerryCans", -11, -3.8, 40 },
+			{ "CardboardPile", 8, 3.8, 0 }, { "Drum", 11.5, -5.3, 0 }, { "RollCage", 17, 4.6, 90 },
+			{ "StorageShelf", 0, -5.35, FACE.n }, { "Lockers", 20.8, -5.45, FACE.n } } do
 			K(p[1], p[2], p[3], p[4], UF)
 		end
-		cont("crate", "Smuggled goods", 2, 5.2, 0, UF)
-		cont("crate", "Smuggled goods", 18, -4.8, 0, UF)
-		cont("weaponbox", "Hidden weapons", -13, 3, 0, UF)
-		cont("toolbox", "Smuggler's chest", 14, -4.5, 180, UF)
-		cont("safe", "Cache safe", 23.5, 2, -90, UF)
-		cont("locker", "Locker", 16, -5.4, FACE.n, UF)
+		cont("crate", "Smuggled goods", 2, 4.35, 0, UF)
+		cont("crate", "Smuggled goods", 12.5, 4.35, 0, UF)
+		cont("weaponbox", "Hidden weapons", -15, -4.9, 0, UF)
+		cont("toolbox", "Smuggler's chest", 14, -5.0, 180, UF)
+		cont("safe", "Cache safe", 22.5, 2, -90, UF)
+		cont("locker", "Locker", 16.6, -5.4, FACE.n, UF)
 		for _, s in { { "junk", 0.5, -14, 1 }, { "junk", 0.5, 6, 0 }, { "vault", 0.4, 21, 0 }, { "keys", 0.3, 10, -5 }, { "junk", 0.45, 16, 3 } } do
 			lt(s[1], s[2], s[3], s[4], UF)
 		end
@@ -3504,18 +3507,23 @@ return function(B)
 			end
 			ab(bm, 5.2, 6.0, UC - 2.4, UC - 1.8, -15, 15, STL2, M.Metal)
 			ab(bm, 2, 6, UC - 2.4, UC - 1.8, -8.4, -7.6, STL2, M.Metal)
+			-- 18.8 x 34.4: the stair comes down the north-west quarter (u -8 to -2, v -18 to 0) and the tanks fill the east
+			-- side, so the shelf and the bench line the west wall south of the stair and the rest stands along the south
+			-- wall. The first layout put the shelf, the bench and two containers in one another, a safe inside a tank and a
+			-- crate in the wall; the station desk is gone, as it had no room (placement audit, 2026-11-02).
 			K("PipeValve", 8.2, -1.4, 0, UF)
-			K("CraftBench", -7.6, 12, FACE.w, UF)
-			K("StorageShelf", -8.2, 5.2, FACE.w, UF)
-			K("Drum", -7, 15.4, 0, UF)
-			K("Drum", -5, 15.6, 0, UF)
-			K("JerryCans", 0, 15.2, 20, UF)
+			K("StorageShelf", -8.35, 4.2, FACE.w, UF)
+			K("CraftBench", -7.6, 12.6, FACE.w, UF)
+			K("Drum", -0.6, 16.1, 0, UF)
+			K("Drum", 1.5, 16.1, 0, UF)
+			K("JerryCans", -0.5, 13.0, 20, UF)
 			for k, p in { { -5, -12 }, { 0, 4 }, { -3, 14 }, { 4, -12 } } do
 				lamp(p[1], UC - 0.6, p[2], (k % 3 == 0) and 0 or 20, 0.8, nil, WARM, 3)
 			end
-			for _, c in { { "toolbox", "Pump fitter's chest", -8, 8.4 }, { "crate", "Old stock", 1, 16 }, { "weaponbox", "Locked case", 8, 15.6 }, { "medbag", "First aid bag", -8.2, 2 },
-				{ "safe", "Station safe", 8.2, 3.4 }, { "drawer", "Station desk", -3, 16 } } do
-				cont(c[1], c[2], c[3], c[4], 0, UF, true)
+			for _, c in { { "toolbox", "Pump fitter's chest", -3.5, 16.25, FACE.s, UF }, { "crate", "Old stock", 1.0, -15.1, 0, UF },
+				{ "weaponbox", "Locked case", 5.5, 16.3, 0, UF }, { "medbag", "First aid bag", 9.2, 0.5, FACE.e, UF + 4 },
+				{ "safe", "Station safe", 7.5, -15.6, FACE.n, UF } } do
+				cont(c[1], c[2], c[3], c[4], c[5], c[6], true)
 			end
 			for _, s in { { "junk", 0.5, -2, 10 }, { "junk", 0.45, 4, 12 }, { "vault", 0.4, 7, 14 }, { "tech", 0.3, -8, 11 } } do
 				lt(s[1], s[2], s[3], s[4], UF + (s[1] == "tech" and 3.1 or 0.1))

@@ -18,14 +18,14 @@ Border 1,285, Meridian 2,260, Smelter 100, Quay 7 85.
 |---|---|---|
 | Border floating | 5 (rubble over the river; a car on a lift, a false hit) | 0 (the lift car is marked `Raised`) |
 | Border sunk | 12 (drums and crates in terrain inside bunkers) | 0 |
-| Border clipping | 30 | 14, all 0.3 to 1.4 studs (racks touching a ceiling, shelves against shelves) |
-| Border stacked | 15 | 1 |
-| Border props in a door's way | 7 (box check) | 4 (leaf-sweep check, the stricter one) |
-| Border containers run into something | not checked | 8 (0.4 to 1.6 studs; furniture against walls) |
+| Border clipping | 30 | 5, 0.3 to 1.0 studs (a rack touching a ceiling, a locker 0.6 into a thin wall, a fuse box against a stepped gable) |
+| Border stacked | 15 | 0 |
+| Border props in a door's way | 7 (box check) | 0 (leaf-sweep check, the stricter one) |
+| Border containers run into something | not checked | 0 |
 | Meridian sunk / clipping | 5 / 12 (THE SUBSTATION) | 0 / 0 |
-| Meridian floating | not checked (fuse box was exempt) | 1 fuse box |
-| Smelter | clean | 1 rubble pile 0.3 studs into a tunnel wall |
-| Quay 7 | clean | 1 vault crate against the wall |
+| Meridian floating | not checked (fuse box was exempt) | 0 |
+| Smelter | clean | clean |
+| Quay 7 | clean | clean |
 | Terrain over the floor in Border's 6 underground rooms (2-stud grid) | 539 of 5,813 spots, up to 9.5 studs high | 0; ceilings 0 |
 | Doors whose leaf meets a wall or a container, as built | 22 (six could open only 10°) | 1 (opens 90°); 30 doors re-hung to open the other way |
 
@@ -36,11 +36,18 @@ Border 1,285, Meridian 2,260, Smelter 100, Quay 7 85.
     terrain mound came through it.
   - THE SUBSTATION office: desk, chair, lockers and bench all standing on the floor.
 
+Round 2 (2026-11-02 01:00 SGT) found that the push out of walls ran the wrong way for walls whose thin side is their
+Z axis. LookVector is -Z, so the push went into the wall. After the fix:
+
+- 72 props are moved out of walls, and only 7 are left, against 62 before the fix.
+- The Smugglers' Hole and the old pumps cellar were re-laid to fit.
+- Four Living props were moved out of doorways.
+- THE SUBSTATION's fuse box now stands on the floor.
+
 **NOT VERIFIED:**
 
 - AI pathing through the re-hung doors.
 - Each re-hung door by hand.
-- The 62 pieces of Border furniture the pass left touching walls, 0.2 to 2 studs in (`KNOWN_ISSUES` 69).
 
 ## Frame rate in a separate client window (2026-11-01, Meridian)
 

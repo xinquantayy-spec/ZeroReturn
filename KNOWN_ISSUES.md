@@ -99,10 +99,15 @@
 68. **BOILER CELLAR: the AI may not path down the cabin stair (checked 2026-11-01 night).** The cellar is lit (13 lamps within 60 studs), and the dog-leg looks complete: two flights of 0.5-stud risers on 0.8-stud treads, a landing, the exit radio below. With the boiler door opened, PathfindingService with the AI agent (radius 1.6, height 5.6, no jumping) found no path from the cabin to the top step, down either flight, or to the cellar. Inside the cellar it did (17 waypoints). An earlier session found 37 waypoints from the cabin to the exit zone. One suspect: the cabin door opens inward into the 4-stud gap between the cabin wall and the shaft (open panel at 136.6, -5267.9). Not checked by hand: the movement controller ignores `Humanoid:MoveTo`, and the Studio navigation tool reports no route. Five probes from Block A's ground floor to floor-2 rooms also gave NoPath, but those goal points may have been inside furniture: retest along the corridors with `aiGoto`.
 
 69. **Placement: what the tidy pass leaves (2026-11-02).** `docs/look/PLACEMENT.md` describes the pass and the audit.
-    - **Furniture touching walls.** On Border, the pass left 62 pieces 0.2 to 2 studs into walls. They are benches,
-      lockers, racks, shelves, the motor shop's water tank, and some containers' own boxes. It only moves a prop up to
-      half its width, and it never removes furniture or anything holding loot. `ZR_Dev tidylog border left` lists them
-      with positions, for fixing in the builders.
+    - **Furniture touching walls.** After round 2, the pass leaves 7 props on Border:
+      - 2 dorm chairs pushed under part-built desks;
+      - a STORE 3 rack 0.8 studs into a ceiling;
+      - a motor shop fuse box against a stepped gable;
+      - a Red Stores locker 0.6 studs into a thin wall;
+      - two STORE 7 props the stacked step then cleared.
+
+      It only moves a prop up to half its width, and it never removes furniture or anything holding loot.
+      `ZR_Dev tidylog border left` lists them.
     - **Kit origins.** 59 kits have their origin off the middle of their footprint, by 0.3 to 4.8 studs: the fuse box,
       lockers, office desk and others (KitMeta `center`). Builders gave positions as if those were the middle, so these
       props sit up to a stud forward of where they were aimed. Usually that leaves a gap behind them, sometimes it runs
@@ -113,9 +118,7 @@
       into both tanks. Check this against the reference when the fuel yard is next compared with Tarkov.
     - **Still to check by hand:**
       - every re-hung door, and AI paths through them;
-      - Living.luau's trailers and the fuel stop, where the safe overlaps the office desk;
-      - the 8 containers the audit still finds against walls;
-      - the floating fuse box on Meridian.
+      - the fuel stop, where the safe overlaps the office desk.
 
 ## Tool limitations (not game bugs)
 

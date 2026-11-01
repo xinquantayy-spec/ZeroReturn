@@ -32,6 +32,12 @@ for _, n in {
 	FIXED[n] = true
 end
 Tidy.FIXED = FIXED
+-- wall fittings that are furniture: one hung across a doorway is removed like any prop (a shelf, a board, a box)
+local WALLFURN = {}
+for _, n in { "WallShelf", "WallShelfBooks", "WallShelfMeds", "WallShelfSparse", "WallShelfTools", "Whiteboard", "CorkBoard", "Pegboard",
+	"Pigeonholes", "GunRack", "FirstAid", "Extinguisher", "WallPhone", "WallClock", "JunctionBox", "HoseReel", "TVWall", "RangeDisplay" } do
+	WALLFURN[n] = true
+end
 -- what a chair is pushed in under (a chair and one of these share a box by design). Not the office desk: its kit has
 -- its own chair, so a second chair in its box stands in that one
 local TUCK = { Table = true, TechTable = true, CCTVDesk = true, FoodTable = true, FoodTableMess = true, DisplayTable = true, GunBench = true, CraftBench = true }
@@ -110,7 +116,9 @@ local function intoWall(cf, size, p)
 		local r, u, l = cf.RightVector * size.X / 2, cf.UpVector * size.Y / 2, cf.LookVector * size.Z / 2
 		return math.abs(r:Dot(axis)) + math.abs(u:Dot(axis)) + math.abs(l:Dot(axis))
 	end
-	local ax = { { p.CFrame.RightVector, rel.X, half.X }, { p.CFrame.UpVector, rel.Y, half.Y }, { p.CFrame.LookVector, rel.Z, half.Z } }
+	-- the part's own axes (ZVector, not LookVector: LookVector is -Z, which turned the pushes into walls with a thin
+	-- Z, found 2026-11-02)
+	local ax = { { p.CFrame.XVector, rel.X, half.X }, { p.CFrame.YVector, rel.Y, half.Y }, { p.CFrame.ZVector, rel.Z, half.Z } }
 	local best, bestDir = math.huge, nil
 	for _, a in ax do
 		local ra = reach(a[1])
@@ -182,7 +190,8 @@ function Tidy.run(mapId, model, doors)
 			local seen = {}
 			for _, p in workspace:GetPartBoundsInBox(d.cf, box, op) do
 				local km = kitOf(p, model)
-				if km and not seen[km] and not gone[km] and not FIXED[km:GetAttribute("Kit")] and not km:IsAncestorOf(d.part) then
+				local kk = km and km:GetAttribute("Kit")
+				if km and not seen[km] and not gone[km] and (not FIXED[kk] or WALLFURN[kk]) and not km:IsAncestorOf(d.part) then
 					seen[km] = true
 					if not keeps(km) then
 						note("doorway", km)
