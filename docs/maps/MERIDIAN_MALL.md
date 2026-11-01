@@ -953,3 +953,213 @@ and memory on a low-end phone.
 | `src/server/Maps/Meridian/StoresL1Kit.luau` | the frame toolkit: placement by footprint, containers, loose spots, doors, offices, lamps |
 | `src/server/Maps/Meridian/StoresL1Halls.luau` | NESTA, KASSA, BOLTWORKS |
 | `src/server/Maps/Meridian/StoresL1Back.luau` | the NESTA CANTEEN, `BACK_1` to `BACK_4` |
+
+## Part 4b: upper floor stores and the car-park rooms
+
+`src/server/Maps/Meridian/StoresL2.luau` is the second half of the stores (`Stores.luau` runs it after `StoresL1`, each under its own
+`pcall`). It furnishes the 31 L2 units the shell fitted, the stock rooms behind them, and the insides of THE SHELTER and UNIT 14 on L0 (their
+walls, doors and cards are the shell's and Play's). Researched first (`docs/maps/reference/INTERCHANGE_REFERENCE.md` sections 4.4, 8.1,
+8.2, 8.4 and 8.5: what each L2 unit sells, the ULTRA medical storage, the saferoom's and Object-14's contents, TECHLIGHT as the best tech
+store, the SPT container groups), then built. Status: written and passed through `tools/luau_check.py`; the placement also ran in an offline
+plain-Lua mock against the real shell and was checked there (see "Checked offline"). Nothing has run in Luau, Studio, on a phone or on a
+console, and no frame rate was measured.
+
+### What is built
+
+Numbers are the mock's (a kit prop counts its pieces and colliders from `KitMeta`, as the budget does). Where two totals are shown the mock
+gave either: `L2_shiccos` has an entrance on both long walls and the shell's choice of its front varied between runs (see "Known quirks");
+every other number was the same in every run:
+
+| | Count |
+|---|---|
+| Rooms | 58: 31 sales floors (30 shops and the MEDIQ STORE ROOM), 25 stock rooms behind them, THE SHELTER, UNIT 14 |
+| Kit props | 663 or 664 (budget 700): 552 or 553 on L2, 111 on L0 |
+| Parts | 2,747 or 2,752 (budget 3,000): 2,543 or 2,548 kit pieces and colliders, 204 plain parts (stand-in boxes, six cargo containers, small cases, door fillers, dust sheets, lamps) |
+| Containers | 148: 114 on L2 and 34 on L0 (shelter 17, UNIT 14 17) |
+| Loose loot spots | 166: 129 on L2 and 37 on L0 |
+| Doors | 1 new (`MM_MEDIQ_STORE`), 2 of the shell's given a key |
+| Lamps | 60 (48 on L2, 12 on L0), all dead until `MALL_POWER` |
+
+The aim was about 100 containers and about 120 loose spots: L2 alone is 114 and 129, and the two car-park rooms add 34 and 37 (that is where
+the mall's best loot is meant to lie).
+
+Containers by kind: register 22, crate 18, jacket 16, cooler 15, pharmacy 13, grocery 12, techbox 12, locker 10, medbag 8, safe 7, toolbox 6,
+drawer 5, weaponbox 4. Loose spots by pool: grocery 36, mall 33, pharmacy 21, junk 20, tech 20, vault 11, office 8, mallgood 5, drinks 4,
+mallkeys 4, dorm 2, dorm_good 2. Only existing container kinds and loot tables are used (`Loot.luau` is untouched). The module prints one
+line (`[ZR] Meridian stores L2: ...`) with these totals and the number of placements it refused (144 or 146: a prop that did not fit its
+slot, skipped, not an error); it adds to `B.count.prop`, `container`, `door` and `light`.
+
+### How a room is furnished
+
+Each unit gets two frames, the sales floor and the stock strip (8.8 deep), each in its own coordinates (x across the front, d the depth from
+the front wall). A kit prop goes in by the centre of its footprint and is **refused** (counted, not placed) when it would overlap another
+prop, a column or wall of the shell, an entrance strip (7.5 deep, 5.5 for an entrance 30 or more wide, 1.2 more either side), or the swing of
+a stock door (4.5 deep and 3.6 either side on the sales side, 6.8 and 6.4 on the stock side). Props stand on `u.floorY`; the counters'
+colliders are lower boxes (a prop's own bounding box would be taller than the counter) so loose items can lie on them. Loose items lie only
+where a player can reach them (a surface at most 4.8 up). The code stops adding at 2,960 parts or 690 props (nothing was cut). Recipes by kind:
+
+- **Food** (11 restaurants): shallow units (under 24 deep) serve over food counters and fridges along the back wall; deeper ones have a service
+  line (counters and tills with a gap for the staff) and a kitchen behind it; seating in rows of tables in front; a till, a drinks fridge or
+  vending machine, a staff locker in the larger ones; dry-store shelves in the stock room.
+- **Clothing** (7), **general** (2), **pharmacies** (2), **electronics** (2), **furniture** (1), **museum** (1), **travel** (1): shelving on
+  the walls, rows of racks, aisles, tables, display cases or desks by kind, a till, and what the kind sells on top; each stock room has
+  shelves along the back wall, boxes in the corners and a container kind that fits the shop (spare coats, stock cabinets, packed crates,
+  archive drawers).
+- **PLAYFIELD** (the sports and games hall): shelves and lockers on the back wall, treadmills and weight racks in front of them, arcade
+  machines along one side, racks and gondolas in rows, a till and a gym bag.
+- **CLOSED FOR REFIT** and **OPENING SOON** (half-built): dust sheets over what is left, rubble, pallets and cardboard, a hoarding across the
+  middle (the first); empty shelves, pallets of boxes, fitters' tools (the second). Both keep a container or two so they are worth a visit.
+
+### The units (31)
+
+Reference id and name are the reference's (never shown to a player); our names are original. VOLTA and MEDIQ are fixed by the spec. W x D is the
+sales area in studs; Props counts kit props in both rooms; Containers is the total, with the sales floor and the stock room in brackets
+where the unit has one; Loose is the loose spots in both rooms. Five restaurants (`L2_fck`, `L2_mcdaniels`, `L2_burger_house`, `L2_shiccos`,
+`L2_sushi_huyushi`) and `L2_father_sons` have no stock room, as in the shell.
+
+| Reference id | Reference name | Our name | Kind | W x D | Props | Containers | Loose |
+|---|---|---|---|---|---|---|---|
+| `L2_apteka` | Apteka (ULTRA Medical's pharmacy) | MEDIQ | pharmacy | 38 x 19 | 8 | 3 (2 + 1) | 3 |
+| `L2_arena` | Arena | PLAYFIELD | sports | 38 x 38 | 21 | 5 (4 + 1) | 4 |
+| `L2_burger_house` | Burger House | SMOKEHOUSE | food | 57 x 16 | 10 | 2 | 1 |
+| `L2_burger_spot_49` | Burger Spot (#49) | STACK & SIZZLE | food | 57 x 31 | 26 | 10 (3 + 7) | 10 |
+| `L2_closed_for_repairs` | Closed for repairs | CLOSED FOR REFIT | closed | 66 x 69 | 32 | 4 (3 + 1) | 6 |
+| `L2_coffee_joy` | Coffee Joy | CUP & SAUCER | food | 63 x 19 | 13 | 3 (2 + 1) | 3 |
+| `L2_eastland` | Eastland | LINDEN WEAR | clothing | 41 x 28 | 17 | 3 (2 + 1) | 4 |
+| `L2_fashion_store` | Fashion Store | CATWALK | clothing | 79 x 19 | 19 | 3 (2 + 1) | 3 |
+| `L2_father_sons` | Father & Sons | HALE & KIN | clothing | 79 x 23 | 19 | 2 | 1 |
+| `L2_fck` | FCK | GOLDEN WING | food | 57 x 23 | 10 | 2 | 1 |
+| `L2_figaro` | Figaro | SHEARS & CO | clothing | 85 x 31 | 27 | 2 (1 + 1) | 3 |
+| `L2_furniture_mk` | Furniture MK | HEARTH & HOME | furniture | 85 x 31 | 25 | 2 (1 + 1) | 3 |
+| `L2_history_museum` | History Museum | REGIONAL MUSEUM | museum | 91 x 28 | 21 | 2 (1 + 1) | 4 |
+| `L2_intourist` | Intourist | HORIZON TRAVEL | travel | 38 x 19 | 9 | 2 (1 + 1) | 3 |
+| `L2_jacob_jacob` | Jacob & Jacob | HOLLIS & PARK | clothing | 82 x 31 | 28 | 3 (2 + 1) | 4 |
+| `L2_mcdaniels` | McDaniels | BIG BITE | food | 57 x 19 | 9 | 2 | 1 |
+| `L2_na_svyazi` | Na-Svyazi | SIGNAL POINT | electronics | 38 x 38 | 14 | 2 (1 + 1) | 3 |
+| `L2_opening_soon` | Opening soon | OPENING SOON | closed | 44 x 25 | 10 | 3 (2 + 1) | 4 |
+| `L2_papillon` | Papillon | VELVET MOTH | clothing | 110 x 19 | 26 | 3 (2 + 1) | 3 |
+| `L2_philly_cute` | Philly Cute | COPPER PAN | food | 44 x 75 | 19 | 4 (3 + 1) | 6 |
+| `L2_pushkin` | Pushkin | SILVER FORK | food | 73 x 38 | 23 | 5 (4 + 1) | 6 |
+| `L2_sara` | SARA | EVERYDAY STORE | general | 35 x 19 | 8 | 3 (2 + 1) | 2 |
+| `L2_shiccos` | Shiccos | OLIVE & SALT | food | 57 x 19 | 8 or 9 | 2 | 1 |
+| `L2_sushi_huyushi` | Sushi Huyushi | TIDE SUSHI | food | 57 x 16 | 8 | 2 | 1 |
+| `L2_tarducks` | Tarducks | DAWN ROAST | food | 57 x 19 | 10 | 3 (2 + 1) | 3 |
+| `L2_tarkovstar` | Tarkovstar | ALDER GENERAL | general | 38 x 22 | 9 | 3 (2 + 1) | 3 |
+| `L2_tarzdrav` | Tarzdrav | WELLSPRING | pharmacy | 94 x 31 | 42 | 4 (3 + 1) | 3 |
+| `L2_techlight` | Techlight | VOLTA | electronics | 116 x 19 | 30 | 13 (4 + 9) | 15 |
+| `L2_ultra_med_locked_room` | ULTRA med (locked room) | MEDIQ STORE ROOM | locked store | 32 x 19 | 8 | 9 (8 + 1) | 15 |
+| `L2_underway` | Underway | CROSSTOWN DELI | food | 76 x 38 | 29 | 5 (4 + 1) | 6 |
+| `L2_urban_clothes` | Urban Clothes | METRO WEAR | clothing | 41 x 25 | 14 | 3 (2 + 1) | 4 |
+
+**THE SHELTER** (`L0_saferoom_exfil_room`, 216 x 201; 87 props, 17 containers, 19 loose spots, 9 lamps): a hidden dormitory hall. Bunks in
+three rows (18) with locker banks on the back wall (3 locker containers and 2 jackets), a supply corner (racks and pallets of boxes, water
+tanks, drums, jerry cans; 3 rack containers), a utility corner (generator with its toolbox, fuse box, electric cabinet), the mess (6 tables
+with 12 chairs, a kitchen run along the wall with a ration fridge, a pantry shelf and a galley counter), a couch with valuables, an infirmary
+(cots, a shelf, two med cases), an armoury on the right wall (gun racks, a bench carrying two weapon cases, armour and rig stands), a briefing
+table in the middle, benches and notices by the entry. The exit marking and beacon (`B.points.SHELTER_ROOM`) and the vestibule arch stay free.
+
+**UNIT 14** (`L0_object_14_container_room`, 91 x 69; 24 props, 17 containers, 18 loose spots, 3 lamps): the best loot of the mall. Six
+walk-in shipping containers in two rows (the kit has no container prop, so each is nine plain parts: roof, two sides, back, four posts and a
+header; open at one end), each holding two of: a safe, a sealed crate, a weapon case, a server case, a medical case, a toolbox; five pallet
+racks along the back wall (three are containers), a forklift, pallets of boxes, roll cages, drums, tool chests (one is a container), a work
+light, and a dispatch drawer. 4 safes, 6 crates, 2 weapon cases, a tech case, a med case, 2 toolboxes and a drawer in all. The card door's
+swing stays free.
+
+### Doors and keys
+
+| Door | Key | Opens |
+|---|---|---|
+| `MM_MEDIQ_STORE` (new) | `KEY_MEDIQ` | the MEDIQ STORE ROOM (`L2_ultra_med_locked_room`). The shell left the unit open; the widest entrance is closed by two wall fillers and a lintel round a 5.2 x 8.6 leaf that opens inward. Play puts the power lock on it (its electric-lock pass takes every keyed door of `KEY_MEDIQ`) |
+| `MM_L2_techlight_STOCK` (the shell's, keyed here) | `KEY_VOLTA_STORE` | VOLTA's stock room |
+| `MM_L2_burger_spot_49_STOCK` (the shell's, keyed here) | `KEY_MALL_STAFF` | the staff kitchen behind STACK & SIZZLE (the reference's Burger Spot #49) |
+| `MM_SHELTER`, `MM_UNIT14` (the shell's) | `CARD_MALL_VAULT`, `KEY_MM_UNIT14` | unchanged; the room behind each keeps the swing and the way in free |
+
+Part 3 expected the ids `MM_VOLTA_STORE` and `MM_STAFF_KITCHEN`; the shell already had a stock door in each unit, so those two were keyed
+instead of adding a second door. Play matches doors by key, so nothing else changes (read the two ids in Part 3's table as the ids above).
+The other 22 stock-room doors stay as the shell made them (unkeyed, open about 40 % of the time).
+
+Where the keys lie: the reference's key tiles are loose spots of the `mallkeys` pool (`KEY_MALL_STAFF` at (309.4, -287.5) and the shelter card
+at (359.4, -287.5) on the counters of STACK & SIZZLE, `KEY_VOLTA_STORE` at (-36.6, 183.8) on VOLTA's sales floor). `KEY_MEDIQ`'s tile (32.2,
+58.8) lies inside the room it opens, so its spot is on MEDIQ's till in the pharmacy instead. A loose spot rolls from its pool, so the item that
+appears is any key of `mallkeys`, not the one the tile names. Part 4a's remedy applies here too: a `Loot.POOLS` entry holding only that key,
+named in the `mallkeys` spots of the STACK & SIZZLE, MEDIQ and VOLTA entries of `PLAN` in `StoresL2.luau`, would put the exact key on its tile.
+
+### What the rooms hold
+
+- **STACK & SIZZLE's kitchen** (7 containers, 5 loose spots): a kitchen fridge, a dry store, a kitchen till, two staff lockers, the
+  manager's safe, a first-aid case; the aisle stays 3.4 wide or more.
+- **The MEDIQ STORE ROOM** (9 containers, 15 loose spots; the best medical loot of L2): racks and shelves of medicines (6 pharmacy
+  containers: 5 in the room, 1 in the strip behind it), two med cases and a narcotics safe, `pharmacy` pool spots on the floor and the shelves.
+- **VOLTA's stock room** (9 containers, 10 loose spots): racks of graphics cards, server cases and cable crates (6 tech boxes, a packing
+  crate), a stock safe and a fitter's toolbox, `tech` pool spots (graphics cards are in that pool).
+- Registers (22) are the tills of the shops, the fridges and vending machines (cooler 15) hold drinks, the coat racks and spare coats (jacket
+  16) hold clothes, the pharmacy shelves (pharmacy 13) medicines.
+
+### Lights
+
+Sixty flat fixtures (2.6 x 0.35 x 0.9, under the ceiling) with a `PointLight` each (range 24 to 50, no shadows), dead until the mall power
+is on: one `B.powerHooks` function switches all of them (neon material and a warm colour when on). A lamp is placed only where no lamp of
+the shell or of ours reaches 80 % of its range, on a grid of 44 studs (72 in the shelter, 46 in UNIT 14), so most shops get one to three and
+the stock rooms of the small shops none (the lamps of the shop beside them reach in).
+
+### Known quirks (part 4b)
+
+- The MEDIQ STORE ROOM's own stock strip (32 x 8.8) holds one medicine shelf and a pallet of boxes: the stock door's swing zone (6.8 deep,
+  6.4 either side) takes most of it and the rack slots next to it were refused. The room in front carries the loot.
+- `L2_shiccos` (OLIVE & SALT) has a shop entrance on both long walls, and which one the shell makes its front changed from one run of the
+  mock to the next (the unit's `cframe` faces north or south). The module builds from `u.cframe` and `u.entrances`, so either works; the
+  room has 8 or 9 props and the totals above move by one prop (3 to 5 parts). Both outcomes passed the same checks.
+- Three planters (HISTORY MUSEUM, WELLSPRING, VOLTA) have a collider reaching 0.3 below the floor (the kit's own data); it sinks into the slab.
+- The shelter's right wall is full of pilasters, so the 14-stud gun bench has few places that fit: it is tried at three depths and its two
+  weapon cases are made only when it was placed (it was, in the mock).
+
+### Checked offline
+
+The Luau code never ran. These ran in an offline plain-Lua mock of the Roblox API (the real `Layout`, `Kit`, `KitMeta` and `Mall` shell, the
+real `StoresL2.luau` text passed through a Luau-to-Lua rewrite; kit props are boxes there, not meshes) and over its part list in Python:
+
+- `python3 tools/luau_check.py src`: 136 files, 0 failing. The module ran to the end with no error (warnings: none) and nothing cut by the
+  budget (663 or 664 of 700 props, 2,747 or 2,752 of 3,000 parts).
+- Every container id is unique (148, all `MM2_...`, none shared with the L1 stores' `MM_L1_...`) and every pool and container kind exists in
+  `Loot.luau`; every colour and material the module uses is a defined value (`C`, `hex`, `Enum.Material`), after the shell's first run died on
+  a nil colour.
+- On a 0.5-stud lattice, per room: no two props overlap (same height band, over 0.5 square stud), no prop stands in a shell wall or column
+  (0.7 square stud), no collider lies outside its room, no prop stands in an entrance strip or a stock door's keep-out. Only the three
+  planter notes above remain.
+- Walkable floor for a 2-stud-wide walker, from each room's doors and entrances: at least 95 % of every room's free floor is connected (the
+  staff kitchen first had a cut-off end, fixed), and every container and loose spot has that floor within 4.5 studs.
+- Not covered: how the props face (the kit's front is -Z, taken from `Kit.luau`), how anything looks, how a Humanoid moves among them.
+
+### Parity gaps from this part (copied to `docs/design/EFT_PARITY.md`)
+
+- **Interiors are ours.** The reference gives each unit's rectangle and kind (and a few loot notes); the shelves, counters, tables and racks are
+  placed by recipe, not copied from any plan.
+- **Every container is filled in every raid.** SPT draws a subset of its container groups per raid (Ultra 45 to 49 of 129, MedicalShops 14 to
+  18 of 38, ClothingShops 14 to 18 of 29); here all 114 on L2 and 34 on L0 exist and roll their kind's table. The loot tables are the game's own.
+- **The saferoom** has the reference's couch with valuables, food and drink shelves, weapon cases and crates, but no microwave (nothing in
+  the kit), no keypad or urinal step (Play's), and a dormitory, mess, infirmary and armoury of our own; **Object 14** has the secret stash as six
+  walk-in containers (our design; the reference gives no interior).
+- **The ULTRA medical storage** is a whole locked unit behind one door (the reference places the room, not the door, grade C), full of
+  medicine shelves and med cases; the four LEDX spawn spots are not copied (no such item here).
+- **A loose spot cannot name its item**: key tiles are `mallkeys` spots, so the key that lies there is a roll of that pool.
+- **Stock rooms** of 25 of the 31 units; the five restaurants and `L2_father_sons` have none, as in the shell.
+- **Lamps** (60, switched by the power) are ours; the reference's lighting is not documented.
+- **Not run**: nothing above has run in Luau, Studio, on a phone or on a console; no frame rate or part count in Studio.
+
+### Unverified (part 4b; nothing has run in Luau or Studio)
+
+The module in Luau and Studio: the real part count and build time (the code hands the thread back every 0.04 s of work, like the shell); the
+kit meshes and colliders in `ZR_Assets` (a prop whose mesh is missing is skipped by the kit without a warning, so rooms could be sparser);
+the look and scale of the props in the rooms, and which way they face; whether the counters' lower colliders let a loose item land where it
+should (the loot spawns by a ray 3 studs down); whether the prompts of containers inside the cargo containers and behind shelves are easy to
+reach; the height of the gun bench's top against the weapon cases (3.4 studs, from the bench's collider); the swing and lock of
+`MM_MEDIQ_STORE` with the power rule; the lamps (brightness, count) in the dark; the AI's pathing round the new furniture; frame rate on a
+low-end phone with about 2,750 more parts on top of the shell's.
+
+### Files (part 4b)
+
+| File | What |
+|---|---|
+| `src/server/Maps/Meridian/StoresL2.luau` | the L2 units, the MEDIQ STORE ROOM, VOLTA's and the staff kitchen's stock rooms, THE SHELTER and UNIT 14: room frames and the placement rules, recipes by kind, special rooms, doors and keys, lamps, totals |
+| `src/server/Maps/Meridian/Stores.luau` | the dispatcher (the L1 agent's): runs `StoresL1` then `StoresL2`; unchanged |
+| `docs/design/EFT_PARITY.md` | the parity gaps above, as "Interchange upper floor stores and car-park rooms: Meridian Mall, part 4b" |

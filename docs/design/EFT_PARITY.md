@@ -227,6 +227,50 @@ Gaps (not copied or not found):
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
 
+### Interchange upper floor stores and car-park rooms: Meridian Mall, part 4b (2026-11-01)
+
+Researched first (`docs/maps/reference/INTERCHANGE_REFERENCE.md` sections 4.4 and 8.1 to 8.5: the L2 store list and what each sells, the
+ULTRA medical storage, the saferoom's and Object 14's contents, TECHLIGHT as the best tech store, the SPT container groups), then built.
+Status: written and passed through `tools/luau_check.py`; the placement also ran in an offline plain-Lua mock against the real shell and
+was checked there (nothing overlapping or through a wall, entrances clear, walkable floor to every container and loose spot). Nothing has
+run in Luau, Studio, on a phone or on a console, and no frame rate was measured. Details, the unit table and the counts:
+`docs/maps/MERIDIAN_MALL.md`, "Part 4b".
+
+Matched:
+- **All 31 units of the upper floor furnished for what they are**, at the reference's rectangles: 11 food-court restaurants (kitchens,
+  counters, seating), 7 clothing stores, 2 general stores, 2 pharmacies, 2 electronics stores, the furniture store, the museum, the travel
+  agency, the sports and games hall, the closed unit under repair and the "opening soon" unit (half-built, dust sheets); a stock room behind
+  each unit that has one in the shell (25 of 31).
+- **The ULTRA medical storage as a locked room full of medical loot**, next to the ULTRA pharmacy (MEDIQ), opened by `KEY_MEDIQ` (a key door
+  that also needs the mall power, by Play's electric-lock rule).
+- **TECHLIGHT (VOLTA) as the best tech store**: computers on the floor and a stock room locked with `KEY_VOLTA_STORE`, full of graphics cards,
+  server cases and cable crates (the `tech` pool).
+- **The food-court staff kitchen** behind the reference's Burger Spot #49, locked with `KEY_MALL_STAFF` (kitchen fridge, dry store, lockers,
+  a safe, a first-aid case).
+- **The saferoom's reference contents** (a couch with valuables, food and drink shelves, a weapon case and crates) inside THE SHELTER.
+- **The key tiles' positions** for `KEY_MALL_STAFF`, `CARD_MALL_VAULT` and `KEY_VOLTA_STORE` (loose spots of the key pool) and for `KEY_MEDIQ`
+  (inside its room, on MEDIQ's till).
+- **The game's own container kinds and loot tables** only (`Loot.luau` untouched): 148 containers and 166 loose spots, 60 lamps that stay dead
+  until `MALL_POWER`.
+
+Gaps (not copied or not found):
+- **Interiors are ours.** The reference gives each unit's rectangle and kind (and a few loot notes), not its shelves, counters or tables;
+  every room is built by recipe from the kit.
+- **Every container is filled in every raid.** SPT draws a subset of its container groups per raid (Ultra 45 to 49 of 129, MedicalShops 14 to
+  18 of 38, ClothingShops 14 to 18 of 29); here all 114 on L2 and 34 on L0 exist and roll their kind's table, so loot density needs tuning
+  against the reference once the map can run.
+- **The saferoom** has no microwave (nothing in the kit) and no keypad or urinal step (those are Play's); its dormitory, mess, infirmary and
+  armoury are ours. **UNIT 14**'s interior is ours (the reference gives none): six walk-in shipping containers holding safes, crates and cases.
+- **The ULTRA medical storage** is a whole locked unit behind one door (the reference places the room, not the door: grade C); the four LEDX
+  spawn spots are not copied (no such item here).
+- **A loose spot cannot name its item**: the key tiles are `mallkeys` pool spots, so the key that lies there is a roll of that pool (a pool
+  holding only that key would fix it, as Part 4a notes).
+- **Stock rooms** exist for 25 of the 31 units; five restaurants and `L2_father_sons` have none, as in the shell. The MEDIQ STORE ROOM's own
+  stock strip is nearly empty (the stock door's swing zone takes most of it).
+- **The sports hall, travel agency, museum and the two unfinished units** are only named by the reference; what they hold is ours.
+- **Lamps** (60, off until the mall power) are ours; the reference's lighting is not documented.
+- **Not run**: nothing above has run in Luau, Studio, on a phone or on a console; no frame rate or part count was measured in Studio.
+
 ### Interchange gameplay: Meridian Mall, part 3 (2026-11-01)
 
 Researched first (`docs/maps/reference/INTERCHANGE_REFERENCE.md` sections 6 to 8: SPT data of the old map, tarkovforge and re3mr 2026,
