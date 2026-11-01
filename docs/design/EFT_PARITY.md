@@ -524,3 +524,34 @@ Gaps (not copied or not found):
 - **Not run**: nothing above has been run in Luau, Studio, on a phone or on a console. A second player is needed to see the shared
   countdown and the "left behind" case. The touch tap on a prompt now holds it for its whole hold time (`Interact.luau`), which also
   affects the other hold prompts (the Meridian levers, the Border switches); that is untested on a phone too.
+
+### Breakable glass: window panes (2026-11-01)
+
+Researched first; **no source that states how Tarkov's window glass behaves could be read** (the wiki's Ballistics and Changelog pages say
+nothing about windows; the forum threads about glass damage and the Kiba store glass, the wiki's Penetration page and web.archive.org
+could not be opened). The rules below are therefore the owner's brief, not checked against the game, and sit in one table
+(`Glass.CFG`) to tune. Built in `src/server/Services/Glass.luau` and `src/client/Controllers/GlassFx.luau`, with small hooks in
+`Ballistics.luau`, `Combat.luau`, `AI.luau`, `Stationary.luau`, `Doors.luau`, `Effects.luau` and the two map builders (`Border/Living.luau`,
+`Meridian/MallShell.luau`). Full design, costs, Studio check list and gap list: `docs/design/GLASS.md`. Status: written and passed through
+`tools/luau_check.py` only; nothing has run in Luau, Studio, on a phone or on a console, and the new LogicTests `glass:` checks have not been run.
+
+Matched (to the brief):
+- **A bullet breaks the pane and goes on** from just past it, on the same line, with 7.5 % less damage and penetration per pane (the middle
+  of 5 to 10 %), no deflection; the AI's and the mounted guns' bullets do the same.
+- **A knife swing breaks a pane** and is spent on it; the AI hears it.
+- **A broken pane no longer blocks**: it is gone and can be walked or vaulted through like an open window; a new raid mends every pane.
+- **Shards and sound**: a short spray of shards (none on the lowest graphics level), glass on the floor on both sides for the raid, a
+  breaking sound that carries further for a bigger pane.
+
+Gaps (not copied or not found):
+- **Tarkov's real behaviour is unverified**: the loss, "no deflection", melee breaking and that every pane breaks are all from the brief.
+- **No bulletproof glass**: nothing found shows where Tarkov has it (the Kiba store forum titles hint that some glass is special).
+- **A pane breaks whole**: no cracking stage, no partial holes, no fragments left in the frame; Meridian's shop fronts are cut into panes
+  of at most 20 studs so one shot does not clear a front.
+- **Only window glass**: balustrades, skylights, mirrors, counter glass, vehicle windows and the sawmill booth are unchanged; grenade blasts
+  and fists do not break glass.
+- **Meridian's shop glass no longer stops the AI's sight or thrown grenades** (it was solid to every ray before); only shots and blows meet it.
+- **The sound is not in the game until `ZR_SFX_Amb` is re-uploaded** (the file changed: three glass sounds added at its end) and
+  `Sounds.AMB_ATLAS` is replaced; until then glass breaks silently.
+- **Not run**: the collision-group plan (hit shells in group `ZR_Glass`, shots in `ZR_Shot`) rests on documented Roblox behaviour and
+  has not been seen working in Studio.
