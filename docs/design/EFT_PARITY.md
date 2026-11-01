@@ -223,7 +223,7 @@ Gaps (not copied or not found):
 | Tarkov | Zero Return | To do |
 |---|---|---|
 | Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
-| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01; written, nothing run in Studio). Part 1 the outside, part 2 the mall shell and stores (other agents), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Part 3) | The second boss (the hammer boss), airdrops, co-op, flare and transit extracts, the car exit's car and karma, the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the list under "Interchange gameplay" below |
+| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01; written, nothing run in Studio). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | The second boss (the hammer boss), airdrops, co-op, flare and transit extracts, the car exit's car and karma, the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
 
@@ -271,3 +271,41 @@ Gaps (not copied or not found):
 - **Art**: the ten new keys have no icon or model yet.
 - **Not run**: nothing above has been run in Studio, on a phone or on a console, and the new LogicTests group and MapTests M01 to M05 for
   this map have not been run either.
+
+### Interchange mall shell: Meridian Mall, part 2 (2026-11-01)
+
+Researched first (`docs/maps/reference/INTERCHANGE_REFERENCE.md` sections 4 and 5: outline and wings, heights, vertical links, docks,
+restrooms, power), then built. Status: written and passed through `tools/luau_check.py`; the geometry also ran in an offline plain-Lua
+mock and was checked there (floor tops, walkability, openings, Play's floor rule). Nothing has run in Luau, Studio, on a phone or on a
+console, and no frame rate was measured. Details, the unit table and the counts: `docs/maps/MERIDIAN_MALL.md`, "Part 2".
+
+Matched:
+- **The footprint, wings and three levels at real scale**: the 22-point outline, the car park at floor 0, L1 at 17.81 and L2 at 47.50 (the
+  reference's 5.7 m and 15.2 m above the car park, times 3.125), the L2 floor only over the central block, the three halls open up to their roofs.
+- **Three anchor halls** at the reference's rectangles (KASSA east, NESTA north, BOLTWORKS south) with their back-of-house blocks, stock
+  rooms, offices and goods-in, and eight checkout lanes each.
+- **All 76 store records** of the reference as fitted empty units at their rectangles (snapped to 1 m): glass front, entrances at the
+  reference's openings, stock room, party walls, sign over the door.
+- **Vertical links where the reference puts them**: nine stairs or ramps between the car park and L1, two stairs and three escalators
+  (stopped, as in the game) between L1 and L2 on the central axis, the four dock ramps (Ground) meeting the L1 decks.
+- **The car park**: zones A to D and the NESTA, KASSA and BOLTWORKS garages, the service tunnel, THE SHELTER block with its vestibule and
+  card door, UNIT 14 with its card door; stairs up at the nine spots.
+- **Two atria with octagonal domes and about 40 skylights**; the roof cannot be reached (no stairs or ladders in the reference).
+- **Two docks on the east walls** with their bays at the reference's 8.1 m pitch.
+- **A washroom on L2 for the saferoom chain and a security room on L1** for the alarm terminal.
+- **Dark until the power is on**: the main lamps follow the mall power; a few red emergency lamps stay lit.
+
+Gaps (not copied or not found):
+- **Walls are inferred**: the reference draws the outline, some closed blocks and a few partitions; every other wall follows the store,
+  hall and corridor rectangles snapped to a 1 m grid (within 1.6 studs).
+- **Escalators** are solid single-lane flights (no up and down lanes, no moving steps); one stair is steeper than the reference (32 degrees
+  against 28) because the grid shortened its run.
+- **Domes** are eight-pane glass drums with a stepped cap; the skylights are 41 flat strips.
+- **Loading docks**: 7 bays per dock (the reference: 8) in a straight wall, not a sawtooth; the bay doors, their size and any levellers are
+  in no source; six bays stand open and eight are shut by a plate (our choice).
+- **Interiors that no source gives** (the shelter room, UNIT 14, the washrooms, the security room, the tunnel's inside) are ours; so is the
+  tunnel's east passage to the KASSA garage and the car park's column grid (50 studs; the reference: about 8 m).
+- **Lighting**: the reference's lamps and their dead/alive rules are not documented; ours are 149 sparse lamps and 26 red ones.
+- **The atria open down to the car park**: no source says what lies under them.
+- **The stores are empty boxes**: no counters, shelves, stock or loot (the stores agents'); 12 small or open stores have no stock room.
+- **Not run**: nothing above has been run in Luau, Studio, on a phone or on a console.

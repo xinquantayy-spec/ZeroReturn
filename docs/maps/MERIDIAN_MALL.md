@@ -8,8 +8,8 @@ see `MERIDIAN_INTERCHANGE_BUILD.md`: same map, own buildings and names). The fir
 (`git show 42049af:src/server/Maps/MeridianMall.luau`) and `src/server/Maps/MeridianMall.luau` is a stub.
 
 Status: part 1 of 3 (foundation) is written: layout data, init, ground and outside structures, the power switch, the wiring in
-`World.luau` and `Maps.luau` (raid time 2400 s). The mall itself (shell, stores) and the play layer are not built: the footprint
-is a flat pad with a thin outline. Part 1 was written without a Luau runtime: `tools/luau_check.py` (structure only) passes, and an
+`World.luau` and `Maps.luau` (raid time 2400 s). The shell (part 2) and the play layer (part 3) were written
+afterwards (see below); the stores are not built yet. Part 1 was written without a Luau runtime: `tools/luau_check.py` (structure only) passes, and an
 offline Lua 5.4 mock (stand-ins for the kit, `MapKit`, `TerrainKit` and the engine; not in the repo) ran `init`, `Ground` and
 `Outside` against the real `Layout.luau` with no error and no warning. Nothing has run in Studio: every number below that depends
 on the engine (terrain look, timings, frame rate) is an expectation, and the part counts are the mock's.
@@ -181,8 +181,7 @@ the item exists.
 
 ## Not done yet
 
-- **Mall shell** (agent 2): outer walls and entrances, L0 car park, garages, SHELTER and UNIT 14, L1 and L2 slabs, atria, roof, corridors,
-  escalators and stairs, service corridors, docks, washrooms, empty store units with shopfronts.
+- **Mall shell**: written, see Part 2 below (not run in Luau or Studio).
 - **Stores** (agents 3): every store's interior, containers, loose loot, doors, locked rooms and their keys, the ten new key items.
 - **Play** (agent 3): extracts, PMC spawns by side (`W.spawns`, `W.sideExtracts`), scav zones, AI routes and watch posts (`W.patrols`,
   `W.watchPosts`), THE CARETAKER and his zones, what the power changes, the IRONSIGHT alarm, visit zones, lethal minefield and sniper
@@ -230,6 +229,299 @@ field, 2 rail bed, 3 concrete, 4 gravel, 5 asphalt, 8 outside the limit, 9 pond 
 `inMall(x, z)` and `T` (the TerrainKit result); Outside adds the named points in `B.points`: `SUBSTATION_SWITCH`, `SUBSTATION_UTILITY`,
 `SUBSTATION_GATE`, `RESCUE_CHECKPOINT`, `RESCUE_GATE`, `WEST_CAMP`, `RESCUE_CAMP`, `KART_PIT`, `NESTA_TOWER`, `BOLTWORKS_TOWER`
 (world positions at standing height).
+
+## Part 2: the mall shell (car park, L1 and L2, atria, roof, empty store units)
+
+Written 2026-11-01 by the mall shell agent, in parallel with the gameplay and stores agents: `Mall.luau`, `MallGrid.luau`, `MallPlan.luau`,
+`MallShell.luau`, `MallLinks.luau` and `MallFit.luau` in `src/server/Maps/Meridian/`. `python3 tools/luau_check.py src` (structure only)
+passes. **Nothing here has run in Luau or Studio.** The six files were transpiled to Lua 5.3 and run against the real `Layout.luau` with
+stand-ins for the kit and the engine (offline, not in the repo): no error, no warning; every count below is that run's, and the checks
+listed under "Checked offline" were made on its part list. This part replaces the "Mall shell" bullet under "Not done yet" and the
+Status sentence that calls the mall a flat pad.
+
+### What is built
+
+The building at real scale on the reference's outline, empty: walls, floors, roof, stairs, the empty store units; no furniture, loot,
+containers or store interiors. **5,360 parts** (budget 7,000) in the model "Mall": L0 706, L1 2,171, L2 1,442, Roof 431, Links 547, Units
+(the 63 sign boards) 63. The plan (`MallPlan`, plain Lua, no engine calls) rasterises `Layout` into 3.125-stud cells (302 x 523: x -65.6..878,
+z -965.6..668.8), one label array per level (outside, open floor, solid mass, hall, void, deck, unit n); every store rectangle of
+`L.mall.levels[i].stores` is snapped to that grid and gets a label of its own. Walls are found as runs along the grid lines between cells
+of different labels, and what a run is follows from the pair of labels (below). `Mall` runs `MallShell`, `MallLinks` and `MallFit` under
+`pcall` (a failing step is logged and the rest still builds), then prints `[ZR] Meridian mall: ...` and a `detail` line.
+
+| Area | Built as |
+|---|---|
+| Walls | Outer walls 2.4 thick (16.25 high at L0, up to the roof 69.1 above L1 and L2); partitions, party walls and shop fronts 2.0; the parapet round the open L1 decks 1.6 thick, 3.4 high; balustrades where a gallery meets a void (glass 3.5 high, handrail to 4.0). 3,191 wall parts; no wall part is thicker than 2.4 |
+| L0 car park | Floor slab top at **y 0** (1.6 thick), the outline of `L.mall.levels[1].floor`; ceiling 16.25; 305 columns (3.2 square) on a 50-stud grid, kept clear of walls, flights and openings; zones A to D and the three garages as seven parking units with a 10 x 10 floor mark (letter or name); 13 gates in the outer wall (20 or 14 wide, 13 high); the west pad opens into the car park |
+| L0 rooms | THE SHELTER (216 x 201, with columns, arch to its vestibule and the card door `MM_SHELTER` in car park C at (412.5, 175)); UNIT 14 (91 x 69, card door `MM_UNIT14` at (34.4, -818.8)); the SERVICE TUNNEL (297 x 37.5, WEST CAMP's extract inside, open at the west end and through a 19-stud passage at the east end into the KASSA garage) |
+| L1 | Floor slab top **17.81**, ceiling 45.94 under the L2 floor and 49.69 (up to the roof) elsewhere; the galleries and corridors, 40 units, the three anchor halls, terraces and decks (open air, parapets) with 12 entries (14 x 12) and the dock bays, 71 openings (18 x 13) between halls and galleries |
+| L2 | Floor slab top **47.50**, ceiling 67.50; galleries, 33 units (shops and the food court), the two washrooms (the men's holds the valve spot) |
+| Anchors | KASSA (773 x 304), NESTA (473 x 394) and BOLTWORKS (691 x 351): one open hall each, 28.13 high under a thin roof (top 46.64), columns on a 68.75-stud grid (111), 11, 6 and 14 entrances, eight checkout lanes marked on the floor 26 studs inside the front (the yellow strips are not collidable), back-of-house blocks with keyless doors (see the door table), goods-in |
+| Store units | Every unit of `L.mall.levels[i].stores` (76) plus eight of ours: an empty fitted box with party walls, a back wall, a glass front 13.5 high with one or more open entrances 13 high, a header and a sign board over the widest entrance, a roller-grille housing over the entrances of every third store (the grille is rolled up), a floor plate (0.03 above the slab), and for stores at least 22 wide and 28 deep a stock room: a 9.4-stud strip behind a partition with a keyless door `MM_<unit id>_STOCK` (51 of them) |
+| Atria | Two octagonal voids through the L1 and L2 slabs (the car park ceiling is open under them), a glass balustrade wherever a gallery meets a void and a wall where a store does, the ramp `V_L0_L1_0` in the south one; above each a glass drum of eight panes with a metal rim and a stepped four-disc cap on the roof (the roof hole is the atrium shrunk by 4.6 studs) |
+| Roof | Slab top 69.06 (153 parts), thin hall roofs (top 46.64), 41 skylight panes (strips 9.4 wide) over the halls and galleries; **not reachable** (the reference has no way up) |
+| Links | 8 stairs L0 to L1, 2 stairs L1 to L2 and 3 stopped escalators at the positions of `L.mall.vert` (solid treads of at most 0.594 rise, 30 treads for 17.81 and 50 for 29.69, side panels and handrails, landings of at least 6 studs), the ramp `V_L0_L1_0` (a wedge); the four `V_OUT_*` vehicle ramps are Ground's, the shell's L1 deck meets their high ends |
+| Docks | 14 bays (7 on each dock wall, 10 to 13 wide, 14 high); six stand open, eight are closed by a collidable `Shutter` plate (every third bay is open) |
+| Washrooms (L2) | The east end of the reference's washroom rectangle (the burger spot keeps the west part): men's room x 362.5..390.6 and women's room x 390.6..415.6, z -309.4..-265.6, doors on the south side (`MM_WASH2_MEN`, `MM_WASH2_WOMEN`), stalls, sinks and a mirror; the valve spot `B.points.SHELTER_SWITCH` is on the men's north wall at (376.6, -307.5) |
+| Security room (L1) | About 25 x 28 at x 581..606, z 216..244 (north of the BOLTWORKS hall), door `MM_SECURITY` on its east face (KEY_MALL_SECURITY), a desk, a monitor and filing cabinets; `B.points.SECURITY_TERMINAL` stands in it |
+| Light | See "Points, power and lights" |
+
+The part counts by step: shell 4,046 (floors 361, roof 431, walls 3,191, sign boards 63), links 547 (490 treads, 28 handrails, 28 side
+panels, 1 wedge), fit 767 (stock walls 153, anchors 24, zone marks 7, columns 416, rooms 18, lamps 147, door lamps 2). In the mock the
+plan took about 2.3 s and the build 0.15 s (plain Lua 5.3; Luau and Roblox will differ). The plan and the build hand the thread back
+(`task.wait()`, only when `task` exists, after 0.04 to 0.05 s of work) so that a slow server cannot run into the script timeout.
+
+### Units: `B.units[id]`
+
+Every unit is published under its Layout store id (`L1_adik`); ours are `BACK_1` to `BACK_4` (NESTA stock rooms, KASSA back of house,
+BOLTWORKS stock block, BOLTWORKS offices; L1), `SECURITY_ROOM` (L1), `SHELTER_VESTIBULE` (L0), `WASH_L2_MEN` and `WASH_L2_WOMEN`. The `id`
+is a key and is never shown (some carry the reference's brand words); show `name`.
+
+| Field | Meaning |
+|---|---|
+| `id`, `name`, `kind`, `level` | the Layout record (`name` is "" for the 57 stores the stores agents name; `kind` is the Layout's: `clothing`, `food`, `electronics`, `locked store`, `closed` ...) |
+| `front` | `"N"`, `"S"`, `"E"` or `"W"`: the side of the entrance (the side with most entrance width; a service room: the side of its door; anchors: the side facing the central concourse); nil for the seven parking units |
+| `cframe` | world `CFrame` at the middle of the sales area's floor, y = the slab top (the plate is 0.03 above); its look vector points **out through the front**, so local -Z is the front and +Z the back wall; local +X is to the right when looking out |
+| `size` | `Vector3(width across the front, floor to ceiling, depth)` of the sales area |
+| `rect` | `{ x0, z0, x1, z1 }` the sales area in map-local studs (axis aligned; the stock strip and the walls are excluded); `outer` is the whole unit with the stock strip (not on anchors) |
+| `floorY`, `ceilY`, `ceilMin` | the slab top, the highest and the lowest ceiling (an L1 store partly under an L2 gallery has two: `L1_book_store`, `L1_dom`) |
+| `service` | true when the unit has no glass front (stock blocks, rooms, washrooms) |
+| `doors` | ids in `W.doors` that belong to the unit |
+| `entrances` | `{ pos = Vector3 (world, at floor level), width, side, kind }` for every opening of the front: `"shop"`; anchors list `"hall"` (to the galleries), `"entry"` (to the terraces) and `"dock"` (with `open = true` when the shutter is up). Keep these clear |
+| `stock` | `{ door = id, cframe, size }` of the stock strip, when the unit has one (same frame convention) |
+| `sign`, `signGui` | the board (`Sign_<id>`, model Mall/Units) and its `SurfaceGui`; the `TextLabel` holds the name, or the kind in capitals while the name is "". Set the text there and `u.name` when naming a store |
+| `floor` | the `UnitFloor` plate |
+| anchors only | `checkouts` (eight `CFrame`s, look vector out through the front), `backs` (ids of their back-of-house units), `goodsIn` (door id) |
+| parking only | `mark` (the `ZoneMark` plate); `cframe` is the zone's middle and `size` the whole zone |
+
+A prop at depth `d` studs in from the front line and `x` studs to the right: `u.cframe * CFrame.new(x, 0, d - u.size.Z / 2)`.
+Store entrances are open gaps: a store that needs a door (IRONSIGHT, RESCUE POINT, MEDIQ STORE ROOM, a grille) builds it in the gap from
+`entrances`. A store may re-key a shell door by setting `W.doors[id].key` before `World` builds the doors.
+
+### The units (84)
+
+76 from `Layout` (L0 10, L1 35 with the three anchors, L2 31) and eight of ours: `SHELTER_VESTIBULE`, `BACK_1` to `BACK_4`, `SECURITY_ROOM`,
+`WASH_L2_MEN`, `WASH_L2_WOMEN`. Sales W x D are the `size` of the sales area in studs (width across the front, depth), Height is floor to
+ceiling (two values: the highest and the lowest ceiling), Entr. the number of `entrances`, Stock whether the unit has a stock room, Other
+doors the leaves in `W.doors` besides its own stock room door. The 57 blank store names are for the stores agents.
+
+**L0** (11 units)
+
+| Id | Name | Kind | Front | Sales W x D | Height | Entr. | Stock | Other doors |
+|---|---|---|---|---|---|---|---|---|
+| `L0_garage_a_central_parking_north_hall` | CAR PARK A | parking | - | 297 x 328 | 16.25 | 0 |  |  |
+| `L0_garage_b_central_parking` | CAR PARK B | parking | - | 291 x 306 | 16.25 | 0 |  |  |
+| `L0_garage_c_central_parking` | CAR PARK C | parking | - | 431 x 391 | 16.25 | 0 |  |  |
+| `L0_garage_d_central_parking_south` | CAR PARK D | parking | - | 388 x 391 | 16.25 | 0 |  |  |
+| `L0_idea_garage` | NESTA GARAGE | parking | - | 359 x 412 | 16.25 | 0 |  |  |
+| `L0_goshan_garage` | KASSA GARAGE | parking | - | 241 x 425 | 16.25 | 0 |  |  |
+| `L0_oli_garage` | BOLTWORKS GARAGE | parking | - | 234 x 375 | 16.25 | 0 |  |  |
+| `L0_scav_camp_tunnel_co_op_extract` | SERVICE TUNNEL | tunnel | W | 35 x 294 | 16.25 | 0 |  |  |
+| `L0_saferoom_exfil_room` | THE SHELTER | shelter | S | 216 x 201 | 16.25 | 0 |  |  |
+| `SHELTER_VESTIBULE` |  | vestibule | S | 26 x 32 | 16.25 | 0 |  | `MM_SHELTER` |
+| `L0_object_14_container_room` | UNIT 14 | unit14 | S | 91 x 69 | 16.25 | 0 |  | `MM_UNIT14` |
+
+**L1** (40 units)
+
+| Id | Name | Kind | Front | Sales W x D | Height | Entr. | Stock | Other doors |
+|---|---|---|---|---|---|---|---|---|
+| `L1_goshan` | KASSA | anchor | W | 773 x 304 | 28.13 | 11 |  | `MM_KASSA_BACK_2`, `MM_KASSA_BACK_1` |
+| `L1_idea` | NESTA | anchor | S | 473 x 394 | 28.13 | 6 |  | `MM_NESTA_STOCK_2`, `MM_NESTA_GOODS`, `MM_NESTA_STOCK_1` |
+| `L1_oli` | BOLTWORKS | anchor | N | 691 x 351 | 28.13 | 14 |  | `MM_BOLT_STOCK_2`, `MM_BOLT_STOCK_1`, `MM_BOLT_OFFICES_1`, `MM_BOLT_OFFICES_2` |
+| `BACK_1` | NESTA STOCK ROOMS | stock | S | 154 x 151 | 49.69 | 0 |  | `MM_NESTA_STOCK_2`, `MM_NESTA_GOODS`, `MM_NESTA_STOCK_1` |
+| `BACK_2` | KASSA BACK OF HOUSE | stock | S | 154 x 123 | 49.69 | 0 |  | `MM_KASSA_BACK_2`, `MM_KASSA_BACK_1` |
+| `BACK_3` | BOLTWORKS STOCK BLOCK | stock | N | 113 x 263 | 49.69 | 0 |  | `MM_BOLT_STOCK_2`, `MM_BOLT_STOCK_1` |
+| `BACK_4` | BOLTWORKS OFFICES | stock | E | 185 x 98 | 49.69 | 0 |  | `MM_BOLT_OFFICES_1`, `MM_BOLT_OFFICES_2` |
+| `SECURITY_ROOM` | SECURITY | security | E | 26 x 23 | 49.69 | 0 |  | `MM_SECURITY` |
+| `L1_adik` |  | sports | E | 76 x 59 | 28.13 | 3 | yes |  |
+| `L1_avokado` |  | food | W | 41 x 94 | 49.69 | 2 | yes |  |
+| `L1_bizarro` |  | clothing | W | 23 x 44 | 49.69 | 2 | yes |  |
+| `L1_book_store` |  | books | S | 123 x 69 | 49.69 / 28.13 | 5 | yes |  |
+| `L1_boots_4_life` |  | shoes | E | 119 x 23 | 28.13 | 2 |  |  |
+| `L1_brutal` |  | clothing | N | 79 x 50 | 28.13 | 3 | yes |  |
+| `L1_dino_clothes` |  | clothing | N | 26 x 113 | 28.13 | 4 | yes |  |
+| `L1_dom` |  | homeware | S | 148 x 50 | 49.69 / 28.13 | 4 | yes |  |
+| `L1_emercom` | RESCUE POINT | locked store | E | 26 x 59 | 28.13 | 3 | yes |  |
+| `L1_generic` |  | general | W | 51 x 53 | 28.13 | 2 | yes |  |
+| `L1_german` |  | general | W | 35 x 26 | 28.13 | 1 |  |  |
+| `L1_idea_bistro` | NESTA CANTEEN | food | S | 198 x 323 | 49.69 | 6 |  |  |
+| `L1_kiba` | IRONSIGHT | locked store | W | 79 x 25 | 28.13 | 1 | yes |  |
+| `L1_kostin` |  | clothing | W | 48 x 66 | 28.13 | 4 | yes |  |
+| `L1_mantis` |  | electronics | S | 79 x 50 | 28.13 | 3 | yes |  |
+| `L1_mode7` |  | clothing | W | 57 x 25 | 28.13 | 1 | yes |  |
+| `L1_nortex` |  | clothing | E | 107 x 26 | 49.69 | 4 |  |  |
+| `L1_pretty_lights` |  | lighting | E | 79 x 25 | 28.13 | 2 | yes |  |
+| `L1_rasmussen` |  | electronics | E | 35 x 75 | 28.13 | 4 | yes |  |
+| `L1_revis` |  | general | S | 85 x 31 | 28.13 | 2 | yes |  |
+| `L1_spiel` |  | toys | E | 54 x 23 | 28.13 | 2 |  |  |
+| `L1_sports` |  | sports | N | 85 x 22 | 28.13 | 2 | yes |  |
+| `L1_telespot` |  | electronics | E | 73 x 23 | 28.13 | 1 |  |  |
+| `L1_texho` |  | electronics | S | 85 x 19 | 28.13 | 3 | yes |  |
+| `L1_the_national` |  | clothing | N | 132 x 50 | 28.13 | 3 | yes |  |
+| `L1_top_brand` |  | clothing | S | 60 x 75 | 28.13 | 4 | yes |  |
+| `L1_trend` |  | clothing | N | 85 x 19 | 28.13 | 2 | yes |  |
+| `L1_tts` |  | electronics | S | 82 x 28 | 28.13 | 3 | yes |  |
+| `L1_unlabelled_store_n_of_viking` |  | unlabelled | S | 126 x 47 | 28.13 | 2 | yes |  |
+| `L1_viking` |  | sports | S | 129 x 50 | 28.13 | 2 | yes |  |
+| `L1_voyage` |  | travel | W | 29 x 25 | 28.13 | 1 | yes |  |
+| `L1_yushka` |  | clothing | W | 60 x 25 | 28.13 | 1 | yes |  |
+
+**L2** (33 units)
+
+| Id | Name | Kind | Front | Sales W x D | Height | Entr. | Stock | Other doors |
+|---|---|---|---|---|---|---|---|---|
+| `WASH_L2_MEN` | MEN | washroom | S | 26 x 41 | 20 | 0 |  | `MM_WASH2_MEN` |
+| `WASH_L2_WOMEN` | WOMEN | washroom | S | 23 x 41 | 20 | 0 |  | `MM_WASH2_WOMEN` |
+| `L2_apteka` | MEDIQ | pharmacy | S | 38 x 19 | 20 | 1 | yes |  |
+| `L2_arena` |  | sports | S | 38 x 38 | 20 | 2 | yes |  |
+| `L2_burger_house` |  | food | S | 57 x 16 | 20 | 1 |  |  |
+| `L2_burger_spot_49` |  | food | N | 57 x 31 | 20 | 2 | yes |  |
+| `L2_closed_for_repairs` |  | closed | W | 66 x 69 | 20 | 5 | yes |  |
+| `L2_coffee_joy` |  | food | S | 63 x 19 | 20 | 1 | yes |  |
+| `L2_eastland` |  | clothing | N | 41 x 28 | 20 | 1 | yes |  |
+| `L2_fashion_store` |  | clothing | N | 79 x 19 | 20 | 2 | yes |  |
+| `L2_father_sons` |  | clothing | S | 79 x 23 | 20 | 1 |  |  |
+| `L2_fck` |  | food | N | 57 x 23 | 20 | 1 |  |  |
+| `L2_figaro` |  | clothing | N | 85 x 31 | 20 | 3 | yes |  |
+| `L2_furniture_mk` |  | furniture | S | 85 x 31 | 20 | 3 | yes |  |
+| `L2_history_museum` |  | museum | N | 91 x 28 | 20 | 6 | yes |  |
+| `L2_intourist` |  | travel | S | 38 x 19 | 20 | 1 | yes |  |
+| `L2_jacob_jacob` |  | clothing | S | 82 x 31 | 20 | 3 | yes |  |
+| `L2_mcdaniels` |  | food | S | 57 x 19 | 20 | 1 |  |  |
+| `L2_na_svyazi` |  | electronics | N | 38 x 38 | 20 | 2 | yes |  |
+| `L2_opening_soon` |  | closed | E | 44 x 25 | 20 | 2 | yes |  |
+| `L2_papillon` |  | clothing | E | 110 x 19 | 20 | 2 | yes |  |
+| `L2_philly_cute` |  | food | S | 44 x 75 | 20 | 5 | yes |  |
+| `L2_pushkin` |  | food | E | 73 x 38 | 20 | 1 | yes |  |
+| `L2_sara` |  | general | S | 35 x 19 | 20 | 1 | yes |  |
+| `L2_shiccos` |  | food | N | 57 x 19 | 20 | 2 |  |  |
+| `L2_sushi_huyushi` |  | food | N | 57 x 16 | 20 | 1 |  |  |
+| `L2_tarducks` |  | food | S | 57 x 19 | 20 | 3 | yes |  |
+| `L2_tarkovstar` |  | general | N | 38 x 22 | 20 | 1 | yes |  |
+| `L2_tarzdrav` |  | pharmacy | E | 94 x 31 | 20 | 1 | yes |  |
+| `L2_techlight` | VOLTA | electronics | E | 116 x 19 | 20 | 3 | yes |  |
+| `L2_ultra_med_locked_room` | MEDIQ STORE ROOM | locked store | W | 32 x 19 | 20 | 1 | yes |  |
+| `L2_underway` |  | food | W | 76 x 38 | 20 | 1 | yes |  |
+| `L2_urban_clothes` |  | clothing | S | 41 x 25 | 20 | 1 | yes |  |
+
+### Doors and keys
+
+65 doors in `W.doors`, all `MM_` ids and unique, 5.2 x 8.6 studs, a 0.35 leaf swinging into the unit; keyless ones carry `openChance = 0.4`;
+a card door has a reader panel and a status lamp on the outside. Play marks `power` by key, so the shell
+does not.
+
+| Id | Where | Key | What |
+|---|---|---|---|
+| `MM_SHELTER` | (412.5, 175), L0, the vestibule south of THE SHELTER in car park C | `CARD_MALL_VAULT` (card) | the shelter's door; the room has a 13.8-wide arch behind it |
+| `MM_UNIT14` | (34.4, -818.8), L0, UNIT 14's south wall | `KEY_MM_UNIT14` (card) | UNIT 14 |
+| `MM_SECURITY` | (606.2, 229.7), L1, the security room's east face | `KEY_MALL_SECURITY` | the security room |
+| `MM_WASH2_MEN`, `MM_WASH2_WOMEN` | (376.6, -265.6), (403.1, -265.6), L2 | none | the washrooms |
+| `MM_NESTA_STOCK_1`, `MM_NESTA_STOCK_2`, `MM_NESTA_GOODS` | (578.1, -781.2), (500, -857.8), (656.2, -818), L1 | none | NESTA's stock block `BACK_1`; goods-in opens east, onto the dock bays |
+| `MM_KASSA_BACK_1`, `MM_KASSA_BACK_2` | (734.4, -400), (656.2, -462.5), L1 | none | KASSA's back of house `BACK_2` |
+| `MM_BOLT_STOCK_1`, `MM_BOLT_STOCK_2` | (535.9, 312.5), (478.1, 445.3), L1 | none | BOLTWORKS' stock block `BACK_3` |
+| `MM_BOLT_OFFICES_1`, `MM_BOLT_OFFICES_2` | (62.5, 500), (12.5, 406.2), L1 | none | BOLTWORKS' offices `BACK_4` |
+| `MM_<unit id>_STOCK` (51) | in each partition, label "Stock room" | none | the stock rooms of the stores |
+
+Part 3 expects these ids that the shell does **not** build (they belong to the stores, who fit them into the entrance gaps and rooms):
+`MM_IRON_FRONT`, `MM_IRON_GRATE`, `MM_RESCUE_N/E/W`, `MM_MEDIQ_STORE`, `MM_VOLTA_STORE`, `MM_NESTA_CASH`, `MM_KASSA_CASH`, `MM_BOLT_CASH`,
+`MM_BOLT_OFFICE`, `MM_BOLT_GOODS`, `MM_STAFF_KITCHEN`. The BOLTWORKS office and stock doors above are keyless placeholders: re-key them
+(`W.doors.MM_BOLT_OFFICES_1.key = "KEY_MM_BOLT_OFFICE"`) or ignore them.
+
+### Points, power and lights
+
+- `B.points.SHELTER_SWITCH`: a `CFrame` at (376.6, 50.8, -307.5) map-local (world z + 9000): standing height on the L2 men's room floor,
+  look vector (0, 0, 1), so the cabinet faces south into the room; nothing stands within 5 studs of it.
+- `B.points.SECURITY_TERMINAL`: a `Vector3` at (593.75, 21.11, 218.0) map-local, standing height in the L1 security room (an L1 floor part
+  lies under it). Play builds the valve and the terminal there; the shell registers neither switch.
+- `B.points.SHELTER_DOOR` (412.5, 3.3, 171.9) and `B.points.SHELTER_ROOM` (512.5, 3.3, 77.2), both standing points on the L0 floor
+  (the second is the SHELTER EXIT).
+- **Lights: 149**, none with shadows (the budget is 400 for the map and 40 shadowed; Outside has 13, so 162 are used). 123 main lamps
+  (5 x 1.4 fixtures under the ceiling, one per block of 52 cells on L0, 48 on L1, 44 on L2; range 48, 48 and 44 studs, brightness 0.8)
+  are **dead at build** and follow `MALL_POWER` through one `B.powerHooks` entry (the fixture turns neon, the light comes on). 24
+  emergency lamps (red, 1.2 studs, range 20 to 22, brightness 0.5; nine on L0, nine on L1, six on L2) and two door lamps (over the
+  shelter's reader and the security door) stay lit, so the mall is dark and red until the switch is thrown. The sign boards are lit by
+  the lamps (`LightInfluence` 1).
+
+### For the stores and gameplay agents
+
+1. Build in `B.units[id]` (frame and fields above); keep the `entrances` and the stock room door clear. The stock rooms are empty
+   boxes; 12 stores (too shallow, or open like the NESTA CANTEEN) have none.
+2. To name a store set `u.name` and the text of `u.signGui`'s `TextLabel`; never show an `id`.
+3. Do not register `SHELTER_SWITCH` or `MM_ALARM`; do not set `power` on doors (Play matches by key).
+4. Extra lights: append to `B.powerHooks`, apply the off state when built, stay under the budget above.
+5. The anchors' `checkouts` are the places for the tills; `goodsIn` names the door to the goods-in area; `entrances` of kind `dock` tell
+   which bays stand open.
+6. The shell's parts are anchored and named: `Floor` (slabs), `UnitFloor` (plates), `Column`, `Sign_<id>`, `Shutter`, `ZoneMark`,
+   `CheckoutLane`, `Reader`/`Led` (card doors). Floor tops are exactly 0, 17.81 and 47.50.
+
+### Known quirks
+
+- Four reference points sit on a wall line or over a void: `KEY_MM_RESCUE`'s tile (153.1, -306.2) on RESCUE POINT's west wall,
+  `KEY_MM_NESTA_REG`'s (162.5, -753.1) on the NESTA CANTEEN's east glass front, the scav point (520.6, 268.1) on BOLTWORKS' north wall, and
+  Play's L1C route point (266, 58) over the south atrium (Play drops points without a floor). Move the first three 2 to 3 studs onto the
+  floor. The card key's tile (359.4, -287.5) lies on the floor of `L2_burger_spot_49`, 2 studs from the washroom wall.
+- Two L1 stores stand partly under an L2 gallery and are open to the roof elsewhere: `L1_book_store` and `L1_dom` (two ceilings:
+  `ceilY` 67.5 and `ceilMin` 45.94).
+- Flights are as short as the reference's runs, snapped to the grid: slopes run from 12 to 27 degrees, except `V_L0_L1_7` at 32 degrees
+  with 0.94-stud treads (reference 28). The three escalators are solid stairs (stopped), one 15.6-wide flight each, not two lanes.
+- The atria open the car park ceiling: nothing in the reference says what lies under them. The south atrium holds the ramp.
+- Closed dock bays carry a collidable shutter plate; the dock wall is straight (no sawtooth) with solid blocks between the bays.
+- Four L1 `Part` slabs (the dock deck pieces at the ends of the dock ramps) stand outside the footprint on purpose; Play counts them as L1
+  floors, which they are.
+
+### Checked offline
+
+On the mock's 5,360 parts (Python over the part list; the Luau code itself never ran):
+
+- Slab tops are exactly y 0, 17.81 and 47.50 (none off); unit plates are 0.03 above. Play's floor rule finds 104 L1 floors (60 slabs, 40 plates,
+  4 dock deck pieces) and 107 L2 floors (74 slabs, 33 plates); the hall roofs (top 46.64) and skylights (46.5) are more than 0.7 below 47.50, so
+  they are not taken for floors. Every walkable cell of every level has a floor part under it; no L2 floor lies over a void.
+- Walkability: on a lattice of half cells, a point is blocked by a collidable part between floor + 0.6 and floor + 6.4; from the 39 gates,
+  entries and dock bays, joined across the levels by the 13 flights and the ramp, **every** free walkable cell is reached (L0 86,885,
+  L1 128,258, L2 25,593; none left). Every wall opening is clear (0 blocked probes).
+- No wall part is thicker than 2.4 (the one 3.0 vertical part is the security room's filing cabinet); no exact duplicate parts; 136
+  coplanar overlapping top faces remain (2.4 x 2.4 joints of collinear walls of one style, hidden duplicates inside slabs).
+- Flights: 30 (L0 to L1) or 50 (L1 to L2) treads, rise 0.594 at most, the last tread's top within 0.001 of the next floor, landings at
+  both ends, nothing hangs over a flight.
+- The gameplay agent's points (routes, boss zones, extracts SE and WC, poi): on a floor and free, except those named above.
+
+### Parity gaps from this part (copied to `docs/design/EFT_PARITY.md`)
+
+- **Walls are inferred.** The reference draws the outline, a few closed blocks and some partitions; every other wall follows the store,
+  hall and corridor rectangles snapped to a 1 m grid (within 1.6 studs of the reference), so gallery widths are whole metres.
+- **Escalators** are three stopped, solid, single-lane flights (no up and down lanes); the stairs L0 to L1 are 15.6 wide flights with
+  handrails and side panels, the steepest 32 degrees (reference 28).
+- **Domes** are eight-pane glass drums with a stepped cap, not the reference's curved domes; 41 skylight strips (the reference: about 40).
+- **Loading docks**: 7 bays per dock, 14 in all (the reference: 8 per dock), straight wall instead of a sawtooth, 6 open and 8 shut; dock
+  doors and levellers are in no source.
+- **Interiors** of the shelter, UNIT 14, the washrooms, the security room and the tunnel are ours (grade C or D in the reference); the car park's
+  column grid is 50 studs (the reference: about 8 m) and its column positions are ours.
+- **Lighting**: 149 sparse lamps (one per 150 studs), dead until the power is on, plus 26 red lamps; the reference's lighting is not
+  documented.
+- **Atria** open down to the car park; the reference does not say.
+- **Stores** are empty boxes: no counters, shelves, stock or loot yet (the stores agents'); 12 small or open stores have no stock room.
+- **The tunnel's east end** links the KASSA garage through a 19-stud passage cut in the solid block between them.
+- **Not run**: nothing has run in Studio, on a phone or on a console; no frame rate was measured.
+
+### Unverified (part 2; nothing has run in Luau)
+
+The whole of `Mall*.luau` in Luau and Studio. In particular: the real part count and build time (the mock took 2.3 s for the plan and
+0.15 s for the build in plain Lua; the code yields with `task.wait()` after 0.04 to 0.05 s of work, never between making a part and setting
+it up); collision of the real parts (the walkability result is geometric, not a Humanoid's), above all on the steepest flights; whether a
+0.594-stud tread feels right on a phone; the look under the real lighting (the mall is dark until the switch); sign legibility; door swing
+directions; the fit of Play's valve cabinet and terminal in their rooms; the AI's pathing round 416 columns (305 in the car park, 111 in the
+halls); frame rate on a low-end phone with 5,360 parts here, Ground and Outside's 3,514 and Dress.
+
+### Files (part 2)
+
+| File | What |
+|---|---|
+| `src/server/Maps/Meridian/Mall.luau` | orchestrator: context, part helpers, pacing, power hook, order of the steps, `B.units` fallback, summary lines |
+| `src/server/Maps/Meridian/MallGrid.luau` | the grid: rasterising polygons, the run finder (walls along grid lines), rectangle cover |
+| `src/server/Maps/Meridian/MallPlan.luau` | the plan: labels per level, units, atria, flights, wall classes, openings, slabs, roof, reachability and its repair |
+| `src/server/Maps/Meridian/MallShell.luau` | floors, roof, domes, walls, store fronts, balustrades, door leaves, dock shutters, sign boards |
+| `src/server/Maps/Meridian/MallLinks.luau` | stairs, the ramp, escalators |
+| `src/server/Maps/Meridian/MallFit.luau` | stock rooms, `B.units`, anchors' checkouts, zone marks, columns, washrooms, security room, lamps |
 
 ## Part 3: gameplay (extracts, spawns, AI, the Caretaker, power, keys, dressing)
 
