@@ -1,0 +1,12 @@
+{
+  "_comment": "ZR_BrickWall: running-bond brick, 250 x 65 mm bricks; 8 x 28 bricks, 2.08 m per tile. The maps are empty on purpose: the main session uploads assets/textures/out/materials/ZR_MAT_BrickWall_Color.png, _Normal.png and _Rough.png and writes the three rbxassetid values here (never invent ids). World.applyWear skips this variant while ColorMap is empty, so nothing breaks before then.",
+  "className": "MaterialVariant",
+  "properties": {
+    "BaseMaterial": "Brick",
+    "ColorMap": "",
+    "NormalMap": "",
+    "RoughnessMap": "",
+    "StudsPerTile": 6.5,
+    "MaterialPattern": "Regular"
+  }
+}

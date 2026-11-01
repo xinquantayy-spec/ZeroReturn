@@ -30,7 +30,7 @@ return function(B)
 		end
 	end
 	-- what the dorm interiors added, by kind (printed once at the end)
-	local DC = { rooms = 0, lived = 0, bare = 0, wash = 0, kitchen = 0, doors = 0, props = 0, rejected = 0, bits = 0, fit = 0, panes = 0, frosted = 0, boards = 0, curtains = 0, shards = 0, cracked = 0, open = 0, boarded = 0 }
+	local DC = { rooms = 0, lived = 0, bare = 0, wash = 0, kitchen = 0, doors = 0, props = 0, rejected = 0, bits = 0, fit = 0, panes = 0, frosted = 0, boards = 0, curtains = 0, shards = 0, cracked = 0, open = 0, boarded = 0, band = 0, tiles = 0 }
 
 	local P = {
 		panel = hex("A19E92"), panelDk = hex("7A776D"), brick = hex("7D4A3A"), brickDk = hex("5E392D"), plaster = hex("B3AD98"),
@@ -109,20 +109,35 @@ return function(B)
 		return out
 	end
 
-	-- a wall along u at v from u0 to u1, foot at y, height h, thickness t; holes { u, width, bottom, top }
-	function Frame:wallU(v, u0, u1, y, h, t, color, mat, holes)
+	-- a sub-Model of the building that carries a wall finish (the attribute Finish, and Tint: may it take a hue from the list);
+	-- walls built into it (the last parameter of wallU / wallV) get that finish from World.applyWear (docs/look/WALLS.md)
+	function Frame:finModel(key, finish, tint)
+		self.fins = self.fins or {}
+		local m = self.fins[key]
+		if not m then
+			m = kit.model(key, self.parent)
+			m:SetAttribute("Finish", finish)
+			m:SetAttribute("Tint", tint == true)
+			self.fins[key] = m
+		end
+		return m
+	end
+
+	-- a wall along u at v from u0 to u1, foot at y, height h, thickness t; holes { u, width, bottom, top }; into: the Model the
+	-- pieces go in (a Frame:finModel), else the building
+	function Frame:wallU(v, u0, u1, y, h, t, color, mat, holes, into)
 		if u1 - u0 < 0.3 then
 			return
 		end
-		kit.wallHoles(self.parent, self.base * CFn((u0 + u1) / 2, y, v), u1 - u0, h, t, color, mat, holesFor(holes, u0, u1, false, h))
+		kit.wallHoles(into or self.parent, self.base * CFn((u0 + u1) / 2, y, v), u1 - u0, h, t, color, mat, holesFor(holes, u0, u1, false, h))
 		table.insert(self.solids, { cf = self.base * CFn((u0 + u1) / 2, y + h / 2, v), hx = (u1 - u0) / 2, hy = h / 2, hz = t / 2 })
 	end
-	-- a wall along v at u from v0 to v1; holes { v, width, bottom, top }
-	function Frame:wallV(u, v0, v1, y, h, t, color, mat, holes)
+	-- a wall along v at u from v0 to v1; holes { v, width, bottom, top }; into as for wallU
+	function Frame:wallV(u, v0, v1, y, h, t, color, mat, holes, into)
 		if v1 - v0 < 0.3 then
 			return
 		end
-		kit.wallHoles(self.parent, self.base * CFn(u, y, (v0 + v1) / 2) * CFrame.Angles(0, rad(90), 0), v1 - v0, h, t, color, mat, holesFor(holes, v0, v1, true, h))
+		kit.wallHoles(into or self.parent, self.base * CFn(u, y, (v0 + v1) / 2) * CFrame.Angles(0, rad(90), 0), v1 - v0, h, t, color, mat, holesFor(holes, v0, v1, true, h))
 		table.insert(self.solids, { cf = self.base * CFn(u, y + h / 2, (v0 + v1) / 2) * CFrame.Angles(0, rad(90), 0), hx = (v1 - v0) / 2, hy = h / 2, hz = t / 2 })
 	end
 
@@ -403,7 +418,8 @@ return function(B)
 	-- a small or thin loose piece (clutter, curtains, glass, partitions, fittings) with its bottom at y. It has no collision, no
 	-- ray hits and no touch unless asked: o.collide, o.query, or o.solid (both, and a place among the building's solids). It
 	-- casts no shadow unless a side is 3 studs or more (o.shadow = false even then). o.alpha: transparency, o.roll / o.pitch:
-	-- tilt in degrees, o.wear: leave it to the detail layer, o.cat: the counter it is added to
+	-- tilt in degrees, o.wear: leave it to the detail layer, o.cat: the counter it is added to, o.finish: the wall finish it
+	-- takes (a variant name, no hue: its colour stays), o.plain: no worn variant at all
 	function Frame:bit(su, sy, sv, u, y, v, color, mat, ry, o)
 		o = o or {}
 		su, sy, sv = math.max(su, 0.05), math.max(sy, 0.05), math.max(sv, 0.05)
@@ -422,6 +438,13 @@ return function(B)
 		end
 		if not o.wear then
 			p:SetAttribute("NoDetail", true)
+		end
+		if o.finish then
+			p:SetAttribute("Finish", o.finish)
+			p:SetAttribute("Tint", false)
+		end
+		if o.plain then
+			p:SetAttribute("Wear", "")
 		end
 		if solid then
 			table.insert(self.solids, { cf = cf, hx = su / 2, hy = sy / 2, hz = sv / 2 })
@@ -1158,10 +1181,12 @@ return function(B)
 		local rx = Random.new(info.seed)
 		local fit = { cat = "fit", shadow = false }
 		local solid = { cat = "fit", solid = true }
+		local tile = { cat = "fit", shadow = false, finish = "ZR_WallTiles" } -- glazed wall tiles (World.applyWear)
 		R:rb(2 * hw - 0.3, 0.06, dp - 0.3, 0, 0.01, dp / 2, D.tileW, M.CeramicTiles, fit)
-		R:rb(0.08, 4.4, dp - 1.0, s * (hw - 0.04), 0, dp / 2, D.tileG, M.CeramicTiles, fit)
-		R:rb(0.08, 4.4, dp - 1.0, -s * (hw - 0.04), 0, dp / 2, D.tileG, M.CeramicTiles, fit)
-		R:rb(2 * hw - 0.4, 2.9, 0.08, 0, 0, dp - 0.04, D.tileG, M.CeramicTiles, fit)
+		R:rb(0.08, 4.4, dp - 1.0, s * (hw - 0.04), 0, dp / 2, D.tileG, M.CeramicTiles, tile)
+		R:rb(0.08, 4.4, dp - 1.0, -s * (hw - 0.04), 0, dp / 2, D.tileG, M.CeramicTiles, tile)
+		-- the far wall to head height too, but only to 2.9 under a window (its sill is at 3.0)
+		R:rb(2 * hw - 0.4, info.win and 2.9 or 4.4, 0.08, 0, 0, dp - 0.04, D.tileG, M.CeramicTiles, tile)
 		-- two sinks, each under its mirror, and the pipe over them
 		for _, d in { 7.2, 11.4 } do
 			R:bprop("MirrorSink", s * (hw - 0.75), d, facing(s), { mats = { glass = { M.Glass, nil, 0.1, 0.5, false } } })
@@ -1223,6 +1248,12 @@ return function(B)
 		local rx = Random.new(info.seed)
 		local fit = { cat = "fit", shadow = false }
 		local solid = { cat = "fit", solid = true }
+		local tile = { cat = "fit", shadow = false, finish = "ZR_WallTiles" }
+		-- tiled to 4.4 studs (1.4 m) on three walls, like the washrooms
+		R:rb(0.08, 4.4, dp - 1.0, s * (hw - 0.04), 0, dp / 2, D.tileW, M.CeramicTiles, tile)
+		R:rb(0.08, 4.4, dp - 1.0, -s * (hw - 0.04), 0, dp / 2, D.tileW, M.CeramicTiles, tile)
+		R:rb(2 * hw - 0.4, info.win and 2.9 or 4.4, 0.08, 0, 0, dp - 0.04, D.tileW, M.CeramicTiles, tile)
+		DC.tiles += 3
 		local ca = s * (hw - 1.15)
 		R:rb(2.2, 3.0, 3.6, ca, 0, 7.4, D.wood, M.WoodPlanks, solid)
 		R:rb(2.4, 0.2, 3.8, ca, 3.0, 7.4, D.top, M.Concrete, fit)
@@ -1297,6 +1328,142 @@ return function(B)
 		R:lamp(0, dp * 0.5, 22, false)
 	end
 
+	-- ── wall finishes of the dorms (docs/look/WALLS.md) ──────────────────────────────────────────────────────────────
+	-- World.applyWear reads the attribute Finish on a part or on the Model it stands in. Here: a corridor wall is whitewash over
+	-- a gloss-painted band 1.5 m high (thin skins on its face with a darker line on top, cut at every doorway); each room's
+	-- dividers carry that room's finish (wallpaper A or B or whitewash in a hue its Model's name picks, plaster peel in a bare
+	-- room); a divider between two rooms that differ is two leaves, one per side, while WF_CAP.split lasts; the washrooms and
+	-- the kitchen are tiled to 4.4 studs (see there). Every skin and line is a part of Frame:bit: no collision, no shadow,
+	-- no ray.
+	local BAND_H = 4.7 -- 1.5 m
+	local BAND_COL = { green = hex("5E7B5C"), blue = hex("5C7684"), brown = hex("6E5440"), ochre = hex("A07F3E") }
+	local BAND_BLOCK = { A = { BAND_COL.green, BAND_COL.blue, BAND_COL.brown }, B = { BAND_COL.ochre, BAND_COL.green } } -- by floor
+	local WF = { skins = 0, lines = 0, stairs = 0, splits = 0, whole = 0, worst = 0 }
+	local WF_CAP = { split = 125, parts = 440 } -- extra leaves; band skins and lines together
+	local LOOK_RANK = { ZR_PlasterPeel = 1, ZR_Whitewash = 2, ZR_WallpaperB = 3, ZR_WallpaperA = 4 } -- the worse one wins a divider
+
+	-- the finish of a room's own walls: bare rooms are plaster peel, the others wallpaper A, wallpaper B or whitewash by the
+	-- room's seed (locked rooms have none: their number stands in)
+	local function roomLook(info, num)
+		if info == nil then
+			return "ZR_Whitewash"
+		elseif info.class == "bare" then
+			return "ZR_PlasterPeel"
+		elseif info.class == "wash" or info.class == "kitchen" then
+			return "ZR_Whitewash"
+		end
+		local r = Random.new((info.seed or (num * 7919 + 17)) + 31):NextNumber()
+		if r < 0.35 then
+			return "ZR_WallpaperA"
+		elseif r < 0.65 then
+			return "ZR_WallpaperB"
+		end
+		return "ZR_Whitewash"
+	end
+
+	-- the Model that carries the finish of the room (or the stairwell) in a slot, and that finish
+	local function slotFin(f, row, floor, s, ctx)
+		if s.kind == "stairs" then
+			return f:finModel(string.format("Stairwell %s%d", row.name, floor), "ZR_Whitewash", false), "ZR_Whitewash"
+		end
+		local num = floor * 100 + s.n
+		local look = roomLook(ctx.plan.rooms[num], num)
+		return f:finModel("Rm " .. num, look, look ~= "ZR_PlasterPeel"), look
+	end
+
+	-- a gloss-painted band BAND_H high on one face of a wall. The wall runs along `axis` ("u" or "v") from t0 to t1, `face` is the
+	-- coordinate of its face across it and `out` (+1 / -1) the way the face looks. A skin 0.03 thick (World.applyWear gives it
+	-- the gloss variant; its colour stays), and a darker line 0.2 high on top of it, 0.04 thick. Thin on purpose: the detail
+	-- plan's wall decals float 0.055 and more off the face, and a skin as thick as that flickers against them (Relay7 had
+	-- 0.06 slabs once and cut its walls instead, see its wall()); under 0.05 they stay in front
+	local function band(f, axis, face, out, t0, t1, y, col, line)
+		if t1 - t0 < 0.4 or WF.skins + WF.lines >= WF_CAP.parts then
+			return
+		end
+		local len, mid = t1 - t0, (t0 + t1) / 2
+		local o = { cat = "band", shadow = false, finish = "ZR_PaintGloss" }
+		local at = face + out * 0.015
+		if axis == "u" then
+			f:bit(len, BAND_H, 0.03, mid, y, at, col, M.Plaster, 0, o)
+		else
+			f:bit(0.03, BAND_H, len, at, y, mid, col, M.Plaster, 0, o)
+		end
+		WF.skins += 1
+		if line then
+			local dark = Color3.new(col.R * 0.6, col.G * 0.6, col.B * 0.6)
+			local lo = { cat = "band", shadow = false, plain = true }
+			local la = face + out * 0.02
+			if axis == "u" then
+				f:bit(len, 0.2, 0.04, mid, y + BAND_H - 0.2, la, dark, M.Plaster, 0, lo)
+			else
+				f:bit(0.04, 0.2, len, la, y + BAND_H - 0.2, mid, dark, M.Plaster, 0, lo)
+			end
+			WF.lines += 1
+		end
+	end
+
+	-- the band on the corridor face of a row's wall, from lo to hi, cut at every opening that reaches down to it (the doorways, the
+	-- stairwell's, a gap)
+	local function corridorBand(f, row, y, floor, holes, lo, hi, tag)
+		local cols = BAND_BLOCK[tag] or BAND_BLOCK.A
+		local col = cols[((floor - 1) % #cols) + 1]
+		local out = -row.dir -- from the wall into the corridor
+		local face = row.wallAt + out * TI / 2
+		local cuts = {}
+		for _, h in holes do
+			if h[3] < BAND_H then
+				table.insert(cuts, { h[1] - h[2] / 2, h[1] + h[2] / 2 })
+			end
+		end
+		table.sort(cuts, function(p, q)
+			return p[1] < q[1]
+		end)
+		local at = lo
+		for _, c in cuts do
+			if c[1] > at then
+				band(f, row.axis, face, out, at, math.min(c[1], hi), y, col, true)
+			end
+			at = math.max(at, c[2])
+		end
+		if hi > at then
+			band(f, row.axis, face, out, at, hi, y, col, true)
+		end
+	end
+
+	-- the divider between two neighbouring slots of a row (it runs across the row's axis from c0 to c1, centred at a.a2): one wall
+	-- when both rooms are bare, else two leaves of half the thickness, one in each room's finish, while the budget lasts; after
+	-- that one wall in the worse of the two. A stairwell side gets a gloss band on its face
+	local function divider(f, row, y, floor, a, b, c0, c1, ctx, tag)
+		local ma, na = slotFin(f, row, floor, a, ctx)
+		local mb, nb = slotFin(f, row, floor, b, ctx)
+		local x = a.a2
+		local function wall(at, t, into)
+			if row.axis == "u" then
+				f:wallV(at, c0, c1, y, H10, t, P.plaster, M.Plaster, nil, into)
+			else
+				f:wallU(at, c0, c1, y, H10, t, P.plaster, M.Plaster, nil, into)
+			end
+		end
+		if na == nb and na == "ZR_PlasterPeel" then
+			wall(x, TI, ma)
+			WF.whole += 1
+		elseif WF.splits < WF_CAP.split then
+			wall(x - TI / 4, TI / 2, ma)
+			wall(x + TI / 4, TI / 2, mb)
+			WF.splits += 1
+		else
+			wall(x, TI, (LOOK_RANK[na] <= LOOK_RANK[nb]) and ma or mb)
+			WF.worst += 1
+		end
+		if a.kind == "stairs" or b.kind == "stairs" then
+			local side = (b.kind == "stairs") and 1 or -1
+			local cols = BAND_BLOCK[tag] or BAND_BLOCK.A
+			local before = WF.skins
+			band(f, (row.axis == "u") and "v" or "u", x + side * TI / 2, side, c0, c1, y, cols[((floor - 1) % #cols) + 1], true)
+			WF.stairs += WF.skins - before
+		end
+	end
+
 	-- ── dorm rows: corridor wall with doorways, dividers, rooms ──────────────────────────────────────────────────────
 	-- row = { name, axis, wallAt, dir, depth, far, doorOff, slots = { { a1, a2, kind, num } } } (kinds: room, stairs, gap)
 	local function dormRow(f, y, floor, row, tag, ctx)
@@ -1316,21 +1483,20 @@ return function(B)
 		if row.extend then
 			hi = math.max(hi, row.extend)
 		end
+		-- the corridor wall: whitewash above a gloss-painted band
+		local cor = f:finModel(string.format("Corridor %s%d", row.name, floor), "ZR_Whitewash", false)
 		if row.axis == "u" then
-			f:wallU(row.wallAt, lo, hi, y, H10, TI, row.color, M.Plaster, holes)
+			f:wallU(row.wallAt, lo, hi, y, H10, TI, row.color, M.Plaster, holes, cor)
 		else
-			f:wallV(row.wallAt, lo, hi, y, H10, TI, row.color, M.Plaster, holes)
+			f:wallV(row.wallAt, lo, hi, y, H10, TI, row.color, M.Plaster, holes, cor)
 		end
+		corridorBand(f, row, y, floor, holes, lo, hi, tag)
 		local near = row.wallAt + row.dir * TI / 2
 		local c0, c1 = math.min(near, row.far), math.max(near, row.far)
 		for i = 1, #slots - 1 do
 			local a, b = slots[i], slots[i + 1]
 			if a.kind ~= "gap" and b.kind ~= "gap" then
-				if row.axis == "u" then
-					f:wallV(a.a2, c0, c1, y, H10, TI, P.plaster, M.Plaster)
-				else
-					f:wallU(a.a2, c0, c1, y, H10, TI, P.plaster, M.Plaster)
-				end
+				divider(f, row, y, floor, a, b, c0, c1, ctx, tag)
 			end
 		end
 		for _, s in slots do
@@ -1395,7 +1561,9 @@ return function(B)
 			f:flight(uc + 2.25, vE, y + 5.5, 5.5, run, 4.0, backDir, solid and 0 or nil, P.conc, M.Concrete)
 		end
 		local top = g.ys[g.levels + 1]
-		f:box(0.5, top - g.ys[1], run, uc, (g.ys[1] + top) / 2, (vS + vE) / 2, P.plaster, M.Plaster)
+		local partition = f:box(0.5, top - g.ys[1], run, uc, (g.ys[1] + top) / 2, (vS + vE) / 2, P.plaster, M.Plaster)
+		partition:SetAttribute("Finish", "ZR_Whitewash") -- whitewash, its colour stays (World.applyWear)
+		partition:SetAttribute("Tint", false)
 	end
 
 	-- an end stair tower on the outside of an end wall: the door on its outer face, a doorway to the corridor through the end
@@ -2954,6 +3122,12 @@ return function(B)
 			"[ZR] Border dorms: %d rooms (%d lived-in, %d bare, %d washrooms, %d kitchen, %d locked), %d room doors (locked ones apart), %d furniture props (%d dropped for overlap), %d clutter pieces, %d fittings, %d panes (%d frosted, %d half-broken, %d open, %d boarded with %d boards), %d curtains, %d glass-on-floor",
 			DC.rooms, DC.lived, DC.bare, DC.wash, DC.kitchen, DC.rooms - DC.lived - DC.bare - DC.wash - DC.kitchen, DC.doors, DC.props,
 			DC.rejected, DC.bits, DC.fit, DC.panes, DC.frosted, DC.cracked, DC.open, DC.boarded, DC.boards, DC.curtains, DC.shards
+		)
+	)
+	print(
+		string.format(
+			"[ZR] Border dorm walls: %d band skins (%d on stairwells) and %d lines, %d dividers in two leaves, %d in one finish, %d in the worse of two finishes, %d kitchen tile pieces: %d parts added",
+			WF.skins, WF.stairs, WF.lines, WF.splits, WF.whole, WF.worst, DC.tiles, WF.skins + WF.lines + WF.splits + DC.tiles
 		)
 	)
 end

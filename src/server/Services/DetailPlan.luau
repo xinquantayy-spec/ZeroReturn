@@ -186,6 +186,8 @@ local function ground(key, p, yaw, lod, col, fy0)
 	return true
 end
 
+-- the share of inside plaster walls that get a peeling patch, by the wall's MaterialVariant (the rest: 0.4)
+local PEEL_ODDS = { ZR_PaintGloss = 0.12, ZR_Whitewash = 0.22, ZR_WallpaperA = 0.16, ZR_WallpaperB = 0.16 }
 local function wallFace(p, f, sign, mat)
 	local n = f.n * sign
 	local along = f.along
@@ -232,8 +234,9 @@ local function wallFace(p, f, sign, mat)
 		local damp = ext and rng:NextNumber() < 0.3
 		decal(damp and D.BaseDamp or D.BaseGrime, at(0, f.bottom + hb / 2, L_BASE), n, len, hb, 1, 0, rng:NextNumber(7, 10), hb, ext and rng:NextNumber(0, 0.2) or rng:NextNumber(0.25, 0.45), u0)
 	end
-	-- 3. interior plaster peels in patches (water damage), not over whole walls
-	if plaster and not ext and hgt >= 3 and rng:NextNumber() < 0.4 then
+	-- 3. interior plaster peels in patches (water damage), not over whole walls. A wall with a finish of its own carries its
+	-- wear in the texture (docs/look/WALLS.md), so fewer patches go over gloss paint, whitewash and wallpaper
+	if plaster and not ext and hgt >= 3 and rng:NextNumber() < (PEEL_ODDS[p.MaterialVariant] or 0.4) then
 		local pw = math.min(len, rng:NextNumber(5, 12))
 		local ph = math.min(hgt, rng:NextNumber(3, 6))
 		local pu = rng:NextNumber(-len / 2 + pw / 2, len / 2 - pw / 2)

@@ -1,0 +1,12 @@
+{
+  "_comment": "ZR_WallpaperA: flocked damask wallpaper in four 0.5 m rolls; 2 m per tile. The maps are empty on purpose: the main session uploads assets/textures/out/materials/ZR_MAT_WallpaperA_Color.png, _Normal.png and _Rough.png and writes the three rbxassetid values here (never invent ids). World.applyWear skips this variant while ColorMap is empty, so nothing breaks before then.",
+  "className": "MaterialVariant",
+  "properties": {
+    "BaseMaterial": "Plaster",
+    "ColorMap": "",
+    "NormalMap": "",
+    "RoughnessMap": "",
+    "StudsPerTile": 6.25,
+    "MaterialPattern": "Regular"
+  }
+}

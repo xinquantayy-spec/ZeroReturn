@@ -167,6 +167,141 @@ function T.run(ctx)
 		end
 	end
 
+	-- L04 wall finishes (docs/look/WALLS.md): sound tables, no part in a variant that has no textures yet, known Finish names, band
+	-- skins nobody can touch or shoot, and World.applyWear on a throwaway set of walls that never joins the world
+	do
+		local ok, err = pcall(function()
+			local World = ctx.World
+			local MS = game:GetService("MaterialService")
+			local sum, named = 0, true
+			for _, e in World.DEFAULT_PICK do
+				sum += e[2]
+				if e[1] ~= "ZR_PlasterPeel" and table.find(World.WALL_FINISHES, e[1]) == nil then
+					named = false
+				end
+			end
+			check("L04 default wall picks add up to 100 and name known finishes", sum == 100 and named, sum)
+			check("L04 wall hue lists are filled", #World.WALL_HUES.paint >= 5 and #World.WALL_HUES.wood >= 3 and #World.WALL_HUES.brick >= 3)
+
+			-- the variants of MaterialService (Rojo: src/materials): ready = textures uploaded, empty = not yet
+			local ready, empty, missing = {}, {}, {}
+			for _, v in MS:GetChildren() do
+				if v:IsA("MaterialVariant") then
+					if v.ColorMap ~= "" then
+						ready[v.Name] = v
+					else
+						empty[v.Name] = true
+					end
+				end
+			end
+			local anyNew = false
+			for _, name in World.WALL_FINISHES do
+				if ready[name] ~= nil then
+					anyNew = true
+				elseif not empty[name] then
+					table.insert(missing, name)
+				end
+			end
+			check("L04 every wall finish is a MaterialVariant in MaterialService", #missing == 0, table.concat(missing, ","))
+
+			-- the world as built
+			local KNOWN = {
+				ZR_ConcreteWorn = true, ZR_ConcretePanel = true, ZR_FloorConcrete = true, ZR_PlasterPeel = true,
+				ZR_MetalPaint = true, ZR_Corrugated = true, ZR_WoodWeathered = true, ZR_AsphaltCracked = true,
+			}
+			local worn, badFinish, skins, touchable = 0, 0, 0, 0
+			local world = workspace:FindFirstChild("ZR_World")
+			for _, d in world and world:GetDescendants() or {} do
+				local f = d:GetAttribute("Finish")
+				if f ~= nil and f ~= "" and not (table.find(World.WALL_FINISHES, f) or KNOWN[f]) then
+					badFinish += 1
+				end
+				if d:IsA("BasePart") then
+					if empty[d.MaterialVariant] then
+						worn += 1
+					end
+					if f == "ZR_PaintGloss" and math.min(d.Size.X, d.Size.Y, d.Size.Z) < 0.05 then
+						skins += 1
+						if d.CanCollide or d.CanQuery or d.CastShadow then
+							touchable += 1
+						end
+					end
+				end
+			end
+			check("L04 no part wears a variant that has no textures yet", worn == 0, worn)
+			check("L04 every Finish attribute names a known variant", badFinish == 0, badFinish)
+			check("L04 band skins do not collide, take rays or cast shadows", touchable == 0, touchable .. " of " .. skins)
+
+			-- World.applyWear on 24 plain plaster walls, each in a Model of its own, built twice
+			local PLAIN = Color3.fromRGB(0xB3, 0xAD, 0x98)
+			local function near(a, b)
+				return math.abs(a.R - b.R) < 0.004 and math.abs(a.G - b.G) < 0.004 and math.abs(a.B - b.B) < 0.004
+			end
+			local function wall(parent, x)
+				local p = Instance.new("Part")
+				p.Anchored = true
+				p.Material = Enum.Material.Plaster
+				p.Color = PLAIN
+				p.Size = Vector3.new(0.8, 10, 12)
+				p.Position = Vector3.new(x, 5.5, 0)
+				p.Parent = parent
+				return p
+			end
+			local function walls()
+				local fol = Instance.new("Folder")
+				fol.Name = "LT_Walls"
+				local list = {}
+				for i = 1, 24 do
+					local m = Instance.new("Model")
+					m.Name = "LT_Room_" .. i
+					m.Parent = fol
+					table.insert(list, wall(m, i * 20))
+				end
+				local keep = wall(fol, -20)
+				keep:SetAttribute("Wear", "")
+				return fol, list, keep
+			end
+			local fa, la, ka = walls()
+			local fb, lb = walls()
+			local n, stats = World.applyWear(fa)
+			World.applyWear(fb)
+			local usable, baseOk, same, peelKept, onlyPeel, applied = true, true, true, true, true, 0
+			for i, p in la do
+				local mv = p.MaterialVariant
+				if mv ~= "" then
+					applied += 1
+					if ready[mv] == nil then
+						usable = false
+					elseif p.Material ~= ready[mv].BaseMaterial then
+						baseOk = false
+					end
+				end
+				if mv ~= "ZR_PlasterPeel" then
+					onlyPeel = false
+				elseif not near(p.Color, PLAIN) then
+					peelKept = false
+				end
+				if mv ~= lb[i].MaterialVariant or not near(p.Color, lb[i].Color) then
+					same = false
+				end
+			end
+			local total = 0
+			for _, c in stats do
+				total += c
+			end
+			local keptPlain = ka.MaterialVariant == "" and near(ka.Color, PLAIN)
+			fa:Destroy()
+			fb:Destroy()
+			check("L04 applyWear uses only variants that have textures, on their base material", usable and baseOk)
+			check("L04 applyWear picks the same finish for the same walls", same)
+			check("L04 plaster peel keeps the colour the builder gave", peelKept)
+			check("L04 Wear = \"\" keeps the plain material", keptPlain)
+			check("L04 applyWear counts what it wore", n == applied and total == applied, n .. "/" .. applied .. "/" .. total)
+			check("L04 until a finish has textures the plain walls keep the plaster peel", anyNew or ready.ZR_PlasterPeel == nil or onlyPeel)
+		end)
+		check("L04 wall finish checks ran", ok, err)
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

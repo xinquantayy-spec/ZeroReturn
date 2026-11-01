@@ -41,7 +41,7 @@ return function(B)
 	local pre = "BW" -- prefix of container and door ids
 	local nProps, nCont, nLoose, nDoors, nLamps, nSkip = 0, 0, 0, 0, 0, 0
 	local bProps, bCap = 0, 1e9 -- props placed in the building being built, and its cap (containers ignore it)
-	local contN, doorN = 0, 0
+	local contN, doorN, roomN = 0, 0, 0
 	local failed = {}
 	-- one structure at a time, so a failure leaves the rest standing
 	local function run(name, fn, ...)
@@ -98,7 +98,7 @@ return function(B)
 		bm = kit.model(name, works)
 		pm = kit.model("Props", bm)
 		pre = prefix
-		contN, doorN = 0, 0
+		contN, doorN, roomN = 0, 0, 0
 		return bm
 	end
 	-- a building row of Layout.blds
@@ -108,6 +108,11 @@ return function(B)
 			gy = 0
 		end
 		return siteAt(b[4], b[5], b[8], gy, name, prefix, floorY, cap)
+	end
+	-- the wall finish of the building being built: the attribute Finish on its Model, read by World.applyWear (docs/look/WALLS.md).
+	-- "ZR_BrickWall" turns the concrete and plaster walls of a hall into brick; "" keeps the old look
+	local function wallFinish(name)
+		bm:SetAttribute("Finish", name)
 	end
 	-- a point of the current building as a world position
 	local function wp(u, y, v)
@@ -628,7 +633,7 @@ return function(B)
 
 	-- a room (offices, cabins, cells): plaster walls on its outer extents u0..u1, v0..v1 standing on floor top y0,
 	-- doors[side] = { { s, key, id, w, label, dir }, ... }, windows[side] = { { s, w, bottom, top }, ... },
-	-- skip = sides left out, ceil = a ceiling slab, floorCol = a floor slab inside
+	-- skip = sides left out, ceil = a ceiling slab, floorCol = a floor slab inside, finish = a wall finish (a MaterialVariant name)
 	local function room(o)
 		local y0 = o.y0 or FY
 		local h = o.h or 9
@@ -644,7 +649,15 @@ return function(B)
 				table.insert(Hs[side], e)
 			end
 		end
-		rectWalls(bm, o.u0, o.u1, o.v0, o.v1, y0, h, t, o.col or PLS, o.mat or M.Plaster, Hs)
+		local into = bm
+		if o.finish then
+			-- o.finish: the finish of the walls (World.applyWear); the Model's name picks the hue from the list
+			roomN += 1
+			into = kit.model("Room " .. roomN, bm)
+			into:SetAttribute("Finish", o.finish)
+			into:SetAttribute("Tint", true)
+		end
+		rectWalls(into, o.u0, o.u1, o.v0, o.v1, y0, h, t, o.col or PLS, o.mat or M.Plaster, Hs)
 		for _, a in after do
 			local side, d = a[1], a[2]
 			local u, v
@@ -717,7 +730,7 @@ return function(B)
 		K("ElectricCabinet", -83.2, 26, -90)
 		-- the office in the north-east corner
 		room({
-			u0 = 52, u1 = 83.3, v0 = -58.3, v1 = -38, h = 9.5, ceil = true, skip = { n = true, e = true },
+			u0 = 52, u1 = 83.3, v0 = -58.3, v1 = -38, h = 9.5, ceil = true, skip = { n = true, e = true }, finish = "ZR_WoodPanel",
 			doors = { s = { { s = 8, id = "BW_S3_OFFICE" } }, w = { { s = 17 } } },
 			windows = { s = { { 20, 5, 3.5, 6.5 } }, w = {} },
 		})
@@ -1183,6 +1196,7 @@ return function(B)
 	local function store4()
 		local b = byId[23]
 		site(b, "STORE 4", "BW_S4", nil, 44)
+		wallFinish("ZR_BrickWall") -- a brick hall (its shift office has its own finish)
 		local hw, hd = b[6] / 2, b[7] / 2
 		local pA = pitRect(stairsEntry("ladder-35"), 0.2)
 		local pB = pitRect(stairsEntry("ladder-36"), 0.2)
@@ -1233,7 +1247,7 @@ return function(B)
 		pitRails(pB, FY, "w")
 		-- the shift office in the south-east corner of D1
 		room({
-			u0 = 62, u1 = iw, v0 = 27, v1 = id, y0 = DECK, h = 9, ceil = true, skip = { e = true, s = true },
+			u0 = 62, u1 = iw, v0 = 27, v1 = id, y0 = DECK, h = 9, ceil = true, skip = { e = true, s = true }, finish = "ZR_WallpaperB",
 			doors = { n = { { s = 10, id = "BW_S4_OFFICE" } }, w = { { s = 12 } } },
 			windows = { n = { { 26, 5, 3.5, 6.5 } } },
 		})
@@ -1337,7 +1351,7 @@ return function(B)
 		stairs(bm, 36, 5, FY, rise, (36 - U2.u1) / rise, 4.5, "-u", FY - 0.2, PAN2, M.Concrete, true)
 		-- the offices on the mezzanines
 		room({
-			u0 = U1.u0 + 0.4, u1 = U1.u1 - 6, v0 = U1.v0 + 0.4, v1 = U1.v1 - 0.4, y0 = DECK, h = 9, ceil = true,
+			u0 = U1.u0 + 0.4, u1 = U1.u1 - 6, v0 = U1.v0 + 0.4, v1 = U1.v1 - 0.4, y0 = DECK, h = 9, ceil = true, finish = "ZR_WallpaperA",
 			doors = { e = { { s = 24.5, id = "BW_S7_OFFICE1" } } }, windows = { n = { { 9, 5, 3.5, 6.5 } }, w = { { 16, 5, 3.5, 6.5 } } },
 		})
 		desk(-44, -8, 90, DECK)
@@ -1355,7 +1369,7 @@ return function(B)
 		cont("weaponbox", "Ammunition crate", -3, 10, 0, DECK)
 		-- the locked office: south-east corner, one door (KEY_BY_STORE), a window to look in through
 		room({
-			u0 = 40, u1 = iw, v0 = 14, v1 = id, y0 = FY, h = 10, ceil = true, skip = { e = true, s = true },
+			u0 = 40, u1 = iw, v0 = 14, v1 = id, y0 = FY, h = 10, ceil = true, skip = { e = true, s = true }, finish = "ZR_WoodPanel",
 			doors = { n = { { s = 10, key = "KEY_BY_STORE", id = "by_store7", label = "Store 7 office" } } },
 			windows = { w = { { 14, 5, 3.5, 6.5 } } },
 		})
@@ -1467,6 +1481,7 @@ return function(B)
 	local function store17()
 		local b = byId[31]
 		site(b, "STORE 17", "BW_S17", nil, 44)
+		wallFinish("ZR_BrickWall")
 		local pts = { { 76.4, -74.4 }, { 75.7, 51.4 }, { -11.1, 51.6 }, { -10.9, 74.3 }, { -76.4, 74.5 }, { -76.1, -25.7 }, { 38.5, -24.6 }, { 38.7, -74.4 } }
 		local R1 = { u0 = -76.2, u1 = 76, v0 = -25.2, v1 = 51.5 } -- the main body
 		local R2 = { u0 = -76.4, u1 = -11, v0 = 51.5, v1 = 74.4 } -- south-west wing
@@ -1534,7 +1549,7 @@ return function(B)
 		railRect(bm, M2.u0, M2.u1, M2.v0, M2.v1, D2, { { "w", -1000, 1000 }, { "n", -1000, 1000 }, { "e", -15.75, -11.25 } })
 		-- the foreman's office on the mezzanine
 		room({
-			u0 = -74.7, u1 = -50, v0 = 6, v1 = 28, y0 = D1, h = 9, ceil = true, skip = { w = true },
+			u0 = -74.7, u1 = -50, v0 = 6, v1 = 28, y0 = D1, h = 9, ceil = true, skip = { w = true }, finish = "ZR_WoodPanel",
 			doors = { n = { { s = 14, id = "BW_S17_OFFICE" } } }, windows = { e = { { 11, 5, 3.5, 6.5 } } },
 		})
 		desk(-66, 14, 90, D1)
@@ -1642,7 +1657,7 @@ return function(B)
 		bc(bm, 0.5, 8, 0.5, -20, 27, -8, STL, M.Metal, 0)
 		-- the inspectors' office against the west wall, then racks and the cargo lift
 		room({
-			u0 = -75.2, u1 = -58, v0 = -36, v1 = -14, y0 = FY, h = 10, ceil = true, skip = { w = true },
+			u0 = -75.2, u1 = -58, v0 = -36, v1 = -14, y0 = FY, h = 10, ceil = true, skip = { w = true }, finish = "ZR_WallpaperB",
 			doors = { e = { { s = 11, id = "BW_DEP_OFFICE" } } }, windows = { n = { { 9, 5, 3.5, 6.5 } }, s = { { 9, 5, 3.5, 6.5 } } },
 		})
 		desk(-68, -29, 0)
@@ -1919,11 +1934,11 @@ return function(B)
 		stairs(bm, -4.5, -7, FY, rise, (-4.5 - DK.u1) / rise, 5, "-u", FY - 0.2, PAN2, M.Concrete, true)
 		railRect(bm, DK.u0, DK.u1, DK.v0, DK.v1, DECK, { { "w", -1000, 1000 }, { "e", -9.5, -4.5 } })
 		room({
-			u0 = DK.u0 + 0.4, u1 = -68, v0 = DK.v0 + 0.4, v1 = -15, y0 = DECK, h = 9, ceil = true,
+			u0 = DK.u0 + 0.4, u1 = -68, v0 = DK.v0 + 0.4, v1 = -15, y0 = DECK, h = 9, ceil = true, finish = "ZR_WallpaperA",
 			doors = { s = { { s = 12, id = "BW_RED_OFFICE1" } } }, windows = { e = { { 8, 5, 3.5, 6.5 } } },
 		})
 		room({
-			u0 = -66, u1 = -44, v0 = DK.v0 + 0.4, v1 = -15, y0 = DECK, h = 9, ceil = true,
+			u0 = -66, u1 = -44, v0 = DK.v0 + 0.4, v1 = -15, y0 = DECK, h = 9, ceil = true, finish = "ZR_WoodPanel",
 			doors = { s = { { s = 10, id = "BW_RED_OFFICE2" } } }, windows = { n = { { 11, 5, 3.5, 6.5 } } },
 		})
 		desk(-82, -22, 0, DECK)
@@ -1988,6 +2003,7 @@ return function(B)
 	local function bastion()
 		local b = byId[28]
 		site(b, "THE BASTION", "BW_BAS", nil, 34)
+		wallFinish("ZR_Whitewash") -- the plaster inside is whitewash, never wallpaper
 		local hw, hd = b[6] / 2, b[7] / 2
 		local T = 1.6
 		local iw, id = hw - T, hd - T
@@ -2887,7 +2903,7 @@ return function(B)
 			ab(bm, -58.6, -57.4, 10, 11, -1.3, -0.4, STL2, M.Metal)
 			-- the foreman's office (KEY_BY_MOTOR): the north-west corner, a door onto the shop floor
 			room({
-				u0 = -91.9, u1 = -76, v0 = -19.9, v1 = -6, y0 = FY, h = 10.4, ceil = true, skip = { n = true, w = true },
+				u0 = -91.9, u1 = -76, v0 = -19.9, v1 = -6, y0 = FY, h = 10.4, ceil = true, skip = { n = true, w = true }, finish = "ZR_WoodPanel",
 				doors = { e = { { s = 9, key = "KEY_BY_MOTOR", id = "by_motor", label = "Foreman's office" } } },
 			})
 			tableP(-90, -83, -18.4, -15.4, FY, 2.8)
@@ -3152,7 +3168,7 @@ return function(B)
 			end
 			-- the site office on the ground floor of the block
 			room({
-				u0 = 2, u1 = 14.4, v0 = 19.5, v1 = 29.6, y0 = FY, h = 9.6, ceil = true, skip = { s = true },
+				u0 = 2, u1 = 14.4, v0 = 19.5, v1 = 29.6, y0 = FY, h = 9.6, ceil = true, skip = { s = true }, finish = "ZR_WallpaperB",
 				doors = { n = { { s = 6 } } }, windows = { e = { { 5, 4, 3.5, 6.5 } } },
 			})
 			tableP(4, 10, 24.5, 27, FY, 2.8)
@@ -3397,7 +3413,7 @@ return function(B)
 			end
 			-- the hut
 			room({
-				u0 = -hw + 2.5, u1 = -hw + 8, v0 = hd - 7.4, v1 = hd - 2, y0 = FY, h = 8, ceil = true,
+				u0 = -hw + 2.5, u1 = -hw + 8, v0 = hd - 7.4, v1 = hd - 2, y0 = FY, h = 8, ceil = true, finish = "ZR_Whitewash",
 				doors = { w = { { s = 2.7 } } }, windows = { n = { { 2.7, 2.6, 3.5, 6 } } },
 			})
 			lamp(-hw + 5.2, FY + 7.4, hd - 4.7, 14, 0.7, nil, WARM, 2.2)

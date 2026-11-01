@@ -1,0 +1,12 @@
+{
+  "_comment": "ZR_WoodPanel: vertical wood panelling, sixteen 10 cm boards; 1.6 m per tile. The maps are empty on purpose: the main session uploads assets/textures/out/materials/ZR_MAT_WoodPanel_Color.png, _Normal.png and _Rough.png and writes the three rbxassetid values here (never invent ids). World.applyWear skips this variant while ColorMap is empty, so nothing breaks before then.",
+  "className": "MaterialVariant",
+  "properties": {
+    "BaseMaterial": "WoodPlanks",
+    "ColorMap": "",
+    "NormalMap": "",
+    "RoughnessMap": "",
+    "StudsPerTile": 5.0,
+    "MaterialPattern": "Regular"
+  }
+}

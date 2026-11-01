@@ -1307,43 +1307,251 @@ local WEAR_BY_MATERIAL = {
 	[M.Asphalt] = "ZR_AsphaltCracked", [M.Plaster] = "ZR_PlasterPeel", [M.Metal] = "ZR_MetalPaint",
 	[M.CorrodedMetal] = "ZR_Corrugated", [M.WoodPlanks] = "ZR_WoodWeathered",
 }
+
+-- ── wall finishes (docs/look/WALLS.md) ───────────────────────────────────────────────────────────────────────
+-- Seven variants make walls read as different finishes: gloss oil paint, whitewash, two wallpapers, glazed wall tiles,
+-- brick and wood panelling. A variant whose ColorMap is still empty (its textures are not uploaded yet) is skipped
+-- everywhere, so the map looks as it did until the ids are filled in.
+-- A part gets its look from the first of these that applies:
+--   1. the attribute Wear (a variant name; "" = the plain material), as always;
+--   2. the attribute Finish on the part (a variant name, any shape and material; "" = no finish), or Finish on the
+--      nearest Model above it, which only wall pieces take: Plaster always, Concrete and Brick only for the structural
+--      finishes. The part gets the variant's base material; a Finish that is not ready leaves the shape rules in step 4;
+--   3. no Finish anywhere: Plaster wall pieces take a finish from DEFAULT_PICK, chosen by a stable hash of the nearest
+--      Model and the floor band (y // 11), and Brick wall pieces become ZR_BrickWall;
+--   4. the shape rules (concrete slabs, panels and worn concrete, asphalt, metal, planks, plaster peel).
+-- Colour: gloss, whitewash and wallpaper take a hue from WALL_HUES.paint by the same hash, at the brightness the builder
+-- gave the wall (0.4 to 0.75); wood and brick take theirs from their own lists as they are. Only parts with the
+-- builder's plain plaster colour are re-tinted (brick and wood: parts whose material changes), or Tint = true on the
+-- part or its Model; Tint = false keeps the colour.
+-- Furniture and doors (NoDetail) are never walls. Upright thin boxes are wall pieces, lintels and jambs included.
+local DEFAULT_PICK = {
+	{ "ZR_Whitewash", 35 }, { "ZR_WallpaperA", 15 }, { "ZR_WallpaperB", 15 }, { "ZR_PlasterPeel", 25 }, { "ZR_PaintGloss", 10 },
+}
+local WALL_FINISHES = { "ZR_PaintGloss", "ZR_Whitewash", "ZR_WallpaperA", "ZR_WallpaperB", "ZR_WallTiles", "ZR_BrickWall", "ZR_WoodPanel" }
+local STRUCTURAL = { ZR_BrickWall = true, ZR_ConcreteWorn = true, ZR_ConcretePanel = true }
+local FINISH_KIND = { -- which hue list re-tints the finish
+	ZR_PaintGloss = "paint", ZR_Whitewash = "paint", ZR_WallpaperA = "paint", ZR_WallpaperB = "paint", ZR_WoodPanel = "wood", ZR_BrickWall = "brick",
+}
+local WALL_HUES = {
+	-- pale green, pale blue, beige, cream, dusty pink, ochre, light grey
+	paint = { hex("A0AE98"), hex("9BAAB3"), hex("B0A68D"), hex("BAB195"), hex("AE9490"), hex("AE9863"), hex("A8AAA3") },
+	wood = { hex("B08C64"), hex("A07850"), hex("8A6444"), hex("9C8460") },
+	brick = { hex("A5654F"), hex("98584A"), hex("AA7458"), hex("8F5E4D") },
+}
+World.WALL_FINISHES, World.WALL_HUES, World.DEFAULT_PICK = WALL_FINISHES, WALL_HUES, DEFAULT_PICK
+local NO_ATTR = {} -- "this Model and the ones above it do not have the attribute" in the attribute caches
+
+-- a stable 32-bit hash of a string (djb2)
+local function hashString(str)
+	local h = 5381
+	for i = 1, #str do
+		h = (h * 33 + string.byte(str, i)) % 4294967296
+	end
+	return h
+end
+-- the builder's plain plaster colour: grey, beige or green-grey in a mid range (not a painted or coloured wall)
+local function plainPlaster(c)
+	local r, g, b = c.R * 255, c.G * 255, c.B * 255
+	local hi = math.max(r, g, b)
+	return math.abs(r - g) <= 8 and math.abs(g - b) <= 24 and r >= b - 4 and hi >= 100 and hi <= 215
+end
+-- an upright, thin box: a wall, or a lintel, sill or jamb piece of one (not a floor, slab, column or block)
+local function wallPiece(p)
+	local s = p.Size
+	local thin = math.min(s.X, s.Z)
+	local big = math.max(s.X, s.Y, s.Z)
+	if big <= 1.5 or s.Y <= thin or thin > 2.6 then
+		return false
+	end
+	return thin <= 1.6 or math.max(s.X, s.Z) >= 2 * thin
+end
+-- the value of an attribute on the nearest Model at or above inst (nil when there is none); memo is per attribute
+local function modelAttr(inst, name, memo)
+	if inst == nil then
+		return nil
+	end
+	local hit = memo[inst]
+	if hit ~= nil then
+		if hit == NO_ATTR then
+			return nil
+		end
+		return hit
+	end
+	local v = nil
+	if inst:IsA("Model") then
+		v = inst:GetAttribute(name)
+	end
+	if v == nil then
+		v = modelAttr(inst.Parent, name, memo)
+	end
+	if v == nil then
+		memo[inst] = NO_ATTR
+	else
+		memo[inst] = v
+	end
+	return v
+end
+
 function World.applyWear(folder)
 	local MS = game:GetService("MaterialService")
-	local have = {}
+	local base = {} -- ready variants (a filled ColorMap): name -> base material
 	for _, v in MS:GetChildren() do
-		if v:IsA("MaterialVariant") then
-			have[v.Name] = true
+		if v:IsA("MaterialVariant") and v.ColorMap ~= "" then
+			base[v.Name] = v.BaseMaterial
 		end
 	end
+	local memoFinish, memoTint, memoNoDetail, memoPick, memoName = {}, {}, {}, {}, {}
+	local stats = {}
 	local n = 0
+
+	-- the pick of a part's Model and floor band: { name = a DEFAULT_PICK finish, h = the hash the hues come from }
+	local function pickFor(p)
+		local m = p:FindFirstAncestorOfClass("Model") or p.Parent
+		local full = memoName[m]
+		if full == nil then
+			full = m:GetFullName()
+			memoName[m] = full
+		end
+		local key = full .. "#" .. math.floor(p.Position.Y / 11)
+		local pk = memoPick[key]
+		if pk == nil then
+			local h = hashString(key)
+			local roll = Random.new(h):NextInteger(1, 100)
+			pk = { name = "ZR_PlasterPeel", h = h, hue = {} }
+			local acc = 0
+			for _, e in DEFAULT_PICK do
+				acc += e[2]
+				if roll <= acc then
+					pk.name = e[1]
+					break
+				end
+			end
+			memoPick[key] = pk
+		end
+		return pk
+	end
+	local function hueOf(pk, kind)
+		local c = pk.hue[kind]
+		if c == nil then
+			local list = WALL_HUES[kind]
+			c = list[Random.new(pk.h + 7919):NextInteger(1, #list)]
+			pk.hue[kind] = c
+		end
+		return c
+	end
+	-- may this part take a hue from the lists? Tint (on the part, else the nearest Model) says; else the builder's plain
+	-- plaster colour does. Brick and wood keep a colour the builder chose for that very material
+	local function mayTint(p, kind, orig, now)
+		local t = p:GetAttribute("Tint")
+		if t == nil then
+			t = modelAttr(p.Parent, "Tint", memoTint)
+		end
+		if t ~= nil then
+			return t == true
+		end
+		return plainPlaster(p.Color) and (kind == "paint" or orig ~= now)
+	end
+
 	for _, p in folder:GetDescendants() do
 		if p:IsA("Part") and p.Transparency < 1 then
 			local want = p:GetAttribute("Wear")
+			local finish, kind, pk = false, nil, nil
+			local orig = p.Material
 			if want == nil then
 				local s = p.Size
 				local thin = math.min(s.X, s.Y, s.Z)
 				local big = math.max(s.X, s.Y, s.Z)
-				if p.Material == M.Concrete then
-					if s.Y <= math.min(s.X, s.Z) and s.Y < 9 and math.max(s.X, s.Z) > 6 then
-						want = "ZR_FloorConcrete" -- slabs, floors, roofs seen from below
-					elseif big > 60 and thin <= 2.5 then
-						want = "ZR_ConcretePanel" -- long perimeter walls
-					elseif big > 3 then
-						want = "ZR_ConcreteWorn"
+				-- wall finishes: a Finish attribute (the part's own, or the nearest Model's for wall pieces), else the default
+				local own = p:GetAttribute("Finish")
+				local explicit = type(own) == "string"
+				local fin = nil
+				local wall = false
+				if explicit then
+					fin = own
+				else
+					-- furniture and doors are not walls: NoDetail on the part or on a Model above it
+					wall = wallPiece(p) and p:GetAttribute("NoDetail") ~= true and modelAttr(p.Parent, "NoDetail", memoNoDetail) ~= true
+					if wall then
+						local up = modelAttr(p.Parent, "Finish", memoFinish)
+						if type(up) == "string" then
+							fin = up
+						end
 					end
-				elseif p.Material == M.CorrodedMetal then
-					want = big > 6 and "ZR_Corrugated" or nil
-				elseif WEAR_BY_MATERIAL[p.Material] and big > 1.5 then
-					want = WEAR_BY_MATERIAL[p.Material]
+				end
+				if fin ~= nil then
+					if fin ~= "" then
+						if string.sub(fin, 1, 3) ~= "ZR_" then
+							fin = "ZR_" .. fin
+						end
+						local fits = explicit or orig == M.Plaster or ((orig == M.Concrete or orig == M.Brick) and STRUCTURAL[fin] == true)
+						if fits and base[fin] ~= nil then
+							want, finish, kind = fin, true, FINISH_KIND[fin]
+							pk = pickFor(p)
+						end
+					end
+				elseif wall then
+					if orig == M.Plaster then
+						pk = pickFor(p)
+						local name = pk.name
+						-- wallpaper and gloss are for inside: outside (thick) walls, coloured walls and Tint = false get whitewash
+						local thick = math.min(s.X, s.Z) > 0.95
+						if name == "ZR_WallpaperA" or name == "ZR_WallpaperB" then
+							if thick or not mayTint(p, "paint", orig, orig) then
+								name = "ZR_Whitewash"
+							end
+						elseif name == "ZR_PaintGloss" and thick then
+							name = "ZR_Whitewash"
+						end
+						if base[name] ~= nil then
+							want, finish, kind = name, true, FINISH_KIND[name]
+						end
+					elseif orig == M.Brick and base.ZR_BrickWall ~= nil then
+						want, finish = "ZR_BrickWall", true -- the builder's brick colour stays
+					end
+				end
+				if want == nil then
+					-- the shape rules
+					if orig == M.Concrete then
+						if s.Y <= math.min(s.X, s.Z) and s.Y < 9 and math.max(s.X, s.Z) > 6 then
+							want = "ZR_FloorConcrete" -- slabs, floors, roofs seen from below
+						elseif big > 60 and thin <= 2.5 then
+							want = "ZR_ConcretePanel" -- long perimeter walls
+						elseif big > 3 then
+							want = "ZR_ConcreteWorn"
+						end
+					elseif orig == M.CorrodedMetal then
+						want = big > 6 and "ZR_Corrugated" or nil
+					elseif WEAR_BY_MATERIAL[orig] and big > 1.5 then
+						want = WEAR_BY_MATERIAL[orig]
+					end
 				end
 			end
-			if want and want ~= "" and have[want] then
+			if want and want ~= "" and base[want] ~= nil then
+				if finish then
+					-- a finish sets the material its variant belongs to, and a hue where the part may take one
+					if orig ~= base[want] then
+						p.Material = base[want]
+					end
+					if kind ~= nil and pk ~= nil and mayTint(p, kind, orig, p.Material) then
+						local hue = hueOf(pk, kind)
+						if kind == "paint" then
+							-- the hue of the list at the brightness the builder gave the wall
+							local hh, hs = hue:ToHSV()
+							local _, _, pv = p.Color:ToHSV()
+							p.Color = Color3.fromHSV(hh, hs, math.clamp(pv, 0.4, 0.75))
+						else
+							p.Color = hue
+						end
+					end
+				end
 				p.MaterialVariant = want
 				n += 1
+				stats[want] = (stats[want] or 0) + 1
 			end
 		end
 	end
-	return n
+	return n, stats
 end
 
 -- building kit handed to map modules (src/server/Maps/*): the same primitives, props and registration helpers
@@ -1546,7 +1754,7 @@ function World.build()
 		d.parent = nil
 	end
 	World.activate("quay7")
-	local worn = World.applyWear(root)
+	local worn, wornBy = World.applyWear(root)
 	root.Parent = workspace
 	snapLooseSpots()
 	local n = 0
@@ -1567,6 +1775,12 @@ function World.build()
 		end
 		return k
 	end)()))
+	-- how many parts took each wall finish (the new variants only count once their maps are filled in)
+	local fin = {}
+	for _, name in WALL_FINISHES do
+		table.insert(fin, string.format("%s %d", string.sub(name, 4), (wornBy and wornBy[name]) or 0))
+	end
+	print("[ZR] Wall finishes: " .. table.concat(fin, ", "))
 end
 
 -- places the cosmetic detail plan keeps its ground clutter away from (M12): loot spots, containers, doors (and

@@ -14,6 +14,10 @@ older PCs. Three layers do that work, and a graphics setting decides how much of
   * corrugated sheet;
   * weathered planks;
   * cracked asphalt.
+* **Wall finishes (2026-11-01):** seven more variants (gloss paint, whitewash, two wallpapers, glazed tiles, brick, wood
+  panelling) so rooms stop all wearing the same plaster. A wall takes one from its `Finish` attribute or from a weighted pick
+  per room, and the Border dorm corridors are two-tone. Their texture slots are empty until the PNGs are uploaded, and nothing
+  changes on screen until then: `docs/look/WALLS.md`.
 * `World.applyWear` picks a variant for each part by its material and shape. Slabs become floor concrete, long
   perimeter walls become precast panels, and roads become cracked asphalt. A part can ask for a specific one with
   the `Wear` attribute.
@@ -112,7 +116,7 @@ device numbers.
 
 ## Tests
 
-* `ZR_Dev:Invoke("tests")` runs `LookTests` (19 checks), which cover:
+* `ZR_Dev:Invoke("tests")` runs `LookTests` (19 checks, plus the 13 of L04 for the wall finishes), which cover:
   * the graphics level through the real request path;
   * the published plan: well formed, known images, library meshes, clutter clear of play spots, under 400 KB;
   * the server building no detail itself;
