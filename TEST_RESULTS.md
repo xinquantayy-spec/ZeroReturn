@@ -23,9 +23,45 @@ Studio on the T490, Test → Clients and Servers with one player, so the client 
 | KASSA, no shadow from parts under 3 / under 12 studs (226 / 1,687 parts) | no change (shadow draws 361 → 340) |
 | KASSA, the mall's 330 lamps off | no change on the render thread (graphics card time is not reported on this laptop) |
 
-So in a window that is not in front, Studio draws at most 15 frames a second while the game keeps running at 60. The 15 fps the owner saw is that cap, not the game's cost. Each frame needs 10 to 27 ms on the render thread, which would allow about 37 to 90 fps on the CPU side. The integrated graphics' share is not measured, and needs the window in front: the benchmark marks those rows FOCUSED. The earlier Play mode result below was probably capped the same way. It found "about 34 ms a frame is not drawing" and 29 fps when looking straight up, and both fit a background cap, not real overhead.
+**With the window in front** (owner clicked it, 15:40), same views, Roblox render level 21 (the top):
+
+| View | fps | Render thread | Sun shadows off | The mall's lamps off, post effects off, glass hidden, screen UI off |
+|---|---|---|---|---|
+| KASSA aisles | 32.4 | 28.2 ms | 38.3 fps | 32.2, 32.3, 33.2, 33.1 fps (no change) |
+| L2 gallery | 27.7 to 29.9 | 31 to 34 ms | 30.4 fps | 27.8, 25.1, 27.1 fps (no change) |
+| Outside east | 29.9 | 31.2 ms | 34.8 fps | 30.4, 29.3, 27.1, 32.3 fps |
+
+L2 gallery by Roblox render level (set from the client for the test, then put back to 21):
+
+| Level | fps | Render thread | Draw calls (scene + shadow) |
+|---|---|---|---|
+| 21 (top) | 29.9 | 31.1 ms | 198 + 290 |
+| 10 | 58.4 | 15.6 ms | 209 + 68 |
+| 5 | 60.0 (cap) | 9.6 ms | 195 + 0 |
+| 1 | 60.0 (cap) | 7.7 ms | 168 + 0 |
+
+The user's graphics slider (`SavedQualityLevel`) cannot be set by a script ("lacking capability"); `settings().Rendering.QualityLevel` could be set from the MCP context.
+
+So in a window that is not in front, Studio draws at most 15 frames a second while the game keeps running at 60. The 15 fps the owner saw is that cap, not the game's cost. Each frame needs 10 to 27 ms on the render thread, which would allow about 37 to 90 fps on the CPU side. With the window in front, the top render level gives 28 to 33 fps in Meridian's heaviest views, bound by the render thread. The sun's shadows are the largest single cost, at 4 to 5 ms. Level 10 gives 58 fps, and level 5 or lower hits Roblox's 60 fps cap. The benchmark marks rows counted in front FOCUSED. The earlier Play mode result below was probably capped the same way. It found "about 34 ms a frame is not drawing" and 29 fps when looking straight up, and both fit a background cap, not real overhead.
 
 Benchmark: set the workspace attribute `ZR_Bench` to a map id (`meridian`, `border`) in Edit mode and start a test. Dev.luau deploys the first player and walks the viewpoints. The client holds each view for 4 s, counts frames for 6 s and shows a table. Rows counted while the window was in the background are marked BACKGROUND.
+
+## Meridian exits on the navigation mesh (2026-11-01)
+
+Server of the same Clients and Servers test, Roblox PathfindingService (agent radius 2, height 5.5, can jump), raid running with the mall's power on.
+
+| From | RAIL SIDING | RESCUE CHECKPOINT | SUBSTATION CAR | WEST CAMP | RIVER PATH | FENCE GAP |
+|---|---|---|---|---|---|---|
+| PMC spawn north-west | path | path | path | not tried | path | path |
+| Car park, L0 | path | path | path | path | path | path |
+| KASSA, L1 | path | path | path | path | path | path |
+| Gallery, L2 | path | path | path | path | path | path |
+
+SHELTER EXIT:
+- No path with the power on and the valve pulled while THE SHELTER's card door is locked. That is by design: the chain is power, then the valve in the L2 washroom, then CARD_MALL_VAULT at the door.
+- With the door unlocked (`door MM_SHELTER`): car park to the door, the door to the exit and the car park to the exit all have paths.
+
+Still by hand: the paid car taking the money and leaving, FENCE GAP refusing a player with a backpack, and the messages at each step of the shelter chain.
 
 ## Frame time in Studio: where it goes (2026-11-01, Meridian, KASSA)
 
