@@ -389,7 +389,8 @@ function Loot.view(c, player)
 	local list = units(c)
 	return {
 		cid = c.id, label = c.label, kind = c.kind, body = c.body or nil, items = items, grids = grids, slots = slots,
-		mainW = h.mainW, mainH = h.mainH, searched = (c.revealed[player] or 0) >= #list, searching = c.searching[player] ~= nil,
+		mainW = h.mainW, mainH = h.mainH, pocketsW = h.pocketsW, pocketsH = h.pocketsH,
+		searched = (c.revealed[player] or 0) >= #list, searching = c.searching[player] ~= nil,
 	}
 end
 
@@ -956,6 +957,10 @@ local function kit(rand)
 		local g, it = Inv.newItem(id, n or 1, extra)
 		return Inv.place(h, g, it, Inv.loadOrder(h)) and g or nil
 	end
+	-- Tarkov's Goons carry five double pockets (5 x 2, one item one cell wide in each; Inv pocketSpot)
+	function k.doublePockets()
+		h.pocketsW, h.pocketsH = 5, 2
+	end
 	-- put a part on a weapon in the kit, in a free slot that takes it (skipped when there is none)
 	function k.mod(wg, id)
 		if not wg then
@@ -1129,6 +1134,79 @@ function Loot.stokerLoadout(rand)
 		k.put("HEMOSTAT")
 	end
 	k.roll("mallgood", rand:NextInteger(0, 2))
+	return k.h
+end
+
+-- THE HOUNDS (Border Yard's roaming trio, our Goons; docs/design/BOSS_HOUNDS.md). Each has Tarkov's five double pockets.
+-- Tarkov's Knight wears a class 5 armoured rig (here a class 5 vest under a black chest rig), a class 1 skull mask (we have
+-- none: a black gaiter) and a head mount for his panoramic goggles, no helmet, and fights with a kitted 7.62 AR. Big Pipe wears no helmet (a bandana and his
+-- pipe) and flushes cover with a grenade launcher (we have none: MORTAR throws frags). Birdeye wears a class 4 concealable
+-- vest, a chest rig and a radio frame pack and holds long angles with a marksman rifle.
+function Loot.halberdLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 85, 100 }
+	k.doublePockets()
+	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(50, 70), tint = "black" })
+	-- no helmet (Tarkov: his head is unarmoured): a goggle head mount, now and then with the panoramic goggles
+	local strap = k.slot("head", "NV_STRAP")
+	if rand:NextNumber() < 0.35 then
+		k.mod(strap, "NV_QUAD")
+	end
+	k.slot("face", "GAITER", { tint = "black" }) -- in place of the skull mask
+	k.slot("rig", "RIG_CHEST", { tint = "black" })
+	k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", 3, nil, "R17_CQB")
+	k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1, nil, "P9_TAC")
+	k.put("MEDKIT_L")
+	k.put("HEMOSTAT")
+	k.put("GREN_F7")
+	if rand:NextNumber() < 0.5 then
+		k.put("GOLD_CHAIN")
+	end
+	k.roll("dorm_good", rand:NextInteger(0, 2))
+	return k.h
+end
+
+function Loot.mortarLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 80, 100 }
+	k.doublePockets()
+	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(45, 65), tint = "olive" })
+	k.slot("head", "BEANIE", { tint = "charcoal" }) -- in place of the bandana: no head armour, as Big Pipe
+	k.slot("rig", "RIG_CHEST", { tint = "olive" })
+	k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3, nil, "KST_TAC")
+	for _ = 1, 3 do
+		k.put("GREN_F7")
+	end
+	for _ = 1, 3 do
+		k.put("GREN_RK5")
+	end
+	k.put("MEDKIT_L")
+	k.put("PAINKILLERS")
+	k.put("SPLINT")
+	k.roll("crate", rand:NextInteger(0, 2))
+	return k.h
+end
+
+function Loot.kestrelLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 85, 100 }
+	k.doublePockets()
+	k.slot("armor", "ARMOR_C4", { dur = rand:NextInteger(35, 50), tint = "olive" })
+	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 35), tint = "tan" })
+	k.slot("rig", "RIG_CHEST", { tint = "ranger" })
+	k.slot("back", "BAG_PATROL", { tint = "tan" })
+	k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", 4, nil, "R17_DMR")
+	k.put("GREN_SMOKE")
+	k.put("GREN_SMOKE")
+	k.put("MEDKIT_M")
+	k.put("PAINKILLERS")
+	if rand:NextNumber() < 0.3 then
+		k.put("FLARE_RED")
+	end
+	k.roll("dorm_good", rand:NextInteger(0, 2))
 	return k.h
 end
 

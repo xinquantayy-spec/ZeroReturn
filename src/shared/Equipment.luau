@@ -161,6 +161,15 @@ local LOOKS: { [string]: any } = {
 	-- apron-vest, knee pads; his plate carrier and welding mask are items and stay in view
 	stoker = { jacket = "2E3742", pants = "2A2D30", skin = "B8957A", glove = "4A3A2A", boot = "2A2622",
 		overlays = join({ P("ZR_OV_PaddedJacket", "UpperTorso", "4A3B2C", "Fabric", { shell = "jacket" }) }, KNEE("2A2622")) },
+	-- THE HOUNDS (Border Yard's roaming trio, our Goons; docs/design/BOSS_HOUNDS.md): HALBERD the leader in dark navy
+	-- with tan knee pads, MORTAR the grenadier in olive with a black armband, KESTREL the marksman in a mottled
+	-- brown-green with a hood; their carriers, helmets and guns are items
+	halberd = { jacket = "26303A", pants = "222831", skin = "C9A58A", glove = "1A1B1C", boot = "1E1D1C",
+		overlays = join({ P("ZR_OV_Armband", "LeftUpperArm", "B5A27A", "Fabric") }, KNEE("8A7A58")) },
+	mortar = { jacket = "4A5236", pants = "3C4230", skin = "B8957A", glove = "2A2B26", boot = "2E2A24",
+		overlays = join({ P("ZR_OV_Armband", "LeftUpperArm", "1E1F20", "Fabric") }, KNEE("2E3026")) },
+	kestrel = { jacket = "5C5640", pants = "4A4634", skin = "BF9C80", glove = "3A3428", boot = "3A3228",
+		overlays = join({ P("ZR_OV_Hood", "UpperTorso", "56523A", "Fabric", { region = "hood" }) }, KNEE("3E3A2C")) },
 	-- Relay 7 traders (lobby NPCs), each in their trade's clothes: VOS the quartermaster (olive, red armband), HALE
 	-- the field medic (pale coat, blue gloves, red-cross armband), TILDA the outfitter (dark, fleece collar), the Fence
 	-- (hooded, shabby)

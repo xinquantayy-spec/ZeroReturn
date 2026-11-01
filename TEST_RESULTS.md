@@ -8,6 +8,42 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## THE HOUNDS, Border Yard's second boss group (2026-11-02)
+
+Border raids with the trio forced in by ZR_Dev `boss(true, "Halberd")` and THE BROKER forced out.
+
+- **Spawn:** HALBERD, MORTAR and KESTREL spawned at the Bastion yard with 1,120, 910 and 795 health. They walked the route together, about 16 studs apart. Pictures: `docs/maps/evidence/BY_hounds_trio.jpg`.
+- **First fight:** the player stood in the open, 45 studs ahead, in god mode.
+  - All three engaged. MORTAR threw an F-7 grenade.
+  - KESTREL ran dry and fled (FLEE). His kit showed why:
+    - his plate rig was refused over his vest, so he had no rig and no spare magazines;
+    - the medkits of HALBERD and MORTAR did not fit at all, since pockets take only 1 x 1 items.
+- **Fixed:** the three now have Tarkov's five double pockets (5 x 2, `Inv` `pocketsW`/`pocketsH`), and KESTREL wears a chest rig and a frame pack. His gear now follows the wiki:
+  - HALBERD: a goggle head mount and a gaiter instead of a helmet;
+  - MORTAR: a beanie instead of a helmet.
+- **Second fight,** same set-up. Over 26 s all three stayed in ENGAGE and reloaded again and again (KESTREL 0 to 20 rounds twice). Nobody fled.
+- **Body:** KESTREL's body, searched with ZR_Dev `loot`, showed:
+  - the pockets as 5 x 2 (two smoke grenades in one pocket, upright medkits and the red flare in their own);
+  - four magazines in the rig;
+  - the frame pack.
+
+  Picture: `docs/maps/evidence/BY_hounds_pockets.jpg`.
+- **Tests, all passing:**
+
+  | Suite | Passed | Failed | New |
+  |---|---|---|---|
+  | LogicTests | 357 | 0 | 7 in "hounds": two groups rolled on their own; the trio's health and skill; their route; the kits fit whole over 40 seeds; their gear; a double pocket takes a 1 x 2 upright and refuses a 2 x 2; their looks |
+  | CharTests | 47 | 0 | |
+  | LookTests | 33 | 0 | |
+  | MapTests | 38 | 0 | |
+
+**Not checked:**
+- the whole route walked end to end;
+- MORTAR's grenades in the second fight (the player stood in the open, and grenades go at cover);
+- dragging items into a body's double pockets by hand;
+- two clients;
+- phones.
+
 ## AI paths into Border's cellars and bunkers (2026-11-02)
 
 ZR_Dev `exitcheck("border", 12, true)` found two faults, both fixed and re-checked. After the fixes, every one of the 26 exits is reached from every spawn that may use it:

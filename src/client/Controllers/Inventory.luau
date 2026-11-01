@@ -212,7 +212,7 @@ local function findFree(view, cid, w, h)
 	if cid == "stash" then
 		cw, ch = Config.STASH_W, view.stashH or Config.STASH_H
 	elseif cid == "pockets" then
-		cw, ch = Config.POCKETS_W, Config.POCKETS_H
+		cw, ch = view.pocketsW or Config.POCKETS_W, view.pocketsH or Config.POCKETS_H
 	elseif cid == "main" then
 		cw, ch = view.mainW or 0, view.mainH or 0
 	else
@@ -223,11 +223,26 @@ local function findFree(view, cid, w, h)
 		end
 		cw, ch = cd.grid.w, cd.grid.h
 	end
-	local x, y, r = Grid.findFree(cw, ch, pl, function(gg)
-		local it = view.items[gg]
-		local d = it and defs[it.id]
-		return sizeOf(it)
-	end, w, h)
+	local function sz(gg)
+		return sizeOf(view.items[gg])
+	end
+	if cid == "pockets" and ch > 1 then
+		-- five double pockets (THE HOUNDS' bodies): one column is one pocket, an item lies one cell wide (Inv pocketSpot)
+		local r = w > 1 and 1 or 0
+		local rw, rh = Grid.dims(w, h, r)
+		if rw > 1 then
+			return nil
+		end
+		for x = 1, cw do
+			for y = 1, ch - rh + 1 do
+				if Grid.fits(cw, ch, pl, sz, x, y, rw, rh) then
+					return x, y, r
+				end
+			end
+		end
+		return nil
+	end
+	local x, y, r = Grid.findFree(cw, ch, pl, sz, w, h)
 	return x, y, r
 end
 
@@ -803,7 +818,7 @@ local function drawContainers(parent, view, ref, cell, width)
 	container("rig", "TACTICAL RIG")
 	-- pockets (no slot of their own)
 	if view.grids and view.grids.pockets then
-		local _, h0 = drawGrid(parent, view, ref, "pockets", "POCKETS", Config.POCKETS_W, Config.POCKETS_H, cell, box + 8, y, nil)
+		local _, h0 = drawGrid(parent, view, ref, "pockets", "POCKETS", view.pocketsW or Config.POCKETS_W, view.pocketsH or Config.POCKETS_H, cell, box + 8, y, nil)
 		y += h0 + 6
 	else
 		K.label(parent, "POCKETS  ·  NOT SEARCHED", 11, { Position = UDim2.fromOffset(box + 8, y), Size = UDim2.new(1, 0, 0, 16), TextColor3 = K.C.dim })

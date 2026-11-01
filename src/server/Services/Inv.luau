@@ -53,6 +53,24 @@ local function sizer(h: any)
 		return Inv.sizeOf(h.items[g])
 	end
 end
+
+-- Double pockets (THE HOUNDS; Tarkov's Goons have five 1 x 2 pockets instead of four 1 x 1): the holder carries
+-- pocketsW = 5, pocketsH = 2 and each column is one pocket, so an item lies one cell wide in it. Fills pocket by pocket.
+local function pocketSpot(h: any, cw: number, ch: number, pl: any, iw: number, ih: number): (number?, number?, number?)
+	local r = iw > 1 and 1 or 0
+	local rw, rh = Grid.dims(iw, ih, r)
+	if rw > 1 then
+		return nil, nil, nil
+	end
+	for x = 1, cw do
+		for y = 1, ch - rh + 1 do
+			if Grid.fits(cw, ch, pl, sizer(h), x, y, rw, rh) then
+				return x, y, r
+			end
+		end
+	end
+	return nil, nil, nil
+end
 Inv.sizer = sizer
 
 function Inv.dims(h: any, cid: string): (number, number)
@@ -63,7 +81,7 @@ function Inv.dims(h: any, cid: string): (number, number)
 		return 0, 0
 	elseif cid == "pockets" then
 		if h.grids.pockets then
-			return Config.POCKETS_W, Config.POCKETS_H
+			return h.pocketsW or Config.POCKETS_W, h.pocketsH or Config.POCKETS_H -- double pockets: see pocketSpot
 		end
 		return 0, 0
 	elseif cid == "main" then
@@ -271,8 +289,8 @@ function Inv.canEnter(h: any, g: string, cid: string): (boolean, string?)
 		return false, "SECURE_RESTRICTED"
 	end
 	local iw, ih = Inv.sizeOf(it)
-	if cid == "pockets" and iw * ih > 1 then
-		return false, "TOO_BIG"
+	if cid == "pockets" and iw * ih > (h.pocketsH or Config.POCKETS_H) then
+		return false, "TOO_BIG" -- a pocket holds a 1 x 1 item (a double pocket a 1 x 2)
 	end
 	if not BUILTIN[cid] then
 		if Inv.isInside(h, g, cid) then
@@ -497,6 +515,9 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 	local iw, ih = Inv.sizeOf(it)
 	local w, hh = Grid.dims(iw, ih, r)
 	local cw, ch = Inv.dims(h, cid)
+	if cid == "pockets" and ch > 1 and w > 1 then
+		return false, "NO_FIT" -- a double pocket takes an item one cell wide (pocketSpot)
+	end
 	local k, a = Inv.locate(h, g)
 	local ignore = (k == "grid" and a == cid) and g or nil
 	if not Grid.fits(cw, ch, h.grids[cid], sizer(h), dest.x, dest.y, w, hh, ignore) then
@@ -554,7 +575,12 @@ function Inv.autoPlace(h: any, g: string, order: { string }): (boolean, string?)
 				local own = pl[g]
 				pl[g] = nil
 				local iw, ih = Inv.sizeOf(it)
-				local x, y, r = Grid.findFree(cw, ch, pl, sizer(h), iw, ih)
+				local x, y, r
+				if cid == "pockets" and ch > 1 then
+					x, y, r = pocketSpot(h, cw, ch, pl, iw, ih)
+				else
+					x, y, r = Grid.findFree(cw, ch, pl, sizer(h), iw, ih)
+				end
 				if own then
 					pl[g] = own
 				end
@@ -1300,6 +1326,9 @@ function Inv.check(h: any): (boolean, string?)
 			local w, hh = Grid.dims(iw, ih, p.r)
 			if not Grid.fits(cw, ch, pl, sizer(h), p.x, p.y, w, hh, g) then
 				return false, "overlap/out of bounds " .. g .. " in " .. cid
+			end
+			if cid == "pockets" and ch > 1 and w > 1 then
+				return false, "across two pockets " .. g
 			end
 		end
 	end

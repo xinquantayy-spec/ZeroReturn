@@ -1059,6 +1059,71 @@ function T.run(ctx)
 		check("stoker: he has a look of his own", Equipment.LOOKS.stoker ~= nil and Equipment.lookKey("stoker") == "stoker")
 	end
 
+	-- THE HOUNDS (Border Yard's roaming trio, our Goons): a second boss group beside the Broker, three men of their own
+	if ctx and ctx.World and ctx.Loot then
+		local bm = ctx.World.maps and ctx.World.maps.border
+		local bl = bm and bm.bosses
+		local hb = bl and bl[2]
+		check("hounds: Border Yard rolls the Broker and THE HOUNDS on their own (Tarkov's Goons: 20 % on Customs)",
+			bl ~= nil and #bl == 2 and bl[1].label == "Broker" and hb.label == "Halberd" and hb.chance == 0.2, bl and #bl)
+		local crewOk = hb ~= nil and #hb.crew == 2 and hb.crew[1].label == "Mortar" and hb.crew[2].label == "Kestrel"
+			and typeof(hb.crew[1].pos) == "Vector3" and typeof(hb.crew[2].pos) == "Vector3"
+		check("hounds: HALBERD leads MORTAR and KESTREL, each with Tarkov's health (1,120, 910, 795) and the boss's skill",
+			crewOk and math.abs(hb.hp * 440 - 1120) < 0.5 and math.abs(hb.crew[1].hp * 440 - 910) < 0.5 and math.abs(hb.crew[2].hp * 440 - 795) < 0.5
+				and hb.skill == "boss" and hb.crew[1].skill == "boss" and hb.crew[2].skill == "boss")
+		check("hounds: they walk a loop of the map from the Bastion (10 points)", hb ~= nil and #hb.route == 10 and typeof(hb.home) == "Vector3")
+		local function at(h, slot)
+			local g = h.slots[slot]
+			return g and h.items[g] and h.items[g].id
+		end
+		local function count(h, ids)
+			local n = 0
+			for _, it in h.items do
+				if ids[it.id] then
+					n += 1
+				end
+			end
+			return n
+		end
+		-- every seed: the whole kit fits (no spare magazine, grenade or med left out), five double pockets, a sound holder
+		local kitsOk, why = true, nil
+		for seed = 1, 40 do
+			local hh, hm, hk = ctx.Loot.halberdLoadout(Random.new(seed)), ctx.Loot.mortarLoadout(Random.new(seed)), ctx.Loot.kestrelLoadout(Random.new(seed))
+			-- (at least: the loot rolls on top may add a magazine, a grenade or a med of their own)
+			local fits = count(hh, { R17_MAG = true }) >= 4 and count(hh, { P9_MAG = true }) >= 2 and count(hh, { MEDKIT_L = true }) >= 1
+				and count(hm, { KST_MAG = true }) >= 4 and count(hm, { GREN_F7 = true, GREN_RK5 = true }) >= 6 and count(hm, { MEDKIT_L = true, SPLINT = true }) >= 2
+				and count(hk, { R17_MAG = true }) >= 5 and count(hk, { GREN_SMOKE = true }) >= 2 and count(hk, { MEDKIT_M = true }) >= 1
+			for _, h in { hh, hm, hk } do
+				local okH, err = Inv.check(h)
+				if not okH or h.pocketsW ~= 5 or h.pocketsH ~= 2 then
+					fits, why = false, err or "pockets"
+				end
+			end
+			if not fits then
+				kitsOk, why = false, "seed " .. seed .. " " .. tostring(why or "a kit item left out")
+				break
+			end
+		end
+		check("hounds: their kits fit whole in five double pockets (Tarkov's Goons), every seed", kitsOk, why)
+		local hh, hm, hk = ctx.Loot.halberdLoadout(Random.new(5)), ctx.Loot.mortarLoadout(Random.new(5)), ctx.Loot.kestrelLoadout(Random.new(5))
+		check("hounds: HALBERD class 5, a goggle mount and an AR, MORTAR with no head armour and six frags, KESTREL a class 4 vest, chest rig, frame pack and DMR",
+			at(hh, "primary") == "R17_RIFLE" and at(hh, "armor") == "ARMOR_C5" and at(hh, "head") == "NV_STRAP" and at(hh, "face") == "GAITER"
+				and at(hm, "primary") == "KST_RIFLE" and at(hm, "head") == "BEANIE" and Items.defs.BEANIE.armor == nil
+				and at(hk, "primary") == "R17_RIFLE" and at(hk, "armor") == "ARMOR_C4" and at(hk, "rig") == "RIG_CHEST" and at(hk, "back") == "BAG_PATROL")
+		-- a double pocket takes a 1 x 2 upright and refuses one lying across two pockets
+		local hp = Inv.newHolder("raid")
+		hp.pocketsW, hp.pocketsH = 5, 2
+		local g1, it1 = Inv.newItem("MEDKIT_L", 1)
+		local placed = Inv.place(hp, g1, it1, { "pockets" })
+		local _, _, p1 = Inv.locate(hp, g1)
+		local w1 = p1 and select(1, Grid.dims(1, 2, p1.r))
+		local g2, it2 = Inv.newItem("BAG_SLING", 1)
+		check("hounds: a double pocket holds a 1 x 2 upright, refuses a 2 x 2", placed and w1 == 1 and not Inv.place(hp, g2, it2, { "pockets" }))
+		local Eq = require(game:GetService("ReplicatedStorage").ZR.Equipment)
+		check("hounds: each of the three has a look of his own",
+			Eq.lookKey("halberd") == "halberd" and Eq.lookKey("mortar") == "mortar" and Eq.lookKey("kestrel") == "kestrel")
+	end
+
 	-- airdrops (Services/Airdrop.luau): Tarkov's four crates, their pools, a full crate fits its 10 x 12 grid, the
 	-- maps' roll numbers
 	if ctx and ctx.Airdrop and ctx.Loot then

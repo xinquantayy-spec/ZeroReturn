@@ -259,7 +259,7 @@ Gaps (not copied or not found):
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
+| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, THE HOUNDS (the Goons, 2026-11-02), border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
 | Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | Co-op, flare and transit extracts, the car exit's karma pricing (the car itself is built: "Car exits" below), the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
@@ -598,3 +598,31 @@ Gaps (not copied or not found):
   `Sounds.AMB_ATLAS` is replaced; until then glass breaks silently.
 - **Not run**: the collision-group plan (hit shells in group `ZR_Glass`, shots in `ZR_Shot`) rests on documented Roblox behaviour and
   has not been seen working in Studio.
+
+### THE HOUNDS: Customs' Goons on Border Yard (2026-11-02)
+
+Researched first (tarkovforge's Knight, Big Pipe and Birdeye pages, timesaver.gg's Goons guide for patch 1.1.0, the Fandom
+pages; `docs/design/BOSS_HOUNDS.md`), then built in `Maps/Border/Play.luau`, `AI.luau`, `Loot.luau`, `Inv.luau` and
+`Equipment.luau`. Checked in Studio with one player (TEST_RESULTS "THE HOUNDS").
+
+Matched:
+- **Three bosses who move together**, rolled at 20 % on Customs' map, from the Stronghold (our Bastion yard), roaming a
+  loop of the map.
+- **Their health**: 1,120, 910 and 795.
+- **Their gear, where we have an equivalent**:
+  - HALBERD (Knight): class 5 on the body, an unarmoured head with a goggle mount and the panoramic goggles now and then,
+    a face cover;
+  - MORTAR (Big Pipe): no head armour, grenades for flushing cover;
+  - KESTREL (Birdeye): a class 4 vest, a chest rig, a frame pack, a marksman rifle.
+- **Five double pockets** (ten cells) on all three, drawn as 5 x 2 on their bodies.
+
+Gaps:
+- **No grenade launcher**: MORTAR throws grenades.
+- **Weapons**: no Mk47 or 7.62 x 51 marksman rifle; the R-17 builds stand in.
+- **No unique items**: no skull mask (a gaiter, cosmetic, where Tarkov's is class 1), no bandana or pipe (a beanie), no
+  class 5 armoured rig (a vest with a chest rig on top).
+- **Ours**: KESTREL's class 3 helmet, the 35 % goggle chance and the loot rolls.
+- **One map**: they do not rotate to other maps; there is no tracker.
+- **One AI**: all three use the boss skill, with no leader push or overwatch of their own.
+- **Health spreads evenly** over the body's parts, not Tarkov's per-part numbers.
+- **Looks reuse existing overlays and gear**: no new meshes.

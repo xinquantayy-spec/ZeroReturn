@@ -1729,6 +1729,7 @@ AI.liveCount = liveCount
 
 function AI.spawn(kind, pos, opts)
 	opts = opts or {}
+	local skillOf = SKILL[opts.skill or kind] or SKILL[kind] -- a crew may fight with the boss's skill (THE HOUNDS)
 	if liveCount() >= Config.AI_MAX then
 		return nil
 	end
@@ -1781,17 +1782,17 @@ function AI.spawn(kind, pos, opts)
 	turn.Enabled = false
 	turn.Parent = root
 	local u = {
-		id = seq, kind = kind, faction = FACTION[kind], label = opts.label or LABEL[kind], name = model.Name, skill = SKILL[kind],
+		id = seq, kind = kind, faction = FACTION[kind], label = opts.label or LABEL[kind], name = model.Name, skill = skillOf,
 		model = model, hum = hum, root = root, head = model:FindFirstChild("Head"), inv = inv, alive = true, gen = myGen,
 		state = (opts.route or opts.post or opts.leader) and "PATROL" or "WANDER", route = opts.route, wp = opts.wp or 1,
 		post = opts.post, leader = opts.leader, slot = opts.slot,
 		aware = {}, lastPos = {}, seen = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
-		useCover = math.random() < SKILL[kind].cover, turn = turn, charge = opts.charge,
+		useCover = math.random() < skillOf.cover, turn = turn, charge = opts.charge,
 	}
 	u.w = weaponIn(u, "primary") or weaponIn(u, "secondary") or weaponIn(u, "holster")
 	table.insert(units, u)
 	-- a boss may bring its own health (THE STOKER: Tarkov's Tagilla has 1,220 to a PMC's 440)
-	ctx.Health.attach(model, { kind = "ai", scale = opts.hp or SKILL[kind].hp, holder = function()
+	ctx.Health.attach(model, { kind = "ai", scale = opts.hp or skillOf.hp, holder = function()
 		return u.inv
 	end })
 	if u.charge then
@@ -2151,13 +2152,20 @@ function AI.reset()
 				table.insert(AI.bossesThisRaid, b.label or "Foreman")
 				local boss = AI.spawn("boss", zone and zone.home or b.home, {
 					route = zone and zone.route or b.route, wp = 1, label = b.label or "Foreman", name = b.label, look = b.look,
-					loadout = b.loadout, hp = b.hp, charge = b.charge,
+					loadout = b.loadout, hp = b.hp, charge = b.charge, skill = b.skill,
 				})
 				for i, p in b.crew or {} do
 					if myGen ~= gen then
 						return
 					end
-					AI.spawn("follower", p, { leader = boss, slot = i })
+					-- a crew member is a spot, or { pos, look, loadout, hp, label, skill } (THE HOUNDS: each his own man)
+					if typeof(p) == "Vector3" then
+						AI.spawn("follower", p, { leader = boss, slot = i })
+					elseif type(p) == "table" and typeof(p.pos) == "Vector3" then
+						AI.spawn("follower", p.pos, {
+							leader = boss, slot = i, look = p.look, loadout = p.loadout, hp = p.hp, label = p.label, name = p.label, skill = p.skill,
+						})
+					end
 				end
 			end
 		end

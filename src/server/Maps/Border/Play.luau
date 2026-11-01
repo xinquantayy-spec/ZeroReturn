@@ -692,6 +692,28 @@ return function(B)
 		W.boss = { name = "THE BROKER", label = "Broker", home = bossHome or r[1], route = r, crew = route(CREW) }
 	end)
 
+	-- ── THE HOUNDS (Tarkov's Goons: Knight, Big Pipe and Birdeye; docs/design/BOSS_HOUNDS.md) ────────────────────────
+	-- Three rogues who roam the map together. On Customs they turn up at the Stronghold (our Bastion) in 20 % of raids. Here
+	-- they set out from the Bastion's yard and walk a loop past the frame, along the main road, by the motor shop and back.
+	-- Every leg of the loop was checked with the AI pathfinder (2026-11-02). Each has Tarkov's health: HALBERD 1,120,
+	-- MORTAR 910, KESTREL 795. All three fight with the boss's skill; the AI rolls them on their own, beside the Broker.
+	local HOUNDS_ROUTE = { { -190, -170 }, { -200, -40 }, { -180, 150 }, { -100, 205 }, { 150, 237 }, { 400, 100 }, { 290, -150 }, { 241, -258 }, { 60, -260 }, { -50, -340 } }
+	try("hounds", function()
+		local r = route(HOUNDS_ROUTE)
+		local home = named("BASTION_YARD", 28, 0.5) or r[1]
+		local hx, hz = home.X - O.X, home.Z - O.Z
+		local spots = route({ { hx + 4, hz + 3 }, { hx - 4, hz + 3 } })
+		local hounds = {
+			name = "THE HOUNDS", label = "Halberd", home = home, route = r, look = "halberd", loadout = "halberdLoadout",
+			chance = 0.2, hp = 1120 / 440, skill = "boss",
+			crew = {
+				{ pos = spots[1], label = "Mortar", look = "mortar", loadout = "mortarLoadout", hp = 910 / 440, skill = "boss" },
+				{ pos = spots[2], label = "Kestrel", look = "kestrel", loadout = "kestrelLoadout", hp = 795 / 440, skill = "boss" },
+			},
+		}
+		W.bosses = W.boss and { W.boss, hounds } or { hounds }
+	end)
+
 	-- ── scav spawn zones ─────────────────────────────────────────────────────────────────────────────────
 	try("scav", function()
 		local zones, zpts, perBld = {}, {}, {}
@@ -1001,8 +1023,9 @@ return function(B)
 		return n
 	end
 	print(string.format(
-		"[ZR] Border play: %d spawns, %d patrol routes, %d watch posts, %d scav zones, boss %s with %d guards, %d visit zones, %d propane, %d sniper strips, %d loose spots",
+		"[ZR] Border play: %d spawns, %d patrol routes, %d watch posts, %d scav zones, boss %s with %d guards%s, %d visit zones, %d propane, %d sniper strips, %d loose spots",
 		nSpawn, count(W.patrols), count(W.watchPosts), count(W.scavZones), W.boss and W.boss.name or "none",
-		W.boss and #W.boss.crew or 0, count(W.visitZones), nPropane, nStrip, nLoose
+		W.boss and #W.boss.crew or 0, (W.bosses and W.bosses[2]) and (", " .. W.bosses[2].name .. " (" .. #W.bosses[2].route .. " route points)") or "",
+		count(W.visitZones), nPropane, nStrip, nLoose
 	))
 end
