@@ -297,6 +297,28 @@ Gaps (not copied or not found):
   displays, price tags, posters and signage art (no logos by design), and any sound.
 - **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
 
+### Placement of props, doors and terrain (2026-11-01/02, owner: "ensure nothing is placed abnormally or glitching")
+
+What Tarkov does: on Customs and Interchange every prop stands on a floor or hangs on a wall. Doorways and door swings
+are clear: a door that opens into furniture does not occur. Furniture stands against walls, not through them.
+Basements and bunkers are clean concrete rooms with no ground showing through. Trees stand outside buildings.
+
+| Item | Tarkov | Zero Return before | Now |
+|---|---|---|---|
+| Underground rooms | Concrete floor, walls and ceiling | Terrain humps along every wall of Border's 6 underground rooms, up to 9.5 studs | Clean (the dig reaches past the walls) |
+| Doors | Swing clear | 22 met a wall or a container as built, 6 could open only 10°; one stood in a solid wall | Each hangs the way that opens widest; 1 opens 90° |
+| Containers | Chest, crate, safe or bag at its real size | Plain ones were all 4-stud crates, some floating over stair shafts or inside racks | Their own look prop; one model each, which the tidy can move |
+| Props on floors | On the floor | THE SUBSTATION's props 1.15 studs into a plinth; drums and crates in terrain | On the floor |
+| Props in props | Never | 15 stacked pairs, 33 chairs inside desks' own chairs | Removed by the tidy pass |
+| Furniture in walls | Against the wall | 30 clipping | 14, all under 1.4 studs; 62 pieces of Border furniture still touch walls (`KNOWN_ISSUES` 69) |
+
+Gaps still open:
+
+- Furniture is still into walls by 0.2 to 2 studs.
+- Kit origins sit off the middle of the footprint, so 59 kits stand up to a stud forward of where the builders aimed
+  (`KNOWN_ISSUES` 69).
+- The pump platforms were shortened to fit between the fuel tanks. Check that against the reference.
+
 ### Trees (2026-11-01, owner: "the trees are opaque", "i dont want the leaves totally opaque")
 
 Like Tarkov's trees, crowns and bushes are alpha-tested needle and leaf cards. Spruce sprays hang like a comb spruce, and birches (white ringed trunks, airy crowns) grow among the spruce on Border and Pinewatch. The see-through texture is drawn within a radius of the camera that is set by the graphics level (HIGH 520 studs, MEDIUM 240, LOW 110). Beyond it, and on POTATO, the same cards are solid: a lower level of detail, as in Tarkov's LODs. Checked in Studio (`TEST_RESULTS.md`, See-through foliage).

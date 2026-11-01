@@ -14,6 +14,13 @@
 3. **Meridian's second boss (THE STOKER, our Tagilla in KASSA GARAGE):** research done, nothing built: `docs/design/BOSS_STOKER.md`. One decision is open there (the welding mask's slot).
 4. Then the list below. Done today and checked in Studio: see-through foliage (all levels but POTATO), FOG weather closing the view at 480 studs with the map beyond it hidden, detail rings shortened (about 30 % fewer draws in wide views), car exits (one player), breakable glass and the AI seeing through whole panes.
 
+**Placement pass (owner, 2026-11-01: "ensure nothing is placed abnormally or glitching"): first round done 2026-11-02 00:20 SGT** (b263a00, `docs/look/PLACEMENT.md`, TEST_RESULTS "Placement audit and tidy pass"). A tidy pass runs on every map at server start. ZR_Dev `audit` and `tidylog` report what is left. Fixed: terrain in Border's underground rooms, THE SUBSTATION's plinth, doors in solid walls and doors swinging into walls or containers, the pump platforms inside the fuel tanks, and containers drawn as 4-stud crates. Next round (`KNOWN_ISSUES` 69):
+- Fix the 62 pieces of Border furniture still touching walls, in their builders (`tidylog border left`).
+- Fix the 8 containers against walls.
+- Walk the 30 re-hung doors.
+- Check Living.luau's office rooms.
+- Check outdoor placement: trees and props on roads, fences through buildings.
+
 **Now, in order:**
 1. **Meridian polish:** per-key loot and the key pictures are done. Fuller small shops are done and checked in Studio (`StoresFill.luau`, +1,938 parts). Lighting in the deep halls with the power on was checked on 2026-11-01 in the separate client: NESTA and KASSA by day, and KASSA at 23:00, all read as lit halls. Still to do: a walk-through of every exit by hand.
 2. **Performance on phones:** Border Yard and Meridian stream 16,000 to 18,600 parts near the player (KNOWN_ISSUES 65); try a smaller streaming radius in Studio's Workspace settings and merge plain walls, then measure in the device emulator.

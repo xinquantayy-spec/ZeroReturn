@@ -8,6 +8,40 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Placement audit and tidy pass (2026-11-01/02, all four raid maps)
+
+Studio playtests with one player. The audit is ZR_Dev `audit` (`docs/look/PLACEMENT.md`). The first column is the
+audit before any fixes. The second is after the tidy pass and the builder fixes, on a fresh server start. Kit props:
+Border 1,285, Meridian 2,260, Smelter 100, Quay 7 85.
+
+| Map, check | Before | After |
+|---|---|---|
+| Border floating | 5 (rubble over the river; a car on a lift, a false hit) | 0 (the lift car is marked `Raised`) |
+| Border sunk | 12 (drums and crates in terrain inside bunkers) | 0 |
+| Border clipping | 30 | 14, all 0.3 to 1.4 studs (racks touching a ceiling, shelves against shelves) |
+| Border stacked | 15 | 1 |
+| Border props in a door's way | 7 (box check) | 4 (leaf-sweep check, the stricter one) |
+| Border containers run into something | not checked | 8 (0.4 to 1.6 studs; furniture against walls) |
+| Meridian sunk / clipping | 5 / 12 (THE SUBSTATION) | 0 / 0 |
+| Meridian floating | not checked (fuse box was exempt) | 1 fuse box |
+| Smelter | clean | 1 rubble pile 0.3 studs into a tunnel wall |
+| Quay 7 | clean | 1 vault crate against the wall |
+| Terrain over the floor in Border's 6 underground rooms (2-stud grid) | 539 of 5,813 spots, up to 9.5 studs high | 0; ceilings 0 |
+| Doors whose leaf meets a wall or a container, as built | 22 (six could open only 10°) | 1 (opens 90°); 30 doors re-hung to open the other way |
+
+- **Tidy pass time:** 0.27 s Smelter, 0.43 s Border, 0.92 s Meridian, 0.01 s Quay 7.
+- **Logic suites after the change:** LogicTests 332 passed, CharTests 46, LookTests 32, MapTests 38, all with 0 failed.
+- **Screenshots:**
+  - Bunker K-11 before and after: `placement_k11_before_after.jpg`, sent to the owner. The floor is flat where a
+    terrain mound came through it.
+  - THE SUBSTATION office: desk, chair, lockers and bench all standing on the floor.
+
+**NOT VERIFIED:**
+
+- AI pathing through the re-hung doors.
+- Each re-hung door by hand.
+- The 62 pieces of Border furniture the pass left touching walls, 0.2 to 2 studs in (`KNOWN_ISSUES` 69).
+
 ## Frame rate in a separate client window (2026-11-01, Meridian)
 
 Studio on the T490, Test → Clients and Servers with one player, so the client has its own process. It was driven over Studio MCP, which can reach the test windows. Settings: Roblox quality 10 (render level 21), viewport 1274×712, the mall's power on. The views were held with a fixed camera, the benchmark loop described below, cycles of 4 views × 11 s.
