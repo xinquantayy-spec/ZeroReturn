@@ -111,11 +111,11 @@ return {
 	-- M13 nature kit (ZR_Nature.meta.json): trees are a trunk (_T, solid) and a crown (_C, foliage) sharing the
 	-- trunk's base as origin; everything else bottom-centre
 	ZR_NAT_PineA_T = Vector3.new(0.0154, 15.7977, -0.0119),
-	ZR_NAT_PineA_C = Vector3.new(-0.329, 20.5077, 0.3086),
+	ZR_NAT_PineA_C = Vector3.new(0.1791, 19.8886, -0.4815),
 	ZR_NAT_PineB_T = Vector3.new(0.0002, 19.799, 0.0401),
-	ZR_NAT_PineB_C = Vector3.new(0.1305, 28.0709, -0.6665),
+	ZR_NAT_PineB_C = Vector3.new(-0.1162, 27.4771, 0.0141),
 	ZR_NAT_PineC_T = Vector3.new(0, 8.2989, 0.0223),
-	ZR_NAT_PineC_C = Vector3.new(0.2264, 9.9925, 0.0374),
+	ZR_NAT_PineC_C = Vector3.new(-0.3765, 9.2971, 0.2415),
 	ZR_NAT_Snag_T = Vector3.new(0.2675, 11.7984, -0.1228),
 	ZR_NAT_Rock1 = Vector3.new(-0.1109, 1.3235, -0.1256),
 	ZR_NAT_Rock2 = Vector3.new(0.0403, 2.6415, -0.1269),

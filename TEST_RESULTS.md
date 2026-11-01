@@ -46,6 +46,16 @@ So in a window that is not in front, Studio draws at most 15 frames a second whi
 
 Benchmark: set the workspace attribute `ZR_Bench` to a map id (`meridian`, `border`) in Edit mode and start a test. Dev.luau deploys the first player and walks the viewpoints. The client holds each view for 4 s, counts frames for 6 s and shows a table. Rows counted while the window was in the background are marked BACKGROUND.
 
+## Trees: branch whorls instead of solid cones (2026-11-01)
+
+Owner: "the trees are opaque, i want it looking more realistic without compromising performance". The pine crowns of the nature kit (`build_nature.py`, `crown_whorl`) are now whorls of drooping, ragged, double-sided branch sprays with open gaps between sprays and whorls, instead of stacked solid cones. They are vertex coloured, with no textures and no transparency. Uploaded as `ZR_Nature` 120510695580100; the crown offsets are in `AssetMeta`.
+
+| Check | Result |
+|---|---|
+| Triangles a crown | PineA 1,256, PineB 1,256, PineC 1,048. The old stacked cones were about 250. |
+| Look (Border forest at 150, 7, -4638 looking north-east) | Before: faceted solid cones. After: layered sprays with sky between the whorls, lighter tips and darker insides. The distant trees read thinner. |
+| Cost in that view, same session (Studio Play, window not in front) | All 536 streamed crowns shown: render thread 53.2 / 53.6 ms, 340k triangles. Hidden: 52.3 ms, 279k triangles. So the crowns cost about 1 ms and 61k triangles there; the old cones would be about 12k of those. Draw calls 402 against 400. |
+
 ## Wall finishes and indoor light (2026-11-01)
 
 Studio Play mode on the T490. Owner: "the walls look repetitive and fake".

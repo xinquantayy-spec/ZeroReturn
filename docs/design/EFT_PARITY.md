@@ -297,6 +297,17 @@ Gaps (not copied or not found):
   displays, price tags, posters and signage art (no logos by design), and any sound.
 - **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
 
+### Trees (2026-11-01, owner: "the trees are opaque")
+
+Pine crowns are branch whorls with gaps (about 1,250 triangles, vertex colour, no transparency), not solid cones; checked in Studio (`TEST_RESULTS.md`, Trees).
+
+Gaps against Tarkov's foliage:
+- No alpha-tested needle or leaf cards: they were left out for the phone frame rate.
+- No birches or other broadleaf trees: Customs has many.
+- No wind sway.
+- No separate LOD meshes beyond Roblox's automatic ones.
+- The bushes are still solid low-poly clumps.
+
 ### Wall finishes (2026-11-01, owner: "walls look repetitive and fake")
 
 Seven new MaterialVariants (gloss paint, whitewash, two wallpapers, wall tiles, brick, wood panelling), chosen per room or floor with a hue each (`docs/look/WALLS.md`):

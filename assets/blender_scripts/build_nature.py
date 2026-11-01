@@ -77,6 +77,56 @@ def crown(b, base, top, rmax, tiers, seed, taper=0.86, droop=0.0):
     b.paint_fn(shade)
 
 
+def crown_whorl(b, base, top, rmax, tiers, seed, taper=0.86, droop=0.0):
+    """A conifer crown as whorls of drooping, ragged branch sprays with open gaps between them (owner 2026-11-01: the
+    stacked-cone crowns read as solid green blocks). Each spray is a thin double-sided plate along a bent spine, wide in
+    the middle and narrow at the root and tip; light and sight pass between sprays and between whorls. About 1,300
+    triangles a crown, vertex colour only (no textures, no transparency: the cost stays that of an opaque mesh)."""
+    rnd = random.Random(seed)
+    span = top - base
+    rmax = rmax * 1.22  # sprays need more reach than solid cones to read as full
+    whorls = tiers * 2 - 1
+    for i in range(whorls):
+        t = i / max(1, whorls - 1)
+        z = base + span * 0.9 * t + rnd.uniform(-0.3, 0.3)
+        r = max(0.9, rmax * (1 - t * taper) * rnd.uniform(0.85, 1.1))
+        k = 7 if t < 0.5 else (6 if t < 0.8 else 4)
+        a0 = rnd.uniform(0, 6.283)
+        for j in range(k):
+            a = a0 + j * 6.283 / k + rnd.uniform(-0.28, 0.28)
+            col = NEEDLE[rnd.randrange(len(NEEDLE))]
+            ca, sa = math.cos(a), math.sin(a)
+            px, py = -sa, ca
+            rr = r * rnd.uniform(0.75, 1.05)
+            dn = (0.30 + droop * 0.25) * rr * (1 - 0.45 * t) * rnd.uniform(0.75, 1.25)
+            # stations along the spine: (fraction of the length, width as a fraction of the reach)
+            st = ((0.0, 0.16), (0.45, 0.78), (1.0, 0.10))
+            L, C, R = [], [], []
+            for f, w in st:
+                d = rr * f
+                h = z - dn * (f ** 1.4) + (0.10 * rr if f == 1.0 else 0.0) * (1 - t)
+                cx, cy = ca * d, sa * d
+                ww = rr * w * rnd.uniform(0.85, 1.15)
+                ridge = 0.08 * ww
+                C.append((cx, cy, h + ridge))
+                L.append((cx + px * ww / 2 + ca * rnd.uniform(-0.15, 0.15) * ww, cy + py * ww / 2 + sa * rnd.uniform(-0.15, 0.15) * ww, h - ridge * 0.6 + rnd.uniform(-0.12, 0.12)))
+                R.append((cx - px * ww / 2 + ca * rnd.uniform(-0.15, 0.15) * ww, cy - py * ww / 2 + sa * rnd.uniform(-0.15, 0.15) * ww, h - ridge * 0.6 + rnd.uniform(-0.12, 0.12)))
+            for q in range(len(st) - 1):
+                b.face((L[q], C[q], C[q + 1], L[q + 1]), col, double=True)
+                b.face((C[q], R[q], R[q + 1], C[q + 1]), col, double=True)
+    # the leader: a short spike at the top
+    b.cyl((0, 0, top - 2.4), (0, 0, top + 0.5), 0.45, NEEDLE[1], r2=0.0, seg=5)
+
+    def shade(p, c):
+        # dark inside and low, lighter at the tips and the top; a little noise
+        rad = math.sqrt(p.x * p.x + p.y * p.y)
+        hz = max(0.0, min(1.0, (p.z - base) / max(1.0, span)))
+        k = (0.62 + 0.30 * hz) * (0.76 + 0.36 * min(1.0, rad / max(1.0, rmax * 0.75)))
+        n = vnoise(p, 0.9, seed + 3)
+        return mul(c, k * (1 + 0.09 * n))
+    b.paint_fn(shade)
+
+
 def snag(b):
     trunk(b, 24, 0.7, 0.18, 41)
     rnd = random.Random(42)
@@ -206,11 +256,11 @@ def build(scene):
         objs.append(b.finish(col))
 
     make("ZR_NAT_PineA_T", trunk, 32, 0.8, 0.2, 1)
-    make("ZR_NAT_PineA_C", crown, 8, 33, 5.6, 7, 2)
+    make("ZR_NAT_PineA_C", crown_whorl, 8, 33, 5.6, 7, 2)
     make("ZR_NAT_PineB_T", trunk, 40, 0.9, 0.22, 3)
-    make("ZR_NAT_PineB_C", crown, 15, 41, 4.6, 7, 4, 0.8)
+    make("ZR_NAT_PineB_C", crown_whorl, 15, 41, 4.6, 7, 4, 0.8)
     make("ZR_NAT_PineC_T", trunk, 17, 0.45, 0.12, 5, False)
-    make("ZR_NAT_PineC_C", crown, 2.2, 18, 4.2, 6, 6, 0.9, 0.6)
+    make("ZR_NAT_PineC_C", crown_whorl, 2.2, 18, 4.2, 6, 6, 0.9, 0.6)
     make("ZR_NAT_Snag_T", snag)
     make("ZR_NAT_Rock1", rock, (5.0, 4.0, 3.4), 61)
     make("ZR_NAT_Rock2", rock, (11.0, 8.0, 6.0), 62, 0.55)
