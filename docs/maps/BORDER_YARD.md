@@ -214,9 +214,10 @@ middle and 13 slots on each side, and a side wing of 52 x 40 studs with its own 
 the place of room 109 (the dog-leg stair, `ladder-25`, the same footprint on every level) and the passage into the wing that of room
 116, which leaves 32 rooms a floor, numbered 101 to 134, 201 to 234 and 301 to 334. Two end towers (`ladder-26`, `ladder-27`, outer
 doors `LV_A_TN` and `LV_A_TS`), a wing exit (`LV_A_WX`) and a roof hut (`LV_A_ROOF`) with two HVAC units and two vents. The rooms are
-furnished from fixed seeds (2601 for A, 2602 for B), so every raid gets the same dorm: 62 % are stripped (a chair or a bin at most), the
-rest hold a bed, a wardrobe or a table, a desk with drawers, or bunks, plus up to two loose items; one in four has a hinged door, the
-others are open doorways. 13 rooms are locked (103, 125, 128, 201, 212, 225, 228, 229, 303, 310, 314, 317, 325, at the positions of
+furnished from fixed seeds (2601 for A, 2602 for B), so every raid gets the same dorm. Since the 2026-11-01 interiors pass (see "Dorm
+interiors" below) a fifth of the rooms are stripped (a mattress, rubbish, a fallen chair or a broken shelf), the others are lived in (a
+bed or bunks, usually a wardrobe, often a desk and chair, now and then a bookcase, rubbish, curtains), every floor has a shared
+washroom and the top floor of A a kitchen, nine in ten unlocked rooms have a hinged door, and the windows have glass. 13 rooms are locked (103, 125, 128, 201, 212, 225, 228, 229, 303, 310, 314, 317, 325, at the positions of
 `L.locked`): each holds a bed, a wardrobe, a desk with drawers, a coat and three `dorm_good` spots, and 7 of them also a medical bag
 (310, 201, 212), a weapon case (317, 228) or a toolbox (225, 103). ROOM 314 (`KEY_BY_314`) has no wardrobe; it keeps a safe, a weapon
 case and six `dorm_good` spots. The ground-floor lobby by the north tower has a guard desk, cloakroom lockers, a vending machine and a
@@ -270,15 +271,109 @@ BLOCK_B_STAIRS (-217, 1, 557), FUEL_SHOP (-773, 1, 228), OLD_PUMPS_SHOP (-587, 1
 home), BLOCK_A_ROOM314 (the DORM314 visit zone), FUEL_SHOP, OLD_PUMPS_SHOP, SQUAT and BLOCK_B_LOBBY (scav zones). The other five are
 not read by any module yet.
 
+### Dorm interiors (update of 2026-11-01: rooms, doors, washrooms, glass)
+
+Only `Living.luau` changed (the dorm section, the two dorm builders and a few helpers); no other file. Written without a Luau runtime:
+`tools/luau_check.py` passes and the offline mock (below) ran it; nothing has been seen or run in Studio.
+
+**What Tarkov's dorms have** (web research on 2026-11-01; the game itself was not run). Sourced: two dorm buildings in the far north,
+the west one three floors and the east one two, each with a front entrance and a fire stair at each end with a door to every floor,
+some blocked or locked (fandom and gamepedia Customs pages); rooms numbered by floor, keys for 103 to 118, 203 to 220 and 303 to 315
+(wiki.biligame.com Customs key table); locked rooms hold safes, weapon boxes, toolboxes, jackets, sport bags and medical cases, a guard
+desk room sits by the two-storey dorm's front door, and some doors open onto a bed ("jump over the bed to open the door", rooms 204 and
+214: gamersdecide, eft-ammo and dignitas key guides); an L-shaped hall on the second floor of the three-storey dorm (Sportskeeda,
+Chemical Part 2, room 220 behind a door covered in metal rods); windows are passable (room 206 "can be skipped since you can jump
+through the windows", the guard room "visible from outside": eft-ammo, gamersdecide); a "Common area" on the first floor and a kitchen
+and a rest area on the third (a Google Slides Customs guide, with Chinese captions); showers on the third floor of the three-storey dorm (a Medal clip
+titled "Customs 3rd Floor of 3-story showers bugged"). Not found in any page: where the washrooms are on the other floors, whether the
+two-storey dorm has any, whether any glass is left, curtains. `api.tarkov.dev` and the fandom raw page could not be fetched (blocked),
+so no room position comes from the game's data. Everything below that rests on this is therefore inferred (grade C) or our own choice
+(grade D); the list of what is which is in the gaps.
+
+**Rooms.** `planDorm` replays the old dice first (seeds 2601 and 2602, same draws in the same order: door roll, layout roll, coat,
+loose spots), so every desk with drawers, coat and loose-loot spot is thrown for the same room as before; geometry-dependent retries
+of the old code (a spot with no room) now use a stream of their own, so one retry no longer shifts every later room. The new decisions
+come from `seed + 5000` and one seed per room, so a room never moves another. Classes: a fifth of the calm rooms (not locked, no desk)
+are `bare`, the rest `lived` (washrooms and the kitchen take their rooms first, below). Lived-in rooms: one bed 46 %, two beds 18 %,
+bunks 24 % (a second bunk in a quarter of them), a double bed 12 %; a wardrobe 62 %; a desk and chair 50 %; a bookcase 30 %; two to
+four pieces of rubbish; curtains in 40 % of rooms with a window. Bare rooms: a mattress on the floor 75 %, a fallen chair 50 %, a
+broken shelf 35 %, a cardboard heap 35 %, five to eight pieces of rubbish, curtains 15 %. Beds, wardrobes, desks and bookcases are the
+kit props stretched to dorm sizes (bed 3.1 x 6.7 studs, wardrobe 2.7 x 6.7 x 2.3, desk 4.2 x 2.4, bookcase 4.0 x 1.7); a prop whose
+collider would overlap a wall or another prop is dropped without a word (109 of the 397 tried in the mock), so a room can come out
+emptier than its dice say. Locked rooms keep their own furniture and containers (bed, wardrobe, desk with drawers, coat, extras, and
+room 314's safe, weapon case and six `dorm_good` spots); their loose loot is now thrown last so nothing is built over it. Loose loot
+that finds no room moves within its own room only (a ring that crossed a partition used to drop it into the next room, under a bed).
+
+**Doors.** A hinged door through the existing `f:door` helper (prompt, `openChance`) in the corridor wall of 118 of the 128 unlocked
+rooms: lived-in rooms 95 %, bare 70 %, washrooms and the kitchen always, and any room that had a door from the old dice keeps it. Ids
+are `LV_<tag><number>` (never `DORM`); label "Room 2xx", "Washroom" or "Kitchen"; `openChance` 0.55 (bare 0.35, washroom 0.5).
+The door holes stay 3.9 x 7.5 and the rooms' door landing (a 3.3 x 4.8 x 3.4 box either side of the slab) is kept free by the furniture
+rules and checked in the mock. Locked doors are unchanged (30 in all, same keys).
+
+**Washrooms and the kitchen.** A shared washroom on every floor: BLOCK A rooms x15 (115, 215, 315; if the old dice put a coat or a
+desk in one of them, the next of x14, x18, x17), BLOCK B rooms x21 (121, 221; fallbacks x25, x19, x17, x20); BLOCK A's top floor has
+a kitchen in room 308 (fallbacks 307, 306, 305). Never a locked room, a room with a desk or coat, or one that holds key loot. A
+washroom is built from boxes in the room: tiled floor and half-height wall tiles, two sinks under mirrors (kit `MirrorSink`) with a
+pipe over them, three toilet cubicles (steel partitions, bowl and high cistern, doors shut, broken or gone), three shower stalls at
+the far end (tray, rose, curtain drawn or pushed aside), a drain, two puddles, a bin and a "WASHROOM" sign over the corridor side of
+the door; its window, if it has one (BLOCK B's two do, BLOCK A's three stand behind the wing and have none), is frosted. The aisle is
+4.7 studs wide. The kitchen: a run of worktops with a sink and a two-ring cooker on
+the free wall, wall cupboards, a fridge, a table and two chairs. Both are on the plan the room classes already had (a bare stand-in
+before), so they take no container and no key room.
+
+**Glass.** Every outer-wall window hole of both blocks (all walls, 168 holes in A and B) gets a thin pane of 0.1 studs, Glass,
+Transparency 0.5, `CastShadow = false`, `CanCollide = true`, `CanQuery = false`, `CanTouch = false`: bodies stop at it, shots and
+sight pass through it (as they passed the open hole it replaces). The state of a window comes from a hash of its floor, wall and
+position, so the wall and the room behind it agree: 68 % whole, 6 % the top half left, 6 % the bottom half left, 12 % open (no
+pane), 8 % boarded (three planks across the hole, `CanCollide` and `CanQuery`); washroom windows are frosted (Transparency 0.12).
+Half-broken and open windows drop a heap of glass on the floor inside (70 %). Curtains are thin cloth parts on the window wall of
+a room (closed, drawn to both sides, or to one), never over a boarded or open window. The windows of the two end stair towers, the
+roof huts and the door holes stay open. In the mock, A and B hold 168 window holes: 104 whole panes, 19 half panes, 2 frosted, 22
+open and 21 boarded (63 boards), plus 54 curtains and 15 heaps of glass; the exact mix changes with the PRNG.
+
+**What it costs** (the brief's ceiling was +2,500 parts). The mock's part count undercounts kit props (one stand-in box each), so the
+estimate converts every kit prop to what `Kit.place` really builds, one mesh part per material piece (`KitMeta.luau`) plus its
+colliders, adds two parts per added door (`World` builds a slab and a handle) and subtracts the same count for the old build. Result
+for BLOCK A and B together: 2,181 parts before, about 3,780 after on the real seeds, +1,760 with the doors; across the real seeds and
+twelve other random streams the gain was +1,760 to +1,890 (mean about +1,830), so Border goes from about 23,400 to about 25,200
+parts. Kit props in the two blocks: 183 before, about 394 after (the other buildings' 440-prop cap is untouched; the dorm furniture
+has its own cap of 900, which is not reached). No new lights (152, 12 with shadows). Every new part with all sides under 3 studs has
+`CastShadow = false`; clutter under 1 stud has no collision and no query; the fittings carry `NoDetail` so the detail layer does not
+decorate them. The build yields every room (`pace()`, as `Ground` does) so it does not hold the server up.
+
+**What the mock checks** (clean on 13 runs: the real seeds and twelve other random streams; the mock's generator is not Roblox's, so
+rooms differ in Studio, which is why the others were run): 0 failed buildings; no `DORM` door id; the same 30 locked doors, keys,
+named points and room 314 setup; every door slab clear of solids, and every door's landing and every open doorway's landing free; no
+prop collider overlaps a wall or another prop (about 600 colliders a run); every loose spot has a surface under it and does not start
+inside a solid; container ids unique. With the old retry draws removed from the old build, the container ids come out identical
+(234 and 234, and every old door is kept); against the old build as it was, 7 of its 231 container ids are absent and 10 others
+present (coats and desk drawers of A's upper floors in a neighbouring room), and one old door (`LV_A227`) is gone, because the old
+code's one retry (a locked room's loose spot with no room) shifted every later room's dice. A retry is geometry-dependent, so what the
+old build did in Studio, with its own PRNG, cannot be told offline. The mock has no real PRNG, no physics and no
+rendering: how the stretched kit meshes, the glass and the curtains look, whether the AI walks through the new doors, and the frame
+rate on a phone with the extra 1,800 parts have not been seen or measured.
+
+**For the Studio screenshots** (world position = the map-local position given here plus (0, 0, -5200); the washroom and kitchen rooms
+move to a fallback room if the real PRNG gives the preferred one a coat or a desk, but the door label and the sign say which). A
+furnished room: BLOCK A floor 2, rooms 204 to 208, doors at (-42.6, 15.3, -4535.1) to (-37.2, 15.3, -4574.3); stand in the corridor
+at about (-44, 13, -4555) and look toward +x through room 206's door. A washroom: BLOCK A floor 1, door "Washroom" at (-54.5, 4.3,
+-4516.7), room centre (-64.3, 0.5, -4519.7), the room runs toward -x (floors 2 and 3 are 11 and 22 studs higher); BLOCK B's is at
+(-216.0, 4.3, -4631.1), centre (-225.8, 0.5, -4634.0). The kitchen: BLOCK A floor 3, door at (-37.2, 26.3, -4574.3), the room runs
+toward +x. A window row: BLOCK A's east face, floor 2: panes from (-26.2, 16.6, -4504.5) to (-10.1, 16.6, -4622.3), seen from about
+(-6, 16, -4564) looking toward -x (whole, half, open and boarded windows in one view). Also worth a look from inside: room 314 (far
+corner, the safe) to see nothing was built over it.
+
 ### Counts (offline mock, not Studio)
 
-43 buildings (0 failed), 3,728 parts of its own plus 436 kit props (the props add their own mesh parts), 152 lamps (12 with shadows; 57
-of the lamps are in the two dorms), 129 doors (30 locked), 231 containers, 346 loose spots (0 without room), 0 props rejected for
-overlap. The brief's ceilings are about 9,000 parts, 450 props and 20 shadow lamps; the module's own prop cap is 440 and it builds the
-dorms, stations and houses first, so the cap would cut small buildings, not those. Biggest, props and parts: BLOCK A 128 and about
-1,010, BLOCK B 55 and 514, THE SQUAT 47 and 306, WATCHHOUSE 44 and 395, FUEL STOP 23 and 104. Containers by kind: drawer 48, locker 46,
-jacket 41, toolbox 19, grocery 18, register 14, medbag 11, crate 9, safe 9, weaponbox 9, cooler 6, techbox 1. The `Works.luau` section
-counts 8,249 parts in its own mock run, so the two modules together come to about 12,000 mock parts before the kit meshes.
+Updated 2026-11-01 for the dorm interiors: 43 buildings (0 failed), 4,690 parts of its own plus 647 kit props (the props add their own
+mesh parts), 152 lamps (12 with shadows; 57 of the lamps are in the two dorms), 211 doors (30 locked), 234 containers, 349 loose spots
+(0 without room), 0 props rejected for overlap. Before the pass: 3,728 parts, 436 props, 129 doors, 231 containers and 346 loose
+spots. The brief's ceilings are about 9,000 parts, 450 props and 20 shadow lamps; the module's own prop cap is 440 for the buildings
+other than the dorm rooms (their furniture has a cap of 900 of its own) and it builds the dorms, stations and houses first, so the cap
+would cut small buildings, not those. Biggest, props and parts: BLOCK A 274 and about 1,630, BLOCK B 120 and 860, THE SQUAT 47 and 306,
+WATCHHOUSE 44 and 395, FUEL STOP 23 and 104. Containers by kind: drawer 46, locker 46, jacket 46, toolbox 19, grocery 18, register 14,
+medbag 11, crate 9, safe 9, weaponbox 9, cooler 6, techbox 1. The `Works.luau` section counts 8,249 parts in its own mock run, so the
+two modules together come to about 12,900 mock parts before the kit meshes.
 
 What the mock checks (clean at the end): every key a door names is an item with `kind == "key"`, no door id starts with `DORM`; every
 door slab stands in a real opening (no solid part inside it); a landing of 3.3 x 4.8 x 3.4 studs on both sides of every door and open
@@ -289,12 +384,24 @@ inside a solid part (a 2.4 x 5 x 2.4 stud capsule). It ran on flat ground and on
 
 ### Gaps (to copy into `docs/design/EFT_PARITY.md`)
 
-- Furniture: about one prop a room and 62 % of the dorm rooms bare; Tarkov's dorm rooms are fuller (beds, wardrobes, books, bags, rubbish).
-- Interior doors: one in four unlocked dorm rooms has a hinged door, the rest are open doorways. The garage roller doors are fixed slabs
+- Dorm furniture (2026-11-01, "Dorm interiors"): a fifth of the rooms are stripped, the others hold a bed or bunks, usually a wardrobe,
+  often a desk and chair, now and then a bookcase, rubbish and curtains. Still missing against Tarkov: the second floor's L-shaped hall
+  and the reference's room shapes (ours are 9.1 x 19.4 stud boxes off a straight corridor), wall fittings (radiators, posters, sockets,
+  switches), books and papers as searchable things, and doors that open onto a bed (204, 214). The mix of furniture, the odds and the
+  20 % bare share are ours (grade D; the brief asked for about a fifth); Tarkov's own shares are unknown.
+- Interior doors: 118 of the 128 unlocked dorm rooms have a hinged door, the rest (bare rooms, mostly) are open doorways; the doors
+  open and shut by prompt and have no kicked-in or ajar-at-spawn variants beyond `openChance`. The garage roller doors are fixed slabs
   and cannot open.
-- No shared washrooms, showers or kitchens on the dorm floors (to check against the reference); the only washroom is the fuel stop's,
-  and kitchens exist only in the squat, the watchhouse and the army barracks.
-- Windows are open holes: no glass, blinds or curtains. No light switches or power state; the lamps are always on.
+- Washrooms and kitchens (2026-11-01): a shared washroom on every dorm floor (A 115, 215, 315; B 121, 221) and a kitchen in A 308.
+  The pages found confirm only showers on the third floor of the three-storey dorm, a kitchen and rest area on its third floor and a
+  common area on its first; the washroom columns, B's washrooms (the two-storey dorm may have none), the counts of cubicles, sinks and
+  showers and the kitchen's room are inferred (grade C) or ours (grade D). No common area or rest area is built as such (the lobby by
+  the north tower and the top-floor kitchen stand in for them).
+- Windows (2026-11-01): the outer windows of A and B have thin panes. Tarkov's dorm windows are passable openings (the guides jump and
+  shoot through them); ours stop the body when whole (68 % of them, set by `winStyle`; the brief asked for panes with a few broken and
+  boarded), pass shots and sight (`CanQuery = false`), do not break when hit, and have no cracks, blinds or shutters. The windows of the
+  two end stair towers stay open holes. Lower the 0.68 in `winStyle` to leave more windows open. No light switches or power state; the
+  lamps are always on.
 - Stairs are straight or dog-leg approximations on the reference stair footprints (5.5 studs of rise per half flight, about 30
   degrees). Roofs are flat with a parapet (dorms, stations) or a low gable (cabins, sheds, the squat), without the reference's detail.
 - Room numbers follow our own column grid and the locked set follows `L.locked`; the key-to-room assignments and the loot per room are
@@ -306,7 +413,10 @@ Unverified (nothing has run in Studio): every count above; the look of the kit p
 collider); the gable wedges and roofs; frame rate on a low-end phone with 152 lamps; whether the AI paths through the 3.9-wide dorm
 doorways; the part count with the kit's own meshes; `LogicTests` expects exactly 4 keyed doors among those with `d.map == nil or
 "quay7"` and `MapTests` M05 wants `d.part`, `d.prompt` and `d.map` on every door (Border doors should carry a map tag, not run). Top-down
-plans drawn from the mock's parts were reviewed for most of the larger buildings; no building has been seen in Studio. OLD PUMPS
+plans drawn from the mock's parts were reviewed for most of the larger buildings (and, for the dorm interiors, a washroom, the kitchen,
+a few rooms and an elevation of the windows); no building has been seen in Studio. Not seen or measured either: the dorm furniture
+stretched from the kit meshes, the glass, the curtains, the 80 extra door prompts and slabs, and the frame rate with about 1,800 more
+parts in the two blocks. OLD PUMPS
 CELLAR and its stair (`ladder-39`, between OLD PUMPS SHED A and B) are `Works.luau`'s; the two sheds here have no floor, keep the
 stair's footprint clear and have a wall opening toward it, and whether those openings line up with Works' stair is unchecked on both sides. RED STORES CABIN A and B overlap by 0.23 studs in the
 traced layout (grade B); cabin A is turned half a revolution so that its door faces away from cabin B.

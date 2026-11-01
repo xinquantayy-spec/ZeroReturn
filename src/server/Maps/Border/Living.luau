@@ -14,12 +14,23 @@ return function(B)
 	local rad = math.rad
 	local living = kit.model("Living", map)
 
-	local LIMIT = { props = 440, shadows = 20 }
+	local LIMIT = { props = 440, shadows = 20, dorm = 900 } -- dorm: the furniture of the dorm rooms, counted apart from the other buildings' props
 	local REJECTS = {}
-	local st = { props = 0, shadows = 0, lights = 0, doors = 0, locked = 0, containers = 0, loose = 0, ok = 0, failed = 0, cut = 0, rejected = 0, noRoom = 0 }
+	local st = { props = 0, dorm = 0, shadows = 0, lights = 0, doors = 0, locked = 0, containers = 0, loose = 0, ok = 0, failed = 0, cut = 0, rejected = 0, noRoom = 0 }
 	local DOOR = V3(3.9, 7.4, 0.35)
 	local STOREY = 11 -- floor to floor
 	local SLAB = 1 -- floor slab thickness
+
+	-- hand the server back now and then so a long build never stalls it (Ground does the same)
+	local lastPace = os.clock()
+	local function pace()
+		if os.clock() - lastPace > 0.03 then
+			task.wait()
+			lastPace = os.clock()
+		end
+	end
+	-- what the dorm interiors added, by kind (printed once at the end)
+	local DC = { rooms = 0, lived = 0, bare = 0, wash = 0, kitchen = 0, doors = 0, props = 0, rejected = 0, bits = 0, fit = 0, panes = 0, frosted = 0, boards = 0, curtains = 0, shards = 0, cracked = 0, open = 0, boarded = 0 }
 
 	local P = {
 		panel = hex("A19E92"), panelDk = hex("7A776D"), brick = hex("7D4A3A"), brickDk = hex("5E392D"), plaster = hex("B3AD98"),
@@ -274,9 +285,24 @@ return function(B)
 		end
 		return true
 	end
+	-- the horizontal centre and the radius of the circle round a solid, worked out once: the quick reject of the tests below
+	local function bound(s)
+		local r = s.r
+		if not r then
+			local p = s.cf.Position
+			s.px, s.pz = p.X, p.Z
+			r = math.sqrt(s.hx * s.hx + s.hz * s.hz)
+			s.r = r
+		end
+		return s.px, s.pz, r
+	end
 	function Frame:hits(box, shrink)
+		local bp = box.cf.Position
+		local br = math.sqrt(box.hx * box.hx + box.hz * box.hz)
 		for _, s in self.solids do
-			if boxesHit(box, s, shrink or 0.15) then
+			local sx, sz, sr = bound(s)
+			local dx, dz, rr = sx - bp.X, sz - bp.Z, sr + br
+			if dx * dx + dz * dz < rr * rr and boxesHit(box, s, shrink or 0.15) then
 				return true
 			end
 		end
@@ -286,9 +312,13 @@ return function(B)
 	function Frame:blocked(p)
 		local o = p + V3(0, 2.5, 0)
 		for _, s in self.solids do
-			local l = s.cf:PointToObjectSpace(o)
-			if math.abs(l.X) < s.hx + 0.3 and math.abs(l.Z) < s.hz + 0.3 and math.abs(l.Y) < s.hy + 0.1 then
-				return true
+			local sx, sz, sr = bound(s)
+			local dx, dz, rr = sx - o.X, sz - o.Z, sr + 0.5
+			if dx * dx + dz * dz < rr * rr then
+				local l = s.cf:PointToObjectSpace(o)
+				if math.abs(l.X) < s.hx + 0.3 and math.abs(l.Z) < s.hz + 0.3 and math.abs(l.Y) < s.hy + 0.1 then
+					return true
+				end
 			end
 		end
 		return false
@@ -334,6 +364,91 @@ return function(B)
 		return m
 	end
 
+	-- a kit prop of the dorm rooms, given as a CFrame: as Frame:prop, but counted in its own pool (LIMIT.dorm) so the dorms never
+	-- use up the other buildings' share, and a prop that would overlap a wall or another prop is dropped without a word
+	function Frame:dprop(name, cf, opts)
+		if st.dorm >= LIMIT.dorm then
+			st.cut += 1
+			return nil
+		end
+		opts = opts or {}
+		if opts.shadows == nil then
+			opts.shadows = false
+		end
+		local m = Kit.place(self.parent, name, cf, opts)
+		if not m then
+			return nil
+		end
+		local cols = {}
+		for _, c in m:GetChildren() do
+			if c.Name == "KitCollider" then
+				table.insert(cols, { cf = c.CFrame, hx = c.Size.X / 2, hy = c.Size.Y / 2, hz = c.Size.Z / 2 })
+			end
+		end
+		for _, c in cols do
+			if self:hits(c, 0.15) then
+				m:Destroy()
+				DC.rejected += 1
+				return nil
+			end
+		end
+		for _, c in cols do
+			table.insert(self.solids, c)
+		end
+		st.dorm += 1
+		DC.props += 1
+		return m
+	end
+
+	-- a small or thin loose piece (clutter, curtains, glass, partitions, fittings) with its bottom at y. It has no collision, no
+	-- ray hits and no touch unless asked: o.collide, o.query, or o.solid (both, and a place among the building's solids). It
+	-- casts no shadow unless a side is 3 studs or more (o.shadow = false even then). o.alpha: transparency, o.roll / o.pitch:
+	-- tilt in degrees, o.wear: leave it to the detail layer, o.cat: the counter it is added to
+	function Frame:bit(su, sy, sv, u, y, v, color, mat, ry, o)
+		o = o or {}
+		su, sy, sv = math.max(su, 0.05), math.max(sy, 0.05), math.max(sv, 0.05)
+		local cf = self:cf(u, y + sy / 2, v, ry)
+		if o.roll or o.pitch then
+			cf = cf * CFrame.Angles(rad(o.pitch or 0), 0, rad(o.roll or 0))
+		end
+		local p = kit.boxCF(self.parent, su, sy, sv, cf, color or P.cloth, mat or M.SmoothPlastic)
+		local solid = o.solid == true
+		p.CanCollide = solid or o.collide == true
+		p.CanQuery = solid or o.query == true
+		p.CanTouch = false
+		p.CastShadow = (su >= 3 or sy >= 3 or sv >= 3) and o.shadow ~= false
+		if o.alpha then
+			p.Transparency = o.alpha
+		end
+		if not o.wear then
+			p:SetAttribute("NoDetail", true)
+		end
+		if solid then
+			table.insert(self.solids, { cf = cf, hx = su / 2, hy = sy / 2, hz = sv / 2 })
+		end
+		local k = o.cat or "bits"
+		DC[k] = (DC[k] or 0) + 1
+		return p
+	end
+
+	-- is the floor round the world point p (radius r, up to y1 over it) free of anything solid?
+	function Frame:clearAt(p, r, y1)
+		for _, s in self.solids do
+			local sx, sz, sr = bound(s)
+			local dx, dz, rr = sx - p.X, sz - p.Z, sr + r
+			if dx * dx + dz * dz < rr * rr then
+				local c = s.cf.Position
+				if c.Y + s.hy > p.Y + 0.05 and c.Y - s.hy < p.Y + y1 then
+					local l = s.cf:PointToObjectSpace(p)
+					if math.abs(l.X) < s.hx + r and math.abs(l.Z) < s.hz + r then
+						return false
+					end
+				end
+			end
+		end
+		return true
+	end
+
 	-- a ceiling lamp (a flat Neon panel with a light); only `big` rooms get a shadow-casting light, up to the cap
 	function Frame:lamp(u, y, v, range, big)
 		local head = self:box(2.2, 0.3, 0.9, u, y, v, hex("FFE2B0"), M.Neon)
@@ -371,10 +486,14 @@ return function(B)
 		local o = p + V3(0, 2.5, 0)
 		for _, list in { self.floors, self.solids } do
 			for _, s in list do
-				local l = s.cf:PointToObjectSpace(o)
-				local top = s.cf.Position.Y + s.hy
-				if math.abs(l.X) <= s.hx and math.abs(l.Z) <= s.hz and top <= o.Y and o.Y - top <= 7 then
-					return true
+				local sx, sz, sr = bound(s)
+				local dx, dz, rr = sx - o.X, sz - o.Z, sr + 0.01
+				if dx * dx + dz * dz <= rr * rr then
+					local l = s.cf:PointToObjectSpace(o)
+					local top = s.cf.Position.Y + s.hy
+					if math.abs(l.X) <= s.hx and math.abs(l.Z) <= s.hz and top <= o.Y and o.Y - top <= 7 then
+						return true
+					end
 				end
 			end
 		end
@@ -511,9 +630,27 @@ return function(B)
 		local u, v = self:uv(a, d)
 		return self.f:stash(prop, id, kind, label, u, self.y, v, self:yaw(face), opts)
 	end
+	-- loose loot at (a, d), h over the floor. Something standing there moves it aside (the same ring as Frame:loose), but never out of
+	-- the room: a ring that crossed a partition would drop the loot into the next room, where that room's bed is built later
 	function Room:loose(a, h, d, pool, chance, quiet)
-		local u, v = self:uv(a, d)
-		return self.f:loose(u, self.y + h, v, pool, chance, quiet)
+		local f = self.f
+		local hw = self.aw / 2 - 0.9
+		for _, o in RING do
+			local a2, d2 = a + o[1], d + o[2]
+			if math.abs(a2) <= hw and d2 >= 1.2 and d2 <= self.dp - 0.9 then
+				local u, v = self:uv(a2, d2)
+				local p = f:pt(u, self.y + h, v)
+				if not f:blocked(p) and f:supported(p) then
+					kit.loose(p.X, p.Y, p.Z, pool, chance or 0.4, "border", true)
+					st.loose += 1
+					return true
+				end
+			end
+		end
+		if not quiet then
+			st.noRoom += 1
+		end
+		return false
 	end
 	function Room:lamp(a, d, range, big)
 		local u, v = self:uv(a, d)
@@ -528,70 +665,619 @@ return function(B)
 		return self.f:blk(sd, sh, sa, u, self.y + y, v, color, mat)
 	end
 
+	-- a kit prop placed by the centre of its box at (a, d) of the room: `face` as Room:yaw, opts as Kit.place (scale, tint, mats,
+	-- collide) and the dorm furniture pool; nil when it would overlap a wall or another prop
+	function Room:bprop(name, a, d, face, opts)
+		local size, centre = Kit.size(name)
+		if not size then
+			return nil
+		end
+		opts = opts or {}
+		local sc = opts.scale or V3(1, 1, 1)
+		local u, v = self:uv(a, d)
+		local cf = self.f:cf(u, self.y, v, self:yaw(face)) * CFn(-centre.X * sc.X, 0, -centre.Z * sc.Z)
+		return self.f:dprop(name, cf, opts)
+	end
+	-- a Frame:bit given in room terms: sa along the wall, sh high, sd deep, centred at (a, d), bottom y0 over the floor
+	function Room:rb(sa, sh, sd, a, y0, d, color, mat, o)
+		local u, v = self:uv(a, d)
+		if self.axis == "u" then
+			return self.f:bit(sa, sh, sd, u, self.y + y0, v, color, mat, 0, o)
+		end
+		return self.f:bit(sd, sh, sa, u, self.y + y0, v, color, mat, 0, o)
+	end
+
 	local function pick(rng, list)
 		return list[rng:NextInteger(1, #list)]
 	end
 
-	-- ── dorm rooms: furnishing ───────────────────────────────────────────────────────────────────────────────────────
-	-- R: a room seen from its door (a along the door wall from the centre, d into the room). `spec` carries the room
-	-- number, whether it is locked, and the id stem for its containers.
-	local function dormLoose(R, rng, n, pool, chance)
+	-- ── dorm rooms: what stands in them ──────────────────────────────────────────────────────────────────────────────
+	-- R: a room seen from its door (a along the door wall from the centre, d into the room). The first dice of the old
+	-- furnishing (door, layout, coat, loose loot) are still thrown for every room at the start, in the old order from the old
+	-- seed, so every coat, every desk with drawers and every loose-loot spot stays where it was; what stands in the rooms is
+	-- new. All that is new comes from a second seed and from one seed per room, so one room never moves another.
+	local TI = 0.8 -- interior partition thickness
+	local H10 = STOREY - SLAB
+
+	local D = {
+		bedding = { hex("66727F"), hex("7A6C58"), hex("5C6757"), hex("84605A"), hex("8A867A") },
+		curtain = { hex("7C5B54"), hex("5F6B73"), hex("8A7F62"), hex("5A6A5A") },
+		cloth = { hex("6B5E54"), hex("4F5A63"), hex("7B6F5A"), hex("5A4A46") },
+		wood = hex("6A5641"), woodLt = hex("85735A"), glass = hex("A5BDC1"), frost = hex("D4DAD6"),
+		tileW = hex("B7BBB0"), tileG = hex("7F8C89"), porc = hex("CFD1C8"), part = hex("7C8A86"),
+		paper = hex("C8C4B2"), bottle = hex("5C7A55"), box = hex("8A7456"), water = hex("5E7479"), top = hex("B0A68F"),
+	}
+	-- the sizes the furniture is stretched to (the kit's beds and lockers are bigger than a dorm's)
+	local SC = {
+		single = V3(0.55, 1, 0.9), -- Bed 5.6 x 7.4 -> 3.1 x 6.7 studs: one metre by two
+		ward = V3(1.4, 0.95, 1.15), -- Locker 1.95 x 7.1 x 2.0 -> 2.7 x 6.7 x 2.3
+		desk = V3(0.7, 1, 0.8), -- Table 6 x 3.1 x 3 -> 4.2 x 3.1 x 2.4
+		books = V3(0.5, 0.85, 0.8), -- WallShelfBooks 8 x 7.8 x 2.1 -> 4.0 x 6.6 x 1.7
+	}
+	-- a bunk bed's two decks as colliders (the kit's six, with the posts, leave nothing to lie on)
+	local BUNK_COLL = { { V3(6.9, 1.6, 2.9), V3(0, 0.8, 0) }, { V3(6.9, 0.5, 2.9), V3(0, 4.35, 0) } }
+
+	local function shuffled(list, rx)
+		local t = {}
+		for i, v in list do
+			t[i] = v
+		end
+		for i = #t, 2, -1 do
+			local j = rx:NextInteger(1, i)
+			t[i], t[j] = t[j], t[i]
+		end
+		return t
+	end
+	-- the face of a prop that stands against the side wall at a (so it looks into the room)
+	local function facing(a)
+		return (a > 0) and "a-" or "a+"
+	end
+
+	-- n loose-loot spots as the old furnishing threw them: (a, d) in the room, two dice each
+	local function throwSpots(rng, n, hw, dp)
+		local t = {}
+		for i = 1, n do
+			local a = rng:NextNumber(-hw + 1.2, hw - 1.2)
+			local d = rng:NextNumber(2.5, dp - 1.5)
+			t[i] = { a, d }
+		end
+		return t
+	end
+
+	local function winKey(floor, wallId, c)
+		return string.format("%d%s%d", floor, wallId, math.floor(c * 10 + 0.5))
+	end
+	-- how a window is glazed: the same answer every time for the same window, so the wall and the room agree
+	local function winStyle(floor, wallId, c)
+		local g = Random.new(floor * 100003 + string.byte(wallId) * 1009 + math.floor((c + 300) * 10 + 0.5))
+		g:NextNumber()
+		g:NextNumber()
+		local r = g:NextNumber()
+		if r < 0.68 then
+			return "whole"
+		elseif r < 0.80 then
+			return (g:NextNumber() < 0.5) and "high" or "low"
+		elseif r < 0.92 then
+			return "open"
+		end
+		return "boards"
+	end
+
+	-- The plan of one block. cfg = { seed, floors, rows, locks, ctx, wash = { ns, floors }, kitchen = { floor, ns } }. The old
+	-- dice go first, room by room in the order the block is built (floor, row, slot), draw for draw as before; then each room
+	-- gets its class from the second seed: "wash", "kitchen", "bare" (a fifth of all rooms) or "lived".
+	local function planDorm(cfg)
+		local rng = Random.new(cfg.seed)
+		local plan = { rooms = {}, list = {} }
+		for k = 1, cfg.floors do
+			for _, row in cfg.rows do
+				local near = row.wallAt + row.dir * TI / 2
+				local dp = math.abs(row.far - near)
+				for _, s in row.slots do
+					if s.kind == "room" then
+						local num = k * 100 + s.n
+						local hw = (s.a2 - s.a1 - TI) / 2
+						local info = { num = num, floor = k, row = row, slot = s, hw = hw, dp = dp }
+						if cfg.locks[num] then
+							info.locked = true
+							info.spots = throwSpots(rng, 3, hw, dp)
+							if cfg.locks[num] == "KEY_BY_314" then
+								info.spots2 = throwSpots(rng, 3, hw, dp)
+							end
+						else
+							info.doorRoll = rng:NextNumber()
+							info.roll = rng:NextNumber()
+							if info.roll < 0.62 then
+								if rng:NextNumber() < 0.25 then
+									rng:NextNumber()
+								end
+							elseif info.roll >= 0.74 and info.roll < 0.83 then
+								rng:NextNumber()
+							end
+							info.desk = info.roll >= 0.90 and info.roll < 0.95
+							info.jacket = rng:NextNumber() < 0.12
+							local n = 0
+							if rng:NextNumber() < 0.65 then
+								n += 1
+							end
+							if rng:NextNumber() < 0.15 then
+								n += 1
+							end
+							info.spots = throwSpots(rng, n, hw, dp)
+						end
+						-- the window in the room's far wall, if it has one
+						local we = cfg.ctx.win[row.name]
+						if we then
+							for _, h in we[1] do
+								if h[3] >= 1.5 and math.abs(h[1] - s.a0) < 0.5 then
+									info.win, info.wallId = h, we[2]
+									break
+								end
+							end
+						end
+						plan.rooms[num] = info
+						table.insert(plan.list, info)
+					end
+				end
+			end
+		end
+
+		local rooms, list = plan.rooms, plan.list
+		local rc = Random.new(cfg.seed + 5000)
+		local function calm(i)
+			return i ~= nil and not i.locked and not i.desk
+		end
+		local function free(i)
+			return calm(i) and not i.jacket
+		end
+		-- washrooms: one column through the floors if every floor has a room for it, else the first free room of each
+		local wz = cfg.wash
+		if wz then
+			local col = nil
+			for _, n in wz.ns do
+				local ok = true
+				for _, k in wz.floors do
+					if not free(rooms[k * 100 + n]) then
+						ok = false
+					end
+				end
+				if ok and not col then
+					col = n
+				end
+			end
+			for _, k in wz.floors do
+				local at = col and rooms[k * 100 + col] or nil
+				if not at then
+					for _, n in wz.ns do
+						local i = rooms[k * 100 + n]
+						if not at and free(i) then
+							at = i
+						end
+					end
+				end
+				if at then
+					at.class = "wash"
+					if at.win then
+						cfg.ctx.frost[winKey(at.floor, at.wallId, at.win[1])] = true
+					end
+				end
+			end
+		end
+		local kz = cfg.kitchen
+		if kz then
+			local at = nil
+			for _, n in kz.ns do
+				local i = rooms[kz.floor * 100 + n]
+				if not at and free(i) and not i.class then
+					at = i
+				end
+			end
+			if at then
+				at.class = "kitchen"
+			end
+		end
+		-- a fifth of all the rooms are bare
+		local pool = {}
+		for _, i in list do
+			if not i.class and calm(i) then
+				table.insert(pool, i)
+			end
+		end
+		for j = #pool, 2, -1 do
+			local m = rc:NextInteger(1, j)
+			pool[j], pool[m] = pool[m], pool[j]
+		end
+		for j = 1, math.min(math.floor(0.2 * #list + 0.5), #pool) do
+			pool[j].class = "bare"
+		end
+		for _, i in list do
+			if not i.locked then
+				i.class = i.class or "lived"
+				i.seed = rc:NextInteger(1, 2000000000)
+				local fixed = i.class == "wash" or i.class == "kitchen"
+				local dr = rc:NextNumber()
+				-- a room whose old dice gave it a door (one in four) keeps it
+				i.hasDoor = fixed or i.doorRoll < 0.25 or dr < ((i.class == "bare") and 0.7 or 0.95)
+			end
+		end
+		return plan
+	end
+
+	-- loose loot at the spots the plan holds; a spot with no room is tried again elsewhere (up to three times) with dice of
+	-- their own, so the plan's dice are never disturbed
+	local function dormSpots(R, spots, pool, chance, rx)
 		local hw, dp = R.aw / 2, R.dp
-		for _ = 1, n do
-			-- a spot with no room (a bed fills the corner) is tried again elsewhere in the room, up to three times
-			for try = 1, 3 do
-				if R:loose(rng:NextNumber(-hw + 1.2, hw - 1.2), 0.5, rng:NextNumber(2.5, dp - 1.5), pool, chance, try < 3) then
-					break
+		for _, sp in spots do
+			local placed = R:loose(sp[1], 0.5, sp[2], pool, chance, true)
+			local try = 1
+			while not placed and try < 3 do
+				try += 1
+				local a, d = rx:NextNumber(-hw + 1.2, hw - 1.2), rx:NextNumber(2.5, dp - 1.5)
+				placed = R:loose(a, 0.5, d, pool, chance, try < 3)
+			end
+		end
+	end
+
+	-- ── thin glass, boards and curtains ──────────────────────────────────────────────────────────────────────────────
+	-- Glass in the window holes of one outer wall: axis "u" = the wall runs along u at v = at, "v" = along v at u = at; inward:
+	-- which way the rooms lie from it. A pane is CanCollide only (shots and sight pass it, as they passed the open hole); some
+	-- windows keep half a pane, some none, some are boarded up. Broken ones leave glass on the floor inside.
+	local function glaze(f, axis, at, inward, y, holes, wallId, floor, ctx)
+		local ry = (axis == "u") and 0 or 90
+		for _, h in holes do
+			local c, w, b, t = h[1], h[2], h[3], h[4]
+			if b >= 1.5 and w >= 1.5 and t - b >= 2.5 then
+				local pu, pv = at, c
+				if axis == "u" then
+					pu, pv = c, at
+				end
+				local frost = ctx.frost[winKey(floor, wallId, c)] == true
+				local style = frost and "whole" or winStyle(floor, wallId, c)
+				local gw, gh = w - 0.1, t - b - 0.1
+				if style == "whole" then
+					f:bit(gw, gh, 0.1, pu, y + b + 0.05, pv, frost and D.frost or D.glass, M.Glass, ry,
+						{ collide = true, alpha = frost and 0.12 or 0.5, shadow = false, cat = frost and "frosted" or "panes" })
+				elseif style == "high" then
+					f:bit(gw, gh * 0.5, 0.1, pu, y + t - 0.05 - gh * 0.5, pv, D.glass, M.Glass, ry, { collide = true, alpha = 0.5, shadow = false, cat = "panes" })
+					DC.cracked += 1
+				elseif style == "low" then
+					f:bit(gw, gh * 0.45, 0.1, pu, y + b + 0.05, pv, D.glass, M.Glass, ry, { collide = true, alpha = 0.5, shadow = false, cat = "panes" })
+					DC.cracked += 1
+				elseif style == "open" then
+					DC.open += 1
+				else
+					DC.boarded += 1
+					for i = 1, 3 do
+						f:bit(w + 0.5, 0.9, 0.2, pu, y + b + (i - 0.5) * ((t - b) / 3) - 0.45, pv, P.board, M.WoodPlanks, ry,
+							{ collide = true, query = true, wear = true, roll = (i - 2) * 2.5, cat = "boards" })
+					end
+				end
+				if style == "high" or style == "low" or style == "open" then
+					local g = Random.new(math.floor(c * 100) + floor)
+					if g:NextNumber() < 0.7 then
+						local su, sv = pu, pv
+						if axis == "u" then
+							sv = pv + inward * 1.4
+						else
+							su = pu + inward * 1.4
+						end
+						if f:dprop("GlassShards", f:cf(su, y, sv, g:NextInteger(0, 359)), {}) then
+							DC.shards += 1
+						end
+					end
 				end
 			end
 		end
 	end
 
-	-- one of a handful of layouts, chosen by the dice (about 0.9 props a room); the door sits at R.doorA, the free wall is
-	-- on side s
-	local function dormFill(R, rng, spec)
+	-- curtains on a room's own window (not over a boarded or open one)
+	local function curtains(R, info, rx, chance)
+		local h = info.win
+		if not h or rx:NextNumber() > chance then
+			return
+		end
+		local style = winStyle(info.floor, info.wallId, h[1])
+		if style == "open" or style == "boards" then
+			return
+		end
+		local aw = h[1] - info.slot.a0
+		local col = pick(rx, D.curtain)
+		local dd = R.dp - 0.35
+		local kind = rx:NextNumber()
+		local o = { cat = "curtains", shadow = false }
+		if kind < 0.45 then
+			R:rb(h[2] + 0.7, 4.8, 0.08, aw, 2.2, dd, col, M.Fabric, o)
+		elseif kind < 0.8 then
+			R:rb(1.2, 4.8, 0.08, aw - h[2] / 2 - 0.1, 2.2, dd, col, M.Fabric, o)
+			R:rb(1.2, 4.8, 0.08, aw + h[2] / 2 + 0.1, 2.2, dd, col, M.Fabric, o)
+		else
+			local side = (rx:NextNumber() < 0.5) and -1 or 1
+			R:rb(2.2, 4.8, 0.08, aw + side * (h[2] / 2 - 0.9), 2.2, dd, col, M.Fabric, o)
+		end
+	end
+
+	-- ── what lies about ──────────────────────────────────────────────────────────────────────────────────────────────
+	-- a clear patch of floor (radius r) away from the door's swing; returns u, v (the frame's) and a, d (the room's), or nil.
+	-- `along`: the half length of a long thing lying in the room's depth, its two ends are tested as well
+	local function spot(R, rx, r, y1, along)
+		local hw, dp = R.aw / 2, R.dp
+		for _ = 1, 8 do
+			local a, d = rx:NextNumber(-hw + r, hw - r), rx:NextNumber(1.0 + (along or 0), dp - r - (along or 0))
+			if not (a > -4.0 and a < 1.1 and d - (along or 0) < 5.6) then
+				local u, v = R:uv(a, d)
+				local ok = R.f:clearAt(R.f:pt(u, R.y, v), r, y1)
+				if ok and along then
+					local u1, v1 = R:uv(a, d - along)
+					local u2, v2 = R:uv(a, d + along)
+					ok = R.f:clearAt(R.f:pt(u1, R.y, v1), r, y1) and R.f:clearAt(R.f:pt(u2, R.y, v2), r, y1)
+				end
+				if ok then
+					return u, v, a, d
+				end
+			end
+		end
+		return nil
+	end
+	local function dropJunk(f, rx, kind, u, y, v)
+		local ry = rx:NextInteger(0, 359)
+		if kind == "paper" then
+			f:bit(1.4, 0.04, 1.0, u, y + 0.02, v, D.paper, M.SmoothPlastic, ry)
+		elseif kind == "bottle" then
+			f:bit(0.35, 1.0, 0.35, u, y, v, D.bottle, M.SmoothPlastic, ry)
+		elseif kind == "clothes" then
+			f:bit(1.6, 0.35, 1.2, u, y, v, pick(rx, D.cloth), M.Fabric, ry)
+		elseif kind == "box" then
+			f:bit(1.4, 0.9, 1.0, u, y, v, D.box, M.Cardboard, ry)
+		elseif kind == "bag" then
+			f:bit(2.0, 0.9, 1.0, u, y, v, pick(rx, D.cloth), M.Fabric, ry)
+		else
+			f:bit(0.6, 0.15, 0.9, u, y + 0.02, v, pick(rx, D.cloth), M.SmoothPlastic, ry)
+		end
+	end
+	local LIVED_JUNK = { "paper", "bottle", "clothes", "bag", "book", "box" }
+	local BARE_JUNK = { "paper", "paper", "bottle", "bottle", "clothes", "box", "box", "book" }
+	local function scatter(R, rx, n, kinds)
+		for _ = 1, n do
+			local u, v = spot(R, rx, 0.8, 1.0)
+			if u then
+				dropJunk(R.f, rx, pick(rx, kinds), u, R.y, v)
+			end
+		end
+	end
+
+	-- the lived-in room: somewhere to sleep, then a wardrobe, a desk and chair, a bookcase, some rubbish, curtains
+	local function furnishLived(R, info, rx)
 		local hw, dp = R.aw / 2, R.dp
 		local s = (R.doorA < 0) and 1 or -1
-		local roll = rng:NextNumber()
-		local id = spec.stem
-		if roll < 0.62 then
-			-- stripped: whatever is left lies on the floor
-			if rng:NextNumber() < 0.25 then
-				R:prop(rng:NextNumber() < 0.5 and "Chair" or "Bin", s * 2.5, dp - 3.0, "a-")
+		local corner = hw - 1.7
+		local ca = (rx:NextNumber() < 0.5) and 1 or -1 -- the far corner the first bed takes
+		local sleep = rx:NextNumber()
+		local tintA, tintB = { fabric = pick(rx, D.bedding) }, { fabric = pick(rx, D.bedding) }
+		if sleep < 0.46 then
+			R:bprop("Bed", ca * s * corner, dp - 3.4, "out", { scale = SC.single, tint = tintA })
+		elseif sleep < 0.64 then
+			R:bprop("Bed", ca * s * corner, dp - 3.4, "out", { scale = SC.single, tint = tintA })
+			R:bprop("Bed", -ca * s * corner, dp - 3.4, "out", { scale = SC.single, tint = tintB })
+		elseif sleep < 0.88 then
+			local k = hw - 1.55
+			local a1, a2 = ca * s * k, -ca * s * k
+			if not R:bprop("BunkBed", a1, dp - 3.6, facing(a1), { collide = BUNK_COLL, tint = tintA }) then
+				R:bprop("BunkBed", a2, dp - 3.6, facing(a2), { collide = BUNK_COLL, tint = tintA })
 			end
-		elseif roll < 0.74 then
-			R:prop("Bed", s * 1.0, dp - 4.0, "out")
-		elseif roll < 0.83 then
-			if rng:NextNumber() < 0.6 then
-				R:prop("Locker", -s * (hw - 1.2), dp - 1.2, "out")
+			if rx:NextNumber() < 0.25 then
+				R:bprop("BunkBed", a2, dp - 3.6, facing(a2), { collide = BUNK_COLL, tint = tintB })
+			end
+		else
+			R:bprop("Bed", s * 1.3, dp - 3.85, "out", { tint = tintA })
+		end
+		local sideA = (rx:NextNumber() < 0.8) and s or -s -- the side wall the desk and the shelves stand on
+		if rx:NextNumber() < 0.62 then
+			local cands = shuffled({
+				{ s * (hw - 1.2), 2.1, facing(s) }, -- inside the door, against the free wall
+				{ -s * (hw - 1.45), dp - 1.2, "out" }, { s * (hw - 1.45), dp - 1.2, "out" },
+				{ sideA * (hw - 1.2), 9.8, facing(sideA) },
+			}, rx)
+			for _, c in cands do
+				if R:bprop("Locker", c[1], c[2], c[3], { scale = SC.ward, tint = D.wood, mats = { paint = { M.Wood } } }) then
+					break
+				end
+			end
+		end
+		if rx:NextNumber() < 0.5 then
+			local da, ch = sideA * (hw - 1.25), sideA * (hw - 3.2)
+			local cands = shuffled({
+				{ da, 7.4, facing(sideA), ch, 7.4, facing(-sideA) },
+				{ da, 10.2, facing(sideA), ch, 10.2, facing(-sideA) },
+				{ 0, dp - 1.3, "out", 0, dp - 3.4, "in" },
+			}, rx)
+			for _, c in cands do
+				if R:bprop("Table", c[1], c[2], c[3], { scale = SC.desk }) then
+					R:bprop("Chair", c[4], c[5], c[6])
+					break
+				end
+			end
+		end
+		if rx:NextNumber() < 0.3 then
+			-- the spot just inside the door only on the free wall: on the hinge side it would stand in the door's landing
+			local list = { { sideA * (hw - 0.95), 12.4, facing(sideA) }, { -sideA * (hw - 0.95), 12.4, facing(-sideA) } }
+			if sideA == s then
+				list[#list + 1] = { sideA * (hw - 0.95), 4.2, facing(sideA) }
+			end
+			local cands = shuffled(list, rx)
+			for _, c in cands do
+				if R:bprop("WallShelfBooks", c[1], c[2], c[3], { scale = SC.books }) then
+					break
+				end
+			end
+		end
+		scatter(R, rx, rx:NextInteger(2, 4), LIVED_JUNK)
+		curtains(R, info, rx, 0.4)
+	end
+
+	-- the stripped room: a mattress on the floor, rubbish, and a fallen chair or a broken shelf or a heap of cardboard
+	local function furnishBare(R, info, rx)
+		local f, y = R.f, R.y
+		if rx:NextNumber() < 0.75 then
+			local u, v, a, d = spot(R, rx, 1.7, 1.0, 2.4)
+			if u then
+				R:rb(3.0, 0.5, 6.4, a, 0, d, pick(rx, D.bedding), M.Fabric, { cat = "bits" })
+			end
+		end
+		if rx:NextNumber() < 0.5 then
+			local u, v = spot(R, rx, 1.5, 1.3)
+			if u then
+				f:dprop("Chair", f:cf(u, y + 0.66, v, rx:NextInteger(0, 359)) * CFrame.Angles(0, 0, rad(90)), { collide = false })
+			end
+		end
+		if rx:NextNumber() < 0.35 then
+			local u, v = spot(R, rx, 2.2, 1.0)
+			if u then
+				local ry = rx:NextInteger(0, 359)
+				f:bit(3.4, 0.22, 0.9, u, y + 0.02, v, D.woodLt, M.WoodPlanks, ry)
+				f:bit(3.0, 0.22, 0.9, u + 0.5, y + 0.26, v + 0.4, D.wood, M.WoodPlanks, ry + 25)
+				f:bit(0.25, 3.0, 0.9, u - 0.8, y + 0.02, v - 1.0, D.wood, M.WoodPlanks, ry + 70)
+			end
+		end
+		if rx:NextNumber() < 0.35 then
+			local u, v = spot(R, rx, 2.0, 1.0)
+			if u then
+				f:dprop("CardboardPile", f:cf(u, y, v, rx:NextInteger(0, 359)), { scale = V3(0.55, 0.7, 0.55) })
+			end
+		end
+		scatter(R, rx, rx:NextInteger(5, 8), BARE_JUNK)
+		curtains(R, info, rx, 0.15)
+	end
+
+	-- the shared washroom: sinks under mirrors along the free wall, three toilet cubicles along the other, three showers at the
+	-- far end; tiles, a drain, puddles, a sign over the door. The aisle between is 4.7 studs wide.
+	local function washroom(R, info)
+		local hw, dp = R.aw / 2, R.dp
+		local s = (R.doorA < 0) and 1 or -1
+		local rx = Random.new(info.seed)
+		local fit = { cat = "fit", shadow = false }
+		local solid = { cat = "fit", solid = true }
+		R:rb(2 * hw - 0.3, 0.06, dp - 0.3, 0, 0.01, dp / 2, D.tileW, M.CeramicTiles, fit)
+		R:rb(0.08, 4.4, dp - 1.0, s * (hw - 0.04), 0, dp / 2, D.tileG, M.CeramicTiles, fit)
+		R:rb(0.08, 4.4, dp - 1.0, -s * (hw - 0.04), 0, dp / 2, D.tileG, M.CeramicTiles, fit)
+		R:rb(2 * hw - 0.4, 2.9, 0.08, 0, 0, dp - 0.04, D.tileG, M.CeramicTiles, fit)
+		-- two sinks, each under its mirror, and the pipe over them
+		for _, d in { 7.2, 11.4 } do
+			R:bprop("MirrorSink", s * (hw - 0.75), d, facing(s), { mats = { glass = { M.Glass, nil, 0.1, 0.5, false } } })
+		end
+		R:rb(0.25, 0.25, 11, s * (hw - 0.2), 8.0, 9.4, P.steel, M.Metal, fit)
+		-- three cubicles: partitions, a bowl and a high cistern each, doors shut, broken or gone
+		local pa = -s * (hw - 1.45)
+		for i = 0, 3 do
+			R:rb(2.9, 5.4, 0.2, pa, 0.8, 5.8 + 3 * i, D.part, M.Metal, solid)
+		end
+		local states = shuffled({ "closed", "half", "gone" }, rx)
+		for i = 0, 2 do
+			local dc = 7.3 + 3 * i
+			R:rb(1.5, 1.1, 1.0, -s * (hw - 1.1), 0, dc, D.porc, M.SmoothPlastic, solid)
+			R:rb(0.5, 1.1, 0.9, -s * (hw - 0.3), 4.7, dc, D.porc, M.SmoothPlastic, fit)
+			local state = states[i + 1]
+			if state == "closed" then
+				R:rb(0.15, 5.0, 2.5, -s * 1.72, 0.8, dc, D.part, M.Metal, solid)
+			elseif state == "half" then
+				R:rb(0.15, 5.0, 1.1, -s * 1.72, 0.8, dc - 0.7, D.part, M.Metal, solid)
+			end
+		end
+		-- three shower stalls across the far end, curtains drawn or pushed aside
+		for i = -1, 1 do
+			local ac = i * 3.0
+			R:rb(2.7, 0.2, 2.8, ac, 0, dp - 1.8, D.porc, M.SmoothPlastic, fit)
+			R:rb(0.15, 5.4, 0.15, ac, 0, dp - 0.25, P.metalGry, M.Metal, fit)
+			R:rb(0.9, 0.25, 0.9, ac, 5.4, dp - 0.8, P.metalGry, M.Metal, fit)
+			local col = pick(rx, D.curtain)
+			if rx:NextNumber() < 0.6 then
+				R:rb(2.6, 5.0, 0.08, ac, 0.9, dp - 3.3, col, M.Fabric, fit)
 			else
-				R:prop("Table", -s * 1.5, dp - 1.7, "out")
+				R:rb(0.8, 5.0, 0.08, ac + 1.0, 0.9, dp - 3.3, col, M.Fabric, fit)
 			end
-		elseif roll < 0.90 then
-			R:prop("Bed", s * 1.0, dp - 4.0, "out")
-			R:prop("Locker", -s * (hw - 1.2), dp - 1.2, "out")
-		elseif roll < 0.95 then
+		end
+		for _, ac in { -1.5, 1.5 } do
+			R:rb(0.2, 6.2, 3.1, ac, 0, dp - 1.75, D.part, M.Metal, solid)
+		end
+		-- a drain and two puddles; a bin by the door
+		R:rb(0.9, 0.04, 0.9, 0.8, 0.08, 14.6, P.metalGry, M.Metal, fit)
+		R:rb(2.2, 0.03, 1.6, 1.4, 0.08, 9.0, D.water, M.Glass, { cat = "fit", shadow = false, alpha = 0.45 })
+		R:rb(1.8, 0.03, 1.4, 0.4, 0.08, dp - 4.4, D.water, M.Glass, { cat = "fit", shadow = false, alpha = 0.45 })
+		R:bprop("Bin", s * (hw - 1.0), 1.6, "out")
+		-- the sign above the door, on the corridor side of the wall
+		local plate = R:rb(2.4, 0.9, 0.12, R.doorA, 8.2, -(TI + 0.05), P.steel, M.Metal, fit)
+		local face
+		if R.axis == "u" then
+			face = (R.dir > 0) and Enum.NormalId.Front or Enum.NormalId.Back
+		else
+			face = (R.dir > 0) and Enum.NormalId.Left or Enum.NormalId.Right
+		end
+		kit.sign(plate, face, "WASHROOM", P.white, P.steel)
+	end
+
+	-- the kitchen of the top floor: worktops, a sink and a cooker along the free wall, a fridge, a table with two stools
+	local function kitchen(R, info)
+		local hw, dp = R.aw / 2, R.dp
+		local s = (R.doorA < 0) and 1 or -1
+		local rx = Random.new(info.seed)
+		local fit = { cat = "fit", shadow = false }
+		local solid = { cat = "fit", solid = true }
+		local ca = s * (hw - 1.15)
+		R:rb(2.2, 3.0, 3.6, ca, 0, 7.4, D.wood, M.WoodPlanks, solid)
+		R:rb(2.4, 0.2, 3.8, ca, 3.0, 7.4, D.top, M.Concrete, fit)
+		R:rb(1.4, 0.15, 1.8, ca, 3.2, 7.4, P.steel, M.Metal, fit)
+		R:rb(0.2, 1.0, 0.2, s * (hw - 0.3), 3.2, 7.4, P.metalGry, M.Metal, fit)
+		R:rb(2.2, 3.1, 2.6, ca, 0, 10.5, P.white, M.Metal, solid)
+		R:rb(0.8, 0.1, 0.8, ca, 3.1, 10.0, P.tar, M.Metal, fit)
+		R:rb(0.8, 0.1, 0.8, ca, 3.1, 11.0, P.tar, M.Metal, fit)
+		R:rb(2.2, 3.0, 2.8, ca, 0, 13.2, D.wood, M.WoodPlanks, solid)
+		R:rb(2.4, 0.2, 3.0, ca, 3.0, 13.2, D.top, M.Concrete, fit)
+		R:rb(1.2, 2.2, 3.6, s * (hw - 0.65), 5.4, 7.4, D.wood, M.WoodPlanks, fit)
+		R:rb(1.2, 2.2, 2.8, s * (hw - 0.65), 5.4, 13.2, D.wood, M.WoodPlanks, fit)
+		R:rb(0.9, 0.5, 0.9, ca, 3.2, 13.2, P.metalGry, M.Metal, fit)
+		R:rb(0.8, 0.5, 0.8, ca, 3.2, 10.5, P.metalGry, M.Metal, fit)
+		R:bprop("Fridge", s * (hw - 1.62), dp - 1.6, "out", { scale = V3(0.38, 0.95, 0.6) })
+		local ta = -s * (hw - 1.4)
+		R:bprop("Table", ta, 9.0, facing(-s), { scale = V3(0.5, 1, 0.8) })
+		R:bprop("Chair", ta + s * 1.6, 8.2, facing(s))
+		R:bprop("Chair", ta + s * 1.6, 9.8, facing(s))
+		scatter(R, rx, 3, LIVED_JUNK)
+		curtains(R, info, rx, 0.5)
+	end
+
+	-- one room that is not locked: what the old dice left (a desk with drawers and its chair, a coat), then the new furniture
+	-- by class, then the loose loot at the old spots
+	local function dormFurnish(R, ctx, info, spec)
+		local hw, dp = R.aw / 2, R.dp
+		local s = (R.doorA < 0) and 1 or -1
+		local id = spec.stem
+		if info.desk then
 			R:stash("OfficeDesk", id .. "D", "drawer", "Desk drawers", s * 1.5, dp - 2.6, "out")
 			R:prop("Chair", s * 1.5, dp - 5.4, "in")
-		elseif roll < 0.98 then
-			R:prop("BunkBed", s * (hw - 1.7), dp - 5.5, s > 0 and "a-" or "a+")
-			R:prop("Table", 0, 6.5, "in")
-		else
-			R:prop("BunkBed", -s * (hw - 1.7), dp - 5.5, s > 0 and "a+" or "a-")
-			R:prop("BunkBed", s * (hw - 1.7), dp - 5.5, s > 0 and "a-" or "a+")
-			R:prop("Table", 0, 6.5, "in")
 		end
-		if rng:NextNumber() < 0.12 and not spec.noJacket then
+		if info.jacket then
 			local ju, jv = R:uv(s * (hw - 0.6), dp * 0.42)
 			R.f:jacket(id .. "J", "Jacket", ju, R.y, jv, R:yaw(s > 0 and "a-" or "a+"))
 		end
-		local n = (rng:NextNumber() < 0.65 and 1 or 0) + (rng:NextNumber() < 0.15 and 1 or 0)
-		dormLoose(R, rng, n, "dorm", spec.chance or 0.4)
+		local rx = Random.new(info.seed)
+		if info.class == "wash" then
+			washroom(R, info)
+			DC.wash += 1
+		elseif info.class == "kitchen" then
+			kitchen(R, info)
+			DC.kitchen += 1
+		elseif info.class == "bare" then
+			furnishBare(R, info, rx)
+			DC.bare += 1
+		else
+			furnishLived(R, info, rx)
+			DC.lived += 1
+		end
+		dormSpots(R, info.spots, "dorm", spec.chance or 0.4, ctx.rx)
 	end
 
 	-- a locked room: richer, with its own containers. The vault room (314) keeps its bed on the far side and leaves the
 	-- far corner on the bed's usual side to its safe (see onLocked in dormA)
-	local function dormLocked(R, rng, spec)
+	local function dormLocked(R, ctx, spec)
 		local hw, dp = R.aw / 2, R.dp
 		local s = (R.doorA < 0) and 1 or -1
 		local id = spec.stem
@@ -606,16 +1292,12 @@ return function(B)
 		R:prop("Chair", s * (hw - 4.6), 4.5, s > 0 and "a+" or "a-")
 		local ju, jv = R:uv(-s * (hw - 0.6), dp * 0.55)
 		R.f:jacket(id .. "J", "Jacket", ju, R.y, jv, R:yaw(s > 0 and "a+" or "a-"))
-		dormLoose(R, rng, 3, "dorm_good", 0.5)
 		R:lamp(0, dp * 0.5, 22, false)
 	end
 
 	-- ── dorm rows: corridor wall with doorways, dividers, rooms ──────────────────────────────────────────────────────
-	-- row = { axis, wallAt, dir, depth, far, doorOff, slots = { { a1, a2, kind, num } } } (kinds: room, stairs, gap)
-	local TI = 0.8 -- interior partition thickness
-	local H10 = STOREY - SLAB
-
-	local function dormRow(f, y, floor, row, tag, rng, locks)
+	-- row = { name, axis, wallAt, dir, depth, far, doorOff, slots = { { a1, a2, kind, num } } } (kinds: room, stairs, gap)
+	local function dormRow(f, y, floor, row, tag, ctx)
 		local slots = row.slots
 		local holes = {}
 		for _, s in slots do
@@ -652,27 +1334,37 @@ return function(B)
 		for _, s in slots do
 			if s.kind == "room" then
 				local num = floor * 100 + s.n
+				local info = ctx.plan.rooms[num]
 				local aw = s.a2 - s.a1 - TI
 				local R = newRoom(f, y, row.axis, s.a0, aw, near, row.dir, math.abs(row.far - near))
 				R.doorA = row.doorOff
 				local stem = "LV_" .. tag .. num
-				local key = locks[num]
-				local spec = { stem = stem, num = num, vault = (locks[num] == "KEY_BY_314") }
+				local key = ctx.locks[num]
+				local spec = { stem = stem, num = num, vault = (key == "KEY_BY_314"), info = info }
+				DC.rooms += 1
 				if key then
-					local dAbs = s.a0 + row.doorOff
-					local label = "Room " .. num
-					local swing = row.dir
-					f:door(stem, label, row.axis, dAbs, row.wallAt, y, swing, key, P.doorDk)
-					dormLocked(R, rng, spec)
+					f:door(stem, "Room " .. num, row.axis, s.a0 + row.doorOff, row.wallAt, y, row.dir, key, P.doorDk)
+					dormLocked(R, ctx, spec)
 					if row.onLocked then
 						row.onLocked(R, num, spec)
 					end
+					dormSpots(R, info.spots, "dorm_good", 0.5, ctx.rx) -- last: the loot goes where nothing else will stand
 				else
-					if rng:NextNumber() < 0.25 then
-						f:door(stem, "Room " .. num, row.axis, s.a0 + row.doorOff, row.wallAt, y, row.dir, nil, P.door, 0.55)
+					if info.hasDoor then
+						local label, chance = "Room " .. num, 0.55
+						if info.class == "wash" then
+							label, chance = "Washroom", 0.5
+						elseif info.class == "kitchen" then
+							label = "Kitchen"
+						elseif info.class == "bare" then
+							chance = 0.35
+						end
+						f:door(stem, label, row.axis, s.a0 + row.doorOff, row.wallAt, y, row.dir, nil, P.door, chance)
+						DC.doors += 1
 					end
-					dormFill(R, rng, spec)
+					dormFurnish(R, ctx, info, spec)
 				end
+				pace()
 			end
 		end
 	end
@@ -819,7 +1511,6 @@ return function(B)
 
 	local function dormA(b)
 		local f = newFrame(b, "BLOCK A")
-		local rng = Random.new(2601)
 		local FL = 3
 		local ys = { 0.5, 11.5, 22.5 }
 		local top = ys[1] + STOREY * FL
@@ -832,6 +1523,8 @@ return function(B)
 			[314] = "KEY_BY_314", [317] = "KEY_BY_A317", [325] = "KEY_BY_A325",
 		}
 		local extras = { [310] = "medbag", [317] = "gun", [225] = "tool", [201] = "medbag", [228] = "gun", [103] = "tool", [212] = "medbag" }
+		-- ctx: what the rooms share (the plan, the keys, the dice for loose loot that finds no room, the frosted windows)
+		local ctx = { locks = locks, rx = Random.new(2601 + 9000), frost = {} }
 		local slotsHI, slotsLO, slotsE, slotsW = {}, {}, {}, {}
 		for i = 12, 0, -1 do
 			local a1 = (i == 12) and -64.5 or colEdge(i + 1)
@@ -854,48 +1547,60 @@ return function(B)
 				R.f:container(spec.stem .. "S", "safe", "Room 314 safe", su, R.y, sv, R:yaw("out"))
 				local gu, gv = R:uv(s * 3.6, dp - 7.0)
 				R.f:gunCase(spec.stem .. "W", "Weapon case", gu, R.y, gv, R:depthYaw())
-				dormLoose(R, rng, 3, "dorm_good", 0.6)
+				dormSpots(R, spec.info.spots2, "dorm_good", 0.6, ctx.rx)
 				local pu, pv = R:uv(0, dp * 0.4)
 				points.BLOCK_A_ROOM314 = R.f:pt(pu, R.y + 0.5, pv)
 			elseif extras[num] then
 				lockedExtras(R, num, spec, extras[num])
 			end
 		end
-		local rowHI = { axis = "u", wallAt = 24.4, dir = 1, far = 44.2, doorOff = -1.6, color = P.plasterG, slots = slotsHI, onLocked = onLocked }
-		local rowLO = { axis = "u", wallAt = 15.1, dir = -1, far = -4.7, doorOff = -1.6, color = P.plasterG, slots = slotsLO, onLocked = onLocked }
-		local rowE = { axis = "v", wallAt = -34.95, dir = 1, far = -15.2, doorOff = -1.6, color = P.plasterG, extend = 14.7, slots = slotsE, onLocked = onLocked }
-		local rowW = { axis = "v", wallAt = -44.85, dir = -1, far = -64.5, doorOff = -1.6, color = P.plasterG, extend = 14.7, slots = slotsW, onLocked = onLocked }
+		local rowHI = { name = "HI", axis = "u", wallAt = 24.4, dir = 1, far = 44.2, doorOff = -1.6, color = P.plasterG, slots = slotsHI, onLocked = onLocked }
+		local rowLO = { name = "LO", axis = "u", wallAt = 15.1, dir = -1, far = -4.7, doorOff = -1.6, color = P.plasterG, slots = slotsLO, onLocked = onLocked }
+		local rowE = { name = "E", axis = "v", wallAt = -34.95, dir = 1, far = -15.2, doorOff = -1.6, color = P.plasterG, extend = 14.7, slots = slotsE, onLocked = onLocked }
+		local rowW = { name = "W", axis = "v", wallAt = -44.85, dir = -1, far = -64.5, doorOff = -1.6, color = P.plasterG, extend = 14.7, slots = slotsW, onLocked = onLocked }
 		local stairHole = { 14.95, 24.05, 29.1, 44.2 }
+		-- the window holes of the outer walls (the same on every floor), and the plan of the rooms behind them: washrooms (115, 215, 315
+		-- where the old dice left them free: windowless, behind the corridor's west end) and a kitchen on the top floor
+		local hN, hS, hE, hW, hWe = {}, {}, { { VC, 3.9, 0, 7.5 }, win(5.0), win(39.4) }, { { VC, 3.9, 0, 7.5 }, win(39.4), win(5.0) }, {}
+		for _, sl in slotsHI do
+			table.insert(hN, sl.kind == "room" and win(sl.a0) or { sl.a0, 2.6, 2.0, 8.6 })
+		end
+		for i = 0, 7 do
+			table.insert(hS, win(colC(i)))
+		end
+		for _, c in wingC do
+			table.insert(hW, win(c))
+			table.insert(hWe, win(c))
+		end
+		ctx.win = { HI = { hN, "N" }, LO = { hS, "S" }, E = { hWe, "X" }, W = { hW, "W" } }
+		ctx.plan = planDorm({
+			seed = 2601, floors = FL, rows = { rowHI, rowLO, rowE, rowW }, locks = locks, ctx = ctx,
+			wash = { ns = { 15, 14, 18, 17 }, floors = { 1, 2, 3 } }, kitchen = { floor = 3, ns = { 8, 7, 6, 5 } },
+		})
 
 		for k = 1, FL do
 			local y = ys[k]
 			f:slab(U0, U1, VLO, VHI, y, SLAB, P.conc, M.Concrete, k >= 2 and { stairHole } or nil)
 			f:slab(U0, UW, VFAR, VLO, y, SLAB, P.conc, M.Concrete)
-			-- the outside walls: windows at the room centres, a tall one at the stairwell
-			local hN, hS = {}, {}
-			for _, sl in slotsHI do
-				table.insert(hN, sl.kind == "room" and win(sl.a0) or { sl.a0, 2.6, 2.0, 8.6 })
-			end
-			for i = 0, 7 do
-				table.insert(hS, win(colC(i)))
-			end
+			-- the outside walls: windows at the room centres, a tall one at the stairwell, thin glass in them
+			local hF = { win(-54.9), win(-24.9), k == 1 and { -39.9, 3.9, 0, 7.5 } or win(-39.9, 3.0) }
 			f:wallU(VHI - 0.6, U0, U1, y, H10, 1.2, ext, extM, hN)
+			glaze(f, "u", VHI - 0.6, -1, y, hN, "N", k, ctx)
 			f:wallU(VLO + 0.6, -15.2, U1, y, H10, 1.2, ext, extM, hS)
+			glaze(f, "u", VLO + 0.6, 1, y, hS, "S", k, ctx)
 			f:wallU(-5.1, -64.5, -15.2, y, H10, TI, P.plaster, M.Plaster, { { -39.9, 9.1, 0, H10 } })
-			f:wallV(U1 - 0.6, -4.7, 44.2, y, H10, 1.2, ext, extM, { { VC, 3.9, 0, 7.5 }, win(5.0), win(39.4) })
-			local hW = { { VC, 3.9, 0, 7.5 }, win(39.4), win(5.0) }
-			local hWs, hWe = {}, {}
-			for _, c in wingC do
-				table.insert(hW, win(c))
-				table.insert(hWe, win(c))
-			end
+			f:wallV(U1 - 0.6, -4.7, 44.2, y, H10, 1.2, ext, extM, hE)
+			glaze(f, "v", U1 - 0.6, -1, y, hE, "E", k, ctx)
 			f:wallV(U0 + 0.6, -44.2, 44.2, y, H10, 1.2, ext, extM, hW)
-			f:wallU(VFAR + 0.6, U0, UW, y, H10, 1.2, ext, extM, { win(-54.9), win(-24.9), k == 1 and { -39.9, 3.9, 0, 7.5 } or win(-39.9, 3.0) })
+			glaze(f, "v", U0 + 0.6, 1, y, hW, "W", k, ctx)
+			f:wallU(VFAR + 0.6, U0, UW, y, H10, 1.2, ext, extM, hF)
+			glaze(f, "u", VFAR + 0.6, 1, y, hF, "F", k, ctx)
 			f:wallV(UW - 0.6, -44.2, -5.9, y, H10, 1.2, ext, extM, hWe)
-			dormRow(f, y, k, rowHI, "A", rng, locks)
-			dormRow(f, y, k, rowLO, "A", rng, locks)
-			dormRow(f, y, k, rowE, "A", rng, locks)
-			dormRow(f, y, k, rowW, "A", rng, locks)
+			glaze(f, "v", UW - 0.6, -1, y, hWe, "X", k, ctx)
+			dormRow(f, y, k, rowHI, "A", ctx)
+			dormRow(f, y, k, rowLO, "A", ctx)
+			dormRow(f, y, k, rowE, "A", ctx)
+			dormRow(f, y, k, rowW, "A", ctx)
 			for _, i in { 1, 4, 7 } do
 				f:lamp(colC(i), y + 9.6, VC, 24, false)
 			end
@@ -942,7 +1647,6 @@ return function(B)
 
 	local function dormB(b)
 		local f = newFrame(b, "BLOCK B")
-		local rng = Random.new(2602)
 		local FL = 2
 		local ys = { 0.5, 11.5 }
 		local top = ys[1] + STOREY * FL
@@ -951,6 +1655,7 @@ return function(B)
 		local ext, extM = P.brick, M.Brick
 		local locks = { [111] = "KEY_BY_B111", [124] = "KEY_BY_B124", [103] = "KEY_BY_B103", [116] = "KEY_BY_B116", [223] = "KEY_BY_B223" }
 		local extras = { [124] = "tool", [116] = "medbag", [223] = "gun", [103] = "medbag" }
+		local ctx = { locks = locks, rx = Random.new(2602 + 9000), frost = {} }
 		local slotsHI, slotsLO = {}, {}
 		for i = 12, 0, -1 do
 			local a1 = (i == 12) and -64.4 or colEdge(i + 1)
@@ -963,25 +1668,38 @@ return function(B)
 				lockedExtras(R, num, spec, extras[num])
 			end
 		end
-		local rowHI = { axis = "u", wallAt = 4.75, dir = 1, far = 24.7, doorOff = -1.6, color = P.plasterB, slots = slotsHI, onLocked = onLocked }
-		local rowLO = { axis = "u", wallAt = -4.65, dir = -1, far = -24.4, doorOff = -1.6, color = P.plasterB, slots = slotsLO, onLocked = onLocked }
+		local rowHI = { name = "HI", axis = "u", wallAt = 4.75, dir = 1, far = 24.7, doorOff = -1.6, color = P.plasterB, slots = slotsHI, onLocked = onLocked }
+		local rowLO = { name = "LO", axis = "u", wallAt = -4.65, dir = -1, far = -24.4, doorOff = -1.6, color = P.plasterB, slots = slotsLO, onLocked = onLocked }
 		local stairHole = { 14.95, 24.05, -24.4, -9.35 }
+		-- the window holes of the outer walls, and the plan of the rooms: every room has a window, so the washrooms (121, 221 where the
+		-- old dice left them free) get frosted glass
+		local hN, hS = {}, {}
+		for _, sl in slotsHI do
+			table.insert(hN, win(sl.a0))
+		end
+		for _, sl in slotsLO do
+			table.insert(hS, sl.kind == "room" and win(sl.a0) or { sl.a0, 2.6, 2.0, 8.6 })
+		end
+		ctx.win = { HI = { hN, "N" }, LO = { hS, "S" } }
+		ctx.plan = planDorm({
+			seed = 2602, floors = FL, rows = { rowHI, rowLO }, locks = locks, ctx = ctx,
+			wash = { ns = { 21, 25, 19, 17, 20 }, floors = { 1, 2 } },
+		})
 		for k = 1, FL do
 			local y = ys[k]
 			f:slab(U0, U1, VLO, VHI, y, SLAB, P.conc, M.Concrete, k >= 2 and { stairHole } or nil)
-			local hN, hS = {}, {}
-			for _, sl in slotsHI do
-				table.insert(hN, win(sl.a0))
-			end
-			for _, sl in slotsLO do
-				table.insert(hS, sl.kind == "room" and win(sl.a0) or { sl.a0, 2.6, 2.0, 8.6 })
-			end
+			local hE = { k == 1 and { VC, 3.9, 0, 7.5 } or win(VC, 3.0), win(15.0), win(-14.8) }
+			local hW = { { VC, 3.9, 0, 7.5 }, win(15.0), win(-19.6) }
 			f:wallU(VHI - 0.6, U0, U1, y, H10, 1.2, ext, extM, hN)
+			glaze(f, "u", VHI - 0.6, -1, y, hN, "N", k, ctx)
 			f:wallU(VLO + 0.6, U0, U1, y, H10, 1.2, ext, extM, hS)
-			f:wallV(U1 - 0.6, VLO + 1.2, VHI - 1.2, y, H10, 1.2, ext, extM, { k == 1 and { VC, 3.9, 0, 7.5 } or win(VC, 3.0), win(15.0), win(-14.8) })
-			f:wallV(U0 + 0.6, VLO + 1.2, VHI - 1.2, y, H10, 1.2, ext, extM, { { VC, 3.9, 0, 7.5 }, win(15.0), win(-19.6) })
-			dormRow(f, y, k, rowHI, "B", rng, locks)
-			dormRow(f, y, k, rowLO, "B", rng, locks)
+			glaze(f, "u", VLO + 0.6, 1, y, hS, "S", k, ctx)
+			f:wallV(U1 - 0.6, VLO + 1.2, VHI - 1.2, y, H10, 1.2, ext, extM, hE)
+			glaze(f, "v", U1 - 0.6, -1, y, hE, "E", k, ctx)
+			f:wallV(U0 + 0.6, VLO + 1.2, VHI - 1.2, y, H10, 1.2, ext, extM, hW)
+			glaze(f, "v", U0 + 0.6, 1, y, hW, "W", k, ctx)
+			dormRow(f, y, k, rowHI, "B", ctx)
+			dormRow(f, y, k, rowLO, "B", ctx)
 			for _, i in { 1, 4, 7, 10 } do
 				f:lamp(colC(i), y + 9.6, VC, 24, false)
 			end
@@ -2229,4 +2947,11 @@ return function(B)
 	if #REJECTS > 0 then
 		print("[ZR] Border living: not placed (overlap): " .. table.concat(REJECTS, "; "))
 	end
+	print(
+		string.format(
+			"[ZR] Border dorms: %d rooms (%d lived-in, %d bare, %d washrooms, %d kitchen, %d locked), %d room doors (locked ones apart), %d furniture props (%d dropped for overlap), %d clutter pieces, %d fittings, %d panes (%d frosted, %d half-broken, %d open, %d boarded with %d boards), %d curtains, %d glass-on-floor",
+			DC.rooms, DC.lived, DC.bare, DC.wash, DC.kitchen, DC.rooms - DC.lived - DC.bare - DC.wash - DC.kitchen, DC.doors, DC.props,
+			DC.rejected, DC.bits, DC.fit, DC.panes, DC.frosted, DC.cracked, DC.open, DC.boarded, DC.boards, DC.curtains, DC.shards
+		)
+	)
 end
