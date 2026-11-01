@@ -78,12 +78,12 @@ There are 28 props from the Blender wear kit (`ZR_WearKit`) on Quay 7:
 
 | Level | Detail rings (studs) | Post effects | Materials | Shadows | Other |
 |---|---|---|---|---|---|
-| HIGH (3) | 270 / 215 / 150 | depth of field, sun rays, bloom, two grain layers, turn blur | worn variants | on | full rain, most particles |
-| MEDIUM (2) | 200 / 155 / – | sun rays, bloom, two grain layers, turn blur | worn variants | on | full rain |
-| LOW (1) | 135 / – / – | one grain layer, turn blur | worn variants | on | half rain, fewer particles |
-| POTATO (0) | no detail | one grain layer, no turn blur | plain (variants removed locally) | off | no cloud layer, 30% rain, fewest particles |
+| HIGH (3) | 200 / 175 / 140 | depth of field, sun rays, bloom, two grain layers, turn blur | worn variants | on | full rain, most particles, see-through leaves to 520 studs |
+| MEDIUM (2) | 165 / 135 / – | sun rays, bloom, two grain layers, turn blur | worn variants | on | full rain, see-through leaves to 240 studs |
+| LOW (1) | 120 / – / – | one grain layer, turn blur | worn variants | on | half rain, fewer particles, see-through leaves to 110 studs |
+| POTATO (0) | no detail | one grain layer, no turn blur | plain (variants removed locally) | off | no cloud layer, 30% rain, fewest particles, solid leaves |
 
-* The three ring numbers are the distances for fine, medium and coarse detail.
+* The three ring numbers are the distances for coarse detail (the grime strips along wall bases), medium marks and fine clutter. They were 270 / 215 / 150, 200 / 155 and 135 until 2026-11-01, when the wear decals were measured at about 55 % of all draw calls in a wide view (TEST_RESULTS, Fog and draw cost).
 * Every level has the same fog, light levels, exposure and gameplay geometry, so no setting sees further or through
   more.
 * The server accepts 0–3 only. Other numbers are rounded and clamped, and anything that is not a number is refused.

@@ -22,10 +22,13 @@ local root: Folder
 local cells = {} -- key -> { center, byLod = { [1] = {}, ... }, built = { [lod] = Folder } }
 local queue = {} -- { cell, lod, i, folder, d }
 -- distance (studs from the camera to the cell centre) up to which each lod is built, per level
+-- (2026-11-01: from 270/215/150, 200/155 and 135. In a wide view over Border the wear decals made about 870 of 1,516 draw
+-- calls, 620 of them the far ring's grime strips; these rings take HIGH to about 1,020 draws there. Within 140 studs nothing
+-- changes. TEST_RESULTS, Fog and draw cost)
 local RINGS = {
-	[3] = { 270, 215, 150 },
-	[2] = { 200, 155 },
-	[1] = { 135 },
+	[3] = { 200, 175, 140 },
+	[2] = { 165, 135 },
+	[1] = { 120 },
 }
 local BUDGET = 60 -- instances per frame
 local HALF = Wear.CELL / 2

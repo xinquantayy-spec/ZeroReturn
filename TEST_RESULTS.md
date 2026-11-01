@@ -96,6 +96,8 @@ Owner: fog only to improve rendering performance, the same on every graphics lev
 
 So a fog wall saves little unless it sits closer than about 500 studs (160 m), which would make every raid a foggy one. Most of the cost is near the player, and the largest single cost is the detail layer's wear decals.
 
+Follow-up the same day: the far ring held 1,372 of the decals, about 620 draws. Hiding the far ring's decals beyond 200 studs, the medium ring's beyond 175 and the fine ring's beyond 140 took that view from 1,516 to 1,020 draws. The detail rings are now HIGH 200 / 175 / 140 (were 270 / 215 / 150), MEDIUM 165 / 135 (200 / 155) and LOW 120 (135). Measured again in a fresh session from the same view: 1,072 draws (was about 1,516), 648k triangles, 1,267 wear decals (was 2,050). Nothing changes within 140 studs.
+
 ## Wall finishes and indoor light (2026-11-01)
 
 Studio Play mode on the T490. Owner: "the walls look repetitive and fake".
