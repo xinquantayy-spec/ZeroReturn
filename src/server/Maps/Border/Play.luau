@@ -9,10 +9,12 @@
 --   hazards        the border snipers over the reference's sniper quad (walking the rails to NORTH LINE is safe: the
 --                  1.2.0.0 change), propane cylinders on open ground
 --   loose loot     yards, the pump platforms, the scrap bridge landings (Dress adds a spot at each wreck)
+--   mounted guns   two on the roof of the Bastion, each with a gunner posted behind it (Stationary.luau)
 -- Buildings publish named standing points in B.points (BLOCK_A_LOBBY ...); each one used here falls back to the matching
 -- footprint centre in L.blds when it is missing. Local coordinates (x east, z south), world positions through H.V.
 -- B.geo: the geometry tests below (footprints, roads, fences, rails, forests, keep-outs, part boxes) for Dress.
--- Not built (no system for it): the mounted machine guns (docs/maps/BORDER_YARD.md, Gameplay).
+-- The mounted guns (docs/maps/BORDER_YARD.md, Gameplay) are the Bastion's roof nests: Tarkov has stationary weapons on Customs
+-- but no source gives where, so the roof of the scav base is our choice (docs/design/STATIONARY_WEAPONS.md).
 return function(B)
 	local kit, W, H, L, map = B.kit, B.W, B.H, B.L, B.map
 	local V = H.V
@@ -591,6 +593,33 @@ return function(B)
 			{ route = "S4", label = "Store Guard" },
 			{ route = "TL", label = "Trailer Watch" },
 		}
+	end)
+
+	-- ── mounted guns: two nests on the roof of the Bastion (the scav base), a gunner posted behind each ─────────────────
+	-- Both stand against the yard-side parapet, the building's +v wall (the one facing the BASTION_YARD point), pointing straight out
+	-- from it. The pad lifts the gun and its operator so the barrel clears the 3.4 high parapet. The HMG-12 sits over the
+	-- BASTION_YARD point (75 studs along the wall) and covers the yard; the AGL-30 sits 95 studs further along the same wall
+	-- and lobs over the ground beyond (arcs 70 and 60 degrees either side of straight out). The gunners are Watch guards on
+	-- the posts behind the guns: the AI mans a gun when it engages a raider the gun can reach (Stationary.crew).
+	try("guns", function()
+		local b = byId[28]
+		if not (b and kit.stationary and W.watchPosts) then
+			return
+		end
+		local top = points.BASTION_TOP
+		local roofY = (typeof(top) == "Vector3") and (top.Y - 3) or (ground(b.cx, b.cz) + 25.8)
+		local nests = kit.model("Gun nests", map)
+		local out = Vector3.new(-b.s, 0, b.c) -- the building's +v side: the yard and the gate
+		for _, n in { { "HMG12", -75, "Bastion Gunner" }, { "AGL30", 20, "Bastion Grenadier" } } do
+			local v = b.hd - 4.4
+			local pos = V(b.cx + n[2] * b.c - v * b.s, roofY + 1.8, b.cz + n[2] * b.s + v * b.c)
+			local cf = CFrame.lookAt(pos, pos + out)
+			kit.boxCF(nests, 6, 1.8, 7.4, cf * CFrame.new(0, -0.9, 1.1), kit.hex("5A5E58"), kit.M.Concrete)
+			local gun = kit.stationary(n[1], cf, {})
+			if gun then
+				table.insert(W.watchPosts, { route = "BG", post = gun.frame:PointToWorldSpace(gun.spec.op + Vector3.new(0, 0.5, 0)), label = n[3] })
+			end
+		end
 	end)
 
 	-- ── the Broker (Reshala): the dorms, four guards ─────────────────────────────────────────────────────

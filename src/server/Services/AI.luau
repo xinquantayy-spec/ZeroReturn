@@ -410,6 +410,7 @@ local function visiblePart(u, model, eye)
 	end
 	return nil
 end
+AI.visiblePart = visiblePart -- the first of the head and torso parts of `model` in sight of `eye`, or nil (Stationary crews)
 
 local function candidates(u)
 	local out = {}
@@ -1522,6 +1523,20 @@ local function think(u)
 	if u.evade and evade(u, t) then
 		updatePose(u)
 		return
+	end
+	-- a guard posted at a stationary gun mans it while engaging a raider the gun can reach (Stationary.crew)
+	if ctx.Stationary then
+		local onGun, look = ctx.Stationary.crew(u, t)
+		if onGun then
+			u.wantFire = false
+			u.visible = true
+			stop(u)
+			if look then
+				face(u, look)
+			end
+			updatePose(u)
+			return
+		end
 	end
 	if u.state == "ENGAGE" then
 		combat(u, t)

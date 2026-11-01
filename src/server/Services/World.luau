@@ -1334,6 +1334,21 @@ function World.kit()
 		part = part, box = box, boxCF = boxCF, cyl = cyl, vcyl = vcyl, model = model, jitter = jitter, light = light,
 		sign = sign, mesh = mesh, wall = wall, wallHoles = wallHoles, loose = loose,
 		container = addContainerSpot, extract = addExtract, foliage = World.addFoliage,
+		-- a mounted gun (Stationary.luau): kind "HMG12" or "AGL30", the ground point under it with its heading, opts. The guns
+		-- go in a Stationary folder of the world root (ZR_World reaches the workspace only when the build is done)
+		stationary = function(kind, cf, opts)
+			opts = table.clone(opts or {})
+			if not opts.parent then
+				local folder = root:FindFirstChild("Stationary")
+				if not folder then
+					folder = Instance.new("Folder")
+					folder.Name = "Stationary"
+					folder.Parent = root
+				end
+				opts.parent = folder
+			end
+			return require(script.Parent.Stationary).place(kind, cf, opts)
+		end,
 	}
 end
 

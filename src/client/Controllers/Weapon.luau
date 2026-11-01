@@ -1054,7 +1054,7 @@ local function update(dt)
 	handleFire()
 	Weapon.aiming = aimWanted and canAim()
 	local o = vm
-	local show = o ~= nil and (inRaid or practicing()) and hum ~= nil and not ctx.Input.isMenu() and not ctx.Camera.orbit
+	local show = o ~= nil and (inRaid or practicing()) and hum ~= nil and not ctx.Input.isMenu() and not ctx.Camera.orbit and not ctx.Input.isMounted()
 	-- local player's own third-person weapon light stays off (the viewmodel lamp lights the scene)
 	if now - tpLightT > 0.25 and char then
 		tpLightT = now

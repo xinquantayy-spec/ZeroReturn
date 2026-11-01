@@ -10,7 +10,7 @@
 1. **Meridian Mall on Interchange's layout**, the same way as Border Yard: research the current layout, then foundation, buildings and gameplay (`docs/maps/BORDER_CUSTOMS_BUILD.md` is the template). Pinewatch stays parked.
 2. **Border Yard polish from playtests:** dorm interiors (glass, washrooms, denser furniture), the 0.16 interiors, ladders, the lamp count on phones, the K-13 and boiler cellar entries (KNOWN_ISSUES).
 3. **Inventory pictures for the eyewear items** (item art pipeline, `docs/items/ITEM_ART.md`).
-4. **Mounted machine guns** need a stationary-weapon system first (Customs has them).
+4. **Stationary guns (written 2026-11-01, not run):** run `tests` in Studio for the new "stationary" group, then mount the HMG-12 and AGL-30 on the Bastion roof by hand (keyboard, gamepad, touch); the real Customs positions and more guns come later (`docs/design/STATIONARY_WEAPONS.md`).
 5. Then the remaining parity list in `EFT_PARITY.md` (hideout customisation, MASTERING, co-op extracts and transits, other boss groups).
 
 **Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file). Decisions that can wait: publishing, a cross-server flea market (MemoryStore).

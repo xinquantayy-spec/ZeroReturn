@@ -82,6 +82,7 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Prone | X | Z | Move; double Z drops the backpack |
 | Time and exits | Double O (raid timer on by default since 0.16.7) | O (exits) | Add the time |
 | Head device (NVG, face shield) | N | Done 2026-11-01: N flips goggles or raises the face shield | - |
+| Stationary guns (NSV, AGS-30): man the gun, aim, fire, leave | F is Interact; Tarkov documents no control for them, so how to leave and how to zoom were not found | Done 2026-11-01 with controls of our own: the prompt (F, pad X, tap) mounts; mouse / right stick / screen drag aims; fire and zoom follow the Fire and Aim keys, right trigger and left trigger, the FIRE and ZOOM buttons; F, B or LEAVE gets off (section below) | Sounds, animation, the real positions |
 | Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Y and F1 to F12 | Some | The rest |
 | Rebinding with press, double press, hold and release | Settings, Controls | Missing | Keybinding screen |
 
@@ -162,6 +163,37 @@ Gaps (not copied):
   their tiles show the item colour and short name, and loose ones lie as a coloured block until an art pass.
 - **Meshes:** built and uploaded 2026-11-01 (batch ZR_EyeGear, 16 meshes); the five items still use the generic inventory picture.
 
+### Stationary (mounted) guns (2026-11-01)
+
+Researched first (sources below and in `docs/design/STATIONARY_WEAPONS.md`, which has the rules, numbers, controls and the
+tests), then built. Status: written and passed through `tools/luau_check.py` only. The new "stationary" LogicTests group, the
+mounted camera, the gamepad and touch controls and the guard AI have not been run in Studio or on a phone or console.
+
+Matched:
+- **Two guns for Tarkov's two:** the HMG-12 "Bastion" for the NSV Utyos (650 RPM, 12.7 mm, the unofficial B-32 round: 182 damage,
+  88 penetration) and the AGL-30 for the AGS-30 (425 RPM, a 30 mm round that bursts like a frag). Both spawn full each raid
+  and cannot be reloaded; one operator at a time; players and posted guards can use them.
+- **Rounds are real bullets** with drop, drag and travel time through the same hit path as every weapon (armour, hit zones,
+  bleeds, propane, doors); the launcher's rounds burst through the grenade system. The gun shakes the camera when fired.
+- **The AGS's two numbers while aiming** (arc and zeroing) are shown on the AGL-30.
+
+Gaps (not copied or not found):
+- **No documented controls in Tarkov** (F = Interact only): the mount and leave keys, the zoom, the mouse, trigger and stick
+  mappings and the touch buttons are ours.
+- **Not found, so ours:** belt sizes (100 and 30), traverse and elevation limits (70 left and right, +40 / -20; 60, +55 / -14),
+  zoom (2x and 3x), spread and bloom, the VOG-30 blast numbers (150 fragments of 24 to 38 within 16 studs, blast 85 within 4.5),
+  the arming distance (20 studs). No overheating, as none was found.
+- **The AGL-30's zeroing is fixed** and its "arc" is the elevation in degrees; in Tarkov the arc is a number (such as -.02) that
+  sets where the grenade lands and the zeroing only fine-tunes the alignment.
+- **Ammo counter:** the HUD shows the gun's rounds (`87 / 100`) although Tarkov shows no counter; asked for in the task.
+- **Positions:** only two guns, on the Bastion roof of Border Yard, placed by us. Tarkov has NSV and AGS guns on Customs, Ground
+  Zero, Lighthouse, Reserve, Shoreline, Streets (and the NSV on Woods and Interchange); no source gave a position.
+- **Bots:** only posted guards use a gun (in sight, inside the arcs and range, short bursts); Tarkov's bots use them in more
+  ways and its AI handling was fixed in 2023 and 2024 (the details were not found).
+- **Art and audio:** no mounting animation (the raider is moved to the spot), no operator pose on the grips, models built from
+  parts, the shot sound is the rifle recording pitched down and louder.
+- **Not run:** nothing above has been run in Studio, on a phone, on a gamepad or on a console, and no frame rate was measured.
+
 ## Order of work
 
 1. **Now (task #56):** the INSPECT window with the full attribute sheet for every item kind (a turnable 3D view in a
@@ -181,13 +213,14 @@ Gaps (not copied):
 - [GameSpot: controls and hotkeys](https://www.gamespot.com/articles/escape-from-tarkov-guide-for-controls-and-hotkeys/1100-6472601/), [Prima Games: controls](https://primagames.com/tips/escape-from-tarkov-complete-controls-guide)
 - [TarkovForge: Salewa](https://tarkovforge.com/meds/salewa-first-aid-kit) (med fields), [Gamepressure: health and injuries](https://www.gamepressure.com/escape-from-tarkov/health-and-injuries/z1cf2f)
 - Eyewear and face gear (2026-11-01): [TarkovForge: glasses](https://tarkovforge.com/glasses) (armor, durability, blindness protection), [6B34](https://tarkovforge.com/glasses/6b34-anti-fragmentation-glasses), [AFGlass](https://tarkovforge.com/glasses/anti-fragmentation-glasses), [Caiman visor](https://tarkovforge.com/glasses/galvion-caiman-fixed-arm-visor), [GP-5 gas mask](https://tarkovforge.com/face-covers/gp-5-gas-mask); Wiki: [Eyewear](https://escapefromtarkov.fandom.com/wiki/Eyewear), [RayBench Aviator glasses](https://escapefromtarkov.fandom.com/wiki/RayBench_Aviator_glasses) (Ragman LL4), [Kolpak-1S](https://escapefromtarkov.fandom.com/wiki/Kolpak-1S_riot_helmet), [EXFIL face shield](https://escapefromtarkov.fandom.com/wiki/Team_Wendy_EXFIL_Ballistic_face_shield_(Black)), [Maska-1SCh](https://escapefromtarkov.fandom.com/wiki/Maska-1SCh_face_shield_(Olive_Drab)), [Jason mask](https://escapefromtarkov.fandom.com/wiki/Jason_mask) (blocks lists)
+- Stationary guns (2026-11-01): Wiki [Weapons](https://escapefromtarkov.fandom.com/wiki/Weapons) ("Stationary weapons"), [NSV Utyos](https://escapefromtarkov.fandom.com/wiki/NSV_Utyos_12.7x108_heavy_machine_gun), [AGS-30](https://escapefromtarkov.fandom.com/wiki/AGS-30_30x29_automatic_grenade_launcher); [Dexerto: grenade launchers](https://www.dexerto.com/escape-from-tarkov/how-to-destroy-escape-from-tarkov-players-using-grenade-launchers-1355803/) (arc and zeroing); the rest of the list is in `docs/design/STATIONARY_WEAPONS.md`
 - Patch notes: [0.16.0.0 (Sportskeeda)](https://sportskeeda.com/esports/escape-tarkov-patch-notes-update-0-16-0-0-new-event-customs-rework-prestige-system), [0.16.7.0 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-0.16.7.0-full-patch-notes-aP2RA1G8vdlq), [1.0.4.5 (AltChar)](https://www.altchar.com/game-news/escape-from-tarkov-patch-1.0.4.5-improves-performance-reworks-weapon-balance-and-fixes-key-issues-aPJVC8b37l9m)
 
 ## 7. Maps (owner, 2026-11-01: same map as Tarkov's, own buildings and names)
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | Mounted machine guns (no stationary-weapon system yet), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
+| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
 | Interchange | Meridian Mall is our own layout | Rebuild on Interchange's layout the same way |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |

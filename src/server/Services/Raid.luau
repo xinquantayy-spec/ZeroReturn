@@ -233,6 +233,9 @@ function Raid.resetWorld()
 	ctx.Loot.reset(Raid.world.seed)
 	ctx.Doors.reset()
 	ctx.Hazards.reset()
+	if ctx.Stationary then
+		ctx.Stationary.reset() -- the mounted guns are full again
+	end
 	ctx.AI.reset()
 	Raid.world.status = "RUNNING"
 end

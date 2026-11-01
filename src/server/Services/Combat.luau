@@ -219,6 +219,9 @@ function Combat.shoot(player, seq, origin, dir)
 	if not head then
 		return reject("dead shooter", nil)
 	end
+	if char:GetAttribute("Mounted") then
+		return reject("shot while on a mounted gun", nil) -- the mounted gun fires through Stationary, not the personal weapon
+	end
 	local w = ws(player)
 	if seq <= w.seq then
 		return reject("replayed seq", player)

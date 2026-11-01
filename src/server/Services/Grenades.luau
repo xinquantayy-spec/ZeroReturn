@@ -285,8 +285,8 @@ local function pull(player, want)
 	end
 	local char = alive(player)
 	local head = char and char:FindFirstChild("Head")
-	if not head then
-		return
+	if not head or char:GetAttribute("Mounted") then
+		return -- both hands are on a mounted gun
 	end
 	local t = os.clock()
 	if (ps.pull and t - ps.pull < G.PULL_MAX) or t < (ps.cd or 0) then

@@ -148,8 +148,8 @@ Parity gaps (to copy into `docs/design/EFT_PARITY.md`, which was outside part 1'
 - The Voron note for SMUGGLERS' HOLE and SMUGGLERS' BOAT, the green flare for NORTH LINE and OLD PUMPS, and the ZB-1013 key for the
   K-13 basement door have no items; the three exits are plain 50 % chance extracts and the bunker door is not locked.
 - DORMS CAR costs 25,000 MK (the old map's price, kept); Tarkov charges 5,000 roubles, so check the MK scale in the economy.
-- Mounted weapons (AGS, NSV), propane cylinders and the three other boss groups the reference lists (a knight with two escorts, a
-  sect priest with four warriors, a partisan) are not built.
+- Mounted weapons (AGS, NSV): built later with positions of our own (see "Gun nests" under the guard routes); propane cylinders and
+  the three other boss groups the reference lists (a knight with two escorts, a sect priest with four warriors, a partisan) are not built.
 - Five scav exit names are ours (STORE 4 GATE, HUTS GATE, STORE 17 GATE, SHACK GATE, PUMPS GATE).
 - The reference outlines are 0.12-era shapes and the extract positions are good to 5 to 10 m (grades in `L.blds` and `L.ext`).
 
@@ -365,6 +365,14 @@ the open ground beside it, at most 4 per building), 29 hand-placed anchors (dorm
 old pumps) and six standing points inside the shops, the squat and the dorm lobby: about 118 zones. Visit zones: DORM314 (room 314
 in BLOCK A, r 7), BOILER (the cellar, r 14), DERRICK (the roof, r 12), FRAME (the top floor, r 10), SMUGGLERS (the tunnel room, r 10).
 
+**Gun nests** (`Play.luau`, "guns"; `docs/design/STATIONARY_WEAPONS.md`). Two mounted guns stand on the roof of the Bastion
+(building 28, the scav base), both against the yard-side parapet (the building's +v wall, the one that faces the BASTION_YARD point) and pointing
+straight out from it: the HMG-12 75 studs along the wall one way from the building's centre (over the `BASTION_YARD` point),
+covering the yard; the AGL-30 20 studs along the other way (95 studs from the HMG), lobbing over the ground beyond. Each sits on a concrete pad that lifts the gun and its operator over the
+3.4 stud parapet, and each has a Watch guard posted behind it on route BG ("Bastion Gunner", "Bastion Grenadier"). A guard who
+engages a raider the gun can reach mans the gun (arcs 70 and 60 degrees either side of straight out); a raider can mount a free gun
+from its prompt. The guns are placed through `kit.stationary`, which parents them under `ZR_World/Stationary`.
+
 ### Hazards and outdoor loot
 
 - Propane: 9 spots (fuel stop, old works, motor shop, Frame site, trailer lot, old pumps, Store 17), two cylinders 3.2 studs apart at
@@ -394,7 +402,11 @@ Budget 2,450 parts (counted as it goes); the run prints the real count.
 
 ### Gaps (to copy into `docs/design/EFT_PARITY.md`)
 
-- Mounted AGS and NSV style guns are not built: the reference positions are unknown (`L.hazard.mounted` is empty).
+- Mounted AGS and NSV style guns: the reference positions are unknown (`L.hazard.mounted` is empty), so the mounted guns
+  (HMG-12 and AGL-30, `docs/design/STATIONARY_WEAPONS.md`) stand on the Bastion's roof, our choice: two nests on the yard-side
+  parapet with a posted gunner each (`Maps/Border/Play.luau`, "guns"). Move them when a position source turns up. Written and
+  checked by `tools/luau_check.py` only; the pad and parapet clearance was worked out offline, and the arcs against the yard and a
+  gunner's sight lines have not been seen in Studio.
 - Co-op extracts and transits: BOILER CELLAR is a plain key extract (a PMC must bring a scav in Tarkov); the transits to Factory,
   Interchange, Reserve and Shoreline that the reference lists do not exist.
 - Other boss groups are not built: the knight with Big Pipe and Birdeye, the sect priest with four warriors, the partisan.

@@ -44,6 +44,12 @@ return {
 	FreeLook = { keys = { K.LeftAlt }, pad = {}, context = "play" },
 	-- G: hold to pull the pin, release to throw (hold aim for underhand). Gamepad: hold D-down (a tap is Extracts).
 	Grenade = { keys = { K.G }, pad = { K.DPadDown }, touch = "NADE", context = "play" },
+	-- stationary guns (Stationary controller): while mounted these replace the personal-weapon actions (context "mount").
+	-- Fire and zoom follow the player's Fire and Aim keys (`like`); F leaves, Tarkov's interact key, since the game has no
+	-- documented control for its stationary weapons
+	MountFire = { like = "Fire", keys = { K.MouseLeftButton }, pad = { K.ButtonR2 }, touch = "FIRE", context = "mount" },
+	MountZoom = { like = "Aim", keys = { K.MouseRightButton }, pad = { K.ButtonL2 }, touch = "ZOOM", context = "mount" },
+	MountLeave = { keys = { K.F }, pad = { K.ButtonB }, touch = "LEAVE", context = "mount" },
 	-- Tarkov's quick slots: hover an item in your pockets or rig in the inventory and press the key to bind it;
 	-- in a raid the key uses it (meds, food) or readies it (grenades). Global, so binding works with the inventory open.
 	Quick4 = { keys = { K.Four }, pad = {}, context = "global" },

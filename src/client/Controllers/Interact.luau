@@ -4,9 +4,10 @@
 local PPS = game:GetService("ProximityPromptService")
 local Items = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR").Items)
 
-local Interact = { current = nil }
+local Interact = { current = nil, locked = false }
 local ctx, K
 local gui, btn
+local wanted = true -- what the menus last asked for (setEnabled), apart from the lock
 
 -- loose items carry their id: show the name only once this player has examined that kind of item (Tarkov)
 local function objectText(p)
@@ -32,7 +33,15 @@ local function render()
 end
 
 function Interact.setEnabled(on)
-	PPS.Enabled = on
+	wanted = on
+	PPS.Enabled = on and not Interact.locked
+	render()
+end
+
+-- at a stationary gun the prompts stay off: F leaves the gun and must not also use a prompt
+function Interact.lock(on)
+	Interact.locked = on
+	PPS.Enabled = wanted and not on
 	render()
 end
 

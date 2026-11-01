@@ -14,6 +14,7 @@ local handlers = {}
 local down = {}
 local contexts = {}
 local menu = false
+local mounted = false -- at a stationary gun: the "mount" actions replace the "play" ones
 local deviceEvent = Instance.new("BindableEvent")
 Input.deviceChanged = deviceEvent.Event
 local lastDevice = nil
@@ -39,6 +40,9 @@ end
 -- the PC keys of an action after rebinding: list of KeyCodes and its chord modifier
 function Input.keysOf(action)
 	local spec = InputMap[action]
+	if spec and spec.like then
+		return Input.keysOf(spec.like) -- follows the other action's (rebound) keys
+	end
 	local o = overrides[action]
 	if o then
 		local k = o.key and Enum.KeyCode[o.key]
@@ -105,9 +109,25 @@ function Input.isMenu()
 	return menu
 end
 
+-- is this context live: play on foot, mount at a stationary gun, menu in a menu, global always
+local function contextOn(name)
+	if name == "global" then
+		return true
+	elseif name == "menu" then
+		return menu
+	elseif name == "mount" then
+		return mounted and not menu
+	end
+	return not menu and not mounted
+end
+
+local function blocked(spec)
+	return (spec.context == "play" and (menu or mounted)) or (spec.context == "mount" and (menu or not mounted))
+end
+
 function Input.trigger(action, isDown)
 	local spec = InputMap[action]
-	if isDown and menu and spec and spec.context == "play" then
+	if isDown and spec and blocked(spec) then
 		return
 	end
 	dispatch(action, isDown)
@@ -115,15 +135,12 @@ end
 
 local function setupIAS()
 	return pcall(function()
-		for name, prio in { play = 10, global = 15, menu = 20 } do
+		for name, prio in { play = 10, mount = 12, global = 15, menu = 20 } do
 			local c = Instance.new("InputContext")
 			c.Name = "ZR_" .. name
 			c.Priority = prio
 			c.Sink = false
-			c.Enabled = (name == "menu") == menu
-			if name == "global" then
-				c.Enabled = true
-			end
+			c.Enabled = contextOn(name)
 			c.Parent = container
 			contexts[name] = c
 		end
@@ -178,7 +195,7 @@ local function setupCAS()
 		if #inputs > 0 then
 			CAS:BindActionAtPriority("ZR_" .. action, function(_, state, obj)
 				if state == Enum.UserInputState.Begin then
-					if menu and spec.context == "play" then
+					if blocked(spec) then
 						return Enum.ContextActionResult.Pass
 					end
 					if menu == false and spec.context == "menu" then
@@ -244,14 +261,38 @@ end
 function Input.setMenu(open)
 	menu = open
 	if Input.backend == "IAS" and contexts.play then
-		contexts.play.Enabled = not open
-		contexts.menu.Enabled = open
+		for name, c in contexts do
+			c.Enabled = contextOn(name)
+		end
 	end
 	if open then
 		for action, spec in InputMap do
-			if spec.context == "play" and down[action] then
+			if (spec.context == "play" or spec.context == "mount") and down[action] then
 				dispatch(action, false)
 			end
+		end
+	end
+end
+
+function Input.isMounted()
+	return mounted
+end
+
+-- the Stationary controller: at a gun the personal-weapon actions are off and the mount actions are on
+function Input.setMounted(on)
+	on = on == true
+	if mounted == on then
+		return
+	end
+	mounted = on
+	for action, spec in InputMap do
+		if (spec.context == "play" or spec.context == "mount") and down[action] then
+			dispatch(action, false)
+		end
+	end
+	if Input.backend == "IAS" then
+		for name, c in contexts do
+			c.Enabled = contextOn(name)
 		end
 	end
 end
@@ -292,7 +333,7 @@ local LABELS = {
 	Gamepad = {
 		Fire = "RT", Aim = "LT", Reload = "X", Sprint = "L3", Crouch = "B", Heal = "D-UP", FireMode = "D-RIGHT", Extracts = "D-DOWN", Inventory = "Y",
 		Settings = "VIEW", Back = "B", Interact = "X", CycleWeapon = "D-LEFT", MagCheck = "R3", LeanLeft = "LB", LeanRight = "RB",
-		Grenade = "HOLD D-DOWN",
+		Grenade = "HOLD D-DOWN", MountFire = "RT", MountZoom = "LT", MountLeave = "B",
 	},
 	Touch = { Interact = "TAP", CycleWeapon = "SWAP", MagCheck = "CHK", Grenade = "NADE" },
 }

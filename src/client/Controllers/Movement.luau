@@ -212,6 +212,10 @@ local function update(dt)
 	local root = char:FindFirstChild("HumanoidRootPart")
 	local W = ctx.Weapon
 	local inRaid = ctx.State.inRaid()
+	local atGun = ctx.Input.isMounted() -- at a stationary gun: standing, planted (Stationary controller)
+	if atGun and Movement.stance ~= "s" then
+		setStance("s")
+	end
 	local vit = ctx.State.vitals
 	local mods = vit and vit.mods or nil
 	ctx.Camera.tremor = mods and mods.tremor or 0
@@ -291,7 +295,7 @@ local function update(dt)
 	if W.healing then
 		speed = math.min(speed, Config.CROUCH_SPEED)
 	end
-	if os.clock() < Movement.transitionUntil then
+	if os.clock() < Movement.transitionUntil or atGun then
 		speed = 0
 	end
 	-- inertia: heavier kit takes longer to get going and to change direction
@@ -322,7 +326,7 @@ local function update(dt)
 	hum.UseJumpPower = false
 	-- jump / vault (Space): vaulting takes priority over a jump when an obstacle is in front
 	vaultAvail = (inRaid or true) and root and Movement.stance ~= "p" and not Movement.vaulting and findVault(char, root) or nil
-	local canJump = Movement.stance == "s" and Movement.stamina >= Config.JUMP_COST and w <= wMax and not vaultAvail and not Movement.vaulting
+	local canJump = Movement.stance == "s" and Movement.stamina >= Config.JUMP_COST and w <= wMax and not vaultAvail and not Movement.vaulting and not atGun
 	hum.JumpHeight = canJump and 3.2 or 0
 	-- local footsteps from the camera bob (others' come from the Animator)
 	local bob = math.sin(ctx.Camera.bobPhase)
@@ -375,6 +379,9 @@ function Movement.init(c)
 	Input.on("LeanLeft", lean(-1))
 	Input.on("LeanRight", lean(1))
 	UIS.JumpRequest:Connect(function()
+		if c.Input.isMounted() then
+			return
+		end
 		if Movement.stance == "p" then
 			setStance("c")
 			return

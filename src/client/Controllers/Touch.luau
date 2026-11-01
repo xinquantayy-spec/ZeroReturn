@@ -26,7 +26,12 @@ local LAYOUT = {
 	{ "LeanRight", "LN-R", Vector2.new(0.70, 0.80), 46 },
 	{ "Prone", "PRN", Vector2.new(0.62, 0.86), 46 },
 	{ "Grenade", "NADE", Vector2.new(0.885, 0.73), 50 },
+	-- at a stationary gun these replace the personal-weapon buttons (the Stationary controller; FIRE drags to aim)
+	{ "MountFire", "FIRE", Vector2.new(0.885, 0.50), 96 },
+	{ "MountZoom", "ZOOM", Vector2.new(0.765, 0.43), 62 },
+	{ "MountLeave", "LEAVE", Vector2.new(0.955, 0.33), 56 },
 }
+local MOUNT = { MountFire = true, MountZoom = true, MountLeave = true }
 
 local function refresh()
 	if not gui then
@@ -35,10 +40,19 @@ local function refresh()
 	local touch = ctx.Input.device() == "Touch" or (UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.GamepadEnabled)
 	gui.Enabled = touch and not ctx.Input.isMenu()
 	local inRaid = ctx.State.inRaid()
+	local atGun = ctx.Stationary ~= nil and ctx.Stationary.mounted == true
 	for action, b in buttons do
 		local raidOnly = action ~= "Inventory" and action ~= "Settings" and action ~= "Sprint" and action ~= "Crouch"
-		b.Visible = inRaid or not raidOnly
-		if action == "Aim" then
+		local shown = inRaid or not raidOnly
+		if MOUNT[action] then
+			shown = shown and atGun
+		elseif atGun then
+			shown = shown and (action == "Inventory" or action == "Settings")
+		end
+		b.Visible = shown
+		if action == "MountZoom" then
+			b.BackgroundColor3 = ctx.Stationary.zooming and K.C.ochre or K.C.bg
+		elseif action == "Aim" then
 			b.BackgroundColor3 = ctx.Weapon.aiming and K.C.ochre or K.C.bg
 		elseif action == "Sprint" then
 			b.BackgroundColor3 = ctx.Movement.sprinting and K.C.ochre or K.C.bg
@@ -80,7 +94,7 @@ function Touch.init(c)
 				c.Input.trigger(action, false)
 			end
 		end)
-		if action == "Fire" then
+		if action == "Fire" or action == "MountFire" then
 			b.InputChanged:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.Touch and last then
 					local p = Vector2.new(input.Position.X, input.Position.Y)

@@ -162,7 +162,7 @@ function T.run(ctx)
 				badMod = true
 			end
 			for _, k in spec.keys do
-				local id = k.Name .. "+" .. tostring(spec.mod)
+				local id = k.Name .. "+" .. tostring(spec.mod) .. (spec.context == "mount" and "+mount" or "") -- the mount context reuses play keys
 				if seen[id] then
 					dup = action .. "/" .. seen[id]
 				end
@@ -1309,6 +1309,413 @@ function T.run(ctx)
 			end
 		end
 		check("eyewear: Equipment.PENDING lists only meshes the game places", #stray == 0)
+	end
+
+	-- stationary guns (Tarkov's NSV Utyos and AGS-30 as our HMG-12 and AGL-30, docs/design/STATIONARY_WEAPONS.md): the kinds, the arcs,
+	-- who may man a gun and when they must get off, the rate of fire and the belt, damage through the normal hit path, the AGL-30's
+	-- burst, a guard's use of a gun, the raid reset, Border Yard's placements. The operators are stand-in tables (a rig for a
+	-- character, a raid session the test hands out): the server needs a real Player only to tell the client, and a table has nobody
+	-- to tell. The test guns are stepped by hand (Stationary.update with a clock of the test's own) and kept out of the Heartbeat loop.
+	do
+		local SG = require(Shared.Stationary)
+		local Wp = require(Shared.Weapons)
+		local IM = require(Shared.InputMap)
+		local RigM = require(Shared.RigMath)
+		local STAND = RigM.STAND_HIP + RigM.hrpHalf
+		local H, A = SG.KINDS.HMG12, SG.KINDS.AGL30
+		local okShared, errShared = pcall(function()
+			-- the kinds: Tarkov's rates, the NSV's B-32 numbers, a launcher round the grenade system can burst
+			check("stationary: the kinds carry Tarkov's rates (650 and 425 RPM), belts and the B-32 round (182 damage, 88 penetration)",
+				H.rpm == 650 and A.rpm == 425 and H.belt == 100 and A.belt == 30 and H.dmg == 182 and H.pen == 88 and A.round == "AGL30_ROUND")
+			local missing = {}
+			for kind, k in SG.KINDS do
+				for _, f in { "rpm", "belt", "velocity", "drag", "range", "zero", "spread", "bloomPerShot", "bloomMax", "bloomDecay", "tracerEvery", "loud", "pivotH", "muzzleLen", "zoom", "shake", "turnRate", "aiRange", "aiMin", "aiErr" } do
+					if type(k[f]) ~= "number" then
+						table.insert(missing, kind .. "." .. f)
+					end
+				end
+				for _, f in { "id", "name", "short", "what", "sound", "ammoName" } do
+					if type(k[f]) ~= "string" then
+						table.insert(missing, kind .. "." .. f)
+					end
+				end
+				for _, f in { "eye", "op" } do
+					if typeof(k[f]) ~= "Vector3" then
+						table.insert(missing, kind .. "." .. f)
+					end
+				end
+				for _, f in { "burst", "pause", "arcs" } do
+					if type(k[f]) ~= "table" then
+						table.insert(missing, kind .. "." .. f)
+					end
+				end
+			end
+			check("stationary: every kind has the numbers the server and the client read" .. (#missing > 0 and (" (missing " .. table.concat(missing, ", ") .. ")") or ""), #missing == 0)
+			check("stationary: the time between rounds is 60 / RPM", math.abs(SG.interval(H) - 60 / 650) < 1e-9 and math.abs(SG.interval(A) - 60 / 425) < 1e-9)
+			local rd = Items.defs[A.round]
+			check("stationary: the launcher's round is a frag charge that bursts on contact (fuse 0)",
+				rd ~= nil and rd.nade ~= nil and rd.nade.type == "frag" and rd.nade.fuse == 0 and rd.kind == "hazard")
+			-- arcs
+			local arcs = SG.makeArcs(H)
+			local narrow = SG.makeArcs(H, { left = 30 })
+			check("stationary: arcs come from the kind, and a map can narrow them per gun",
+				math.abs(arcs.l - math.rad(70)) < 1e-9 and math.abs(arcs.r - math.rad(70)) < 1e-9 and math.abs(arcs.up - math.rad(40)) < 1e-9
+				and math.abs(arcs.dn - math.rad(20)) < 1e-9 and math.abs(narrow.l - math.rad(30)) < 1e-9 and math.abs(narrow.r - math.rad(70)) < 1e-9)
+			local cy1, cp1 = SG.clamp(arcs, math.rad(120), math.rad(80))
+			local cy2, cp2 = SG.clamp(arcs, math.rad(-120), math.rad(-80))
+			local cy3, cp3 = SG.clamp(arcs, math.rad(350), math.rad(5))
+			check("stationary: the aim is held inside the arcs (left, right, up, down; 350 degrees is 10 to the right)",
+				math.abs(cy1 - arcs.l) < 1e-9 and math.abs(cp1 - arcs.up) < 1e-9 and math.abs(cy2 + arcs.r) < 1e-9 and math.abs(cp2 + arcs.dn) < 1e-9
+				and math.abs(cy3 - math.rad(-10)) < 1e-9 and math.abs(cp3 - math.rad(5)) < 1e-9)
+			check("stationary: inArc takes the edge with its slack",
+				SG.inArc(arcs, 0, 0) and SG.inArc(arcs, math.rad(69.9), math.rad(39.9)) and not SG.inArc(arcs, math.rad(70.1), 0)
+				and SG.inArc(arcs, math.rad(70.1), 0, math.rad(0.5)) and not SG.inArc(arcs, 0, math.rad(-20.1)) and not SG.inArc(arcs, math.rad(180), 0))
+			-- the aiming maths: positive yaw is left, and the aim that sends a round from the eye through a point
+			local fr = SG.frame(CFrame.new(0, 0, 0))
+			local wy, wp = math.rad(25), math.rad(10)
+			local goal = SG.eye(fr, H, wy) + SG.dirOf(fr, H, wy, wp) * 300
+			local ay, ap = SG.anglesFrom(fr, H, goal)
+			local leftYaw = SG.anglesTo(fr, H, SG.pivot(fr, H).Position + Vector3.new(-50, 0, -50))
+			local rightYaw = SG.anglesTo(fr, H, SG.pivot(fr, H).Position + Vector3.new(50, 0, -50))
+			check("stationary: positive yaw is left, and anglesFrom finds the aim that puts a round from the eye on a point",
+				math.abs(leftYaw - math.rad(45)) < 1e-6 and math.abs(rightYaw + math.rad(45)) < 1e-6 and math.abs(ay - wy) < 1e-4 and math.abs(ap - wp) < 1e-4)
+			check("stationary: approach turns toward the goal by at most the step, the short way round",
+				math.abs(SG.approach(0, 1, 0.25) - 0.25) < 1e-9 and math.abs(SG.approach(0, 0.1, 0.25) - 0.1) < 1e-9
+				and SG.approach(math.rad(170), math.rad(-170), 0.1) > math.rad(170))
+			-- the input map: the mount actions have a context of their own and follow the player's Fire and Aim keys
+			check("stationary: the mount actions have their own context (fire and zoom follow the player's Fire and Aim keys, F or B leaves)",
+				IM.MountFire.context == "mount" and IM.MountZoom.context == "mount" and IM.MountLeave.context == "mount"
+				and IM.MountFire.like == "Fire" and IM.MountZoom.like == "Aim" and IM.MountLeave.keys[1] == Enum.KeyCode.F and IM.MountLeave.pad[1] == Enum.KeyCode.ButtonB
+				and IM.MountFire.pad[1] == Enum.KeyCode.ButtonR2 and IM.MountZoom.pad[1] == Enum.KeyCode.ButtonL2
+				and IM.MountFire.touch ~= nil and IM.MountZoom.touch ~= nil and IM.MountLeave.touch ~= nil)
+		end)
+		if not okShared then
+			check("stationary: the shared checks ran without an error (" .. tostring(errShared) .. ")", false)
+		end
+
+		if ctx and ctx.Stationary and ctx.Combat and ctx.Health and ctx.Chars and ctx.Grenades and ctx.Hazards and ctx.AI then
+			local ST = ctx.Stationary
+			local realFire, realSession, realGuns, realSee = ST.fire, ST.sessionOf, ST.guns, ctx.AI.visiblePart
+			local stage = Instance.new("Folder")
+			stage.Name = "ZR_TestStationary"
+			stage.Parent = workspace
+			local sessions, mine, dummies, fired, useReal = {}, {}, {}, 0, false
+			local origin = Vector3.new(9000, 2500, 0)
+			-- stand-ins, passing everything else through: the test's stand-in operators have sessions of their own, its guns count
+			-- their rounds instead of flying them (until useReal), its guard is "seen" by anyone it points at
+			ST.sessionOf = function(p)
+				if typeof(p) == "Instance" then
+					return realSession(p)
+				end
+				return sessions[p]
+			end
+			ST.fire = function(g, who)
+				if mine[g] and not useReal then
+					fired += 1
+					return
+				end
+				return realFire(g, who)
+			end
+			ctx.AI.visiblePart = function(u, model, eye)
+				if u.test then
+					return model:FindFirstChild("UpperTorso")
+				end
+				return realSee(u, model, eye)
+			end
+
+			local function place(kind, at, turn)
+				local g = ST.place(kind, CFrame.new(at) * CFrame.Angles(0, turn or 0, 0), { parent = stage })
+				for i = #ST.guns, 1, -1 do
+					if ST.guns[i] == g then
+						table.remove(ST.guns, i) -- the Heartbeat loop must not tick a gun the test steps by hand
+					end
+				end
+				mine[g] = true
+				return g
+			end
+			local function rigAt(look, pos)
+				local rig = ctx.Chars.buildRig(look)
+				rig:PivotTo(CFrame.new(pos))
+				rig.HumanoidRootPart.Anchored = true
+				rig.Parent = stage
+				return rig
+			end
+			local function operator(name, pos)
+				local op = { Name = name, DisplayName = name, Character = rigAt("player", pos), Parent = stage }
+				sessions[op] = { done = false }
+				return op
+			end
+			local function dummy(pos)
+				local rig = rigAt("guard", pos)
+				local held = { slots = {}, items = {}, grids = {} }
+				ctx.Health.attach(rig, { kind = "ai", holder = function()
+					return held
+				end })
+				table.insert(dummies, rig)
+				return rig, ctx.Health.get(rig)
+			end
+			-- the trigger held for `secs` seconds on a gun stepped at 60 Hz by a clock of the test's own; returns that clock
+			local function hold(g, secs, fire)
+				local t = os.clock()
+				for _ = 1, math.floor(secs * 60) do
+					t += 1 / 60
+					ST.setAim(g, 0, 0, fire, t)
+					ST.update(g, t, 1 / 60)
+				end
+				return t
+			end
+
+			local okLive, errLive = pcall(function()
+				local gun = place("HMG12", origin, math.rad(90))
+				local spec = gun.spec
+				local spot = SG.opSpot(gun.frame, spec)
+				local function nearSpot(i) -- standing a few studs from the operator spot
+					return spot + Vector3.new(0, STAND, 0) + gun.frame:VectorToWorldSpace(Vector3.new(i, 0, 2))
+				end
+				local farSpot = spot + Vector3.new(0, STAND, 0) + gun.frame:VectorToWorldSpace(Vector3.new(0, 0, 60))
+				local eyeP = SG.eye(gun.frame, spec, 0)
+				local fwd = gun.frame.LookVector
+
+				-- mounting
+				local opFar, opOver, opNone, opDead = operator("Far", farSpot), operator("Over", nearSpot(0)), operator("NoRaid", nearSpot(0)), operator("Dead", nearSpot(0))
+				sessions[opOver].done = true
+				sessions[opNone] = nil
+				opDead.Character.Humanoid.Health = 0
+				check("stationary: a raider too far away, outside a raid, whose raid is over or who is dead cannot man a gun",
+					not ST.mount(opFar, gun) and not ST.mount(opOver, gun) and not ST.mount(opNone, gun) and not ST.mount(opDead, gun) and gun.op == nil)
+				local opA = operator("Alpha", nearSpot(0))
+				local rootA = opA.Character.HumanoidRootPart
+				local mountedA = ST.mount(opA, gun)
+				check("stationary: a raider in a raid within reach mounts: held at the operator spot, facing along the gun, the gun marked and its prompt off",
+					mountedA and gun.op == opA and ST.gunOf(opA) == gun and opA.Character:GetAttribute("Mounted") == gun.id
+					and (rootA.Position - (spot + Vector3.new(0, STAND, 0))).Magnitude < 0.5 and rootA.CFrame.LookVector:Dot(fwd) > 0.99
+					and gun.model:GetAttribute("Op") == "Alpha" and gun.prompt.Enabled == false)
+				local gunB = place("HMG12", origin + Vector3.new(0, 0, 6), math.rad(90)) -- its spot is 6 studs from the first gun's
+				local opB = operator("Bravo", nearSpot(1))
+				check("stationary: one operator per gun and one gun per operator",
+					not ST.mount(opB, gun) and gun.op == opA and not ST.mount(opA, gunB) and gunB.op == nil and ST.gunOf(opA) == gun)
+
+				-- aiming: the client's update is held inside the arcs, and only the operator's counts
+				ST.aim(opA, { y = 9, p = 9, f = 1 })
+				local hiOk = math.abs(gun.yaw - gun.arcs.l) < 1e-9 and math.abs(gun.pitch - gun.arcs.up) < 1e-9 and gun.fire == true
+				ST.aim(opA, { y = 0 / 0, p = 0, f = 1 })
+				local nanOk = math.abs(gun.yaw - gun.arcs.l) < 1e-9
+				ST.aim(opA, { y = -9, p = -9, f = 0 })
+				local loOk = math.abs(gun.yaw + gun.arcs.r) < 1e-9 and math.abs(gun.pitch + gun.arcs.dn) < 1e-9 and gun.fire == false
+				ST.aim(opB, { y = 0.1, p = 0.1, f = 1 })
+				check("stationary: the operator's aim is clamped to the arcs (left/up, right/down), a non-number is ignored, a bystander cannot aim the gun",
+					hiOk and nanOk and loOk and math.abs(gun.yaw + gun.arcs.r) < 1e-9 and gun.fire == false)
+
+				-- leaving: frees the gun; the same raider cannot take it again at once (F is both keys), but a moment later
+				ST.leave(opA)
+				local freed = gun.op == nil and ST.gunOf(opA) == nil and opA.Character:GetAttribute("Mounted") == nil and gun.prompt.Enabled == true and gun.model:GetAttribute("Op") == ""
+				local tooSoon = ST.mount(opA, gun)
+				task.wait(ST.RESTART + 0.15)
+				local later = ST.mount(opA, gun)
+				check("stationary: leaving frees the gun; the same raider cannot grab it again at once but can a moment later", freed and not tooSoon and later and gun.op == opA)
+
+				-- the operator is put off the gun: too far from the spot, the raid ends, death
+				opA.Character:PivotTo(CFrame.new(spot + Vector3.new(0, STAND, 0) + gun.frame:VectorToWorldSpace(Vector3.new(0, 0, 5))))
+				ST.update(gun, os.clock(), 1 / 60)
+				local stayed = gun.op == opA -- 5 studs from the spot is inside the leash
+				opA.Character:PivotTo(CFrame.new(farSpot))
+				ST.update(gun, os.clock(), 1 / 60)
+				local awayOff = gun.op == nil and opA.Character:GetAttribute("Mounted") == nil
+				local opC = operator("Charlie", nearSpot(0))
+				ST.mount(opC, gun)
+				sessions[opC].done = true
+				ST.update(gun, os.clock(), 1 / 60)
+				local raidOff = gun.op == nil and opC.Character:GetAttribute("Mounted") == nil
+				local opD = operator("Delta", nearSpot(0))
+				ST.mount(opD, gun)
+				local onD = gun.op == opD
+				opD.Character.Humanoid.Health = 0
+				ST.update(gun, os.clock(), 1 / 60)
+				local deadOff = onD and gun.op == nil and opD.Character:GetAttribute("Mounted") == nil
+				check("stationary: an operator who strays more than 8 studs, whose raid ends or who dies is put off the gun",
+					stayed and awayOff and raidOff and deadOff and gun.prompt.Enabled == true)
+
+				-- rate of fire and the belt (the gun counts its rounds here instead of flying them)
+				local opE = operator("Echo", nearSpot(0))
+				ST.mount(opE, gun)
+				gun.rounds, gun.nextShot, gun.shots, fired = spec.belt, 0, 0, 0
+				hold(gun, 2, true)
+				local hmgShots = fired
+				check("stationary: the HMG-12 fires 650 rounds a minute (about 22 in two seconds), each one off the belt",
+					hmgShots >= 21 and hmgShots <= 23 and gun.rounds == spec.belt - hmgShots and gun.shots == hmgShots)
+				local gunL = place("AGL30", origin + Vector3.new(300, 0, 0), 0)
+				local opL = operator("Lima", SG.opSpot(gunL.frame, gunL.spec) + Vector3.new(0, STAND, 1.5))
+				local onL = ST.mount(opL, gunL)
+				fired = 0
+				hold(gunL, 2, true)
+				check("stationary: the AGL-30 fires 425 rounds a minute (about 15 in two seconds) from a belt of 30",
+					onL and fired >= 14 and fired <= 16 and gunL.rounds == gunL.spec.belt - fired)
+				gun.rounds, gun.nextShot, fired = 50, 0, 0
+				local base = os.clock() + 1000
+				local s1, s2, s3 = ST.trigger(gun, base, nil), ST.trigger(gun, base + 0.01, nil), ST.trigger(gun, base + 0.1, nil)
+				check("stationary: a round inside the interval is refused (650 RPM is 92 ms apart), the next one fires", s1 and not s2 and s3 and fired == 2 and gun.rounds == 48)
+				gun.rounds, gun.nextShot, fired = 3, 0, 0
+				local tEmpty = hold(gun, 1, true)
+				check("stationary: an empty belt stops the gun and nothing reloads it", fired == 3 and gun.rounds == 0 and not ST.trigger(gun, tEmpty + 5, nil))
+				gun.rounds, gun.nextShot, fired = 50, 0, 0
+				local tk = os.clock() + 3000
+				ST.setAim(gun, 0, 0, true, tk)
+				ST.update(gun, tk + ST.KEEP + 0.3, 1 / 60)
+				local released = fired == 0
+				ST.update(gun, tk + 0.1, 1 / 60)
+				check("stationary: a trigger whose aim updates stopped counts as released after 0.7 s", released and fired == 1)
+				ST.setAim(gun, 0.4, 0.1, false, tk + 0.2)
+				ST.update(gun, tk + 0.3, 1 / 60)
+				check("stationary: the belt and the aim reach every client as attributes on the model",
+					gun.model:GetAttribute("Rounds") == gun.rounds and math.abs((gun.model:GetAttribute("Yaw") or 9) - 0.4) < 1e-6
+					and math.abs((gun.model:GetAttribute("Pitch") or 9) - 0.1) < 1e-6)
+				check("stationary: damage falls off with distance like every weapon (whole to a third of the range, 60 percent at the end)",
+					ST.falloff(0, 1000) == 1 and ST.falloff(Wp.FALLOFF_START * 1000, 1000) == 1 and math.abs(ST.falloff(1000, 1000) - Wp.FALLOFF_MIN) < 1e-9
+					and ST.falloff(2000, 1000) == Wp.FALLOFF_MIN and ST.falloff(600, 1000) < 1 and ST.falloff(600, 1000) > Wp.FALLOFF_MIN)
+
+				-- a real bullet through the normal hit path (Ballistics, Combat.hitModel, Health.hit)
+				useReal = true
+				local tgt, hs = dummy(eyeP + fwd * 80)
+				local total0 = ctx.Health.total(hs)
+				local ty, tp = SG.anglesFrom(gun.frame, spec, tgt.UpperTorso.Position)
+				ST.setAim(gun, ty, tp, false, os.clock())
+				ST.fire(gun, opE)
+				local t0 = os.clock()
+				while not hs.lastHit and os.clock() - t0 < 1.5 do
+					task.wait()
+				end
+				check("stationary: a round from the HMG-12 flies as a real bullet and hurts what it meets through Health.hit (weapon, ammunition, health)",
+					hs.lastHit ~= nil and hs.lastHit.weapon == spec.name and hs.lastHit.ammo == spec.ammoName and ctx.Health.total(hs) < total0)
+				-- an AGL-30 round flies to a wall and bursts there through the grenade system (a frag blast); a world is needed for that
+				if workspace:FindFirstChild("ZR_World") then
+					local eyeL = SG.eye(gunL.frame, gunL.spec, 0)
+					local wall = Instance.new("Part")
+					wall.Anchored, wall.Size, wall.Position = true, Vector3.new(60, 60, 2), eyeL + gunL.frame.LookVector * 120
+					wall.Parent = stage
+					local ly, lp = SG.anglesFrom(gunL.frame, gunL.spec, wall.Position)
+					ST.setAim(gunL, ly, lp, false, os.clock())
+					local shells0, blasts0 = ST.stats.shells, ctx.Grenades.stats.exploded
+					ST.fire(gunL, opL)
+					local t1 = os.clock()
+					while ST.stats.shells == shells0 and os.clock() - t1 < 2 do
+						task.wait()
+					end
+					check("stationary: an AGL-30 round flies to what it hits and bursts there through the grenade system",
+						ST.stats.shells == shells0 + 1 and ctx.Grenades.stats.exploded == blasts0 + 1)
+					local fake = { Instance = wall, Normal = Vector3.yAxis, Material = Enum.Material.Concrete }
+					local before = ST.stats.shells
+					ST.burst(gunL, nil, fake, wall.Position, gunL.spec.arm - 5)
+					local dud = ST.stats.shells == before
+					ST.burst(gunL, nil, fake, wall.Position, gunL.spec.arm + 40)
+					local armed = ST.stats.shells == before + 1
+					ST.expire(gun, nil, wall.Position)
+					local mgExpire = ST.stats.shells == before + 1
+					ST.expire(gunL, nil, wall.Position)
+					check("stationary: a launcher round nearer than its arming distance is a dud, one that flies its whole range bursts itself, a machine-gun round just ends",
+						dud and armed and mgExpire and ST.stats.shells == before + 2)
+				end
+				-- shots by a guard's model and by a stand-in operator run through the whole fire path
+				local crewRig = rigAt("guard", spot + Vector3.new(0, STAND, 0))
+				local shotOk1 = pcall(realFire, gun, crewRig)
+				local shotOk2 = pcall(realFire, gun, opE)
+				useReal = false
+				check("stationary: a shot by a guard's model and a shot by an operator both run through the fire path", shotOk1 and shotOk2)
+				ST.leave(opE)
+
+				-- guards: who may post, the reach, the burst fire, walking off
+				local opM = operator("Mike", nearSpot(0))
+				ST.mount(opM, gun)
+				ST.guns = { gun }
+				local manned = ST.gunNear(spot + Vector3.new(0, STAND, 0), 4)
+				ST.leave(opM)
+				local free = ST.gunNear(spot + Vector3.new(0, STAND, 0), 4)
+				ST.guns = realGuns
+				check("stationary: a gun with a raider on it is no post for a guard, a free one is", manned == nil and free == gun)
+				local eyeL = SG.eye(gunL.frame, gunL.spec, 0)
+				local left = gun.frame:VectorToWorldSpace(Vector3.new(-1, 0, 0))
+				check("stationary: a guard's reach is the arcs and the kind's range (ahead yes; behind, to the side or past 190 studs no; the launcher not inside 40 studs)",
+					ST.reaches(gun, eyeP + fwd * 100) and not ST.reaches(gun, eyeP - fwd * 100) and not ST.reaches(gun, eyeP + left * 100)
+					and not ST.reaches(gun, eyeP + fwd * 250) and ST.reaches(gunL, eyeL + gunL.frame.LookVector * 100) and not ST.reaches(gunL, eyeL + gunL.frame.LookVector * 20))
+				gun.rounds, gun.nextShot, gun.yaw, gun.pitch, fired = spec.belt, 0, 0, 0, 0
+				local unit = { alive = true, state = "ENGAGE", post = true, root = crewRig.HumanoidRootPart, model = crewRig, label = "Test Gunner", test = true }
+				local behind = dummy(eyeP - fwd * 80)
+				unit.target = behind
+				local tc = os.clock()
+				ST.guns = { gun }
+				local seatedBehind = ST.crew(unit, tc)
+				local front = dummy(eyeP + fwd * 80)
+				unit.target = front
+				local seated, look = ST.crew(unit, tc)
+				ST.guns = realGuns
+				local opX = operator("Xray", nearSpot(0))
+				check("stationary: a guard does not man a gun against a target outside its arcs, does against one in its arcs and sight, and then no raider can mount it",
+					seatedBehind == false and seated == true and typeof(look) == "Vector3" and gun.crew == unit and unit.gun == gun and gun.prompt.Enabled == false and not ST.mount(opX, gun))
+				for i = 1, 240 do -- four seconds at 60 Hz, the guard's AI step (5 Hz) in between
+					tc += 1 / 60
+					if i % 12 == 0 then
+						ST.crew(unit, tc)
+					end
+					ST.update(gun, tc, 1 / 60)
+				end
+				check("stationary: the guard lays the gun on the target and fires bursts (5 to 10 rounds) off the belt",
+					fired >= 5 and fired <= 60 and gun.rounds == spec.belt - fired and math.abs(gun.yaw) < 0.2 and gun.crew == unit)
+				front.Humanoid.Health = 0
+				local stays = ST.crew(unit, tc + 0.2)
+				local goneOk = stays == false and gun.crew == nil and unit.gun == nil and gun.prompt.Enabled == true
+				local front2 = dummy(eyeP + fwd * 80)
+				unit.target = front2
+				ST.guns = { gun }
+				local reseated = ST.crew(unit, tc + 1)
+				ST.guns = realGuns
+				crewRig:PivotTo(CFrame.new(farSpot))
+				local walked = ST.crew(unit, tc + 1.2)
+				check("stationary: the guard leaves the gun when the target dies or when moved away from the spot, and the gun is free again",
+					goneOk and reseated == true and walked == false and gun.crew == nil and unit.gun == nil)
+
+				-- a new raid: every gun full, free and straight ahead
+				local opF = operator("Foxtrot", nearSpot(0))
+				ST.mount(opF, gun)
+				local onF = gun.op == opF
+				gun.rounds, gunL.rounds = 12, 3
+				ST.setAim(gun, 0.5, 0.2, true, os.clock())
+				ST.guns = { gun, gunL }
+				ST.reset()
+				ST.guns = realGuns
+				check("stationary: a new raid frees every gun, fills its belt and points it straight ahead",
+					onF and gun.op == nil and opF.Character:GetAttribute("Mounted") == nil and gun.rounds == spec.belt and gunL.rounds == gunL.spec.belt
+					and gun.yaw == 0 and gun.pitch == 0 and gun.fire == false and gun.prompt.Enabled == true and gun.model:GetAttribute("Rounds") == spec.belt)
+				-- taking a gun away puts its operator off it
+				local gunR = place("HMG12", origin + Vector3.new(-300, 0, 0), 0)
+				local opR = operator("Romeo", SG.opSpot(gunR.frame, gunR.spec) + Vector3.new(0, STAND, 1.5))
+				ST.mount(opR, gunR)
+				local onR = gunR.op == opR
+				ST.remove(gunR)
+				check("stationary: removing a gun puts its operator off it", onR and gunR.op == nil and opR.Character:GetAttribute("Mounted") == nil and ST.gunOf(opR) == nil and gunR.model.Parent == nil)
+			end)
+			ST.fire, ST.sessionOf, ST.guns, ctx.AI.visiblePart = realFire, realSession, realGuns, realSee
+			for _, d in dummies do
+				ctx.Health.states[d] = nil
+			end
+			stage:Destroy()
+			if not okLive then
+				check("stationary: the live checks ran without an error (" .. tostring(errLive) .. ")", false)
+			end
+			-- the maps' own guns, as built: Border Yard puts an HMG-12 and an AGL-30 on the Bastion's roof, inside the world folder
+			local nHmg, nAgl, inWorld = 0, 0, true
+			for _, g in ST.guns do
+				if g.model.Parent then -- (a gun of a rebuilt world is still listed until the next place)
+					if g.kind == "HMG12" then
+						nHmg += 1
+					elseif g.kind == "AGL30" then
+						nAgl += 1
+					end
+					if not g.model:FindFirstAncestor("ZR_World") then
+						inWorld = false
+					end
+				end
+			end
+			check("stationary: Border Yard carries an HMG-12 and an AGL-30 on the Bastion roof, inside the world folder", nHmg >= 1 and nAgl >= 1 and inWorld)
+		end
 	end
 
 	local summary = string.format("%d passed, %d failed", passed, failed)

@@ -101,7 +101,7 @@ local function press(slot, down)
 		end
 		return
 	end
-	if ctx.Input.isMenu() or not ctx.State.inRaid() then
+	if ctx.Input.isMenu() or ctx.Input.isMounted() or not ctx.State.inRaid() then
 		return
 	end
 	show(2.5)

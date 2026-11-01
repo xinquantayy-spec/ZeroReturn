@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
 
-local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "NightVision", "Eyewear", "Atmos", "Detail", "Interact", "Touch", "Inventory", "Character", "QuickSlots", "Modding", "Inspect", "Screens", "Trade", "Menus", "Lobby" }
+local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "NightVision", "Eyewear", "Atmos", "Detail", "Interact", "Stationary", "Touch", "Inventory", "Character", "QuickSlots", "Modding", "Inspect", "Screens", "Trade", "Menus", "Lobby" }
 local ctx = {}
 for _, name in ORDER do
 	ctx[name] = require(Controllers:WaitForChild(name))
@@ -241,6 +241,17 @@ if RunService:IsStudio() then
 				ctx.Grenade.POSE[k] = v
 			end
 			return "ok"
+		elseif cmd == "stationary" then
+			-- the mounted gun: a = "leave" gets off it; reports the mode (use "action" with MountFire / MountZoom to drive it)
+			local St = ctx.Stationary
+			if a == "leave" then
+				St.leave()
+			end
+			return HttpService:JSONEncode({
+				mounted = St.mounted, gun = St.name, rounds = St.rounds, belt = St.belt, zooming = St.zooming,
+				yawDeg = math.floor(math.deg(St.yaw) * 10 + 0.5) / 10, pitchDeg = math.floor(math.deg(St.pitch) * 10 + 0.5) / 10,
+				inputMounted = ctx.Input.isMounted(), fov = math.floor(workspace.CurrentCamera.FieldOfView * 10 + 0.5) / 10,
+			})
 		end
 		return "unknown"
 	end

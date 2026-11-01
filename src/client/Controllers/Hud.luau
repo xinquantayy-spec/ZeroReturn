@@ -270,7 +270,17 @@ local function slowUpdate()
 	-- weapon line
 	local W = ctx.Weapon
 	local Gr = ctx.Grenade
-	if inRaid and Gr and Gr.state and Gr.state ~= "throw" then
+	local St = ctx.Stationary
+	if inRaid and St and St.mounted then
+		-- at a stationary gun: its name and the rounds left (Tarkov shows no counter: a deliberate exception, STATIONARY_WEAPONS.md)
+		O.weapon:show(true)
+		local low = St.rounds <= math.max(5, St.belt * 0.1)
+		local leave = ctx.Input.device() == "Touch" and "TAP LEAVE" or (ctx.Input.label("MountLeave") .. " TO LEAVE")
+		O.weapon:set({
+			{ t = St.name .. "  ·  ", color = C.dim, alpha = 0.15 }, { t = St.rounds .. " / " .. St.belt, color = low and C.red or C.yellow, alpha = 0.1 },
+			{ t = "  ·  " .. leave, color = C.dim, alpha = 0.15 },
+		})
+	elseif inRaid and Gr and Gr.state and Gr.state ~= "throw" then
 		-- grenade in hand: what it is and how to throw it
 		O.weapon:show(true)
 		local how = Gr.state == "ready" and ("RELEASE " .. ctx.Input.label("Grenade") .. " TO THROW  ·  HOLD " .. ctx.Input.label("Aim") .. ": UNDERHAND") or "PULLING THE PIN"
