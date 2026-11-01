@@ -36,6 +36,7 @@ for this reason.
 | Water | Removes an outdoor dressing prop that stands on water or over nothing at its centre and all four corners. Props of 16 studs or more stay. |
 | Sunk | Lifts a prop that stands 0.15 to 0.3 studs into a floor or the ground onto the surface. |
 | Walls | Pushes a prop out of a wall, an upright tank (radial test), a wall fitting's collider, or a bigger prop on the same floor. It can take up to three pushes, so a prop gets out of a corner. The total move is at most half the prop's width. Small loose dressing that cannot be freed is removed: it is at most 4.5 studs and not a chair. Furniture and loot are left and logged. |
+| Flush | Sets furniture that belongs against a wall back against it when it stands 0.08 to 1.6 studs off: lockers, shelves, cabinets, fridges, desks, benches and beds. Many kits have their origin off the middle of their footprint, so the builders left them standing off the wall. Nothing may be in the way, and the furniture must stay out of every doorway and door swing. |
 | Stacked | Of two props sharing more than 40 % of the smaller one's box, removes the smaller. If that one holds loot, it removes the other. A chair pushed under a table stays. The office desk is not exempt: its kit has its own chair. |
 
 The console prints one line per map, for example:
@@ -58,6 +59,7 @@ examples with positions. The checks:
 - **container:** a loot container's own box runs into a prop or a wall.
 - **tree:** a trunk inside a building, or a crown through a roof.
 - **road:** a trunk or a bush on a road.
+- **gap:** furniture that belongs against a wall standing 0.25 to 1.6 studs off it.
 - **fences, rails, power:** one of these running through a building. A rail spur into THE DEPOT is meant to be there.
 
 `ZR_Dev:Invoke("tidylog", mapId, what)` lists what the last tidy run did to each prop. The `what` values are:

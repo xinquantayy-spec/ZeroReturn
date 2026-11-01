@@ -11,6 +11,7 @@
 --   trees      a trunk, crown or bush grown through a building, a fence, a rock or another solid is removed, and one
 --              standing on a road
 --   fences     a fence piece run into a building's wall or floor is removed (the fence stops at the building)
+--   flush      furniture that belongs against a wall standing up to 1.6 studs off it is set back against it
 --   stacked    of two props sharing more than 40 % of the smaller one's box, the smaller is removed (a chair under a desk stays)
 --   water      an outdoor dressing prop standing on water or over nothing is removed (a boat-sized one, 16 studs or more, stays)
 --   sunk       a floor-standing prop sunk into a floor slab or the ground is lifted onto it
@@ -142,7 +143,7 @@ Tidy.last = {}
 
 function Tidy.run(mapId, model, doors)
 	local t0 = os.clock()
-	local res = { roadTrees = 0, fences = 0, doorways = 0, swing = 0, doorsTurned = 0, doorsShort = 0, twins = 0, stacked = 0, trees = 0, water = 0, waterBig = 0, sunk = 0, walls = 0, wallsGone = 0, wallsLeft = 0 }
+	local res = { flush = 0, roadTrees = 0, fences = 0, doorways = 0, swing = 0, doorsTurned = 0, doorsShort = 0, twins = 0, stacked = 0, trees = 0, water = 0, waterBig = 0, sunk = 0, walls = 0, wallsGone = 0, wallsLeft = 0 }
 	local log = {}
 	Tidy.last[mapId] = log
 	local function note(what, m, detail)
@@ -233,6 +234,7 @@ function Tidy.run(mapId, model, doors)
 		return true
 	end
 	local HANGS = { { -1, 1 }, { -1, -1 }, { 1, -1 }, { 1, 1 } } -- hinge end (-X or +X), turn (+ swings toward -Z)
+	local keepOut = {} -- per door: its doorway and swing boxes, which later moves must stay out of
 	for id, d in doors or {} do
 		if d.part and d.cf and d.size and d.part:IsDescendantOf(model) then
 			local w, h, th = d.size.X, d.size.Y, math.max(0.2, d.size.Z)
@@ -288,6 +290,13 @@ function Tidy.run(mapId, model, doors)
 				end
 			end
 			if best then
+				-- what must stay clear of this door from now on: its doorway and its leaf's way as it opens
+				local hingeB = d.cf * CFrame.new(best.hs * w / 2, 0, 0)
+				local boxesD = { { cf = d.cf, size = Vector3.new(w * 0.9, h * 0.9, th + 2.4) } }
+				for a = 20, best.swing, 20 do
+					table.insert(boxesD, { cf = hingeB * CFrame.Angles(0, math.rad(best.turn * a), 0) * CFrame.new(-best.hs * (w / 2 + 0.25), 0, 0), size = leafBox })
+				end
+				table.insert(keepOut, { pos = d.cf.Position, boxes = boxesD })
 				for km in best.inWay do
 					note("swing", km, "in the way of door " .. tostring(id))
 					remove(km)
@@ -610,6 +619,88 @@ function Tidy.run(mapId, model, doors)
 			end
 		end
 	end
+	-- 6b. flush: furniture that belongs against a wall (lockers, shelves, cabinets, desks, benches, beds) standing 0.08 to 1.6
+	-- studs off the wall behind it is set back against it, if nothing is in the way. Many kits have their origin off the
+	-- middle of their footprint (KitMeta center), so builders that aimed at the middle left them standing off the wall.
+	local BACKED = {}
+	for _, n in { "Locker", "Lockers", "LockerOpen", "StorageShelf", "StorageShelfEmpty", "StorageRack", "MedShelf", "Fridge",
+		"FridgeBroken", "ElectricCabinet", "FuseBox", "ToolChest", "CraftBench", "GunBench", "OfficeDesk", "BunkBed", "BunkBedMessy",
+		"WaterTank", "HideoutGenerator", "Vending", "VendingBroken", "GondolaSparse", "PalletRack" } do
+		BACKED[n] = true
+	end
+	for i, m in props do
+		if i % 400 == 0 then
+			task.wait()
+		end
+		if not gone[m] and m.Parent and BACKED[m:GetAttribute("Kit")] then
+			local cf, size = m:GetBoundingBox()
+			local lv = cf.LookVector
+			local back = Vector3.new(-lv.X, 0, -lv.Z) -- a kit's front is its -Z (LookVector): the back is the other way
+			if back.Magnitude > 0.9 then
+				back = back.Unit
+				local half = size.Z / 2
+				local xrp = RaycastParams.new()
+				xrp.FilterType = Enum.RaycastFilterType.Exclude
+				xrp.FilterDescendantsInstances = { m }
+				xrp.RespectCanCollide = true
+				local g, wall = math.huge, true
+				for _, h in { -0.25, 0.1, 0.35 } do
+					local hit = workspace:Raycast(cf.Position + cf.UpVector * (size.Y * h), back * (half + 1.6), xrp)
+					local q = hit and hit.Instance
+					if not q or q == workspace.Terrain or not q:IsDescendantOf(model) or not structural(q) or kitOf(q, model) ~= nil
+						or string.sub(q.Name, 1, 5) == "Door_" or string.sub(q.Name, 1, 5) == "Loot_" or hit.Normal:Dot(back) > -0.8 then
+						wall = false
+						break
+					end
+					g = math.min(g, hit.Distance - half)
+				end
+				if wall and g > 0.08 and g < 1.6 then
+					local shift = back * (g - 0.03)
+					local op = OverlapParams.new()
+					op.FilterType = Enum.RaycastFilterType.Exclude
+					op.FilterDescendantsInstances = { m }
+					op.RespectCanCollide = true
+					local clear = true
+					local inner = Vector3.new(math.max(0.1, size.X - 0.2), math.max(0.1, size.Y - 0.5), math.max(0.1, size.Z - 0.2))
+					for _, q in workspace:GetPartBoundsInBox((cf + shift) * CFrame.new(0, 0.25, 0), inner, op) do
+						if q.Name == "KitCollider" or structural(q) or string.sub(q.Name, 1, 5) == "Loot_" then
+							clear = false
+							break
+						end
+					end
+					if clear then
+						local was = m:GetPivot()
+						m:PivotTo(was + shift)
+						-- not into a doorway or a door's swing (a locker beside a door would end up in front of it)
+						local kop = OverlapParams.new()
+						kop.FilterType = Enum.RaycastFilterType.Include
+						kop.FilterDescendantsInstances = { m }
+						local p0 = cf.Position + shift
+						for _, k in keepOut do
+							if (k.pos - p0).Magnitude < 14 then
+								for _, bx in k.boxes do
+									if #workspace:GetPartBoundsInBox(bx.cf, bx.size, kop) > 0 then
+										clear = false
+										break
+									end
+								end
+							end
+							if not clear then
+								break
+							end
+						end
+						if clear then
+							note("flush", m, string.format("%.2f back to the wall", g - 0.03))
+							res.flush += 1
+						else
+							m:PivotTo(was)
+						end
+					end
+				end
+			end
+		end
+	end
+
 	-- 7. stacked (after the pushes out of walls, which can move one prop into another): two props sharing most of the
 	-- smaller one's box (a chair pushed under a desk or a table is how it stands)
 	local boxes = {}

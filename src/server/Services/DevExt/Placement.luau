@@ -13,6 +13,7 @@
 --   tree      a tree trunk inside a building, or a crown or bush through a roof or wall
 --   container a loot container's own box (crate, safe, drawers) run into a prop or a wall
 --   road      a tree trunk or a bush standing on a road
+--   gap       furniture that belongs against a wall (lockers, shelves, cabinets, desks, benches) 0.25 to 1.6 studs off it
 --   fences / rails / power  a fence, a rail or a power pole run through a building
 local HttpService = game:GetService("HttpService")
 
@@ -329,6 +330,39 @@ return function(C, ctx)
 				if p:IsDescendantOf(model) and structural(p) and p.Name ~= "Trunk" and ownerKit(p) == nil then
 					note("tree", t.Name, t.Position, "inside " .. p:GetFullName():sub(-60))
 					break
+				end
+			end
+		end
+
+		-- 10. gaps: furniture that belongs against a wall standing 0.25 to 1.6 studs off the wall behind it
+		local BACKED = {}
+		for _, n in { "Locker", "Lockers", "LockerOpen", "StorageShelf", "StorageShelfEmpty", "StorageRack", "MedShelf", "Fridge",
+			"FridgeBroken", "ElectricCabinet", "FuseBox", "ToolChest", "CraftBench", "GunBench", "OfficeDesk", "BunkBed", "BunkBedMessy",
+			"WaterTank", "HideoutGenerator", "Vending", "VendingBroken", "GondolaSparse", "PalletRack" } do
+			BACKED[n] = true
+		end
+		for _, b in boxes do
+			local kitName = b.m:GetAttribute("Kit")
+			if BACKED[kitName] then
+				local cf, size = b.cf, b.size
+				local back = cf.LookVector * -1 -- a kit's front is its -Z (LookVector); the back is the other way
+				local half = size.Z / 2
+				local rp = rayParams({ b.m })
+				local gaps = {}
+				for _, h in { -0.25, 0.1, 0.35 } do
+					local from = cf.Position + cf.UpVector * (size.Y * h)
+					local hit = workspace:Raycast(from, back * (half + 1.6), rp)
+					if hit and structural(hit.Instance) and ownerKit(hit.Instance) == nil and hit.Normal:Dot(back) < -0.8 then
+						table.insert(gaps, hit.Distance - half)
+					else
+						table.insert(gaps, false)
+					end
+				end
+				if gaps[1] and gaps[2] and gaps[3] then
+					local g = math.min(gaps[1], gaps[2], gaps[3])
+					if g > 0.25 and g < 1.6 then
+						note("gap", kitName .. " (" .. (b.m.Parent and b.m.Parent.Name or "?") .. ")", cf.Position, string.format("%.2f studs off the wall behind", g))
+					end
 				end
 			end
 		end

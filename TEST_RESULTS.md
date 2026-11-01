@@ -56,6 +56,20 @@ Border 1,285, Meridian 2,260, Smelter 100, Quay 7 85.
     terrain mound came through it.
   - THE SUBSTATION office: desk, chair, lockers and bench all standing on the floor.
 
+Round 4 (2026-11-02 01:30 SGT) added the gap check and the flush step. Furniture standing off its wall:
+
+| Map | Before | After |
+|---|---|---|
+| Border | 85 | 11 |
+| Meridian | 191 | 0 |
+| Smelter | 9 | 0 |
+| Quay 7 | 3 | 0 |
+
+Props set back against their wall: 135 on Border, 275 on Meridian, 11 on Smelter, 4 on Quay 7. A KASSA fridge row was
+checked on screen: the fridges stand against the back wall. The flush keeps furniture out of doorways and door swings.
+At first it moved two pieces into a doorway's margin, and that was fixed before this run. All suites pass: LogicTests
+341, CharTests 46, LookTests 32, MapTests 38.
+
 Round 2 (2026-11-02 01:00 SGT) found that the push out of walls ran the wrong way for walls whose thin side is their
 Z axis. LookVector is -Z, so the push went into the wall. After the fix:
 
