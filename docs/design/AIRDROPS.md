@@ -75,6 +75,15 @@ Border has 41 points and Meridian 80. A drop takes one of them at random.
 | supply | 2 | 10 to 15 |
 | weapon | 1.5 | 6 to 10 |
 
+**The red flare (built 2026-11-02).** `FLARE_RED`, our "Red Signal Flare": 1 x 2, 0.19 kg, gone after one shot.
+- **Where it turns up:** crates, jackets, weapon boxes and toolboxes, now and then.
+- **Using it:** USE in the inventory, or a quick slot. It goes through the med "use" path: a 1.2 s hold, then the shot.
+- **Open sky only:** under a roof it is refused with "Fire the flare under the open sky." and not used up.
+- **The star:** fired outdoors, a red star climbs about 130 studs, hangs and sinks for 9 s with a glare and a smoke trail.
+- **The call:** on a map with airdrops it calls a plane to drop within 15 studs of the spot 90 to 150 s later.
+- **Congested airspace:** a second call before the plane comes, or within Tarkov's 15 to 17 minutes after the last
+  call, gets "WAIT FOR ARRIVAL! AIRSPACE IS CONGESTED". That flare still fires.
+
 **Dev commands (ZR_Dev `airdrop`):**
 - `airdrop(kind, x, z)`: send a plane now;
 - `airdrop("force", true / false / nil)`: plane in every raid / in none / roll;
@@ -89,12 +98,20 @@ Border has 41 points and Meridian 80. A drop takes one of them at random.
 
 Pictures: `docs/maps/evidence/BY_airdrop_plane.jpg`, `BY_airdrop_falling.jpg`, `BY_airdrop_landed.jpg`.
 
+**The red flare, checked in Studio the same day:**
+- under the fuel stop roof it was refused and kept;
+- in the open its star climbed and burned (`BY_red_flare.jpg`);
+- a common crate landed 191 s later, 8 studs from the spot;
+- a second flare 20 s after the first fired but called nothing: still one crate at 261 s.
+
 ## Gaps (also in `EFT_PARITY.md`)
 
 - **The plane is silent.** It plays the generator drone pitched down, there is no plane sound in the atlases, and the
   ambience atlas asset currently loads as 0.0 s long (KNOWN_ISSUES). A real engine sound needs an upload from the owner's
   machine.
-- **No red flare**, so players cannot call a plane. The cooldown numbers are kept for it.
+- **The flare is used from the inventory or a quick slot.** Tarkov fires it from a special slot, which we do not have,
+  and there is no flare gun (Tarkov's signal pistol).
+- **No green or yellow flares** (flare exits, quests).
 - **Drop points are found, not placed.** Tarkov uses fixed drop zones per map; ours are open, level spots found from the
   world.
 - **No bonus backpack** in the crates, and no wait to open a crate before the search.

@@ -1095,6 +1095,18 @@ function T.run(ctx)
 			ab and am and ab.chance == 0.2 and am.chance == 0.2 and ab.minPlayers == 6 and am.minPlayers == 6 and ab.first[1] == 300 and ab.first[2] == 900)
 		check("airdrop: the plane flies its run at drop height and the crate sinks slowly (about 7 studs a second)",
 			A.ALT >= 300 and A.RUN >= 1000 and A.FALL > 4 and A.FALL < 10)
+		local fd = Items.defs.FLARE_RED
+		local found = 0
+		for _, pool in { "crate", "jacket", "weaponbox", "toolbox" } do
+			for _, e in ctx.Loot.POOLS[pool] or {} do
+				if e.id == "FLARE_RED" then
+					found += 1
+				end
+			end
+		end
+		check("airdrop: the red flare is a 1 x 2 flare that calls a plane, found in crates, jackets, weapon boxes and toolboxes",
+			fd ~= nil and fd.kind == "flare" and fd.w == 1 and fd.h == 2 and fd.flare and fd.flare.call == true and found == 4
+				and type(A.canFlare) == "function" and type(A.flare) == "function", found)
 	end
 
 	-- remote de-dupe

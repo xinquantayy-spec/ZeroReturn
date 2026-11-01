@@ -992,6 +992,12 @@ return function(B)
 			head = -1 -- the tunnel lies toward +u: the flight climbs toward -u
 		end
 		slab(bm, -hw, hw, -hd, hd, FY, 1.0, FLR, M.Concrete, { { pit.u0, pit.u1, pit.v0, pit.v1 } })
+		-- concrete pads outside both end walls: Ground's open cut for the shaft runs 2 studs past the flight, 0.75 past the end
+		-- walls, and the 4-stud terrain columns along them were dug to the cellar's depth, leaving holes in front of the door
+		-- and behind the shed; no AI path reached the doorway (exit check, 2026-11-02)
+		for _, sgn in { -1, 1 } do
+			slab(bm, sgn > 0 and hw or -hw - 4.5, sgn > 0 and hw + 4.5 or -hw, -hd, hd, FY, 1.0, FLR, M.Concrete)
+		end
 		local pv = (pit.v0 + pit.v1) / 2
 		local Hs = { n = {}, s = {}, w = {}, e = {} }
 		local dside = head > 0 and "e" or "w"
@@ -2824,8 +2830,10 @@ return function(B)
 		-- the boilerman's cabin over the stairs to the cellar, the shaft, its lining and the flights down
 		local function cabin()
 			local sh = MSH
+			-- the cabin reaches 7.7 studs west of the shaft (u -6): with its wall at -2 the floor between the door and the stair was
+			-- 2.7 studs wide, and the pathfinder found no way across it to the cellar (KNOWN_ISSUES 68, 2026-11-02)
 			room({
-				u0 = -2, u1 = 24, v0 = 18, v1 = 36, y0 = FY, h = 9.2, ceil = true, col = hex("6F7E78"), mat = M.Metal,
+				u0 = -6, u1 = 24, v0 = 18, v1 = 36, y0 = FY, h = 9.2, ceil = true, col = hex("6F7E78"), mat = M.Metal,
 				doors = { w = { { s = 11.5, key = "KEY_BY_BOILER", id = "by_boiler", label = "Boiler cellar stair" } } },
 				windows = { n = { { 12, 5, 3.5, 6.5 } }, s = { { 12, 5, 3.5, 6.5 } } },
 			})
@@ -2893,7 +2901,9 @@ return function(B)
 			end
 			ab(bm, 61.6, 62.4, FY + 13.8, FY + 14.6, 9.6, 58.4, STL2, M.Metal)
 			ucyl(bm, 80, FY, 12, 60, 8, hex("6B4A3C"), M.Brick)
-			for _, c in { { 4, 28 }, { 4, 48 }, { 4, 70 } } do
+			-- the hall's middle row of columns; the first stood at (4, 28), inside the cabin on the top steps of the cellar stair,
+			-- where it left a 3-stud gap no AI path could take (KNOWN_ISSUES 68); it stands north of the cabin now
+			for _, c in { { 4, 39.5 }, { 4, 55 }, { 4, 70 } } do
 				colm(bm, c[1], c[2], FY, Y3 - 0.8, 1.6, PAN2, M.Concrete)
 			end
 			K("Generator", 86, 66, FACE.e, FY)

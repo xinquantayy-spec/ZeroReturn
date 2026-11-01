@@ -482,6 +482,11 @@ function Effects.init(c)
 				Effects.remoteShot(d)
 			elseif kind == "sfx" and type(d) == "table" and type(d.n) == "string" and typeof(d.p) == "Vector3" then
 				Effects.sfx(d.n, d.p, d.v or 0.8, 1, 60)
+			elseif kind == "flare" and AirdropFx and type(d) == "table" then
+				local ok, err = pcall(AirdropFx.flare, d)
+				if not ok then
+					warn("[ZR] flare fx:", err)
+				end
 			elseif kind == "airdrop" and AirdropFx and type(d) == "table" then
 				local ok, err = pcall(AirdropFx.run, d)
 				if not ok then

@@ -39,6 +39,9 @@ local FALL = 7 -- the crate's sink rate under its canopy, studs a second
 local SMOKE = 300 -- seconds of red smoke after the landing
 local SPREAD = 220 -- drop points at least this far apart
 local CLEAR = 70 -- and this far from exits and spawns
+local FLARE_WAIT = { 90, 150 } -- seconds from a red flare to the plane over it ("a few minutes")
+local FLARE_COOLDOWN = { 900, 1020 } -- Tarkov: 15 to 17 minutes before the next call is answered
+local FLARE_SCATTER = 15 -- the crate lands this close to the flare's spot
 Airdrop.ALT, Airdrop.SPEED, Airdrop.RUN, Airdrop.FALL = ALT, SPEED, RUN, FALL
 
 local function now()
@@ -357,6 +360,83 @@ function Airdrop.drop(kind, at)
 	return d
 end
 
+-- the map in play's airdrop numbers (L.hazard.airdrop), or nil on a map without airdrops
+local function cfgOf(mapId)
+	local spec = MAPS[mapId]
+	if not spec then
+		return nil
+	end
+	local okL, L = pcall(require, script.Parent.Parent.Maps[spec.folder].Layout)
+	return okL and L and L.hazard and L.hazard.airdrop or nil
+end
+
+local function skyParams()
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = { workspace.Terrain, workspace:FindFirstChild("ZR_World") }
+	return rp
+end
+
+-- can this player fire a flare here? (in a raid, alive, under the open sky); false, code, message otherwise
+function Airdrop.canFlare(player)
+	local s = ctx.Raid.session(player)
+	local char = player.Character
+	local head = char and (char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart"))
+	if not s or s.done or not head then
+		return false, "NOT_AUTHORIZED"
+	end
+	if workspace:Raycast(head.Position + Vector3.new(0, 1, 0), Vector3.new(0, 220, 0), skyParams()) then
+		return false, "NEED_OPEN_SKY", "Fire the flare under the open sky."
+	end
+	return true
+end
+
+-- a fired flare (Health has used it up): everyone sees the star; a red one on a map with airdrops calls a plane to the
+-- spot unless one is already on its way or the airspace is still congested from the last call
+function Airdrop.flare(player, f)
+	local char = player.Character
+	local head = char and (char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart"))
+	if not head then
+		return false
+	end
+	local p = head.Position
+	local color = (f and f.color) or "red"
+	ctx.Remotes.fx("flare", { p = p + Vector3.new(0, 1.2, 0), c = color })
+	if not (f and f.call) then
+		return true
+	end
+	local M = ctx.Match
+	if M.state ~= "RUNNING" or not cfgOf(ctx.World.activeMap) then
+		return false
+	end
+	local t = now()
+	if Airdrop.pending or t < (Airdrop.flareReady or 0) then
+		ctx.Remotes.note(player, "toast", { text = "WAIT FOR ARRIVAL! AIRSPACE IS CONGESTED", tone = "warn" })
+		return false
+	end
+	local rng = Random.new()
+	Airdrop.flareReady = t + rng:NextNumber(FLARE_COOLDOWN[1], FLARE_COOLDOWN[2])
+	Airdrop.pending = true
+	local a = rng:NextNumber(0, 2 * math.pi)
+	local r = rng:NextNumber(0, FLARE_SCATTER)
+	local probe = Vector3.new(p.X + math.cos(a) * r, p.Y + 6, p.Z + math.sin(a) * r)
+	local hit = workspace:Raycast(probe, Vector3.new(0, -400, 0), skyParams())
+	local at = hit and hit.Position or Vector3.new(p.X, p.Y - 2.5, p.Z)
+	local raid = Airdrop.raid
+	local wait = rng:NextNumber(FLARE_WAIT[1], FLARE_WAIT[2])
+	Airdrop.called = { at = at, eta = t + wait + RUN / SPEED, by = player.Name }
+	task.delay(wait, function()
+		Airdrop.pending = false
+		if Airdrop.raid == raid then
+			local ok, err = pcall(Airdrop.drop, nil, at)
+			if not ok then
+				warn("[ZR] flare airdrop failed:", err)
+			end
+		end
+	end)
+	return true
+end
+
 -- a new raid: clear the last one's crates and roll this one's plane
 local function newRaid(raidId, mapId)
 	for _, c in Airdrop.crates do
@@ -367,12 +447,8 @@ local function newRaid(raidId, mapId)
 	table.clear(Airdrop.crates)
 	Airdrop.raid = raidId
 	Airdrop.plan = nil
-	local okL, L = false, nil
-	local spec = MAPS[mapId]
-	if spec then
-		okL, L = pcall(require, script.Parent.Parent.Maps[spec.folder].Layout)
-	end
-	local cfg = okL and L and L.hazard and L.hazard.airdrop
+	Airdrop.pending, Airdrop.flareReady, Airdrop.called = false, 0, nil
+	local cfg = cfgOf(mapId)
 	if not cfg then
 		return
 	end

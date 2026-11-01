@@ -345,7 +345,7 @@ local function actionsFor(ref, g)
 			req({ op = "equip", g = g, from = ref, to = "me" })
 		end)
 	end
-	if mine and (d.kind == "med" or d.kind == "food") and known(it.id) then
+	if mine and (d.kind == "med" or d.kind == "food" or (d.kind == "flare" and inRaid)) and known(it.id) then
 		add("USE", function()
 			req({ op = "use", g = g })
 		end, "good")

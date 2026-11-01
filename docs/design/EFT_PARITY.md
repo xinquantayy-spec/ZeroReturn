@@ -456,7 +456,7 @@ Gaps (not copied or not found):
   the plane comes 5 to 15 minutes in, at most once. A crate (common, medical, supply or weapon; 10 x 12) comes down under
   a canopy and gives off red smoke. Gaps:
   - the plane is silent until a sound is uploaded;
-  - no red flare to call one;
+  - the red flare (built the same day, from the inventory or a quick slot) has no special slot or flare gun;
   - drop points are found as open level ground, not Tarkov's fixed zones;
   - no bonus backpack.
 - **Co-op, flare and transit extracts**: WEST CAMP is scav-only, RIVER PATH is a plain exit (no green flare), and the transits to Streets

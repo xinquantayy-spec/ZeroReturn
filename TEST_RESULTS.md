@@ -8,6 +8,24 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## AI paths into Border's cellars and bunkers (2026-11-02)
+
+ZR_Dev `exitcheck("border", 12, true)` found two faults, both fixed and re-checked. After the fixes, every one of the 26 exits is reached from every spawn that may use it:
+- BOILER CELLAR: 12 of 12;
+- K-11: 6 of 6.
+
+**Boiler cellar.** It had never had an AI path (KNOWN_ISSUES 68).
+- PathfindingService (radius 1.0) found no way across the cabin floor to the stair. That floor was 2.7 studs wide between the door wall and the shaft kerb.
+- One of the hall's columns stood on the top steps, at (4, 28) inside the cabin (`BY_boiler_cabin_before.jpg`).
+- The column now stands at (4, 39.5), and the cabin reaches to u -6.
+- Probes then: cabin to the top step, top step to the landing, landing to the cellar floor, and cabin to the cellar all succeed.
+
+**K-11.** It had passed earlier in the day and failed now: 0 of 6.
+- Ground samples in front of the shed door found holes to y -16.
+- The shaft's open cut (`Ground` voids: its footprint + 2 studs) runs 0.75 studs past the shed's end walls. The 4-stud terrain columns along them were dug.
+- The pathfinder found its way across them in the earlier run and not this time.
+- Concrete pads 4.5 studs deep now cover both ends of the K-11 and Smugglers' Hole sheds (`bunkerShed`). The holes are gone (`BY_k11_shed_door.jpg` shows the door before the pads).
+
 ## Airdrops (2026-11-02)
 
 Run in a Border Yard raid with ZR_Dev `airdrop("weapon", -21, -5255)`. The design and the gaps are in `docs/design/AIRDROPS.md`.
@@ -27,6 +45,13 @@ Run in a Border Yard raid with ZR_Dev `airdrop("weapon", -21, -5255)`. The desig
   | Meridian | 349 | 47 | 33 | 37 |
 
   New: 4 airdrop checks in LogicTests (the crates and pools, the 10 x 12 fit, the maps' numbers, the flight), and M11 in MapTests (the map in play has 6 or more open, spread drop points clear of its exits).
+
+**The red flare (later the same day):**
+- under the fuel stop roof it was refused ("Fire the flare under the open sky.");
+- in the open the red star climbed and burned (`BY_red_flare.jpg`);
+- a common crate landed 191 s after the flare, 8 studs from the spot;
+- a second flare 20 s later fired, but no second plane came (one crate at 261 s);
+- LogicTests 350, all passing.
 
 **Not checked:**
 - the natural roll reaching its time (5 to 15 minutes in);

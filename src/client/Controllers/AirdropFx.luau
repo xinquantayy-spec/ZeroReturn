@@ -217,6 +217,75 @@ function AirdropFx.run(d)
 	end)
 end
 
+-- a signal flare: a star shot straight up (about 130 studs in 2.2 s) that hangs and sinks while it burns, lighting the
+-- ground under it, with a thin smoke trail. d = { p = where it was fired, c = "red" (or another colour) }
+local STAR = { red = Color3.fromRGB(255, 70, 52), green = Color3.fromRGB(90, 255, 110), yellow = Color3.fromRGB(255, 220, 90), white = Color3.fromRGB(255, 250, 235) }
+function AirdropFx.flare(d)
+	if type(d) ~= "table" or typeof(d.p) ~= "Vector3" then
+		return
+	end
+	local cam = workspace.CurrentCamera
+	if cam and (cam.CFrame.Position - d.p).Magnitude > 5000 then
+		return
+	end
+	local col = STAR[d.c] or STAR.red
+	local star = part(fxFolder(), Vector3.new(1.8, 1.8, 1.8), CFrame.new(d.p), col, Enum.Material.Neon)
+	star.Shape = Enum.PartType.Ball
+	local light = Instance.new("PointLight")
+	light.Color = col
+	light.Brightness = 6
+	light.Range = 60
+	light.Parent = star
+	-- the glare round the star, so it reads as a signal from far off in daylight (a bare ball is a speck at 150 studs)
+	local glow = Instance.new("ParticleEmitter")
+	glow.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	glow.Color = ColorSequence.new(col)
+	glow.LightEmission = 0.55 -- at 1 the bloom washed the red out to white
+	glow.LightInfluence = 0
+	glow.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 7), NumberSequenceKeypoint.new(1, 5) })
+	glow.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+	glow.Lifetime = NumberRange.new(0.15, 0.25)
+	glow.Rate = 40
+	glow.Speed = NumberRange.new(0)
+	glow.LockedToPart = true
+	glow.Parent = star
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.Position, a1.Position = Vector3.new(0, 0.9, 0), Vector3.new(0, -0.9, 0)
+	a0.Parent, a1.Parent = star, star
+	local trail = Instance.new("Trail")
+	trail.Attachment0, trail.Attachment1 = a0, a1
+	trail.Lifetime = 3.5
+	trail.Color = ColorSequence.new(Color3.fromRGB(205, 200, 192))
+	trail.Transparency = NumberSequence.new(0.25, 1)
+	trail.WidthScale = NumberSequence.new(1, 4)
+	trail.Parent = star
+	if E and E.sfx then
+		E.sfx("smoke_pop", d.p, 1.2, 1.25, 250)
+	end
+	local t0, RISE, BURN = os.clock(), 2.2, 9
+	local top = d.p + Vector3.new(math.random() * 6 - 3, 130, math.random() * 6 - 3)
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		local t = os.clock() - t0
+		if t >= RISE + BURN or not star.Parent then
+			conn:Disconnect()
+			star:Destroy()
+			return
+		end
+		if t < RISE then
+			local k = t / RISE
+			star.Position = d.p:Lerp(top, 1 - (1 - k) * (1 - k)) -- fast off the launcher, slowing at the top
+		else
+			local k = (t - RISE) / BURN
+			star.Position = top + Vector3.new(k * 6, -k * 24, k * 3) -- it sinks and drifts as it burns
+			light.Brightness = 6 * (1 - k * 0.6)
+			if k > 0.85 then
+				star.Transparency = (k - 0.85) / 0.15
+			end
+		end
+	end)
+end
+
 function AirdropFx.init(_, effects)
 	E = effects
 end

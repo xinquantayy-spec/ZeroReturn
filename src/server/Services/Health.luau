@@ -434,6 +434,21 @@ end
 
 -- what this item would do now (or nil, error)
 local function plan(hs, d, it, part)
+	if d.kind == "flare" then
+		-- a signal flare (Services/Airdrop.luau): fired straight up under the open sky; the red one may call a plane
+		local A = ctx.Airdrop
+		if not (A and hs.player) then
+			return nil, "NOT_USABLE"
+		end
+		local ok, code, msg = A.canFlare(hs.player)
+		if not ok then
+			return nil, code, msg
+		end
+		return { time = 1.2, label = "FIRING THE " .. string.upper(d.short or d.name), apply = function()
+			A.flare(hs.player, d.flare)
+			return 1
+		end }
+	end
 	if d.kind == "food" then
 		local f = d.food
 		return { time = f.time or 3, label = "CONSUMING " .. string.upper(d.name), apply = function()
@@ -609,9 +624,9 @@ function Health.use(player, g, part)
 		return ctx.Remotes.fail("NO_ITEM")
 	end
 	local d = Items.defs[it.id]
-	local pl, err = plan(hs, d, it, part)
+	local pl, err, msg = plan(hs, d, it, part)
 	if not pl then
-		return ctx.Remotes.fail(err or "NOTHING_TO_TREAT")
+		return ctx.Remotes.fail(err or "NOTHING_TO_TREAT", msg)
 	end
 	local token = { label = pl.label, t0 = os.clock(), dur = pl.time }
 	hs.using = token
