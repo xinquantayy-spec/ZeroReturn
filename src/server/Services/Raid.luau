@@ -63,6 +63,7 @@ function Raid.raidInfo(s)
 		table.insert(ex, {
 			id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key, powered = r.kind == "power" and ctx.World.switchOn(r.switch) or nil,
 			chance = (r.kind ~= "chance" and ctx.Extract.hasChance(r)) or nil, seats = r.seats, depart = r.depart,
+			flared = (r.kind == "flare" and ctx.Match.flareOpen[id]) or nil, area = r.kind == "flare" and (r.radius or 60) or nil,
 			closed = gone or nil, closedText = gone and "THE CAR HAS LEFT" or nil,
 		})
 	end

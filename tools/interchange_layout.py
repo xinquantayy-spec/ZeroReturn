@@ -97,8 +97,8 @@ EXTRACTS = {
                        "hidden room east of car park C; after power: the hidden switch in the L2 washroom (poi.WASHROOM) and the keycard at the panel, door at poi.SHELTER_DOOR; power is the only rule World supports"),
     "Scav Camp (Co-Op)": ("WC", "WEST CAMP", "scav", {"kind": "scav"}, (22, 10, 22),
                           "reference position is the service tunnel between car park B/C and the KASSA garage (NOT the west camp huts): co-op (scav + PMC) becomes scav-only; the spec name is kept"),
-    "Path to River (flare)": ("RP", "RIVER PATH", "both", {"kind": "open"}, (28, 12, 28),
-                              "far west edge on the dirt road past the highway; the flare is a gap (plain open exit); likely flare spot poi.FLARE_SPOT"),
+    "Path to River (flare)": ("RP", "RIVER PATH", "both", {"kind": "flare", "radius": 75}, (28, 12, 28),
+                              "far west edge on the dirt road past the highway; a green flare fired within 75 studs opens it (the likely flare spot poi.FLARE_SPOT is 34 studs east)"),
     "Hole in the Fence": ("FG", "FENCE GAP", "both", {"kind": "nobag"}, (24, 10, 24),
                           "grade D: behind the NESTA hall on the east service lane in the 46 m fence gap; the backpack slot must be empty (kind nobag is new)"),
 }

@@ -8,6 +8,30 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Flare exits (2026-11-02)
+
+Border raids, one player, god mode, noon.
+
+- **Signal area:** standing 55 studs from NORTH LINE showed "SIGNAL AREA · FIRE A GREEN FLARE TO OPEN NORTH LINE" (`docs/maps/evidence/BY_signal_area.jpg`).
+- **The flare:** a green flare (ZR_Dev `give`, then the inventory "use" request) went up green over the rail cut (`BY_green_flare.jpg`).
+- **Extraction:** walking into the zone after the flare started the 8 s extraction, "EXTRACTING · NORTH LINE" (`BY_northline_exfil.jpg`). The raid ended with the player out.
+- **Next raid:** the zone refused again with "EXFIL NL · FIRE A GREEN FLARE IN THE SIGNAL AREA", because the flare state resets each raid.
+- **OLD PUMPS:** forced open with ZR_Dev `exitOpen`. A green star rose over it 3 s after the check began (`BY_oldpumps_signal.jpg`).
+- **Tests, all passing:**
+
+  | Suite | Passed | Failed | New |
+  |---|---|---|---|
+  | LogicTests | 360 | 0 | 3 in "flare exits": the item; the rules on both maps; closed until a flare inside the area, nothing from one outside |
+  | CharTests | 47 | 0 | |
+  | LookTests | 33 | 0 | |
+  | MapTests | 38 | 0 | |
+
+**Not checked:**
+- RIVER PATH on Meridian in a raid (only the rule test);
+- buying the flare from VOS;
+- two clients (the flare opening the exit for a second player);
+- phones.
+
 ## THE HOUNDS, Border Yard's second boss group (2026-11-02)
 
 Border raids with the trio forced in by ZR_Dev `boss(true, "Halberd")` and THE BROKER forced out.

@@ -18,7 +18,7 @@ local Inv = require(script.Parent.Inv)
 
 local Match = {
 	state = "IDLE", id = nil, startsAt = 0, endsAt = 0, lateUntil = 0, startedAt = 0,
-	extractOpen = {}, usedSpawns = {}, squadSpawn = {}, raids = 0,
+	extractOpen = {}, flareOpen = {}, usedSpawns = {}, squadSpawn = {}, raids = 0,
 	env = nil, -- this raid's time of day and weather (Env.State, t0 = raid start)
 	nextEnv = nil, -- rolled when matching starts, so the deploy screen can show it
 	map = nil, -- map of the running (or last) raid
@@ -422,6 +422,7 @@ local function startRaid()
 	for id, open in Match.rollExtracts(ctx.World.extracts) do
 		Match.extractOpen[id] = open
 	end
+	table.clear(Match.flareOpen) -- flare exits close again (Extract.openFlareAt)
 	ctx.Raid.resetWorld() -- (also clears the cars' seats and shows or hides each car by this roll)
 	-- group the queue: squad members of the same kind share a spawn
 	local groups, bySquad = {}, {}

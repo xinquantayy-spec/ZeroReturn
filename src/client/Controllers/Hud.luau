@@ -211,6 +211,30 @@ local function vitals()
 	return { hp = hum and hum.Health or 0, max = hum and hum.MaxHealth or 100 }
 end
 
+-- Tarkov's "Signal Area" notice: the first step into a flare exit's area that no green flare has opened yet
+local signalAt = nil
+local function signalCheck(raid)
+	local lp = game:GetService("Players").LocalPlayer
+	local char = lp and lp.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local here = nil
+	if raid and root then
+		for _, e in raid.extracts or {} do
+			if e.rule == "flare" and not e.flared and e.area and typeof(e.pos) == "Vector3" then
+				local dx, dz = root.Position.X - e.pos.X, root.Position.Z - e.pos.Z
+				if dx * dx + dz * dz <= e.area * e.area then
+					here = e.id
+					if signalAt ~= e.id then
+						Hud.notice("SIGNAL AREA", "FIRE A GREEN FLARE TO OPEN " .. string.upper(e.name or ""), C.yellow, 4)
+					end
+					break
+				end
+			end
+		end
+	end
+	signalAt = here
+end
+
 local function slowUpdate()
 	local d = ctx.State.data
 	local inRaid = ctx.State.inRaid()
@@ -233,6 +257,7 @@ local function slowUpdate()
 		O.rec:set({ { icon = I.DOT, color = C.white, alpha = 0.55, size = SZ.rec * 0.66 }, { t = "STBY", color = C.white }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
 	end
 	O.dev:set({ { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Maps.nameOf(raid and raid.map) or "RELAY 7"), color = C.dim, alpha = 0.2 } })
+	signalCheck(inRaid and raid or nil)
 	-- clock / money
 	if inRaid and raid then
 		local left = math.max(0, raid.endsAt - now)
@@ -349,6 +374,8 @@ function Hud.exitStatus(e)
 		return e.powered and "POWER ON" or "NEEDS POWER", e.powered and C.green or C.yellow
 	elseif e.rule == "nobag" then
 		return "NO BACKPACK", C.yellow
+	elseif e.rule == "flare" then
+		return e.flared and "OPEN  ·  FLARE SEEN" or "GREEN FLARE IN THE SIGNAL AREA", e.flared and C.green or C.yellow
 	end
 	return "", C.green
 end

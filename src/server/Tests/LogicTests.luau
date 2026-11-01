@@ -1124,6 +1124,42 @@ function T.run(ctx)
 			Eq.lookKey("halberd") == "halberd" and Eq.lookKey("mortar") == "mortar" and Eq.lookKey("kestrel") == "kestrel")
 	end
 
+	-- flare exits (Extract kind "flare"): the green flare; NORTH LINE and RIVER PATH open by flare; OLD PUMPS shows green
+	-- flares while it is there (Tarkov's Railroad Passage, Smuggler's Tunnel and Old Gas Station)
+	if ctx and ctx.World and ctx.Extract and ctx.Match and ctx.World.maps then
+		local gd = Items.defs.FLARE_GREEN
+		check("flare exits: the green signal flare (1 x 2, 0.19 kg) opens exits",
+			gd ~= nil and gd.kind == "flare" and gd.flare.color == "green" and gd.flare.exit == true and gd.w == 1 and gd.h == 2
+				and math.abs(gd.mass - 0.19) < 1e-6)
+		local bx = ctx.World.maps.border and ctx.World.maps.border.extracts
+		local mx = ctx.World.maps.meridian and ctx.World.maps.meridian.extracts
+		local nl, op, rp = bx and bx.NL, bx and bx.OP, mx and mx.RP
+		check("flare exits: NORTH LINE and RIVER PATH open by flare; OLD PUMPS, a chance exit, sends up green flares",
+			nl ~= nil and nl.rule.kind == "flare" and nl.rule.radius == 94 and rp ~= nil and rp.rule.kind == "flare"
+				and op ~= nil and op.rule.kind == "chance" and op.rule.signal == "green")
+		if nl then
+			-- the rule on Border's exits: closed; a flare outside the area opens nothing; one inside opens it
+			local W, M, X = ctx.World, ctx.Match, ctx.Extract
+			local saved, savedOpen = W.extracts, table.clone(M.flareOpen)
+			W.extracts = bx
+			table.clear(M.flareOpen)
+			local s = { inv = Inv.newHolder("raid") }
+			local b0 = X.blocked(nil, s, nl)
+			local far = X.openFlareAt(nl.pos + Vector3.new(120, 0, 0))
+			local b1 = X.blocked(nil, s, nl)
+			local near = X.openFlareAt(nl.pos + Vector3.new(40, 30, -20))
+			local b2 = X.blocked(nil, s, nl)
+			W.extracts = saved
+			table.clear(M.flareOpen)
+			for k, v in savedOpen do
+				M.flareOpen[k] = v
+			end
+			check("flare exits: closed until a green flare goes up inside the signal area, then open",
+				b0 == "FLARE" and #far == 0 and b1 == "FLARE" and #near == 1 and near[1] == "NORTH LINE" and b2 == nil,
+				tostring(b0) .. "/" .. tostring(b1) .. "/" .. tostring(b2))
+		end
+	end
+
 	-- airdrops (Services/Airdrop.luau): Tarkov's four crates, their pools, a full crate fits its 10 x 12 grid, the
 	-- maps' roll numbers
 	if ctx and ctx.Airdrop and ctx.Loot then

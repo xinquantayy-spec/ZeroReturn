@@ -173,6 +173,16 @@
 
     The asset id is in `Sounds.AMB_ATLAS`. The owner needs to re-upload `ZR_SFX_Amb` from the laptop (Open Cloud key) and
     put the new id there. A real plane engine sound would come in the same upload (`docs/design/AIRDROPS.md`).
+74. **Meridian's `Layout.luau` holds hand edits its generator lacks (found 2026-11-02).** `Layout.luau` says "GENERATED,
+    do not edit by hand", but the exit walk-through fixes were made in it directly. Re-running
+    `tools/interchange_layout.py` would undo them:
+    - the FENCE GAP posts (`fence_gap_n`, `fence_gap_s`);
+    - the saferoom's size in `shelter`;
+    - SHELTER EXIT's 3 s hold;
+    - FENCE GAP's position, size and 10 s hold.
+
+    Until the generator carries them, edit Meridian's layout by hand (RIVER PATH's flare rule was added both ways).
+    Border's generator matches its layout.
 
 ## Tool limitations (not game bugs)
 

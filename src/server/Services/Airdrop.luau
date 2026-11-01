@@ -402,6 +402,9 @@ function Airdrop.flare(player, f)
 	local p = head.Position
 	local color = (f and f.color) or "red"
 	ctx.Remotes.fx("flare", { p = p + Vector3.new(0, 1.2, 0), c = color })
+	if f and f.exit and ctx.Extract and ctx.Extract.flareFired then
+		return ctx.Extract.flareFired(player, p) -- a green flare: the flare exits round the shooter
+	end
 	if not (f and f.call) then
 		return true
 	end

@@ -45,6 +45,7 @@ local POOLS = {
 		{ id = "FUEL_CAN", w = 3 }, { id = "DECK_TRANSCEIVER", w = 3 }, { id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" },
 		{ id = "GREN_RK5", w = 3 }, { id = "GREN_SMOKE", w = 2 }, { id = "GLASSES_RANGE", w = 2 }, { id = "GAS_MASK", w = 1 },
 		{ id = "FLARE_RED", w = 1.2 },
+		{ id = "FLARE_GREEN", w = 1.6 },
 	},
 	locker = {
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
@@ -83,12 +84,14 @@ local POOLS = {
 		{ id = "KST_HG_POLY", w = 1 }, { id = "AR_STK_CARB", w = 2 }, { id = "KST_STK_FOLD", w = 1 }, { id = "R17_MAG40", w = 1, a = { 0, 40 }, at = "A62_FMJ" },
 		{ id = "KST_MAG_POLY", w = 2, a = { 0, 30 }, at = "A76_PS" }, { id = "P9_MAG33", w = 1, a = { 0, 33 }, at = "A9_PST" },
 		{ id = "FLARE_RED", w = 1 },
+		{ id = "FLARE_GREEN", w = 1.2 },
 	},
 	toolbox = {
 		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
 		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "WEAPON_KIT", w = 2 },
 		{ id = "MULTITOOL", w = 3 }, { id = "AR_CH_EXT", w = 1 }, { id = "R17_GAS_LOW", w = 1 }, { id = "GAS_MASK", w = 1 },
 		{ id = "FLARE_RED", w = 0.6 },
+		{ id = "FLARE_GREEN", w = 0.9 },
 	},
 	jacket = {
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
@@ -97,6 +100,7 @@ local POOLS = {
 		{ id = "GLASSES_SUN", w = 2 }, { id = "GLASSES_RANGE", w = 1 },
 		{ id = "KEY_MALL_SECURITY", w = 1 }, { id = "KEY_MM_RESCUE", w = 1 }, { id = "KEY_MM_IRON_FRONT", w = 0.5 },
 		{ id = "FLARE_RED", w = 0.6 },
+		{ id = "FLARE_GREEN", w = 0.9 },
 	},
 	safe = {
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },

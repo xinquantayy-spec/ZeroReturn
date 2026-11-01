@@ -111,7 +111,7 @@ Pictures: `docs/maps/evidence/BY_airdrop_plane.jpg`, `BY_airdrop_falling.jpg`, `
   machine.
 - **The flare is used from the inventory or a quick slot.** Tarkov fires it from a special slot, which we do not have,
   and there is no flare gun (Tarkov's signal pistol).
-- **No green or yellow flares** (flare exits, quests).
+- **No yellow flares** (quests). The green flare and its exits were added the same day (`EFT_PARITY.md`, "Flare exits").
 - **Drop points are found, not placed.** Tarkov uses fixed drop zones per map; ours are open, level spots found from the
   world.
 - **No bonus backpack** in the crates, and no wait to open a crate before the search.

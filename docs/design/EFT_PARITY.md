@@ -626,3 +626,42 @@ Gaps:
 - **One AI**: all three use the boss skill, with no leader push or overwatch of their own.
 - **Health spreads evenly** over the body's parts, not Tarkov's per-part numbers.
 - **Looks reuse existing overlays and gear**: no new meshes.
+
+### Flare exits: the green signal flare (2026-11-02)
+
+Researched first:
+- the Fandom Customs page: Railroad Passage (Flare) and Old Gas Station;
+- tarkovforge's page for the green RSP-30;
+- dotesports' flare guide and diamondlobby's Klimov Street guide;
+- our map references (`CUSTOMS_REFERENCE.md` section 9, `INTERCHANGE_REFERENCE.md` for Path to River).
+
+Built in `Items.luau`, `Airdrop.luau` (the shot), `Extract.luau`, `Match.luau`, `Raid.luau`, `Hud.luau` and the two layouts.
+Checked in Studio with one player (TEST_RESULTS "Flare exits").
+
+Matched:
+- **The green flare** `FLARE_GREEN`: 1 x 2, 0.19 kg.
+  - Sold by VOS at loyalty 1 (Tarkov: Jaeger LL1). Found where red flares are, a little more often.
+  - Used like the red one: a 1.2 s use, open sky only, a green star.
+- **Flare exits** (rule `flare`): NORTH LINE on Border Yard (Railroad Passage) and RIVER PATH on Meridian Mall (Path to River).
+  - Each exit is there every raid but closed.
+  - A green flare fired under the open sky inside its signal area (94 and 75 studs round the exit) opens it for the rest of the
+    raid. A flare outside the area opens nothing.
+  - The shooter gets "SIGNAL SEEN · ... OPEN".
+- **"Signal Area"**: stepping into a closed flare exit's area shows "SIGNAL AREA · FIRE A GREEN FLARE TO OPEN ...".
+- **Exits list**: it reads "GREEN FLARE IN THE SIGNAL AREA" until the flare, then "OPEN · FLARE SEEN". The zone itself says
+  "FIRE A GREEN FLARE IN THE SIGNAL AREA".
+- **Old Gas Station's "Green flares = Open"**: OLD PUMPS keeps its 50 % roll. While it is there, a green star goes up over it
+  every 50 to 80 s (rule `signal`).
+
+Gaps:
+- **Who it opens for is ours.** No source says whether the flare opens the exit for the shooter, the group or everyone; here it
+  opens for everyone in the raid. Streets' guide says one player's flare stops the sniper for all.
+- **Height**: Tarkov's flare must climb high enough. Ours needs open sky above the shooter (220 studs).
+- **The signal areas are ours**: Customs' flare area position is unknown (the north rail tip is used). Interchange's is inferred
+  at the toll booth, 34 studs from the exit.
+- **Railroad Passage's sniper rule** ("stay on the tracks") is not tied to the flare: the border snipers' strips already leave the
+  rail walk clear.
+- **Old Gas Station's signal** is our reading of "Green flares = Open". The interval is ours.
+- **No flare gun, no yellow flare** (quests), and no special slot.
+- **No art**: the item has no inventory picture yet.
+

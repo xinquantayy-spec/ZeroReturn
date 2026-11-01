@@ -86,14 +86,14 @@ serves both; "scav" is for scavs only. All 26 exist as `kit.extract` zones with 
 |---|---|---|---|---|---|
 | K11 | BUNKER K-11 | -1469, -307 | east | open | always open; underground exit at the end of the tunnel |
 | SH | SMUGGLERS' HOLE | -960, -259 | both | chance 50 % | secret exit; needs the Voron note found in the same raid |
-| OP | OLD PUMPS | -469, -450 | east | chance 50 % | in the basement; not always available, opened with a green flare |
+| OP | OLD PUMPS | -469, -450 | east | chance 50 %; while it is there, a green star goes up over it every 50 to 80 s | in the basement; not always available; "green flares = open" (wiki) |
 | DC | DORMS CAR | -56, 779 | both (PMCs only) | car: paid 25,000 MK per seat, chance 50 %, 4 seats, 60 s shared countdown | Tarkov's V-Ex: 5,000 roubles per player (wiki: depends on Scav karma), up to 4 players, 60 s shared timer, 50 % chance (SPT). Pay at the car (hold F on its prompt); see "Car exits" below |
 | K13 | BUNKER K-13 | -137, -357 | both | power: lever `BORDER_STORE4` in Store 4 | lever in Store 4 (power stays on once thrown), then the basement door |
 | CR | CROSSROADS | 1512, -134 | west | open | |
 | TL | TRAILER LOT | 1468, -592 | west | open | in the trees |
 | AR | ARMY ROADBLOCK | 571, -327 | west | open | sources disagree on its availability (grade C); the icon lies 56 studs past the limit |
 | SB | SMUGGLERS' BOAT | 625, 474 | both | chance 50 % | secret exit; same Voron note as the hole |
-| NL | NORTH LINE | -31, -766 | both | chance 50 % | green flare fired in the flare area, then keep to the tracks past the border snipers (grade C) |
+| NL | NORTH LINE | -31, -766 | both | flare: closed until a green flare goes up within 94 studs (the signal area), then open to all for the raid | green flare fired in the flare area, then keep to the tracks past the border snipers (grade C) |
 | BC | BOILER CELLAR | 181, -48 | both | key `KEY_BY_BOILER` | scav cooperation: a PMC must bring a scav |
 | OF, FC, OC, AG | OFFICE GATE, FAR CORNER, OLD CHECKPOINT, ARMY GATE | west edge, z -70, -400, 17, 507 | scav | scav | scav exits on the west edge; the icons of OFFICE GATE and ARMY GATE lie 17 and 77 studs past the limit |
 | RP, AL | ROCK PASS, ARMY LINE | -1147, 717; -1006, 765 | scav | scav | south-west rim |
@@ -154,8 +154,9 @@ mounted weapons (`L.hazard.propane` and `.mounted` are empty: no reference data 
 Parity gaps (to copy into `docs/design/EFT_PARITY.md`, which was outside part 1's scope):
 
 - Co-op extracts and transits do not exist here yet (BOILER CELLAR is a plain key extract; in Tarkov a PMC must bring a scav).
-- The Voron note for SMUGGLERS' HOLE and SMUGGLERS' BOAT, the green flare for NORTH LINE and OLD PUMPS, and the ZB-1013 key for the
-  K-13 basement door have no items; the three exits are plain 50 % chance extracts and the bunker door is not locked.
+- The Voron note for SMUGGLERS' HOLE and SMUGGLERS' BOAT and the ZB-1013 key for the K-13 basement door have no items; the two
+  exits are plain 50 % chance extracts and the bunker door is not locked. The green flare exists since 2026-11-02 (NORTH LINE opens
+  by flare, OLD PUMPS sends up green flares while it is there; `docs/design/EFT_PARITY.md`, "Flare exits").
 - DORMS CAR is a vehicle exit now (50 % chance, pay at the car, 4 seats, shared 60 s countdown, single use). Still gaps: it costs 25,000 MK (the old
   map's price, kept) against Tarkov's 5,000 roubles, so check the MK scale in the economy; the price does not depend on Scav karma and
   using the car gives no karma; the 60 s countdown is grade C (from memory, to confirm: the wiki pages read do not state it, the map
@@ -540,7 +541,7 @@ Budget 2,450 parts (counted as it goes); the run prints the real count.
   spread out as they path.
 - The AI director's numbers (`SCAV_START` 4, plus 0.5 per player up to `SCAV_CAP` 10, `AI_MAX` 18) were tuned for the small maps and
   are low for a map this size; the six guard routes are all the fixed AI the map has besides the Broker.
-- The Voron note, the green flare and the ZB-1013 key still have no items (part 1's list).
+- The Voron note and the ZB-1013 key still have no items (part 1's list); the green flare was added 2026-11-02.
 
 Unverified (nothing has run in Studio): every count above; that the spawns, routes and posts sit on walkable ground in the built
 map; the head-room test for the 12 spawns; the Broker's loop with the real dorm walls; `B.points` names against what the buildings

@@ -88,6 +88,10 @@ return function(C, ctx)
 						ctx.Doors.setSwitch(r.switch, true)
 						task.wait(0.8)
 						table.insert(line, "· " .. tostring(r.switch) .. " on: " .. read(e))
+					elseif r.kind == "flare" then
+						local names = X.openFlareAt(e.pos)
+						task.wait(0.8)
+						table.insert(line, "· green flare fired in the signal area (" .. table.concat(names, ", ") .. "): " .. read(e))
 					elseif r.kind == "nobag" then
 						local bag = s.inv.slots and s.inv.slots.back
 						if bag then

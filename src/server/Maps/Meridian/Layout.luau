@@ -1100,7 +1100,7 @@ L.ext = {
 	{ "SC", "SUBSTATION CAR", "both", 1112.2, -1123.8, 26, 12, 26, { kind = "paid", cost = 20000, chance = 0.50, seats = 4, depart = 60 }, "B", "north-east corner by the sniper band; a car: 50% chance (SPT), 4 seats, 60 s shared timer; 20000 is the 2026 figure (SPT/wiki 5000); karma pricing is a gap" },
 	{ "SE", "SHELTER EXIT", "both", 512.5, 77.2, 16, 10, 16, { kind = "power", switch = "MALL_POWER", needs = "NO POWER  ·  THROW THE SWITCH AT THE SUBSTATION", time = 3 }, "B", "hidden room east of car park C; after power: the hidden switch in the L2 washroom (poi.WASHROOM) and the keycard at the panel, door at poi.SHELTER_DOOR; power is the only rule World supports" },
 	{ "WC", "WEST CAMP", "scav", 549.7, -209.7, 22, 10, 22, { kind = "scav" }, "B", "reference position is the service tunnel between car park B/C and the KASSA garage (NOT the west camp huts): co-op (scav + PMC) becomes scav-only; the spec name is kept" },
-	{ "RP", "RIVER PATH", "both", -1371.9, 285.9, 28, 12, 28, { kind = "open" }, "B", "far west edge on the dirt road past the highway; the flare is a gap (plain open exit); likely flare spot poi.FLARE_SPOT" },
+	{ "RP", "RIVER PATH", "both", -1371.9, 285.9, 28, 12, 28, { kind = "flare", radius = 75 }, "B", "far west edge on the dirt road past the highway; a green flare fired within 75 studs opens it (the likely flare spot poi.FLARE_SPOT is 34 studs east)" },
 	{ "FG", "FENCE GAP", "both", 929.0, -218.8, 10, 10, 10, { kind = "nobag", time = 10 }, "D", "grade D: behind the NESTA hall on the east service lane, in the 46 m fence gap (reference 946.9); ours is the hole left in the fence we close the gap with (L.fences fence_gap_n / fence_gap_s); the backpack slot must be empty" },
 }
 L.pmc = {

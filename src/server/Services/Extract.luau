@@ -138,6 +138,97 @@ function Extract.finish(player)
 	return ctx.Raid.finalize(player, "SUCCESS")
 end
 
+-- Flare exits (Tarkov: "Shoot a green flare into the sky while inside the signal flare area"; Customs' Railroad Passage,
+-- Interchange's Smuggler's Tunnel): a green flare fired under the open sky within `radius` of the exit opens it for
+-- everyone in the raid until the raid ends. Tarkov's pages do not say who it opens for; one flare for all is ours.
+-- Returns the names of the exits it opened (the active map's only: World.extracts is the map in play).
+function Extract.openFlareAt(p)
+	local opened = {}
+	for id, e in ctx.World.extracts do
+		local r = e.rule
+		if r and r.kind == "flare" and not ctx.Match.flareOpen[id] then
+			if Vector3.new(p.X - e.pos.X, 0, p.Z - e.pos.Z).Magnitude <= (r.radius or 60) then
+				ctx.Match.flareOpen[id] = true
+				table.insert(opened, e.name)
+			end
+		end
+	end
+	return opened
+end
+
+-- Exits that show they are open (Tarkov's Old Gas Station: "Green flares = Open"): while such an exit is there this
+-- raid, a green star goes up over it now and then (rule.signal = "green"). The launch spot is the nearest point under
+-- open sky within 40 studs of the zone (the exit itself may be in a basement); found once per map.
+local SIGNAL_EVERY = { 50, 80 }
+local signalSpot = {}
+local nextSignal = {}
+local function skySpot(e)
+	local key = tostring(e.map) .. ":" .. e.id
+	if signalSpot[key] ~= nil then
+		return signalSpot[key] or nil
+	end
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Exclude
+	rp.FilterDescendantsInstances = { workspace:FindFirstChild("ZR_AI"), workspace:FindFirstChild("ZR_Corpses") }
+	local found = false
+	for _, r in { 0, 12, 24, 40 } do
+		for k = 0, (r == 0 and 0 or 7) do
+			local a = k * math.pi / 4
+			local x, z = e.pos.X + math.cos(a) * r, e.pos.Z + math.sin(a) * r
+			local down = workspace:Raycast(Vector3.new(x, e.pos.Y + 60, z), Vector3.new(0, -120, 0), rp)
+			if down then
+				local g = down.Position + Vector3.new(0, 2, 0)
+				if not workspace:Raycast(g, Vector3.new(0, 220, 0), rp) then
+					found = g
+					break
+				end
+			end
+		end
+		if found then
+			break
+		end
+	end
+	signalSpot[key] = found
+	return found or nil
+end
+
+function Extract.signalTick(t)
+	if ctx.Match.state ~= "RUNNING" then
+		table.clear(nextSignal)
+		return
+	end
+	for id, e in ctx.World.extracts do
+		local r = e.rule
+		if r and r.signal and isOpen(e) then
+			local due = nextSignal[id]
+			if not due then
+				nextSignal[id] = t + math.random(8, 30) -- the first star soon after the raid starts
+			elseif t >= due then
+				nextSignal[id] = t + math.random(SIGNAL_EVERY[1], SIGNAL_EVERY[2])
+				local at = skySpot(e)
+				if at then
+					ctx.Remotes.fx("flare", { p = at, c = r.signal })
+				end
+			end
+		end
+	end
+end
+
+-- a green flare fired by a raider (Airdrop.flare, after the open-sky check in Health)
+function Extract.flareFired(player, p)
+	local s = ctx.Raid.session(player)
+	if not s or s.done or ctx.Match.state ~= "RUNNING" then
+		return false
+	end
+	local opened = Extract.openFlareAt(p)
+	if #opened == 0 then
+		return false
+	end
+	Extract.refresh()
+	ctx.Remotes.note(player, "toast", { text = "SIGNAL SEEN  ·  " .. table.concat(opened, ", ") .. " OPEN", tone = "good" })
+	return true
+end
+
 -- every raider still in the raid gets a fresh snapshot, which carries the exit list (the car has gone)
 function Extract.refresh()
 	for player, rs in ctx.Raid.sessions() do
@@ -187,6 +278,8 @@ function Extract.blocked(player, s, e)
 		return carBlocked(player, s, e)
 	elseif Extract.hasChance(r) and not ctx.Match.extractOpen[e.id] then
 		return "CLOSED", "NOT AVAILABLE THIS RAID"
+	elseif r.kind == "flare" and not ctx.Match.flareOpen[e.id] then
+		return "FLARE", r.needs or "FIRE A GREEN FLARE IN THE SIGNAL AREA"
 	elseif r.kind == "scav" and not s.scav then
 		return "SCAV_ONLY", "SCAVS ONLY"
 	elseif r.kind == "power" and r.also and not ctx.World.switchOn(r.also) then
@@ -532,11 +625,19 @@ function Extract.start()
 		warn("[ZR] car exits", nCars)
 	end
 	task.spawn(function()
+		local n = 0
 		while true do
 			task.wait(0.2)
 			local ok, err = pcall(Extract.tick)
 			if not ok then
 				warn("[ZR] extract tick", err)
+			end
+			n += 1
+			if n % 5 == 0 then
+				local okS, errS = pcall(Extract.signalTick, workspace:GetServerTimeNow())
+				if not okS then
+					warn("[ZR] exit signal", errS)
+				end
 			end
 		end
 	end)
