@@ -14,6 +14,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 
+local RoadBeds = require(script.Parent.Parent.RoadBeds)
 local R = 4 -- column size in studs (one terrain voxel)
 local EX, EZ = 1800, 940 -- terrain half extents: the playable box plus 100 to 170 studs of berm and cliff
 local NX, NZ = (2 * EX) / R, (2 * EZ) / R
@@ -278,12 +279,15 @@ return function(B)
 		end
 	end)
 
-	-- 3. roads and rails are graded: across a road the ground follows the line between its vertices (so a road board
-	-- never sits on a cross slope), blending back into the relief beside it
+	-- 3. roads and rails are graded: across a road the ground is level (so a road board never sits on a cross slope),
+	-- blending back into the relief beside it. Along a road the ground follows the relief, sampled every 4 studs and
+	-- averaged over about 30 (two passes of +-16), the plain held flat. Until 2026-11-02 a road ran straight between its
+	-- vertices, and main_0 has three over 2,000 studs, so it cut a trench up to 10 studs deep through the hill under the
+	-- fuel stop, which stood 20 studs over the road. Rails keep the straight grades between their vertices.
 	local GRD = {} -- key (i * 1024 + k) -> grading weight, kept so the river valley leaves road beds alone
 	step("grade", function()
 		local gw, gh = {}, {}
-		local function line(pts, halfW, blend)
+		local function line(pts, halfW, blend, follow)
 			local n = #pts / 2
 			local hs = table.create(n, 0)
 			for q = 1, n do
@@ -293,12 +297,21 @@ return function(B)
 				end
 				hs[q] = h
 			end
+			local prof = follow
+				and RoadBeds.profile(pts, function(x, z)
+					local h = groundAt(x, z)
+					return math.abs(h) < 3 and 0 or h
+				end)
+			if follow then
+				pace()
+			end
 			eachNear(pts, halfW + blend, function(i, k, d, t, s)
 				local wgt = 1 - smooth((d - halfW) / blend)
 				if wgt > 0.004 then
 					local key = i * 1024 + k
+					local h = prof and RoadBeds.at(prof, s, t) or (hs[s] + (hs[s + 1] - hs[s]) * t)
 					gw[key] = (gw[key] or 0) + wgt
-					gh[key] = (gh[key] or 0) + wgt * (hs[s] + (hs[s + 1] - hs[s]) * t)
+					gh[key] = (gh[key] or 0) + wgt * h
 					if wgt > (GRD[key] or 0) then
 						GRD[key] = wgt
 					end
@@ -307,7 +320,7 @@ return function(B)
 			pace()
 		end
 		for _, rd in L.roads do
-			line(rd[4], rd[3] / 2 + 1, 12)
+			line(rd[4], rd[3] / 2 + 1, 12, true)
 		end
 		for _, rl in L.rails do
 			line(rl[3], 6.5, 10)
@@ -572,6 +585,45 @@ return function(B)
 		local col = WGRID[colOf(x)]
 		return col and col[rowOf(z)] or nil
 	end
+
+	-- 7b. road beds (Maps/RoadBeds.luau): across every road the ground lies flat at the road's smoothed height, after the
+	-- pads and the river had tilted some beds again (road audit, 2026-11-02). Building footprints (+1), the river banks
+	-- and the ground outside the boundary are left alone.
+	step("road beds", function()
+		local keep = {}
+		for _, b in L.blds do
+			local cxp, czp, w, d, rot = b[4], b[5], b[6], b[7], b[8]
+			if type(cxp) == "number" and type(czp) == "number" and type(w) == "number" and type(d) == "number" then
+				local a = math.rad(tonumber(rot) or 0)
+				local ca, sa = math.cos(a), math.sin(a)
+				local hw, hd = w / 2 + 1, d / 2 + 1
+				local reach = math.sqrt(hw * hw + hd * hd)
+				for i = colOf(cxp - reach), colOf(cxp + reach) do
+					local x = xAt(i)
+					for k = rowOf(czp - reach), rowOf(czp + reach) do
+						local dx, dz = x - cxp, zAt(k) - czp
+						if math.abs(dx * ca + dz * sa) <= hw and math.abs(dz * ca - dx * sa) <= hd then
+							keep[i * 1024 + k] = true
+						end
+					end
+				end
+			end
+		end
+		local rails = {}
+		for _, rl in L.rails do
+			table.insert(rails, rl[3])
+		end
+		count.roadBed = RoadBeds.bed({
+			roads = L.roads, rails = rails, HG = HG, groundAt = groundAt, eachNear = eachNear,
+			colOf = colOf, rowOf = rowOf, xAt = xAt, zAt = zAt, smooth = smooth, pace = pace, keep = keep,
+			open = function(i, k)
+				return INS[i][k] and riverD(xAt(i), zAt(k)) < -10
+			end,
+			wet = function(x, z)
+				return riverD(x, z) >= -10 or not insideAt(x, z) -- the river, and the berm outside the boundary
+			end,
+		})
+	end)
 
 	-- 8. voids: the underground rooms and tunnels, and the open shafts down to them (the buildings agent fills them)
 	local CAVE = {}

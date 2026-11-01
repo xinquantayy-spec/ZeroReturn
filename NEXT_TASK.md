@@ -33,7 +33,7 @@ Next round (`KNOWN_ISSUES` 69):
 - the 7 props the pass leaves;
 - off-centre kit origins, builder by builder;
 - the fuel stop safe against the desk;
-- the road boards: from 45 studs up, Border's roads look broken where the terrain shows between boards on slopes; from the ground they read as roads.
+- ~~the road boards~~: **done 2026-11-02**. Roads on both maps follow the smoothed relief and lie level across (`Maps/RoadBeds.luau`, TEST_RESULTS "Road beds"). ZR_Dev `roadaudit` checks them.
 
 **Now, in order:**
 1. **Meridian polish:** per-key loot and the key pictures are done. Fuller small shops are done and checked in Studio (`StoresFill.luau`, +1,938 parts). Lighting in the deep halls with the power on was checked on 2026-11-01 in the separate client: NESTA and KASSA by day, and KASSA at 23:00, all read as lit halls. **Exit walk-through done 2026-11-02** (TEST_RESULTS "Meridian exit walk-through"): every spawn reaches every exit it may use, each rule refuses and then lets the player out, exits have their own timers (8 s standard, saferoom 3 s, fence hole 10 s), and three exits were rebuilt to look right (the saferoom, the fence hole, the tunnel portal on the railway). Left: KNOWN_ISSUES 71. **Border Yard's 26 exits were walked the same way the same night.** Also done that night:

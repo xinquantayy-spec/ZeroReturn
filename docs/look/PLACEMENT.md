@@ -65,6 +65,14 @@ examples with positions. The checks:
 `ZR_Dev:Invoke("tidylog", mapId, what)` lists what the last tidy run did to each prop. The `what` values are:
 `doorway`, `swing`, `twin`, `stacked`, `water`, `lifted`, `moved`, `wedged`, `left` and `short`.
 
+`ZR_Dev:Invoke("roadaudit", mapId, examples)` (`border` or `meridian`) walks every paved road inside the limit. Every
+2 studs it samples the centre and a stud inside each edge, with a ray from above. It returns JSON:
+- `samples`: the samples that hit anything;
+- `buried`: where the terrain is hit before the asphalt boards, by how far it stands over the board (under 0.2, 0.5 and
+  1 stud, then 1 or more);
+- `noboard`: no board at all (bridges, and roads outside the inner limit, which are painted into the terrain);
+- `worst`: the worst places.
+
 ## Builder faults found and fixed at the source (2026-11-01/02)
 
 - **Terrain in every Border underground room.** It stood along the walls, up to 9.5 studs over the floor of K-11, and
@@ -110,6 +118,13 @@ Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit
   but not of where the leaf opens, and doors that start a raid ajar moved the spot. `World.detailAvoid` now holds the
   closed leaf and the leaf at a third, two thirds and all of its swing. Before this, LookTests L02 found 11 to 19
   clutter pieces in door swings during a Border raid; now there are none.
+
+- **Roads in trenches and buried under banks (both maps, 2026-11-02).** A road was graded straight between its
+  vertices, and Border's main_0 has three over 2,000 studs. It ran in a cutting up to 10 studs deep past the fuel stop,
+  whose forecourt stood 20 studs over the road. The pads, rock mounds, pits and the river came after the grading and
+  tilted road beds again, burying board edges under banks (up to 18.8 studs on Border).
+  - `Maps/RoadBeds.luau` grades roads along the smoothed relief and levels the ground across every road last.
+  - Ground over the asphalt by a stud or more: Border 203 to 1 samples, Meridian 86 to 3 (TEST_RESULTS "Road beds").
 
 ## Left for later
 

@@ -119,6 +119,12 @@
     - **Still to check by hand:**
       - every re-hung door, and AI paths through them;
       - the fuel stop, where the safe overlaps the office desk.
+    - **Road boards: fixed 2026-11-02.** From above, Border's roads looked broken: terrain stood over the asphalt on
+      slopes and banks covered road edges. Roads now follow the smoothed relief and lie level across (`Maps/RoadBeds.luau`).
+      What is left are small patches at steep junctions:
+      - Border: ground over the asphalt in 101 of 15,344 samples, 1 by a stud or more;
+      - Meridian: 19 of 29,284 samples, 3 by a stud or more;
+      - TEST_RESULTS "Road beds".
 
 70. **The detail plan for Meridian was 970 KB: fixed 2026-11-02.** The client detail layer's plan used to be published in
     full to ReplicatedStorage for the map in play: 970 KB in 787 cells for the real-scale Meridian, so LookTests L02

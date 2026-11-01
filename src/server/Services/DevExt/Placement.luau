@@ -572,4 +572,87 @@ return function(C, ctx)
 		local report = { map = mapId, props = #props, trees = #trees, steps = #steps, doors = doorN, checks = out }
 		return HttpService:JSONEncode(report)
 	end
+
+	-- Road audit (2026-11-02): down every paved road every 2 studs, at the centre and a stud inside each edge, inside the
+	-- map's limit, a ray from above. It counts where the terrain is hit before the asphalt boards: by how much the ground
+	-- stands over the board ("buried"), or "noboard" where no board lies under it (bridges and the river, or a gap).
+	-- Returns JSON: samples, buried counts by height (<0.2, <0.5, <1, >=1 stud), noboard, and the worst examples.
+	local ROADMAPS = {
+		border = { folder = "Border", o = Vector3.new(0, 0, -5200), limit = "boundary" },
+		meridian = { folder = "Meridian", o = Vector3.new(0, 0, 9000), limit = "limit" },
+	}
+	function C.roadaudit(mapId, examples)
+		local spec = ROADMAPS[mapId]
+		local world = workspace:FindFirstChild("ZR_World")
+		local mapModel = spec and world and world:FindFirstChild(spec.folder)
+		local roads = mapModel and mapModel:FindFirstChild("Roads")
+		if not roads then
+			return "no roads for " .. tostring(mapId)
+		end
+		local L = require(script.Parent.Parent.Parent.Maps[spec.folder].Layout)
+		local poly, O = L[spec.limit], spec.o
+		local function inside(x, z)
+			local c, n = false, #poly / 2
+			local j = n
+			for i = 1, n do
+				local xi, zi, xj, zj = poly[2 * i - 1], poly[2 * i], poly[2 * j - 1], poly[2 * j]
+				if ((zi > z) ~= (zj > z)) and (x < (xj - xi) * (z - zi) / (zj - zi) + xi) then
+					c = not c
+				end
+				j = i
+			end
+			return c
+		end
+		local both, boards = RaycastParams.new(), RaycastParams.new()
+		both.FilterType, boards.FilterType = Enum.RaycastFilterType.Include, Enum.RaycastFilterType.Include
+		both.FilterDescendantsInstances = { workspace.Terrain, roads }
+		boards.FilterDescendantsInstances = { roads }
+		local res = { map = mapId, samples = 0, buried = { lt02 = 0, lt05 = 0, lt1 = 0, ge1 = 0 }, noboard = 0, worst = {} }
+		local worst = {}
+		for _, rd in L.roads do
+			if rd[2] ~= "G" then
+				local pts, w = rd[4], rd[3]
+				for s = 1, #pts / 2 - 1 do
+					local ax, az, bx, bz = pts[2 * s - 1], pts[2 * s], pts[2 * s + 1], pts[2 * s + 2]
+					local len = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2)
+					if len > 0.1 then
+						local ux, uz = (bx - ax) / len, (bz - az) / len
+						for q = 0, math.floor(len / 2) do
+							local cx, cz = ax + ux * q * 2, az + uz * q * 2
+							for _, off in { -(w / 2 - 1), 0, w / 2 - 1 } do
+								local x, z = cx - uz * off, cz + ux * off
+								if inside(x, z) then
+									local from = Vector3.new(O.X + x, 400, O.Z + z)
+									local h = workspace:Raycast(from, Vector3.new(0, -800, 0), both)
+									if h then
+										res.samples += 1
+										if h.Instance == workspace.Terrain then
+											local b = workspace:Raycast(from, Vector3.new(0, -800, 0), boards)
+											if not b then
+												res.noboard += 1
+											else
+												local dd = h.Position.Y - b.Position.Y
+												local k = (dd < 0.2 and "lt02") or (dd < 0.5 and "lt05") or (dd < 1 and "lt1") or "ge1"
+												res.buried[k] += 1
+												table.insert(worst, { dd, tostring(rd[1]), round(x), round(z) })
+											end
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+			task.wait()
+		end
+		table.sort(worst, function(a, b)
+			return a[1] > b[1]
+		end)
+		for i = 1, math.min(examples or 10, #worst) do
+			local wv = worst[i]
+			table.insert(res.worst, string.format("%s at %.0f, %.0f: +%.2f", wv[2], wv[3], wv[4], wv[1]))
+		end
+		return HttpService:JSONEncode(res)
+	end
 end

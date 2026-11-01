@@ -8,6 +8,48 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Road beds on Border Yard and Meridian Mall (2026-11-02)
+
+The owner asked for nothing placed abnormally or glitching. From a roof or a hill, Border's roads looked broken.
+
+**How the roads were checked.** The road audit (now ZR_Dev `roadaudit`, `docs/look/PLACEMENT.md`) walks every paved road inside the map's limit. Every 2 studs it samples the centre and a stud inside each edge, and casts a ray from above. It counts the samples where the terrain is hit before the asphalt boards, by how far the ground stands over the board.
+
+| Map | Samples | Ground over the asphalt: < 0.2 stud | 0.2–0.5 | 0.5–1 | 1 or more | Worst |
+|---|---|---|---|---|---|---|
+| Border Yard, before | 15,344 | 409 | 111 | 76 | 203 | 18.8 studs (highway_0 at the east edge) |
+| Border Yard, after | 15,344 | 67 | 19 | 14 | 1 | 1.6 (the highway crossing at the east edge) |
+| Meridian Mall, before | 29,284 | 183 | 66 | 35 | 86 | 2.8 seen (south-west highways) |
+| Meridian Mall, after | 29,284 | 11 | 4 | 1 | 3 | 1.6 (road 47) |
+
+The no-board samples did not change (Border 274, Meridian 534). They are the bridge spans and the stretches outside the inner limit, where roads are painted into the terrain.
+
+**Causes:**
+- **Straight grading.** A road was graded straight between its vertices, and main_0 has three vertices over 2,000 studs. Through the hill under the fuel stop it ran in a trench up to 10 studs deep, with the fuel stop forecourt 20 studs above it.
+- **Steps that ran after the grading.** The pads, rock mounds, pits and the river came after it and tilted the beds again. Banks stood up to 9 studs over road edges, and boards on slopes were short and stepped.
+
+**Fix (`Maps/RoadBeds.luau`, both maps):**
+- Roads now follow the relief along their length, averaged over about 30 studs. Rails keep their straight grades.
+- A last "road beds" step levels the ground across every road at that height, out to a stud past the edge, then blends it back over 8 studs.
+- Roads are done widest first, so where roads meet, a narrower one meets a wider one at its height.
+- Samples near a rail keep their height, so level crossings stay level.
+- Building footprints, the river, ponds and the ground outside the limit are left alone.
+
+**Pictures (before, after):**
+- `BY_road_fuelstop_before.jpg` / `BY_road_fuelstop_after.jpg`: the main road along the fuel stop from above. Stepped boards with bare ground along both edges became one straight road with clean junctions.
+- `BY_road_main0_before.jpg` / `BY_road_main0_after.jpg`: main_0 by the building site. It lay in a cutting with grass over its edge; it now runs level with the ground beside it.
+- `MM_road_interchange_after.jpg`: Meridian's south-west highway ramps.
+
+The main bridge, the level crossing on main_0 and the highway junction by the east rock were looked at after the change.
+
+**Tests (all passing):**
+
+| Raid | LogicTests | CharTests | LookTests | MapTests |
+|---|---|---|---|---|
+| Border Yard | 345 | 47 | 33 | 36 |
+| Meridian Mall | 345 | 47 | 33 | 36 |
+
+**Exits re-checked on Meridian** with ZR_Dev `exitcheck` (doors opened): see "Meridian exit walk-through".
+
 ## THE STOKER, Meridian's second boss (2026-11-02)
 
 Meridian raid, the boss forced in with ZR_Dev `boss(true, "Stoker")`.
