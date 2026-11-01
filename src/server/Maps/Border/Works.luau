@@ -955,7 +955,9 @@ return function(B)
 		door(pre .. "_DOOR", "Bunker shed door", head > 0 and hw - 0.5 or -hw + 0.5, pv, head > 0 and "-u" or "+u", 4.0, 7.4, FY, nil, hex("4D534E"))
 		slab(bm, -hw - 0.6, hw + 0.6, -hd - 0.6, hd + 0.6, 10.3, 0.8, ROOF, M.Concrete)
 		lamp(0, 8.3, pv, 18, 0.9, nil, WARM, 2.4)
-		local pl = ab(bm, head * (hw + 0.05), head * (hw + 0.5), 5.2, 6.8, pv - 2.2, pv + 2.2, STL, M.Metal)
+		-- the name plate hangs above the doorway (8.05 to 9.35): at 5.2 to 6.8 it left 5.2 studs of headroom in the door, so
+		-- nobody could walk in and the two bunker exits had no path (found in Studio, 2026-11-01)
+		local pl = ab(bm, head * (hw + 0.05), head * (hw + 0.5), 8.05, 9.35, pv - 2.2, pv + 2.2, STL, M.Metal)
 		if pl then
 			kit.sign(pl, head > 0 and Enum.NormalId.Right or Enum.NormalId.Left, plate, C.orange)
 		end

@@ -46,6 +46,18 @@ So in a window that is not in front, Studio draws at most 15 frames a second whi
 
 Benchmark: set the workspace attribute `ZR_Bench` to a map id (`meridian`, `border`) in Edit mode and start a test. Dev.luau deploys the first player and walks the viewpoints. The client holds each view for 4 s, counts frames for 6 s and shows a table. Rows counted while the window was in the background are marked BACKGROUND.
 
+## Border Yard exits on the navigation mesh (2026-11-01)
+
+Studio Play mode, Roblox PathfindingService (agent radius 1.6 to 2, height 5.5, can jump) from the dorms yard and from RED STORES to every exit zone.
+
+| Result | Exits |
+|---|---|
+| Path from the dorms yard | AL, AR, CL, CR, DC, FC, HG, HR, K13, NL, OC, OF, OR, PG, PL, RP, S17, S4, SB, TL, TS, AG |
+| No path from RED STORES only (the far west scav exits, over 2,500 studs away) | AG, OC, OF, RP |
+| BOILER CELLAR | needs its key door (by design; the cellar path itself was checked earlier) |
+| OLD PUMPS | path from its sheds to the cellar floor (19 waypoints) |
+| **BUNKER K-11 and SMUGGLERS' HOLE: bug found and fixed** | No path into either shed. The name plate over each shed door hung at 5.2 to 6.8 studs, inside the doorway, which left 5.2 studs of headroom. Lifting the plates in the live server gave paths at once. In `Works.luau` the plate now hangs at 8.05 to 9.35. After a rebuild: K-11 from outside its shed, 21 waypoints; SMUGGLERS' HOLE 15, and 269 from the dorms yard. |
+
 ## Border Yard dorm interiors (2026-11-01)
 
 Studio Play mode on the T490, one client, in-memory store.
