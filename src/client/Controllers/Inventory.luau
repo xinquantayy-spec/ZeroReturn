@@ -973,16 +973,18 @@ function Inventory.render()
 	K.label(panel, info, 12, { Position = UDim2.fromOffset(12, 28), Size = UDim2.fromOffset(W - 220, 16), TextColor3 = weight > 40 and K.C.orange or K.C.dim })
 	local close = K.button(panel, "CLOSE [" .. ctx.Input.label("Inventory") .. "]", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(150, 30) })
 	close.Activated:Connect(Inventory.close)
-	-- Tarkov's character tabs along the top: GEAR (this screen), HEALTH, SKILLS, then OVERALL out of a raid or TASKS in one
-	local tabs = { "GEAR", "HEALTH", "SKILLS", inRaid and "TASKS" or "OVERALL" }
+	-- Tarkov's character tabs along the top: GEAR (this screen), HEALTH, SKILLS, MASTERING, then OVERALL out of a raid or
+	-- TASKS in one. On narrow screens (phones) the tabs narrow so the row keeps clear of the header text.
+	local tabs = { "GEAR", "HEALTH", "SKILLS", "MASTERING", inRaid and "TASKS" or "OVERALL" }
 	if not table.find(tabs, Inventory.tab) then
 		Inventory.tab = "GEAR"
 	end
-	local tabBar = K.frame(panel, { Name = "Tabs", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -168, 0, 8), Size = UDim2.fromOffset(4 * 96, 30) })
+	local tw = math.clamp(math.floor((W - 168 - 250) / #tabs) - 4, 60, 92)
+	local tabBar = K.frame(panel, { Name = "Tabs", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -168, 0, 8), Size = UDim2.fromOffset(#tabs * (tw + 4), 30) })
 	K.list(tabBar, Enum.FillDirection.Horizontal, 4)
 	for _, t in tabs do
 		local on = Inventory.tab == t
-		local b = K.button(tabBar, t, { Name = "Tab_" .. t, Size = UDim2.fromOffset(92, 30), TextSize = 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+		local b = K.button(tabBar, t, { Name = "Tab_" .. t, Size = UDim2.fromOffset(tw, 30), TextSize = tw < 76 and 10 or 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
 		b.Activated:Connect(function()
 			if Inventory.tab ~= t then
 				Inventory.tab = t

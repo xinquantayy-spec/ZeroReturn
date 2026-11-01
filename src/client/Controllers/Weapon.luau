@@ -63,6 +63,8 @@ local POSE = {
 		hip = CFrame.new(0.17, -0.25, -0.62) * CFrame.Angles(math.rad(1), math.rad(4), math.rad(-4)),
 		sprint = CFrame.new(0.08, -0.4, -0.42) * CFrame.Angles(math.rad(-25), math.rad(45), math.rad(15)),
 		reload = CFrame.new(0.15, -0.3, -0.46) * CFrame.Angles(math.rad(12), math.rad(-8), math.rad(30)),
+		-- WEAPON MASTERING (02): the second reload motion, canted further toward the support hand and held higher
+		reload2 = CFrame.new(0.13, -0.27, -0.48) * CFrame.Angles(math.rad(16), math.rad(-12), math.rad(46)),
 		check = CFrame.new(0.12, -0.25, -0.46) * CFrame.Angles(math.rad(8), math.rad(-20), math.rad(52)),
 		tube = CFrame.new(0.16, -0.27, -0.46) * CFrame.Angles(math.rad(10), math.rad(-6), math.rad(-55)),
 		low = CFrame.new(0.26, -0.85, -0.3) * CFrame.Angles(math.rad(-60), math.rad(12), 0),
@@ -72,6 +74,7 @@ local POSE = {
 		hip = CFrame.new(0.11, -0.23, -0.6) * CFrame.Angles(math.rad(2), math.rad(3), 0),
 		sprint = CFrame.new(0.15, -0.48, -0.45) * CFrame.Angles(math.rad(-55), math.rad(5), 0),
 		reload = CFrame.new(0.08, -0.26, -0.55) * CFrame.Angles(math.rad(15), math.rad(-10), math.rad(25)),
+		reload2 = CFrame.new(0.07, -0.24, -0.53) * CFrame.Angles(math.rad(20), math.rad(-14), math.rad(38)),
 		check = CFrame.new(0.06, -0.22, -0.5) * CFrame.Angles(math.rad(10), math.rad(-15), math.rad(45)),
 		low = CFrame.new(0.2, -0.8, -0.35) * CFrame.Angles(math.rad(-70), 0, 0),
 		eyeDist = 0.48,
@@ -137,6 +140,12 @@ end
 -- a gun in your hands: in a raid, or at the range in the lobby
 local function armed()
 	return ctx.State.inRaid() or practicing()
+end
+-- Tarkov's weapon mastering (Progress.MASTERING) of the weapon in hands, from the points the server sends: level 2 gives
+-- the magazine reload a second motion, level 3 lets you reload while aiming down sights (the server holds the same rule)
+local function mastery()
+	local econ = ctx.State.data and ctx.State.data.econ
+	return vm and Progress.masteryFor(econ and econ.mastering, vm.def.id) or 0
 end
 
 local function activeItem()
@@ -668,7 +677,7 @@ local function canAim()
 	if M and (M.busy() or (M.prone and ctx.Camera.speed > 0.6)) then
 		return false -- stance transitions, vaults; no ADS while crawling (Tarkov)
 	end
-	return vm ~= nil and not Weapon.melee and not Weapon.reloading and not Weapon.checking and not Weapon.healing
+	return vm ~= nil and not Weapon.melee and not (Weapon.reloading and mastery() < 3) and not Weapon.checking and not Weapon.healing
 		and switching == nil and armed() and not ctx.Input.isMenu() and not (ctx.Grenade and ctx.Grenade.busy())
 end
 
@@ -1101,11 +1110,15 @@ local function update(dt)
 		base = base:Lerp(CFrame.new(-e.X, -e.Y, -(P.eyeDist or 0.34) - e.Z), aimA)
 	end
 	base = base:Lerp(P.sprint, sprintA * (1 - aimA))
+	-- weapon mastering: level 2 reloads a magazine with the second motion; at level 3 aiming through a reload keeps
+	-- the gun at the eye and the reload only tips it a little (below 3 aiming is off while reloading: canAim)
+	local mlvl = mastery()
+	local keep = mlvl >= 3 and aimA * 0.8 or 0
 	if P.reload then
-		base = base:Lerp(P.reload, reloadA)
+		base = base:Lerp((mlvl >= 2 and P.reload2) or P.reload, reloadA * (1 - keep))
 	end
 	if P.tube then
-		base = base:Lerp(P.tube, tubeA)
+		base = base:Lerp(P.tube, tubeA * (1 - keep))
 	end
 	if P.check then
 		base = base:Lerp(P.check, checkA)
@@ -1182,12 +1195,16 @@ local function update(dt)
 			magW = grip * out:Lerp(CFrame.identity, phase(p, 0.72, 0.8))
 			lHand = magW * grab
 		else
-			if not joltDone then
+			-- the second motion (WEAPON MASTERING (02)) ends with a palm tap on the seated magazine: the hand drops
+			-- and strikes up, and the jolt comes with the strike
+			local m2 = mlvl >= 2
+			if not joltDone and (not m2 or p >= 0.9) then
 				joltDone = true
 				kickRot += math.rad(1.6)
 				kickZ += 0.02
 			end
-			lHand = (grip * grab):Lerp(grip * o.lHand, phase(p, 0.8, 1))
+			local tap = m2 and math.sin(math.pi * math.clamp((p - 0.8) / 0.1, 0, 1)) or 0
+			lHand = (grip * CFrame.new(0, -0.05 * tap, 0) * grab):Lerp(grip * o.lHand, phase(p, m2 and 0.9 or 0.8, 1))
 		end
 	elseif checkT0 and Weapon.checking and o.magGrab then
 		local p = (now - checkT0) / checkDur

@@ -1,7 +1,8 @@
 --!nonstrict
 -- Tarkov's character tabs inside the inventory screen (docs/design/EFT_PARITY.md section 3): HEALTH (the body by part
--- with bleeding and fractures, energy, hydration, weight and effects), SKILLS, OVERALL (out of raid: level, raids,
--- survival rate, kills, karma) and TASKS (in a raid: active tasks and their progress). GEAR stays the inventory itself.
+-- with bleeding and fractures, energy, hydration, weight and effects), SKILLS, MASTERING (weapon mastering by group,
+-- docs/design/MASTERING.md), OVERALL (out of raid: level, raids, survival rate, kills, karma) and TASKS (in a raid:
+-- active tasks and their progress). GEAR stays the inventory itself.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
@@ -151,6 +152,67 @@ local function skills(f, w)
 	sf.CanvasSize = UDim2.fromOffset(0, y + 10)
 end
 
+-- Tarkov's MASTERING tab: every weapon group under its weapon class, with its level ("WEAPON MASTERING (02)"), a bar to
+-- the next level and what each level gives (written out: touch has no hover). Every entry takes the gamepad selection,
+-- so a controller moves down the list and the frame scrolls to it; on narrow screens the list is one column.
+local function mastering(f, w)
+	local d = ctx.State.data
+	local econ = d and d.econ or {}
+	local pts = econ.mastering or {}
+	K.label(f, "MASTERING", 15, { FontFace = K.bold, Position = UDim2.fromOffset(10, 0), Size = UDim2.fromOffset(300, 20) })
+	K.label(f, "Every hit on a living target with a weapon of the group adds one point; every shotgun pellet that hits counts.", 11, {
+		Position = UDim2.fromOffset(10, 22), Size = UDim2.fromOffset(w - 20, 28), TextWrapped = true, TextColor3 = K.C.dim,
+		TextYAlignment = Enum.TextYAlignment.Top,
+	})
+	local ROW = 84
+	local cols = w > 760 and 2 or 1
+	local cw = math.floor((w - 20 - (cols - 1) * 10) / cols)
+	local y, n, cls = 52, 0, nil
+	for _, gid in P.MASTERY_ORDER do
+		local g = P.MASTERING[gid]
+		if g.class ~= cls then
+			if n % cols ~= 0 then
+				y += ROW
+			end
+			n = 0
+			cls = g.class
+			K.label(f, cls, 12, { Position = UDim2.fromOffset(10, y + 2), Size = UDim2.fromOffset(300, 16), TextColor3 = K.C.ochre })
+			y += 22
+		end
+		local p = pts[gid] or 0
+		local lvl, a, b = P.masteryProgress(gid, p)
+		local top = lvl >= P.MASTERY_MAX
+		local box = K.frame(f, {
+			Name = "Mastery_" .. gid, BackgroundColor3 = K.C.panel, Position = UDim2.fromOffset(10 + (n % cols) * (cw + 10), y),
+			Size = UDim2.fromOffset(cw, ROW - 6), Selectable = true, SelectionImageObject = K.selection(),
+		})
+		K.label(box, string.upper(g.name), 13, { FontFace = K.bold, Position = UDim2.fromOffset(8, 4), Size = UDim2.new(0.42, 0, 0, 18), TextTruncate = Enum.TextTruncate.AtEnd })
+		K.label(box, string.format("WEAPON MASTERING (%02d)", lvl), 12, {
+			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 4), Size = UDim2.new(0.58, -8, 0, 18),
+			TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = top and K.C.ochre or K.C.text,
+		})
+		bar(box, 8, 26, cw - 16, top and 1 or (p - a) / math.max(1, b - a), K.C.ochre)
+		K.label(box, top and (Util.commas(p) .. "  ·  MAX") or (Util.commas(p) .. " / " .. Util.commas(b)), 11, {
+			Position = UDim2.fromOffset(8, 34), Size = UDim2.new(1, -16, 0, 14), TextColor3 = K.C.dim,
+		})
+		-- what the levels give, bright once reached
+		for i, lv in { 2, 3 } do
+			K.label(box, string.format("(%02d)  %s", lv, P.MASTERY_PERKS[lv]), 10, {
+				Position = UDim2.fromOffset(8, 36 + i * 13), Size = UDim2.new(1, -16, 0, 12), TextTruncate = Enum.TextTruncate.AtEnd,
+				TextColor3 = lvl >= lv and K.C.text or K.C.dim,
+			})
+		end
+		n += 1
+		if n % cols == 0 then
+			y += ROW
+		end
+	end
+	if n % cols ~= 0 then
+		y += ROW
+	end
+	return y
+end
+
 local function overall(f, w)
 	local d = ctx.State.data
 	local econ = d and d.econ or {}
@@ -217,6 +279,8 @@ function Character.draw(tab, f, w, h)
 	elseif tab == "SKILLS" then
 		skills(f, w)
 		return 26 + math.ceil(#P.SKILL_ORDER / (w > 900 and 3 or 2)) * 76
+	elseif tab == "MASTERING" then
+		return mastering(f, w) + 10
 	elseif tab == "OVERALL" then
 		overall(f, w)
 		return 60 + 7 * 30
