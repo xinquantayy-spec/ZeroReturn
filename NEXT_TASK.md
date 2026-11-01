@@ -43,7 +43,7 @@
 
 Performance rules for all of it: instanced meshes, low poly with baked shading, shared textures, near-player clutter scaled by the GRAPHICS level, few real lights, an FPS check after each map.
 
-Maps are original. They are the same kinds of places as Tarkov's with their own layouts, landmarks and names; Battlestate's layouts, art, icons and fonts are not copied.
+Maps copy Tarkov's layouts (owner, 2026-11-01, now in the project instructions): same terrain, roads and building positions at real scale, with our own buildings, interiors and names; Battlestate's art, icons and fonts are not copied.
 
 ## M13 Maps
 

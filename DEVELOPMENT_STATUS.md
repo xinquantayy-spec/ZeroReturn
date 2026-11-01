@@ -2,7 +2,7 @@
 
 Build `0.9.2-m13`. Last updated 2026-11-01.
 
-Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. Maps are original (same kinds of places as Tarkov's, own layouts and names): **Quay 7** (industrial port), **Smelter** (factory-type) and **Meridian Mall** (mall-type, furnished and damaged with a Blender kit) are playable; **Border Yard** (customs-type) is designed; **Pinewatch** (woods-type) is built but parked by the owner (2026-10-29), kept in the repo and out of the map vote.
+Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. Maps copy Tarkov's layouts with our own buildings and names (owner, 2026-11-01): **Quay 7** (industrial port), **Smelter** (factory-type) and **Meridian Mall** (mall-type, furnished and damaged with a Blender kit) are playable; **Border Yard** (customs-type) is designed; **Pinewatch** (woods-type) is built but parked by the owner (2026-10-29), kept in the repo and out of the map vote.
 
 **Standing rule (owner, 2026-10-31):** develop Zero Return as close as possible to Escape from Tarkov in all aspects, less the exceptions in `docs/design/EFT_PARITY.md` (IP, the owner's design choices, Roblox limits, cross-platform). Research before each task, parity check before moving on. The parity gap list (item information, quality of life, controls, settings, visuals) is in that file.
 

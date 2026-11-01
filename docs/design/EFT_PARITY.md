@@ -8,8 +8,10 @@ the owner pointed out that weapons show no fire rate or damage in our game (rese
 
 ## Exceptions (assumed; the owner can add or remove)
 
-1. **Intellectual property.** Original names, item and map art, icons, fonts and map layouts; no real gun or gear
-   brands; no Battlestate assets. Layouts, rules, numbers and behaviour are copied; the art is not.
+1. **Intellectual property.** Original names, item and map art, icons and fonts; no real gun or gear brands; no
+   Battlestate assets. Rules, numbers, behaviour and screen layouts are copied; the art is not. **Maps copy Tarkov's
+   layouts** (terrain, roads and where every building stands, at real scale) with our own buildings, interiors and
+   names (owner, 2026-11-01; in the project instructions since then).
 2. **The owner's design choices.** The name Zero Return; the BODYCAM look (lens, grain, STBY/REC, the wide bodycam
    view); the Relay 7 bunker as a walk-around lobby (every Tarkov screen still opens from its key); one bunker per server.
 3. **What Roblox does not let a game control.** Resolution, screen mode, VSync, frame-rate caps, DLSS/FSR, Reflex,
