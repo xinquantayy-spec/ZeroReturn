@@ -1,6 +1,7 @@
 --!nonstrict
 -- M12 client detail layer and graphics presets.
--- The server publishes a detail plan (ReplicatedStorage.ZR_DetailPlan: one JSON list per 64-stud cell, see the
+-- The server publishes a detail plan (one JSON list per 64-stud cell: the lobby's in ReplicatedStorage.ZR_DetailPlan,
+-- the map's on parts in workspace.ZR_DetailCells that stream in and out with the map; see the
 -- server DetailPlan module). This controller builds the cells around the camera in distance rings: fine clutter
 -- close by, medium marks further out, the big grime strips furthest. It creates a few dozen instances per frame so
 -- nothing hitches, and tears cells down again as the camera moves away. Detail is local to this client and never
@@ -225,6 +226,23 @@ local function loadCell(sv)
 		end
 	end
 	cells[sv.Name] = cell
+end
+
+-- a streamed cell left the client (far from the player): its details go; a cell with ground cover keeps its region
+local function unloadCell(key)
+	local cell = cells[key]
+	if not cell then
+		return
+	end
+	for lod = 1, 3 do
+		dropCell(cell, lod)
+	end
+	if cell.natRegion then
+		cell.byLod = { {}, {}, {} }
+		cell.natPending = true
+	else
+		cells[key] = nil
+	end
 end
 
 -- cells over terrain regions get ground cover, scattered when the camera first comes near
@@ -695,10 +713,32 @@ function Detail.init(c)
 				if okN and type(regions) == "table" then
 					addNatureCells(regions)
 				end
-				pf.ChildAdded:Connect(loadCell)
+				local conns = { pf.ChildAdded:Connect(loadCell) }
+				-- the map's cells stream in and out with the map (DetailPlan.publish puts each on a part in workspace)
+				local wf = workspace:WaitForChild("ZR_DetailCells", 15)
+				if wf then
+					for _, sv in wf:GetDescendants() do
+						if sv:IsA("StringValue") then
+							loadCell(sv)
+						end
+					end
+					table.insert(conns, wf.DescendantAdded:Connect(function(sv)
+						if sv:IsA("StringValue") then
+							loadCell(sv) -- built by the next refresh (every 0.4 s) when it is near the camera
+						end
+					end))
+					table.insert(conns, wf.DescendantRemoving:Connect(function(sv)
+						if sv:IsA("StringValue") then
+							unloadCell(sv.Name)
+						end
+					end))
+				end
 				refresh()
-				-- a new plan (another map) replaces the folder
+				-- a new plan (another map) replaces the folders
 				pf.AncestryChanged:Wait()
+				for _, cn in conns do
+					cn:Disconnect()
+				end
 			end
 			pf = ReplicatedStorage:WaitForChild("ZR_DetailPlan", 300)
 		end

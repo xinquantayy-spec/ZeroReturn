@@ -57,8 +57,11 @@ There are 28 props from the Blender wear kit (`ZR_WearKit`) on Quay 7:
   * floors and roads;
   * wall caps;
   * shipping containers.
-* The list goes into 64-stud cells in `ReplicatedStorage.ZR_DetailPlan`. Quay 7 has about 2,000 entries (164 KB),
-  and generation takes about 1.2 s at server start.
+* The list goes into 64-stud cells. The lobby's cells are in `ReplicatedStorage.ZR_DetailPlan`, which every client
+  gets at once. Since 2026-11-02, the cells of the map in play sit on invisible parts in `workspace.ZR_DetailCells`, so
+  they stream in and out with the map around each player. Quay 7 has about 2,000 entries (164 KB); the real-scale
+  Meridian has 10,866 (970 KB), of which a client near the mall holds about 280 KB. Generation takes about 1.2 s
+  (Quay 7) to 10 s (all maps) at server start.
   * Decals: water streaks, ground grime and damp, peeling plaster, cracks, spalls, bullet holes, rust runs, leaks,
     soot, graffiti of the game's own factions, oil, puddles, debris, leaves, skid marks, manholes.
   * Wear-kit meshes: rubble, litter, cardboard, trash bags, tyres, planks, weeds, rebar. Indoors: tipped bins and

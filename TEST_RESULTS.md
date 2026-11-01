@@ -8,6 +8,20 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Detail plan streamed with the map (2026-11-02)
+
+The client detail layer's plan for the map in play now sits on invisible parts in `workspace.ZR_DetailCells`, which
+stream in and out with the map. Before, it was all in ReplicatedStorage. Checked on Meridian with one player:
+
+| Check | Result |
+|---|---|
+| Published | 769 cells on parts (971 KB in all), the lobby's 13 cells in ReplicatedStorage; Count 10,866 entries over both |
+| Client by the mall (-211, 7737) | 276 streamed cells (274 KB) plus the lobby's 21 KB; 1,091 details built in 46 folders |
+| Client teleported to the south-east corner (1112, 9861) | 282 cells, 16 within 250 studs; 842 details built there in 41 folders |
+| Suites | LogicTests 341/341, CharTests 46/46, LookTests 33/33 (L02 now checks what every client gets at once, 21 KB, and the streamed parts), MapTests 36/36 |
+
+**NOT VERIFIED:** a phone, where streaming out under memory pressure would also drop far cells.
+
 ## Meridian exit walk-through (2026-11-02)
 
 Every exit, walked from every spawn that may use it and stood in with its rule met, then looked at.
@@ -58,9 +72,9 @@ Audit after the changes (`audit meridian`): one finding, the shelter's gun bench
 flags 0.25).
 
 Suites (raid running on Meridian): LogicTests 341/341, CharTests 46/46, MapTests 36/36 (the two map-swap checks skip
-while a raid runs), **LookTests 31/32: L02 fails**. The detail plan published for Meridian is 970 KB in 787 cells,
-against a 400 KB limit. The biggest cell is 12 KB, so these changes do not explain it. It comes from the real-scale
-Meridian (KNOWN_ISSUES 70).
+while a raid runs), **LookTests 31/32: L02 failed**. The detail plan published for Meridian was 970 KB in 787 cells,
+against a 400 KB limit. The biggest cell is 12 KB, so these changes do not explain it. It came from the real-scale
+Meridian, and is fixed in the next section up (the plan now streams with the map).
 
 **NOT VERIFIED:**
 

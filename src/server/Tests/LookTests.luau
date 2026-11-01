@@ -69,8 +69,25 @@ function T.run(ctx)
 			local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
 			local avoid = ctx.World.detailAvoid()
 			local total, badCell, badDec, badMesh, near, bytes = 0, 0, 0, 0, 0, 0
+			-- the lobby's cells in ReplicatedStorage (every client gets them at once), the map's on streamed parts
+			local svs, holders, badHolder, biggest = {}, 0, 0, 0
 			for _, sv in pf:GetChildren() do
 				bytes += #sv.Value
+				table.insert(svs, sv)
+			end
+			local wf = workspace:FindFirstChild("ZR_DetailCells")
+			for _, p in wf and wf:GetChildren() or {} do
+				holders += 1
+				local sv = p:FindFirstChildOfClass("StringValue")
+				if not (p:IsA("BasePart") and p.Anchored and not p.CanCollide and not p.CanQuery and not p.CanTouch and p.Transparency == 1 and sv) then
+					badHolder += 1
+				end
+				if sv then
+					biggest = math.max(biggest, #sv.Value)
+					table.insert(svs, sv)
+				end
+			end
+			for _, sv in svs do
 				local ok, list = pcall(HttpService.JSONDecode, HttpService, sv.Value)
 				local cx, cz = string.match(sv.Name, "^(-?%d+)_(-?%d+)u?$")
 				if not ok or not cx then
@@ -110,7 +127,9 @@ function T.run(ctx)
 			check("L02 decals use the uploaded wear images", badDec == 0, badDec)
 			check("L02 meshes are wear-kit pieces in the library", badMesh == 0, badMesh)
 			check("L02 ground clutter keeps clear of loot, containers, doors, exfils and spawns", near == 0, near)
-			check("L02 plan stays small enough to replicate (< 400 KB)", bytes < 400 * 1024, math.floor(bytes / 1024) .. " KB")
+			check("L02 what every client gets at once stays small (< 400 KB)", bytes < 400 * 1024, math.floor(bytes / 1024) .. " KB")
+			check("L02 the map's cells stream with the map: each on an invisible, anchored part that blocks nothing, none over 32 KB",
+				holders > 0 and badHolder == 0 and biggest < 32 * 1024, holders .. " parts, " .. badHolder .. " wrong, biggest " .. math.floor(biggest / 1024) .. " KB")
 		end
 		check("L02 the server builds no detail itself (client only)", workspace:FindFirstChild("ZR_Detail") == nil)
 	end

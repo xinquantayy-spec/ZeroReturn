@@ -120,15 +120,11 @@
       - every re-hung door, and AI paths through them;
       - the fuel stop, where the safe overlaps the office desk.
 
-70. **The detail plan for Meridian is 970 KB (measured 2026-11-02).** The client detail layer's plan is published to
-    ReplicatedStorage for the map in play. For the real-scale Meridian it is 970 KB in 787 cells, against LookTests L02's
-    400 KB limit, so L02 fails while Meridian is in play (it passes on the smaller maps). Every entry repeats its full
-    image id ("rbxassetid://" and 15 digits, about a quarter of the bytes). Ways to cut it:
-    - an index into a shared image list instead of the id;
-    - fewer decimals;
-    - cells sent only near the player.
-
-    It costs replication at raid start, which matters most on phones (see 65).
+70. **The detail plan for Meridian was 970 KB: fixed 2026-11-02.** The client detail layer's plan used to be published in
+    full to ReplicatedStorage for the map in play: 970 KB in 787 cells for the real-scale Meridian, so LookTests L02
+    (400 KB) failed while Meridian was in play. The map's cells now sit on invisible parts in `workspace.ZR_DetailCells`
+    and stream with the map: a client by the mall held 276 cells (274 KB) plus the lobby's 21 KB. Still possible: an
+    image index instead of the full id in every entry (about a quarter of the bytes).
 
 71. **Meridian exits: what the walk-through left (2026-11-02).**
     - **SHELTER EXIT.** In Tarkov you press the lock button by the saferoom door. The door shuts for good and the 3 s

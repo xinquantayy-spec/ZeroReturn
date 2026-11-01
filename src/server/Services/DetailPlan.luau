@@ -1,8 +1,9 @@
 --!nonstrict
 -- M12 detail plan. After a map is built the server reads its geometry once (walls and their faces, openings,
 -- floors and slabs, wall caps) and writes a seeded list of cosmetic details, grouped in 64-stud cells. The cells of
--- the map in play (M13: Plan.publish on every map activation) go to ReplicatedStorage.ZR_DetailPlan (one JSON
--- StringValue per cell; underground cells end in "u"). Each client builds the cells near its camera at
+-- the map in play (M13: Plan.publish on every map activation) are published as one JSON StringValue per cell
+-- (underground cells end in "u"): the lobby's in ReplicatedStorage.ZR_DetailPlan, the map's on streamed parts in
+-- workspace.ZR_DetailCells (Plan.publish). Each client builds the cells near its camera at
 -- its graphics level (client Detail controller). Details never collide, block sight or take bullets, and they are
 -- kept low or flat against surfaces, so they never become cover; gameplay props stay in World.
 --
@@ -718,9 +719,12 @@ Plan.always = {}
 local function inArea(x, z, b)
 	return x >= b.x0 - CELL and x <= b.x1 + CELL and z >= b.z0 - CELL and z <= b.z1 + CELL
 end
--- the cells inside `bounds` (a map's play area, with a cell of margin) and the always-areas replace
--- ReplicatedStorage.ZR_DetailPlan; clients clear their detail and rebuild from the new set. nil bounds publish
--- everything.
+-- the cells inside `bounds` (a map's play area, with a cell of margin) and the always-areas replace the published plan;
+-- clients clear their detail and rebuild from the new set. nil bounds publish everything.
+-- The always-areas (the lobby) go to ReplicatedStorage.ZR_DetailPlan, which every client gets at once. A map's cells go
+-- to workspace.ZR_DetailCells, each on an invisible anchored part at the cell's middle, so they stream in and out with
+-- the map around each player: real-scale Meridian's plan is about 1 MB, and a phone needs only the cells near it.
+-- ZR_DetailPlan's attributes: Count and Bytes over both folders, Nature (terrain regions for ground cover).
 function Plan.publish(bounds)
 	if not Plan.allCells then
 		return 0
@@ -729,28 +733,52 @@ function Plan.publish(bounds)
 	if old then
 		old:Destroy()
 	end
+	local oldW = workspace:FindFirstChild("ZR_DetailCells")
+	if oldW then
+		oldW:Destroy()
+	end
 	local folder = Instance.new("Folder")
 	folder.Name = "ZR_DetailPlan"
-	local n, bytes = 0, 0
+	local wf = Instance.new("Folder")
+	wf.Name = "ZR_DetailCells"
+	local n, bytes, streamed = 0, 0, 0
 	for k, c in Plan.allCells do
-		local cx, cz = string.match(k, "^(-?%d+)_(-?%d+)")
+		local cx, cz, u = string.match(k, "^(-?%d+)_(-?%d+)(u?)$")
 		local x, z = (tonumber(cx) + 0.5) * CELL, (tonumber(cz) + 0.5) * CELL
-		local keep = not bounds or inArea(x, z, bounds)
+		local always = false
 		for _, a in Plan.always do
-			keep = keep or inArea(x, z, a)
+			always = always or inArea(x, z, a)
 		end
-		if keep then
+		if always or not bounds or inArea(x, z, bounds) then
 			local sv = Instance.new("StringValue")
 			sv.Name = k
 			sv.Value = c.json
-			sv.Parent = folder
+			if always then
+				sv.Parent = folder
+			else
+				local p = Instance.new("Part")
+				p.Name = k
+				p.Anchored = true
+				p.CanCollide = false
+				p.CanQuery = false
+				p.CanTouch = false
+				p.CastShadow = false
+				p.Transparency = 1
+				p.Size = Vector3.new(1, 1, 1)
+				p.CFrame = CFrame.new(x, u == "u" and -12 or 2, z)
+				sv.Parent = p
+				p.Parent = wf
+				streamed += #c.json
+			end
 			n += c.n
 			bytes += #c.json
 		end
 	end
 	folder:SetAttribute("Count", n)
 	folder:SetAttribute("Bytes", bytes)
+	folder:SetAttribute("Streamed", streamed)
 	folder:SetAttribute("Nature", HttpService:JSONEncode(Plan.nature)) -- terrain regions for client ground cover (M13)
+	wf.Parent = workspace
 	folder.Parent = ReplicatedStorage
 	return n
 end
