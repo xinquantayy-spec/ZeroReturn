@@ -298,6 +298,9 @@ function Input.setMounted(on)
 end
 
 function Input.device()
+	if Input.forceDevice then
+		return Input.forceDevice -- Studio test bridge (ZR_ClientDev "device"): the gamepad and touch paths without one
+	end
 	local ok, pi = pcall(function()
 		return UIS.PreferredInput
 	end)

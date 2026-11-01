@@ -48,6 +48,11 @@ local function visorHelmet()
 	return def and def.armor and def.armor.face == true
 end
 
+-- something on the head that N flips (goggles on a mount or strap, or a helmet's face shield): the touch NV button
+function NV.canFlip()
+	return NV.device() ~= nil or visorHelmet() == true
+end
+
 -- thermal goggles down: no magnified optics (Tarkov: iron sights only)
 function NV.blocksOptics()
 	return NV.down and NV.dev ~= nil and NV.dev.thermal == true
@@ -238,10 +243,27 @@ function NV.init(c)
 	cc.Name = "ZR_NightVision"
 	cc.Enabled = false
 	cc.Parent = Lighting
+	-- N (Tarkov). Gamepad: hold D-left (a tap there is the next weapon, Weapon controller). Touch: NV.
+	local padTok = nil
 	c.Input.on("ToggleNVG", function(down)
-		if down then
-			toggle()
+		if c.Input.device() ~= "Gamepad" then
+			if down then
+				toggle()
+			end
+			return
 		end
+		if not down then
+			padTok = nil
+			return
+		end
+		local tok = {}
+		padTok = tok
+		task.delay(0.4, function()
+			if padTok == tok then
+				padTok = nil
+				toggle()
+			end
+		end)
 	end)
 	RunService.RenderStepped:Connect(function(dt)
 		local ok, err = pcall(apply, dt)

@@ -267,6 +267,22 @@ function M.build(items, it, origin: CFrame, scale: number, g: string?)
 		table.insert(out.parts, lp)
 		out.lightPart = lp
 	end
+	if A.laser then
+		-- the laser's aperture: the same kind of part, its Right face down the barrel (the beam starts here)
+		local zp = Instance.new("Part")
+		zp.Name = "Laser"
+		zp.Size = Vector3.new(0.05, 0.05, 0.05) * scale
+		zp.Transparency = 1
+		zp.Anchored = false
+		zp.CanCollide = false
+		zp.CanQuery = false
+		zp.CanTouch = false
+		zp.Massless = true
+		zp.CastShadow = false
+		zp.CFrame = origin * CFrame.new(A.laser * scale) * CFrame.fromMatrix(Vector3.zero, -Vector3.zAxis, Vector3.yAxis, Vector3.xAxis)
+		table.insert(out.parts, zp)
+		out.laserPart = zp
+	end
 	return out
 end
 

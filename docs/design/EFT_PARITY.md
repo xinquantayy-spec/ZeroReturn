@@ -74,18 +74,18 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 
 | Action | Tarkov | Zero Return | To do |
 |---|---|---|---|
-| Check magazine (approximate count) | Alt+T | T | Move to Alt+T |
-| Check chamber, fix malfunction | Shift+T | Missing | Add (with M11 part B malfunctions) |
-| Fire mode / check fire mode | B / Alt+B | V / none | Move, add the check |
-| Tactical device on, mode | T, Ctrl+T | L | Move |
-| Inspect weapon (animation) | L | Missing | Add |
-| Melee | V | 4 | Move |
-| Quick slots | 4 to 0 | Heal on H | Quick slots |
-| Prone | X | Z | Move; double Z drops the backpack |
-| Time and exits | Double O (raid timer on by default since 0.16.7) | O (exits) | Add the time |
+| Check magazine (approximate count) | Alt+T | Done: Alt+T | - |
+| Check chamber, fix malfunction | Shift+T | Done: Shift+T | - |
+| Fire mode / check fire mode | B / Alt+B | Done: B / Alt+B | - |
+| Tactical device on, mode | T, Ctrl+T | Done 2026-11-02: T, and Ctrl+T cycles a combo between light, laser and both; lasers draw a beam and a dot (section below) | - |
+| Inspect weapon (animation) | L | Done: L | - |
+| Melee | V | Done: V | - |
+| Quick slots | 4 to 0 | Done: 4 to 0 | - |
+| Prone, drop the backpack | X, double Z | X | Double Z to drop the backpack |
+| Time and exits | Double O (raid timer on by default since 0.16.7) | Done: O shows the time, twice lists the exits | - |
 | Head device (NVG, face shield) | N | Done 2026-11-01: N flips goggles or raises the face shield | - |
 | Stationary guns (NSV, AGS-30): man the gun, aim, fire, leave | F is Interact; Tarkov documents no control for them, so how to leave and how to zoom were not found | Done 2026-11-01 with controls of our own: the prompt (F, pad X, tap) mounts; mouse / right stick / screen drag aims; fire and zoom follow the Fire and Aim keys, right trigger and left trigger, the FIRE and ZOOM buttons; F, B or LEAVE gets off (section below) | Sounds, animation, the real positions |
-| Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Y and F1 to F12 | Some | The rest |
+| Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, zeroing, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Page Up/Down, Y and F1 to F12 | Hold breath (Shift while aiming), magnification (Alt+RMB, in steps) and zeroing (Page Up/Down) | Walk, walk speed, side step, blind fire, switch sights, voice lines, gestures |
 | Rebinding with press, double press, hold and release | Settings, Controls | Missing | Keybinding screen |
 
 ## 5. Settings
@@ -687,4 +687,31 @@ Gaps:
 - **The looted knife** has the field knife's stats and does not poison.
 - **The night rule** is "the raid starts in the dark", not Tarkov's exact hours.
 - **Zones are ours**; not on other maps; no cultist circle.
+
+### Tactical devices: lasers and modes (2026-11-02)
+
+Researched first: Prima Games' Tarkov controls guide gives T for "Toggle Laser/Light" and Ctrl+T for "Toggle Tactical
+Device Mode", and Left Alt + RMB (another of its tables: Ctrl + wheel) for the scope's magnification; the wiki's weapon
+mods page lists lights, lasers and combo devices. Built in `Combat.luau`, `AI.luau`, `GunBuild.luau`, `Chars.luau`,
+`Weapon.luau`, `LaserFx.luau` (new), `InputMap.luau`, `Touch.luau` and `NightVision.luau`. Checked in Studio with one player (TEST_RESULTS "Tactical lasers").
+
+Matched:
+- **Keys:** T turns the device on and off; Ctrl+T cycles a light/laser combo (the LC-4) between both, light and laser. A
+  device with one function ignores the mode.
+- **Visible laser:** every client draws a red beam from the device along the barrel and a dot where it lands, up to 250
+  studs. It shows the barrel, not the crosshair, so in hip fire the dot is where the gun points. Others' lasers stop on
+  whatever they meet, you included.
+- **Others see it:** the server sets WeaponLight and WeaponLaser on the character from the device and its mode.
+
+Ours (Roblox, cross-platform, or no source found):
+- **AI:** bots with a light use it at night while hunting, and guards on patrol; a laser runs with the light and in
+  any fight, day or night. No source gives Tarkov's rule for when bots switch devices on.
+- **Gamepad:** hold D-right for the device (a tap is still the fire mode). Held while aiming, it switches the mode.
+- **Touch:** LGT toggles; holding it switches the mode. The new NV button flips goggles; on a pad, hold D-left.
+
+Gaps:
+- **One colour.** Tarkov has red, green and infrared lasers (the last seen only through night vision); ours are red.
+- **No laser hip-fire numbers from Tarkov.** A laser steadies hip fire by 20 %, our figure.
+- **The beam's look is ours** (transparency 0.62 at night, 0.88 by day; the dot keeps a few pixels at range).
+- **No second-client check** of another player's beam; the same code draws the AI's, which was seen.
 

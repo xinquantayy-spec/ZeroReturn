@@ -61,6 +61,7 @@ Next round (`KNOWN_ISSUES` 69):
    - THE HOUNDS, Border Yard's Goons: three bosses at 20 % from the Bastion, Tarkov's health, kits and five double pockets (`docs/design/BOSS_HOUNDS.md`).
    - The green flare and flare exits: NORTH LINE and RIVER PATH open by flare, OLD PUMPS sends up green flares while it is there (`EFT_PARITY.md`, "Flare exits").
    - THE CULT, Border Yard's cultists: a priest and two to four warriors at night, prone ambushes, poisoned knives and the antidote (`docs/design/BOSS_CULT.md`).
+   - Tactical lasers and device modes (KNOWN_ISSUES 52): T and Ctrl+T, a beam and a dot for every laser, the AI's too; gamepad holds on D-right and D-left, touch LGT and NV (`EFT_PARITY.md`, "Tactical devices"). KNOWN_ISSUES 55 (zeroing, variable zoom) was already done and is closed.
 
    Left from these:
    - KNOWN_ISSUES 73: the ambience atlas is silent until the owner re-uploads it.
@@ -72,7 +73,7 @@ Next round (`KNOWN_ISSUES` 69):
 
 **Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file). Decisions that can wait: publishing, a cross-server flea market (MemoryStore).
 
-**M14 weapon modding is done (part A, 2026-10-29).** Follow-ups from the fidelity check (KNOWN_ISSUES 52–57): laser beams and device modes, folding stocks, saved builds with buying missing parts, sight zeroing and variable zoom, 3D inspect for every item, part sizes against Tarkov's.
+**M14 weapon modding is done (part A, 2026-10-29).** Follow-ups from the fidelity check (KNOWN_ISSUES 53, 54, 56, 57): folding stocks, saved builds with buying missing parts, 3D inspect for every item, part sizes against Tarkov's. Laser beams and device modes (52) and zeroing and variable zoom (55) are done.
 
 **M16 Characters (owner request, 2026-10-28) is done (part A).** Block body, Blender equipment set, server appearance system and role presets; see `docs/character/`. M16 part B is still to do:
 - the two-client checks (C06, C08), which need a Studio Clients-and-Servers run by the owner;

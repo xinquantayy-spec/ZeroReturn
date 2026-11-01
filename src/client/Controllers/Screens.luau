@@ -629,7 +629,7 @@ local SETTING_TABS = {
 local BIND_ROWS = {
 	{ "Reload", "RELOAD" }, { "Sprint", "SPRINT" }, { "Crouch", "CROUCH" }, { "Prone", "PRONE" }, { "LeanLeft", "LEAN LEFT" },
 	{ "LeanRight", "LEAN RIGHT" }, { "FreeLook", "FREE LOOK" }, { "FireMode", "FIRE MODE" }, { "FireModeCheck", "CHECK FIRE MODE" },
-	{ "MagCheck", "CHECK MAGAZINE" }, { "ChamberCheck", "CHECK CHAMBER" }, { "Light", "TACTICAL DEVICE" }, { "InspectWeapon", "INSPECT WEAPON" },
+	{ "MagCheck", "CHECK MAGAZINE" }, { "ChamberCheck", "CHECK CHAMBER" }, { "Light", "TACTICAL DEVICE" }, { "DeviceMode", "DEVICE MODE" }, { "InspectWeapon", "INSPECT WEAPON" },
 	{ "Sidearm", "SIDEARM" }, { "Primary", "WEAPON ON SLING" }, { "Secondary", "WEAPON ON BACK" }, { "Knife", "MELEE WEAPON" },
 	{ "Grenade", "GRENADE" }, { "Extracts", "TIME (TWICE: EXITS)" }, { "Inventory", "INVENTORY" }, { "Settings", "SETTINGS" },
 	{ "Quick4", "QUICK SLOT 4" }, { "Quick5", "QUICK SLOT 5" }, { "Quick6", "QUICK SLOT 6" }, { "Quick7", "QUICK SLOT 7" },

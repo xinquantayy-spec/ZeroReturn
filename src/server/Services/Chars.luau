@@ -232,6 +232,12 @@ function Chars.setWeapon(char, holder, g)
 				l.Enabled = char:GetAttribute("WeaponLight") == true
 				l.Parent = b.lightPart
 			end
+			if b.laserPart then
+				-- where every client's LaserFx starts this gun's beam (the part itself is renamed with the rest)
+				local a = Instance.new("Attachment")
+				a.Name = "LaserEmitter"
+				a.Parent = b.laserPart
+			end
 		end
 	else
 		char:SetAttribute("ActiveWeapon", nil)

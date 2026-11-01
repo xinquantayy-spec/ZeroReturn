@@ -26,6 +26,10 @@ local LAYOUT = {
 	{ "LeanRight", "LN-R", Vector2.new(0.70, 0.80), 46 },
 	{ "Prone", "PRN", Vector2.new(0.62, 0.86), 46 },
 	{ "Grenade", "NADE", Vector2.new(0.885, 0.73), 50 },
+	-- shown only when there is something to switch: a light or laser on the gun (a tap: on/off, held: its mode), goggles
+	-- or a face shield on the head
+	{ "Light", "LGT", Vector2.new(0.60, 0.58), 42 },
+	{ "ToggleNVG", "NV", Vector2.new(0.60, 0.44), 42 },
 	-- at a stationary gun these replace the personal-weapon buttons (the Stationary controller; FIRE drags to aim)
 	{ "MountFire", "FIRE", Vector2.new(0.885, 0.50), 96 },
 	{ "MountZoom", "ZOOM", Vector2.new(0.765, 0.43), 62 },
@@ -48,6 +52,14 @@ local function refresh()
 			shown = shown and atGun
 		elseif atGun then
 			shown = shown and (action == "Inventory" or action == "Settings")
+		end
+		if action == "Light" then
+			shown = shown and ctx.Weapon.hasDevice ~= nil and ctx.Weapon.hasDevice()
+			b.BackgroundColor3 = ctx.Weapon.light and K.C.ochre or K.C.bg
+		elseif action == "ToggleNVG" then
+			local NV = ctx.NightVision
+			shown = shown and NV ~= nil and NV.canFlip ~= nil and NV.canFlip()
+			b.BackgroundColor3 = (NV and NV.down) and K.C.ochre or K.C.bg
 		end
 		b.Visible = shown
 		if action == "MountZoom" then

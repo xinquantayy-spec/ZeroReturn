@@ -543,20 +543,32 @@ function Combat.drawDelay(player, slot)
 	w.drawUntil = os.clock() + t
 	if player.Character then
 		player.Character:SetAttribute("WeaponLight", false)
+		player.Character:SetAttribute("WeaponLaser", false)
 		ctx.Chars.gesture(player.Character, "draw", t)
 	end
 	ctx.Remotes.note(player, "draw", { slot = slot, t = t })
 end
 
--- tactical light: only when the weapon in hands carries one; replicated via attribute + third-person SpotLight
-function Combat.setLight(player, on)
+-- tactical device: only when the weapon in hands carries one; replicated via attributes (WeaponLight with the
+-- third-person SpotLight, WeaponLaser drawn by every client's LaserFx). A light/laser combo has a mode (Tarkov: Ctrl+T
+-- switches it): "both", "light" or "laser"; a single-purpose device ignores it.
+function Combat.deviceState(ms, on, mode)
+	on = on == true
+	local light = on and ms.light == true and (not ms.laser or mode ~= "laser")
+	local laser = on and ms.laser == true and (not ms.light or mode ~= "light")
+	return light, laser
+end
+function Combat.setLight(player, on, mode)
 	local s = ctx.Raid.session(player)
 	local char = player.Character
 	if not s or s.done or not char then
 		return
 	end
 	local wg = s.active and s.inv.slots[s.active]
-	on = on == true and wg ~= nil and Inv.modStats(s.inv, wg).light == true
+	local ms = wg and Inv.modStats(s.inv, wg) or {}
+	local laser
+	on, laser = Combat.deviceState(ms, on == true and wg ~= nil, mode)
+	char:SetAttribute("WeaponLaser", laser)
 	char:SetAttribute("WeaponLight", on)
 	for _, c in char:GetChildren() do
 		if c.Name == "TPWeapon" then
@@ -678,7 +690,8 @@ function Combat.init(c)
 	end, 4, 6)
 	ctx.Remotes.onAct("light", function(player, p)
 		if type(p) == "table" and type(p.on) == "boolean" then
-			Combat.setLight(player, p.on)
+			local mode = (p.mode == "light" or p.mode == "laser") and p.mode or "both"
+			Combat.setLight(player, p.on, mode)
 		end
 	end, 3, 4)
 	ctx.Remotes.onAct("magcheck", function(player, p)

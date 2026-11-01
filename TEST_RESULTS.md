@@ -8,6 +8,57 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Tactical lasers and device modes (2026-11-02)
+
+Border raids at 01:00 and 13:00, one player, god mode, the R-17 close-quarters build (LC-4 light/laser) given into the
+second weapon slot with ZR_Dev `give`.
+
+- **Device on and off, modes:**
+  - T (real keyboard input through Studio MCP) turned the device off and on. Ctrl+T switched laser to both and did not
+    also toggle the device.
+  - ZR_ClientDev `devicemode` cycled both → light → laser → both. The server attributes followed each time (light only:
+    WeaponLight on, WeaponLaser off; laser only: the reverse; both: both).
+  - In light mode the player's own beam was removed; laser and both drew it again.
+  - The HUD's weapon line read LIGHT, LASER or LIGHT + LASER.
+- **What it looks like:**
+  - Night, hip fire, laser mode: a red beam from the device along the barrel (not the crosshair) and a dot 28 studs away
+    (0.19 studs across) (`docs/maps/evidence/W02_laser_night_hip.jpg`).
+  - Day: the beam fades to a hint (transparency 0.88, 0.62 at night); the dot stays (`W04_laser_day_hint.jpg`).
+  - An AI guard's laser seen from the side at night: the beam from its SMG's device (`W03_laser_ai_side.jpg`).
+  - Dots scale with distance (0.43 studs at 61 studs), so they stay a few pixels wide.
+- **AI:**
+  - At night the guards with a combo had the light and the laser on while patrolling. Beyond 600 studs nothing was drawn
+    (3 lasers on, 2 drawn).
+  - At 13:00 the same guard had both off while patrolling. When it engaged the player, the laser came on and the light
+    stayed off.
+  - HALBERD (THE HOUNDS, R-17 close-quarters build) had his laser on in a fight. While he held cover his gun pointed
+    16 to 80 degrees away from the player, so no dot landed on the player in that sample.
+- **Gamepad and touch** (handlers driven with ZR_ClientDev `device` and `press`; Studio MCP cannot send real gamepad
+  input):
+  - **Gamepad, D-right:**
+    - a tap changed the fire mode (AUTO to SEMI) and left the device alone;
+    - a 0.7 s hold turned the device on;
+    - a hold while aiming switched both to light;
+    - a hold not aiming turned it off.
+  - **Gamepad, D-left:** a tap went to the next weapon. Holds flipped the goggles up and down (NvDown) without changing
+    weapons.
+  - **Touch, LGT:** a tap toggled the device. Holds cycled light → laser → both.
+  - The new LGT and NV buttons sit left of the right-hand cluster with no overlap. NV shows only with goggles or a face
+    shield, LGT only with a light or laser on the gun (`W05_touch_lgt_nv.jpg`).
+- **Tests, all passing:**
+
+  | Suite | Passed | Failed | New |
+  |---|---|---|---|
+  | LogicTests | 367 | 0 | T and Ctrl+T are Tarkov's; the shared gamepad buttons are only the three tap/hold pairs |
+  | CharTests | 47 | 0 | |
+  | LookTests | 33 | 0 | |
+  | MapTests | 38 | 0 | |
+
+- **Not verified:**
+  - another player's laser seen by a second client (the same code path as the AI's, which was seen);
+  - a real gamepad;
+  - a phone.
+
 ## THE CULT, Border Yard's night group (2026-11-02)
 
 Border raids, one player, THE CULT forced in with ZR_Dev `boss(true, "Priest")` and the other bosses forced out.

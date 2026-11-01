@@ -200,10 +200,10 @@ Checked in Studio: the logic tests (184 of 184), the 2D build pictures of every 
 | Vital parts locked in raid without a multitool | Same | Same |
 | Traders sell presets; loot and AI carry builds | VOS presets by loyalty level; loot 30% presets; AI kits | Same |
 | Handling: ergonomics, recoil, accuracy, velocity, sighting range, loudness, weight | Same figures, against the default build | Same |
-| Tactical devices with modes (light, laser, both) | Light works; the lasers have no beam or dot yet | **Gap** |
+| Tactical devices with modes (light, laser, both) | T on and off, Ctrl+T cycles a combo; a red beam and dot for every laser, the AI's too (2026-11-02) | Same |
 | Folding stocks fold to make the gun smaller | The folding stock exists but cannot be folded | **Gap** |
 | Saved weapon builds; buy the missing parts from the modding screen | Not built | **Gap** |
-| Sight zeroing and variable zoom | Fixed zoom, no zeroing | **Gap** |
+| Sight zeroing and variable zoom | Page Up / Page Down zero in Tarkov's steps; Alt + right mouse steps a variable scope's power | Same |
 | Inspect any item in 3D | 3D only for guns in the modding screen | **Gap** |
 | Durability and malfunctions | Planned for M11 part B | **Gap** |
 

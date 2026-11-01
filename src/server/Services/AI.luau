@@ -660,6 +660,8 @@ end
 local function equip(u, w)
 	u.w = w
 	u.lightOn = nil
+	u.laserOn = nil
+	u.model:SetAttribute("WeaponLaser", false)
 	if w then
 		ctx.Chars.setWeapon(u.model, u.inv, w.g)
 		ctx.Chars.gesture(u.model, "draw", w.def.draw or 0.6)
@@ -1733,12 +1735,22 @@ local function think(u)
 			startReload(u, t)
 		end
 	end
-	-- at night, units with a weapon light use it while hunting someone (guards also on patrol)
+	-- at night, units with a weapon light use it while hunting someone (guards also on patrol); a visible laser runs
+	-- with the light and in any fight, day or night (Tarkov's bots light their lasers when they engage)
 	if envView.dark > 0.55 then
 		local hunting = u.state == "INVESTIGATE" or u.state == "SEARCH" or u.state == "ENGAGE"
 		setLight(u, hunting or (u.kind ~= "scav" and (u.state == "PATROL" or u.state == "RETURN")))
 	elseif u.lightOn then
 		setLight(u, false)
+	end
+	local w = u.w
+	if w and w.hasLaser == nil then
+		w.hasLaser = u.inv.items[w.g] ~= nil and Inv.modStats(u.inv, w.g).laser == true
+	end
+	local wantLaser = w ~= nil and w.hasLaser == true and (u.lightOn == true or u.state == "ENGAGE")
+	if (u.laserOn == true) ~= wantLaser then
+		u.laserOn = wantLaser
+		u.model:SetAttribute("WeaponLaser", wantLaser)
 	end
 	updatePose(u)
 end

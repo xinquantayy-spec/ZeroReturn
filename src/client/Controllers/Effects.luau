@@ -17,6 +17,11 @@ if not okAirdropFx then
 	warn("[ZR] AirdropFx failed to load:", AirdropFx)
 	AirdropFx = nil
 end
+local okLaserFx, LaserFx = pcall(require, script.Parent.LaserFx)
+if not okLaserFx then
+	warn("[ZR] LaserFx failed to load:", LaserFx)
+	LaserFx = nil
+end
 local okGlassFx, GlassFx = pcall(require, script.Parent.GlassFx)
 if not okGlassFx then
 	warn("[ZR] GlassFx failed to load:", GlassFx)
@@ -502,6 +507,12 @@ function Effects.init(c)
 	end
 	if AirdropFx then
 		AirdropFx.init(c, Effects)
+	end
+	if LaserFx then
+		local okLaser, errLaser = pcall(LaserFx.init, c)
+		if not okLaser then
+			warn("[ZR] LaserFx init:", errLaser)
+		end
 	end
 	if GlassFx then
 		local okGlass, errGlass = pcall(GlassFx.init, c, Effects)

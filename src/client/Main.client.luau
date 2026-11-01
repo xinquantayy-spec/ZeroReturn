@@ -133,7 +133,8 @@ if RunService:IsStudio() then
 				phase = ctx.State.data and ctx.State.data.phase, ammo = W.ammo, spare = W.spare, hasWeapon = W.hasWeapon,
 				reloading = W.reloading, aiming = W.aiming, crouching = M.crouching, stamina = math.floor(M.stamina),
 				weapon = W.weaponName, slot = W.slot, mode = W.modeName, drawing = W.drawing, checking = W.checking,
-				light = W.light, scoped = W.scoped, melee = W.melee, vmParts = vmModel and #vmModel:GetChildren() or 0,
+				light = W.light, deviceMode = W.deviceMode, laserOn = W.deviceState and select(2, W.deviceState()),
+				scoped = W.scoped, melee = W.melee, vmParts = vmModel and #vmModel:GetChildren() or 0,
 				input = ctx.Input.backend, device = ctx.Input.device(), invOpen = ctx.Inventory.open,
 				modal = ctx.Screens.modal and ctx.Screens.modal:FindFirstChildOfClass("TextLabel").Text or nil,
 				prompt = ctx.Interact.current and ctx.Interact.current.ObjectText or nil,
@@ -200,6 +201,26 @@ if RunService:IsStudio() then
 		elseif cmd == "light" then
 			ctx.Weapon.toggleLight()
 			return tostring(ctx.Weapon.light)
+		elseif cmd == "device" then
+			-- a = "Gamepad" / "Touch" / nil: what Input.device() answers (the gamepad and touch paths without one)
+			ctx.Input.forceDevice = a
+			return ctx.Input.device()
+		elseif cmd == "press" then
+			-- a = { action, ... } pressed together for b seconds (a shared gamepad button sends both of its actions)
+			for _, act in a do
+				ctx.Input.trigger(act, true)
+			end
+			task.wait(b or 0.1)
+			for _, act in a do
+				ctx.Input.trigger(act, false)
+			end
+			task.wait(0.05)
+			return "ok"
+		elseif cmd == "devicemode" then
+			-- Ctrl+T: a light/laser combo's mode; returns the mode and what runs (light, laser)
+			ctx.Weapon.cycleDeviceMode()
+			local l, z = ctx.Weapon.deviceState()
+			return string.format("%s light=%s laser=%s", ctx.Weapon.deviceMode, tostring(l), tostring(z))
 		elseif cmd == "slash" then
 			ctx.Weapon.slash()
 			return "ok"

@@ -206,9 +206,9 @@ part("GRIP_V", "Vertical Foregrip", "GRIP", "foregrip", "pica", { w = 1, h = 1, 
 part("GRIP_ANG", "Rovik AFG angled foregrip", "AFG", "foregrip", "pica", { w = 1, h = 1, mass = 0.06, value = 11000, ergo = 6, recoil = -5, desc = "Angled grip that indexes the support hand." })
 part("GRIP_STUB", "Rovik ST stubby grip", "STUBBY", "foregrip", "pica", { w = 1, h = 1, mass = 0.05, value = 6400, ergo = 5, recoil = -6, desc = "Short vertical grip." })
 part("GRIP_STOP", "Rovik HS handstop", "HSTOP", "foregrip", "pica", { w = 1, h = 1, mass = 0.03, value = 3800, ergo = 3, recoil = -3, desc = "Small stop for a forward grip." })
-part("LIGHT_T", "WL-2 Weapon Light", "LIGHT", "tactical", "pica", { w = 1, h = 1, mass = 0.15, value = 11000, ergo = -1, light = true, desc = "Weapon light. Toggle with L." })
-part("LASER_COMBO", "Tessel LC-4 light/laser", "LC-4", "tactical", "pica", { w = 1, h = 1, mass = 0.21, value = 26000, rarity = "uncommon", ergo = -2, light = true, laser = true, desc = "Light and visible laser in one housing. Toggle with L." })
-part("LASER_DOT", "Tessel LP-1 laser pointer", "LP-1", "tactical", "pica", { w = 1, h = 1, mass = 0.07, value = 9500, ergo = -1, laser = true, desc = "Visible laser: steadier hip fire. Toggle with L." })
+part("LIGHT_T", "WL-2 Weapon Light", "LIGHT", "tactical", "pica", { w = 1, h = 1, mass = 0.15, value = 11000, ergo = -1, light = true, desc = "Weapon light. T turns it on and off." })
+part("LASER_COMBO", "Tessel LC-4 light/laser", "LC-4", "tactical", "pica", { w = 1, h = 1, mass = 0.21, value = 26000, rarity = "uncommon", ergo = -2, light = true, laser = true, desc = "Light and visible laser in one housing. T turns it on and off; Ctrl+T switches between light, laser and both." })
+part("LASER_DOT", "Tessel LP-1 laser pointer", "LP-1", "tactical", "pica", { w = 1, h = 1, mass = 0.07, value = 9500, ergo = -1, laser = true, desc = "Visible red laser: while it is on, hip fire is steadier. T turns it on and off." })
 
 -- parts that cannot be on one build together (both directions are checked)
 W.CONFLICTS = {

@@ -65,10 +65,10 @@
 49. **Studio frame rates depend on Studio's render quality.** Studio renders at quality 21 (the maximum) during Play; devices choose their own level. `settings().Rendering.QualityLevel` can be set from the client command bar for comparisons (it resets when Play stops).
 50. **Resolved in M14 (2026-10-29): a modded gun now shows its build.** Every grid tile, drag ghost, detail strip and trader preset row draws the gun from the sprites of the parts actually on it.
 51. **Item pictures are not checked on a phone.** At 64 px per grid cell they look sharp in Studio on the laptop; how readable the small ones (ammunition, keys) are on a phone screen is not verified.
-52. **Tactical lasers have no beam (M14 gap).** The LC-4 and LP-1 count as lasers in the stats, but nothing is drawn and there are no device modes yet; Tarkov cycles light, laser and both.
+52. **Resolved 2026-11-02: tactical lasers draw a beam and a dot, and combos have modes.** T turns the device on and off, Ctrl+T switches an LC-4 between light, laser and both (Tarkov). Every client draws each laser that is on (LaserFx); AI run theirs with the light and in any fight. Gamepad: hold D-right (while aiming: the mode); touch: LGT (hold: the mode). Not seen with a second client or a real pad (TEST_RESULTS, Tactical lasers).
 53. **Folding stocks cannot be folded (M14 gap).** Tarkov lets you fold a stock to make the gun one or two cells shorter; the KS-7 folding stock is always unfolded here.
 54. **No saved weapon builds (M14 gap).** Tarkov's modding screen saves builds and buys the missing parts from traders; here you fit parts you own, one at a time.
-55. **No sight zeroing or variable zoom (M14 gap).** Scopes have one fixed zoom (the V6 is shown as 6x) and no zeroing distance.
+55. **Resolved: sight zeroing and variable zoom.** Page Up / Page Down set the zeroing in Tarkov's steps (the server keeps it per weapon, 2026-11-01), and Alt + right mouse switches a variable scope between its powers (the V6: 1x and 6x), as Tarkov does in steps. Neither has a gamepad or touch control yet (see 13).
 56. **3D inspect only for guns (M14 gap).** The modding screen shows a gun in 3D; other items have only their picture.
 57. **Part grid sizes are hand-set.** Only the pistol grips (1x1) were checked against Tarkov's wiki; barrels, handguards, stocks and sights keep sizes chosen to look like Tarkov's.
 58. **At the range others do not see the gun in your hands (lobby gap).** Practice mode raises your gun on your own screen; other players hear the shots and see the impacts and the targets react, but your character keeps its weapons slung.
@@ -88,7 +88,7 @@
     - Until then characters wear neutral boxes in the item's colour (the night-vision head strap, which wore a beanie as a stand-in, is a box too) and loose copies lie as the old coloured block. Protection, the slot rules and the screen overlays do not depend on the meshes.
     - The gas mask has no breathing sound: the sound atlases hold only one-shot breaths, no loop.
     - Not modelled: lens cracks, fogging and raindrops, the mask's filter. The gas mask blocking glasses was asked for in the brief; Tarkov's own rule for gas masks could not be checked (see `docs/design/EFT_PARITY.md`, section 6).
-    - The night-vision key N still has no gamepad binding (the touch button exists).
+    - N flips the goggles; on a gamepad hold D-left (2026-11-02), on touch the NV button (added 2026-11-02: until then there was none, although this note said so).
 
 65. **Frame rate: 30 fps is the floor (owner, 2026-11-01).** HOLD 30 FPS now steps the GRAPHICS level down when a device stays under 30 fps for 8 s. A Studio test window that is not in front is held at 15 drawn frames a second while the game keeps running at 60. That cap is what showed as 15 fps, and the earlier "overhead" was most likely the same cap. In a separate client the render thread needs 10 to 27 ms a frame in Meridian's heaviest views (TEST_RESULTS, frame rate in a separate client window). With the window in front on the T490, Meridian's heaviest views run at 28 to 33 fps at Roblox's top render level (21), 58 fps at level 10, and Roblox's 60 fps cap at level 5 or lower. The sun's shadows are the largest cost at the top level, 4 to 5 ms a frame; the lamps, post effects, glass and HUD cost almost nothing. Phones are still unmeasured. **Border Yard streams in many parts at once.** At the map centre the client holds about 18,600 parts (Quay 7: 2,500), with the default streaming radius. In Studio it ran about 20% slower than Quay 7 (TEST_RESULTS, Border Yard raid with AI). Phones are unmeasured, and the 30 fps rule makes this the main risk on the map. Levers, in order: a smaller `StreamingTargetRadius` (set in Studio's Workspace properties; scripts cannot read it), fewer separate parts per building (merge plain walls into meshes), then lamps. Roblox's distant-model meshes (`LevelOfDetail = StreamingMesh`) are made when a place is published, so they do not help maps built by script at server start.
 
@@ -178,6 +178,18 @@
 
     Until the generator carries them, edit Meridian's layout by hand (RIVER PATH's flare rule was added both ways).
     Border's generator matches its layout.
+
+75. **Touch: the top-right buttons cover the raid clock (seen 2026-11-02).** With the touch layout on, EXIT and BAG sit
+    over the HUD's time-left readout (`docs/maps/evidence/W05_touch_lgt_nv.jpg`). Either the readout moves down on touch
+    or the top row moves; the jump button's place on small phones limits the lower right.
+
+76. **Gamepad and touch still miss some weapon controls (2026-11-02).** The tactical device, its mode and the goggles now
+    have both (hold D-right, hold D-left; LGT, NV). Still keyboard-only:
+    - the chamber check (Shift+T) and fire-mode check (Alt+B);
+    - zeroing (Page Up / Page Down) and a variable scope's power (Alt + right mouse);
+    - inspecting the weapon (L);
+    - the slot keys 1, 2, 3 and V (the pad and touch cycle weapons instead);
+    - free look and hold breath (see 13).
 
 ## Tool limitations (not game bugs)
 

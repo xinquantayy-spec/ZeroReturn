@@ -458,10 +458,11 @@ local function buildVm(it, d, g)
 		l.Brightness = 3.2
 		l.Color = Color3.fromRGB(255, 244, 222)
 		l.Shadows = true
-		l.Enabled = Weapon.light
+		l.Enabled = false -- set by applyDevice once the viewmodel is in place
 		l.Parent = b.lightPart
 		o.lamp = l
 	end
+	o.laser = b.laserPart -- the visible laser's aperture (LaserFx draws the beam while the device runs a laser)
 	local A = b.anchors
 	o.rHand = CFrame.new((A.grip or Vector3.zero) * VMS) * CFrame.Angles(math.rad(-16), 0, 0) * CFrame.new(0.012, 0, 0)
 	o.lHand = CFrame.new((A.hand or Vector3.zero) * VMS) * CFrame.new(-0.012, -0.03, 0) * CFrame.Angles(0, 0, math.rad(-20))
@@ -753,6 +754,9 @@ local function fireOnce()
 	local crouch = M and M.crouching
 	local camCF = ctx.Camera.aimCFrame or cam.CFrame -- free look does not move the weapon
 	local spread = (Weapon.aiming and def.aimSpread or def.hipSpread) * (Weapon.aiming and (o.ms.acc or 1) or 1)
+	if not Weapon.aiming and select(2, Weapon.deviceState()) then
+		spread *= 0.8 -- a visible laser steadies hip fire (Tarkov: while it is on)
+	end
 	-- M11 part B: a hot barrel throws shots wider (medium overheating and up; the server keeps the real heat)
 	local t0 = os.clock()
 	heat = heat * math.exp(-(t0 - heatT) / 30) + (HEAT[def.class] or 0.012)
@@ -978,16 +982,58 @@ function Weapon.cycleWeapon()
 	end
 end
 
+-- the tactical device: T turns it on and off (Weapon.light), Ctrl+T switches a light/laser combo between "both", "light"
+-- and "laser" (Tarkov); the server decides what others see (Combat.setLight)
+Weapon.deviceMode = "both"
+local DEVICE_LABEL = { both = "LIGHT + LASER", light = "LIGHT", laser = "LASER" }
+local PAD_HOLD = 0.4 -- a shared gamepad or touch button: released sooner is a tap, held this long the other action
+function Weapon.deviceState()
+	if not vm or not Weapon.light then
+		return false, false
+	end
+	local ms, mode = vm.ms, Weapon.deviceMode
+	local light = ms.light == true and (not ms.laser or mode ~= "laser")
+	local laser = ms.laser == true and (not ms.light or mode ~= "light")
+	return light, laser
+end
+-- a light or a laser on the gun in hand (the touch LGT button shows only then)
+function Weapon.hasDevice()
+	return vm ~= nil and vm.ms ~= nil and (vm.ms.light == true or vm.ms.laser == true)
+end
+-- the viewmodel's laser aperture and the viewmodel itself (LaserFx draws the beam from it)
+function Weapon.vmLaser()
+	return vm and vm.laser, vm and vm.model
+end
+local function applyDevice()
+	local light = Weapon.deviceState()
+	if vm and vm.lamp then
+		vm.lamp.Enabled = light
+	end
+end
+Weapon.applyDevice = applyDevice
 function Weapon.toggleLight()
-	if not vm or not vm.ms.light or not armed() then
+	if not vm or not (vm.ms.light or vm.ms.laser) or not armed() then
 		return
 	end
 	Weapon.light = not Weapon.light
-	if vm.lamp then
-		vm.lamp.Enabled = Weapon.light
-	end
+	applyDevice()
 	ctx.Effects.sfx("selector", SoundService, 0.5, 1.3)
-	ctx.State.act("light", { on = Weapon.light })
+	ctx.State.act("light", { on = Weapon.light, mode = Weapon.deviceMode })
+end
+function Weapon.cycleDeviceMode()
+	if not vm or not (vm.ms.light and vm.ms.laser) or not armed() then
+		return
+	end
+	Weapon.deviceMode = (Weapon.deviceMode == "both" and "light") or (Weapon.deviceMode == "light" and "laser") or "both"
+	applyDevice()
+	ctx.Effects.sfx("selector", SoundService, 0.4, 1.5)
+	if not Weapon.light then
+		-- off, nothing shows the change (Tarkov is silent; the HUD's weapon line names it once on)
+		ctx.State.toast("DEVICE  ·  " .. DEVICE_LABEL[Weapon.deviceMode])
+	end
+	if Weapon.light then
+		ctx.State.act("light", { on = true, mode = Weapon.deviceMode })
+	end
 end
 
 -- Studio tuning: rebuild the viewmodel (after changing TUNE.vms or arm sizes)
@@ -1330,6 +1376,7 @@ local function onSnapshot()
 	Weapon.hasWeapon = true
 	if not vm or vm.key ~= vmKey(it, g) then
 		buildVm(it, d, g)
+		applyDevice() -- a rebuilt gun (a part fitted) keeps the device as it was
 	end
 	if g ~= lastActiveG then
 		-- a different weapon came into the hands
@@ -1397,8 +1444,8 @@ function Weapon.init(c)
 			c.State.req("inv", { op = "use" })
 		end
 	end)
-	Input.on("FireMode", function(down)
-		if not down or not vm or Weapon.melee then
+	local function nextFireMode()
+		if not vm or Weapon.melee then
 			return
 		end
 		local modes = vm.def.modes
@@ -1407,6 +1454,27 @@ function Weapon.init(c)
 			Weapon.modeName = modes[Weapon.mode]
 			c.Effects.sfx("selector", SoundService, 0.5)
 			c.State.toast("FIRE MODE: " .. (MODE_NAMES[Weapon.modeName] or Weapon.modeName))
+		end
+	end
+	-- gamepad D-right and D-left are shared (InputMap): a tap (released within PAD_HOLD) is the fire mode or the next
+	-- weapon, a hold the tactical device (Light below) or the goggles (NightVision)
+	local padDown = {}
+	local function padTap(action, down)
+		if down then
+			padDown[action] = os.clock()
+			return false
+		end
+		local t = padDown[action]
+		padDown[action] = nil
+		return t ~= nil and os.clock() - t < PAD_HOLD
+	end
+	Input.on("FireMode", function(down)
+		if c.Input.device() == "Gamepad" then
+			if padTap("FireMode", down) then
+				nextFireMode()
+			end
+		elseif down then
+			nextFireMode()
 		end
 	end)
 	Input.on("Fire", function(down)
@@ -1473,13 +1541,51 @@ function Weapon.init(c)
 			c.State.toast(string.format("SCOPE %dx", vm.zoom))
 		end
 	end)
+	-- the tactical device: T (Tarkov). Gamepad: hold D-right, held while aiming switches a combo's mode. Touch: a tap on
+	-- LGT turns it on and off, holding it switches the mode (a light or a laser alone turns on and off either way).
+	local devHold = nil
 	Input.on("Light", function(down)
+		local dev = c.Input.device()
+		if dev ~= "Gamepad" and dev ~= "Touch" then
+			if down then
+				Weapon.toggleLight()
+			end
+			return
+		end
+		if not down then
+			local tapped = devHold ~= nil
+			devHold = nil
+			if tapped and dev == "Touch" then
+				Weapon.toggleLight()
+			end
+			return
+		end
+		local tok = {}
+		devHold = tok
+		task.delay(PAD_HOLD, function()
+			if devHold ~= tok then
+				return
+			end
+			devHold = nil
+			local combo = vm and vm.ms.light and vm.ms.laser
+			if combo and (dev == "Touch" or Weapon.aiming) then
+				Weapon.cycleDeviceMode()
+			else
+				Weapon.toggleLight()
+			end
+		end)
+	end)
+	Input.on("DeviceMode", function(down)
 		if down then
-			Weapon.toggleLight()
+			Weapon.cycleDeviceMode()
 		end
 	end)
 	Input.on("CycleWeapon", function(down)
-		if down then
+		if c.Input.device() == "Gamepad" then
+			if padTap("CycleWeapon", down) then
+				Weapon.cycleWeapon()
+			end
+		elseif down then
 			Weapon.cycleWeapon()
 		end
 	end)

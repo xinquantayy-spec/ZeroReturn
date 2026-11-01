@@ -173,6 +173,33 @@ function T.run(ctx)
 		check("input map: Tarkov keys (X prone, B fire mode, Alt+T magazine, Shift+T chamber, V melee, 4 quick slot)",
 			IM.Prone.keys[1] == Enum.KeyCode.X and IM.FireMode.keys[1] == Enum.KeyCode.B and IM.MagCheck.mod == "Alt"
 			and IM.ChamberCheck.mod == "Shift" and IM.Knife.keys[1] == Enum.KeyCode.V and IM.Quick4.keys[1] == Enum.KeyCode.Four)
+		check("input map: T is the tactical device and Ctrl+T its mode (Tarkov)", IM.Light.keys[1] == Enum.KeyCode.T and IM.Light.mod == nil
+			and IM.DeviceMode.keys[1] == Enum.KeyCode.T and IM.DeviceMode.mod == "Ctrl")
+		-- the gamepad has fewer buttons than the keyboard: a D-pad button may carry two actions, a tap and a hold, and only
+		-- these three pairs share one (the controllers tell the tap from the hold)
+		local PAIRS = { DPadDown = "Extracts+Grenade", DPadRight = "FireMode+Light", DPadLeft = "CycleWeapon+ToggleNVG" }
+		local byPad = {}
+		for action, spec in IM do
+			if spec.context ~= "mount" and spec.context ~= "menu" then
+				for _, k in spec.pad or {} do
+					byPad[k.Name] = byPad[k.Name] or {}
+					table.insert(byPad[k.Name], action)
+				end
+			end
+		end
+		local badPad = nil
+		for key, list in byPad do
+			table.sort(list)
+			if #list > 1 and PAIRS[key] ~= table.concat(list, "+") then
+				badPad = key .. ": " .. table.concat(list, "+")
+			end
+		end
+		for key in PAIRS do
+			if not byPad[key] or #byPad[key] ~= 2 then
+				badPad = badPad or (key .. " is not shared")
+			end
+		end
+		check("input map: shared gamepad buttons are only the tap/hold pairs on D-down, D-right and D-left" .. (badPad and (" (" .. badPad .. ")") or ""), badPad == nil)
 	end
 	-- M11 part B (Tarkov): no mechanical malfunctions above 93 % condition, likelier as it wears; big magazines feed badly
 	do

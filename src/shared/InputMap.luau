@@ -1,7 +1,8 @@
 --!strict
 -- Single source of truth for action bindings (PC keys, gamepad, touch label). Movement/jump/look stay
 -- with Roblox's PlayerModule + our camera. Interact uses ProximityPrompts (F / ButtonX / tap); Q/E lean (Tarkov).
--- Gamepad D-down is shared: a tap shows the extracts, a hold readies a grenade (Grenade controller).
+-- Gamepad D-pad buttons are shared: a tap does one thing, a hold another. D-down: extracts / grenade (Grenade
+-- controller); D-right: fire mode / tactical device; D-left: next weapon / goggles (Weapon and NightVision).
 -- PC keys are Tarkov's defaults (docs/design/EFT_PARITY.md section 4): `mod` makes a chord with Alt, Shift or
 -- Ctrl (Alt+T checks the magazine, Shift+T the chamber, Alt+B the fire mode); a key's plain action only fires
 -- when none of its chord modifiers is held. Players can rebind PC keys (Settings, CONTROLS); Esc stays Roblox's
@@ -29,9 +30,13 @@ return {
 	CycleWeapon = { keys = {}, pad = { K.DPadLeft }, touch = "SWAP", context = "play" },
 	MagCheck = { keys = { K.T }, mod = "Alt", pad = { K.ButtonR3 }, context = "play" },
 	ChamberCheck = { keys = { K.T }, mod = "Shift", pad = {}, context = "play" },
-	Light = { keys = { K.T }, pad = {}, context = "play" },
-	-- Tarkov: N flips the goggles (or a face shield) up and down
-	ToggleNVG = { keys = { K.N }, pad = {}, touch = "NV", context = "play" },
+	-- T: the tactical device on and off. Gamepad: hold D-right (a tap is the fire mode). Touch: LGT.
+	Light = { keys = { K.T }, pad = { K.DPadRight }, touch = "LGT", context = "play" },
+	-- Tarkov: Ctrl+T switches a tactical device's mode (light, laser, both on a combo). Gamepad: hold D-right while
+	-- aiming. Touch: hold LGT. (Both in the Weapon controller's Light handler.)
+	DeviceMode = { keys = { K.T }, mod = "Ctrl", pad = {}, context = "play" },
+	-- Tarkov: N flips the goggles (or a face shield) up and down. Gamepad: hold D-left (a tap cycles weapons).
+	ToggleNVG = { keys = { K.N }, pad = { K.DPadLeft }, touch = "NV", context = "play" },
 	-- Tarkov: Alt + right mouse changes a sight's mode (a variable scope's magnification)
 	SightMode = { keys = { K.MouseRightButton }, mod = "Alt", pad = {}, context = "play" },
 	-- Tarkov: Page Up / Page Down set the sight's zeroing distance

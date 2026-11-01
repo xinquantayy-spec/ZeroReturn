@@ -315,7 +315,12 @@ local function slowUpdate()
 		O.weapon:show(true)
 		local line = (W.weaponName or "WEAPON") .. "  ·  " .. (W.modeLabel and W.modeLabel() or W.modeName or "SINGLE")
 		if W.light then
-			line ..= "  ·  LIGHT"
+			-- what the tactical device runs (a combo switches with Ctrl+T)
+			local lt, lz = true, false
+			if W.deviceState then
+				lt, lz = W.deviceState()
+			end
+			line ..= "  ·  " .. ((lt and lz) and "LIGHT + LASER" or (lz and "LASER") or "LIGHT")
 		end
 		if W.malf then
 			-- Tarkov flashes the weapon corner on a malfunction; inspecting names it
