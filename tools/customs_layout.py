@@ -62,7 +62,7 @@ SNIPER_NAMES = {
 }
 # reference extract name -> (id, our name, spawn group override or None, rule, zone size (x, y, z) in studs)
 # rule keys follow the game's extract kinds: kind open | paid (cost; a car also has chance, seats, depart) | key (key) |
-# chance (chance) | power (switch, needs) | scav. Groups: east / west = the PMC entry half that may use it (the reference's entry_group: east-half
+# chance (chance) | power (switch, needs) | scav; who = "pmc" keeps a shared exit from scavs (the reference's side "pmc"). Groups: east / west = the PMC entry half that may use it (the reference's entry_group: east-half
 # spawners leave in the WEST), both = shared, scav = scav-only.
 EXTRACTS = {
     "ZB-1011": ("K11", "BUNKER K-11", None, {"kind": "open"}, (16, 10, 16)),
@@ -71,12 +71,12 @@ EXTRACTS = {
     # a car (Tarkov's V-Ex): chance = the SPT 50 %, seats = max 4 players, depart = the 60 s shared timer (the game's Extract.luau)
     "Dorms V-Ex": ("DC", "DORMS CAR", None, {"kind": "paid", "cost": 25000, "chance": 0.5, "seats": 4, "depart": 60}, (26, 12, 26)),
     "ZB-013 (also written ZB-1013)": ("K13", "BUNKER K-13", None,
-                                      {"kind": "power", "switch": "BORDER_STORE4", "needs": "NO POWER  ·  THROW THE LEVER IN STORE 4"}, (16, 10, 16)),
+                                      {"kind": "power", "switch": "BORDER_STORE4", "needs": "NO POWER  ·  THROW THE LEVER IN STORE 4", "who": "pmc"}, (16, 10, 16)),
     "Crossroads": ("CR", "CROSSROADS", None, {"kind": "open"}, (30, 12, 30)),
     "Trailer Park": ("TL", "TRAILER LOT", None, {"kind": "open"}, (28, 12, 28)),
     "RUAF Roadblock": ("AR", "ARMY ROADBLOCK", None, {"kind": "open"}, (28, 12, 28)),
     "Smugglers' Boat": ("SB", "SMUGGLERS' BOAT", None, {"kind": "chance", "chance": 0.5}, (24, 10, 24)),
-    "Railroad Passage (Flare)": ("NL", "NORTH LINE", None, {"kind": "flare", "radius": 94}, (30, 12, 30)),
+    "Railroad Passage (Flare)": ("NL", "NORTH LINE", None, {"kind": "flare", "radius": 94, "who": "pmc"}, (30, 12, 30)),
     "Boiler Room Basement (Co-op)": ("BC", "BOILER CELLAR", None, {"kind": "coop"}, (16, 10, 16)),
     "Administration Gate": ("OF", "OFFICE GATE", "scav", {"kind": "scav"}, (22, 12, 22)),
     "Factory Far Corner": ("FC", "FAR CORNER", "scav", {"kind": "scav"}, (22, 12, 22)),

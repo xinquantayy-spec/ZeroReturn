@@ -691,7 +691,7 @@ return function(B)
 				rule = {
 					kind = "power", switch = "SHELTER_SWITCH", also = "MALL_POWER",
 					needs = "SEALED  ·  FIND THE VALVE HIDDEN IN A WASHROOM", needsAlso = rule.needs, time = rule.time,
-					last = buttonOk and "SHELTER_LOCK" or nil, needsLast = "CLOSE THE DOOR WITH THE BUTTON BESIDE IT",
+					last = buttonOk and "SHELTER_LOCK" or nil, needsLast = "CLOSE THE DOOR WITH THE BUTTON BESIDE IT", who = rule.who,
 				}
 			end
 			kit.extract(ex, id, name, V(x, y, z), Vector3.new(e[6], e[7], e[8]), rule, opts)

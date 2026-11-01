@@ -8,6 +8,44 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## HUD and touch layout: the menu row, the exits list (2026-11-02)
+
+One player; touch forced with `ZR_ClientDev` "device" (the Studio viewport, 1156 x 465, is not a phone); a Border scav
+raid, a Border PMC raid and a Meridian PMC raid.
+
+- **Before:** with the touch layout on, SET, EXIT and BAG sat over the money and the raid clock
+  (`docs/maps/evidence/UI01_touch_row_before.jpg`, `W05_touch_lgt_nv.jpg`).
+- **The menu row:** it now stands at the top centre, in the band Roblox leaves free right of its own menu
+  (`GuiService.TopbarInset`, read in Studio as x 164 to 1156, y 0 to 58). Only the buttons shown are centred: SET and BAG
+  in the hideout, all three in a raid. The clock column is clear (`UI02_touch_menu_row_hideout.jpg`).
+- **The vitals:** on this small screen they now start below Roblox's menu (y 58) instead of under it. At 1080p nothing
+  moves.
+- **The exits list on touch:** a drop-down under the menu row, centred (`UI03_touch_exits_dropdown.jpg`).
+  - Touch buttons under a row fade while the list shows. MED faded for the Meridian list; ADS, CRCH, MED and SWAP for
+    the scav's two columns.
+  - Only buttons under an actual row fade: with one box around the whole list, MED faded when no row touched it.
+- **A long list:**
+  - **Found:** the list had 6 rows until the transits work and 8 after it, so a Border Yard PMC on the west side lost a
+    row (9 exits and the transit) and a scav saw 8 of 26.
+  - **Now:** all rows show. A Border scav's 24 rows split into two columns: on touch the columns meet at the centre at
+    full size (`UI04_touch_scav_exits_two_columns.jpg`); with keys they stand right-aligned under the clock
+    (`UI06_pc_scav_exits.jpg`).
+  - **Narrow screens:** with the HUD scale at 1.4, which makes the text as wide, relative to the screen, as on a 16:9
+    phone, the drop-down shrank to pass between the vitals and the recorder column, still legible
+    (`UI05_touch_exits_narrow_fit.jpg`).
+  - The first width rule (the widest row against the room beside the vitals) made the text unreadably small. Only rows
+    level with the vitals or the clock are held to that room now, and the co-op row reads "CO-OP EXTRACTION".
+- **The scav's exits:** BUNKER K-13 and NORTH LINE are no longer in a Border scav's list. The Customs reference gives
+  ZB-013 and the flare passage to PMCs only.
+- **Toasts on touch:** two "THE TRANSIT OPENS A MINUTE INTO THE RAID" toasts now stand right of the RUN button instead of
+  under it (`UI07_touch_toasts_beside_run.jpg`).
+- **Tests, all passing:** LogicTests 383, CharTests 47, LookTests 33, MapTests 38. Two LogicTests changed: a scav's list
+  leaves out the PMC-only exits, and a scav arriving at Meridian by transit gets 3 exits.
+  - The first run, three seconds after the playtest started, failed 12 stationary-gun timing tests. A run 20 s in
+    passed them all: the server was still busy starting.
+- **Not verified:** a real phone or tablet, the device emulator, the Roblox menu opened wider over the row, a portrait
+  screen.
+
 ## Hideout style (2026-11-02)
 
 One player in Relay 7.

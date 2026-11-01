@@ -102,7 +102,8 @@ serves both; "scav" is for scavs only. All 26 exist as `kit.extract` zones with 
 | PG | PUMPS GATE | -469, -494 | scav | scav | name is ours; not always available in the reference (grade D) |
 
 Every PMC side has an open exit (east K-11; west CROSSROADS, TRAILER LOT, ARMY ROADBLOCK). The five underground exits stand on
-their room's floor (y -16). Scavs may use every extract except DORMS CAR (Tarkov's vehicle exits are for PMCs). The reference puts four exit icons on or past the traced limit (ARMY GATE,
+their room's floor (y -16). Scavs may use every extract except DORMS CAR (Tarkov's vehicle exits are for PMCs), BUNKER K-13 and NORTH LINE: the reference
+gives ZB-013 and the flare passage to PMCs only (rule `who = "pmc"`, 2026-11-02). The reference puts four exit icons on or past the traced limit (ARMY GATE,
 ARMY ROADBLOCK, OFFICE GATE, CITY LINE), which the invisible wall would make unreachable, and DORMS CAR 12 studs from it: the
 generator pulls each in until its whole zone lies inside the wall (72, 91, 30, 15 and 2 studs; the note in `L.ext` says so).
 STORE 17 GATE (352, -151) lies inside STORE 17's footprint: the building needs a gate bay there.

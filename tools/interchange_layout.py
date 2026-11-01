@@ -84,7 +84,7 @@ ZONE_NAMES = {
 # entry half that is OFFERED the extract in the SPT data (MallNW spawners are offered the south-east exit, MallSE spawners
 # the north-west one; the 2026 sources call both corner exits neutral: Play decides), both, scav = scav-only. Rule kinds are
 # World's extract rules: open | paid (cost; a car also has chance, seats, depart) | key (key) | chance (chance) | power (switch, needs) | scav, plus nobag (new:
-# the backpack slot must be empty).
+# the backpack slot must be empty). who = "pmc": the reference gives the exit to PMCs only (scavs do not get it).
 EXTRACTS = {
     "Railway Exfil": ("RS", "RAIL SIDING", "se", {"kind": "open"}, (30, 12, 30),
                       "north-west corner beside the west double railway; SPT offers it to MallSE spawners, 2026 sources: both"),
@@ -93,13 +93,13 @@ EXTRACTS = {
     "Power Station V-Ex": ("SC", "SUBSTATION CAR", "both", {"kind": "paid", "cost": 20000, "chance": 0.5, "seats": 4, "depart": 60}, (26, 12, 26),
                            "north-east corner by the sniper band; a car: 50% chance (SPT), 4 seats, 60 s shared timer; 20000 is the 2026 figure (SPT/wiki 5000); karma pricing is a gap"),
     "Saferoom Exfil": ("SE", "SHELTER EXIT", "both",
-                       {"kind": "power", "switch": "MALL_POWER", "needs": "NO POWER  ·  THROW THE SWITCH AT THE SUBSTATION"}, (16, 10, 16),
+                       {"kind": "power", "switch": "MALL_POWER", "needs": "NO POWER  ·  THROW THE SWITCH AT THE SUBSTATION", "who": "pmc"}, (16, 10, 16),
                        "hidden room east of car park C; after power: the hidden switch in the L2 washroom (poi.WASHROOM) and the keycard at the panel, door at poi.SHELTER_DOOR; power is the only rule World supports"),
     "Scav Camp (Co-Op)": ("WC", "WEST CAMP", "both", {"kind": "coop"}, (22, 10, 22),
                           "reference position is the service tunnel between car park B/C and the KASSA garage (NOT the west camp huts): co-op, a PMC and a scav together (Extract coop, 2026-11-02); the spec name is kept"),
-    "Path to River (flare)": ("RP", "RIVER PATH", "both", {"kind": "flare", "radius": 75}, (28, 12, 28),
+    "Path to River (flare)": ("RP", "RIVER PATH", "both", {"kind": "flare", "radius": 75, "who": "pmc"}, (28, 12, 28),
                               "far west edge on the dirt road past the highway; a green flare fired within 75 studs opens it (the likely flare spot poi.FLARE_SPOT is 34 studs east)"),
-    "Hole in the Fence": ("FG", "FENCE GAP", "both", {"kind": "nobag"}, (24, 10, 24),
+    "Hole in the Fence": ("FG", "FENCE GAP", "both", {"kind": "nobag", "who": "pmc"}, (24, 10, 24),
                           "grade D: behind the NESTA hall on the east service lane in the 46 m fence gap; the backpack slot must be empty (kind nobag is new)"),
 }
 BOSS_NAMES = {"bossKilla": "THE CARETAKER"}

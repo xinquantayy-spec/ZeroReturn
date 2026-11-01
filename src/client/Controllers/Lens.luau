@@ -220,6 +220,37 @@ function TextObj:setAt(u, v)
 	end
 end
 
+-- the line's length in pixels as it would be laid out now (before the lens bends it)
+function TextObj:measure()
+	local unit, x = self.lens.unit, 0
+	for _, s in self.segs do
+		local size = (s.size or self.size) * unit
+		if s.icon then
+			x += size * 0.86 + size * 0.14
+		elseif s.t then
+			local font = s.font or self.font
+			for _, cp in utf8.codes(s.t) do
+				x += advance(font, utf8.char(cp)) * size / 100 + self.tracking * size
+			end
+		end
+	end
+	return x
+end
+
+function TextObj:setSize(px)
+	if self.size ~= px then
+		self.size = px
+		self.dirty = true
+	end
+end
+
+function TextObj:setAlign(a)
+	if self.align ~= a then
+		self.align = a
+		self.dirty = true
+	end
+end
+
 function TextObj:setAlpha(a)
 	if a ~= self.alpha then
 		self.alpha = a
@@ -326,6 +357,7 @@ function TextObj:layout()
 		end
 	end
 	local total = x
+	self.width = total -- the line's length in pixels (before the lens bends it)
 	-- 2) anchor: invert the lens so the anchor lands where requested
 	local ax, ay = L:unwarp(self.at.X * L.W, self.at.Y * L.H)
 	local popS = 1 + self.pz

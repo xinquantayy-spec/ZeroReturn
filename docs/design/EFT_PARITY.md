@@ -804,3 +804,35 @@ Gaps:
 - **The beam's look is ours** (transparency 0.62 at night, 0.88 by day; the dot keeps a few pixels at range).
 - **No second-client check** of another player's beam; the same code draws the AI's, which was seen.
 
+
+### HUD and touch layout: the exits list, the menu row (2026-11-02)
+
+Researched first: the Customs reference (section 9) and Interchange reference (section 6). They list which exits are
+for PMCs, which for scavs and which for both. Gamepressure's extraction guide describes the list Tarkov shows on O: every
+extraction point of the raid and the time left. A plain field means no condition; a question mark means the exit needs
+something. Built in `Hud.luau`, `Lens.luau`, `Touch.luau`, `Extract.luau`, `Match.luau`, `Transit.luau` and both maps'
+`Layout.luau` (and their generators). Checked in Studio with touch forced (TEST_RESULTS "HUD and touch layout").
+
+Matched:
+- **The whole list:** every exit and transit a raider has now shows on O. Before, the HUD showed at most 6 rows (8
+  after the transits work), so a Border scav saw 8 of 26.
+- **The scav's exits:** a scav no longer gets the exits the references give to PMCs only. On Border Yard that is BUNKER
+  K-13 (ZB-013) and NORTH LINE (the flare passage). On Meridian Mall it is SHELTER EXIT (the saferoom), RIVER PATH (the
+  flare path) and FENCE GAP (the hole in the fence). The cars were already left out. The rule is `who = "pmc"` on the
+  exit, read by `Extract.scavMay`.
+
+Ours (Roblox, cross-platform):
+- **Touch menu row:** SET, EXIT and BAG stand at the top centre, in the band of the top bar that Roblox leaves free right
+  of its own menu (`GuiService.TopbarInset`). They no longer cover the raid clock (KNOWN_ISSUES 75).
+- **Touch exits list:** it drops down under that row, in two columns meeting at the centre when it is long. It shrinks
+  to pass between the vitals and the recorder column, and the thumb buttons under a row fade while it shows.
+- **A long list:** with keys, a long list shrinks to fit under the clock and splits in two columns past 62 % size.
+- **Vitals:** on small screens they start below Roblox's own menu instead of under it.
+- **Toasts:** on touch they start right of the RUN button when they would reach it (KNOWN_ISSUES 77).
+
+Gaps:
+- **Disputed scav exits kept:** ZB-1011 and Old Gas Station are PMC exits in SPT and scav exits too per TarkovForge; a
+  scav keeps BUNKER K-11 and OLD PUMPS.
+- **Our wording, not Tarkov's:** the list writes requirements out ("NEEDS POWER", "CO-OP EXTRACTION") where Tarkov
+  marks a condition with a question mark.
+- **Not checked on a phone** or in the device emulator; the narrow-screen fit was checked with the HUD scale at 1.4.

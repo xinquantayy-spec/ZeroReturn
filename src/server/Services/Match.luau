@@ -316,7 +316,7 @@ function Match.extractsFor(spawn, scav)
 	if scav then
 		local all = {}
 		for id, e in ctx.World.extracts do
-			if not ctx.Extract.isCar(e) then
+			if ctx.Extract.scavMay(e) then
 				table.insert(all, id)
 			end
 		end

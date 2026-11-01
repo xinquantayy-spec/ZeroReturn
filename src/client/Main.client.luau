@@ -186,6 +186,10 @@ if RunService:IsStudio() then
 		elseif cmd == "settings" then
 			ctx.Screens.settings()
 			return "ok"
+		elseif cmd == "setting" then
+			-- a = key, b = value (as the settings screen would set it; saved with the profile)
+			ctx.Settings.set(a, b)
+			return tostring(ctx.Settings.data[a])
 		elseif cmd == "aim" then
 			ctx.Weapon.setAim(a == true)
 			return "ok"

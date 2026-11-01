@@ -53,7 +53,8 @@ function Transit.infoFor(s)
 	return out
 end
 
--- the exits a raider gets on arriving: a scav every exit but the cars; a PMC the list of the spawn nearest the arrival
+-- the exits a raider gets on arriving: a scav every exit a scav may use (Extract.scavMay); a PMC the list of the spawn
+-- nearest the arrival
 -- (Tarkov does not tie a transit to a spawn group; the nearest spawn's side is ours)
 function Transit.extractsFor(mapId, pos, scav)
 	local m = ctx.World.maps[mapId]
@@ -63,7 +64,7 @@ function Transit.extractsFor(mapId, pos, scav)
 	if scav then
 		local all = {}
 		for id, e in m.extracts or {} do
-			if not ctx.Extract.isCar(e) then
+			if ctx.Extract.scavMay(e) then
 				table.insert(all, id)
 			end
 		end

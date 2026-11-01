@@ -89,6 +89,12 @@ function Extract.isCar(e)
 	return r ~= nil and r.kind == "paid" and type(r.seats) == "number" and r.seats > 0
 end
 
+-- may a scav leave here? Not by a car (Tarkov's V-Ex is for PMCs) nor by an exit the reference gives PMCs only
+-- (rule.who = "pmc": Customs' ZB-013 and the flare passage; docs/maps/reference/CUSTOMS_REFERENCE.md section 9)
+function Extract.scavMay(e)
+	return e ~= nil and not Extract.isCar(e) and not (e.rule and e.rule.who == "pmc")
+end
+
 -- does the exit roll for being there this raid? (kind chance, or any rule that carries a chance, as the car does)
 function Extract.hasChance(r)
 	return r ~= nil and (r.kind == "chance" or type(r.chance) == "number")

@@ -480,6 +480,14 @@ function C.xp(name, n)
 	return "level " .. ctx.Economy.level(prof) .. " xp " .. prof.xp
 end
 
+-- a scav raid can be entered now (clears the cooldown)
+function C.scavReady(name)
+	local p = plr(name)
+	ctx.Profiles.get(p).scavReadyAt = 0
+	ctx.Raid.push(p)
+	return "scav ready"
+end
+
 -- flea market (Tarkov): age the player's offers by some minutes and let the market resolve them
 function C.flea(name, minutes)
 	local p = plr(name)

@@ -561,7 +561,8 @@ actually built and left out when absent, so the map still builds without `Mall.l
 | RP | RIVER PATH | both | flare |
 | FG | FENCE GAP | both | `nobag` |
 
-`W.sideExtracts`: nw = RC, SC, SE, RP, FG; se = RS, SC, SE, RP, FG. Scavs get all seven except SC (a car is for PMCs). SE and WC stand on the L0 floor
+`W.sideExtracts`: nw = RC, SC, SE, RP, FG; se = RS, SC, SE, RP, FG. Scavs get RS, RC and WC (since 2026-11-02): SC is a car, and SE, RP and FG carry `who = "pmc"` because the
+reference gives the saferoom, the flare path and the fence hole to PMCs only. SE and WC stand on the L0 floor
 under the mall (y 0.1, compact boxes). `Extract.blocked` reads `also` first, so before the power is on a player reads the original
 "throw the switch at the substation" text and afterwards "sealed, find the valve hidden in a washroom". FENCE GAP refuses while the
 `back` slot holds a pack and cancels the hold if one is put on during it; the HUD shows "NO BACKPACK".

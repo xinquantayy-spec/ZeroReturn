@@ -45,7 +45,8 @@ Status 2026-11-02: **built and checked in Studio with one player** (TEST_RESULTS
   - A squad goes only when every living member stands in the zone, and then all of them go.
   - At zero you arrive at the other map's transit, facing away from its sign, with your gear and wounds.
 - **On the new map:**
-  - Your exits are that map's: a PMC gets the list of the spawn nearest the arrival, a scav every exit but the car.
+  - Your exits are that map's: a PMC gets the list of the spawn nearest the arrival, a scav every exit a scav may use
+    (not the car nor a PMC-only exit; on Meridian Mall that leaves the two corner exits and WEST CAMP).
   - The first raider to arrive on a map that is not in play rolls its chance exits and lets out six scavs there. They
     wander that map's scav zones (`AI.populate`, `u.zones`).
 - **What follows you:**

@@ -1338,12 +1338,16 @@ function T.run(ctx)
 		check("transit: opens 60 s into the raid, 20 s countdown (SPT)", TR.CFG.openAfter == 60 and TR.CFG.timer == 20)
 		local pmcList = m and TR.extractsFor("border", m.pos, false) or {}
 		local scavList = b and TR.extractsFor("meridian", b.pos, true) or {}
-		local carIn = false
+		local carIn, pmcOnlyIn = false, false
 		for _, id in scavList do
-			carIn = carIn or ctx.Extract.isCar(ctx.World.maps.meridian.extracts[id])
+			local me = ctx.World.maps.meridian.extracts[id]
+			carIn = carIn or ctx.Extract.isCar(me)
+			pmcOnlyIn = pmcOnlyIn or (me.rule and me.rule.who == "pmc")
 		end
-		check("transit: arriving, a PMC gets the nearest spawn's exits, a scav every exit but the car",
-			#pmcList > 0 and #scavList >= 5 and not carIn)
+		-- Interchange (reference section 9): a scav has the two corner exits and the co-op one; the car, the saferoom, the
+		-- flare path and the fence hole are for PMCs
+		check("transit: arriving, a PMC gets the nearest spawn's exits, a scav every exit a scav may use (not the car nor a PMC-only one)",
+			#pmcList > 0 and #scavList == 3 and not carIn and not pmcOnlyIn)
 		local mrp = ctx.World.maps.meridian.extracts.RP
 		local other = ctx.World.activeMap ~= "meridian"
 		check("transit: the exits of a map that is not in play keep their own keys in the raid's tables (map:id)",
@@ -2382,17 +2386,25 @@ function T.run(ctx)
 			local infoBefore = ctx.Raid.raidInfo({ extracts = { "T_CAR" } }).extracts[1]
 			check("car list: the exit list shows the car as paid with a chance (like a chance exit), 4 seats, and not closed",
 				infoBefore.rule == "paid" and infoBefore.cost == 20000 and infoBefore.chance == true and infoBefore.seats == 4 and infoBefore.closed == nil)
-			-- a scav's list has every exit but the cars (Tarkov's V-Ex is for PMCs); the stand-in is a car like the real ones
-			local nAll, nCars = 0, 0
+			-- a scav's list has every exit but the cars (Tarkov's V-Ex is for PMCs) and the PMC-only ones (who = "pmc"); the
+			-- stand-in is a car like the real ones
+			local nAll, nCars, nPmc = 0, 0, 0
 			for _, we in WD.extracts do
 				nAll += 1
 				if EX.isCar(we) then
 					nCars += 1
+				elseif we.rule and we.rule.who == "pmc" then
+					nPmc += 1
 				end
 			end
 			local scavList = MT.extractsFor({ extracts = {} }, true)
-			check("car scavs: a scav's exit list has every exit but the cars (the stand-in car is left out)",
-				table.find(scavList, "T_CAR") == nil and #scavList == nAll - nCars and nCars >= 1)
+			local pmcOnlyIn = false
+			for _, id in scavList do
+				pmcOnlyIn = pmcOnlyIn or ((WD.extracts[id].rule or {}).who == "pmc")
+			end
+			check("car scavs: a scav's exit list has every exit but the cars (the stand-in car is left out) and the PMC-only ones",
+				table.find(scavList, "T_CAR") == nil and #scavList == nAll - nCars - nPmc and nCars >= 1 and not pmcOnlyIn
+					and (ctx.World.activeMap ~= "border" or nPmc == 2))
 
 			-- no money, no seat
 			local okBroke, whyBroke = EX.pay(broke, sBroke, car, t0)

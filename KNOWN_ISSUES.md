@@ -179,9 +179,11 @@
     Until the generator carries them, edit Meridian's layout by hand (RIVER PATH's flare rule was added both ways).
     Border's generator matches its layout.
 
-75. **Touch: the top-right buttons cover the raid clock (seen 2026-11-02).** With the touch layout on, EXIT and BAG sit
-    over the HUD's time-left readout (`docs/maps/evidence/W05_touch_lgt_nv.jpg`). Either the readout moves down on touch
-    or the top row moves; the jump button's place on small phones limits the lower right.
+75. ~~**Touch: the top-right buttons cover the raid clock (seen 2026-11-02).**~~ **Resolved 2026-11-02.**
+    - SET, EXIT and BAG now stand at the top centre, in the top bar's free band (`Touch.luau`).
+    - The exits list drops down under them and fits any length (`Hud.placeExits`).
+    - The vitals start below Roblox's own menu on small screens.
+    - Checked in Studio with touch forced (TEST_RESULTS "HUD and touch layout"); not on a phone.
 
 76. **Gamepad and touch still miss some weapon controls (2026-11-02).** The tactical device, its mode and the goggles now
     have both (hold D-right, hold D-left; LGT, NV). Still keyboard-only:
@@ -190,6 +192,12 @@
     - inspecting the weapon (L);
     - the slot keys 1, 2, 3 and V (the pad and touch cycle weapons instead);
     - free look and hold breath (see 13).
+
+77. ~~**Touch: toasts can fall on the RUN button (found while checking 75, 2026-11-02).**~~ **Resolved 2026-11-02.**
+    - Toasts stack on the left under the vitals, and on a short screen their rows reached RUN at (0.10, 0.48) of the
+      touch area.
+    - On touch they now start right of RUN when the stack would reach it (`Hud.layout`, `Touch.rectOf`).
+    - Seen in Studio (`docs/maps/evidence/UI07_touch_toasts_beside_run.jpg`); not on a phone.
 
 ## Tool limitations (not game bugs)
 

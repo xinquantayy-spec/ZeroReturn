@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
+local GuiService = game:GetService("GuiService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Util = require(Shared.Util)
@@ -54,8 +55,12 @@ local SZ = {
 	toast = 32, death = 90, deathSub = 34, match = 32,
 }
 Hud.SZ = SZ
-local MAX_EXITS = 8 -- the exits, then the transits (Tarkov lists both on O)
+-- the exits, then the transits (Tarkov lists both on O). A Border Yard PMC has up to 9 exits and the transit, a scav 25
+-- and the transit; placeExits shrinks a long list to fit and splits it in two columns past that
+local MAX_EXITS = 30
+local exitArea = { touch = false, y0 = 200, y1 = 900, gap = 5, vit = { 0, 0 }, rec = { 0, 0 } } -- where the list may stand (layout())
 local toastTop, toastStep, squadBottom, squadStep = 0.36, 0.04, 0.93, 0.045
+local toastX = 0.04 -- the toasts' left edge (moved right of the touch RUN button when they would meet it)
 local SIDE_L, SIDE_R = 0.04, 0.96
 
 -- stack objects downward from y0 (pixels); each entry = { obj, size }; returns the y below the last one
@@ -71,23 +76,50 @@ local function stack(list, x, y0, gap)
 end
 
 local function layout()
+	if not L then
+		return
+	end
 	L:resize()
-	local u, H = L.unit, math.max(1, L.H)
+	local u, H, W = L.unit, math.max(1, L.H), math.max(1, L.W)
 	local gap = 7 * u
 	local top = 0.058 * H + 4 * u
+	-- Roblox's own menu sits at the left end of the top bar (GuiService.TopbarInset is the free band right of it): on a
+	-- small screen the vitals start below that menu instead of under it
+	local band = GuiService.TopbarInset
+	local leftTop = top
+	if band.Max.Y > 0 and band.Min.X > SIDE_L * W then
+		leftTop = math.max(top, band.Max.Y + 4 * u)
+	end
 	-- vitals (top-left), toasts below them
-	local leftEnd = stack({ { O.hp, SZ.hp }, { O.st, SZ.st }, { O.needs, SZ.needs }, { O.status, SZ.status } }, SIDE_L, top, gap)
+	local leftEnd = stack({ { O.hp, SZ.hp }, { O.st, SZ.st }, { O.needs, SZ.needs }, { O.status, SZ.status } }, SIDE_L, leftTop, gap)
 	toastTop = (leftEnd + 10 * u + SZ.toast * u * 0.5) / H
 	toastStep = (SZ.toast * u + gap) / H
-	-- recorder line, clock and the exits list (top-right)
+	-- recorder line and clock (top-right), the exits list below them. On touch the menu row (SET, EXIT, BAG) stands at
+	-- the top centre (Touch.luau; KNOWN_ISSUES 75) and the list drops down under it, clear of the thumb buttons
 	local rightEnd = stack({ { O.rec, SZ.rec }, { O.dev, SZ.dev }, { O.clock, SZ.clock } }, SIDE_R, top, gap)
-	local exits = {}
-	for _, o in O.exits do
-		table.insert(exits, { o, SZ.exit })
+	local row = ctx.Touch and ctx.Touch.topRowBottom and ctx.Touch.topRowBottom()
+	-- on touch the toasts start right of the RUN button when their stack would reach it (KNOWN_ISSUES 77)
+	toastX = SIDE_L
+	if row and ctx.Touch.rectOf then
+		local x0, y0, x1, y1 = ctx.Touch.rectOf("Sprint")
+		if x0 then
+			local gp = gui.AbsolutePosition
+			local ty0 = toastTop * H - SZ.toast * u * 0.5
+			local ty1 = (toastTop + 4 * toastStep) * H + SZ.toast * u * 0.5
+			if y1 - gp.Y > ty0 and y0 - gp.Y < ty1 then
+				toastX = math.max(SIDE_L, (x1 - gp.X + 10 * u) / W)
+			end
+		end
 	end
-	stack(exits, SIDE_R, rightEnd + 4 * u, gap * 0.7)
-	-- notices sit above the sight line, progress below it
+	exitArea = {
+		touch = row ~= nil, y0 = row and (row + gap) or (rightEnd + 4 * u), y1 = 0.88 * H, gap = gap * 0.7,
+		vit = { leftTop, leftEnd }, rec = { top, rightEnd }, -- the vitals' and the recorder column's bands (the touch drop-down passes between)
+	}
+	-- notices sit above the sight line (and below the touch menu row), progress below it
 	local ny = 0.19 * H
+	if row then
+		ny = math.max(ny, row + gap + SZ.notice * u * 0.5)
+	end
 	O.notice:setAt(0.5, ny / H)
 	O.noticeSub:setAt(0.5, (ny + (SZ.notice + SZ.noticeSub) * 0.5 * u + gap) / H)
 	local py = 0.74 * H
@@ -104,6 +136,106 @@ local function layout()
 	O.deathSub:setAt(0.5, (0.45 * H + (SZ.death + SZ.deathSub) * 0.5 * u + gap) / H)
 end
 Hud.layout = layout
+
+-- The exits list (Tarkov: on O, names and requirements only): one column under the clock, or on touch a drop-down under
+-- the menu row at the top centre. A long list shrinks to fit its area; past a point it splits in two columns (on touch
+-- they meet at the centre). Returns where each row stands (GUI absolute pixels) for the touch buttons
+-- to fade under (Touch.luau), or nil when the list is hidden.
+local function placeExits(rows)
+	local n = math.min(#rows, #O.exits)
+	for i = n + 1, #O.exits do
+		O.exits[i]:show(false)
+	end
+	if n == 0 then
+		return nil
+	end
+	local u, W, H, a = L.unit, L.W, L.H, exitArea
+	local pitch = SZ.exit * u + a.gap
+	local avail = math.max(1, a.y1 - a.y0)
+	local cols, f = 1, math.min(1, avail / (n * pitch))
+	-- a column may shrink to 62 % on a screen with keys (Tarkov's one column top right); the touch drop-down splits sooner,
+	-- since a phone's text is small already
+	if f < (a.touch and 0.85 or 0.62) then
+		cols = 2
+		f = math.max(0.5, math.min(1, avail / (math.ceil(n / 2) * pitch)))
+	end
+	local per = math.ceil(n / cols)
+	local widths, colW
+	local function fill(size)
+		widths, colW = {}, { 0, 0 }
+		for i = 1, n do
+			local o, e = O.exits[i], rows[i]
+			local status, col = Hud.exitStatus(e)
+			local title = e.rule == "transit" and (" " .. string.upper(e.name)) or string.format(" EXFIL %s  ·  %s", e.id, string.upper(e.name))
+			local resized = o.size ~= size
+			o:setSize(size)
+			local changed = o:set({ { icon = I.EXIT, color = col, size = size * 0.85 }, { t = title, color = C.white }, { t = status ~= "" and ("  " .. status) or "", color = col } })
+			o:show(true)
+			-- measured again only when the row, its size, the screen or a glyph's known width changed
+			if changed or resized or o.mwVer ~= Lens.version or o.mwUnit ~= u then
+				o.mw, o.mwVer, o.mwUnit = o:measure(), Lens.version, u
+			end
+			widths[i] = o.mw
+			local c = (i <= per) and 1 or 2
+			colW[c] = math.max(colW[c], widths[i])
+		end
+	end
+	fill(SZ.exit * f)
+	if a.touch then
+		-- the drop-down passes between the vitals (top left) and the recorder column (top right), and keeps to the screen:
+		-- a row too wide for the room beside it shrinks the list again (text scales with its size, so one pass fits it)
+		local left = SIDE_L * W + math.max(O.hp:measure(), O.st:measure(), O.needs:measure(), O.status:measure()) + 12 * u
+		local right = SIDE_R * W - math.max(O.rec:measure(), O.dev:measure(), O.clock:measure()) - 12 * u
+		local rowH0, g0, k = SZ.exit * f * u, a.gap * f, 1
+		for i = 1, n do
+			local c, r = (i <= per) and 1 or 2, (i - 1) % per
+			local yT = a.y0 + r * (rowH0 + g0)
+			local yB = yT + rowH0
+			local lo = (yB > a.vit[1] and yT < a.vit[2]) and left or SIDE_L * W
+			local hi = (yB > a.rec[1] and yT < a.rec[2]) and right or SIDE_R * W
+			local w = math.max(1, widths[i])
+			if cols == 1 then
+				k = math.min(k, 2 * math.min(0.5 * W - lo, hi - 0.5 * W) / w)
+			elseif c == 1 then
+				k = math.min(k, (0.5 * W - 10 * u - lo) / w)
+			else
+				k = math.min(k, (hi - 0.5 * W - 10 * u) / w)
+			end
+		end
+		if k < 1 then
+			f *= math.max(0.4, k)
+			fill(SZ.exit * f)
+		end
+	end
+	local rowH, g = SZ.exit * f * u, a.gap * f
+	local gp, rects = gui.AbsolutePosition, {}
+	for i = 1, n do
+		local o = O.exits[i]
+		local c, k = (i <= per) and 1 or 2, (i - 1) % per
+		local x, align
+		if a.touch then
+			if cols == 1 then
+				x, align = 0.5 * W, 0.5
+			elseif c == 1 then
+				x, align = 0.5 * W - 10 * u, 1
+			else
+				x, align = 0.5 * W + 10 * u, 0
+			end
+		else
+			-- right-aligned under the clock; with two columns the first stands left of the second
+			x, align = SIDE_R * W, 1
+			if cols == 2 and c == 1 then
+				x -= colW[2] + 26 * u
+			end
+		end
+		local y = a.y0 + k * (rowH + g) + rowH * 0.5
+		o:setAlign(align)
+		o:setAt(x / W, y / H)
+		local x0 = x - align * widths[i] + gp.X
+		table.insert(rects, { x0, y - rowH * 0.5 + gp.Y, x0 + widths[i], y + rowH * 0.5 + gp.Y })
+	end
+	return rects
+end
 
 local function build()
 	gui = K.screen("ZR_HUD", 5)
@@ -163,6 +295,7 @@ local function build()
 	O.deathSub:show(false)
 	layout()
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)
+	GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(layout)
 end
 
 function Hud.toast(text, tone)
@@ -286,15 +419,7 @@ local function slowUpdate()
 			table.insert(rows, { id = tr.id, name = tr.name, rule = "transit", open = tr.open, toName = tr.toName })
 		end
 	end
-	for i, o in O.exits do
-		local e = rows[i]
-		o:show(e ~= nil)
-		if e then
-			local status, col = Hud.exitStatus(e)
-			local title = e.rule == "transit" and (" " .. string.upper(e.name)) or string.format(" EXFIL %s  ·  %s", e.id, string.upper(e.name))
-			o:set({ { icon = I.EXIT, color = col, size = SZ.exit * 0.85 }, { t = title, color = C.white }, { t = status ~= "" and ("  " .. status) or "", color = col } })
-		end
-	end
+	Hud.exitRects = placeExits(rows)
 	-- hideout: raid status line (bottom centre)
 	local m = ctx.State.match
 	if not inRaid and m then
@@ -396,7 +521,7 @@ function Hud.exitStatus(e)
 		return e.open and "TRANSIT  ·  OPEN" or "TRANSIT  ·  OPENS A MINUTE IN", e.open and C.green or C.yellow
 	elseif e.rule == "coop" then
 		-- Tarkov's co-op exit: a PMC and a scav leave together
-		return "CO-OP  ·  PMC AND SCAV TOGETHER", C.yellow
+		return "CO-OP EXTRACTION", C.yellow
 	end
 	return "", C.green
 end
@@ -552,7 +677,7 @@ local function fastUpdate(dt)
 		return a.t > b.t
 	end)
 	for i, tslot in order do
-		tslot.o:setAt(SIDE_L, toastTop + (i - 1) * toastStep)
+		tslot.o:setAt(toastX, toastTop + (i - 1) * toastStep)
 		local a2 = now - tslot.t
 		tslot.o:setAlpha(a2 > 3.5 and (a2 - 3.5) or 0)
 	end
