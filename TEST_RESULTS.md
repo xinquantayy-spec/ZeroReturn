@@ -8,6 +8,26 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Co-op exits (2026-11-02)
+
+One player in Studio, so the partner side ran with a stand-in (a rig placed in the zone) in LogicTests; the zone itself
+was visited as a PMC.
+
+- **Alone as a PMC** at BOILER CELLAR (Border): the notice read "EXFIL BOILER CELLAR · CO-OP: A SCAV MUST BE HERE WITH
+  YOU" and no hold started (`docs/maps/evidence/BY_boiler_coop.jpg`).
+  - The notices name the exit now; they used to show its code ("EXFIL BC").
+- **LogicTests** (stand-in sessions):
+  - the PMC alone is refused (COOP);
+  - with a scav partner in the zone, the exit opens and the hold runs;
+  - another PMC is no partner;
+  - when the partner steps out the hold breaks;
+  - a co-op leave adds Fence standing to a PMC's profile.
+  - WEST CAMP (Meridian) is co-op and both PMC sides now have it.
+- **Found and fixed:** on the short poles of the underground exits (BOILER CELLAR, the bunkers, the shelter, WEST CAMP)
+  the radio box stood at eye height and hid the sign from behind. It now sits under the lamp.
+- **Tests, all passing:** LogicTests 377 (2 new), CharTests 47, LookTests 33, MapTests 38.
+- **Not verified:** two real players leaving together (the owner's two-client test).
+
 ## THE FORESTER and tripwires (2026-11-02)
 
 Border raids at 13:00, one player, god mode, THE FORESTER forced in with ZR_Dev `boss(true, "Forester")` and the other
