@@ -316,7 +316,7 @@ Seven new MaterialVariants (gloss paint, whitewash, two wallpapers, wall tiles, 
 
 Gaps:
 - The reference is grade C: finishes and mix are inferred from period interiors, not read from Tarkov.
-- Wallpaper repeats every 2 m with the same stains.
+- Wallpaper tiles are clean (fixed 2026-11-01: the stains used to repeat every 2 m); its wear comes from scattered decals, and the print itself still repeats every 2 m, as real wallpaper does.
 - Only Border's dorms and works pick finishes by room; the other maps use the weighted pick.
 - Stairwell bands do not follow the flights.
 - No stencilled signs, glazed brick, rendered concrete or plywood.

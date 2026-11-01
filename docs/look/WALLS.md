@@ -114,8 +114,11 @@ changes), or `Tint = true` on the part or its Model; `Tint = false` keeps the co
   inferred. To close it: read interior screenshots of the Customs dormitory, Interchange and Factory and set the mix
   per map.
 * **Uploaded and run in Studio (2026-11-01).** All seven variants render in raids: the dorm corridor two-tone with chips, and wallpaper A and B in rooms. On first use right after an upload, one Play session showed the new variants flat (the base material only). Decals and ImageLabels with the same images showed them, and the next Play session rendered them. So test new textures in a fresh Play session. Not checked: phone, console, and the frame-rate cost of the seven extra textures. Roblox's texture origin on a part is not set by us: scuffs near the foot of the gloss and the wallpaper seams may not meet the floor or the band edge, and every wall piece is textured on its own, so a pattern does not continue across a door.
-* **Pattern repeat.** Wallpaper repeats every 2 m with the same stains and a peeled strip; on a long wall this will
-  show.
+* **Pattern repeat: fixed 2026-11-01.** The wallpaper tiles had water marks, tide lines and two peeled strips baked in, which
+  repeated every 2 m. The tiles are now clean (seams and dye lots only; `gen_materials.py`, `stains=False`), uploaded again
+  (WallpaperA 132936731944092 / 85327065496493 / 96299315530560, WallpaperB 89203670548132 / 77332177983314 /
+  128809799522560), and papered walls get peel patches from the detail layer twice as often (`PEEL_ODDS` 0.32). Checked in
+  Studio on a 25-stud papered wall in RED STORES: an even print, the patches and bullet marks in different places.
 * **Meridian (2026-11-01, main session):** the mall's Model carries `Finish = ZR_Whitewash`, so every plaster wall of the mall is painted rather than papered, with one hue per unit and floor. The washroom stalls are gloss panels. Checked in Studio: in Meridian, whitewash is on 1,784 parts, peeling plaster on 187 (the outside booths), gloss on 11 and wallpaper on 1. TAILORED and the L2 gallery read as painted plaster. Small shops are darker than before since the indoor auto-gain change.
 * **Only Border's dorms and Works use the new finishes by room.** Quay 7 and the other maps get the weighted pick and the
   brick rule only; interiors there have no per-room finish.

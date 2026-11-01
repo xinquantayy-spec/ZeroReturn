@@ -187,7 +187,8 @@ local function ground(key, p, yaw, lod, col, fy0)
 end
 
 -- the share of inside plaster walls that get a peeling patch, by the wall's MaterialVariant (the rest: 0.4)
-local PEEL_ODDS = { ZR_PaintGloss = 0.12, ZR_Whitewash = 0.22, ZR_WallpaperA = 0.16, ZR_WallpaperB = 0.16 }
+-- wallpaper tiles are clean since 2026-11-01 (their baked stains repeated every 2 m), so papered walls get more patches here
+local PEEL_ODDS = { ZR_PaintGloss = 0.12, ZR_Whitewash = 0.22, ZR_WallpaperA = 0.32, ZR_WallpaperB = 0.32 }
 local function wallFace(p, f, sign, mat)
 	local n = f.n * sign
 	local along = f.along
