@@ -259,15 +259,15 @@ Gaps (not copied or not found):
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, THE HOUNDS (the Goons) and THE CULT (the cultists, both 2026-11-02), border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the partisan, ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
-| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | Co-op, flare and transit extracts, the car exit's karma pricing (the car itself is built: "Car exits" below), the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
+| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, THE HOUNDS (the Goons) and THE CULT (the cultists, both 2026-11-02), border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), transits (co-op is in: BOILER CELLAR, and THE FORESTER is our partisan, both 2026-11-02), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
+| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | Transit extracts (co-op and flare exits are in since 2026-11-02: WEST CAMP and RIVER PATH), the car exit's karma pricing (the car itself is built: "Car exits" below), the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
 
 ### Interchange ground and outside: Meridian Mall, part 1 (2026-11-01)
 
-- Co-op extracts, transits and flares do not exist: WEST CAMP is scav-only at the reference's co-op spot, RIVER PATH is a plain open
-  exit, SHELTER EXIT supports only the power rule (the hidden switch and the keycard panel are Play's).
+- Transits do not exist. WEST CAMP is a co-op exit at the reference's co-op spot and RIVER PATH a flare exit (both 2026-11-02);
+  SHELTER EXIT supports only the power rule (the hidden switch and the keycard panel are Play's).
 - SUBSTATION CAR costs 20,000 MK (the 2026 figure) and is a vehicle exit since the "Car exits" work below (the price still ignores Scav karma); FENCE GAP's `nobag` rule is new.
 - The second boss (the hammer boss in the KASSA garage), mounted guns, propane cylinders, airdrop points and the lethal bands are not built.
 - The ponds and the east canal are dry ditches (the budget allows no terrain water), so there is no wading or swimming; the relief is
@@ -459,8 +459,8 @@ Gaps (not copied or not found):
   - the red flare (built the same day, from the inventory or a quick slot) has no special slot or flare gun;
   - drop points are found as open level ground, not Tarkov's fixed zones;
   - no bonus backpack.
-- **Co-op, flare and transit extracts**: WEST CAMP is scav-only, RIVER PATH is a plain exit (no green flare), and the transits to Streets
-  and Customs do not exist.
+- **Transit extracts**: the transits to Streets and Customs do not exist. (WEST CAMP is a co-op exit and RIVER PATH a green-flare exit
+  since 2026-11-02.)
 - **SUBSTATION CAR** was a plain paid exit when part 3 was written; it is a vehicle exit now (see "Car exits" below: 50 % chance, pay at the car, 4 seats, shared countdown, single use). Still a gap: no Scav karma in the price.
 - **Saferoom chain simplified**: the urinal flush that reveals a keypad is a service valve in the washroom; not copied are the keypad,
   the lever for the Object-14 container, and the Terragroup container (Object #21WS card) in the south-west container yard. The inside
@@ -687,6 +687,26 @@ Gaps:
 - **The looted knife** has the field knife's stats and does not poison.
 - **The night rule** is "the raid starts in the dark", not Tarkov's exact hours.
 - **Zones are ours**; not on other maps; no cultist circle.
+
+### Co-op exits: a PMC and a scav leave together (2026-11-02)
+
+Researched first: Shacknews' Customs extract list ("Boiler Room Basement (Co-Op) ... you need to have a PMC with you in
+order for this extract to activate"), the Customs reference (`docs/maps/reference/CUSTOMS_REFERENCE.md`: scav cooperation,
+since 1.2.0.0 open to PMCs from either side), the Interchange reference (Scav Camp co-op in the garage tunnel) and Prima
+Games (co-op extraction raises Fence reputation for the scav and the PMC). Built in `Extract.luau` (rule `coop`),
+`Economy.luau`, `Progress.luau` and both map layouts.
+
+Matched:
+- **BOILER CELLAR** (Customs' Boiler Room Basement) and **WEST CAMP** (Interchange's Scav Camp) are co-op exits.
+- **Both must be there:** a PMC can leave only with a player scav in the zone, and a scav only with a PMC. Each hold runs
+  only while a partner from the other side is still in the zone.
+- **Both gain Fence standing** for leaving that way (`Progress.KARMA.coop`).
+
+Gaps:
+- **Our numbers:** +0.2 standing each; no source gives Tarkov's.
+- **No rule against partners who shot each other**, and no co-op voice prompt or gesture.
+- **Not seen with two clients** (a LogicTest stands a rig in as the partner).
+- **The stairs door to the boiler cellar still takes the boiler house key** (ours).
 
 ### THE FORESTER: Customs' Partisan on Border Yard (2026-11-02)
 

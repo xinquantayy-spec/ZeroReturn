@@ -126,7 +126,7 @@ with their positions and rules; Play builds them (`kit.extract`).
 | RC | RESCUE CHECKPOINT | 1246, 862 | nw | open | south-east corner beside the checkpoint (moved 8 studs inward from the reference) |
 | SC | SUBSTATION CAR | 1112, -1124 | both (PMCs only) | car: paid 20,000 MK per seat, chance 50 %, 4 seats, 60 s shared countdown | north-east corner by the sniper band; Tarkov's V-Ex (SPT: 50 % chance, 60 s timer, 4 players; wiki: always there); pay at the car, see "Car exits" below; karma pricing is a gap |
 | SE | SHELTER EXIT | 512, 77 | both | power (`MALL_POWER`) | the hidden room east of car park C: power, then a hidden switch in the L2 washroom, a keycard at the door, and the button inside that seals the door (Play) |
-| WC | WEST CAMP | 550, -210 | scav | scav | at the reference's co-op position (the service tunnel, L0), not at the huts; the spec name is kept |
+| WC | WEST CAMP | 550, -210 | both | co-op (2026-11-02): a PMC and a player scav together | at the reference's co-op position (the service tunnel, L0), not at the huts; the spec name is kept |
 | RP | RIVER PATH | -1372, 286 | both | flare: closed until a green flare goes up within 75 studs (2026-11-02) | far west edge on the dirt road; the likely flare spot is 34 studs east |
 | FG | FENCE GAP | 929, -219 | both | `nobag` (new kind) | a hole in the fence that closes the 46 m gap in the east service lane fence (reference point 947, -219), with drums and a red container; the backpack slot must be empty (grade D) |
 
@@ -201,8 +201,8 @@ the item exists.
 
 ## Parity gaps (copied to `docs/design/EFT_PARITY.md`)
 
-- Co-op extracts and transits do not exist: WEST CAMP is scav-only at the reference's co-op spot, SHELTER EXIT supports only the
-  power rule (the hidden switch and the keycard panel are Play's). RIVER PATH opens by green flare since 2026-11-02.
+- Transits do not exist. WEST CAMP is Tarkov's co-op exit since 2026-11-02 (a PMC and a player scav together); SHELTER EXIT supports
+  only the power rule (the hidden switch and the keycard panel are Play's). RIVER PATH opens by green flare since 2026-11-02.
 - SUBSTATION CAR is a vehicle exit now (50 % chance, pay at the car, 4 seats, shared 60 s countdown, single use); it costs 20,000 MK (the
   2026 figure) and the price does not depend on Scav karma (a gap). FENCE GAP's `nobag` rule is new.
 - The second boss (the hammer boss in the KASSA garage), mounted guns, propane cylinders, airdrop points and the lethal bands are not built.

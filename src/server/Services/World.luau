@@ -745,7 +745,8 @@ local function addExtract(parent, id, name, pos, size, rule, opts)
 	local poleH = (opts and opts.compact) and 6.4 or 9
 	local px, pz = pos.X + size.X / 2 - 1.5, pos.Z - size.Z / 2 + 1.5
 	vcyl(m, poleH, 0.5, px, y0, pz, C.metalDark, M.Metal)
-	local radio = box(m, 1.6, 1.2, 1, px, y0 + poleH - 2.6, pz, C.olive, M.Metal)
+	-- on the short pole the radio goes up under the lamp, above eye height: lower down it hid the sign from behind
+	local radio = box(m, 1.6, 1.2, 1, px, y0 + poleH - ((opts and opts.compact) and 0.9 or 2.6), pz, C.olive, M.Metal)
 	local lamp = box(m, 0.7, 0.7, 0.7, px, y0 + poleH + 0.3, pz, C.orange, M.Neon)
 	lamp.CastShadow = false
 	lamp.Name = "BeaconLamp"

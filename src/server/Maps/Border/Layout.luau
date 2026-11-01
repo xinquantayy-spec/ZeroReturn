@@ -575,7 +575,7 @@ L.ext = {
 	{ "AR", "ARMY ROADBLOCK", "west", 571, -327.4, 28, 12, 28, { kind = "open" }, "C", "moved 72 studs inward (reference position at or past the limit); none; availability disputed: SPT exits list 100 %, SPT allExtracts lists PMC cha" },
 	{ "SB", "SMUGGLERS' BOAT", "both", 625.3, 473.8, 24, 10, 24, { kind = "chance", chance = 0.50 }, "B", "secret exfil: same Voron note as the bunker exit" },
 	{ "NL", "NORTH LINE", "both", -31.2, -765.6, 30, 12, 30, { kind = "flare", radius = 94 }, "C", "fire a green signal flare (RSP-30 or 26x75) in the flare area and keep to the tr" },
-	{ "BC", "BOILER CELLAR", "both", 181.2, -48.4, 16, 10, 16, { kind = "key", key = "KEY_BY_BOILER" }, "B", "scav-cooperation: a PMC must bring a scav; since 1.2.0.0 available regardless of" },
+	{ "BC", "BOILER CELLAR", "both", 181.2, -48.4, 16, 10, 16, { kind = "coop" }, "B", "scav-cooperation: a PMC must bring a scav; since 1.2.0.0 available regardless of" },
 	{ "OF", "OFFICE GATE", "scav", -1574.7, -70.5, 22, 12, 22, { kind = "scav" }, "B", "moved 30 studs inward (reference position at or past the limit); none" },
 	{ "FC", "FAR CORNER", "scav", -1519.4, -400, 22, 12, 22, { kind = "scav" }, "B", "none" },
 	{ "OC", "OLD CHECKPOINT", "scav", -1514.4, 16.9, 22, 12, 22, { kind = "scav" }, "B", "none" },

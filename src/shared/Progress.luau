@@ -172,7 +172,7 @@ function P.masteryFor(mastering: any?, weaponId: string?): number
 end
 
 -- karma (Fence standing): -3 .. 3. Low karma turns the locals hostile and lengthens the scav cooldown.
-P.KARMA = { min = -3, max = 3, start = 0.2, killScav = -0.25, killPlayerScav = -0.4, scavExtract = 0.03, hostileBelow = -1 }
+P.KARMA = { min = -3, max = 3, start = 0.2, killScav = -0.25, killPlayerScav = -0.4, scavExtract = 0.03, coop = 0.2, hostileBelow = -1 }
 
 function P.scavCooldown(base: number, karma: number?): number
 	return math.floor(base * (1 - 0.08 * math.clamp(karma or 0, -3, 3)))

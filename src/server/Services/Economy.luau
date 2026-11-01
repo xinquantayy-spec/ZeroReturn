@@ -462,8 +462,12 @@ function Economy.afterRaid(player, prof, s, outcome, runThrough)
 	if outcome == "SUCCESS" and not runThrough then
 		gained += P.XP.survive
 	end
-	if s.scav then
-		local k = (s.karmaDelta or 0) + ((outcome == "SUCCESS") and P.KARMA.scavExtract or 0)
+	-- a scav's raid moves the Fence standing; a PMC's only through a co-op exit (Extract, Progress.KARMA.coop)
+	local k = s.karmaDelta or 0
+	if s.scav and outcome == "SUCCESS" then
+		k += P.KARMA.scavExtract
+	end
+	if s.scav or k ~= 0 then
 		prof.karma = math.clamp((prof.karma or P.KARMA.start) + k, P.KARMA.min, P.KARMA.max)
 	end
 	local up = Economy.addXp(prof, gained)

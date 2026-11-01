@@ -3,8 +3,8 @@
 -- Tarkov extract rules: open, paid (MK on exit), key (carry the key), chance (open or closed for the whole
 -- raid, unknown until you get there), scav-only and power (works once a switch such as a generator is on; `also` names a
 -- switch that must be on first, as Interchange's shelter: mall power, then the washroom lever) and nobag (the Hole in the
--- Fence: the backpack slot must be empty, checked on entering and again during the hold). PMCs get their side's list, scavs
--- every extract except the cars.
+-- Fence: the backpack slot must be empty, checked on entering and again during the hold) and coop (a PMC and a player scav
+-- together in the zone, Extract.coopPartner). PMCs get their side's list, scavs every extract except the cars.
 -- Cars (Tarkov's vehicle exits, V-Ex; docs/design/EFT_PARITY.md "Car exits"): a paid exit whose rule has `seats`,
 --   { kind = "paid", cost, chance, seats, depart }. The car is there in some raids only (`chance`, rolled with the other
 --   chance exits at raid start); the fare is paid at the car (a prompt on it, PMCs only; the money goes at once) and buys one
@@ -15,6 +15,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
+local Progress = require(Shared.Progress)
 
 local Extract = {}
 local ctx
@@ -49,11 +50,34 @@ local function wearsBackpack(h)
 	return h ~= nil and h.slots ~= nil and h.slots.back ~= nil
 end
 
--- the rules that can break while the hold runs (a pack put on mid-hold): nil, or (reason code, text)
-function Extract.holdBlocked(s, e)
+-- co-op exits (Tarkov's Boiler Room Basement, "scav cooperation"): a PMC and a player scav stand in the zone together, and
+-- each one's hold runs only while someone from the other side is still in it. Leaving that way raises the Fence standing
+-- of both (Progress.KARMA.coop). The partner: a living raider from the other side inside the zone, or nil.
+function Extract.coopPartner(player, s, e)
+	for p, o in ctx.Raid.sessions() do
+		if p ~= player and not o.done and (o.state == "ACTIVE" or o.state == "EXTRACTING") and (o.scav == true) ~= (s.scav == true) then
+			local char = p.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart")
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if root and hum and hum.Health > 0 and Extract.inside(e, root.Position) then
+				return p, o
+			end
+		end
+	end
+	return nil
+end
+
+local function coopText(s)
+	return s.scav and "CO-OP: A PMC MUST BE HERE WITH YOU" or "CO-OP: A SCAV MUST BE HERE WITH YOU"
+end
+
+-- the rules that can break while the hold runs (a pack put on mid-hold, the co-op partner gone): nil, or (reason, text)
+function Extract.holdBlocked(s, e, player)
 	local r = e and e.rule or {}
 	if r.kind == "nobag" and wearsBackpack(s.inv) then
 		return "BACKPACK", "BACKPACK SLOT MUST BE EMPTY"
+	elseif r.kind == "coop" and player and not Extract.coopPartner(player, s, e) then
+		return "COOP", coopText(s)
 	end
 	return nil
 end
@@ -290,6 +314,8 @@ function Extract.blocked(player, s, e)
 		return "POWER", r.needsLast or "NOT READY"
 	elseif r.kind == "nobag" and wearsBackpack(s.inv) then
 		return "BACKPACK", "BACKPACK SLOT MUST BE EMPTY"
+	elseif r.kind == "coop" and not Extract.coopPartner(player, s, e) then
+		return "COOP", coopText(s)
 	elseif r.kind == "key" and r.key and not carries(s.inv, r.key) then
 		local d = Items.defs[r.key]
 		return "KEY", "REQUIRES " .. string.upper(d and d.name or r.key)
@@ -411,6 +437,9 @@ end
 
 local function complete(player, s, e)
 	local r = e.rule or {}
+	if r.kind == "coop" then
+		s.karmaDelta = (s.karmaDelta or 0) + Progress.KARMA.coop -- Fence likes it (settled in Economy.afterRaid)
+	end
 	if r.kind == "paid" then
 		local prof = ctx.Profiles.get(player)
 		if not prof or prof.money < (r.cost or 0) then
@@ -592,7 +621,7 @@ function Extract.tick()
 			elseif s.state == "EXTRACTING" then
 				local whyHold, textHold = nil, nil
 				if zone == s.exZone then
-					whyHold, textHold = Extract.holdBlocked(s, ctx.World.extracts[zone])
+					whyHold, textHold = Extract.holdBlocked(s, ctx.World.extracts[zone], player)
 				end
 				if zone ~= s.exZone then
 					s.state = "ACTIVE"

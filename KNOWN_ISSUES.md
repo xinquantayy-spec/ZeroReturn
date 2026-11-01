@@ -31,7 +31,7 @@
 15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (1,018 points since the M12 cover props).
 20. **AI lethality is tuned by feel.** Reaction times, aim error and zeroing penalties are in `AI.luau` (`SKILL`); a guard can still kill a player standing in the open within a few seconds, which matches Tarkov but may need tuning after playtests.
 16. **Paid exfils use stash money.** There is no physical cash item yet, so PIER 3 BOAT charges the profile balance on exit, and the car exits (DORMS CAR, SUBSTATION CAR) charge it when you pay at the car.
-17. **Not yet in:** co-op exfils (scav + PMC), a flea market (player-to-player trading across servers), the scav case and other hideout modules (lavatory, intelligence centre, shooting range).
+17. **Not yet in:** transits between maps (co-op exfils, a PMC with a player scav, are in since 2026-11-02: BOILER CELLAR and WEST CAMP), a flea market (player-to-player trading across servers), the scav case and other hideout modules (lavatory, intelligence centre, shooting range).
 21. **Dog tags need space.** The tag goes into the dead PMC's pockets, rig or backpack; if all of them are completely full, no tag is added.
 22. **Trader stock is per player.** Each player has their own purchase limits per 30-minute restock (Tarkov shares some stock between players).
 23. **Economy balance is first-pass.** Prices, XP values, task rewards, build times (5–40 min) and craft times (15–45 min) are tuned by feel and need playtests.

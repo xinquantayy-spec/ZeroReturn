@@ -381,6 +381,9 @@ function Hud.exitStatus(e)
 		return "NO BACKPACK", C.yellow
 	elseif e.rule == "flare" then
 		return e.flared and "OPEN  ·  FLARE SEEN" or "GREEN FLARE IN THE SIGNAL AREA", e.flared and C.green or C.yellow
+	elseif e.rule == "coop" then
+		-- Tarkov's co-op exit: a PMC and a scav leave together
+		return "CO-OP  ·  PMC AND SCAV TOGETHER", C.yellow
 	end
 	return "", C.green
 end
@@ -598,19 +601,29 @@ function Hud.init(c)
 	c.State.on("toast", function(d)
 		Hud.toast(d.text, d.tone)
 	end)
+	-- the exit's name for the notices (Tarkov names the exit, not its code); its id if the raid list lacks it
+	local function exitName(id)
+		local raid = ctx.State.raid
+		for _, e in raid and raid.extracts or {} do
+			if e.id == id and e.name then
+				return string.upper(e.name)
+			end
+		end
+		return tostring(id)
+	end
 	c.State.on("extract", function(d)
 		if d.state == "start" and d.car then
 			-- the fare is paid and a seat taken: every passenger counts down to the same departure (extract note, flagged car)
 			ride = { name = d.name, ends = d.ends, total = d.total }
 			Hud.toast("PAID " .. Util.commas(d.cost or 0) .. " " .. Config.CURRENCY .. "  ·  SEAT " .. tostring(d.seat or 1) .. " OF " .. tostring(d.seats or 4), "good")
-			Hud.toast("EXFIL " .. tostring(d.zone) .. "  -  THE CAR LEAVES IN " .. tostring(math.ceil(d.total or 60)) .. " S  ·  STAY BY IT", "good")
+			Hud.toast("EXFIL " .. exitName(d.zone) .. "  -  THE CAR LEAVES IN " .. tostring(math.ceil(d.total or 60)) .. " S  ·  STAY BY IT", "good")
 		elseif d.state == "start" then
 			ex = { name = d.name, ends = d.ends, total = d.total }
-			Hud.toast("EXFIL " .. tostring(d.zone) .. "  -  HOLD POSITION" .. (d.cost and ("  ·  PAYING " .. Util.commas(d.cost) .. " " .. Config.CURRENCY) or ""), "good")
+			Hud.toast("EXFIL " .. exitName(d.zone) .. "  -  HOLD POSITION" .. (d.cost and ("  ·  PAYING " .. Util.commas(d.cost) .. " " .. Config.CURRENCY) or ""), "good")
 		elseif d.state == "left" then
 			-- the car drove off with the seat paid for and its owner outside the zone: no refund
 			ride = nil
-			Hud.notice("EXFIL " .. tostring(d.zone), d.text or "THE CAR HAS LEFT", C.red, 3.5)
+			Hud.notice("EXFIL " .. exitName(d.zone), d.text or "THE CAR HAS LEFT", C.red, 3.5)
 		elseif d.state == "denied" then
 			-- requirement not met at the zone (closed this raid, key missing, can't pay); a car's zone only says where to pay
 			if not d.car then
@@ -622,7 +635,7 @@ function Hud.init(c)
 					e.closed = true
 				end
 			end
-			Hud.notice("EXFIL " .. tostring(d.zone), d.text or "UNAVAILABLE", d.reason == "PAY" and C.yellow or C.red, 2.6)
+			Hud.notice("EXFIL " .. exitName(d.zone), d.text or "UNAVAILABLE", d.reason == "PAY" and C.yellow or C.red, 2.6)
 		else
 			ex = nil
 			Hud.toast("EXTRACTION INTERRUPTED", "warn")

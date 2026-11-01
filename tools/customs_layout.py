@@ -77,7 +77,7 @@ EXTRACTS = {
     "RUAF Roadblock": ("AR", "ARMY ROADBLOCK", None, {"kind": "open"}, (28, 12, 28)),
     "Smugglers' Boat": ("SB", "SMUGGLERS' BOAT", None, {"kind": "chance", "chance": 0.5}, (24, 10, 24)),
     "Railroad Passage (Flare)": ("NL", "NORTH LINE", None, {"kind": "flare", "radius": 94}, (30, 12, 30)),
-    "Boiler Room Basement (Co-op)": ("BC", "BOILER CELLAR", None, {"kind": "key", "key": "KEY_BY_BOILER"}, (16, 10, 16)),
+    "Boiler Room Basement (Co-op)": ("BC", "BOILER CELLAR", None, {"kind": "coop"}, (16, 10, 16)),
     "Administration Gate": ("OF", "OFFICE GATE", "scav", {"kind": "scav"}, (22, 12, 22)),
     "Factory Far Corner": ("FC", "FAR CORNER", "scav", {"kind": "scav"}, (22, 12, 22)),
     "Scav Checkpoint": ("OC", "OLD CHECKPOINT", "scav", {"kind": "scav"}, (22, 12, 22)),

@@ -94,7 +94,7 @@ serves both; "scav" is for scavs only. All 26 exist as `kit.extract` zones with 
 | AR | ARMY ROADBLOCK | 571, -327 | west | open | sources disagree on its availability (grade C); the icon lies 56 studs past the limit |
 | SB | SMUGGLERS' BOAT | 625, 474 | both | chance 50 % | secret exit; same Voron note as the hole |
 | NL | NORTH LINE | -31, -766 | both | flare: closed until a green flare goes up within 94 studs (the signal area), then open to all for the raid | green flare fired in the flare area, then keep to the tracks past the border snipers (grade C) |
-| BC | BOILER CELLAR | 181, -48 | both | key `KEY_BY_BOILER` | scav cooperation: a PMC must bring a scav |
+| BC | BOILER CELLAR | 181, -48 | both | co-op (2026-11-02): a PMC and a player scav in the zone together | scav cooperation: a PMC must bring a scav; the stairs door down still takes `KEY_BY_BOILER` |
 | OF, FC, OC, AG | OFFICE GATE, FAR CORNER, OLD CHECKPOINT, ARMY GATE | west edge, z -70, -400, 17, 507 | scav | scav | scav exits on the west edge; the icons of OFFICE GATE and ARMY GATE lie 17 and 77 studs past the limit |
 | RP, AL | ROCK PASS, ARMY LINE | -1147, 717; -1006, 765 | scav | scav | south-west rim |
 | OR, HR, PL, CL | OLD ROAD GATE, HILL ROADBLOCK, PORT LINE, CITY LINE | -81, 775; 446, 506; 951, 253; 1020, -581 | scav | scav | named in the build spec |
@@ -153,7 +153,7 @@ mounted weapons (`L.hazard.propane` and `.mounted` are empty: no reference data 
 
 Parity gaps (to copy into `docs/design/EFT_PARITY.md`, which was outside part 1's scope):
 
-- Co-op extracts and transits do not exist here yet (BOILER CELLAR is a plain key extract; in Tarkov a PMC must bring a scav).
+- BOILER CELLAR is Tarkov's co-op exit since 2026-11-02 (a PMC and a player scav together); transits do not exist here yet.
 - The Voron note for SMUGGLERS' HOLE and SMUGGLERS' BOAT and the ZB-1013 key for the K-13 basement door have no items; the two
   exits are plain 50 % chance extracts and the bunker door is not locked. The green flare exists since 2026-11-02 (NORTH LINE opens
   by flare, OLD PUMPS sends up green flares while it is there; `docs/design/EFT_PARITY.md`, "Flare exits").
@@ -530,8 +530,9 @@ Budget 2,450 parts (counted as it goes); the run prints the real count.
   parapet with a posted gunner each (`Maps/Border/Play.luau`, "guns"). Move them when a position source turns up. Written and
   checked by `tools/luau_check.py` only; the pad and parapet clearance was worked out offline, and the arcs against the yard and a
   gunner's sight lines have not been seen in Studio.
-- Co-op extracts and transits: BOILER CELLAR is a plain key extract (a PMC must bring a scav in Tarkov); the transits to Factory,
-  Interchange, Reserve and Shoreline that the reference lists do not exist.
+- Co-op extracts and transits: BOILER CELLAR is a co-op exit since 2026-11-02 (a PMC and a player scav in the zone together;
+  the stairs door down still takes the boiler house key, our addition). The transits to Factory, Interchange, Reserve and
+  Shoreline that the reference lists do not exist.
 - THE HOUNDS (the knight with Big Pipe and Birdeye), THE CULT (the sect priest with his warriors) and THE FORESTER (the partisan,
   with his tripwires in the doorways near the dorms and the frame) were built 2026-11-02 (`docs/design/BOSS_HOUNDS.md`,
   `docs/design/BOSS_CULT.md`, `docs/design/BOSS_FORESTER.md`).
@@ -627,7 +628,7 @@ more when the build ends). The K-13 exit rule in `Layout.ext` is `{ kind = "powe
 | `by_red` | KEY_BY_RED | the cage of seized goods in the RED STORES |
 | `by_bastion` | KEY_BY_BASTION | the Bastion's strongroom |
 | `by_motor` | KEY_BY_MOTOR | the Motor Shop's foreman's office |
-| `by_boiler` | KEY_BY_BOILER | the boilerman's cabin (the stairs to the BOILER CELLAR; the cellar's exit uses the same key) |
+| `by_boiler` | KEY_BY_BOILER | the boilerman's cabin (the stairs to the BOILER CELLAR; the cellar's exit is co-op since 2026-11-02, no key) |
 | `by_k11` | KEY_BY_K11 | K-11's vault door (the way in stays open, as in the reference) |
 
 K-13's door is not locked: no key item exists for it. Every other door in the module is an unlocked door that opens at random (35 %).

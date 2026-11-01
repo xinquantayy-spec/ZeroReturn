@@ -1295,6 +1295,53 @@ function T.run(ctx)
 		end
 	end
 
+	-- co-op exits (Tarkov's Boiler Room Basement): a PMC and a player scav in the zone together; the hold breaks when the
+	-- partner leaves; both gain Fence standing (stand-in raiders: a rig in the zone as the partner)
+	if ctx and ctx.World and ctx.Extract and ctx.Raid and ctx.Economy and ctx.World.maps.border then
+		local EX = ctx.Extract
+		local bc = ctx.World.maps.border.extracts and ctx.World.maps.border.extracts.BC
+		local okRig, rig = pcall(ctx.Chars.buildRig, "scav", 1)
+		local blockedAlone, blockedWith, holdWith, holdGone, sameSide = nil, nil, nil, nil, nil
+		if bc and okRig and rig then
+			rig.Parent = workspace
+			rig:PivotTo(CFrame.new(bc.cf.Position + Vector3.new(0, 1, 0)))
+			local pmc = { Character = nil }
+			local sPmc = { scav = false, state = "ACTIVE", inv = { slots = {}, items = {}, grids = {} } }
+			local partner = { Character = rig }
+			local sScav = { scav = true, state = "ACTIVE" }
+			local origSessions = ctx.Raid.sessions
+			local fake = { [pmc] = sPmc }
+			ctx.Raid.sessions = function()
+				return fake
+			end
+			local okRun = pcall(function()
+				blockedAlone = EX.blocked(pmc, sPmc, bc)
+				fake[partner] = sScav
+				blockedWith = EX.blocked(pmc, sPmc, bc)
+				holdWith = EX.holdBlocked(sPmc, bc, pmc)
+				sScav.scav = false -- another PMC is no partner
+				sameSide = EX.blocked(pmc, sPmc, bc)
+				sScav.scav = true
+				rig:PivotTo(CFrame.new(bc.cf.Position + Vector3.new(bc.size.X + 20, 1, 0)))
+				holdGone = EX.holdBlocked(sPmc, bc, pmc)
+			end)
+			ctx.Raid.sessions = origSessions
+			rig:Destroy()
+			if not okRun then
+				blockedAlone = "ERROR"
+			end
+		end
+		check("co-op exit: BOILER CELLAR needs a scav with the PMC; another PMC will not do; the hold stops when the scav leaves",
+			bc ~= nil and bc.rule.kind == "coop" and blockedAlone == "COOP" and blockedWith == nil and holdWith == nil and sameSide == "COOP"
+				and holdGone == "COOP")
+		local P = require(Shared.Progress)
+		local prof = { karma = 0.2, xp = 0, level = 1, skills = {} }
+		-- (settled the same whatever the outcome; "KIA" keeps the task hooks out of the stand-in)
+		local okA = pcall(ctx.Economy.afterRaid, nil, prof, { scav = false, karmaDelta = P.KARMA.coop, xp = 0 }, "KIA", true)
+		check("co-op exit: leaving together adds Fence standing to the PMC too (a scav's raid also adds its extract bonus)",
+			okA and P.KARMA.coop > 0 and math.abs(prof.karma - (0.2 + P.KARMA.coop)) < 1e-9)
+	end
+
 	-- flare exits (Extract kind "flare"): the green flare; NORTH LINE and RIVER PATH open by flare; OLD PUMPS shows green
 	-- flares while it is there (Tarkov's Railroad Passage, Smuggler's Tunnel and Old Gas Station)
 	if ctx and ctx.World and ctx.Extract and ctx.Match and ctx.World.maps then
@@ -2173,9 +2220,9 @@ function T.run(ctx)
 				return false
 			end
 			local nw, sw = mm.sideExtracts and mm.sideExtracts.nw, mm.sideExtracts and mm.sideExtracts.se
-			check("meridian sides: MallNW gets the rescue checkpoint, MallSE the rail siding, both the substation car, the shelter, the river path and the fence gap, only scavs the west camp",
+			check("meridian sides: MallNW gets the rescue checkpoint, MallSE the rail siding, both the substation car, the shelter, the river path, the fence gap and the west camp (co-op, a PMC with a scav)",
 				has(nw, "RC") and not has(nw, "RS") and has(sw, "RS") and not has(sw, "RC") and has(nw, "SC") and has(sw, "SC") and has(nw, "SE") and has(sw, "SE")
-				and has(nw, "RP") and has(sw, "RP") and has(nw, "FG") and has(sw, "FG") and not has(nw, "WC") and not has(sw, "WC"))
+				and has(nw, "RP") and has(sw, "RP") and has(nw, "FG") and has(sw, "FG") and has(nw, "WC") and has(sw, "WC") and ex.WC.rule.kind == "coop")
 			local sideOk, nN, nS = true, 0, 0
 			for _, sp in mm.spawns or {} do
 				sideOk = sideOk and (sp.side == "nw" or sp.side == "se") and sp.extracts == mm.sideExtracts[sp.side]
