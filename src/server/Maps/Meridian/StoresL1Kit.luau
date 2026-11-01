@@ -15,6 +15,8 @@ return function(B)
 	T.byKind = {}
 	T.frames = {}
 	local root = kit.model("StoresL1", B.map)
+	root:SetAttribute("NoWire", true) -- indoors: no barbed wire from the detail plan
+	root:SetAttribute("DetailProfile", "clean")
 	T.root = root
 
 	local PAL = {

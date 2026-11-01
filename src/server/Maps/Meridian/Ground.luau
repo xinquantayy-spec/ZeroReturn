@@ -23,7 +23,8 @@ local R = 4 -- column size in studs (one terrain voxel)
 local EX, EZ = 1700, 1440 -- terrain half extents: the outer limit plus 90 to 130 studs of berm
 local NX, NZ = (2 * EX) / R, (2 * EZ) / R
 local Y0, NY = -72, 60 -- voxel layers of 4 studs: y -72 .. 168
-local MALL_Y = -0.4
+local MALL_Y = -2.5 -- the terrain under the mall sits below the L0 floor slabs (top y 0, 1.6 thick): at -0.4 its surface
+-- reached y 0 in places and fought the slabs (a camouflage pattern on the car park floor)
 local MAXROCK, MAXMARK = 240, 260
 
 return function(B)
@@ -240,7 +241,13 @@ return function(B)
 		local b = c0[k0 + 1] + (c1[k0 + 1] - c0[k0 + 1]) * tx
 		return a + (b - a) * tz
 	end
-	B.ground = groundAt
+	-- inside the mall's footprint the floor is the L0 slabs (top y 0); the terrain lies MALL_Y under them
+	B.ground = function(x, z)
+		if B.inMall and B.inMall(x, z) then
+			return 0
+		end
+		return groundAt(x, z)
+	end
 	local function insideAt(x, z)
 		return ZN[colOf(x)][rowOf(z)] == 1
 	end

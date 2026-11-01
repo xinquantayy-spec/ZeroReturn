@@ -90,6 +90,8 @@ return function(B)
 	local CONT = { C.olive, C.rust, C.blue, C.red, C.teal, C.yellow, C.rustDark }
 
 	local root = kit.model("StoresL2", map)
+	root:SetAttribute("NoWire", true) -- indoors: no barbed wire from the detail plan
+	root:SetAttribute("DetailProfile", "clean")
 
 	-- ── the shell's solid parts that stand in the rooms (columns and the like), found once ─────────────
 	local shell = {}

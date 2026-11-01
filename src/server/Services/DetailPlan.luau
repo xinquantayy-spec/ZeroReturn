@@ -606,6 +606,13 @@ function Plan.generate(list, seed, avoidList, nature)
 				end
 			elseif d:IsA("Attachment") and d.Name == "DetailSpot" then
 				table.insert(spots, d)
+			elseif (d:IsA("Model") or d:IsA("Folder")) and d:GetAttribute("DetailProfile") == "clean" then
+				-- a part of a map can ask for the clean profile too (Meridian's mall and stores inside the map model)
+				for _, q in d:GetDescendants() do
+					if q:IsA("BasePart") then
+						cleanPart[q] = true
+					end
+				end
 			end
 		end
 	end

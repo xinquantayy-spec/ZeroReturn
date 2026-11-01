@@ -45,6 +45,8 @@ return function(B)
 
 	-- ── models ───────────────────────────────────────────────────────────────────────────────────────────
 	local root = kit.model("Mall", map)
+	root:SetAttribute("NoWire", true) -- indoors: the detail plan must not crown balustrades and partitions with barbed wire
+	root:SetAttribute("DetailProfile", "clean") -- an abandoned mall, not a ruin: grime at the wall feet, few cracks (as the bunker)
 	ctx.m = {
 		root = root,
 		[0] = kit.model("L0", root), [1] = kit.model("L1", root), [2] = kit.model("L2", root),
