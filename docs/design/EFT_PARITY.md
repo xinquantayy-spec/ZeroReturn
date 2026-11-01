@@ -689,6 +689,24 @@ Gaps:
 - **The night rule** is "the raid starts in the dark", not Tarkov's exact hours.
 - **Zones are ours**; not on other maps; no cultist circle.
 
+### Hideout style: walls, floor and ceiling (2026-11-02)
+
+Researched first: the 0.16.0.0 patch notes (floor, walls, ceiling and range targets; posters and collectibles; unlocks
+by level, tasks and achievements; visiting friends) (`docs/design/HIDEOUT_STYLE.md`). Built in `HideoutStyle.luau`,
+`Hideout.luau`, `Trade.luau` and `LobbyStyle.luau`. Checked in Studio with one player (TEST_RESULTS "Hideout style").
+
+Matched:
+- **Three categories:** walls, floor and ceiling styles, chosen in the hideout screen.
+- **Unlocks by character level,** including Tarkov's named rewards: modest wallpaper, blue paint, small tiles.
+
+Ours (exception 2, the shared Relay 7 bunker):
+- **Each player sees their own style** in the shared bunker.
+
+Gaps:
+- **Level unlocks only** (no tasks or achievements).
+- **No posters, collectibles or range targets.**
+- **No visiting another player's hideout.**
+
 ### Transits: Border Yard and Meridian Mall linked (2026-11-02)
 
 Researched first: the Customs and Interchange references (SPT `transits`: open 60 s in, 20 s timer; Prima and re3mr

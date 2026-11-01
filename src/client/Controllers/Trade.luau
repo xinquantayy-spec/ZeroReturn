@@ -11,6 +11,7 @@ local Util = require(Shared.Util)
 local TD = require(Shared.TraderData)
 local QD = require(Shared.QuestData)
 local HD = require(Shared.HideoutData)
+local HS = require(Shared.HideoutStyle)
 local P = require(Shared.Progress)
 
 local Trade = { open = nil }
@@ -887,6 +888,22 @@ function Trade.hideout()
 				req("hideout", { op = "build", m = m })
 			end)
 			b.Name = "Build_" .. m
+		end
+	end
+	-- hideout style (Tarkov 0.16 customisation): walls, floor and ceiling of the bunker as you see it, by level
+	section(left, "STYLE")
+	local lvl = (d.econ and d.econ.level) or 1
+	local mine = hd.style or {}
+	for _, cat in HS.CATS do
+		local cur = mine[cat] or HS.default(cat)
+		for _, o in (HS :: any)[cat] do
+			local open = HS.unlocked(o, lvl)
+			local using = o.id == cur
+			local _, b = row(left, HS.NAMES[cat] .. "  ·  " .. string.upper(o.name), (using or open) and "" or ("LEVEL " .. o.level),
+				using and "IN USE" or (open and "USE" or "LOCKED"), open and not using, function()
+					req("hideout", { op = "style", cat = cat, id = o.id })
+				end, using and K.C.green or nil)
+			b.Name = "Style_" .. cat .. "_" .. o.id
 		end
 	end
 	section(right, "CRAFTING")

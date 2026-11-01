@@ -7,6 +7,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local HD = require(Shared.HideoutData)
+local HS = require(Shared.HideoutStyle)
 
 local Hideout = {}
 local ctx
@@ -133,6 +134,22 @@ local function collect(player, prof, m)
 	return true
 end
 
+-- hideout style (Tarkov 0.16 customisation; HideoutStyle.luau): walls, floor, ceiling, each unlocked by level
+local function style(player, prof, cat, id)
+	local o = HS.option(cat, id)
+	if not o then
+		return fail("BAD_INPUT")
+	end
+	local lvl = ctx.Economy.level(prof)
+	if not HS.unlocked(o, lvl) then
+		return fail("LOCKED", string.format("Unlocks at level %d.", o.level))
+	end
+	prof.style = prof.style or {}
+	prof.style[cat] = id
+	ctx.Remotes.note(player, "toast", { text = string.format("%s  ·  %s", HS.NAMES[cat] or string.upper(cat), string.upper(o.name)), tone = "good" })
+	return true
+end
+
 local function hideoutReq(player, p)
 	local prof = ctx.Profiles.get(player)
 	if not prof then
@@ -152,6 +169,8 @@ local function hideoutReq(player, p)
 		res = craft(player, prof, p.r)
 	elseif p.op == "collect" and type(p.m) == "string" then
 		res = collect(player, prof, p.m)
+	elseif p.op == "style" and type(p.cat) == "string" and type(p.id) == "string" then
+		res = style(player, prof, p.cat, p.id)
 	else
 		return fail("BAD_INPUT")
 	end
@@ -163,7 +182,7 @@ local function hideoutReq(player, p)
 end
 
 function Hideout.stateFor(prof)
-	return { levels = prof.hideout.levels, build = prof.hideout.build, crafts = prof.hideout.crafts, now = os.time() }
+	return { levels = prof.hideout.levels, build = prof.hideout.build, crafts = prof.hideout.crafts, now = os.time(), style = prof.style or {} }
 end
 
 -- hideout healing multiplier (medstation)

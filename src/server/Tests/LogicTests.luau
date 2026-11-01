@@ -1295,6 +1295,35 @@ function T.run(ctx)
 		end
 	end
 
+	-- hideout style (Tarkov 0.16 customisation): walls, floor and ceiling options, the shell's own first, unlocked by level
+	do
+		local HS = require(Shared.HideoutStyle)
+		local MS = game:GetService("MaterialService")
+		local ok, missing = true, {}
+		for _, cat in HS.CATS do
+			local list = (HS :: any)[cat]
+			local seen, last = {}, 0
+			ok = ok and #list >= 4 and list[1].level == 1 and HS.default(cat) == list[1].id
+			for _, o in list do
+				ok = ok and not seen[o.id] and o.level >= last and HS.option(cat, o.id) == o
+				seen[o.id], last = true, o.level
+				for _, k in { "band", "line", "upper", "surface" } do
+					local fin = o[k]
+					if fin then
+						ok = ok and Enum.Material[fin.mat] ~= nil and #fin.color == 6
+						if fin.var ~= "" and not MS:FindFirstChild(fin.var, true) then
+							table.insert(missing, fin.var)
+						end
+					end
+				end
+			end
+		end
+		check("hideout style: walls, floor and ceiling each start with the shell as built and unlock by level; every finish's material exists",
+			ok and HS.unlocked(HS.walls[2], 5) and not HS.unlocked(HS.walls[2], 4) and HS.option("walls", "nope") == nil)
+		check("hideout style: every MaterialVariant a finish names is in MaterialService" .. (#missing > 0 and (" (missing " .. table.concat(missing, ", ") .. ")") or ""),
+			#missing == 0)
+	end
+
 	-- transits (Tarkov 0.15): Border Yard's to Meridian Mall and back, opening a minute in with a 20 s countdown (SPT)
 	if ctx and ctx.World and ctx.Transit and ctx.World.maps.border and ctx.World.maps.meridian then
 		local TR = ctx.Transit

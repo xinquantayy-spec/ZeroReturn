@@ -8,6 +8,22 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Hideout style (2026-11-02)
+
+One player in Relay 7.
+
+- **A new profile (level 1):** asking for the whitewash walls was refused with "Unlocks at level 5."
+- **After adding XP to level 40:**
+  - blue paint walls, terrazzo floor and ceiling tiles were accepted, with a toast for each;
+  - the bunk room took them at once.
+- **Too pale at first:** the terrazzo first rendered almost white with no texture. Darkened (ADA799), it shows its
+  speckled tiles. The small tiles were darkened the same way.
+- **Second set:** wood panelling walls, terrazzo and a whitewashed ceiling (`docs/maps/evidence/R7_style_panel_terrazzo.jpg`).
+- **The hideout screen:** the STYLE section lists all sixteen options with USE or IN USE (`R7_style_screen.jpg`).
+- **Tests, all passing:** LogicTests 383 (2 new: the options and their unlocks; every MaterialVariant a finish names is
+  in MaterialService), CharTests 47, LookTests 33, MapTests 38.
+- **Not verified:** a second player seeing their own style in the same bunker.
+
 ## Transits (2026-11-02)
 
 One player, Border raids at 13:00, god mode.
