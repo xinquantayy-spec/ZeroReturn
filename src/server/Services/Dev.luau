@@ -1150,6 +1150,21 @@ function Dev.init(c)
 	if not RunService:IsStudio() then
 		return
 	end
+	-- feature commands live beside this file in Services/DevExt (one ModuleScript per feature, returning
+	-- function(C, ctx) that adds entries to C), so parallel features never edit this file at the same time
+	local ext = script.Parent:FindFirstChild("DevExt")
+	if ext then
+		for _, m in ext:GetChildren() do
+			if m:IsA("ModuleScript") then
+				local ok, err = pcall(function()
+					require(m)(C, ctx)
+				end)
+				if not ok then
+					warn("[ZR] dev commands from " .. m.Name .. " failed:", err)
+				end
+			end
+		end
+	end
 	local benchMap = workspace:GetAttribute("ZR_Bench")
 	if type(benchMap) == "string" and benchMap ~= "" then
 		game:GetService("Players").PlayerAdded:Connect(function(p)
