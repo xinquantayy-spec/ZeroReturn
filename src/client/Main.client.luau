@@ -36,6 +36,67 @@ task.spawn(function()
 	end
 end)
 
+-- Studio-only benchmark (Dev.luau BENCH): hold each viewpoint the server announces, count frames, show the table
+if RunService:IsStudio() then
+	local lp = Players.LocalPlayer
+	local rows, hold = {}, nil
+	local function panel()
+		local gui = lp:WaitForChild("PlayerGui"):FindFirstChild("ZR_Bench") or Instance.new("ScreenGui")
+		gui.Name, gui.ResetOnSpawn, gui.DisplayOrder = "ZR_Bench", false, 50
+		local t = gui:FindFirstChild("T") or Instance.new("TextLabel")
+		t.Name, t.Size, t.Position = "T", UDim2.fromOffset(460, 200), UDim2.fromOffset(20, 220)
+		t.BackgroundTransparency, t.BackgroundColor3, t.TextColor3 = 0.2, Color3.new(0, 0, 0), Color3.fromRGB(230, 220, 170)
+		t.Font, t.TextSize, t.TextXAlignment, t.TextYAlignment = Enum.Font.Code, 16, Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
+		t.Text = "ZR BENCH  ·  " .. os.date("%H:%M") .. "\n" .. table.concat(rows, "\n")
+		t.Parent = gui
+		gui.Parent = lp.PlayerGui
+	end
+	lp:GetAttributeChangedSignal("ZR_BenchView"):Connect(function()
+		local v = lp:GetAttribute("ZR_BenchView")
+		if hold then
+			hold:Disconnect()
+			hold = nil
+		end
+		local cam = workspace.CurrentCamera
+		if v == "done" then
+			cam.CameraType = Enum.CameraType.Custom
+			table.insert(rows, "done")
+			panel()
+			print("[ZR] bench results:\n" .. table.concat(rows, "\n"))
+			return
+		end
+		local i, n, name, a, b = string.match(tostring(v), "^(%d+)|(%d+)|([^|]+)|([^|]+)|([^|]+)$")
+		if not i then
+			return
+		end
+		local function vec(t)
+			local x, y, z = string.match(t, "([%-%d%.]+),([%-%d%.]+),([%-%d%.]+)")
+			return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
+		end
+		local cf = CFrame.lookAt(vec(a), vec(b))
+		if ctx.Settings and ctx.Settings.data then
+			ctx.Settings.data.autoGfx = false -- the bench measures the chosen level, not the fallback
+		end
+		hold = RunService.RenderStepped:Connect(function()
+			cam.CameraType = Enum.CameraType.Scriptable
+			cam.CFrame = cf
+		end)
+		task.delay(4, function()
+			local frames, total, worst = 0, 0, 0
+			local c = RunService.RenderStepped:Connect(function(dt)
+				frames += 1
+				total += dt
+				worst = math.max(worst, dt)
+			end)
+			task.wait(6)
+			c:Disconnect()
+			local q = ctx.Settings and ctx.Settings.data and ctx.Settings.data.quality or -1
+			table.insert(rows, string.format("%s/%s %-14s %5.1f fps  worst %3.0f ms  (graphics %d)", i, n, name, frames / math.max(total, 1e-3), worst * 1000, q))
+			panel()
+		end)
+	end)
+end
+
 -- Studio-only client test bridge (driven via MCP execute_luau in the Client datamodel)
 if RunService:IsStudio() then
 	local bf = Instance.new("BindableFunction")

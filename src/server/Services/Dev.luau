@@ -1080,10 +1080,57 @@ function C.showroomGo(name)
 	return "ok"
 end
 
+-- BENCHMARK (Studio only): set workspace attribute ZR_Bench to a map id in Edit mode, then start a test (Play, or Test ->
+-- Clients and Servers for a client in its own process). The first player is put in a raid on that map and walked through
+-- fixed viewpoints; the client holds each view, counts frames and shows the table on screen (Bench in Main.client).
+local BENCH = {
+	meridian = {
+		{ "KASSA aisles", Vector3.new(630, 22, 8780), Vector3.new(630, 28, 8780), Vector3.new(665, 17, 8890) },
+		{ "L2 gallery", Vector3.new(335, 51, 8826), Vector3.new(338, 56, 8828), Vector3.new(220, 47, 8860) },
+		{ "Car park", Vector3.new(160, 4, 8530), Vector3.new(162, 8, 8532), Vector3.new(300, 2, 8620) },
+		{ "Outside east", Vector3.new(935, 8, 9041), Vector3.new(940, 14, 9046), Vector3.new(600, 20, 8900) },
+	},
+	border = {
+		{ "Bastion roof", Vector3.new(-165, 31, -5555), Vector3.new(-160, 36, -5550), Vector3.new(450, 5, -5000) },
+		{ "Red Stores yard", Vector3.new(1060, 15, -5260), Vector3.new(1060, 20, -5260), Vector3.new(1163, 10, -5473) },
+	},
+}
+
+local function bench(p, mapId)
+	local views = BENCH[mapId]
+	if not views then
+		warn("[ZR] bench: no viewpoints for " .. tostring(mapId))
+		return
+	end
+	local t0 = os.clock()
+	while not (p.Character and p.Character:FindFirstChild("HumanoidRootPart")) and os.clock() - t0 < 60 do
+		task.wait(0.5)
+	end
+	task.wait(3)
+	C.map(mapId)
+	C.god(p.Name, true)
+	C.deploy(p.Name, "pmc", mapId)
+	C.env(13, "clear", 0, "autumn")
+	pcall(C.switch, "MALL_POWER", true)
+	print("[ZR] bench: " .. mapId .. ", " .. #views .. " views")
+	for i, v in views do
+		C.tp(p.Name, v[2])
+		p:SetAttribute("ZR_BenchView", string.format("%d|%d|%s|%.1f,%.1f,%.1f|%.1f,%.1f,%.1f", i, #views, v[1], v[3].X, v[3].Y, v[3].Z, v[4].X, v[4].Y, v[4].Z))
+		task.wait(11) -- the client lets the view stream in for 4 s, then counts frames for 6 s
+	end
+	p:SetAttribute("ZR_BenchView", "done")
+end
+
 function Dev.init(c)
 	ctx = c
 	if not RunService:IsStudio() then
 		return
+	end
+	local benchMap = workspace:GetAttribute("ZR_Bench")
+	if type(benchMap) == "string" and benchMap ~= "" then
+		game:GetService("Players").PlayerAdded:Connect(function(p)
+			task.spawn(bench, p, benchMap)
+		end)
 	end
 	local old = ServerStorage:FindFirstChild("ZR_Dev")
 	if old then
