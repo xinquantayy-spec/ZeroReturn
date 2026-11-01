@@ -297,16 +297,16 @@ Gaps (not copied or not found):
   displays, price tags, posters and signage art (no logos by design), and any sound.
 - **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
 
-### Trees (2026-11-01, owner: "the trees are opaque")
+### Trees (2026-11-01, owner: "the trees are opaque", "i dont want the leaves totally opaque")
 
-Pine crowns are branch whorls with gaps (about 1,250 triangles, vertex colour, no transparency), not solid cones; checked in Studio (`TEST_RESULTS.md`, Trees).
+Like Tarkov's trees, crowns and bushes are alpha-tested needle and leaf cards. Spruce sprays hang like a comb spruce, and birches (white ringed trunks, airy crowns) grow among the spruce on Border and Pinewatch. The see-through texture is drawn within a radius of the camera that is set by the graphics level (HIGH 520 studs, MEDIUM 240, LOW 110). Beyond it, and on POTATO, the same cards are solid: a lower level of detail, as in Tarkov's LODs. Checked in Studio (`TEST_RESULTS.md`, See-through foliage).
 
 Gaps against Tarkov's foliage:
-- No alpha-tested needle or leaf cards: they were left out for the phone frame rate.
-- No birches or other broadleaf trees: Customs has many.
 - No wind sway.
-- No separate LOD meshes beyond Roblox's automatic ones.
-- The bushes are still solid low-poly clumps.
+- No separate LOD meshes or billboards beyond Roblox's automatic ones.
+- One atlas for all trees: four kinds of card, no seasonal leaf colour on the birches (autumn yellow).
+- Birch bark is vertex colour on a ring every 3.5 studs, not a bark texture.
+- Fog: our FOG weather is much thinner than Tarkov's foggy raids (hills 1,500 studs away stay visible).
 
 ### Wall finishes (2026-11-01, owner: "walls look repetitive and fake")
 

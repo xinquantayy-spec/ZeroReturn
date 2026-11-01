@@ -94,6 +94,8 @@
 
 66. **Meridian Mall: first-pass gaps.** Built and tested in Studio 2026-11-01 (`docs/maps/MERIDIAN_MALL.md`). Still to do: the IRONSIGHT, RESCUE POINT and security keys only drop from a few low-chance loose spots (key tiles roll the whole mall key pool); the small shops hold about 10 props each; the deep halls are very dark even with the power on (149 shell lamps at 0.8 brightness under ceilings 27 studs up); the 10 `KEY_MM_*` keys have no inventory pictures; no exit has been walked by hand yet; the mall streams about 16,800 parts near the player (see 65).
 
+67. **Draw calls: the detail layer's wear decals are the largest single cost (measured 2026-11-01).** In a wide view over Border (45 studs up), 1,575 draw calls: the client detail layer's 2,210 wear Decals and Textures (only 23 different images) make about 870 of them, map decals 140, terrain and characters about 417. Fog does not help: Roblox draws everything inside fog, and hiding all beyond 500 studs saves only 6 % of draws (TEST_RESULTS, Fog and draw cost). Levers: fewer and larger wear marks per wall, a shorter ring for the far grime strips, or marks baked into textures. The see-through foliage adds about 40 draws on HIGH; its alpha-test fill cost on phones is not measured.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

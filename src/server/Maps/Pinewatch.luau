@@ -1291,6 +1291,9 @@ return function(kit, root)
 		{ t = "ZR_NAT_PineA_T", c = "ZR_NAT_PineA_C", w = 40 },
 		{ t = "ZR_NAT_PineB_T", c = "ZR_NAT_PineB_C", w = 30 },
 		{ t = "ZR_NAT_PineC_T", c = "ZR_NAT_PineC_C", w = 24, young = true },
+		-- a few birches among the spruce, as on Woods
+		{ t = "ZR_NAT_BirchA_T", c = "ZR_NAT_BirchA_C", w = 6 },
+		{ t = "ZR_NAT_BirchB_T", c = "ZR_NAT_BirchB_C", w = 5 },
 		{ t = "ZR_NAT_Snag_T", w = 5 },
 	}
 	local wsum = 0

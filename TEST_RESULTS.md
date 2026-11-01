@@ -56,6 +56,33 @@ Owner: "the trees are opaque, i want it looking more realistic without compromis
 | Look (Border forest at 150, 7, -4638 looking north-east) | Before: faceted solid cones. After: layered sprays with sky between the whorls, lighter tips and darker insides. The distant trees read thinner. |
 | Cost in that view, same session (Studio Play, window not in front) | All 536 streamed crowns shown: render thread 53.2 / 53.6 ms, 340k triangles. Hidden: 52.3 ms, 279k triangles. So the crowns cost about 1 ms and 61k triangles there; the old cones would be about 12k of those. Draw calls 402 against 400. |
 
+## See-through foliage and birches (2026-11-01)
+
+Owner: "i dont want the leaves totally opaque", then "i want the see through foliage on low graphics too, but maybe less detail". Studio Play mode on the T490, window not in front, Border, 13:00 clear, autumn.
+
+| Check | Result |
+|---|---|
+| Build | Crown and bush cards carry UVs into a 1024 px foliage atlas (`assets/textures/gen_foliage.py`): spruce dark, spruce young, birch leaves, shrub leaves. The atlas is uploaded as a Decal (image 108334554762066) and set on a SurfaceAppearance template (`src/shared/ZR_FoliageSA.model.json`) in Transparency mode. The parts stay opaque, so the gaps are cut with depth and nothing is sorted. Spruce sprays hang like a comb spruce (a tent, not a flat plate), and leafy sprays are banked at random. New birches A and B (white ringed trunks, airy crowns) are in the Border mix (16 + 12 of 115) and in Pinewatch (6 + 5). `ZR_Nature` 120650690065241. |
+| Runtime | Each client dresses the tagged crowns and bushes (`ZR_Foliage`, set on the library meshes and carried by every clone) within a radius: HIGH 520 studs, MEDIUM 240, LOW 110, POTATO none. Beyond the radius the cards are solid and vertex-coloured. At most 150 changes a frame. |
+| Counts (forest at 150, 7, -4638) | 1,104 to 1,225 foliage parts streamed in; 435 dressed on HIGH, 66 on LOW. |
+| Look | Needles and leaves show sky and trunks through them. Spruces read full from the side, and birches stand out white among the spruce. On LOW, near trees are see-through and far ones solid. |
+| Cost in that view (A/B by removing the 435 textures) | See-through: 392 to 404 draws, 231k to 236k triangles, render thread 11.9 to 14.3 ms. Solid: 352 draws, 216k triangles, 12.1 ms. So about +40 draw calls and no measurable CPU change. GPU time is not reported in Studio, and the alpha-test fill cost on phones is not measured. |
+| Tone | `SurfaceAppearance.Color` can be set by the client at runtime: each texture takes its tree's tone (checked: 0.996 grey on both). |
+| Errors | None in the output. |
+
+## Fog and draw cost (2026-11-01)
+
+Owner: fog only to improve rendering performance, the same on every graphics level. Measured in Studio Play on Border, camera 45 studs up at (0, 45, -5200) looking east along the map: 1,575 draw calls, 692k triangles.
+
+| Check | Result |
+|---|---|
+| Fog alone | Atmosphere density 1 (haze 10), or legacy fog ending at 120 studs: the same 431 draws and 355k triangles as clear in the forest view. Roblox fog hides, it does not skip drawing anything. |
+| Hiding everything beyond a distance (client `LocalTransparencyModifier`) | Beyond 1,200 studs: -1 draw, -2k triangles. Beyond 900: -32 draws, -26k. Beyond 700: -48 draws, -51k. Beyond 500: -95 draws (6 %), -177k triangles (26 %). |
+| What the frame is made of (each hidden in turn) | Detail layer wear decals (2,210 Decals and Textures, 23 different images): about 870 draws, 55 % of all. Map decals (672): 140 draws. Tree trunks, crowns and bushes (1,864): 37 draws, 191k triangles. Kit meshes (3,070): 116 draws, 69k triangles. Terrain and characters with everything else hidden: 417 draws, 443k triangles. |
+| FOG weather now | Density 0.74 still shows the hills about 1,500 studs away: much thinner than Tarkov's foggy raids. |
+
+So a fog wall saves little unless it sits closer than about 500 studs (160 m), which would make every raid a foggy one. Most of the cost is near the player, and the largest single cost is the detail layer's wear decals.
+
 ## Wall finishes and indoor light (2026-11-01)
 
 Studio Play mode on the T490. Owner: "the walls look repetitive and fake".

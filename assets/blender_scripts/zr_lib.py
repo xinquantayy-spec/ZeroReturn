@@ -213,6 +213,26 @@ class Builder:
             fs.append(self.bm.faces.new(vs2))
         self._paint(fs, color)
 
+    def face_uv(self, pts, uvs, color, double=False):
+        """flat polygon with texture coordinates (foliage cards); double adds an offset back face with the same UVs"""
+        if not hasattr(self, "uv"):
+            self.uv = self.bm.loops.layers.uv.get("UVMap") or self.bm.loops.layers.uv.new("UVMap")
+        pts = [Vector(p) for p in pts]
+        vs = [self.bm.verts.new(p) for p in pts]
+        f = self.bm.faces.new(vs)
+        for l, uv in zip(f.loops, uvs):
+            l[self.uv].uv = uv
+        fs = [f]
+        if double:
+            f.normal_update()
+            nrm = f.normal.copy()
+            vs2 = [self.bm.verts.new(p - nrm * 0.004) for p in reversed(pts)]
+            f2 = self.bm.faces.new(vs2)
+            for l, uv in zip(f2.loops, list(reversed(uvs))):
+                l[self.uv].uv = uv
+            fs.append(f2)
+        self._paint(fs, color)
+
     def paint_fn(self, fn):
         """recolour every corner: fn(position Vector, (r, g, b, a)) -> (r, g, b, a)"""
         for f in self.bm.faces:

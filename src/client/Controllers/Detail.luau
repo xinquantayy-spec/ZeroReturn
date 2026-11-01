@@ -390,6 +390,54 @@ local function treeShadows(camPos, force)
 	end
 end
 
+-- ── see-through foliage: crown and bush meshes are needle and leaf cards with foliage-atlas UVs. Around the camera
+-- this client dresses them with the alpha-cut foliage texture (ReplicatedStorage.ZR.ZR_FoliageSA: a SurfaceAppearance in
+-- Transparency mode on an opaque part, so the engine cuts the gaps out with proper depth and no sorting). Beyond the
+-- level's radius the cards stay solid and vertex-coloured (they cost almost nothing), like a lower LOD further out.
+-- LOW keeps a short radius (owner, 2026-11-01: see-through on LOW too, with less detail); POTATO stays solid.
+local FOLIAGE_R = { [3] = 520, [2] = 240, [1] = 110, [0] = 0 }
+local FOLIAGE_BUDGET = 150 -- textures put on or taken off per frame
+local foliage = {} -- tagged crowns and bushes in the world (streamed in and out)
+local leafOn = {} -- part -> its SurfaceAppearance
+local lastLeafPos = nil
+local leafPending = false
+local leafSA = nil
+local function foliageDress(camPos, force)
+	if not force and not leafPending and lastLeafPos and (camPos - lastLeafPos).Magnitude < 8 then
+		return
+	end
+	lastLeafPos = camPos
+	if not leafSA then
+		leafSA = Shared:FindFirstChild("ZR_FoliageSA")
+	end
+	local r = leafSA and FOLIAGE_R[Detail.level] or 0
+	local r2 = r * r
+	local n = 0
+	leafPending = false
+	for p in foliage do
+		local d = p.Position - camPos
+		local want = r > 0 and (d.X * d.X + d.Z * d.Z) < r2
+		if want ~= (leafOn[p] ~= nil) then
+			if n >= FOLIAGE_BUDGET then
+				leafPending = true -- the rest next frame, so a level change or a fresh map never hitches
+				break
+			end
+			n += 1
+			if want then
+				local sa = leafSA:Clone()
+				pcall(function()
+					sa.Color = p.Color -- keep the tree's own tone (the property is newer than some clients)
+				end)
+				sa.Parent = p
+				leafOn[p] = sa
+			else
+				leafOn[p]:Destroy()
+				leafOn[p] = nil
+			end
+		end
+	end
+end
+
 -- ── potato: plain materials, no shadows, no cloud layer, no fill lights (local only, reversible) ───
 -- Fog, light levels and exposure stay the same on every preset, so no setting sees further or through more.
 -- strong keys: a weak-keyed table would drop Instance keys (their Lua handles get collected while the parts live on),
@@ -456,6 +504,7 @@ function Detail.setLevel(level)
 	local cam = workspace.CurrentCamera
 	if cam then
 		treeShadows(cam.CFrame.Position, true)
+		foliageDress(cam.CFrame.Position, true)
 	end
 	if level == 0 then
 		setPotato(true)
@@ -471,7 +520,14 @@ function Detail.setLevel(level)
 end
 
 function Detail.stats()
-	return { level = Detail.level, instances = Detail.instances, cells = Detail.cells, pending = Detail.pending, natureCells = Detail.natureCells or 0, natureItems = Detail.natureItems or 0, planCells = (function()
+	local nf, nl = 0, 0
+	for _ in foliage do
+		nf += 1
+	end
+	for _ in leafOn do
+		nl += 1
+	end
+	return { level = Detail.level, foliage = nf, leaves = nl, instances = Detail.instances, cells = Detail.cells, pending = Detail.pending, natureCells = Detail.natureCells or 0, natureItems = Detail.natureItems or 0, planCells = (function()
 		local n = 0
 		for _ in cells do
 			n += 1
@@ -517,6 +573,21 @@ function Detail.init(c)
 	CollectionService:GetInstanceRemovedSignal("ZR_TreeShadow"):Connect(function(p)
 		trees[p] = nil
 		shadowOn[p] = nil
+	end)
+	-- crowns and bushes (the tag comes with every clone of the library meshes; the library itself is not dressed)
+	local function addLeaf(p)
+		if p:IsA("MeshPart") and p:IsDescendantOf(workspace) then
+			foliage[p] = true
+			leafPending = true
+		end
+	end
+	for _, p in CollectionService:GetTagged("ZR_Foliage") do
+		addLeaf(p)
+	end
+	CollectionService:GetInstanceAddedSignal("ZR_Foliage"):Connect(addLeaf)
+	CollectionService:GetInstanceRemovedSignal("ZR_Foliage"):Connect(function(p)
+		foliage[p] = nil
+		leafOn[p] = nil
 	end)
 	-- potato also has to catch the world folder if it arrives after the setting
 	workspace.ChildAdded:Connect(function(ch)
@@ -569,6 +640,12 @@ function Detail.init(c)
 			local cam = workspace.CurrentCamera
 			if cam then
 				treeShadows(cam.CFrame.Position, false)
+				foliageDress(cam.CFrame.Position, false)
+			end
+		elseif leafPending then
+			local cam = workspace.CurrentCamera
+			if cam then
+				foliageDress(cam.CFrame.Position, false)
 			end
 		end
 		if #queue > 0 then

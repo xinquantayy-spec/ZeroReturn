@@ -77,6 +77,24 @@ def crown(b, base, top, rmax, tiers, seed, taper=0.86, droop=0.0):
     b.paint_fn(shade)
 
 
+# foliage atlas (assets/textures/gen_foliage.py): four 512 cells in a 1024 image; 0 spruce dark, 1 spruce young,
+# 2 birch, 3 shrub. A spray station at fraction f of its length, across a (-1 right edge .. 1 left edge), maps to the cell.
+def _env(f):
+    pts = ((0.0, 0.18), (0.5, 0.8), (1.0, 0.12))
+    if f <= 0.5:
+        a, b, t = pts[0][1], pts[1][1], f / 0.5
+    else:
+        a, b, t = pts[1][1], pts[2][1], (f - 0.5) / 0.5
+    return (a + (b - a) * t) / 0.8 * 0.92
+
+
+def atlas_uv(cell, f, across):
+    ox, oy = (cell % 2) * 512, (cell // 2) * 512
+    x = ox + (0.03 + 0.94 * f) * 512
+    y = oy + 256 - across * _env(f) * 250
+    return (x / 1024.0, 1.0 - y / 1024.0)
+
+
 def crown_whorl(b, base, top, rmax, tiers, seed, taper=0.86, droop=0.0):
     """A conifer crown as whorls of drooping, ragged branch sprays with open gaps between them (owner 2026-11-01: the
     stacked-cone crowns read as solid green blocks). Each spray is a thin double-sided plate along a bent spine, wide in
@@ -100,20 +118,25 @@ def crown_whorl(b, base, top, rmax, tiers, seed, taper=0.86, droop=0.0):
             rr = r * rnd.uniform(0.75, 1.05)
             dn = (0.30 + droop * 0.25) * rr * (1 - 0.45 * t) * rnd.uniform(0.75, 1.25)
             # stations along the spine: (fraction of the length, width as a fraction of the reach)
-            st = ((0.0, 0.16), (0.45, 0.78), (1.0, 0.10))
+            st = ((0.0, 0.18), (0.5, 0.8), (1.0, 0.12))
+            cell = 0 if rnd.random() < 0.65 else 1
             L, C, R = [], [], []
             for f, w in st:
                 d = rr * f
                 h = z - dn * (f ** 1.4) + (0.10 * rr if f == 1.0 else 0.0) * (1 - t)
                 cx, cy = ca * d, sa * d
                 ww = rr * w * rnd.uniform(0.85, 1.15)
-                ridge = 0.08 * ww
+                ridge = 0.05 * ww
+                # the side twigs hang from the spine (a comb spruce), so each spray is a tent rather than a flat plate
+                # and a whorl still reads when seen level from the side (2026-11-01: flat plates vanished edge-on)
+                drop = ww * rnd.uniform(0.44, 0.6)
                 C.append((cx, cy, h + ridge))
-                L.append((cx + px * ww / 2 + ca * rnd.uniform(-0.15, 0.15) * ww, cy + py * ww / 2 + sa * rnd.uniform(-0.15, 0.15) * ww, h - ridge * 0.6 + rnd.uniform(-0.12, 0.12)))
-                R.append((cx - px * ww / 2 + ca * rnd.uniform(-0.15, 0.15) * ww, cy - py * ww / 2 + sa * rnd.uniform(-0.15, 0.15) * ww, h - ridge * 0.6 + rnd.uniform(-0.12, 0.12)))
+                L.append((cx + px * ww / 2 + ca * rnd.uniform(-0.15, 0.15) * ww, cy + py * ww / 2 + sa * rnd.uniform(-0.15, 0.15) * ww, h - drop + rnd.uniform(-0.1, 0.1)))
+                R.append((cx - px * ww / 2 + ca * rnd.uniform(-0.15, 0.15) * ww, cy - py * ww / 2 + sa * rnd.uniform(-0.15, 0.15) * ww, h - drop + rnd.uniform(-0.1, 0.1)))
             for q in range(len(st) - 1):
-                b.face((L[q], C[q], C[q + 1], L[q + 1]), col, double=True)
-                b.face((C[q], R[q], R[q + 1], C[q + 1]), col, double=True)
+                f0, f1 = st[q][0], st[q + 1][0]
+                b.face_uv((L[q], C[q], C[q + 1], L[q + 1]), (atlas_uv(cell, f0, 1), atlas_uv(cell, f0, 0), atlas_uv(cell, f1, 0), atlas_uv(cell, f1, 1)), col, double=True)
+                b.face_uv((C[q], R[q], R[q + 1], C[q + 1]), (atlas_uv(cell, f0, 0), atlas_uv(cell, f0, -1), atlas_uv(cell, f1, -1), atlas_uv(cell, f1, 0)), col, double=True)
     # the leader: a short spike at the top
     b.cyl((0, 0, top - 2.4), (0, 0, top + 0.5), 0.45, NEEDLE[1], r2=0.0, seg=5)
 
@@ -206,6 +229,113 @@ def bush(b, size, seed, parts=5):
     b.paint_fn(lambda p, c: mul(c, 0.8 + 0.3 * max(0.0, min(1.0, p.z / max(0.5, size[2])))))
 
 
+BIRCH_LEAF = [hexc("5E7036"), hexc("6B7B3C"), hexc("55682F"), hexc("71823F")]
+BIRCH_BARK, BIRCH_MARK = hexc("D8D4C6"), hexc("2F2B27")
+
+
+def spray(b, root, d, length, width, col, rnd, droop=0.25, rise=0.0, cell=3):
+    """one leafy spray: a thin double-sided plate along a bent spine from root along the unit vector d (2 segments,
+    16 triangles), wide in the middle, narrow at both ends; used by the bush and birch generators"""
+    up = Vector((0, 0, 1))
+    side = d.cross(up)
+    if side.length < 0.01:
+        side = Vector((1, 0, 0))
+    side.normalize()
+    # bank the plate around its spine at random and let its edges hang (a tent), so a clump reads from every side
+    roll = rnd.uniform(-0.6, 0.6)
+    side = (side * math.cos(roll) + d.cross(side) * math.sin(roll)).normalized()
+    nrm = side.cross(d).normalized()
+    if nrm.z < 0:
+        nrm = -nrm
+    st = ((0.0, 0.18), (0.5, 0.8), (1.0, 0.12))
+    L, C, R = [], [], []
+    for f, w in st:
+        p = Vector(root) + d * (length * f) + up * (rise * length * f - droop * length * (f ** 1.5))
+        ww = width * w * rnd.uniform(0.85, 1.15)
+        drop = ww * rnd.uniform(0.2, 0.34)
+        C.append(tuple(p + nrm * (0.05 * ww)))
+        L.append(tuple(p + side * (ww / 2) - nrm * drop + up * rnd.uniform(-0.04, 0.04) * length))
+        R.append(tuple(p - side * (ww / 2) - nrm * drop + up * rnd.uniform(-0.04, 0.04) * length))
+    for q in range(2):
+        f0, f1 = st[q][0], st[q + 1][0]
+        b.face_uv((L[q], C[q], C[q + 1], L[q + 1]), (atlas_uv(cell, f0, 1), atlas_uv(cell, f0, 0), atlas_uv(cell, f1, 0), atlas_uv(cell, f1, 1)), col, double=True)
+        b.face_uv((C[q], R[q], R[q + 1], C[q + 1]), (atlas_uv(cell, f0, 0), atlas_uv(cell, f0, -1), atlas_uv(cell, f1, -1), atlas_uv(cell, f1, 0)), col, double=True)
+
+
+def bush_sprays(b, size, seed, n=14):
+    """a shrub as a clump of leafy sprays rising and arching out from a low centre, with gaps between them (owner
+    2026-11-01: solid clumps read as green rocks); about 450 triangles"""
+    rnd = random.Random(seed)
+    sx, sy, sz = size
+    for k in range(n):
+        a = rnd.uniform(0, 6.283)
+        lift = rnd.uniform(0.35, 1.1)
+        d = Vector((math.cos(a), math.sin(a), lift)).normalized()
+        base = Vector((rnd.uniform(-0.15, 0.15) * sx, rnd.uniform(-0.15, 0.15) * sy, rnd.uniform(0.05, 0.35) * sz))
+        length = rnd.uniform(0.45, 0.7) * max(sx, sy)
+        spray(b, base, d, length, length * rnd.uniform(0.55, 0.8), LEAF[rnd.randrange(len(LEAF))], rnd, droop=rnd.uniform(0.2, 0.45), rise=0.0)
+    b.paint_fn(lambda p, c: mul(c, (0.72 + 0.38 * max(0.0, min(1.0, p.z / max(0.5, sz)))) * (1 + 0.08 * vnoise(p, 1.3, seed))))
+
+
+def birch_trunk(b, h, r0, r1, seed):
+    """a slim birch trunk: white bark with dark horizontal marks, a slight lean"""
+    rnd = random.Random(seed)
+    lean = Vector((rnd.uniform(-0.6, 0.6), rnd.uniform(-0.6, 0.6), 0))
+    mid = Vector((0, 0, h * 0.5)) + lean * 0.4
+    top = Vector((0, 0, h)) + lean
+    # stacked open rings (about every 3.5 studs) so the vertex-coloured marks have vertices to sit on; caps only at the ends
+    n = max(4, int(round(h / 3.5)))
+    prev = Vector((0, 0, -0.4))
+    for i in range(1, n + 1):
+        t = i / n
+        q = Vector((0, 0, -0.4 + (h + 0.4) * t)) + lean * (t ** 1.6)
+        b.cyl(tuple(prev), tuple(q), r0 + (r1 - r0) * ((i - 1) / n), BIRCH_BARK, r2=r0 + (r1 - r0) * t, seg=7, cap=(i == 1 or i == n))
+        prev = q
+
+    def bark(p, c):
+        # dark bands (lenticels) here and there, darker and rougher at the foot
+        band = math.sin(p.z * 3.1 + vnoise(p, 2.0, seed) * 2.5)
+        foot = max(0.0, 1.0 - p.z / 3.0)
+        dark = 0.0
+        if band > 0.86:
+            dark = 0.8
+        dark = max(dark, foot * 0.75)
+        return mix(BIRCH_BARK, BIRCH_MARK, dark * (0.6 + 0.4 * max(0.0, vnoise(p, 3.3, seed + 1))))
+    b.paint_fn(bark)
+
+
+def birch_crown(b, base, top, rmax, seed, clumps=10):
+    """a birch crown: thin upswept branches, each ending in a clump of small leafy sprays; open and airy, about 750
+    triangles. The branches are part of the crown, so they never block movement."""
+    rnd = random.Random(seed)
+    span = top - base
+    for k in range(clumps):
+        t = (k + 0.5) / clumps
+        a = rnd.uniform(0, 6.283)
+        z0 = base + span * (0.15 + 0.6 * t) + rnd.uniform(-0.5, 0.5)
+        reach = rmax * (0.55 + 0.45 * math.sin(math.pi * min(1.0, 0.25 + t * 0.75))) * rnd.uniform(0.8, 1.1)
+        end = Vector((math.cos(a) * reach, math.sin(a) * reach, z0 + reach * rnd.uniform(0.35, 0.7)))
+        b.cyl((math.cos(a) * 0.15, math.sin(a) * 0.15, z0), tuple(end), 0.09, BIRCH_BARK, r2=0.04, seg=4)
+        for j in range(4):
+            aa = a + rnd.uniform(-1.5, 1.5)
+            d = Vector((math.cos(aa), math.sin(aa), rnd.uniform(-0.3, 0.5))).normalized()
+            L = rnd.uniform(3.2, 5.0) * (rmax / 5.2)
+            spray(b, tuple(end + Vector((0, 0, rnd.uniform(-0.6, 0.4)))), d, L, L * 0.7, BIRCH_LEAF[rnd.randrange(len(BIRCH_LEAF))], rnd, droop=rnd.uniform(0.3, 0.6), cell=2)
+    # a few clumps near the top
+    for j in range(5):
+        aa = rnd.uniform(0, 6.283)
+        d = Vector((math.cos(aa), math.sin(aa), rnd.uniform(0.0, 0.6))).normalized()
+        L = rnd.uniform(2.6, 3.6) * (rmax / 5.2)
+        spray(b, (0, 0, top - rnd.uniform(0.5, 2.0)), d, L, L * 0.7, BIRCH_LEAF[rnd.randrange(len(BIRCH_LEAF))], rnd, droop=0.35, cell=2)
+
+    def shade(p, c):
+        if c[0] > 0.6 and c[1] > 0.6:  # the white branches keep their colour
+            return c
+        hz = max(0.0, min(1.0, (p.z - base) / max(1.0, span)))
+        return mul(c, (0.74 + 0.32 * hz) * (1 + 0.1 * vnoise(p, 1.1, seed + 5)))
+    b.paint_fn(shade)
+
+
 def fern(b, seed):
     rnd = random.Random(seed)
     for k in range(7):
@@ -269,8 +399,12 @@ def build(scene):
     make("ZR_NAT_Log", log, 12, 0.75, 71)
     make("ZR_NAT_Stump", stump)
     make("ZR_NAT_LogPile", logpile)
-    make("ZR_NAT_Bush1", bush, (3.2, 3.0, 2.2), 81)
-    make("ZR_NAT_Bush2", bush, (4.6, 3.8, 2.8), 82, 7)
+    make("ZR_NAT_Bush1", bush_sprays, (3.2, 3.0, 2.2), 81, 13)
+    make("ZR_NAT_Bush2", bush_sprays, (4.6, 3.8, 2.8), 82, 17)
+    make("ZR_NAT_BirchA_T", birch_trunk, 30, 0.55, 0.14, 101)
+    make("ZR_NAT_BirchA_C", birch_crown, 9, 31, 5.2, 102, 18)
+    make("ZR_NAT_BirchB_T", birch_trunk, 22, 0.45, 0.12, 103)
+    make("ZR_NAT_BirchB_C", birch_crown, 6, 23, 4.2, 104, 14)
     make("ZR_NAT_Fern", fern, 91)
     make("ZR_NAT_Grass", grass, 92)
     make("ZR_NAT_Reeds", grass, 93, 1.6, 12, hexc("5E6A3A"))

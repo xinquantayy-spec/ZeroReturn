@@ -7,8 +7,20 @@ local InsertService = game:GetService("InsertService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AssetIds = require(ReplicatedStorage:WaitForChild("ZR"):WaitForChild("AssetIds"))
 
+local CollectionService = game:GetService("CollectionService")
+
 local Assets = {}
 local listeners = {}
+-- crowns and bushes are needle and leaf cards: each client dresses the ones near its camera with the see-through
+-- foliage texture (Detail controller). The tag sits on the library mesh and rides along on every clone.
+local function tagFoliage(l)
+	for _, d in l:GetChildren() do
+		local n = d.Name
+		if d:IsA("MeshPart") and (n:match("^ZR_NAT_.+_C$") or n:match("^ZR_NAT_Bush%d$")) and not CollectionService:HasTag(d, "ZR_Foliage") then
+			CollectionService:AddTag(d, "ZR_Foliage")
+		end
+	end
+end
 Assets.failed = {} -- key -> last error (batches still missing)
 local RETRY = { 15, 45, 120, 300 }
 
@@ -49,6 +61,7 @@ local function loadBatch(entry)
 		end
 	end
 	model:Destroy()
+	tagFoliage(l)
 	return true, n
 end
 

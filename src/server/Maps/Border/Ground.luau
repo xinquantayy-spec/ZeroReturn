@@ -1273,6 +1273,9 @@ return function(B)
 			{ t = "ZR_NAT_PineA_T", c = "ZR_NAT_PineA_C", w = 40 },
 			{ t = "ZR_NAT_PineB_T", c = "ZR_NAT_PineB_C", w = 30 },
 			{ t = "ZR_NAT_PineC_T", c = "ZR_NAT_PineC_C", w = 24, young = true },
+			-- birches (Customs mixes them in with the spruce along the roads and the yards)
+			{ t = "ZR_NAT_BirchA_T", c = "ZR_NAT_BirchA_C", w = 16 },
+			{ t = "ZR_NAT_BirchB_T", c = "ZR_NAT_BirchB_C", w = 12 },
 			{ t = "ZR_NAT_Snag_T", w = 5 },
 		}
 		local wsum = 0
