@@ -8,6 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Rail portals, trees by the rails, clutter in door swings (2026-11-02)
+
+| Check | Result |
+|---|---|
+| Portals built | Meridian 2 (the west double line at both ends, openings 40.7 and 32.7 studs); Border 5 (ARMY LINE, NORTH LINE, CITY LINE, PORT LINE and the old pumps line) |
+| Looked at | Meridian RAIL SIDING and its south-west end, Border CITY LINE and ARMY LINE: the tracks run under the shut gates, the portal set in the hill or the boundary rock |
+| Tidy, Border | 15 trees off roads and rails (2 on roads before); the tree in front of the CITY LINE portal is gone |
+| Suites in the lobby / a Border raid / a Meridian raid | all pass: LogicTests 341, CharTests 46, LookTests 33, MapTests 38 in the lobby and 36 in a raid (two map-swap checks skip while a raid runs). L02's clutter check had failed during a Border raid (11 and 19 pieces in door swings) before `World.detailAvoid` held the swing |
+
+Evidence: `docs/maps/evidence/MM_exit_rail_portal.jpg`.
+
 ## Detail plan streamed with the map (2026-11-02)
 
 The client detail layer's plan for the map in play now sits on invisible parts in `workspace.ZR_DetailCells`, which

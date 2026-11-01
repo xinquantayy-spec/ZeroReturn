@@ -1827,7 +1827,7 @@ function World.build()
 				return require(script.Parent.Parent.Maps.Tidy).run(id, mm.model, World.doors)
 			end)
 			if okT then
-				print(string.format("[ZR] %s tidy: %d trees off roads, %d fence pieces out of buildings, %d out of doorways, %d out of door swings, %d doors re-hung, %d doors open less than 100 degrees, %d twins, %d stacked, %d trees, %d off water (%d big ones kept), %d lifted, %d out of walls (%d removed, %d left), %d set back against walls, %.2fs",
+				print(string.format("[ZR] %s tidy: %d trees off roads and rails, %d fence pieces out of buildings, %d out of doorways, %d out of door swings, %d doors re-hung, %d doors open less than 100 degrees, %d twins, %d stacked, %d trees, %d off water (%d big ones kept), %d lifted, %d out of walls (%d removed, %d left), %d set back against walls, %.2fs",
 					id, tidy.roadTrees, tidy.fences, tidy.doorways, tidy.swing, tidy.doorsTurned, tidy.doorsShort, tidy.twins, tidy.stacked, tidy.trees, tidy.water, tidy.waterBig, tidy.sunk, tidy.walls, tidy.wallsGone, tidy.wallsLeft, tidy.flush, tidy.seconds))
 			else
 				warn("[ZR] " .. id .. " tidy failed: " .. tostring(tidy))
@@ -1884,10 +1884,19 @@ function World.detailAvoid()
 			add(c.part.Position, math.max(c.part.Size.X, c.part.Size.Z) / 2 + 2)
 		end
 	end
+	-- a door: its closed leaf with room on both sides, and the leaf's middle at a third, two thirds and all of its swing
+	-- (Doors.set turns it about the hinge the tidy pass chose), so no clutter stands where the leaf opens. The closed
+	-- leaf, not where the door is now: some doors start a raid ajar.
 	for _, d in World.doors do
-		local cf = d.part and d.part.CFrame or d.cf
-		if cf and d.size then
-			add(cf.Position, d.size.X + 0.6)
+		if d.cf and d.size then
+			local w = d.size.X
+			add(d.cf.Position, w + 0.6)
+			local hs, turn = d.hinge or -1, d.turn or 1
+			local hinge = d.cf * CFrame.new(hs * w / 2, 0, 0)
+			for _, f in { 1 / 3, 2 / 3, 1 } do
+				local leaf = hinge * CFrame.Angles(0, math.rad(turn * (d.swing or 100) * f), 0) * CFrame.new(-hs * w / 2, 0, 0)
+				add(leaf.Position, w / 2 + 0.6)
+			end
 		end
 	end
 	return out

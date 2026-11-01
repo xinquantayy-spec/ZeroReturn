@@ -892,12 +892,9 @@ return function(B)
 		local rm = kit.model("Rails", map)
 		rm:SetAttribute("NoWire", true) -- the detail plan would crown long high parts with barbed wire
 		local BALLAST, SLEEP, STEEL = hex("5C574E"), hex("4B3F33"), hex("6A5A4E")
-		-- where a line leaves the map (past the limit the hills rise), its rails stop at the foot of the slope: a run end with
-		-- the ground 3 studs further on outside the limit gets a tunnel portal (below)
+		-- where a line leaves the map (past the limit the hills rise), its rails stop at the foot of the slope: every run end
+		-- and its way on, for the tunnel portals (below; RailPortals keeps the ends where the hill rises right past them)
 		local exits, ends = {}, {}
-		local function outside(x, z)
-			return ZN[colOf(x)][rowOf(z)] == 0
-		end
 		for _, rl in L.rails do
 			local pts = rl[3]
 			if rl[2] == 0 then
@@ -908,10 +905,11 @@ return function(B)
 					for _, rn in landRuns(ax, az, bx, bz, onLand) do
 						local x0, z0 = ax + (bx - ax) * rn[1], az + (bz - az) * rn[1]
 						local x1, z1 = ax + (bx - ax) * rn[2], az + (bz - az) * rn[2]
-						if outside(x1 + ux * 3, z1 + uz * 3) then
+						-- the line's own ends and the ends of clipped runs (not a bend, where the next piece goes on)
+						if rn[2] < 0.999 or s == #pts / 2 - 1 then
 							table.insert(exits, { x = x1, z = z1, ux = ux, uz = uz })
 						end
-						if outside(x0 - ux * 3, z0 - uz * 3) then
+						if rn[1] > 0.001 or s == 1 then
 							table.insert(exits, { x = x0, z = z0, ux = -ux, uz = -uz })
 						end
 						table.insert(ends, { x = x0, z = z0 })
@@ -935,62 +933,8 @@ return function(B)
 			end
 			pace()
 		end
-		-- tunnel portals where the hill rises past the end (10 studs or more within 14). Exits within 40 studs that point the
-		-- same way share one (the double line), and every rail end within 30 studs of it sets the width of its opening (the
-		-- other track of a pair may stop a little short of the limit). A concrete head wall with shut steel gates.
-		local used = {}
-		for i, a in exits do
-			if not used[i] and groundAt(a.x + a.ux * 14, a.z + a.uz * 14) - groundAt(a.x, a.z) >= 10 then
-				used[i] = true
-				local ux, uz = a.ux, a.uz
-				for j = i + 1, #exits do
-					local b = exits[j]
-					if not used[j] and (b.x - a.x) ^ 2 + (b.z - a.z) ^ 2 < 1600 and b.ux * a.ux + b.uz * a.uz > 0.8 then
-						used[j] = true
-						ux, uz = ux + b.ux, uz + b.uz
-					end
-				end
-				local ul = math.sqrt(ux * ux + uz * uz)
-				ux, uz = ux / ul, uz / ul
-				-- across the line: the outermost rail ends near the mouth; along it: the farthest one in
-				local lo, hi, far = 0, 0, 0
-				for _, q in ends do
-					local dx, dz = q.x - a.x, q.z - a.z
-					if dx * dx + dz * dz < 900 then
-						local across = dx * uz - dz * ux
-						lo, hi = math.min(lo, across), math.max(hi, across)
-						far = math.max(far, dx * ux + dz * uz)
-					end
-				end
-				local mid = (lo + hi) / 2
-				local cx, cz = a.x + uz * mid + ux * far, a.z - ux * mid + uz * far
-				local span = hi - lo
-				local OW, OH, T = span + 18, 22, 5
-				local WW, WH = OW + 24, 36
-				local g = groundAt(cx, cz)
-				-- the front face 1.5 studs past the rail ends; local -Z points into the hill
-				local base = CFrame.lookAt(V(cx, g, cz), V(cx + ux, g, cz + uz)) * CFrame.new(0, 0, -1.5)
-				local pm = kit.model("TunnelPortal", rm)
-				local CON, GATE, BRACE = hex("8A877F"), hex("4C544B"), hex("3A3F38")
-				local function blk(sx, sy, sz, x, y, z, col, mat)
-					return kit.boxCF(pm, sx, sy, sz, base * CFrame.new(x, y, z), col, mat)
-				end
-				-- piers (3 studs into the ground: the foot of the slope is uneven), the lintel and its coping
-				for _, sg in { -1, 1 } do
-					blk(12, WH + 3, T, sg * (OW / 2 + 6), (WH + 3) / 2 - 3, -T / 2, CON, M.Concrete)
-				end
-				blk(OW, WH - OH, T, 0, OH + (WH - OH) / 2, -T / 2, CON, M.Concrete)
-				blk(WW + 1.2, 1.2, T + 1.2, 0, WH + 0.6, -T / 2, CON, M.Concrete)
-				-- the shut gates: two leaves with braces on their faces
-				for _, sg in { -1, 1 } do
-					blk(OW / 2 - 0.2, OH, 0.6, sg * (OW / 4 + 0.05), OH / 2, -T / 2, GATE, M.CorrodedMetal)
-					for _, y in { 3, OH / 2, OH - 3 } do
-						blk(OW / 2 - 1.2, 0.8, 0.5, sg * (OW / 4 + 0.05), y, -T / 2 + 0.55, BRACE, M.Metal)
-					end
-				end
-				count.portal = (count.portal or 0) + 1
-			end
-		end
+		-- tunnel portals where the line meets the rising hill (Maps/RailPortals.luau)
+		count.portal = require(script.Parent.Parent.RailPortals)(kit, rm, exits, ends, groundAt, V)
 	end)
 
 	-- ── fences: chain-link runs along the reference polylines (a see-through panel that blocks walking but not shots, posts

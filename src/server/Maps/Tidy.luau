@@ -405,18 +405,23 @@ function Tidy.run(mapId, model, doors)
 		end
 	end
 
-	-- 3b. outdoors: a tree or a bush standing on a road goes; a fence piece run into a building (its wall, its floor) goes,
-	-- so the fence stops at the building as Tarkov's do
-	local roads = model:FindFirstChild("Roads")
-	if roads then
-		local rop = OverlapParams.new()
+	-- 3b. outdoors: a tree or a bush standing on a road, or on or right beside a railway (its bed, a tunnel portal) goes;
+	-- a fence piece run into a building (its wall, its floor) goes, so the fence stops at the building as Tarkov's do
+	local roads, rails = model:FindFirstChild("Roads"), model:FindFirstChild("Rails")
+	if roads or rails then
+		local rop, lop = OverlapParams.new(), OverlapParams.new()
 		rop.FilterType = Enum.RaycastFilterType.Include
 		rop.FilterDescendantsInstances = { roads }
+		lop.FilterType = Enum.RaycastFilterType.Include
+		lop.FilterDescendantsInstances = { rails }
 		for _, list in { trunks, bushes } do
 			for _, t in list do
 				if t.Parent then
 					local foot = CFrame.new(t.Position.X, t.Position.Y - t.Size.Y / 2 + 0.5, t.Position.Z)
-					if #workspace:GetPartBoundsInBox(foot, Vector3.new(t.Size.X * 0.5, 1.5, t.Size.Z * 0.5), rop) > 0 then
+					local onRoad = roads and #workspace:GetPartBoundsInBox(foot, Vector3.new(t.Size.X * 0.5, 1.5, t.Size.Z * 0.5), rop) > 0
+					-- a track keeps a clear strip on either side: 3 studs past the bed's edge
+					local byRail = rails and #workspace:GetPartBoundsInBox(foot, Vector3.new(t.Size.X * 0.5 + 6, 3, t.Size.Z * 0.5 + 6), lop) > 0
+					if onRoad or byRail then
 						if t.Name == "Trunk" then
 							local c = crownOf(t)
 							if c then

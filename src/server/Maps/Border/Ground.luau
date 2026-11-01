@@ -878,13 +878,26 @@ return function(B)
 		local rm = kit.model("Rails", map)
 		rm:SetAttribute("NoWire", true) -- the detail plan would crown long high parts with barbed wire
 		local BALLAST, SLEEP, STEEL = hex("5C574E"), hex("4B3F33"), hex("6A5A4E")
+		-- every run end and its way on, for the tunnel portals (below; RailPortals keeps the ends where the hill rises right past them)
+		local exits, ends = {}, {}
 		for _, rl in L.rails do
 			local pts = rl[3]
 			for s = 1, #pts / 2 - 1 do
 				local ax, az, bx, bz = pts[2 * s - 1], pts[2 * s], pts[2 * s + 1], pts[2 * s + 2]
+				local sl = math.max(0.01, math.sqrt((bx - ax) * (bx - ax) + (bz - az) * (bz - az)))
+				local ux, uz = (bx - ax) / sl, (bz - az) / sl
 				for _, rn in landRuns(ax, az, bx, bz, onLand) do
 					local x0, z0 = ax + (bx - ax) * rn[1], az + (bz - az) * rn[1]
 					local x1, z1 = ax + (bx - ax) * rn[2], az + (bz - az) * rn[2]
+					-- the line's own ends and the ends of clipped runs (not a bend, where the next piece goes on)
+					if rn[2] < 0.999 or s == #pts / 2 - 1 then
+						table.insert(exits, { x = x1, z = z1, ux = ux, uz = uz })
+					end
+					if rn[1] > 0.001 or s == 1 then
+						table.insert(exits, { x = x0, z = z0, ux = -ux, uz = -uz })
+					end
+					table.insert(ends, { x = x0, z = z0 })
+					table.insert(ends, { x = x1, z = z1 })
 					if (x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0) > 4 then
 						pieces(x0, z0, x1, z1, 80, 20, 0.3, function(px0, pz0, px1, pz1)
 							local a, b = topLine(px0, pz0, px1, pz1, 0)
@@ -903,6 +916,13 @@ return function(B)
 			end
 			pace()
 		end
+		-- tunnel portals where a line meets the rising hill (Maps/RailPortals.luau)
+		count.portal = require(script.Parent.Parent.RailPortals)(kit, rm, exits, ends, groundAt, function(x, y, z)
+			return Vector3.new(O.X + x, y, O.Z + z)
+		end, function(e)
+			-- the boundary's rock stands at the limit
+			return not insideAt(e.x + e.ux * 3, e.z + e.uz * 3)
+		end)
 		-- level crossings: an asphalt (or gravel) plate over the bed where a road crosses a track
 		local roadBy, railBy = {}, {}
 		for _, rd in L.roads do

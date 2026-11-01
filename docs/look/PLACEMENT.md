@@ -90,8 +90,16 @@ Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit
   hall. The room is now a 134 x 89 bunker around the exit, and its furniture was laid out again.
 - **FENCE GAP stood in a field.** The exit marker was 19 studs past the end of a fence, in open grass. The gap is now
   fenced, with a hole at the exit, drums and a red container.
-- **Rails ran into the hill.** Where the west double line leaves the map, the rails ended in the hillside. A tunnel
-  portal with shut gates now stands where a line meets a rising hill (`Ground.luau`, both ends of the line).
+- **Rails ran into the hill.** Where a railway leaves the map, its rails ended in the hillside or in Border's
+  boundary rock. A tunnel portal with shut gates now takes the line in (`Maps/RailPortals.luau`, called from both maps'
+  `Ground.luau`). It is built where the ground rises 10 studs within 14 past a line's end, or, on Border, where the
+  boundary stands. Meridian has 2 portals, Border 5.
+- **Trees by the rails.** A tree or bush on a track bed or right beside it is now removed, as on roads. This includes
+  one in front of Border's CITY LINE portal. The pass removed 13 on Border.
+- **Clutter in door swings.** The client's ground clutter (tipped bins, litter) kept clear of a door's closed leaf,
+  but not of where the leaf opens, and doors that start a raid ajar moved the spot. `World.detailAvoid` now holds the
+  closed leaf and the leaf at a third, two thirds and all of its swing. Before this, LookTests L02 found 11 to 19
+  clutter pieces in door swings during a Border raid; now there are none.
 
 ## Left for later
 

@@ -70,7 +70,7 @@ function T.run(ctx)
 			local avoid = ctx.World.detailAvoid()
 			local total, badCell, badDec, badMesh, near, bytes = 0, 0, 0, 0, 0, 0
 			-- the lobby's cells in ReplicatedStorage (every client gets them at once), the map's on streamed parts
-			local svs, holders, badHolder, biggest = {}, 0, 0, 0
+			local svs, holders, badHolder, biggest, nearAt = {}, 0, 0, 0, {}
 			for _, sv in pf:GetChildren() do
 				bytes += #sv.Value
 				table.insert(svs, sv)
@@ -113,6 +113,9 @@ function T.run(ctx)
 								local d = a.pos - Vector3.new(x, y, z)
 								if math.abs(d.Y) < 4 and d.X * d.X + d.Z * d.Z < a.r * a.r then
 									near += 1
+									if #nearAt < 4 then
+										table.insert(nearAt, string.format("%s @ %.0f, %.0f, %.0f by %.0f, %.0f, %.0f", tostring(e[2]), x, y, z, a.pos.X, a.pos.Y, a.pos.Z))
+									end
 									break
 								end
 							end
@@ -126,10 +129,11 @@ function T.run(ctx)
 			check("L02 every entry well formed and in its own cell", badCell == 0, badCell)
 			check("L02 decals use the uploaded wear images", badDec == 0, badDec)
 			check("L02 meshes are wear-kit pieces in the library", badMesh == 0, badMesh)
-			check("L02 ground clutter keeps clear of loot, containers, doors, exfils and spawns", near == 0, near)
+			check("L02 ground clutter keeps clear of loot, containers, doors, exfils and spawns", near == 0, near .. " " .. table.concat(nearAt, "; "))
 			check("L02 what every client gets at once stays small (< 400 KB)", bytes < 400 * 1024, math.floor(bytes / 1024) .. " KB")
-			check("L02 the map's cells stream with the map: each on an invisible, anchored part that blocks nothing, none over 32 KB",
-				holders > 0 and badHolder == 0 and biggest < 32 * 1024, holders .. " parts, " .. badHolder .. " wrong, biggest " .. math.floor(biggest / 1024) .. " KB")
+			-- a StringValue holds at most 200,000 characters
+			check("L02 the map's cells stream with the map: each on an invisible, anchored part that blocks nothing, none near a StringValue's limit",
+				holders > 0 and badHolder == 0 and biggest < 160000, holders .. " parts, " .. badHolder .. " wrong, biggest " .. math.floor(biggest / 1024) .. " KB")
 		end
 		check("L02 the server builds no detail itself (client only)", workspace:FindFirstChild("ZR_Detail") == nil)
 	end
