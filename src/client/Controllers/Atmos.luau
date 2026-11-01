@@ -205,6 +205,10 @@ local function buildRain()
 	end
 end
 
+-- winter: snow falls from the rain cells (setSnow below). Declared before placeRain, which reads it: declared after, the
+-- name was a global there and snow kicked up rain splashes (2026-11-01)
+local snowing = false
+
 -- reposition the cells around the camera and decide which ones are under a roof
 local function placeRain(intensity, windDrift)
 	local cp = cam.CFrame.Position
@@ -243,7 +247,6 @@ local function placeRain(intensity, windDrift)
 end
 
 -- seasons (Tarkov 0.16): winter snow falls from the rain cells, terrain and foliage take the season's colours
-local snowing = false
 local function setSnow(on)
 	if on == snowing then
 		return
