@@ -36,7 +36,13 @@ Next round (`KNOWN_ISSUES` 69):
 - the road boards: from 45 studs up, Border's roads look broken where the terrain shows between boards on slopes; from the ground they read as roads.
 
 **Now, in order:**
-1. **Meridian polish:** per-key loot and the key pictures are done. Fuller small shops are done and checked in Studio (`StoresFill.luau`, +1,938 parts). Lighting in the deep halls with the power on was checked on 2026-11-01 in the separate client: NESTA and KASSA by day, and KASSA at 23:00, all read as lit halls. **Exit walk-through done 2026-11-02** (TEST_RESULTS "Meridian exit walk-through"): every spawn reaches every exit it may use, each rule refuses and then lets the player out, exits have their own timers (8 s standard, saferoom 3 s, fence hole 10 s), and three exits were rebuilt to look right (the saferoom, the fence hole, the tunnel portal on the railway). Left: KNOWN_ISSUES 71.
+1. **Meridian polish:** per-key loot and the key pictures are done. Fuller small shops are done and checked in Studio (`StoresFill.luau`, +1,938 parts). Lighting in the deep halls with the power on was checked on 2026-11-01 in the separate client: NESTA and KASSA by day, and KASSA at 23:00, all read as lit halls. **Exit walk-through done 2026-11-02** (TEST_RESULTS "Meridian exit walk-through"): every spawn reaches every exit it may use, each rule refuses and then lets the player out, exits have their own timers (8 s standard, saferoom 3 s, fence hole 10 s), and three exits were rebuilt to look right (the saferoom, the fence hole, the tunnel portal on the railway). Left: KNOWN_ISSUES 71. **Border Yard's 26 exits were walked the same way the same night.** Also done that night:
+   - tunnel portals wherever a railway meets the hills or the boundary rock (Meridian 2, Border 5);
+   - barriers on every road into the rock (Border 13, Meridian 8);
+   - a roadblock at ARMY ROADBLOCK and a boat at SMUGGLERS' BOAT;
+   - trees cleared off the rail beds;
+   - client clutter kept out of door swings;
+   - the detail plan streamed with the map (Meridian's is 970 KB).
 2. **Performance on phones:** Border Yard and Meridian stream 16,000 to 18,600 parts near the player (KNOWN_ISSUES 65); try a smaller streaming radius in Studio's Workspace settings and merge plain walls, then measure in the device emulator.
 3. **Border Yard polish:** dorm interiors are done (furniture, washrooms, doors, glass; checked in Studio 2026-11-01). Still to do: the 0.16 interiors elsewhere, ladders, and the AI paths on Border stairs (KNOWN_ISSUES 68; the boiler cellar was inspected 2026-11-01).
 4. **Mounted guns, the rest:** the grenade launcher by hand, gamepad and touch, AI gunners firing a mounted gun, Blender art.

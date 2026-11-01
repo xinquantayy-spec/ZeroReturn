@@ -50,7 +50,7 @@ roadblock inside the AR zone, and L03 (cover clear of exits and spawns) failed w
 
 | Check | Result |
 |---|---|
-| Portals built | Meridian 2 (the west double line at both ends, openings 40.7 and 32.7 studs); Border 5 (ARMY LINE, NORTH LINE, CITY LINE, PORT LINE and the old pumps line) |
+| Portals built | Meridian 2 (the west double line at both ends, openings 40.7 and 32.7 studs); Border 5 (ARMY LINE, NORTH LINE, CITY LINE, PORT LINE and the old pumps line). NORTH LINE's three tracks first met a 33.6-stud opening, and the outer track ran into a pier. Every rail end within 45 studs now sets the width (48.4 studs; `BY_exit_north_line_portal.jpg`) |
 | Looked at | Meridian RAIL SIDING and its south-west end, Border CITY LINE and ARMY LINE: the tracks run under the shut gates, the portal set in the hill or the boundary rock |
 | Tidy, Border | 15 trees off roads and rails (2 on roads before); the tree in front of the CITY LINE portal is gone |
 | Suites in the lobby / a Border raid / a Meridian raid | all pass: LogicTests 341, CharTests 46, LookTests 33, MapTests 38 in the lobby and 36 in a raid (two map-swap checks skip while a raid runs). L02's clutter check had failed during a Border raid (11 and 19 pieces in door swings) before `World.detailAvoid` held the swing |

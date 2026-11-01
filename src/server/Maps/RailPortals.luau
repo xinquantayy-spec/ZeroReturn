@@ -3,8 +3,8 @@
 -- slope. Of the rail run ends the map's rail step passes in, those where the hill rises 10 studs or more within 14
 -- studs beyond get a concrete head wall with shut steel gates that takes the line in (a line that goes on, or ends at a
 -- river bank, has level or falling ground there). Exits within 40 studs that point the same way share one portal (a
--- double line), and every rail end within 30 studs of it sets the width of the opening (the other track of a pair may
--- stop a little short of the limit).
+-- double line), and every rail end within 45 studs of it sets the width of the opening (the other tracks may stop a
+-- little short of the limit; Border's NORTH LINE has three).
 --   exits     { { x, z, ux, uz } }: map-local run ends and the unit way out
 --   ends      { { x, z } }: every rail run end of the map
 --   groundAt  (x, z) -> world height of the ground
@@ -34,7 +34,7 @@ return function(kit, parent, exits, ends, groundAt, V, atEdge)
 			local lo, hi, far = 0, 0, 0
 			for _, q in ends do
 				local dx, dz = q.x - a.x, q.z - a.z
-				if dx * dx + dz * dz < 900 then
+				if dx * dx + dz * dz < 2025 then
 					local across = dx * uz - dz * ux
 					lo, hi = math.min(lo, across), math.max(hi, across)
 					far = math.max(far, dx * ux + dz * uz)
