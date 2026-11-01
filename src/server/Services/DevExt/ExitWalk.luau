@@ -2,12 +2,14 @@
 -- Exit walk for the Studio test bridge. A player in a raid is put in each exit of the map in play, in turn, and the
 -- server's own extract tick (Extract.tick, every 0.2 s) decides what happens there: refused with its reason, or the
 -- hold started. Then the exit's rule is met the way a player meets it (the power switches thrown, the backpack taken
--- off, a scav's raid) and the tick is read again. The character really stands in the zone; nothing is decided here.
+-- off, a scav's raid, the key carried) and the tick is read again. The character really stands in the zone; nothing
+-- is decided here.
 -- The hold is never left to run out (the player steps out first), except at the exit named `finish`, which is held to
 -- the end and ends the raid as a real extraction does.
 --   ZR_Dev:Invoke("exitwalk", name, finish)   start (name = a player's name, nil = the first one)
 --   ZR_Dev:Invoke("exitwalkresult")           what it has found so far
 local Players = game:GetService("Players")
+local Inv = require(script.Parent.Parent.Inv)
 
 local function plr(name)
 	return (name and Players:FindFirstChild(name)) or Players:GetPlayers()[1]
@@ -105,6 +107,15 @@ return function(C, ctx)
 						if id ~= finish then
 							stepOut(e)
 							s.scav = nil
+						end
+					elseif r.kind == "key" and r.key then
+						-- the key put in the raid inventory, then taken out again after the reading
+						local g = C.give(p.Name, r.key, 1)
+						task.wait(0.8)
+						table.insert(line, "· carrying " .. tostring(r.key) .. ": " .. read(e))
+						if type(g) == "string" and string.sub(g, 1, 3) ~= "ERR" and s.inv.items[g] then
+							Inv.consume(s.inv, g)
+							ctx.Raid.afterChange(p, true)
 						end
 					elseif X.isCar(e) then
 						table.insert(line, "· (a car: the fare is paid at the car; not paid here)")

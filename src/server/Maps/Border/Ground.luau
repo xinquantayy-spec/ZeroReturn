@@ -426,6 +426,7 @@ return function(B)
 		return math.min(x - xl, xr - x)
 	end
 	B.riverD = riverD
+	B.riverAt = rowAt -- (z) -> west bank x, east bank x, water surface y (after the river levels step)
 
 	-- the water surface: the reference's, lowered where the banks are low, never rising downstream
 	step("river levels", function()

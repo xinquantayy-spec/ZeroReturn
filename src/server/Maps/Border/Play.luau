@@ -74,6 +74,63 @@ return function(B)
 		W.sideExtracts = sideIds
 	end)
 
+	-- SMUGGLERS' BOAT: Tarkov's exit is a smugglers' motorboat moored on the river bank. The beacon alone stood on the
+	-- slope, so a small open motorboat now lies in the water off the west bank beside it, tied to a post on the bank.
+	try("smugglers' boat", function()
+		local riverAt = B.riverAt
+		local sb = nil
+		for _, e in L.ext do
+			if e[1] == "SB" then
+				sb = e
+			end
+		end
+		if not (riverAt and sb) then
+			return
+		end
+		local bz = sb[5] - 18
+		local xl, _, wy = riverAt(bz)
+		local bx = xl + 5
+		local m = kit.model("SmugglersBoat", map)
+		-- the hull's own frame: x across, z along (bow toward -z), y from the waterline
+		local base = CFrame.new(V(bx, wy, bz))
+		local HULL, TRIM, DARK = kit.hex("D8D4C8"), kit.hex("3F5B6E"), kit.hex("2E3134")
+		local function blk(sx, sy, sz, cf, col, mat)
+			local p = kit.boxCF(m, sx, sy, sz, base * cf, col, mat)
+			p.CastShadow = false
+			return p
+		end
+		local L0, Wd, Hh = 12, 4.6, 1.9 -- the straight part of the hull, its beam and its side height (0.5 below the water)
+		-- the deck lies just over the water: terrain water fills anything below it
+		blk(Wd, 0.3, L0, CFrame.new(0, -0.05, 0), HULL, Enum.Material.SmoothPlastic)
+		for _, sg in { -1, 1 } do
+			blk(0.25, Hh, L0, CFrame.new(sg * (Wd / 2 - 0.125), Hh / 2 - 0.5, 0), HULL, Enum.Material.SmoothPlastic)
+			blk(0.3, 0.25, L0, CFrame.new(sg * (Wd / 2 - 0.1), Hh - 0.4, 0), TRIM, Enum.Material.SmoothPlastic)
+			-- the bow: two sides meeting 4 studs ahead of the straight part
+			local side = (Vector3.new(0, 0, -L0 / 2 - 4) - Vector3.new(sg * (Wd / 2 - 0.125), 0, -L0 / 2))
+			local mid = Vector3.new(sg * (Wd / 2 - 0.125), 0, -L0 / 2) + side / 2
+			blk(0.25, Hh, side.Magnitude, CFrame.lookAt(mid, mid + side) * CFrame.new(0, Hh / 2 - 0.5, 0), HULL, Enum.Material.SmoothPlastic)
+		end
+		blk(Wd, Hh, 0.25, CFrame.new(0, Hh / 2 - 0.5, L0 / 2 - 0.125), HULL, Enum.Material.SmoothPlastic) -- the transom
+		blk(Wd - 0.6, 0.25, 1.4, CFrame.new(0, 0.85, 1.2), kit.hex("6E5C48"), Enum.Material.WoodPlanks) -- a bench
+		blk(1.6, 1.2, 1.0, CFrame.new(0.9, 0.7, -1.4), TRIM, Enum.Material.SmoothPlastic) -- the console
+		blk(1.5, 0.12, 0.7, CFrame.new(0.9, 1.4, -1.85) * CFrame.Angles(math.rad(-30), 0, 0), kit.hex("8FA3AA"), Enum.Material.Glass).Transparency = 0.5
+		-- the outboard motor over the transom
+		blk(1.1, 1.4, 1.3, CFrame.new(0, 1.2, L0 / 2 + 0.6), DARK, Enum.Material.Metal)
+		blk(0.35, 1.8, 0.35, CFrame.new(0, -0.2, L0 / 2 + 0.75), DARK, Enum.Material.Metal)
+		-- jerry cans and a tarp-covered load (the smugglers' goods)
+		blk(1.0, 1.1, 0.6, CFrame.new(-1.2, 0.65, 3.6), kit.hex("6B3A2E"), Enum.Material.Plastic)
+		blk(2.6, 0.9, 2.2, CFrame.new(-0.5, 0.55, -3.6), kit.hex("4B5440"), Enum.Material.Fabric)
+		-- tied to a post on the bank
+		local post = V(xl - 3, ground(xl - 3, bz - 2), bz - 2)
+		local pp = kit.boxCF(m, 0.6, 3.2, 0.6, CFrame.new(post + Vector3.new(0, 1.2, 0)), kit.hex("4A3D30"), Enum.Material.Wood)
+		pp.CastShadow = false
+		local bow = (base * CFrame.new(-Wd / 2 + 0.3, Hh - 0.5, -L0 / 2 + 1)).Position
+		local top = post + Vector3.new(0, 2.3, 0)
+		local rope = kit.boxCF(m, 0.12, 0.12, (bow - top).Magnitude, CFrame.lookAt((bow + top) / 2, bow), kit.hex("9A8F78"), Enum.Material.Fabric)
+		rope.CanCollide = false
+		rope.CastShadow = false
+	end)
+
 	-- ── geometry (Dress uses it too, as B.geo) ────────────────────────────────────────────────────────────
 	local G = { kp = {}, ks = {} }
 	B.geo = G

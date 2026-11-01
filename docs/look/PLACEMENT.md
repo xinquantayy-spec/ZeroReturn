@@ -96,6 +96,9 @@ Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit
   boundary stands. Meridian has 2 portals, Border 5.
 - **Trees by the rails.** A tree or bush on a track bed or right beside it is now removed, as on roads. This includes
   one in front of Border's CITY LINE portal. The pass removed 13 on Border.
+- **SMUGGLERS' BOAT had no boat.** The exit was a beacon on the river bank. A small open motorboat is now moored
+  off the west bank beside it, its deck just above the water (terrain water fills anything below), tied to a post on
+  the bank (`Border/Play.luau`).
 - **Clutter in door swings.** The client's ground clutter (tipped bins, litter) kept clear of a door's closed leaf,
   but not of where the leaf opens, and doors that start a raid ajar moved the spot. `World.detailAvoid` now holds the
   closed leaf and the leaf at a third, two thirds and all of its swing. Before this, LookTests L02 found 11 to 19

@@ -8,6 +8,37 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Border Yard exit walk-through (2026-11-02)
+
+The same checks as Meridian's, on all 26 Border Yard exits.
+
+**Paths** (`exitcheck border 99 true`: 347 doors unlocked and opened): 25 of 26 exits are reached by every spawn that
+may use them. For the 14 scav exits, all 12 PMC spawns were walked, since no PMC may use them. **BOILER CELLAR: 0 of
+12 by the pathfinder.** The break is the top of the cabin stair (KNOWN_ISSUES 68). The way onto the first step is about
+3 studs wide, between the shaft's rail and the stair. A player walked it with the keyboard instead: from inside the
+cabin, down both flights, across the cellar and into the exit zone (D, W, A, S held through Studio, the character
+moving under its own controller).
+
+**Rules** (`exitwalk`):
+
+| Exits | In the zone | Rule met |
+|---|---|---|
+| 14 scav exits | refused: SCAVS ONLY | as a scav: extracting (8 s) |
+| CROSSROADS, TRAILER LOT, ARMY ROADBLOCK, BUNKER K-11 | extracting | |
+| NORTH LINE, OLD PUMPS, SMUGGLERS' BOAT, SMUGGLERS' HOLE (chance) | extracting once rolled open for the test | |
+| BUNKER K-13 | refused: NO POWER · THROW THE LEVER IN STORE 4 | lever on: extracting |
+| BOILER CELLAR | refused: REQUIRES BOILER HOUSE KEY | carrying KEY_BY_BOILER: extracting |
+| DORMS CAR | PAY AT THE CAR | (the fare is paid at the car) |
+
+**Looks:** SMUGGLERS' BOAT had only the beacon on the river bank. There is now a small open motorboat moored off the
+west bank beside the exit, tied to a post (`docs/maps/evidence/BY_exit_smugglers_boat.jpg`). CITY LINE's track ran
+into the boundary rock, and now has its portal (`BY_exit_city_line_portal.jpg`).
+
+**NOT VERIFIED:**
+
+- AI going down the boiler cellar stair.
+- The other 20 Border exits looked at by camera.
+
 ## Rail portals, trees by the rails, clutter in door swings (2026-11-02)
 
 | Check | Result |
