@@ -14,6 +14,7 @@ return function(ctx)
 	local kit = ctx.kit
 	local SLAB = 1.6
 	local FH = 13.5 -- height of a store front's glass and of its entrance
+	local PANE_MAX = 20 -- widest single pane of a store front's glass (a shot breaks one pane)
 
 	-- ── colours ──────────────────────────────────────────────────────────────────────────────────────────
 	local FLOOR = { [0] = C.concreteDark, [1] = hex("8C8D86"), [2] = hex("8C8D86") }
@@ -346,8 +347,18 @@ return function(ctx)
 		local kc = kindColor(u.kind)
 		wbox(par, axis, line, lo, hi, t, y0 + FH, i.top, kc, M.Plaster)
 		for _, s in solid do
-			local p = wbox(par, axis, line, s[1], s[2], 0.5, y0 - 0.1, y0 + FH, GLASS, M.Glass)
-			glassOf(p)
+			-- a run of glass between two entrances is cut into panes of at most PANE_MAX studs, so a shot breaks one pane and not a
+			-- whole front (some runs are 80 to 250 studs long); the pieces meet edge to edge
+			local pieces = math.max(1, math.ceil((s[2] - s[1]) / PANE_MAX - 0.001))
+			local pw = (s[2] - s[1]) / pieces
+			for k = 0, pieces - 1 do
+				local p = wbox(par, axis, line, s[1] + k * pw, s[1] + (k + 1) * pw, 0.5, y0 - 0.1, y0 + FH, GLASS, M.Glass)
+				glassOf(p)
+				if p then
+					-- breakable: the Glass service (server/Services/Glass.luau) finds the panes by this tag
+					CollectionService:AddTag(p, "ZR_Glass")
+				end
+			end
 		end
 		local best = nil
 		for _, h in holes do

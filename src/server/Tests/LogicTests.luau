@@ -2100,6 +2100,204 @@ function T.run(ctx)
 		end
 	end
 
+	-- Breakable glass (docs/design/GLASS.md): the maps tag their panes, every tagged pane has a hit shell that only shots and blows can
+	-- meet, a bullet breaks a pane once (one fx event) and goes on past it with a little less damage, a new raid mends it. The
+	-- mechanics run on stand-in panes far above the maps, so no raid is needed. WRITTEN 2026-11-01, NOT RUN yet.
+	if ctx and ctx.Glass and ctx.Remotes then
+		local GL, WD = ctx.Glass, ctx.World
+		local Ballistics = require(Shared.Ballistics)
+		local AmbAtlas = require(Shared.AmbAtlas)
+		local CS = game:GetService("CollectionService")
+		local CFG = GL.CFG
+		-- the sound atlas: the three glass one-shots are there, and no two regions overlap
+		do
+			local list, shapeOk = {}, true
+			for name, r in AmbAtlas do
+				if type(r) == "table" then
+					table.insert(list, r)
+					if string.find(name, "glass_break_", 1, true) == 1 then
+						shapeOk = shapeOk and type(r[1]) == "number" and type(r[2]) == "number" and r[2] >= 1 and r[2] <= 4
+							and type(r[3]) == "number" and r[3] > 0 and r[3] <= 1 and r[4] == false
+					end
+				end
+			end
+			table.sort(list, function(a, b)
+				return a[1] < b[1]
+			end)
+			local apart = true
+			for i = 2, #list do
+				apart = apart and list[i][1] >= list[i - 1][1] + list[i - 1][2] - 0.0001
+			end
+			check("glass sounds: glass_break_1 to 3 are one-shots in the ambience atlas (1 to 4 s, gain up to 1) and no two regions overlap",
+				AmbAtlas.glass_break_1 ~= nil and AmbAtlas.glass_break_2 ~= nil and AmbAtlas.glass_break_3 ~= nil and shapeOk and apart)
+		end
+		check("glass: the collision groups are made and Ballistics uses them (shots and blows are cast in ZR_Shot, which meets the hit shells); the loss is 5 to 10 percent",
+			Ballistics.shotGroup == GL.SHOT_GROUP and Ballistics.through == GL.through and CFG.keep >= 0.9 and CFG.keep <= 0.95)
+		-- how far a ray travels inside a box before it leaves (straight through, 60 degrees off, along the pane, a turned pane, no direction)
+		do
+			local size = Vector3.new(4, 3, 0.2)
+			local c0 = CFrame.new(0, 0, 0)
+			local a60 = math.rad(60)
+			local d1 = GL.exitDist(c0, size, Vector3.new(0, 0, -0.1), Vector3.new(0, 0, 1))
+			local d2 = GL.exitDist(c0, size, Vector3.new(0, 0, -0.1), Vector3.new(math.sin(a60), 0, math.cos(a60)))
+			local d3 = GL.exitDist(c0, size, Vector3.new(-2, 0, 0), Vector3.new(1, 0, 0))
+			local c1 = CFrame.new(10, 5, 3) * CFrame.Angles(0, math.rad(90), 0)
+			local d4 = GL.exitDist(c1, size, c1:PointToWorldSpace(Vector3.new(0, 0, -0.1)), c1:VectorToWorldSpace(Vector3.new(0, 0, 1)))
+			local d5 = GL.exitDist(c0, size, Vector3.zero, Vector3.zero)
+			check("glass: the way through a pane is 0.2 straight on, 0.4 at 60 degrees, the whole width along it, the same in a turned frame, and 0 (not NaN) without a direction",
+				math.abs(d1 - 0.2) < 0.001 and math.abs(d2 - 0.4) < 0.001 and math.abs(d3 - 4) < 0.001 and math.abs(d4 - 0.2) < 0.001 and d5 == 0)
+		end
+		-- the maps tag their panes
+		for _, spec in { { "border", "dorm windows" }, { "meridian", "shop fronts" } } do
+			local m = WD and WD.maps and WD.maps[spec[1]]
+			if m and m.model then
+				local n, glass, shelled = 0, 0, 0
+				for _, p in CS:GetTagged(GL.TAG) do
+					if p:IsDescendantOf(m.model) then
+						n += 1
+						if p.Material == Enum.Material.Glass then
+							glass += 1
+						end
+						local e = GL.entryOf(p)
+						if e and e.shell and e.shell.Parent ~= nil and e.shell.CanQuery and not e.shell.CanCollide and not p.CanQuery then
+							shelled += 1
+						end
+					end
+				end
+				check("glass: " .. spec[1] .. "'s " .. spec[2] .. " are tagged ZR_Glass (" .. n .. " panes, all glass, each with a hit shell and no ray stopped by the pane itself)",
+					n >= 10 and glass == n and shelled == n)
+			end
+		end
+		check("glass: every tagged pane is in the registry", GL.count() == #CS:GetTagged(GL.TAG))
+		-- stand-in panes (4 x 3, 0.1 thick) in a row with a wall 20 studs behind the first; the events the service sends are caught
+		local P0 = Vector3.new(0, 3200, 9000)
+		local made, sent = {}, {}
+		local realFx = ctx.Remotes.fx
+		ctx.Remotes.fx = function(kind, data)
+			table.insert(sent, { kind = kind, data = data })
+		end
+		local function plate(z, alpha)
+			local p = Instance.new("Part")
+			p.Name = "T_Pane"
+			p.Anchored = true
+			p.Size = Vector3.new(4, 3, 0.1)
+			p.CFrame = CFrame.new(P0 + Vector3.new(0, 0, z))
+			p.Transparency = alpha
+			p.CanCollide = true
+			p.CanQuery = true -- like Meridian's shop glass: registering makes it pass ordinary rays
+			p.Parent = workspace
+			CS:AddTag(p, GL.TAG)
+			table.insert(made, p)
+			return p
+		end
+		local function glassEvents()
+			local out = {}
+			for _, s in sent do
+				if s.kind == "glass" then
+					table.insert(out, s.data)
+				end
+			end
+			return out
+		end
+		local okGlass, errGlass = pcall(function()
+			local wall = Instance.new("Part")
+			wall.Name = "T_Wall"
+			wall.Anchored = true
+			wall.Size = Vector3.new(12, 12, 1)
+			wall.CFrame = CFrame.new(P0 + Vector3.new(0, 0, 20))
+			wall.Parent = workspace
+			table.insert(made, wall)
+			local pane = plate(0, 0.5)
+			local e = GL.register(pane)
+			check("glass: registering a pane makes its hit shell (invisible, not solid, only queryable, in its own group); the pane keeps blocking movement and stops no ray",
+				e ~= nil and e.shell ~= nil and e.shell.Parent ~= nil and e.shell.CanQuery == true and e.shell.CanCollide == false and e.shell.Transparency == 1
+				and e.shell.CollisionGroup == GL.GROUP and e.shell.Size.Z >= CFG.minThick - 0.0001 and pane.CanCollide == true and pane.CanQuery == false)
+			if not e then
+				return
+			end
+			local from, fwd = P0 + Vector3.new(0, 0, -10), Vector3.new(0, 0, 1)
+			local rp0 = RaycastParams.new()
+			rp0.FilterType = Enum.RaycastFilterType.Exclude
+			rp0.FilterDescendantsInstances = {}
+			local function cast(group)
+				local rp = RaycastParams.new()
+				rp.FilterType = Enum.RaycastFilterType.Exclude
+				rp.FilterDescendantsInstances = {}
+				if group then
+					rp.CollisionGroup = group
+				end
+				return workspace:Raycast(from, fwd * 40, rp)
+			end
+			local plain, shot = cast(nil), cast(Ballistics.shotGroup)
+			check("glass: an ordinary ray passes a whole pane and its shell and reaches the wall; a ray cast in the shot group meets the shell",
+				plain ~= nil and plain.Instance.Name == "T_Wall" and shot ~= nil and shot.Instance == e.shell)
+			local k1, f1 = nil, nil
+			if shot then
+				k1, f1 = GL.through(shot, fwd, false)
+			end
+			check("glass: through() answers a shell with the share kept and the way to just past it, nothing for any other part, and an effects trace breaks nothing",
+				k1 == CFG.keep and type(f1) == "number" and f1 > CFG.nudge and f1 < 1 and plain ~= nil and GL.through(plain, fwd, false) == nil and not GL.isBroken(pane))
+			local tres, tpos, tdist = Ballistics.trace(from, fwd, 2000, 0.1, 60, rp0)
+			check("glass: the effects trace goes on past a pane to what lies behind, along the same line, and leaves the pane whole",
+				tres ~= nil and tres.Instance.Name == "T_Wall" and math.abs(tdist - 29.5) < 1 and math.abs(tpos.X - from.X) < 0.05 and math.abs(tpos.Y - from.Y) < 0.5
+				and not GL.isBroken(pane) and pane.Transparency == 0.5)
+			-- a bullet in flight
+			local gotInst, gotPos, gotKeep
+			Ballistics.fly(from, fwd, 2000, 0.1, 60, rp0, function(res, pos, _, _, keep)
+				gotInst, gotPos, gotKeep = res.Instance, pos, keep
+			end)
+			local t0 = os.clock()
+			while gotKeep == nil and os.clock() - t0 < 2 do
+				task.wait()
+			end
+			local ev = glassEvents()
+			check("glass: a bullet in flight breaks the pane (invisible, no collision, no query, flagged GlassBroken), reaches the wall on the same line with the share kept, and one glass event carries the pane's size and the shot's direction",
+				gotInst ~= nil and gotInst.Name == "T_Wall" and gotKeep ~= nil and math.abs(gotKeep - CFG.keep) < 0.000001 and math.abs(gotPos.X - from.X) < 0.05
+				and GL.isBroken(pane) and pane.Transparency == 1 and pane.CanCollide == false and pane.CanQuery == false and e.shell.CanQuery == false
+				and pane:GetAttribute("GlassBroken") == true and #ev == 1 and ev[1].sz == pane.Size and typeof(ev[1].d) == "Vector3"
+				and (ev[1].d - fwd).Magnitude < 0.05 and typeof(ev[1].h) == "Vector3" and typeof(ev[1].cf) == "CFrame")
+			local after = cast(Ballistics.shotGroup)
+			check("glass: a broken pane stops nothing, not even a shot, breaking it again does nothing and sends nothing",
+				after ~= nil and after.Instance.Name == "T_Wall" and GL.shatter(e, shot and shot.Position or P0, fwd) == false and #glassEvents() == 1)
+			-- a new raid mends it
+			local mended = GL.reset()
+			local again = cast(Ballistics.shotGroup)
+			check("glass: reset mends the pane as the map built it (look, collision, no ray stopped), and a shot meets its shell again",
+				mended >= 1 and not GL.isBroken(pane) and pane.Transparency == 0.5 and pane.CanCollide == true and pane.CanQuery == false and e.shell.CanQuery == true
+				and pane:GetAttribute("GlassBroken") == nil and again ~= nil and again.Instance == e.shell)
+			-- a blow
+			local wallHit = cast(nil)
+			check("glass: a blow at a shell breaks the pane and is spent on it; a blow at anything else is not a pane",
+				GL.blow(e.shell, e.shell.Position, fwd, nil) == true and GL.isBroken(pane) and wallHit ~= nil and GL.blow(wallHit.Instance, wallHit.Position, fwd, nil) == false)
+			GL.reset()
+			-- three panes in a row: one bullet breaks them all and keeps the share three times over
+			local pane2, pane3 = plate(5, 0.4), plate(10, 0.3)
+			local e2, e3 = GL.register(pane2), GL.register(pane3)
+			gotInst, gotPos, gotKeep = nil, nil, nil
+			Ballistics.fly(from, fwd, 2000, 0.1, 60, rp0, function(res, pos, _, _, keep)
+				gotInst, gotPos, gotKeep = res.Instance, pos, keep
+			end)
+			t0 = os.clock()
+			while gotKeep == nil and os.clock() - t0 < 2 do
+				task.wait()
+			end
+			check("glass: one bullet through three panes breaks all three, reaches the wall and keeps the share to the third power",
+				e2 ~= nil and e3 ~= nil and gotInst ~= nil and gotInst.Name == "T_Wall" and gotKeep ~= nil and math.abs(gotKeep - CFG.keep ^ 3) < 0.000001
+				and GL.isBroken(pane) and GL.isBroken(pane2) and GL.isBroken(pane3) and math.abs(gotPos.X - from.X) < 0.05)
+			GL.reset()
+		end)
+		-- put everything back
+		ctx.Remotes.fx = realFx
+		GL.reset()
+		for _, p in made do
+			GL.unregister(p)
+			p:Destroy()
+		end
+		if not okGlass then
+			check("glass: the checks ran without an error (" .. tostring(errGlass) .. ")", false)
+		end
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

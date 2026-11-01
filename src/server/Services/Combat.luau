@@ -337,10 +337,11 @@ function Combat.shoot(player, seq, origin, dir)
 		local pm = pres and pres.Instance:FindFirstAncestorOfClass("Model")
 		predHit = predHit or (pm ~= nil and pm:FindFirstChildOfClass("Humanoid") ~= nil)
 		-- the damage comes from the bullet in flight
-		Ballistics.fly(origin, d2, v0, k, wdef.range, params, function(res, hitPos, dist)
+		Ballistics.fly(origin, d2, v0, k, wdef.range, params, function(res, hitPos, dist, _, keep)
 			if ctx.Hazards.hit(res.Instance, player) then
 				return
 			end
+			keep = type(keep) == "number" and keep or 1 -- the share of its damage the bullet kept through panes of glass
 			local model = res.Instance:FindFirstAncestorOfClass("Model")
 			local thum = model and model:FindFirstChildOfClass("Humanoid")
 			if not (thum and thum.Health > 0) then
@@ -352,7 +353,7 @@ function Combat.shoot(player, seq, origin, dir)
 				fall = math.max(Weapons.FALLOFF_MIN, 1 - (dist - fs) / (wdef.range - fs) * (1 - Weapons.FALLOFF_MIN))
 			end
 			local r = Combat.hitModel(model, {
-				dmg = ballistic.dmg * fall, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall), armorDmg = ballistic.armorDmg,
+				dmg = ballistic.dmg * fall * keep, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall) * keep, armorDmg = ballistic.armorDmg,
 				bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = res.Instance, hitPos = hitPos, attacker = player,
 				from = origin, weapon = wd.name, ammo = ammoDef and ammoDef.name or "?",
 			})
@@ -616,7 +617,11 @@ function Combat.melee(player, dir)
 	end
 	ctx.Chars.gesture(char, "slash", 0.5)
 	local head = char:FindFirstChild("Head")
-	local res = workspace:Raycast(head.Position, dir / m * wdef.range, filter(char))
+	-- the blow is cast in the shots' group, so it can meet a pane's hit shell: a pane it reaches breaks and takes the blow
+	local res = workspace:Raycast(head.Position, dir / m * wdef.range, Ballistics.shotParams(filter(char)))
+	if res and ctx.Glass and ctx.Glass.blow(res.Instance, res.Position, dir / m, player) then
+		res = nil
+	end
 	if res then
 		local model = res.Instance:FindFirstAncestorOfClass("Model")
 		local thum = model and model:FindFirstChildOfClass("Humanoid")

@@ -192,6 +192,12 @@ function Doors.reset()
 		end
 	end
 	Doors.resetSwitches()
+	if ctx.Glass then
+		local ok, err = pcall(ctx.Glass.reset) -- every broken pane is whole again
+		if not ok then
+			warn("[ZR] glass reset:", err)
+		end
+	end
 end
 
 -- test hook: flip a switch now (Dev "switch")

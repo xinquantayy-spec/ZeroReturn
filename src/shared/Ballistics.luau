@@ -15,6 +15,16 @@ B.DEFAULT_ZERO = 100
 B.STEP = 1 / 60
 B.MAX_TIME = 3
 
+-- Glass (server/Services/Glass.luau, docs/design/GLASS.md). A pane of glass has an invisible hit shell that only rays cast in the
+-- collision group B.shotGroup can touch, so the AI's sight and every other ray pass the pane as they always did. When a bullet's
+-- ray meets a shell, B.through(res, dir, real) (set by the Glass service) answers: nil = not glass, the bullet stops as before;
+-- otherwise keep, exit = the share of its damage the bullet keeps and how far along dir the far side of the pane lies. A real
+-- bullet (real = true) breaks the pane; the effects trace leaves it whole. Either way the bullet goes on from just past the pane
+-- on the same line, undeflected. Both stay nil until the Glass service has registered its groups: then nothing changes.
+B.through = nil
+B.shotGroup = nil
+B.MAX_PANES = 6 -- panes one bullet can pass in one step (the next one stops it)
+
 -- muzzle velocity in studs/s for a weapon def and its build's velocity multiplier
 function B.muzzle(wdef, velMul)
 	return (wdef.velocity or 700) * (velMul or 1) * B.STUDS_PER_M
@@ -57,18 +67,45 @@ function B.tilt(dir, a)
 	return (CFrame.fromAxisAngle(right.Unit, a) * dir).Unit
 end
 
-local function stepOnce(b, dt)
+local function stepOnce(b, dt, real)
 	local v = b.vel
 	local nv = v * math.exp(-b.k * dt) - Vector3.new(0, B.G * dt, 0)
 	local delta = (v + nv) * 0.5 * dt
-	local res = workspace:Raycast(b.pos, delta, b.params)
-	if res then
-		b.dist += (res.Position - b.pos).Magnitude
-		b.pos = res.Position
-		return res
+	local left = delta
+	local panes = 0
+	while true do
+		local res = workspace:Raycast(b.pos, left, b.params)
+		if not res then
+			break
+		end
+		local keep, far = nil, nil
+		local through = B.through
+		if through and panes < B.MAX_PANES then
+			local ok, k2, f2 = pcall(through, res, left.Unit, real)
+			if ok then
+				keep, far = k2, f2
+			end
+		end
+		if not keep then
+			b.dist += (res.Position - b.pos).Magnitude
+			b.pos = res.Position
+			return res
+		end
+		-- a pane: on from just past it, with a little less damage
+		panes += 1
+		b.keep = (b.keep or 1) * keep
+		local beyond = res.Position + left.Unit * (far or 0.1)
+		local moved = beyond - b.pos
+		b.dist += moved.Magnitude
+		b.pos = beyond
+		left -= moved
+		if left:Dot(delta) <= 0 then
+			left = Vector3.zero -- the step ended inside the pane
+			break
+		end
 	end
-	b.pos += delta
-	b.dist += delta.Magnitude
+	b.pos += left
+	b.dist += left.Magnitude
 	b.vel = nv
 	b.t += dt
 	return nil
@@ -76,9 +113,9 @@ end
 
 -- the whole arc at once (effects, the AI's near-miss check): result or nil, end position, distance, speed fraction
 function B.trace(origin, dir, v0, k, maxDist, params)
-	local b = { pos = origin, vel = dir * v0, k = k, params = params, dist = 0, t = 0 }
+	local b = { pos = origin, vel = dir * v0, k = k, params = B.shotParams(params), dist = 0, t = 0 }
 	while b.dist < maxDist and b.t < B.MAX_TIME do
-		local res = stepOnce(b, B.STEP)
+		local res = stepOnce(b, B.STEP, false)
 		if res then
 			return res, b.pos, b.dist, b.vel.Magnitude / v0
 		end
@@ -97,12 +134,22 @@ function B.copyParams(src)
 	return p
 end
 
--- real-time flight (server): onHit(result, position, distance, speed fraction) on the first hit, onEnd(position)
--- when it falls out of range or time
+-- the filter a bullet or a blow is cast with: a private copy of src, in the group that sees the panes' hit shells (once the Glass
+-- service has made the groups; before that, src's own group)
+function B.shotParams(src)
+	local p = B.copyParams(src)
+	if B.shotGroup then
+		p.CollisionGroup = B.shotGroup
+	end
+	return p
+end
+
+-- real-time flight (server): onHit(result, position, distance, speed fraction, damage kept) on the first hit (the last number is
+-- below 1 after panes of glass), onEnd(position) when it falls out of range or time
 local live = {}
 local conn
 function B.fly(origin, dir, v0, k, maxDist, params, onHit, onEnd)
-	table.insert(live, { pos = origin, vel = dir * v0, v0 = v0, k = k, params = B.copyParams(params), dist = 0, t = 0, maxDist = maxDist, onHit = onHit, onEnd = onEnd })
+	table.insert(live, { pos = origin, vel = dir * v0, v0 = v0, k = k, params = B.shotParams(params), dist = 0, t = 0, maxDist = maxDist, onHit = onHit, onEnd = onEnd })
 	if conn then
 		return
 	end
@@ -110,10 +157,10 @@ function B.fly(origin, dir, v0, k, maxDist, params, onHit, onEnd)
 		dt = math.min(dt, 1 / 20)
 		for i = #live, 1, -1 do
 			local b = live[i]
-			local res = stepOnce(b, dt)
+			local res = stepOnce(b, dt, true)
 			if res then
 				table.remove(live, i)
-				local ok, err = pcall(b.onHit, res, b.pos, b.dist, b.vel.Magnitude / b.v0)
+				local ok, err = pcall(b.onHit, res, b.pos, b.dist, b.vel.Magnitude / b.v0, b.keep or 1)
 				if not ok then
 					warn("[ZR] bullet hit:", err)
 				end

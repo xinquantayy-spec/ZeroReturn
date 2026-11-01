@@ -12,6 +12,7 @@ return function(B)
 	local points = B.points
 	local CFn, V3 = CFrame.new, Vector3.new
 	local rad = math.rad
+	local CollectionService = game:GetService("CollectionService")
 	local living = kit.model("Living", map)
 
 	local LIMIT = { props = 440, shadows = 20, dorm = 900 } -- dorm: the furniture of the dorm rooms, counted apart from the other buildings' props
@@ -777,7 +778,7 @@ return function(B)
 		g:NextNumber()
 		local r = g:NextNumber()
 		-- Tarkov's dorm windows are mostly passable openings (players vault and shoot through them), so a whole pane is the
-		-- exception: 30 % whole, 25 % half broken, 35 % open, 10 % boarded (shares ours; panes do not break yet, EFT_PARITY)
+		-- exception: 30 % whole, 25 % half broken, 35 % open, 10 % boarded (shares ours; a shot or a blow breaks a pane, Glass.luau)
 		if r < 0.30 then
 			return "whole"
 		elseif r < 0.55 then
@@ -946,7 +947,14 @@ return function(B)
 	-- ── thin glass, boards and curtains ──────────────────────────────────────────────────────────────────────────────
 	-- Glass in the window holes of one outer wall: axis "u" = the wall runs along u at v = at, "v" = along v at u = at; inward:
 	-- which way the rooms lie from it. A pane is CanCollide only (shots and sight pass it, as they passed the open hole); some
-	-- windows keep half a pane, some none, some are boarded up. Broken ones leave glass on the floor inside.
+	-- windows keep half a pane, some none, some are boarded up. Broken ones leave glass on the floor inside. Every pane carries the
+	-- tag "ZR_Glass": the Glass service (server/Services/Glass.luau) finds the breakable panes by it, so a shot or a blow breaks one.
+	local function pane(p)
+		if p then
+			CollectionService:AddTag(p, "ZR_Glass")
+		end
+		return p
+	end
 	local function glaze(f, axis, at, inward, y, holes, wallId, floor, ctx)
 		local ry = (axis == "u") and 0 or 90
 		for _, h in holes do
@@ -960,13 +968,13 @@ return function(B)
 				local style = frost and "whole" or winStyle(floor, wallId, c)
 				local gw, gh = w - 0.1, t - b - 0.1
 				if style == "whole" then
-					f:bit(gw, gh, 0.1, pu, y + b + 0.05, pv, frost and D.frost or D.glass, M.Glass, ry,
-						{ collide = true, alpha = frost and 0.12 or 0.5, shadow = false, cat = frost and "frosted" or "panes" })
+					pane(f:bit(gw, gh, 0.1, pu, y + b + 0.05, pv, frost and D.frost or D.glass, M.Glass, ry,
+						{ collide = true, alpha = frost and 0.12 or 0.5, shadow = false, cat = frost and "frosted" or "panes" }))
 				elseif style == "high" then
-					f:bit(gw, gh * 0.5, 0.1, pu, y + t - 0.05 - gh * 0.5, pv, D.glass, M.Glass, ry, { collide = true, alpha = 0.5, shadow = false, cat = "panes" })
+					pane(f:bit(gw, gh * 0.5, 0.1, pu, y + t - 0.05 - gh * 0.5, pv, D.glass, M.Glass, ry, { collide = true, alpha = 0.5, shadow = false, cat = "panes" }))
 					DC.cracked += 1
 				elseif style == "low" then
-					f:bit(gw, gh * 0.45, 0.1, pu, y + b + 0.05, pv, D.glass, M.Glass, ry, { collide = true, alpha = 0.5, shadow = false, cat = "panes" })
+					pane(f:bit(gw, gh * 0.45, 0.1, pu, y + b + 0.05, pv, D.glass, M.Glass, ry, { collide = true, alpha = 0.5, shadow = false, cat = "panes" }))
 					DC.cracked += 1
 				elseif style == "open" then
 					DC.open += 1

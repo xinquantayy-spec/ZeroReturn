@@ -819,10 +819,11 @@ local function shoot(u, t)
 		end
 		local pmod = pr and pr.Instance:FindFirstAncestorOfClass("Model")
 		hit = hit or (pmod ~= nil and pmod ~= u.model and pmod:FindFirstChildOfClass("Humanoid") ~= nil)
-		Ballistics.fly(muzzle, dir, v0, k, w.def.range, shotParams, function(r, hitPos, d)
+		Ballistics.fly(muzzle, dir, v0, k, w.def.range, shotParams, function(r, hitPos, d, _, keep)
 			if ctx.Hazards.hit(r.Instance, u.model) then
 				return
 			end
+			keep = type(keep) == "number" and keep or 1 -- the share of its damage the bullet kept through panes of glass
 			local model = r.Instance:FindFirstAncestorOfClass("Model")
 			local hum = model and model:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 and model ~= u.model then
@@ -832,7 +833,7 @@ local function shoot(u, t)
 					fall = math.max(Weapons.FALLOFF_MIN, 1 - (d - fs) / (w.def.range - fs) * (1 - Weapons.FALLOFF_MIN))
 				end
 				ctx.Combat.hitModel(model, {
-					dmg = ballistic.dmg * fall, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall), armorDmg = ballistic.armorDmg,
+					dmg = ballistic.dmg * fall * keep, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall) * keep, armorDmg = ballistic.armorDmg,
 					bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = r.Instance, hitPos = hitPos, attacker = u.model,
 					from = muzzle, weapon = w.wd.name, ammo = ammoDef and ammoDef.name or "?",
 				})

@@ -13,4 +13,7 @@ return {
 	gun_far_1 = { 50.88, 6.5, 0.6, false },
 	gun_far_2 = { 57.5, 6.5, 0.6, false },
 	gun_far_3 = { 64.12, 6.5, 0.6, false },
+	glass_break_1 = { 70.74, 2.2, 0.9, false },
+	glass_break_2 = { 73.06, 2.7, 0.9, false },
+	glass_break_3 = { 75.88, 1.8, 0.9, false },
 }

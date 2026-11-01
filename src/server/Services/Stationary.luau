@@ -303,8 +303,9 @@ function Stationary.burst(g, who, res, hitPos, dist)
 end
 
 -- a round reached something (the bullet's hit callback): same rules as Combat.shoot
-function Stationary.land(g, who, from, res, hitPos, dist)
+function Stationary.land(g, who, from, res, hitPos, dist, keep)
 	local spec = g.spec
+	keep = type(keep) == "number" and keep or 1 -- the share of its damage the round kept through panes of glass
 	if spec.round then
 		return Stationary.burst(g, who, res, hitPos, dist)
 	end
@@ -321,7 +322,7 @@ function Stationary.land(g, who, from, res, hitPos, dist)
 	end
 	local fall = Stationary.falloff(dist, spec.range)
 	local r = ctx.Combat.hitModel(model, {
-		dmg = spec.dmg * fall, pen = spec.pen * (0.85 + 0.15 * fall), armorDmg = spec.armorDmg, bleedL = spec.bleedL, bleedH = spec.bleedH,
+		dmg = spec.dmg * fall * keep, pen = spec.pen * (0.85 + 0.15 * fall) * keep, armorDmg = spec.armorDmg, bleedL = spec.bleedL, bleedH = spec.bleedH,
 		part = res.Instance, hitPos = hitPos, attacker = who, from = from, weapon = spec.name, ammo = spec.ammoName,
 	})
 	if r and typeof(who) == "Instance" and who:IsA("Player") and who.Parent then
@@ -361,8 +362,8 @@ function Stationary.fire(g, who)
 	local pres, ppos = Ballistics.trace(eye, bore, v0, k, spec.range, params)
 	local pm = pres and pres.Instance:FindFirstAncestorOfClass("Model")
 	local predHit = pm ~= nil and pm:FindFirstChildOfClass("Humanoid") ~= nil
-	Ballistics.fly(eye, bore, v0, k, spec.range, params, function(res, hitPos, dist)
-		Stationary.land(g, who, eye, res, hitPos, dist)
+	Ballistics.fly(eye, bore, v0, k, spec.range, params, function(res, hitPos, dist, _, keep)
+		Stationary.land(g, who, eye, res, hitPos, dist, keep)
 	end, function(pos)
 		Stationary.expire(g, who, pos)
 	end)

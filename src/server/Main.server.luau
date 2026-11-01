@@ -8,6 +8,16 @@ local ctx = {}
 for _, name in { "Remotes", "Store", "Profiles", "Inv", "Settle", "Assets", "World", "DetailPlan", "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Dev" } do
 	ctx[name] = require(Services:WaitForChild(name))
 end
+-- breakable glass (docs/design/GLASS.md) is optional: a fault in it is logged and the game boots without it (every use of ctx.Glass
+-- checks for it first)
+do
+	local okGlass, Glass = pcall(require, Services:WaitForChild("Glass"))
+	if okGlass then
+		ctx.Glass = Glass
+	else
+		warn("[ZR] Glass failed to load, panes will not break:", Glass)
+	end
+end
 
 ctx.Remotes.init(ctx)
 ctx.Store.init(ctx)
@@ -39,6 +49,12 @@ task.spawn(function()
 end)
 for _, name in { "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Dev" } do
 	ctx[name].init(ctx)
+end
+if ctx.Glass then
+	local okInit, errInit = pcall(ctx.Glass.init, ctx)
+	if not okInit then
+		warn("[ZR] Glass init failed, panes will not break:", errInit)
+	end
 end
 ctx.Remotes.open()
 ctx.Profiles.start()

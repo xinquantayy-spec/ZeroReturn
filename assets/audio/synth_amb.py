@@ -2,7 +2,8 @@
 """Zero Return - procedural ambience atlas (atmosphere pass, original synthesis, no samples).
 Loops: empty-mall room tone (sub rumble, air handling, wind whistling through broken skylights), mains + fluorescent
 hum for powered halls, car park tone, the IRONSIGHT gun-shop alarm siren, the power-station generator.
-One-shots: three water drips in a big hall, three far-off gunfire bursts with long echo tails.
+One-shots: three water drips in a big hall, three far-off gunfire bursts with long echo tails, three breaking-glass sounds
+(a bright crack, a spray of shards, pieces tinkling down).
 Every loop repeats EXACTLY: noise is built in the frequency domain (random phases, so it is periodic in the loop
 length), tones have a whole number of cycles per loop, and filters/reverbs are circular. No crossfade seam, so the
 game can loop the region (Sound.LoopRegion) with no click.
@@ -320,6 +321,49 @@ def gun_far(v):
 SOUNDS = {}
 
 
+# ── breakable glass (a pane shot out or smashed; Glass.luau / GlassFx.luau) ────────────────────────────────────
+def glass_ping(f, length, decay, amp=1.0):
+    """A sliver of glass ringing: a few inharmonic modes (a thin plate does not ring in whole-number ratios), dying fast."""
+    n = max(8, int(SR * length))
+    x = np.arange(n) / SR
+    s = np.zeros(n)
+    for ratio, a in ((1.0, 1.0), (2.32, 0.55), (4.19, 0.32), (6.7, 0.16)):
+        fr = f * ratio
+        if fr < 17000:
+            s += a * np.sin(TAU * fr * x + rng.uniform(0, TAU))
+    return s * env(n, 0.0004, decay) * amp
+
+
+def glass_break(v):
+    """A pane shot out: a bright crack, the sheet giving way in a spray of shards, then pieces tinkling down onto the floor.
+    v = 0 a window, 1 a thick shopfront (lower, longer), 2 a small pane (quick)."""
+    L = (2.2, 2.7, 1.8)[v]
+    n = int(SR * L)
+    s = np.zeros(n)
+    # the crack: a hard broadband snap, brightest in the top octaves, and the short bell of the whole sheet
+    m = int(SR * 0.05)
+    s = at(s, hp(noise(0.05), 2200) * env(m, 0.0002, 0.005) * 1.5, 0.0, 1.0)
+    s = at(s, lp(noise(0.05), 900) * env(m, 0.0005, 0.012) * 0.6, 0.0, 1.0)  # the thud of the sheet letting go of its frame
+    for fr, a, dec in ((2300 + 400 * v, 0.7, 0.05), (3650 + 500 * v, 0.55, 0.04), (5200.0, 0.35, 0.03)):
+        s = at(s, glass_ping(fr, 0.2, dec), 0.0, a)
+    # the collapse: a dense spray of small pieces that thins out over about half a second
+    gap = (0.0055, 0.0048, 0.0065)[v]
+    t = 0.012
+    while t < 0.55:
+        s = at(s, glass_ping(rng.uniform(1800, 9500), 0.18, rng.uniform(0.012, 0.05)), t, rng.uniform(0.15, 0.6) * np.exp(-t / 0.2))
+        t += rng.exponential(gap * (1 + 2.5 * t))
+    # glass sliding off the frame: a short fall of filtered noise
+    m = int(SR * 0.6)
+    s = at(s, bp(noise(0.6), 3200, 9000) * env(m, 0.01, 0.12) * 0.22, 0.02, 1.0)
+    # the tail: pieces tinkling onto the floor, further and further apart
+    t = 0.38 + 0.05 * v
+    while t < L - 0.25:
+        s = at(s, glass_ping(rng.uniform(2600, 10500), 0.35, rng.uniform(0.04, 0.11)), t, rng.uniform(0.06, 0.28) * np.exp(-(t - 0.3) / 0.8))
+        t += rng.exponential(0.045 + 0.09 * (t - 0.3))
+    s = reverb(s, 1.0, 0.3, 4800, 0.22)[:n]
+    return norm(s, 0.9)
+
+
 def add(name, sig, gain=1.0, loop=False):
     SOUNDS[name] = (sig, gain, loop)
 
@@ -333,6 +377,10 @@ for i in range(3):
     add(f"drip_{i + 1}", drip(i), 0.7)
 for i in range(3):
     add(f"gun_far_{i + 1}", gun_far(i), 0.6)
+# glass last: the regions above keep their start times (and the random draws that made them), so the asset already uploaded
+# still plays every earlier region correctly; only the new glass regions lie past the end of the old asset
+for i in range(3):
+    add(f"glass_break_{i + 1}", glass_break(i), 0.9)
 
 
 def write_ogg(path, sig):

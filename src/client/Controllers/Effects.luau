@@ -10,6 +10,12 @@ local Atlas = require(Shared.SoundAtlas)
 local EnvAtlas = require(Shared.EnvAtlas)
 local CombatAtlas = require(Shared.CombatAtlas)
 local AmbAtlas = require(Shared.AmbAtlas)
+-- breaking glass: the spray, the sound and the floor shards (docs/design/GLASS.md); optional, a fault in it must not take the other effects down
+local okGlassFx, GlassFx = pcall(require, script.Parent.GlassFx)
+if not okGlassFx then
+	warn("[ZR] GlassFx failed to load:", GlassFx)
+	GlassFx = nil
+end
 
 local Effects = {}
 local ctx
@@ -470,8 +476,19 @@ function Effects.init(c)
 				Effects.remoteShot(d)
 			elseif kind == "sfx" and type(d) == "table" and type(d.n) == "string" and typeof(d.p) == "Vector3" then
 				Effects.sfx(d.n, d.p, d.v or 0.8, 1, 60)
+			elseif kind == "glass" and GlassFx and type(d) == "table" then
+				local ok, err = pcall(GlassFx.burst, d)
+				if not ok then
+					warn("[ZR] glass fx:", err)
+				end
 			end
 		end)
+	end
+	if GlassFx then
+		local okGlass, errGlass = pcall(GlassFx.init, c, Effects)
+		if not okGlass then
+			warn("[ZR] GlassFx init failed:", errGlass)
+		end
 	end
 	RunService.Heartbeat:Connect(function()
 		updateDeaf()
