@@ -8,6 +8,32 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Airdrops (2026-11-02)
+
+Run in a Border Yard raid with ZR_Dev `airdrop("weapon", -21, -5255)`. The design and the gaps are in `docs/design/AIRDROPS.md`.
+
+- **The plane:** it crossed the map at 420 studs. It is the four-engine transport built from parts: high wing, T-tail. Picture: `BY_airdrop_plane.jpg`.
+- **The crate:**
+  - it left the plane over the point and came down under its canopy (`BY_airdrop_falling.jpg`);
+  - it landed after 71 s, as planned;
+  - the server's crate replaced the falling one, with the canopy collapsed beside it and red smoke rising high (`BY_airdrop_landed.jpg`).
+- **The loot:** ZR_Dev `loot` searched the crate item by item, as for any container. It held a built R-17 (red dot, light, grip, quad rail), two magazines, 108 rounds of 7.62 FMJ and a grenade.
+- **Drop points:** Border Yard has 41, Meridian Mall 80. A Meridian raid rolled no plane, which is the 80 % case.
+- **Tests, all passing:**
+
+  | Raid | LogicTests | CharTests | LookTests | MapTests |
+  |---|---|---|---|---|
+  | Border | 349 | 47 | 33 | 37 |
+  | Meridian | 349 | 47 | 33 | 37 |
+
+  New: 4 airdrop checks in LogicTests (the crates and pools, the 10 x 12 fit, the maps' numbers, the flight), and M11 in MapTests (the map in play has 6 or more open, spread drop points clear of its exits).
+
+**Not checked:**
+- the natural roll reaching its time (5 to 15 minutes in);
+- the plane's sound: silent, because the ambience atlas loads as 0.0 s long;
+- two clients;
+- phones.
+
 ## Placement round 5 on Border Yard (2026-11-02)
 
 The six builder faults fixed are listed in `docs/look/PLACEMENT.md` ("Furniture through walls, racks and stairs"). Each was checked in a Border raid with ZR_Dev `audit` and `tidylog`.

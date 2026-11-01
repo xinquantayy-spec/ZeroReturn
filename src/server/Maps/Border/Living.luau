@@ -2062,7 +2062,9 @@ return function(B)
 		f:stash("DisplayTable", "LV_PUMPSDT", "grocery", "Dusty display", -16.5, y1, 3.5, 90)
 		f:prop("Vending", -6.5, y1, -5.25, 180)
 		f:stash("Locker", "LV_PUMPSLK", "locker", "Mechanic's locker", -17.85, y1, -5.7, 180)
-		f:stash("ToolChest", "LV_PUMPSTB", "toolbox", "Tool chest", -10.3, y1, 0.75, 90) -- clear of the back door's swing (v -4.75 to -0.85)
+		-- turned along the counter, clear of the back door's swing (v -4.75 to -0.85) and of the counter (from v 2.25); at 90 degrees
+		-- it either stood in the swing or touched the counter and was not placed
+		f:stash("ToolChest", "LV_PUMPSTB", "toolbox", "Tool chest", -10.3, y1, 0.9, 0)
 		f:prop("Drum", -14.5, y1, -5.8, 0)
 		f:prop("JerryCans", -10.3, y1, -5.6, 0)
 		f:loose(-8.5, y1 + 3.9, 3.3, "register", 0.4)

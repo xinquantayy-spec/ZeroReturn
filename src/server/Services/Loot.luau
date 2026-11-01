@@ -193,6 +193,40 @@ local POOLS = {
 		{ id = "PHONE", w = 8 }, { id = "HDD", w = 6 }, { id = "RAM_STICK", w = 6 }, { id = "INTEL_FOLDER", w = 3 },
 		{ id = "SEALED_DRIVE", w = 2 }, { id = "MEDKIT_M", w = 4 }, { id = "KEY_MALL_SECURITY", w = 1 },
 	},
+	-- airdrops (Tarkov's four crates, 10 x 12 grids; Services/Airdrop.luau): the common crate a bit of everything, the
+	-- medical one meds and provisions, the supply one barter goods, the weapon one guns, mods and ammunition
+	airdrop_common = {
+		{ id = "BOLTS", w = 6 }, { id = "WIRES", w = 6 }, { id = "CAPACITOR", w = 5 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 2 },
+		{ id = "BATTERY", w = 4 }, { id = "FUEL_CAN", w = 3 }, { id = "GOLD_CHAIN", w = 3 }, { id = "MEDKIT_M", w = 6 }, { id = "MEDKIT_L", w = 3 },
+		{ id = "HEMOSTAT", w = 3 }, { id = "SPLINT", w = 4 }, { id = "PAINKILLERS", w = 4 }, { id = "WATER", w = 5 }, { id = "STEW", w = 4 },
+		{ id = "A62_FMJ", w = 6, n = { 30, 60 } }, { id = "A76_PS", w = 6, n = { 30, 60 } }, { id = "A62_AP", w = 2, n = { 20, 40 } },
+		{ id = "A9_PST", w = 4, n = { 30, 50 } }, { id = "R17_MAG", w = 3, a = { 0, 25 }, at = "A62_FMJ" }, { id = "KST_MAG", w = 3, a = { 0, 30 }, at = "A76_PS" },
+		{ id = "HELMET_C3", w = 2 }, { id = "ARMOR_C4", w = 1.5 }, { id = "RIG_CHEST", w = 2 }, { id = "BAG_PATROL", w = 1.5 }, { id = "HEADSET_GS1", w = 1.5 },
+		{ id = "R17_RIFLE", w = 1 }, { id = "KST_RIFLE", w = 1 }, { id = "SPARROW_SMG", w = 1 }, { id = "GREN_RK5", w = 3 }, { id = "GREN_F7", w = 1 },
+	},
+	airdrop_medical = {
+		{ id = "MEDKIT_L", w = 8 }, { id = "MEDKIT_XL", w = 3 }, { id = "MEDKIT_M", w = 10 }, { id = "SURGKIT", w = 3 }, { id = "HEMOSTAT", w = 8 },
+		{ id = "SPLINT", w = 8 }, { id = "TOURNIQUET", w = 8 }, { id = "PAINKILLERS", w = 8 }, { id = "BANDAGE", w = 8 }, { id = "MED_TOOLS", w = 4 },
+		{ id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "HARDTACK", w = 5 }, { id = "VOLT_DRINK", w = 3 }, { id = "JUICE", w = 3 },
+		{ id = "CHOC_BAR", w = 3 },
+	},
+	airdrop_supply = {
+		{ id = "BOLTS", w = 8 }, { id = "DUCT_TAPE", w = 8 }, { id = "WIRES", w = 8 }, { id = "SPARK_PLUG", w = 6 }, { id = "CAPACITOR", w = 6 },
+		{ id = "LOGIC_BOARD", w = 5 }, { id = "MIL_CIRCUIT", w = 3 }, { id = "SIGNAL_COIL", w = 5 }, { id = "CERAMIC_FUSE", w = 5 },
+		{ id = "BATTERY", w = 5 }, { id = "FUEL_CAN", w = 4 }, { id = "DECK_TRANSCEIVER", w = 3 }, { id = "FLASH_MODULE", w = 4 },
+		{ id = "SEALED_DRIVE", w = 2 }, { id = "GOLD_CHAIN", w = 4 }, { id = "CAPT_WATCH", w = 3 }, { id = "COLD_WALLET", w = 1 },
+		{ id = "WEAPON_KIT", w = 2 }, { id = "MULTITOOL", w = 3 },
+	},
+	airdrop_weapon = {
+		{ id = "R17_RIFLE", w = 3 }, { id = "KST_RIFLE", w = 3 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "P9_PISTOL", w = 2 },
+		{ id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" }, { id = "R17_MAG40", w = 2, a = { 0, 40 }, at = "A62_FMJ" },
+		{ id = "KST_MAG", w = 4, a = { 0, 30 }, at = "A76_PS" }, { id = "KST_MAG_POLY", w = 2, a = { 0, 30 }, at = "A76_PS" },
+		{ id = "SPARROW_MAG", w = 3, a = { 0, 30 }, at = "A9_PST" }, { id = "A62_FMJ", w = 5, n = { 40, 60 } }, { id = "A62_AP", w = 3, n = { 20, 50 } },
+		{ id = "A76_PS", w = 5, n = { 40, 60 } }, { id = "A76_BP", w = 2, n = { 20, 40 } }, { id = "A12_SLUG", w = 2, n = { 10, 20 } },
+		{ id = "A76L_LPS", w = 2, n = { 20, 40 } }, { id = "RED_DOT", w = 2 }, { id = "SIGHT_MICRO", w = 1 }, { id = "GRIP_V", w = 2 },
+		{ id = "LIGHT_T", w = 2 }, { id = "LASER_DOT", w = 1 }, { id = "R17_COMP", w = 1 }, { id = "KST_FH_SLANT", w = 1 }, { id = "AR_STK_CARB", w = 1 },
+		{ id = "GREN_F7", w = 2 }, { id = "GREN_RK5", w = 3 }, { id = "ARMOR_C4", w = 1 }, { id = "ARMOR_C5", w = 0.5 }, { id = "HELMET_C4", w = 1 },
+	},
 }
 Loot.POOLS = POOLS
 
@@ -612,6 +646,23 @@ function Loot.spawnPile(pos, bundles)
 	containers[cid] = c
 	part:FindFirstChildOfClass("ProximityPrompt").Triggered:Connect(function(p)
 		c.revealed[p] = #c.order -- dropped gear needs no search
+		Loot.open(p, cid)
+	end)
+	return c
+end
+
+-- a crate dropped in the raid (airdrops): a box holder of w x h filled from `pool`, searched item by item like any
+-- container, and cleared with the raid. part = the crate's body (it carries the prompt); o = { label, pool, w, h, count,
+-- seed }. Returns the container.
+function Loot.spawnCrate(part, o)
+	pileN += 1
+	local cid = "D" .. pileN
+	local rand = Random.new(o.seed or math.random(1, 2 ^ 30))
+	local holder = Inv.newHolder("box", o.w or 10, o.h or 12)
+	local c = { id = cid, kind = "airdrop", label = o.label or "Supply crate", part = part, holder = holder, revealed = {}, viewers = {}, searching = {}, temp = true }
+	c.order = Loot.fill(holder, rand, o.pool or "airdrop_common", o.count or 10)
+	containers[cid] = c
+	prompt(part, c.label, "Search").Triggered:Connect(function(p)
 		Loot.open(p, cid)
 	end)
 	return c

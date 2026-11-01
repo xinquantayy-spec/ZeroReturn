@@ -260,7 +260,7 @@ Gaps (not copied or not found):
 | Tarkov | Zero Return | To do |
 |---|---|---|
 | Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
-| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | The second boss (the hammer boss), airdrops, co-op, flare and transit extracts, the car exit's karma pricing (the car itself is built: "Car exits" below), the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
+| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | Co-op, flare and transit extracts, the car exit's karma pricing (the car itself is built: "Car exits" below), the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
 
@@ -452,7 +452,13 @@ Gaps (not copied or not found):
   - the body's health scales evenly (thorax 235 against 320);
   - the arms keep the gun pose while he swings;
   - no ambush or breaching.
-- **Airdrops** (20 %, 6 or more players, 5 to 15 minutes in): there is no airdrop system; the numbers sit in `L.hazard.airdrop`.
+- **Airdrops: built 2026-11-02** (`docs/design/AIRDROPS.md`). Each raid rolls 20 % with 6 or more alive (people and AI);
+  the plane comes 5 to 15 minutes in, at most once. A crate (common, medical, supply or weapon; 10 x 12) comes down under
+  a canopy and gives off red smoke. Gaps:
+  - the plane is silent until a sound is uploaded;
+  - no red flare to call one;
+  - drop points are found as open level ground, not Tarkov's fixed zones;
+  - no bonus backpack.
 - **Co-op, flare and transit extracts**: WEST CAMP is scav-only, RIVER PATH is a plain exit (no green flare), and the transits to Streets
   and Customs do not exist.
 - **SUBSTATION CAR** was a plain paid exit when part 3 was written; it is a vehicle exit now (see "Car exits" below: 50 % chance, pay at the car, 4 seats, shared countdown, single use). Still a gap: no Scav karma in the price.

@@ -1059,6 +1059,44 @@ function T.run(ctx)
 		check("stoker: he has a look of his own", Equipment.LOOKS.stoker ~= nil and Equipment.lookKey("stoker") == "stoker")
 	end
 
+	-- airdrops (Services/Airdrop.luau): Tarkov's four crates, their pools, a full crate fits its 10 x 12 grid, the
+	-- maps' roll numbers
+	if ctx and ctx.Airdrop and ctx.Loot then
+		local A = ctx.Airdrop
+		local WPmod = require(game:GetService("ReplicatedStorage").ZR.WeaponParts)
+		local kinds, bad = {}, {}
+		for _, t in A.TYPES do
+			kinds[t.id] = true
+			for _, e in ctx.Loot.POOLS[t.pool] or {} do
+				if not Items.defs[e.id] and not (WPmod.defs and WPmod.defs[e.id]) and not (WPmod.PARTS and WPmod.PARTS[e.id]) then
+					table.insert(bad, e.id)
+				end
+			end
+			if not ctx.Loot.POOLS[t.pool] then
+				table.insert(bad, t.pool)
+			end
+		end
+		check("airdrop: four crates (common, medical, supply, weapon), every pool item exists",
+			kinds.common and kinds.medical and kinds.supply and kinds.weapon and #bad == 0, table.concat(bad, ","))
+		local fits = true
+		for _, t in A.TYPES do
+			local holder = Inv.newHolder("box", 10, 12)
+			local order = ctx.Loot.fill(holder, Random.new(11), t.pool, t.count[2])
+			if #order < math.floor(t.count[2] * 0.6) then
+				fits = false
+			end
+		end
+		check("airdrop: a crate's most items (up to 18) go into its 10 x 12 grid", fits)
+		local okB, LB = pcall(require, script.Parent.Parent.Maps.Border.Layout)
+		local okM, LM = pcall(require, script.Parent.Parent.Maps.Meridian.Layout)
+		local ab = okB and LB.hazard and LB.hazard.airdrop
+		local am = okM and LM.hazard and LM.hazard.airdrop
+		check("airdrop: Border Yard and Meridian roll Tarkov's numbers (20 %, 6 people, 300 to 900 s in)",
+			ab and am and ab.chance == 0.2 and am.chance == 0.2 and ab.minPlayers == 6 and am.minPlayers == 6 and ab.first[1] == 300 and ab.first[2] == 900)
+		check("airdrop: the plane flies its run at drop height and the crate sinks slowly (about 7 studs a second)",
+			A.ALT >= 300 and A.RUN >= 1000 and A.FALL > 4 and A.FALL < 10)
+	end
+
 	-- remote de-dupe
 	if ctx and ctx.Remotes then
 		local calls = 0

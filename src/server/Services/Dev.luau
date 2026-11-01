@@ -582,6 +582,50 @@ end
 -- force the Foreman on (true), off (false) or back to chance (nil) for the next raids
 -- boss(true|false|nil) forces every boss of the map in or out of the next raid (nil: rolled); boss(on, label) one of
 -- them by its label ("Caretaker", "Stoker"); boss(nil, label) gives that one back to the roll
+-- airdrops (Services/Airdrop.luau): airdrop(kind, x, z) sends the plane now in the running raid, kind one of common,
+-- medical, supply, weapon (nil: rolled), x and z a world point (nil: one of the map's drop points);
+-- airdrop("force", on) makes every raid from the next on have its plane (true), none (false) or roll (nil);
+-- airdrop("points") lists the map's drop points; airdrop("status") the raid's plane plan
+function C.airdrop(kind, x, z)
+	local A = ctx.Airdrop
+	if not A then
+		return "no airdrop service"
+	end
+	if kind == "force" then
+		A.force = x
+		return "force=" .. tostring(x)
+	end
+	if kind == "status" then
+		local plan = A.plan
+		return HttpService:JSONEncode({
+			raid = A.raid, force = A.force, dropped = A.dropped, crates = #A.crates,
+			plan = plan and { inS = math.floor(plan.at - workspace:GetServerTimeNow()), minPlayers = plan.minPlayers, forced = plan.forced } or nil,
+			points = A.points[ctx.World.activeMap] and #A.points[ctx.World.activeMap] or nil,
+		})
+	end
+	if kind == "points" then
+		local pts = A.findPoints(ctx.World.activeMap)
+		local out = {}
+		for _, p in pts do
+			table.insert(out, string.format("%.0f,%.0f,%.0f", p.X, p.Y, p.Z))
+		end
+		return #pts .. " points: " .. table.concat(out, " ")
+	end
+	local at = nil
+	if x and z then
+		local rp = RaycastParams.new()
+		rp.FilterType = Enum.RaycastFilterType.Include
+		rp.FilterDescendantsInstances = { workspace.Terrain, workspace:FindFirstChild("ZR_World") }
+		local h = workspace:Raycast(Vector3.new(x, 700, z), Vector3.new(0, -1000, 0), rp)
+		at = h and h.Position or Vector3.new(x, 0, z)
+	end
+	local d, err = A.drop(kind, at)
+	if not d then
+		return "no drop: " .. tostring(err)
+	end
+	return string.format("plane away: %s crate, lands at %.0f, %.0f, %.0f in %.0f s", d.kind, d.pos.X, d.pos.Y, d.pos.Z, d.release + d.fall)
+end
+
 function C.boss(on, label)
 	if label then
 		ctx.AI.forceBossId = ctx.AI.forceBossId or {}

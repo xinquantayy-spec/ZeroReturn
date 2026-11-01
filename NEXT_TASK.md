@@ -50,10 +50,19 @@ Next round (`KNOWN_ISSUES` 69):
    - health through `opts.hp` (1,220 / 440 = 2.77).
 
    No new meshes can be uploaded from the cloud (Open Cloud needs the owner's key), so his look reuses existing gear, logged as a gap.
+2b. **Done 2026-11-02, after the Stoker, all checked in Studio:**
+   - road beds on both maps: roads follow the smoothed relief and lie level across (`Maps/RoadBeds.luau`, ZR_Dev `roadaudit`);
+   - placement round 5 on Border: the fuel stop office, STORE 3, STORE 7, the motor shop stores, the Red Stores and Old Pumps (`docs/look/PLACEMENT.md`);
+   - airdrops: Tarkov's plane and four crates on Border and Meridian (`docs/design/AIRDROPS.md`).
+
+   Left from these:
+   - KNOWN_ISSUES 72: grass blades inside STORE 3;
+   - KNOWN_ISSUES 73: the ambience atlas is silent until the owner re-uploads it;
+   - the red flare.
 3. **Performance on phones:** Border Yard and Meridian stream 16,000 to 18,600 parts near the player (KNOWN_ISSUES 65); try a smaller streaming radius in Studio's Workspace settings and merge plain walls, then measure in the device emulator.
 4. **Border Yard polish:** dorm interiors are done (furniture, washrooms, doors, glass; checked in Studio 2026-11-01). Still to do: the 0.16 interiors elsewhere, ladders, and the AI paths on Border stairs (KNOWN_ISSUES 68; the boiler cellar was inspected 2026-11-01).
 5. **Mounted guns, the rest:** the grenade launcher by hand, gamepad and touch, AI gunners firing a mounted gun, Blender art.
-6. Then the remaining parity list in `EFT_PARITY.md` (hideout customisation, MASTERING, co-op extracts and transits, other boss groups, Interchange's second boss).
+6. Then the remaining parity list in `EFT_PARITY.md`: hideout customisation, co-op extracts and transits, other boss groups (Customs' Goons, cultists, the partisan), the red flare calling an airdrop.
 
 **Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file). Decisions that can wait: publishing, a cross-server flea market (MemoryStore).
 

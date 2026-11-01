@@ -156,6 +156,16 @@
     Check the Terrain's Decoration and GrassLength settings in Studio. Hiding the wall part for a moment would show
     where the blades grow from.
 
+73. **The ambience sound atlas loads as 0.0 s long (seen 2026-11-02).** The client logs "the ambience atlas asset is 0.0 s
+    long ... silent until ZR_SFX_Amb is re-uploaded". Everything that plays from it is silent:
+    - the mall's room tone and hum, drips and distant gunfire;
+    - the IRONSIGHT siren and the substation generator;
+    - breaking glass;
+    - the airdrop plane's engine drone.
+
+    The asset id is in `Sounds.AMB_ATLAS`. The owner needs to re-upload `ZR_SFX_Amb` from the laptop (Open Cloud key) and
+    put the new id there. A real plane engine sound would come in the same upload (`docs/design/AIRDROPS.md`).
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

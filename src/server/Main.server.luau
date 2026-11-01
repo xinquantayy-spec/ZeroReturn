@@ -18,6 +18,15 @@ do
 		warn("[ZR] Glass failed to load, panes will not break:", Glass)
 	end
 end
+-- airdrops (Services/Airdrop.luau) are optional too: a fault is logged and the raid runs without the plane
+do
+	local okAir, Airdrop = pcall(require, Services:WaitForChild("Airdrop"))
+	if okAir then
+		ctx.Airdrop = Airdrop
+	else
+		warn("[ZR] Airdrop failed to load, no planes this server:", Airdrop)
+	end
+end
 
 ctx.Remotes.init(ctx)
 ctx.Store.init(ctx)
@@ -50,6 +59,9 @@ end)
 for _, name in { "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Dev" } do
 	ctx[name].init(ctx)
 end
+if ctx.Airdrop then
+	ctx.Airdrop.init(ctx)
+end
 if ctx.Glass then
 	local okInit, errInit = pcall(ctx.Glass.init, ctx)
 	if not okInit then
@@ -71,4 +83,7 @@ ctx.Hazards.start()
 ctx.Stationary.start()
 ctx.Lobby.start()
 ctx.Range.start()
+if ctx.Airdrop then
+	ctx.Airdrop.start()
+end
 print("[ZR] server ready", Config.BUILD, "persistence:", ctx.Store.mode)

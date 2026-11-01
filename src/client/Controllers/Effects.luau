@@ -11,6 +11,12 @@ local EnvAtlas = require(Shared.EnvAtlas)
 local CombatAtlas = require(Shared.CombatAtlas)
 local AmbAtlas = require(Shared.AmbAtlas)
 -- breaking glass: the spray, the sound and the floor shards (docs/design/GLASS.md); optional, a fault in it must not take the other effects down
+-- airdrops: the plane, its flares and the falling crate (Services/Airdrop.luau); optional like the glass
+local okAirdropFx, AirdropFx = pcall(require, script.Parent.AirdropFx)
+if not okAirdropFx then
+	warn("[ZR] AirdropFx failed to load:", AirdropFx)
+	AirdropFx = nil
+end
 local okGlassFx, GlassFx = pcall(require, script.Parent.GlassFx)
 if not okGlassFx then
 	warn("[ZR] GlassFx failed to load:", GlassFx)
@@ -476,6 +482,11 @@ function Effects.init(c)
 				Effects.remoteShot(d)
 			elseif kind == "sfx" and type(d) == "table" and type(d.n) == "string" and typeof(d.p) == "Vector3" then
 				Effects.sfx(d.n, d.p, d.v or 0.8, 1, 60)
+			elseif kind == "airdrop" and AirdropFx and type(d) == "table" then
+				local ok, err = pcall(AirdropFx.run, d)
+				if not ok then
+					warn("[ZR] airdrop fx:", err)
+				end
 			elseif kind == "glass" and GlassFx and type(d) == "table" then
 				local ok, err = pcall(GlassFx.burst, d)
 				if not ok then
@@ -483,6 +494,9 @@ function Effects.init(c)
 				end
 			end
 		end)
+	end
+	if AirdropFx then
+		AirdropFx.init(c, Effects)
 	end
 	if GlassFx then
 		local okGlass, errGlass = pcall(GlassFx.init, c, Effects)

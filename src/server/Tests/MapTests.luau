@@ -258,6 +258,36 @@ function T.run(ctx)
 		check("M10 the forest stands (solid trunks, crowns and bushes pass shots)", trunks > 600 and crownsQuiet, trunks)
 	end
 
+	-- M11 airdrops: the map in play (Border Yard or Meridian) has open drop points, spread out and clear of its exits
+	local W2 = ctx and ctx.World
+	local A = ctx and ctx.Airdrop
+	if W2 and A and (W2.activeMap == "border" or W2.activeMap == "meridian") then
+		local pts = A.findPoints(W2.activeMap)
+		local rp = RaycastParams.new()
+		rp.FilterType = Enum.RaycastFilterType.Include
+		rp.FilterDescendantsInstances = { workspace.Terrain, workspace:FindFirstChild("ZR_World") }
+		local open, spread, clear = true, true, true
+		for i, p in pts do
+			local h = workspace:Raycast(p + Vector3.new(0, 600, 0), Vector3.new(0, -620, 0), rp)
+			if not h or h.Instance ~= workspace.Terrain or (h.Position - p).Magnitude > 1 then
+				open = false
+			end
+			for j = i + 1, #pts do
+				if (pts[j] - p).Magnitude < 200 then
+					spread = false
+				end
+			end
+			for _, e in W2.extracts or {} do
+				local ep = e.pos or (e.cf and e.cf.Position)
+				if ep and (Vector3.new(ep.X, 0, ep.Z) - Vector3.new(p.X, 0, p.Z)).Magnitude < 60 then
+					clear = false
+				end
+			end
+		end
+		check("M11 airdrop points: at least 6 on " .. W2.activeMap .. ", under open sky, 200+ studs apart, clear of the exits",
+			#pts >= 6 and open and spread and clear, #pts)
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")
