@@ -20,6 +20,7 @@ return function(ctx)
 	local INTERIOR = hex("7B7D75")
 	local ROOF = hex("5A5D59")
 	local METAL = C.metalDark
+	local GLASS = ctx.GLASS or hex("9CC2CA") -- shopfront glass (set by Mall.luau)
 	local KIND = {
 		clothing = hex("6B4E5E"), electronics = hex("3E5868"), food = hex("8A5A3A"), general = hex("5E6448"), homeware = hex("7A6A4E"),
 		books = hex("5A4A3A"), lighting = hex("8A7A3E"), shoes = hex("7A3E33"), sports = hex("3D5A57"), toys = hex("A2693A"),
