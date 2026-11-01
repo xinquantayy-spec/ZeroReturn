@@ -8,7 +8,9 @@
 --   swings     each door hangs the way that opens widest (hinge at either end, opening to either side); a prop without
 --              loot in its way is removed; a door that still meets a wall or loot opens less far
 --   twins      the second of two identical props on the same spot is removed
---   trees      a trunk, crown or bush grown through a building, a fence, a rock or another solid is removed
+--   trees      a trunk, crown or bush grown through a building, a fence, a rock or another solid is removed, and one
+--              standing on a road
+--   fences     a fence piece run into a building's wall or floor is removed (the fence stops at the building)
 --   stacked    of two props sharing more than 40 % of the smaller one's box, the smaller is removed (a chair under a desk stays)
 --   water      an outdoor dressing prop standing on water or over nothing is removed (a boat-sized one, 16 studs or more, stays)
 --   sunk       a floor-standing prop sunk into a floor slab or the ground is lifted onto it
@@ -140,7 +142,7 @@ Tidy.last = {}
 
 function Tidy.run(mapId, model, doors)
 	local t0 = os.clock()
-	local res = { doorways = 0, swing = 0, doorsTurned = 0, doorsShort = 0, twins = 0, stacked = 0, trees = 0, water = 0, waterBig = 0, sunk = 0, walls = 0, wallsGone = 0, wallsLeft = 0 }
+	local res = { roadTrees = 0, fences = 0, doorways = 0, swing = 0, doorsTurned = 0, doorsShort = 0, twins = 0, stacked = 0, trees = 0, water = 0, waterBig = 0, sunk = 0, walls = 0, wallsGone = 0, wallsLeft = 0 }
 	local log = {}
 	Tidy.last[mapId] = log
 	local function note(what, m, detail)
@@ -391,6 +393,67 @@ function Tidy.run(mapId, model, doors)
 		if b.Parent and blocked(b, 0.45, 0.5) then
 			b:Destroy()
 			res.trees += 1
+		end
+	end
+
+	-- 3b. outdoors: a tree or a bush standing on a road goes; a fence piece run into a building (its wall, its floor) goes,
+	-- so the fence stops at the building as Tarkov's do
+	local roads = model:FindFirstChild("Roads")
+	if roads then
+		local rop = OverlapParams.new()
+		rop.FilterType = Enum.RaycastFilterType.Include
+		rop.FilterDescendantsInstances = { roads }
+		for _, list in { trunks, bushes } do
+			for _, t in list do
+				if t.Parent then
+					local foot = CFrame.new(t.Position.X, t.Position.Y - t.Size.Y / 2 + 0.5, t.Position.Z)
+					if #workspace:GetPartBoundsInBox(foot, Vector3.new(t.Size.X * 0.5, 1.5, t.Size.Z * 0.5), rop) > 0 then
+						if t.Name == "Trunk" then
+							local c = crownOf(t)
+							if c then
+								c:Destroy()
+							end
+						end
+						t:Destroy()
+						res.roadTrees += 1
+					end
+				end
+			end
+		end
+	end
+	local fences = model:FindFirstChild("Fences")
+	if fences then
+		local blds = {}
+		for _, n in { "Living", "Works", "Outside", "Mall", "StoresL1", "StoresL2", "StoresFill" } do
+			local f = model:FindFirstChild(n)
+			if f then
+				table.insert(blds, f)
+			end
+		end
+		if #blds > 0 then
+			local fop = OverlapParams.new()
+			fop.FilterType = Enum.RaycastFilterType.Include
+			fop.FilterDescendantsInstances = blds
+			fop.RespectCanCollide = true
+			for i, p in fences:GetDescendants() do
+				if i % 500 == 0 then
+					task.wait()
+				end
+				if p:IsA("BasePart") and p.Transparency < 0.99 then
+					local inner = Vector3.new(math.max(0.05, p.Size.X - 0.4), math.max(0.05, p.Size.Y - 0.4), math.max(0.05, p.Size.Z - 0.4))
+					for _, q in workspace:GetPartBoundsInBox(p.CFrame, inner, fop) do
+						if structural(q) and kitOf(q, model) == nil and string.sub(q.Name, 1, 5) ~= "Loot_" then
+							local rel = q.CFrame:PointToObjectSpace(p.Position)
+							local insideXZ = math.abs(rel.X) < q.Size.X / 2 and math.abs(rel.Z) < q.Size.Z / 2
+							if insideXZ or (intoWall(p.CFrame, p.Size, q)) > 0.5 then
+								p:Destroy()
+								res.fences += 1
+								break
+							end
+						end
+					end
+				end
+			end
 		end
 	end
 

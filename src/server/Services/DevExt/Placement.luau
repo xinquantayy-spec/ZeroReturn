@@ -12,6 +12,8 @@
 --   stacked   two props sharing more than 40 % of the smaller one's box
 --   tree      a tree trunk inside a building, or a crown or bush through a roof or wall
 --   container a loot container's own box (crate, safe, drawers) run into a prop or a wall
+--   road      a tree trunk or a bush standing on a road
+--   fences / rails / power  a fence, a rail or a power pole run through a building
 local HttpService = game:GetService("HttpService")
 
 return function(C, ctx)
@@ -327,6 +329,72 @@ return function(C, ctx)
 				if p:IsDescendantOf(model) and structural(p) and p.Name ~= "Trunk" and ownerKit(p) == nil then
 					note("tree", t.Name, t.Position, "inside " .. p:GetFullName():sub(-60))
 					break
+				end
+			end
+		end
+
+		-- 9. outdoors: trees and bushes on a road; fences, rails and power poles run through a building
+		local function folder(name)
+			return model:FindFirstChild(name)
+		end
+		local roads = folder("Roads")
+		if roads then
+			local op3 = OverlapParams.new()
+			op3.FilterType = Enum.RaycastFilterType.Include
+			op3.FilterDescendantsInstances = { roads }
+			for i, t in trees do
+				if i % 400 == 0 then
+					task.wait()
+				end
+				if t.Name ~= "Crown" then
+					-- the foot of the trunk or the bush, a little inside its outline
+					local foot = CFrame.new(t.Position.X, t.Position.Y - t.Size.Y / 2 + 0.5, t.Position.Z)
+					local hits = workspace:GetPartBoundsInBox(foot, Vector3.new(t.Size.X * 0.5, 1.5, t.Size.Z * 0.5), op3)
+					if #hits > 0 then
+						note("road", t.Name, t.Position, "stands on " .. hits[1].Name .. " " .. vs(hits[1].Size))
+					end
+				end
+			end
+		end
+		local buildingSets = {}
+		for _, n in { "Living", "Works", "Outside", "Mall", "StoresL1", "StoresL2", "StoresFill" } do
+			local f = folder(n)
+			if f then
+				table.insert(buildingSets, f)
+			end
+		end
+		if #buildingSets > 0 then
+			local op4 = OverlapParams.new()
+			op4.FilterType = Enum.RaycastFilterType.Include
+			op4.FilterDescendantsInstances = buildingSets
+			op4.RespectCanCollide = true
+			for _, fname in { "Fences", "Rails", "Power" } do
+				local f = folder(fname)
+				if f then
+					local seen = {}
+					for i, p in f:GetDescendants() do
+						if i % 500 == 0 then
+							task.wait()
+						end
+						if p:IsA("BasePart") and p.Transparency < 0.99 then
+							local inner = Vector3.new(math.max(0.05, p.Size.X - 0.4), math.max(0.05, p.Size.Y - 0.4), math.max(0.05, p.Size.Z - 0.4))
+							for _, q in workspace:GetPartBoundsInBox(p.CFrame, inner, op4) do
+								if structural(q) and ownerKit(q) == nil then
+									-- one note per building for each fence, rail or line
+									local bld = q
+									while bld.Parent and not table.find(buildingSets, bld.Parent) do
+										bld = bld.Parent
+									end
+									local key = (p.Parent and p.Parent.Name or "?") .. "|" .. bld.Name
+									if not seen[key] then
+										seen[key] = true
+										note(string.lower(fname), (p.Parent and p.Parent.Name or "?") .. " through " .. bld.Name, p.Position, p.Name .. " " .. vs(p.Size) .. " into " .. q.Name .. " " .. vs(q.Size))
+									end
+									break
+								end
+							end
+						end
+					end
 				end
 			end
 		end

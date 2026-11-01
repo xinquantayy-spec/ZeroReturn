@@ -1827,8 +1827,8 @@ function World.build()
 				return require(script.Parent.Parent.Maps.Tidy).run(id, mm.model, World.doors)
 			end)
 			if okT then
-				print(string.format("[ZR] %s tidy: %d out of doorways, %d out of door swings, %d doors re-hung, %d doors open less than 100 degrees, %d twins, %d stacked, %d trees, %d off water (%d big ones kept), %d lifted, %d out of walls (%d removed, %d left), %.2fs",
-					id, tidy.doorways, tidy.swing, tidy.doorsTurned, tidy.doorsShort, tidy.twins, tidy.stacked, tidy.trees, tidy.water, tidy.waterBig, tidy.sunk, tidy.walls, tidy.wallsGone, tidy.wallsLeft, tidy.seconds))
+				print(string.format("[ZR] %s tidy: %d trees off roads, %d fence pieces out of buildings, %d out of doorways, %d out of door swings, %d doors re-hung, %d doors open less than 100 degrees, %d twins, %d stacked, %d trees, %d off water (%d big ones kept), %d lifted, %d out of walls (%d removed, %d left), %.2fs",
+					id, tidy.roadTrees, tidy.fences, tidy.doorways, tidy.swing, tidy.doorsTurned, tidy.doorsShort, tidy.twins, tidy.stacked, tidy.trees, tidy.water, tidy.waterBig, tidy.sunk, tidy.walls, tidy.wallsGone, tidy.wallsLeft, tidy.seconds))
 			else
 				warn("[ZR] " .. id .. " tidy failed: " .. tostring(tidy))
 			end

@@ -31,7 +31,8 @@ for this reason.
 | Doorways | Removes props standing in a closed leaf's opening, up to 1.2 studs either side. |
 | Door swings | Doors.luau turns a leaf about its hinge. Each door is tried in all four ways it can hang: hinge at either end, opening to either side. It takes the way that opens widest, up to 100°. A wall, a column, a tank or anything holding loot stops the leaf. The choice is stored in `d.hinge`, `d.turn` and `d.swing`, and the handle moves to the free end. Props without loot in the chosen swing are removed. |
 | Twins | Removes the second of two identical props on one spot. |
-| Trees | Removes a trunk (with its crown), a crown or a bush that has grown through a building, a fence or a rock. |
+| Trees | Removes a trunk (with its crown), a crown or a bush that has grown through a building, a fence or a rock, or that stands on a road. |
+| Fences | Removes a fence piece that runs into a building's wall or floor, so the fence stops at the building. |
 | Water | Removes an outdoor dressing prop that stands on water or over nothing at its centre and all four corners. Props of 16 studs or more stay. |
 | Sunk | Lifts a prop that stands 0.15 to 0.3 studs into a floor or the ground onto the surface. |
 | Walls | Pushes a prop out of a wall, an upright tank (radial test), a wall fitting's collider, or a bigger prop on the same floor. It can take up to three pushes, so a prop gets out of a corner. The total move is at most half the prop's width. Small loose dressing that cannot be freed is removed: it is at most 4.5 studs and not a chair. Furniture and loot are left and logged. |
@@ -56,6 +57,8 @@ examples with positions. The checks:
 - **stacked:** two props share more than 40 % of the smaller box.
 - **container:** a loot container's own box runs into a prop or a wall.
 - **tree:** a trunk inside a building, or a crown through a roof.
+- **road:** a trunk or a bush on a road.
+- **fences, rails, power:** one of these running through a building. A rail spur into THE DEPOT is meant to be there.
 
 `ZR_Dev:Invoke("tidylog", mapId, what)` lists what the last tidy run did to each prop. The `what` values are:
 `doorway`, `swing`, `twin`, `stacked`, `water`, `lifted`, `moved`, `wedged`, `left` and `short`.
