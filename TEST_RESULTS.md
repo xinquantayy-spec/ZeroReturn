@@ -8,6 +8,25 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Frame rate in a separate client window (2026-11-01, Meridian)
+
+Studio on the T490, Test → Clients and Servers with one player, so the client has its own process. It was driven over Studio MCP, which can reach the test windows. Settings: Roblox quality 10 (render level 21), viewport 1274×712, the mall's power on. The views were held with a fixed camera, the benchmark loop described below, cycles of 4 views × 11 s.
+
+| Measure | Result |
+|---|---|
+| Bunker lobby, window not in front | 15.0 fps; frame times 62.7 to 71.0 ms, median 66.7 ms; render thread 10 ms a frame |
+| Meridian views, window not in front, 4 cycles | KASSA 13.5 to 14.7 fps, L2 gallery 11.8 to 14.9, car park 12.8 to 15.0, outside east 11.7 to 15.0 |
+| Game updates while not in front | PostSimulation fired 241 times in 4 s (60 a second) while frames were drawn 15 a second |
+| Render thread per drawn frame | KASSA 11 to 20 ms, L2 gallery 17 to 19, car park 15 to 21, outside east 17 to 27 |
+| Draw calls (scene + sun shadow) | KASSA about 65 to 118 + 300 to 370, L2 gallery 250 + 270, car park 235 + 350, outside east 268 + 480 |
+| KASSA, sun shadows off | render thread 11.4 → 9.8 ms |
+| KASSA, no shadow from parts under 3 / under 12 studs (226 / 1,687 parts) | no change (shadow draws 361 → 340) |
+| KASSA, the mall's 330 lamps off | no change on the render thread (graphics card time is not reported on this laptop) |
+
+So in a window that is not in front, Studio draws at most 15 frames a second while the game keeps running at 60. The 15 fps the owner saw is that cap, not the game's cost. Each frame needs 10 to 27 ms on the render thread, which would allow about 37 to 90 fps on the CPU side. The integrated graphics' share is not measured, and needs the window in front: the benchmark marks those rows FOCUSED. The earlier Play mode result below was probably capped the same way. It found "about 34 ms a frame is not drawing" and 29 fps when looking straight up, and both fit a background cap, not real overhead.
+
+Benchmark: set the workspace attribute `ZR_Bench` to a map id (`meridian`, `border`) in Edit mode and start a test. Dev.luau deploys the first player and walks the viewpoints. The client holds each view for 4 s, counts frames for 6 s and shows a table. Rows counted while the window was in the background are marked BACKGROUND.
+
 ## Frame time in Studio: where it goes (2026-11-01, Meridian, KASSA)
 
 Studio on the T490, Play mode (client and server in one process), Studio quality 10, the mall's power on. The owner's floor is 30 fps.
@@ -22,8 +41,7 @@ Studio on the T490, Play mode (client and server in one process), Studio quality
 | Detail decals off | no change; lights off: no gain; shadows off: +0.6 fps |
 | Stores L1 hidden | +3.3 fps (about 8 ms of drawing) |
 
-So drawing KASSA costs about 20 ms, the game's scripts and physics about 6 ms, and the rest of a 55 ms frame is Studio and engine overhead
-that the Roblox app does not have. The real client's frame rate is still to be measured (a Clients and Servers test, or the app).
+So drawing KASSA costs about 20 ms and the game's scripts and physics about 6 ms. At the time, the rest of a 55 ms frame was put down to Studio and engine overhead; the section above shows it was most likely Studio's cap on a window that is not in front. The real client's frame rate is still to be measured (a Clients and Servers test, or the app).
 Added after this: HOLD 30 FPS (on by default) lowers the GRAPHICS level a step whenever a device stays under 30 fps for 8 s.
 
 ## Meridian Mall on Interchange (2026-11-01)
