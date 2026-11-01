@@ -114,10 +114,11 @@ function Settle.migrate(p: any): any
 	return p
 end
 
--- progression and economy (M9): experience, skills, trader standing, purchases, tasks, hideout, karma
+-- progression and economy (M9): experience, skills, weapon mastering, trader standing, purchases, tasks, hideout, karma
 function Settle.progressFields(p: any)
 	p.xp = p.xp or 0
 	p.skills = p.skills or {}
+	p.mastering = p.mastering or {} -- [Progress.MASTERING group] = points (no schema change: older profiles start at 0)
 	p.traders = p.traders or {}
 	p.bought = p.bought or {}
 	p.quests = p.quests or {}

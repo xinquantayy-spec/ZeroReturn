@@ -397,6 +397,29 @@ local function skillUp(player, prof, id, pts, spilled)
 end
 Economy.skillUp = skillUp
 
+-- weapon mastering (Tarkov; Progress.MASTERING): points into a weapon group, kept in the profile at once like the skills
+-- (so a death keeps them) and with no raid fatigue; true when the group reached a new level
+function Economy.mastery(prof, gid, pts)
+	if not (prof and P.MASTERING[gid] and type(pts) == "number" and pts > 0) then
+		return false
+	end
+	prof.mastering = prof.mastering or {}
+	local before = P.masteryLevel(gid, prof.mastering[gid])
+	prof.mastering[gid] = (prof.mastering[gid] or 0) + pts
+	return P.masteryLevel(gid, prof.mastering[gid]) > before
+end
+
+-- a hit landed with this weapon (Weapons id): the server's only way in (Combat, once per hit and so per pellet)
+function Economy.masteryUp(player, prof, weaponId, pts)
+	local gid = weaponId and P.MASTERY_OF[weaponId]
+	if gid and Economy.mastery(prof, gid, pts) then
+		-- Tarkov's notice: "{0} mastering leveled up to {1}"
+		local lvl = P.masteryLevel(gid, prof.mastering[gid])
+		ctx.Remotes.note(player, "toast", { text = string.format("%s MASTERING LEVELED UP TO %d", string.upper(P.MASTERING[gid].name), lvl), tone = "good" })
+		ctx.Raid.push(player) -- the new level applies at once (level 3: reload while aiming)
+	end
+end
+
 -- a raid kill by this player (victimPlayer for raiders, victimModel for AI)
 function Economy.onKill(player, victimPlayer, victimModel, headshot)
 	local s = ctx.Raid.session(player)
@@ -474,8 +497,13 @@ function Economy.stateFor(prof)
 	for id in P.SKILLS do
 		skills[id] = prof.skills[id] or 0
 	end
+	-- mastering points per group (the client's MASTERING tab, and the reload rules of the weapon in hands)
+	local mastering = {}
+	for gid in P.MASTERING do
+		mastering[gid] = (prof.mastering and prof.mastering[gid]) or 0
+	end
 	return {
-		xp = prof.xp or 0, level = Economy.level(prof), skills = skills, karma = prof.karma or P.KARMA.start,
+		xp = prof.xp or 0, level = Economy.level(prof), skills = skills, mastering = mastering, karma = prof.karma or P.KARMA.start,
 		traders = traders, bought = bought, restockIn = TD.RESTOCK - (os.time() % TD.RESTOCK),
 	}
 end

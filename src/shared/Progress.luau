@@ -107,6 +107,70 @@ function P.bonus(skills: any?, id: string): number
 	return def.per * P.skillLevel(skills[id])
 end
 
+-- weapon mastering (Tarkov; docs/design/MASTERING.md): progress per weapon group, one point for every hit on a living
+-- target with a weapon of the group (every shotgun pellet that hits counts), granted on the server only. Level 1 from 0;
+-- levels 2 and 3 at the group's Level2 and Level3, both running totals of the same progress (in Tarkov's globals Level3
+-- is above Level2 in all 78 groups, and a profile keeps one progress number per group). The thresholds are Tarkov's for
+-- the group each weapon copies: R-17 = M4, KS-7 = AKM, SMG-9 = MP5, Harrow-12 = MP-133, Tundra = Mosin, P-9 = MP-443.
+-- The knife and the mounted guns have none, as in Tarkov. class = Tarkov's weapon class heading on the MASTERING tab.
+P.MASTERY_MAX = 3
+P.MASTERING = {
+	R17 = { name = "R-17", class = "ASSAULT RIFLE", level2 = 1600, level3 = 2000, weapons = { "R17" } },
+	KST = { name = "KS-7", class = "ASSAULT RIFLE", level2 = 500, level3 = 600, weapons = { "KST" } },
+	SPARROW = { name = "SMG-9", class = "SMG", level2 = 200, level3 = 250, weapons = { "SPARROW" } },
+	HARROW = { name = "Harrow-12", class = "SHOTGUN", level2 = 150, level3 = 200, weapons = { "HARROW" } },
+	TUNDRA = { name = "Tundra", class = "SNIPER RIFLE", level2 = 200, level3 = 250, weapons = { "TUNDRA" } },
+	P9 = { name = "P-9", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "P9" } },
+}
+P.MASTERY_ORDER = { "R17", "KST", "SPARROW", "HARROW", "TUNDRA", "P9" }
+-- what a level gives (Tarkov): 2 another reload animation (magazine-fed guns here), 3 reloading while aiming down sights
+P.MASTERY_PERKS = { [2] = "ANOTHER RELOAD ANIMATION", [3] = "RELOAD WHILE AIMING DOWN SIGHTS" }
+-- [weapon id] = group id (a group may hold several weapons later, as Tarkov's do)
+P.MASTERY_OF = {}
+for gid, g in P.MASTERING do
+	for _, wid in g.weapons do
+		P.MASTERY_OF[wid] = gid
+	end
+end
+
+-- a group's level (1..3) for some points
+function P.masteryLevel(gid: string, points: number?): number
+	local g = P.MASTERING[gid]
+	local p = points or 0
+	if not g then
+		return 1
+	end
+	if p >= g.level3 then
+		return 3
+	elseif p >= g.level2 then
+		return 2
+	end
+	return 1
+end
+
+-- level, and the running totals the bar runs between (from the level's start to the next level; equal at level 3)
+function P.masteryProgress(gid: string, points: number?): (number, number, number)
+	local g = P.MASTERING[gid]
+	local lvl = P.masteryLevel(gid, points)
+	if not g then
+		return 1, 0, 0
+	elseif lvl == 1 then
+		return 1, 0, g.level2
+	elseif lvl == 2 then
+		return 2, g.level2, g.level3
+	end
+	return 3, g.level3, g.level3
+end
+
+-- the mastering level of a weapon (Weapons id) from a points table (the profile's or the snapshot's); 0 = no mastering
+function P.masteryFor(mastering: any?, weaponId: string?): number
+	local gid = weaponId and P.MASTERY_OF[weaponId]
+	if not gid then
+		return 0
+	end
+	return P.masteryLevel(gid, mastering and mastering[gid])
+end
+
 -- karma (Fence standing): -3 .. 3. Low karma turns the locals hostile and lengthens the scav cooldown.
 P.KARMA = { min = -3, max = 3, start = 0.2, killScav = -0.25, killPlayerScav = -0.4, scavExtract = 0.03, hostileBelow = -1 }
 

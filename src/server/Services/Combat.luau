@@ -360,6 +360,8 @@ function Combat.shoot(player, seq, origin, dir)
 			if r and player.Parent then
 				ctx.Remotes.note(player, "hit", { kill = r.killed })
 				ctx.Economy.skillUp(player, prof, wskill, 0.4)
+				-- weapon mastering (Tarkov): one point per hit on a living target, so every pellet that lands counts
+				ctx.Economy.masteryUp(player, prof, wdef.id, 1)
 			end
 		end)
 	end
@@ -371,6 +373,30 @@ function Combat.shoot(player, seq, origin, dir)
 	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = predHit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat }, player)
 	if malf then
 		setMalf(player, wit, malf, malf == "jam" and (wit.wear or 100) <= 5)
+	end
+end
+
+-- WEAPON MASTERING (03) (Tarkov): only a weapon mastered to level 3 reloads while aiming down sights. Below that the
+-- replicated aim is held off for the length of a reload (Weapon.luau does the same in first person), so others see
+-- the gun come down and the server hitboxes follow; nothing the client says can raise the level.
+function Combat.aimReload(prof, weaponId)
+	return Progress.masteryFor(prof and prof.mastering, weaponId) >= 3
+end
+
+local function reloading(w)
+	return os.clock() < w.reloadUntil or w.tube ~= nil
+end
+
+local function aimAllowed(player, s)
+	local _, _, wdef = Combat.activeWeapon(s)
+	return wdef ~= nil and Combat.aimReload(ctx.Profiles.get(player), wdef.id)
+end
+
+local function dropAim(player, s)
+	local char = player.Character
+	if char and char:GetAttribute("Aim") and not aimAllowed(player, s) then
+		char:SetAttribute("Aim", false)
+		ctx.Chars.pose(char)
 	end
 end
 
@@ -436,6 +462,7 @@ function Combat.reload(player)
 		return
 	end
 	if not wd.family then
+		dropAim(player, s)
 		return tubeReload(player, s, w, wg, wit, wdef, wd)
 	end
 	local best = Inv.bestMag(s.inv, wg)
@@ -449,6 +476,7 @@ function Combat.reload(player)
 	local token = {}
 	w.reloadToken = token
 	w.reloadUntil = t + dur
+	dropAim(player, s)
 	ctx.Remotes.note(player, "reload", { state = "start", t = dur })
 	ctx.Chars.gesture(player.Character, "reload", dur)
 	task.delay(dur, function()
@@ -712,6 +740,14 @@ function Combat.init(c)
 		end
 	end, 3, 4)
 	ctx.Remotes.onAct("stance", function(player, p)
+		-- aiming during a reload needs WEAPON MASTERING (03) of the weapon in hands (aimAllowed above)
+		local w = W[player]
+		if type(p) == "table" and p.a == true and w and reloading(w) then
+			local s = ctx.Raid.session(player)
+			if s and not aimAllowed(player, s) then
+				p.a = false
+			end
+		end
 		ctx.Chars.applyStance(player, p)
 	end, 12, 14)
 	Players.PlayerRemoving:Connect(function(p)
