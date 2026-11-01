@@ -8,6 +8,12 @@
 
 **Done 2026-11-01 (afternoon):** Meridian Mall rebuilt on Interchange's layout at real scale (`docs/maps/MERIDIAN_MALL.md`: ground and outside, the mall shell with the car park, 84 units, both store levels, gameplay with 7 exits and THE CARETAKER), mounted guns on Border Yard's Bastion (`docs/design/STATIONARY_WEAPONS.md`), item pictures for the eyewear and the Border Yard keys, the K-13 stair fix. GitHub `xinquantayy-spec/ZeroReturn` is the remote (owner allowed pushing, 2026-11-01).
 
+**Paused by the owner 2026-11-01 20:35 SGT.** Everything below is committed and pushed. To resume, in order:
+1. **Wallpaper repeat:** `gen_materials.py` now makes clean wallpaper tiles (the stains repeated every 2 m). Run `python3 -I assets/textures/gen_materials.py <out> wallpaper_a wallpaper_b`, upload the six images as Decals (`zr_upload`), read the image ids in Studio (`InsertService:LoadAsset`), put them in `src/materials/ZR_WallpaperA|B.model.json`, raise `PEEL_ODDS` for the wallpapers in `DetailPlan.luau` so stains come from decals, and check in a fresh Play session.
+2. **Weapon mastering:** research done, nothing built: `docs/design/MASTERING.md`.
+3. **Meridian's second boss (THE STOKER, our Tagilla in KASSA GARAGE):** research done, nothing built: `docs/design/BOSS_STOKER.md`. One decision is open there (the welding mask's slot).
+4. Then the list below. Done today and checked in Studio: see-through foliage (all levels but POTATO), FOG weather closing the view at 480 studs with the map beyond it hidden, detail rings shortened (about 30 % fewer draws in wide views), car exits (one player), breakable glass and the AI seeing through whole panes.
+
 **Now, in order:**
 1. **Meridian polish:** per-key loot and the key pictures are done. Fuller small shops are done and checked in Studio (`StoresFill.luau`, +1,938 parts). Lighting in the deep halls with the power on was checked on 2026-11-01 in the separate client: NESTA and KASSA by day, and KASSA at 23:00, all read as lit halls. Still to do: a walk-through of every exit by hand.
 2. **Performance on phones:** Border Yard and Meridian stream 16,000 to 18,600 parts near the player (KNOWN_ISSUES 65); try a smaller streaming radius in Studio's Workspace settings and merge plain walls, then measure in the device emulator.
