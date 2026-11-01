@@ -423,6 +423,14 @@ local function startRaid()
 		Match.extractOpen[id] = open
 	end
 	table.clear(Match.flareOpen) -- flare exits close again (Extract.openFlareAt)
+	-- the queued raiders' karma, for this raid's boss rolls (THE FORESTER comes more often for low karma, AI.forestChance)
+	Match.raidKarma = {}
+	for player in queue do
+		local prof = player.Parent and ctx.Profiles.get(player)
+		if prof then
+			table.insert(Match.raidKarma, prof.karma or 0)
+		end
+	end
 	ctx.Raid.resetWorld() -- (also clears the cars' seats and shows or hides each car by this roll)
 	-- group the queue: squad members of the same kind share a spawn
 	local groups, bySquad = {}, {}

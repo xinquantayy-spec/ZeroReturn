@@ -8,6 +8,55 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## THE FORESTER and tripwires (2026-11-02)
+
+Border raids at 13:00, one player, god mode, THE FORESTER forced in with ZR_Dev `boss(true, "Forester")` and the other
+bosses forced out.
+
+- **Spawn:**
+  - He spawned alone at a random point of his loop, 950 health, silent (`SilentSteps`).
+  - Five wires were laid in doorways near the loop, none refused, two raids in a row. Three were at building entrances
+    and two at inside doors, one of them upstairs in a dorm.
+  - His kit: once the KS-7, once the pump shotgun.
+- **Who he fights:**
+  - **Karma 0.2** (a new profile): with the player put 50 studs in front of him, he kept walking his loop. Not
+    hostile at 39, 34 and 30 studs; at 24 studs he marked the player (`grudge`).
+  - **Karma -1** (a new raid): he engaged at 61 studs within a second, with no grudge.
+- **Tripwires:**
+  - **Seen close up:** two stakes, a steel wire and the grenade at the foot of one, across the sill
+    (`docs/maps/evidence/BY_forester_tripwire.jpg`).
+  - **Inside door:** the same, across a corridor doorway whose leaf opens into the room (`BY_tripwire_interior.jpg`).
+  - **First wire colour:** at first it was dark grey and almost invisible; it is now bare steel, 0.028 studs thick.
+  - **Walking into one:** the player was stepped from 3 studs out to the door side.
+    - The wire went off and the RK-5 dropped and exploded: 1 thrown, 35 fragment hits.
+    - The player stayed at 440 (god mode).
+  - **Disarming by hand:**
+    - Looking at the wire from 3.9 studs showed "[F] DISARM · TRIPWIRE"; the multitool prompt stayed hidden.
+    - F held for 12 s disarmed it. The hold bar filled under the button (`BY_tripwire_disarm.jpg`).
+    - The RK-5 went into the inventory.
+  - **Disarming with a multitool:**
+    - With one in the pack, only the 3 s prompt showed.
+    - A 3.6 s hold disarmed the next wire and the F-7 went into the inventory.
+  - **A shot at the wire:** a ray cast in the shots' group (`ZR_Shot`, which collides with Default) met the wire's
+    shell from both sides. The LogicTest drives the bullet hook with that shell and the wire goes off.
+- **Seen:** the Forester walking the dorms in his olive jacket and beanie, the shotgun on his back
+  (`BY_forester.jpg`).
+- **Tests, all passing:**
+
+  | Suite | Passed | Failed | New |
+  |---|---|---|---|
+  | LogicTests | 375 | 0 | 8 in "forester" and "tripwire": the boss; who he hunts; his roll; his kit and pack; his look; a step across the wire; a wire across a doorway; a shot at the wire |
+  | CharTests | 47 | 0 | |
+  | LookTests | 33 | 0 | |
+  | MapTests | 38 | 0 | |
+
+  The glass test now accepts the wires' hook in front of the panes' (`Tripwires.prevThrough`).
+- **Not verified:**
+  - his silent steps by ear (the code path only);
+  - a real gun firing at a wire;
+  - two players;
+  - a phone.
+
 ## Tactical lasers and device modes (2026-11-02)
 
 Border raids at 01:00 and 13:00, one player, god mode, the R-17 close-quarters build (LC-4 light/laser) given into the

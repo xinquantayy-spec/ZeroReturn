@@ -688,6 +688,35 @@ Gaps:
 - **The night rule** is "the raid starts in the dark", not Tarkov's exact hours.
 - **Zones are ours**; not on other maps; no cultist circle.
 
+### THE FORESTER: Customs' Partisan on Border Yard (2026-11-02)
+
+Researched first: tarkovforge's Partisan page (live from tarkov.dev), timesaver.gg's guide (September 2026), the Japanese
+wiki, Prima Games and GGRecon on karma, tarkovforge's Partisan's bag, Shacknews and GGRecon on tripwires
+(`docs/design/BOSS_FORESTER.md`). Built in `Maps/Border/Play.luau`, `AI.luau`, `Tripwires.luau` (new), `Loot.luau`,
+`Items.luau`, `Equipment.luau`, `Interact.luau` and `Effects.luau`. Checked in Studio with one player (TEST_RESULTS "THE
+FORESTER and tripwires").
+
+Matched:
+- **A lone boss:** 950 health (Tarkov's part split is not applied), no armour, roaming Customs' tree lines, the
+  construction site's edges and the dorms. 20 % a raid, more with low-karma raiders.
+- **Who he hunts:** raiders with low karma; anyone else once they come close or shoot him.
+- **Silent steps;** only the grass rustles.
+- **Tripwires:**
+  - grenades tied across doorways near his walk;
+  - a step through, a shot that meets the wire or a blast nearby sets one off, and the grenade keeps its own fuse;
+  - disarming takes 11 s, or 3 s with a multitool, and you keep the grenade;
+  - his own wires never set him off.
+- **His bag:** Tarkov's numbers (4x3, 20 slots, 0.7 kg, -5 % speed, -2 % turn, -8 ergonomics).
+
+Gaps:
+- **Karma is the Fence standing:** Tarkov's PMC karma is hidden and follows how you play.
+- **Wires only in doorways** and all laid when he spawns; not on trails, fence gaps or log piles.
+- **No tripwire kit for players** (Jaeger's), so no 10-minute timeout.
+- **AI never set off a wire.**
+- **His guns are ours:** no AVT-40, APS, VOG or RGO grenades, ice pick or GP-25.
+- **His tactics are the shared boss AI:** no deliberate stuns at players holding still, no moving on after a fight.
+- **Only on Border Yard;** no inventory picture for the pack.
+
 ### Tactical devices: lasers and modes (2026-11-02)
 
 Researched first: Prima Games' Tarkov controls guide gives T for "Toggle Laser/Light" and Ctrl+T for "Toggle Tactical

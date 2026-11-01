@@ -310,6 +310,14 @@ function Effects.footstep(pos, intensity, model, own)
 	local name = (fam == "concrete" and variant("step_concrete_", 4)) or (fam == "metal" and variant("step_metal_", 3)) or (fam == "gravel" and variant("step_gravel_", 3))
 		or (fam == "wood" and variant("step_wood_", 2)) or variant("step_dirt_", 2)
 	local vol = (own and 0.32 or 0.95) * (0.25 + intensity * 0.75)
+	if not own and model and model:GetAttribute("SilentSteps") then
+		-- THE FORESTER (Tarkov's Partisan) makes no footstep sound: only the grass rustles under him, faintly
+		if fam ~= "dirt" then
+			return
+		end
+		name = math.random() < 0.5 and "cloth_1" or "cloth_2"
+		vol *= 0.35
+	end
 	local speed = 0.94 + math.random() * 0.12
 	if own then
 		Effects.sfx(name, SoundService, vol, speed)

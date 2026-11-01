@@ -144,12 +144,40 @@ function AI.hostileTo(faction, w)
 	return true
 end
 
+-- THE FORESTER (Tarkov's Partisan, docs/design/BOSS_FORESTER.md) hunts raiders whose karma is low; anyone else only once
+-- they come within `close` studs of him or hurt him, and then for the rest of the raid (u.grudge). Karma here is the
+-- Fence standing (Progress.KARMA; Tarkov's PMC karma is hidden and has no counterpart). `chance` adds `perLow` to his
+-- roll for every raider with low karma in the queue, up to `cap`.
+AI.FOREST = { karma = 0, close = 25, perLow = 0.1, cap = 0.5 }
+function AI.forestHostile(karma, grudge, dist)
+	return (karma or 0) < AI.FOREST.karma or grudge == true or (dist ~= nil and dist < AI.FOREST.close)
+end
+function AI.forestChance(base, karmas)
+	local n = 0
+	for _, k in karmas or {} do
+		if (k or 0) < AI.FOREST.karma then
+			n += 1
+		end
+	end
+	return math.min(AI.FOREST.cap, base + AI.FOREST.perLow * n)
+end
+
 local function hostile(u, w)
 	if not w then
 		return false
 	end
 	if w.player and DEV and w.player:GetAttribute("DevIgnore") then
 		return false
+	end
+	if u.karmaHunt and w.player then
+		local s = w.s
+		local root = w.player.Character and w.player.Character:FindFirstChild("HumanoidRootPart")
+		local dist = (root and u.root) and (root.Position - u.root.Position).Magnitude or nil
+		local on = AI.forestHostile(s and ((s.karma or 0) + (s.karmaDelta or 0)), u.grudge[w.player], dist)
+		if on and dist and dist < AI.FOREST.close then
+			u.grudge[w.player] = true -- too close: he remembers you
+		end
+		return on
 	end
 	return AI.hostileTo(u.faction, w)
 end
@@ -1850,7 +1878,11 @@ function AI.spawn(kind, pos, opts)
 		post = opts.post, leader = opts.leader, slot = opts.slot,
 		aware = {}, lastPos = {}, seen = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
 		useCover = math.random() < skillOf.cover, turn = turn, charge = opts.charge, ambush = opts.ambush,
+		karmaHunt = opts.karmaHunt, grudge = {},
 	}
+	if opts.silent then
+		model:SetAttribute("SilentSteps", true) -- every client plays no footsteps for him (Effects.footstep), only rustling grass
+	end
 	u.w = weaponIn(u, "primary") or weaponIn(u, "secondary") or weaponIn(u, "holster")
 	table.insert(units, u)
 	-- a boss may bring its own health (THE STOKER: Tarkov's Tagilla has 1,220 to a PMC's 440)
@@ -2111,6 +2143,9 @@ function AI.onDamaged(model, attacker)
 	if w and w.unit and w.unit.faction == u.faction then
 		return
 	end
+	if u.karmaHunt and w and w.player then
+		u.grudge[w.player] = true -- whoever shoots THE FORESTER is his enemy for the raid
+	end
 	u.aware[amodel] = math.max(u.aware[amodel] or 0, 0.95)
 	u.lastPos[amodel] = amodel:GetPivot().Position
 	u.hurtBy = amodel
@@ -2166,6 +2201,9 @@ end
 -- raid start: the Watch at their posts, the Foreman's crew (some raids), the first scavs
 function AI.reset()
 	AI.clear()
+	if ctx.Tripwires then
+		pcall(ctx.Tripwires.clear) -- last raid's wires go with the last raid's bosses
+	end
 	local myGen = gen
 	local t = now()
 	director.waves = 0
@@ -2191,6 +2229,9 @@ function AI.reset()
 				rolled[b] = forced
 			elseif b.night and not dark then
 				rolled[b] = false
+			elseif b.karmaHunt then
+				-- THE FORESTER comes more often when raiders with low karma are queued for this raid (Match.raidKarma)
+				rolled[b] = math.random() < AI.forestChance(b.chance or Config.BOSS_CHANCE, ctx.Match and ctx.Match.raidKarma)
 			else
 				rolled[b] = math.random() < (b.chance or Config.BOSS_CHANCE)
 			end
@@ -2218,11 +2259,24 @@ function AI.reset()
 				local zone = (zones and #zones > 0) and zones[math.random(1, #zones)] or nil
 				AI.bossZone = AI.bossZone or (zone and zone.name) or nil
 				table.insert(AI.bossesThisRaid, b.label or "Foreman")
-				local boss = AI.spawn("boss", zone and zone.home or b.home, {
-					route = zone and zone.route or b.route, wp = 1, label = b.label or "Foreman", name = b.label, look = b.look,
+				-- a roaming boss (THE FORESTER) starts at any point of his loop
+				local home, wp = zone and zone.home or b.home, 1
+				if b.roam and b.route and #b.route > 0 then
+					wp = math.random(1, #b.route)
+					home = b.route[wp]
+				end
+				local boss = AI.spawn("boss", home, {
+					route = zone and zone.route or b.route, wp = wp, label = b.label or "Foreman", name = b.label, look = b.look,
 					loadout = b.loadout, hp = b.hp, charge = b.charge, skill = b.skill, ambush = b.ambush,
-					post = (zone and zone.post) or b.post,
+					post = (zone and zone.post) or b.post, karmaHunt = b.karmaHunt, silent = b.silent,
 				})
+				-- his tripwires go into doorways near his loop (Tripwires.layAlong)
+				if boss and b.traps and b.route and ctx.Tripwires then
+					local okT, errT = pcall(ctx.Tripwires.layAlong, b.route, b.traps, boss.model)
+					if not okT then
+						warn("[ZR] tripwires", errT)
+					end
+				end
 				for i, p in (zone and zone.crew) or b.crew or {} do
 					if myGen ~= gen then
 						return

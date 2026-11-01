@@ -2,6 +2,7 @@
 -- Custom-styled ProximityPrompts: our own prompt UI (device-aware key label, tappable on touch).
 -- Terminal prompts (attribute Screen) open local screens; loot prompts are handled by the server.
 local PPS = game:GetService("ProximityPromptService")
+local RunService = game:GetService("RunService")
 local Items = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR").Items)
 
 local Interact = { current = nil, locked = false }
@@ -61,6 +62,75 @@ function Interact.init(c)
 			task.delay(0.05 + (p.HoldDuration or 0), function()
 				pcall(p.InputHoldEnd, p)
 			end)
+		end
+	end)
+	-- a held prompt (a car's fare, disarming a tripwire) fills a bar under the button while it is held
+	local bar = Instance.new("Frame")
+	bar.Name = "Hold"
+	bar.AnchorPoint = Vector2.new(0, 1)
+	bar.Position = UDim2.new(0, 0, 1, 0)
+	bar.Size = UDim2.new(0, 0, 0, 3)
+	bar.BackgroundColor3 = K.C.ochre
+	bar.BorderSizePixel = 0
+	bar.Parent = btn
+	local holding, holdT0, holdDur = nil, 0, 1
+	PPS.PromptButtonHoldBegan:Connect(function(prompt)
+		if prompt.HoldDuration > 0 then
+			holding, holdT0, holdDur = prompt, os.clock(), prompt.HoldDuration
+		end
+	end)
+	PPS.PromptButtonHoldEnded:Connect(function(prompt)
+		if prompt == holding then
+			holding = nil
+		end
+	end)
+	RunService.RenderStepped:Connect(function()
+		if holding and holding == Interact.current then
+			bar.Size = UDim2.new(math.clamp((os.clock() - holdT0) / holdDur, 0, 1), 0, 0, 3)
+		elseif bar.Size.X.Scale ~= 0 then
+			bar.Size = UDim2.new(0, 0, 0, 3)
+		end
+	end)
+	-- tripwires (Tripwires.luau, Tarkov): a wire's disarm prompt shows only while you look at the wire from close by, and
+	-- only the one that fits what you carry (a multitool makes it quicker; the server checks again)
+	local function carries(id)
+		local d = c.State.data
+		for _, it in (d and d.items) or {} do
+			if it.id == id then
+				return true
+			end
+		end
+		return false
+	end
+	local trapT = 0
+	RunService.Heartbeat:Connect(function(dt)
+		trapT += dt
+		if trapT < 0.12 then
+			return
+		end
+		trapT = 0
+		local f = workspace:FindFirstChild("ZR_Traps")
+		if not f then
+			return
+		end
+		local cam = workspace.CurrentCamera
+		local cf = cam and cam.CFrame
+		for _, pp in f:GetDescendants() do
+			if pp:IsA("ProximityPrompt") and pp:GetAttribute("Trap") then
+				local want = false
+				local anchor = pp.Parent
+				if cf and anchor and anchor:IsA("BasePart") then
+					local to = anchor.Position - cf.Position
+					local dist = to.Magnitude
+					if dist < 6 and dist > 0.01 and cf.LookVector:Dot(to / dist) > 0.9 then
+						local need, unless = pp:GetAttribute("NeedsItem"), pp:GetAttribute("UnlessItem")
+						want = (need == nil or carries(need)) and (unless == nil or not carries(unless))
+					end
+				end
+				if pp.Enabled ~= want then
+					pp.Enabled = want
+				end
+			end
 		end
 	end)
 	-- the server rewrites prompt text (doors: Unlock -> Close -> Open), so follow the shown prompt's text

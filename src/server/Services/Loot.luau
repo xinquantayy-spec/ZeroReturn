@@ -1237,6 +1237,32 @@ function Loot.cultistLoadout(rand)
 	return k.h
 end
 
+-- THE FORESTER (Tarkov's Partisan; docs/design/BOSS_FORESTER.md): no armour and no helmet (Tarkov: none), his own pack, an
+-- old rifle from the AK family (here the KS-7, now and then the quiet build) or a pump shotgun, a pistol, two to four
+-- grenades (F-1 and RGD-5 in Tarkov), sometimes a field medkit (Tarkov: AFAKs), keys from the dorms' pool
+function Loot.foresterLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 60, 90 }
+	k.slot("head", "BEANIE", { tint = "olive" })
+	k.slot("back", "FORESTER_PACK")
+	if rand:NextNumber() < 0.75 then
+		k.gun("primary", "KST_RIFLE", "KST_MAG", rand:NextNumber() < 0.5 and "A76_BP" or "A76_PS", 3, nil, rand:NextNumber() < 0.35 and "KST_QUIET" or nil)
+	else
+		k.gun("primary", "HARROW12", nil, "A12_BUCK", 2)
+	end
+	k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_PST", 1)
+	for _ = 1, rand:NextInteger(2, 4) do
+		k.put(rand:NextNumber() < 0.5 and "GREN_F7" or "GREN_RK5")
+	end
+	k.put("BANDAGE")
+	if rand:NextNumber() < 0.5 then
+		k.put("MEDKIT_L")
+	end
+	k.roll("dorm_good", rand:NextInteger(1, 2))
+	return k.h
+end
+
 function Loot.priestLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)

@@ -216,6 +216,12 @@ if RunService:IsStudio() then
 			end
 			task.wait(0.05)
 			return "ok"
+		elseif cmd == "look" then
+			-- a = a world point: turn the view to it (the camera's yaw and pitch, as the mouse would)
+			local d = a - workspace.CurrentCamera.CFrame.Position
+			ctx.Camera.yaw = math.atan2(-d.X, -d.Z)
+			ctx.Camera.pitch = math.atan2(d.Y, Vector3.new(d.X, 0, d.Z).Magnitude)
+			return "ok"
 		elseif cmd == "devicemode" then
 			-- Ctrl+T: a light/laser combo's mode; returns the mode and what runs (light, laser)
 			ctx.Weapon.cycleDeviceMode()

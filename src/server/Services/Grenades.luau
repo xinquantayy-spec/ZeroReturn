@@ -196,6 +196,10 @@ local function explode(n)
 	if spec.type == "frag" and ctx.Hazards then
 		ctx.Hazards.blast(center, math.max(6, spec.blastR * 2.5), n.thrower)
 	end
+	-- and snaps tripwires within reach (Tarkov: shrapnel sets them off)
+	if spec.type == "frag" and ctx.Tripwires then
+		ctx.Tripwires.blast(center, math.max(6, spec.blastR * 2.5))
+	end
 	local smodel = n.thrower
 	if typeof(smodel) == "Instance" and smodel:IsA("Player") then
 		smodel = smodel.Character

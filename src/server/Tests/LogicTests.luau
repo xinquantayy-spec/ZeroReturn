@@ -1216,6 +1216,85 @@ function T.run(ctx)
 		check("cult: the warriors and the priest look their own", Eq.lookKey("cultist") == "cultist" and Eq.lookKey("priest") == "priest")
 	end
 
+	-- THE FORESTER (Border Yard's lone trapper, Tarkov's Partisan): the boss, who he hunts, his roll, his kit, his tripwires
+	if ctx and ctx.World and ctx.Loot and ctx.AI then
+		local bl = ctx.World.maps.border and ctx.World.maps.border.bosses
+		local fo = nil
+		for _, b in bl or {} do
+			if b.label == "Forester" then
+				fo = b
+			end
+		end
+		check("forester: Border rolls THE FORESTER alone at 20 %, 950 health, roaming an 8-point loop, silent, with 5 wires",
+			fo ~= nil and fo.chance == 0.2 and math.abs(fo.hp * 440 - 950) < 0.5 and fo.roam == true and #fo.route == 8 and fo.crew == nil
+				and fo.karmaHunt == true and fo.silent == true and fo.traps == 5)
+		local A = ctx.AI
+		check("forester: he hunts low karma; anyone else only close by (25 studs) or once they have hurt him",
+			A.forestHostile(-0.5, nil, 200) and not A.forestHostile(0.2, nil, 200) and A.forestHostile(0.2, nil, 20)
+				and A.forestHostile(0.2, true, 200) and not A.forestHostile(0, nil, nil))
+		check("forester: each raider with low karma in the queue adds 10 % to his roll, up to 50 %",
+			math.abs(A.forestChance(0.2, { 0.2, -0.5, -1 }) - 0.4) < 1e-9 and A.forestChance(0.2, { -1, -1, -1, -1, -1, -1 }) == 0.5
+				and A.forestChance(0.2, {}) == 0.2)
+		local fk = ctx.Loot.foresterLoadout(Random.new(7))
+		local nades = 0
+		for _, it in fk.items do
+			if it.id == "GREN_F7" or it.id == "GREN_RK5" then
+				nades += 1
+			end
+		end
+		local pg = fk.slots.primary
+		local pack = Items.defs.FORESTER_PACK
+		check("forester: no armour and no helmet, his own pack (Tarkov's Partisan's bag: 4x3, 20 slots), a long gun, grenades",
+			fk.slots.armor == nil and fk.items[fk.slots.head].id == "BEANIE" and fk.items[fk.slots.back].id == "FORESTER_PACK"
+				and pg ~= nil and (fk.items[pg].id == "KST_RIFLE" or fk.items[pg].id == "HARROW12") and nades >= 2 and Inv.check(fk)
+				and pack.w == 4 and pack.h == 3 and pack.grid.w * pack.grid.h == 20 and pack.mass == 0.7 and pack.pen.speed == -5)
+		local Eq = require(game:GetService("ReplicatedStorage").ZR.Equipment)
+		check("forester: his own look", Eq.lookKey("forester") == "forester")
+		local TW = ctx.Tripwires
+		if TW then
+			local a, b = Vector3.new(0, 0, 0), Vector3.new(4, 0, 0)
+			check("tripwire: a step across the wire or onto it sets it off; beside it or past its end does not",
+				TW.crosses(a, b, Vector3.new(2, 3, -1), Vector3.new(2, 3, 1)) and TW.crosses(a, b, Vector3.new(2, 3, -2), Vector3.new(2, 3, -0.3))
+					and not TW.crosses(a, b, Vector3.new(2, 3, -3), Vector3.new(2, 3, -1)) and not TW.crosses(a, b, Vector3.new(5, 3, -1), Vector3.new(5, 3, 1)))
+			local e1, e2, side = TW.doorEnds(CFrame.new(), Vector3.new(4, 7, 0.35), 1)
+			local f1, _, side2 = TW.doorEnds(CFrame.new(), Vector3.new(4, 7, 0.35), -1)
+			check("tripwire: across a doorway at the sill, on the side the leaf does not swing to, in from the jambs",
+				side == 1 and side2 == -1 and math.abs(e1.Z - 1) < 1e-6 and math.abs(f1.Z + 1) < 1e-6 and math.abs(e1.Y + 3.5) < 1e-6
+					and math.abs(e2.X - e1.X - (4 - 2 * TW.CFG.inset)) < 1e-6)
+			-- a wire laid in the showroom (far from every map): a shot that meets it sets it off (the grenade is held back)
+			local origThrow = ctx.Grenades.throwFrom
+			local savedStats = table.clone(TW.stats)
+			local thrown = nil
+			ctx.Grenades.throwFrom = function(_, origin, _, item)
+				thrown = { origin = origin, item = item }
+				return nil
+			end
+			local okP, t = pcall(TW.place, Vector3.new(0, 0, 1300), Vector3.new(4, 0, 1300), "GREN_RK5", nil)
+			local shellOk, shotOk = false, false
+			if okP and t then
+				local shell = t.model:FindFirstChild("TripWire")
+				shellOk = shell ~= nil and shell.CanQuery and shell.Transparency == 1 and t.model:FindFirstChild("Wire") ~= nil
+					and #t.model.TrapPrompt:GetChildren() == 2
+				local B2 = require(game:GetService("ReplicatedStorage").ZR.Ballistics)
+				local keep = B2.through and B2.through({ Instance = shell, Position = t.mid }, Vector3.xAxis, true)
+				shotOk = keep == 1 and not t.armed and thrown ~= nil and thrown.item == "GREN_RK5" and t.model:FindFirstChild("Stake") ~= nil
+					and t.model:FindFirstChild("Wire") == nil
+			end
+			ctx.Grenades.throwFrom = origThrow
+			TW.stats = savedStats
+			for i = #TW.list, 1, -1 do
+				if TW.list[i] == t then
+					table.remove(TW.list, i)
+				end
+			end
+			if okP and t and t.model then
+				t.model:Destroy()
+			end
+			check("tripwire: two stakes, a wire and a hidden shell; a shot that meets the wire pulls the pin and flies on",
+				okP and shellOk and shotOk)
+		end
+	end
+
 	-- flare exits (Extract kind "flare"): the green flare; NORTH LINE and RIVER PATH open by flare; OLD PUMPS shows green
 	-- flares while it is there (Tarkov's Railroad Passage, Smuggler's Tunnel and Old Gas Station)
 	if ctx and ctx.World and ctx.Extract and ctx.Match and ctx.World.maps then
@@ -2435,7 +2514,8 @@ function T.run(ctx)
 				AmbAtlas.glass_break_1 ~= nil and AmbAtlas.glass_break_2 ~= nil and AmbAtlas.glass_break_3 ~= nil and shapeOk and apart)
 		end
 		check("glass: the collision groups are made and Ballistics uses them (shots and blows are cast in ZR_Shot, which meets the hit shells); the loss is 5 to 10 percent",
-			Ballistics.shotGroup == GL.SHOT_GROUP and Ballistics.through == GL.through and CFG.keep >= 0.9 and CFG.keep <= 0.95)
+			Ballistics.shotGroup == GL.SHOT_GROUP and (Ballistics.through == GL.through or (ctx.Tripwires ~= nil and ctx.Tripwires.prevThrough == GL.through))
+				and CFG.keep >= 0.9 and CFG.keep <= 0.95)
 		-- how far a ray travels inside a box before it leaves (straight through, 60 degrees off, along the pane, a turned pane, no direction)
 		do
 			local size = Vector3.new(4, 3, 0.2)

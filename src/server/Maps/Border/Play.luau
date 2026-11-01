@@ -745,6 +745,23 @@ return function(B)
 		table.insert(W.bosses, cult)
 	end)
 
+	-- THE FORESTER (Tarkov's Partisan; docs/design/BOSS_FORESTER.md): a lone boss with 950 health and no armour, 20 % (more
+	-- when raiders with low karma are in), who roams the tree lines and the construction site's edges (the 2026 guides; the
+	-- dorms are where he was seen most) and leaves tripwires in the doorways near his walk. He hunts raiders with low
+	-- karma; anyone else he leaves alone unless they come close or shoot at him. His steps make no sound.
+	-- The loop: the frame's south apron, between the two woods, the west edge of the near wood, north of BLOCK B, south of
+	-- the dorms along the wood, east of BLOCK A, the east edge of the long wood and back (each leg checked with the AI
+	-- pathfinder, 2026-11-02).
+	local FORESTER_ROUTE = { { -40, 160 }, { -60, 280 }, { -165, 420 }, { -160, 520 }, { -120, 690 }, { -5, 560 }, { 85, 450 }, { 60, 250 } }
+	try("forester", function()
+		local r = route(FORESTER_ROUTE)
+		local forester = {
+			name = "THE FORESTER", label = "Forester", home = r[1], route = r, roam = true, look = "forester", loadout = "foresterLoadout",
+			chance = 0.2, hp = 950 / 440, skill = "boss", karmaHunt = true, silent = true, traps = 5,
+		}
+		table.insert(W.bosses, forester)
+	end)
+
 	-- ── scav spawn zones ─────────────────────────────────────────────────────────────────────────────────
 	try("scav", function()
 		local zones, zpts, perBld = {}, {}, {}

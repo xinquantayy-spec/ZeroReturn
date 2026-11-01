@@ -258,6 +258,9 @@ function Raid.clearWorld()
 	if ctx.Grenades then
 		ctx.Grenades.clear()
 	end
+	if ctx.Tripwires then
+		pcall(ctx.Tripwires.clear)
+	end
 	ctx.AI.clear()
 	ctx.Loot.clearTemp()
 	ctx.Chars.clearCorpses()

@@ -170,6 +170,10 @@ local LOOKS: { [string]: any } = {
 		overlays = join({ P("ZR_OV_Armband", "LeftUpperArm", "1E1F20", "Fabric") }, KNEE("2E3026")) },
 	kestrel = { jacket = "5C5640", pants = "4A4634", skin = "BF9C80", glove = "3A3428", boot = "3A3228",
 		overlays = join({ P("ZR_OV_Hood", "UpperTorso", "56523A", "Fabric", { region = "hood" }) }, KNEE("3E3A2C")) },
+	-- THE FORESTER (Border Yard's lone trapper, Tarkov's Partisan; docs/design/BOSS_FORESTER.md): a faded olive padded
+	-- jacket, dark olive trousers, no armour; his pack and beanie are items
+	forester = { jacket = "55573D", pants = "3F3E31", skin = "B8957A", glove = "3A3428", boot = "3A3228",
+		overlays = join({ P("ZR_OV_PaddedJacket", "UpperTorso", "55573D", "Fabric", { shell = "jacket" }) }, KNEE("3A3A2E")) },
 	-- THE CULT (Border Yard's night group, Tarkov's cultists; docs/design/BOSS_CULT.md): dark brown hooded robes and black
 	-- gaiters; the priest in a near-black robe with a dark red armband
 	cultist = { jacket = "2E2924", pants = "26221E", skin = "B9A493", glove = "1C1A18", boot = "1E1C1A",
@@ -282,6 +286,7 @@ local VIS: { [string]: any } = {
 	BAG_SLING = { layer = "pack", pieces = { P("ZR_EQ_PackSmall", "UpperTorso", "6B6A4E", "Fabric") }, covers = { upperBack = true, hood = true } },
 	CANVAS_BAG = { layer = "pack", pieces = { P("ZR_EQ_PackCanvas", "UpperTorso", "7A7458", "Fabric") }, covers = { upperBack = true, hood = true } },
 	-- neckUp: how far the head may tilt back under a tall pack before the waist takes over (radians)
+	FORESTER_PACK = { layer = "pack", pieces = { P("ZR_EQ_PackCanvas", "UpperTorso", "4C4A36", "Fabric") }, covers = { upperBack = true, hood = true } },
 	BAG_PATROL = { layer = "pack", pieces = { P("ZR_EQ_PackA", "UpperTorso", "5C5B44", "Fabric") }, covers = { upperBack = true, hood = true }, neckUp = 0.42 },
 	BAG_RAID = { layer = "pack", pieces = { P("ZR_EQ_PackRaid", "UpperTorso", "53523F", "Fabric") }, covers = { upperBack = true, hood = true }, neckUp = 0.2 },
 }

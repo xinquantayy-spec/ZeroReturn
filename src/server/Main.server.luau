@@ -18,6 +18,15 @@ do
 		warn("[ZR] Glass failed to load, panes will not break:", Glass)
 	end
 end
+-- tripwires (Services/Tripwires.luau, THE FORESTER's traps) are optional too: without them he roams with none
+do
+	local okTw, Tripwires = pcall(require, Services:WaitForChild("Tripwires"))
+	if okTw then
+		ctx.Tripwires = Tripwires
+	else
+		warn("[ZR] Tripwires failed to load, no traps this server:", Tripwires)
+	end
+end
 -- airdrops (Services/Airdrop.luau) are optional too: a fault is logged and the raid runs without the plane
 do
 	local okAir, Airdrop = pcall(require, Services:WaitForChild("Airdrop"))
@@ -66,6 +75,14 @@ if ctx.Glass then
 	local okInit, errInit = pcall(ctx.Glass.init, ctx)
 	if not okInit then
 		warn("[ZR] Glass init failed, panes will not break:", errInit)
+	end
+end
+-- after Glass: the wires' shot check wraps the panes' (Ballistics.through)
+if ctx.Tripwires then
+	local okTw, errTw = pcall(ctx.Tripwires.init, ctx)
+	if not okTw then
+		warn("[ZR] Tripwires init failed:", errTw)
+		ctx.Tripwires = nil
 	end
 end
 ctx.Remotes.open()
