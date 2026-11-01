@@ -497,7 +497,9 @@ local function stop(u)
 end
 
 local function newPath()
-	return PathfindingService:CreatePath({ AgentRadius = 1.6, AgentHeight = 5.6, AgentCanJump = false, WaypointSpacing = 5 })
+	-- radius 1.0 (the body is 2 studs wide): at 1.6, 1.4 or 1.2 no path led up Border's dog-leg stairs (4.7-stud flights
+	-- between rails), so the AI never followed anyone upstairs in the dorms (Studio 2026-11-01, KNOWN_ISSUES 68)
+	return PathfindingService:CreatePath({ AgentRadius = 1.0, AgentHeight = 5.6, AgentCanJump = false, WaypointSpacing = 5 })
 end
 
 local function moveTo(u, goal, run, keepFacing)
