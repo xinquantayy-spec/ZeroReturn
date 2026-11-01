@@ -8,6 +8,24 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Frame time in Studio: where it goes (2026-11-01, Meridian, KASSA)
+
+Studio on the T490, Play mode (client and server in one process), Studio quality 10, the mall's power on. The owner's floor is 30 fps.
+
+| Measure | Result |
+|---|---|
+| KASSA view (aisles to the checkouts) | 18 to 19 fps |
+| Same spot looking straight up (almost nothing drawn) | 28.8 to 29.3 fps: about 34 ms a frame is not drawing |
+| Server step | heartbeat scripts 0.6 ms, physics 2.2 ms |
+| Client scripts | about 3 ms (heartbeat and render-step work) |
+| Other maps removed from the server | no change (17.8 against 18.0) |
+| Detail decals off | no change; lights off: no gain; shadows off: +0.6 fps |
+| Stores L1 hidden | +3.3 fps (about 8 ms of drawing) |
+
+So drawing KASSA costs about 20 ms, the game's scripts and physics about 6 ms, and the rest of a 55 ms frame is Studio and engine overhead
+that the Roblox app does not have. The real client's frame rate is still to be measured (a Clients and Servers test, or the app).
+Added after this: HOLD 30 FPS (on by default) lowers the GRAPHICS level a step whenever a device stays under 30 fps for 8 s.
+
 ## Meridian Mall on Interchange (2026-11-01)
 
 Studio on the T490, one client, in-memory store.
