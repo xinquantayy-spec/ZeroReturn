@@ -101,6 +101,87 @@ return function(C, ctx)
 		return table.concat(out, "\n")
 	end
 
+	-- the doors the tidy pass hung another way (hinge at +X, or opening toward +Z) or stopped short: id, position, how
+	function C.doorhangs(mapId)
+		local W = ctx.World
+		local m = W.maps and W.maps[mapId]
+		local model = m and m.model
+		local out = {}
+		for id, d in W.doors or {} do
+			if d.part and (not model or d.part:IsDescendantOf(model)) and (d.hinge or d.turn or d.swing) then
+				local p = d.cf.Position
+				table.insert(out, string.format("%s @ %.1f, %.1f, %.1f hinge %s turn %s swing %s", tostring(id), p.X, p.Y, p.Z,
+					tostring(d.hinge or -1), tostring(d.turn or 1), tostring(d.swing or 100)))
+			end
+		end
+		table.sort(out)
+		return table.concat(out, "\n")
+	end
+
+	-- every exit of a map walked from the spawns that may use it: a path for a player-sized agent (radius 1, 5.6 tall,
+	-- jumping allowed) from each spawn to the exit zone. Per exit: its rule, how many of its spawns reach it, the
+	-- shortest and longest walk in studs, and the spawns that cannot.
+	-- long walks take a while: exitcheck starts the run and returns; exitresult reads it (or how far it has got)
+	local exitRuns = {}
+	function C.exitresult(mapId)
+		local r = exitRuns[mapId]
+		if not r then
+			return "not started"
+		end
+		return (r.done and "done" or ("running, " .. #r.out .. " exits so far")) .. "\n" .. table.concat(r.out, "\n")
+	end
+	function C.exitcheck(mapId, maxSpawns)
+		local PFS = game:GetService("PathfindingService")
+		local W = ctx.World
+		local m = W.maps and W.maps[mapId]
+		if not m then
+			return "no map " .. tostring(mapId)
+		end
+		maxSpawns = maxSpawns or 99
+		local run = { out = {}, done = false }
+		exitRuns[mapId] = run
+		task.spawn(function()
+		local out = run.out
+		local ids = {}
+		for id in m.extracts or {} do
+			table.insert(ids, id)
+		end
+		table.sort(ids)
+		for _, id in ids do
+			local e = m.extracts[id]
+			local goal = (e.pos or e.cf.Position) + Vector3.new(0, 2.5, 0)
+			local ok, fail, lo, hi, n = 0, {}, math.huge, 0, 0
+			for _, sp in m.spawns or {} do
+				if n < maxSpawns and (not sp.extracts or table.find(sp.extracts, id)) then
+					n += 1
+					local path = PFS:CreatePath({ AgentRadius = 1.0, AgentHeight = 5.6, AgentCanJump = true, WaypointSpacing = 12 })
+					local from = sp.cf.Position
+					local good = pcall(function()
+						path:ComputeAsync(from, goal)
+					end)
+					if good and path.Status == Enum.PathStatus.Success then
+						local wps, len = path:GetWaypoints(), 0
+						for i = 2, #wps do
+							len += (wps[i].Position - wps[i - 1].Position).Magnitude
+						end
+						ok += 1
+						lo, hi = math.min(lo, len), math.max(hi, len)
+					else
+						table.insert(fail, string.format("%s (%.0f, %.0f)", tostring(sp.name or "?"), from.X, from.Z))
+					end
+					task.wait()
+				end
+			end
+			local rule = e.rule or {}
+			table.insert(out, string.format("%s %s [%s%s]: %d of %d spawns reach it%s%s", id, tostring(e.name), tostring(rule.kind),
+				rule.cost and (" " .. tostring(rule.cost)) or "", ok, n, ok > 0 and string.format(", %.0f to %.0f studs", lo, hi) or "",
+				#fail > 0 and (" · cannot: " .. table.concat(fail, "; ")) or ""))
+		end
+		run.done = true
+		end)
+		return "started"
+	end
+
 	function C.audit(mapId, examples)
 		examples = examples or 12
 		local W = ctx.World
