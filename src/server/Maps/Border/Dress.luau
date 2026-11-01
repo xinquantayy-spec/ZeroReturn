@@ -445,6 +445,160 @@ return function(B)
 		end
 	end)
 
+	-- ── roads into the hills: a road that leaves the map used to run straight into the boundary rock. A line of concrete
+	-- barriers now closes it 6 studs short of the limit, as Tarkov closes its map edges. ARMY ROADBLOCK (RUAF Roadblock)
+	-- gets a manned roadblock on the road in front of its zone: two staggered rows of barriers, sandbag walls on the
+	-- shoulders and a booth. These are placed on the road directly (the road keeps every other prop off), and their boxes
+	-- keep later props off. Like all cover they keep clear of the exfil zones and the spawns (LookTests L03): a row that
+	-- would reach into one is left out.
+	try("road ends", function()
+		local inside = B.inside
+		if not inside then
+			return
+		end
+		local spawnsAt = {}
+		for _, sp in W.spawns or {} do
+			table.insert(spawnsAt, Vector2.new(sp.cf.Position.X - O.X, sp.cf.Position.Z - O.Z))
+		end
+		local function clearOfPlay(x, z, rad)
+			for _, e in L.ext do
+				if (Vector2.new(e[4], e[5]) - Vector2.new(x, z)).Magnitude < rad + math.max(e[6], e[8]) / 2 + 3 then
+					return false
+				end
+			end
+			for _, p in spawnsAt do
+				if (p - Vector2.new(x, z)).Magnitude < rad + 9 then
+					return false
+				end
+			end
+			return true
+		end
+		local function at(kind, x, z, ry, sz)
+			local y = ground(x, z) + 0.16
+			Props.cover(dm, kind, CF(x, y, z, ry), nil)
+			left -= 8
+			local a = math.rad(ry)
+			local hx = (math.abs(math.cos(a)) * sz.X + math.abs(math.sin(a)) * sz.Z) / 2
+			local hz = (math.abs(math.sin(a)) * sz.X + math.abs(math.cos(a)) * sz.Z) / 2
+			box(x, y, z, hx, hz, sz.Y)
+			n.cover += 1
+		end
+		-- a row of barriers across a road (cx, cz) of width w whose way out is (ox, oz); `stagger` sets every other one
+		-- off along the road. The whole row or nothing.
+		local function barrierRow(cx, cz, ox, oz, w, stagger)
+			local sz = COVER.BarrierBroken
+			local k = math.max(1, math.ceil((w + 2) / (sz.X - 0.4)))
+			local ry = math.deg(math.atan2(-ox, -oz))
+			local spots = {}
+			for i = 1, k do
+				local s = (i - (k + 1) / 2) * (sz.X - 0.4)
+				local off = ((i % 2 == 0) and stagger or 0) + drng:NextNumber(-0.3, 0.3)
+				local x, z = cx - oz * s + ox * off, cz + ox * s + oz * off
+				if not clearOfPlay(x, z, sz.X / 2) then
+					return false
+				end
+				table.insert(spots, { x, z })
+			end
+			for _, p in spots do
+				at("BarrierBroken", p[1], p[2], ry + drng:NextNumber(-7, 7), sz)
+			end
+			return true
+		end
+		-- the roadblock in front of ARMY ROADBLOCK: the road through its zone, the way in from the map along it
+		local ar = nil
+		for _, e in L.ext do
+			if e[1] == "AR" then
+				ar = e
+			end
+		end
+		if ar then
+			-- the nearest road: its direction, its width and the point on its middle line abreast of the zone (the zone
+			-- stands beside the road, not on it)
+			local best, bux, buz, bw, rx, rz = math.huge, 0, 0, 0, ar[4], ar[5]
+			for _, rd in L.roads do
+				local pts = rd[4]
+				for s = 1, #pts / 2 - 1 do
+					local ax, az, bx, bz = pts[2 * s - 1], pts[2 * s], pts[2 * s + 1], pts[2 * s + 2]
+					local dx, dz = bx - ax, bz - az
+					local l2 = dx * dx + dz * dz
+					if l2 > 1 then
+						local t = math.clamp(((ar[4] - ax) * dx + (ar[5] - az) * dz) / l2, 0, 1)
+						local ex, ez = ar[4] - (ax + dx * t), ar[5] - (az + dz * t)
+						local d = math.sqrt(ex * ex + ez * ez)
+						if d < best then
+							local l = math.sqrt(l2)
+							best, bux, buz, bw, rx, rz = d, dx / l, dz / l, rd[3], ax + dx * t, az + dz * t
+						end
+					end
+				end
+			end
+			if best < 20 then
+				-- (bux, buz) toward the map: the direction in which the map goes on longer
+				local fwd, back = 0, 0
+				while fwd < 200 and inside(rx + bux * fwd, rz + buz * fwd) do
+					fwd += 4
+				end
+				while back < 200 and inside(rx - bux * back, rz - buz * back) do
+					back += 4
+				end
+				if fwd < back then
+					bux, buz = -bux, -buz
+				end
+				local reach = math.max(ar[6], ar[8]) / 2 + 3 + COVER.BarrierBroken.X / 2 + 1
+				local cx, cz = rx + bux * reach, rz + buz * reach
+				-- the rows are crossed from the map side, so the way "out" of a row is back toward the zone
+				barrierRow(cx, cz, -bux, -buz, bw, 1.2)
+				barrierRow(cx + bux * 5, cz + buz * 5, -bux, -buz, bw, -1.2)
+				local px, pz = -buz, bux
+				for _, sg in { -1, 1 } do
+					for j = 0, 1 do
+						local sx = cx + px * sg * (bw / 2 + 2.5) + bux * (j * 6 + 1)
+						local sz2 = cz + pz * sg * (bw / 2 + 2.5) + buz * (j * 6 + 1)
+						if clearOfPlay(sx, sz2, COVER.Sandbags.X / 2) then
+							at("Sandbags", sx, sz2, math.deg(math.atan2(-bux, -buz)) + 90, COVER.Sandbags)
+						end
+					end
+				end
+				-- the guard booth on the shoulder, facing the road
+				local bx2, bz2 = cx + px * (bw / 2 + 7) + bux * 3, cz + pz * (bw / 2 + 7) + buz * 3
+				local p = KitMeta.props.TicketBooth
+				if p and clearOfPlay(bx2, bz2, 4) then
+					local m = Kit.place(dm, "TicketBooth", CF(bx2, ground(bx2, bz2), bz2, math.deg(math.atan2(px, pz))), { shadows = false })
+					if m then
+						left -= #p.pieces + 1
+						box(bx2, ground(bx2, bz2), bz2, 4, 4, p.size.Y)
+					end
+				end
+			end
+		end
+		-- every road's way off the map: where the road crosses the limit
+		for _, rd in L.roads do
+			local w, pts = rd[3], rd[4]
+			for s = 1, #pts / 2 - 1 do
+				local ax, az, bx, bz = pts[2 * s - 1], pts[2 * s], pts[2 * s + 1], pts[2 * s + 2]
+				local len = math.sqrt((bx - ax) * (bx - ax) + (bz - az) * (bz - az))
+				if len > 1 then
+					local ux, uz = (bx - ax) / len, (bz - az) / len
+					local steps = math.ceil(len / 2)
+					local px, pz, was = ax, az, inside(ax, az)
+					for q = 1, steps do
+						local x, z = ax + (bx - ax) * q / steps, az + (bz - az) * q / steps
+						local now = inside(x, z)
+						if was ~= now then
+							-- the inside point and the way out from it
+							local ix, iz, ox, oz = px, pz, ux, uz
+							if now then
+								ix, iz, ox, oz = x, z, -ux, -uz
+							end
+							barrierRow(ix - ox * 6, iz - oz * 6, ox, oz, w, 0.8)
+						end
+						px, pz, was = x, z, now
+					end
+				end
+			end
+		end
+	end)
+
 	-- ── checkpoints: sandbags, a broken barrier and a drum round each guard post ───────────────────────────
 	-- (the post, the patrol round it and the scav zones keep most of the ground free: each prop tries ten spots)
 	try("checkpoints", function()

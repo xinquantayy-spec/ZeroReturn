@@ -99,6 +99,12 @@ Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit
 - **SMUGGLERS' BOAT had no boat.** The exit was a beacon on the river bank. A small open motorboat is now moored
   off the west bank beside it, its deck just above the water (terrain water fills anything below), tied to a post on
   the bank (`Border/Play.luau`).
+- **Roads into the rock (Border).** Roads that leave the map ran straight into the boundary rock: 13 places, including
+  CROSSROADS. A row of concrete barriers now closes each road 6 studs short of the limit. A row is left out where it
+  would reach into an exit zone or near a spawn, so all cover keeps clear of play spots (LookTests L03).
+- **ARMY ROADBLOCK had no roadblock.** The road just ended at the rock by the beacon. There is now a roadblock on the
+  road in front of the zone: two staggered rows of barriers, sandbag walls on the shoulders and a guard booth
+  (`Border/Dress.luau`, "road ends").
 - **Clutter in door swings.** The client's ground clutter (tipped bins, litter) kept clear of a door's closed leaf,
   but not of where the leaf opens, and doors that start a raid ajar moved the spot. `World.detailAvoid` now holds the
   closed leaf and the leaf at a third, two thirds and all of its swing. Before this, LookTests L02 found 11 to 19
