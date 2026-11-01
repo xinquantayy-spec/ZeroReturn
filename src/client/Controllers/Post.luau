@@ -277,7 +277,9 @@ local function step(dt)
 	Post.burstAmt = math.max(0, Post.burstAmt - dt * 4)
 	Post.flash = math.max(0, Post.flash - dt * 5)
 	updateGrain()
-	exposure = baseExposure + Post.envExposure + indoor * 0.55 + Post.burstAmt * 0.6 + Post.flash * 2.2 + Post.nvExposure
+	-- indoors the auto-gain lifts less than it did (0.55): rooms stay darker than the day outside, with light falling off from the
+	-- windows, instead of an evenly lit box (owner, 2026-11-01: walls looked flat and fake)
+	exposure = baseExposure + Post.envExposure + indoor * 0.35 + Post.burstAmt * 0.6 + Post.flash * 2.2 + Post.nvExposure
 	Lighting.ExposureCompensation = exposure
 	if bloom and bloom.Enabled then
 		bloom.Intensity = 0.55 + Post.burstAmt * 1.2 + Post.nvBloom

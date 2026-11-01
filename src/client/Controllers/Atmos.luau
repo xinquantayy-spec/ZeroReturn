@@ -70,7 +70,7 @@ local function raidTargets(e, now)
 	local nightAmb = lerpC(rgb(92, 98, 112), rgb(146, 156, 178), w.light)
 	t.OutdoorAmbient = lerpC(lerpC(nightAmb, dayAmb, d), rgb(150, 124, 108), gold * 0.35)
 	-- indoor fill (sky occluded): dim but readable rooms by day, darker at night (lamps and lights matter)
-	t.Ambient = lerpC(rgb(66, 70, 80), rgb(96, 100, 102), d)
+	t.Ambient = lerpC(rgb(62, 66, 76), rgb(74, 77, 80), d) -- day fill lowered from 96,100,102 for contrast indoors (2026-11-01)
 	t.ColorShift_Top = lerpC(rgb(0, 0, 0), rgb(255, 172, 118), gold * 0.55)
 	t.EnvironmentDiffuseScale = lerp(0.25, 0.55, d)
 	t.EnvironmentSpecularScale = 0.25 + rain * 0.6
