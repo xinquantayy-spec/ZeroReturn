@@ -31,13 +31,13 @@ local root: Folder
 -- every service reads (ctx.World.spawns, ctx.World.extracts, ...).
 World.maps = {}
 World.activeMap = nil
-local PER_MAP = { "spawns", "sideExtracts", "extracts", "patrols", "looseSpots", "scavZones", "watchPosts", "visitZones", "boss", "bosses", "bounds" }
+local PER_MAP = { "spawns", "sideExtracts", "extracts", "patrols", "looseSpots", "scavZones", "watchPosts", "visitZones", "boss", "bosses", "bounds", "transits" }
 local currentMap = nil
 local function beginMap(id)
 	currentMap = id
 	World.spawns, World.extracts, World.patrols, World.looseSpots = {}, {}, {}, {}
 	World.sideExtracts, World.scavZones, World.watchPosts, World.visitZones = {}, {}, {}, {}
-	World.boss, World.bosses, World.bounds = nil, nil, nil
+	World.boss, World.bosses, World.bounds, World.transits = nil, nil, nil, nil
 end
 -- z-fighting (owner, 2026-11-01: "textures keep glitching near the corners"): two parts whose faces lie in the same
 -- plane, facing the same way, over a shared area flicker as the camera moves (walls overlapping at a corner, slabs

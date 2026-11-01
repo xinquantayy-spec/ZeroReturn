@@ -918,7 +918,7 @@ end
 
 -- ── states ───────────────────────────────────────────────────────────────────
 local function pickZone(u)
-	local zones = ctx.World.scavZones or {}
+	local zones = u.zones or ctx.World.scavZones or {} -- a unit on another map (AI.populate) keeps that map's zones
 	local me = u.root.Position
 	local best, bestScore = nil, -math.huge
 	for _ = 1, 6 do
@@ -1878,7 +1878,7 @@ function AI.spawn(kind, pos, opts)
 		post = opts.post, leader = opts.leader, slot = opts.slot,
 		aware = {}, lastPos = {}, seen = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
 		useCover = math.random() < skillOf.cover, turn = turn, charge = opts.charge, ambush = opts.ambush,
-		karmaHunt = opts.karmaHunt, grudge = {},
+		karmaHunt = opts.karmaHunt, grudge = {}, zones = opts.zones,
 	}
 	if opts.silent then
 		model:SetAttribute("SilentSteps", true) -- every client plays no footsteps for him (Effects.footstep), only rustling grass
@@ -1958,6 +1958,23 @@ local function spawnScav()
 	return nil
 end
 AI.spawnScav = spawnScav
+
+-- a transit took a raider to a map that is not the one in play (Transit.luau): put n scavs on it, wandering its zones
+function AI.populate(mapId, n)
+	local m = ctx.World.maps[mapId]
+	local zones = m and m.scavZones
+	if not zones or #zones == 0 then
+		return 0
+	end
+	local made = 0
+	for _ = 1, n do
+		local p = safeSpot(zones, 70)
+		if p and AI.spawn("scav", p + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)), { zones = zones }) then
+			made += 1
+		end
+	end
+	return made
+end
 
 local function desiredScavs()
 	local n = (ctx.Match and ctx.Match.liveSessions) and ctx.Match.liveSessions() or 0

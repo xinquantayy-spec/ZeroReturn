@@ -54,7 +54,7 @@ local SZ = {
 	toast = 32, death = 90, deathSub = 34, match = 32,
 }
 Hud.SZ = SZ
-local MAX_EXITS = 6
+local MAX_EXITS = 8 -- the exits, then the transits (Tarkov lists both on O)
 local toastTop, toastStep, squadBottom, squadStep = 0.36, 0.04, 0.93, 0.045
 local SIDE_L, SIDE_R = 0.04, 0.96
 
@@ -277,12 +277,22 @@ local function slowUpdate()
 	end
 	-- extract list (Tarkov: names and requirements only, on demand; no distances or markers)
 	local showEx = inRaid and raid and os.clock() < exitsUntil
+	local rows = {}
+	if showEx then
+		for _, e in raid.extracts or {} do
+			table.insert(rows, e)
+		end
+		for _, tr in raid.transits or {} do
+			table.insert(rows, { id = tr.id, name = tr.name, rule = "transit", open = tr.open, toName = tr.toName })
+		end
+	end
 	for i, o in O.exits do
-		local e = (showEx and raid.extracts) and raid.extracts[i] or nil
+		local e = rows[i]
 		o:show(e ~= nil)
 		if e then
 			local status, col = Hud.exitStatus(e)
-			o:set({ { icon = I.EXIT, color = col, size = SZ.exit * 0.85 }, { t = string.format(" EXFIL %s  ·  %s", e.id, string.upper(e.name)), color = C.white }, { t = status ~= "" and ("  " .. status) or "", color = col } })
+			local title = e.rule == "transit" and (" " .. string.upper(e.name)) or string.format(" EXFIL %s  ·  %s", e.id, string.upper(e.name))
+			o:set({ { icon = I.EXIT, color = col, size = SZ.exit * 0.85 }, { t = title, color = C.white }, { t = status ~= "" and ("  " .. status) or "", color = col } })
 		end
 	end
 	-- hideout: raid status line (bottom centre)
@@ -381,6 +391,9 @@ function Hud.exitStatus(e)
 		return "NO BACKPACK", C.yellow
 	elseif e.rule == "flare" then
 		return e.flared and "OPEN  ·  FLARE SEEN" or "GREEN FLARE IN THE SIGNAL AREA", e.flared and C.green or C.yellow
+	elseif e.rule == "transit" then
+		-- Tarkov's transits open a minute into the raid (SPT); the countdown is 20 s in the zone
+		return e.open and "TRANSIT  ·  OPEN" or "TRANSIT  ·  OPENS A MINUTE IN", e.open and C.green or C.yellow
 	elseif e.rule == "coop" then
 		-- Tarkov's co-op exit: a PMC and a scav leave together
 		return "CO-OP  ·  PMC AND SCAV TOGETHER", C.yellow
@@ -471,9 +484,9 @@ local function fastUpdate(dt)
 			ctx.Effects.sound(Sounds.EXTRACT_BEEP, SoundService, sec <= 1 and 0.55 or 0.4, sec <= 1 and 1.25 or 1)
 			O.notice:pop(0.2)
 		end
-		label, pf, col = "EXTRACTING  ·  " .. string.upper(ex.name or ""), 1 - math.clamp(left / (ex.total or Config.EXTRACT_HOLD), 0, 1), C.green
+		label, pf, col = (ex.transit and "TRANSIT  ·  " or "EXTRACTING  ·  ") .. string.upper(ex.name or ""), 1 - math.clamp(left / (ex.total or Config.EXTRACT_HOLD), 0, 1), C.green
 		O.notice:set({ { t = string.format("%.1f", math.max(0, left)), color = C.green } })
-		O.noticeSub:set({ { t = "HOLD POSITION", color = C.dim } })
+		O.noticeSub:set({ { t = ex.transit and "STAY IN THE TRANSIT ZONE" or "HOLD POSITION", color = C.dim } })
 		notice.t, notice.dur = now, 0.3
 	elseif ride then
 		-- a seat in the car: the shared departure countdown on the progress bar, the last ten seconds out loud like an extraction
@@ -611,6 +624,19 @@ function Hud.init(c)
 		end
 		return tostring(id)
 	end
+	-- transits (Transit.luau): the countdown shares the extraction's; on arrival the new map's name comes up big
+	c.State.on("transit", function(d)
+		if d.state == "start" then
+			ex = { name = d.toName or d.to, ends = d.ends, total = d.total, transit = true }
+			Hud.toast("TRANSIT TO " .. tostring(d.toName or d.to) .. " IN " .. tostring(d.total or 20) .. " S  ·  NO OTHER EXIT NOW", "good")
+		elseif d.state == "arrived" then
+			ex = nil
+			Hud.notice(tostring(d.toName or d.to), "TRANSIT COMPLETE  ·  YOUR EXITS ARE ON O", C.green, 4)
+		else
+			ex = nil
+			Hud.toast(d.text or "TRANSIT CANCELLED", "warn")
+		end
+	end)
 	c.State.on("extract", function(d)
 		if d.state == "start" and d.car then
 			-- the fare is paid and a seat taken: every passenger counts down to the same departure (extract note, flagged car)
@@ -684,7 +710,13 @@ function Hud.init(c)
 			Hud.notice(d.text or "?", d.ammo and string.upper(d.ammo) or nil, C.white, 2.2)
 		end
 	end)
+	-- a raid's first info is the insertion; the same raid's later infos (power on, a flare, a transit) only bring news
+	local lastRaidId = nil
 	c.State.on("raid", function(r)
+		if r and r.id ~= nil and r.id == lastRaidId then
+			return
+		end
+		lastRaidId = r and r.id
 		ex, ride, search, heal = nil, nil, nil, nil
 		squadUntil = os.clock() + 8
 		Hud.notice(Maps.nameOf(r and r.map), (r and r.scav) and "INSERTION CONFIRMED  ·  SCAV" or "INSERTION CONFIRMED", C.white, 3)

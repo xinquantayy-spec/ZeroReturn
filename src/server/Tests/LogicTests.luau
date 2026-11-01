@@ -1295,6 +1295,32 @@ function T.run(ctx)
 		end
 	end
 
+	-- transits (Tarkov 0.15): Border Yard's to Meridian Mall and back, opening a minute in with a 20 s countdown (SPT)
+	if ctx and ctx.World and ctx.Transit and ctx.World.maps.border and ctx.World.maps.meridian then
+		local TR = ctx.Transit
+		local function only(mid)
+			local list = ctx.World.maps[mid].transits or {}
+			return #list == 1 and list[1] or nil
+		end
+		local b, m = only("border"), only("meridian")
+		check("transit: Border Yard has one to Meridian Mall and Meridian Mall one back, each a 16-stud zone with its sign",
+			b ~= nil and m ~= nil and b.to == "meridian" and m.to == "border" and b.size.X == 16 and m.size.Z == 16 and b.sign ~= nil and m.sign ~= nil
+				and TR.inside(b, b.pos + Vector3.new(0, 1, 0)) and not TR.inside(b, b.pos + Vector3.new(20, 1, 0)))
+		check("transit: opens 60 s into the raid, 20 s countdown (SPT)", TR.CFG.openAfter == 60 and TR.CFG.timer == 20)
+		local pmcList = m and TR.extractsFor("border", m.pos, false) or {}
+		local scavList = b and TR.extractsFor("meridian", b.pos, true) or {}
+		local carIn = false
+		for _, id in scavList do
+			carIn = carIn or ctx.Extract.isCar(ctx.World.maps.meridian.extracts[id])
+		end
+		check("transit: arriving, a PMC gets the nearest spawn's exits, a scav every exit but the car",
+			#pmcList > 0 and #scavList >= 5 and not carIn)
+		local mrp = ctx.World.maps.meridian.extracts.RP
+		local other = ctx.World.activeMap ~= "meridian"
+		check("transit: the exits of a map that is not in play keep their own keys in the raid's tables (map:id)",
+			mrp ~= nil and ((other and ctx.Extract.key(mrp) == "meridian:RP") or (not other and ctx.Extract.key(mrp) == "RP")))
+	end
+
 	-- co-op exits (Tarkov's Boiler Room Basement): a PMC and a player scav in the zone together; the hold breaks when the
 	-- partner leaves; both gain Fence standing (stand-in raiders: a rig in the zone as the partner)
 	if ctx and ctx.World and ctx.Extract and ctx.Raid and ctx.Economy and ctx.World.maps.border then

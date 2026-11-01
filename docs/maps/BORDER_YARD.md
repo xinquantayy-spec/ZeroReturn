@@ -153,7 +153,8 @@ mounted weapons (`L.hazard.propane` and `.mounted` are empty: no reference data 
 
 Parity gaps (to copy into `docs/design/EFT_PARITY.md`, which was outside part 1's scope):
 
-- BOILER CELLAR is Tarkov's co-op exit since 2026-11-02 (a PMC and a player scav together); transits do not exist here yet.
+- BOILER CELLAR is Tarkov's co-op exit since 2026-11-02 (a PMC and a player scav together). TRANSIT TO MERIDIAN MALL stands at the
+  trailer lot's wood (2026-11-02); the other transits do not exist.
 - The Voron note for SMUGGLERS' HOLE and SMUGGLERS' BOAT and the ZB-1013 key for the K-13 basement door have no items; the two
   exits are plain 50 % chance extracts and the bunker door is not locked. The green flare exists since 2026-11-02 (NORTH LINE opens
   by flare, OLD PUMPS sends up green flares while it is there; `docs/design/EFT_PARITY.md`, "Flare exits").
@@ -531,8 +532,8 @@ Budget 2,450 parts (counted as it goes); the run prints the real count.
   checked by `tools/luau_check.py` only; the pad and parapet clearance was worked out offline, and the arcs against the yard and a
   gunner's sight lines have not been seen in Studio.
 - Co-op extracts and transits: BOILER CELLAR is a co-op exit since 2026-11-02 (a PMC and a player scav in the zone together;
-  the stairs door down still takes the boiler house key, our addition). The transits to Factory, Interchange, Reserve and
-  Shoreline that the reference lists do not exist.
+  the stairs door down still takes the boiler house key, our addition). The transit to Interchange links to Meridian Mall
+  since 2026-11-02 (`docs/design/TRANSITS.md`); those to Factory, Reserve and Shoreline do not exist.
 - THE HOUNDS (the knight with Big Pipe and Birdeye), THE CULT (the sect priest with his warriors) and THE FORESTER (the partisan,
   with his tripwires in the doorways near the dorms and the frame) were built 2026-11-02 (`docs/design/BOSS_HOUNDS.md`,
   `docs/design/BOSS_CULT.md`, `docs/design/BOSS_FORESTER.md`).

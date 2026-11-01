@@ -201,7 +201,8 @@ the item exists.
 
 ## Parity gaps (copied to `docs/design/EFT_PARITY.md`)
 
-- Transits do not exist. WEST CAMP is Tarkov's co-op exit since 2026-11-02 (a PMC and a player scav together); SHELTER EXIT supports
+- TRANSIT TO BORDER YARD stands at the highway's south end (2026-11-02); the one to Streets does not exist. WEST CAMP is Tarkov's
+  co-op exit since 2026-11-02 (a PMC and a player scav together); SHELTER EXIT supports
   only the power rule (the hidden switch and the keycard panel are Play's). RIVER PATH opens by green flare since 2026-11-02.
 - SUBSTATION CAR is a vehicle exit now (50 % chance, pay at the car, 4 seats, shared 60 s countdown, single use); it costs 20,000 MK (the
   2026 figure) and the price does not depend on Scav karma (a gap). FENCE GAP's `nobag` rule is new.

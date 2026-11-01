@@ -27,6 +27,15 @@ do
 		warn("[ZR] Tripwires failed to load, no traps this server:", Tripwires)
 	end
 end
+-- transits between maps (Services/Transit.luau) are optional too: without them every map is a raid of its own
+do
+	local okTr, Transit = pcall(require, Services:WaitForChild("Transit"))
+	if okTr then
+		ctx.Transit = Transit
+	else
+		warn("[ZR] Transit failed to load, no transits this server:", Transit)
+	end
+end
 -- airdrops (Services/Airdrop.luau) are optional too: a fault is logged and the raid runs without the plane
 do
 	local okAir, Airdrop = pcall(require, Services:WaitForChild("Airdrop"))
@@ -75,6 +84,13 @@ if ctx.Glass then
 	local okInit, errInit = pcall(ctx.Glass.init, ctx)
 	if not okInit then
 		warn("[ZR] Glass init failed, panes will not break:", errInit)
+	end
+end
+if ctx.Transit then
+	local okTr, errTr = pcall(ctx.Transit.init, ctx)
+	if not okTr then
+		warn("[ZR] Transit init failed:", errTr)
+		ctx.Transit = nil
 	end
 end
 -- after Glass: the wires' shot check wraps the panes' (Ballistics.through)

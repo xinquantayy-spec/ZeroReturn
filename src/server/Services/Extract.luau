@@ -102,9 +102,27 @@ function Extract.rollOpen(r, roll)
 	return (roll or math.random()) < (r.chance or 0.5)
 end
 
+-- the raid's tables (extractOpen, flareOpen) hold the map in play under the exit's id and any other map (where a
+-- transit took someone, Transit.luau) under "map:id": both maps may have an exit of the same id
+function Extract.key(e)
+	if e.map == nil or e.map == ctx.World.activeMap then
+		return e.id
+	end
+	return e.map .. ":" .. e.id
+end
+
+-- the exits of the map a raider is on (the map in play, or the one a transit took them to)
+function Extract.listFor(s)
+	local m = s and s.map and s.map ~= ctx.World.activeMap and ctx.World.maps[s.map]
+	if m then
+		return m.extracts or {}
+	end
+	return ctx.World.extracts
+end
+
 -- is the exit there this raid? (only a rolling exit can be absent; a roll that has not happened yet counts as absent)
 local function isOpen(e)
-	return not Extract.hasChance(e.rule) or ctx.Match.extractOpen[e.id] == true
+	return not Extract.hasChance(e.rule) or ctx.Match.extractOpen[Extract.key(e)] == true
 end
 
 -- the car's state for this raid, created on the first fare
@@ -168,12 +186,16 @@ end
 -- Returns the names of the exits it opened (the active map's only: World.extracts is the map in play).
 function Extract.openFlareAt(p)
 	local opened = {}
-	for id, e in ctx.World.extracts do
-		local r = e.rule
-		if r and r.kind == "flare" and not ctx.Match.flareOpen[id] then
-			if Vector3.new(p.X - e.pos.X, 0, p.Z - e.pos.Z).Magnitude <= (r.radius or 60) then
-				ctx.Match.flareOpen[id] = true
-				table.insert(opened, e.name)
+	-- every map's exits (a transit may have taken the shooter to a map that is not the one in play; maps lie far apart)
+	for _, m in ctx.World.maps do
+		for _, e in m.extracts or {} do
+			local r = e.rule
+			local k = Extract.key(e)
+			if r and r.kind == "flare" and not ctx.Match.flareOpen[k] then
+				if Vector3.new(p.X - e.pos.X, 0, p.Z - e.pos.Z).Magnitude <= (r.radius or 60) then
+					ctx.Match.flareOpen[k] = true
+					table.insert(opened, e.name)
+				end
 			end
 		end
 	end
@@ -298,11 +320,15 @@ end
 -- nil when the extract can be used right now, else (reason code, text for the player)
 function Extract.blocked(player, s, e)
 	local r = e.rule or {}
-	if Extract.isCar(e) then
+	if s.transit then
+		return "TRANSIT", "TRANSIT UNDER WAY: NO OTHER EXIT" -- Tarkov: once a transit starts no other exit can be used
+	elseif Extract.isCar(e) and e.map ~= nil and e.map ~= ctx.World.activeMap then
+		return "CLOSED", "NOT AVAILABLE THIS RAID" -- a car stands only on the map in play (its roll and its seats are that map's)
+	elseif Extract.isCar(e) then
 		return carBlocked(player, s, e)
-	elseif Extract.hasChance(r) and not ctx.Match.extractOpen[e.id] then
+	elseif Extract.hasChance(r) and not ctx.Match.extractOpen[Extract.key(e)] then
 		return "CLOSED", "NOT AVAILABLE THIS RAID"
-	elseif r.kind == "flare" and not ctx.Match.flareOpen[e.id] then
+	elseif r.kind == "flare" and not ctx.Match.flareOpen[Extract.key(e)] then
 		return "FLARE", r.needs or "FIRE A GREEN FLARE IN THE SIGNAL AREA"
 	elseif r.kind == "scav" and not s.scav then
 		return "SCAV_ONLY", "SCAVS ONLY"
@@ -571,15 +597,22 @@ function Extract.tick()
 	if not okCar then
 		warn("[ZR] car tick", errCar)
 	end
+	if ctx.Transit then
+		local okTr, errTr = pcall(ctx.Transit.tick)
+		if not okTr then
+			warn("[ZR] transit tick", errTr)
+		end
+	end
 	for player, s in ctx.Raid.sessions() do
 		if not s.done and (s.state == "ACTIVE" or s.state == "EXTRACTING") then
 			local char = player.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local root = char and char:FindFirstChild("HumanoidRootPart")
 			local zone = nil
+			local exts = Extract.listFor(s)
 			if hum and hum.Health > 0 and root then
 				for _, id in s.extracts do
-					local e = ctx.World.extracts[id]
+					local e = exts[id]
 					if e and Extract.inside(e, root.Position) then
 						zone = id
 						break
@@ -588,7 +621,7 @@ function Extract.tick()
 			end
 			if s.state == "ACTIVE" then
 				if zone then
-					local e = ctx.World.extracts[zone]
+					local e = exts[zone]
 					if Extract.isCar(e) then
 						-- a car has no hold: the fare is paid at the car, so the zone only says what to do (once per visit and reason)
 						local why, text = Extract.blocked(player, s, e)
@@ -621,7 +654,7 @@ function Extract.tick()
 			elseif s.state == "EXTRACTING" then
 				local whyHold, textHold = nil, nil
 				if zone == s.exZone then
-					whyHold, textHold = Extract.holdBlocked(s, ctx.World.extracts[zone], player)
+					whyHold, textHold = Extract.holdBlocked(s, exts[zone], player)
 				end
 				if zone ~= s.exZone then
 					s.state = "ACTIVE"
@@ -635,7 +668,7 @@ function Extract.tick()
 					s.exDenied = zone
 					ctx.Remotes.note(player, "extract", { state = "denied", zone = zone, reason = whyHold, text = textHold })
 				elseif t >= s.exEnds then
-					if not complete(player, s, ctx.World.extracts[zone]) then
+					if not complete(player, s, exts[zone]) then
 						s.state = "ACTIVE"
 						s.exZone = nil
 						s.exEnds = nil

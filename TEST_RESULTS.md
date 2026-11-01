@@ -8,6 +8,36 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Transits (2026-11-02)
+
+One player, Border raids at 13:00, god mode.
+
+- **Border Yard's transit:** the zone at the trailer lot's wood edge, with its blue mark, the sign "TRANSIT · MERIDIAN
+  MALL" hanging beside the post, and a wreck parked beside it (`docs/maps/evidence/BY_transit_zone.jpg`,
+  `BY_transit_sign.jpg`).
+  - At first the sign hung in front of the post, which hid letters from behind. It now hangs beside the post.
+  - Standing in the zone showed "[F] TRANSIT · MERIDIAN MALL".
+- **Too early:** 10 s into the raid the start was refused (TOO_EARLY).
+- **After 60 s:**
+  - The 20 s countdown ran with "STAY IN THE TRANSIT ZONE" and the transit's name on the bar
+    (`BY_transit_countdown.jpg`).
+  - The player arrived at Meridian Mall's highway south end (-603, 10239).
+  - The session's map became meridian with the exits RC, SC, SE, WC, RP and FG, and the bodycam read MERIDIAN MALL.
+  - Six scavs were let out on Meridian Mall.
+- **Exits on arrival:** O listed the six Meridian exits with their rules and "TRANSIT TO BORDER YARD · TRANSIT · OPEN"
+  (`MM_transit_arrival_exits.jpg`).
+- **Leaving from the new map:** at RESCUE CHECKPOINT the raid ended in a success after 8.3 s; the profile counted one
+  survived raid.
+- **Stepping out of the zone** 2 s into a countdown cancelled it (1 cancelled), and the exits stayed Border's.
+- **There and back:** Border to Meridian, then Meridian to Border. The player arrived at Border's transit with the east
+  side's exits again; 2 arrivals.
+- **Tests, all passing:** LogicTests 381 (4 new in "transit": the two transits and their zones; the SPT timings; the exits
+  on arrival for a PMC and a scav; the other map's keys), CharTests 47, LookTests 33, MapTests 38.
+- **Not verified:**
+  - a squad;
+  - two players arriving together;
+  - a flare or a chance exit used on the other map (the keys are tested, not a flare fired there).
+
 ## Co-op exits (2026-11-02)
 
 One player in Studio, so the partner side ran with a stand-in (a rig placed in the zone) in LogicTests; the zone itself

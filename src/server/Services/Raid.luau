@@ -55,8 +55,9 @@ end
 
 function Raid.raidInfo(s)
 	local ex = {}
+	local exts = ctx.Extract.listFor(s)
 	for _, id in s.extracts do
-		local e = ctx.World.extracts[id]
+		local e = exts[id]
 		local r = e.rule or {}
 		-- a car (paid exit with seats) that rolls for being there is listed like a chance exit; one that has left is closed for good
 		local gone = ctx.Extract.carLeft(e)
@@ -64,13 +65,14 @@ function Raid.raidInfo(s)
 			id = id, name = e.name, pos = e.pos, rule = r.kind, cost = r.cost, key = r.key, powered = (r.kind == "power" and ctx.World.switchOn(r.switch) and (not r.also or ctx.World.switchOn(r.also))
 				and (not r.last or ctx.World.switchOn(r.last))) or nil,
 			chance = (r.kind ~= "chance" and ctx.Extract.hasChance(r)) or nil, seats = r.seats, depart = r.depart,
-			flared = (r.kind == "flare" and ctx.Match.flareOpen[id]) or nil, area = r.kind == "flare" and (r.radius or 60) or nil,
+			flared = (r.kind == "flare" and ctx.Match.flareOpen[ctx.Extract.key(e)]) or nil, area = r.kind == "flare" and (r.radius or 60) or nil,
 			closed = gone or nil, closedText = gone and "THE CAR HAS LEFT" or nil,
 		})
 	end
 	return {
 		id = s.id, started = s.raidStart or s.started, endsAt = s.endsAt, spawn = s.spawn, extracts = ex, state = s.state,
-		exEnds = s.exEnds, exZone = s.exZone, scav = s.scav, env = ctx.Match.env, map = ctx.Match.map,
+		exEnds = s.exEnds, exZone = s.exZone, scav = s.scav, env = ctx.Match.env, map = s.map or ctx.Match.map,
+		transits = ctx.Transit and ctx.Transit.infoFor(s) or nil, transit = s.transit and { to = s.transit.to, ends = s.transit.ends } or nil,
 	}
 end
 
@@ -249,6 +251,9 @@ function Raid.resetWorld()
 	if not okCars then
 		warn("[ZR] car reset", errCars)
 	end
+	if ctx.Transit then
+		pcall(ctx.Transit.reset) -- nobody has crossed to another map yet
+	end
 	ctx.AI.reset()
 	Raid.world.status = "RUNNING"
 end
@@ -359,7 +364,7 @@ function Raid.enter(player, kind, spawn, idx)
 	local s = {
 		id = raidId, inv = raidInv, state = "ACTIVE", started = t, raidStart = ctx.Match.startedAt, endsAt = ctx.Match.endsAt,
 		match = ctx.Match.id, spawn = spawn.id, extracts = ctx.Match.extractsFor(spawn, scav), kills = 0, risked = {}, found = {},
-		scav = scav, xp = 0, karma = prof.karma or 0, karmaDelta = 0,
+		scav = scav, xp = 0, karma = prof.karma or 0, karmaDelta = 0, map = ctx.Match.map,
 		active = (raidInv.slots.primary and "primary") or (raidInv.slots.secondary and "secondary") or (raidInv.slots.holster and "holster") or (raidInv.slots.melee and "melee") or nil,
 	}
 	for g in raidInv.items do

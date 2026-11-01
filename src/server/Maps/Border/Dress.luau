@@ -306,6 +306,20 @@ return function(B)
 				end
 			end
 		end
+		-- the vehicles parked at a transit (Tarkov's Customs: "a cluster of parked vehicles next to the Trailer Park")
+		for _, tr in W.transits or {} do
+			local tx, tz = tr.pos.X - O.X, tr.pos.Z - O.Z
+			local got = 0
+			for _ = 1, 16 do
+				if got < 2 then
+					local a = drng:NextNumber(0, math.pi * 2)
+					local r = drng:NextNumber(12, 17)
+					if wreckAt(tx + math.cos(a) * r, tz + math.sin(a) * r, drng:NextNumber(0, 360), { slope = 0.3, shadows = true, bld = 4 }, 1) then
+						got += 1
+					end
+				end
+			end
+		end
 		-- car parks: cars along the yard's axes with a little scatter
 		local PARKS = { [11] = 3, [13] = 2, [14] = 1, [8] = 2, [7] = 2, [9] = 3, [5] = 2, [4] = 1, [2] = 2, [0] = 3, [6] = 1, [12] = 1 }
 		local PO = { slope = 0.3, shadows = true, bld = 4 }

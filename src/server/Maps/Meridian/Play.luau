@@ -666,6 +666,15 @@ return function(B)
 	-- ═══════════════════════════════════════════════════════════════════════════════════════════════════
 	-- extracts: the seven (our names); the shelter and the service tunnel stand on the L0 floor under the mall
 	-- ═══════════════════════════════════════════════════════════════════════════════════════════════════
+	-- transits (Tarkov 0.15; docs/design/TRANSITS.md): Interchange's transit to Customs is at the highway's south end (SPT
+	-- icon at -193, 430 m on the aerial's edge; the playable ground ends at z 405 m, so ours stands at 395 m: -603, 1234)
+	try("transits", function()
+		local p = V(-603, ground(-603, 1234) + 0.1, 1234)
+		W.transits = {
+			{ id = "TR_BORDER", name = "TRANSIT TO BORDER YARD", to = "border", pos = p, size = Vector3.new(16, 10, 16), cf = CFrame.new(p + Vector3.new(0, 4.5, 0)) },
+		}
+	end)
+
 	try("extracts", function()
 		local ex = kit.model("Extracts", map)
 		local sideIds = { nw = {}, se = {} }

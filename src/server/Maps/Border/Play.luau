@@ -745,6 +745,17 @@ return function(B)
 		table.insert(W.bosses, cult)
 	end)
 
+	-- ── transits (Tarkov 0.15; docs/design/TRANSITS.md) ─────────────────────────────────────────────────────────
+	-- Customs' transit to Interchange stands among parked vehicles next to the Trailer Park (SPT: 465, -190 m, our
+	-- 1453, -594). That point is inside the trailer lot's wood, so ours stands 46 studs north-west at its edge, where the
+	-- ground is clear (checked in Studio); Dress parks two wrecks beside it.
+	try("transits", function()
+		local p = route({ { 1420, -560 } })[1]
+		W.transits = {
+			{ id = "TR_MERIDIAN", name = "TRANSIT TO MERIDIAN MALL", to = "meridian", pos = p, size = Vector3.new(16, 10, 16), cf = CFrame.new(p + Vector3.new(0, 4.5, 0)) },
+		}
+	end)
+
 	-- THE FORESTER (Tarkov's Partisan; docs/design/BOSS_FORESTER.md): a lone boss with 950 health and no armour, 20 % (more
 	-- when raiders with low karma are in), who roams the tree lines and the construction site's edges (the 2026 guides; the
 	-- dorms are where he was seen most) and leaves tripwires in the doorways near his walk. He hunts raiders with low
