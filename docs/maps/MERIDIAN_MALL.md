@@ -1164,6 +1164,90 @@ low-end phone with about 2,750 more parts on top of the shell's.
 | `src/server/Maps/Meridian/Stores.luau` | the dispatcher (the L1 agent's): runs `StoresL1` then `StoresL2`; unchanged |
 | `docs/design/EFT_PARITY.md` | the parity gaps above, as "Interchange upper floor stores and car-park rooms: Meridian Mall, part 4b" |
 
+## Small shops: wall fixtures, floor fixtures, litter and fitting rooms (`StoresFill.luau`, 2026-11-01)
+
+A Studio screenshot of L1 TAILORED (`L1_kostin`) showed about nine props and bare walls. `StoresFill.luau` is a furnishing pass that runs
+when a shop's recipe is done (L1: at the end of `shop()`; L2: after the room's lamps). It only adds: the stores' containers, loose-loot
+spots and doors are the same list, in the same places, with and without it (checked offline, below). It is called under `pcall`; if it
+is missing or fails, a shop stays as its recipe made it.
+
+### What Tarkov's small shops hold (read 2026-11-01)
+
+No page describes the fixtures of the small shops; they name containers and loot, not furniture.
+
+- eft-ammo wiki (Interchange): tech stores (Texho, Techlight, Rasmussen) have shelving and boxes; medical stores shelved medicine; KIBA
+  weapon boxes, racks, armour racks and ammunition cases; the clothing shops "dominate the second level", with no description.
+  Mannequins, fitting rooms and posters are not mentioned.
+- ensigame guide: ADIK has a weapon box, three jackets, a duffle bag and occasional hat, backpack and armour spawns; the EMERCOM unit has
+  loose medical items, three medbags, a jacket and a weapon crate. thelostgamer guide: KIBA has a weapon cabinet, two registers, two weapon
+  crates, shelves and cabinets of mods and a box of grenades by the counter.
+- The fandom wiki, ggrecon, sportskeeda (names five clothing shops, no interiors), ginx.tv (published 2023-05-09, updated 2024-07-19), the
+  biligame wiki and tarkov.dev (page metadata only) add nothing about small-shop interiors.
+- Our own `docs/maps/reference/INTERCHANGE_REFERENCE.md` agrees with the above (KIBA: armour on mannequins, registers, weapon boxes).
+
+So the fixtures are what a shop of that kind has, by general retail knowledge, and the containers stay what the recipes already name.
+
+### What was added, by shop type (45 shops: 28 on L1, 17 on L2)
+
+| Type (shops) | Wall units | Floor fixtures | Litter |
+|---|---|---|---|
+| Clothing (17) | hanging-clothes rails over folded stacks, pegboards, kit shelves | clothes racks, display tables, mannequins, clothes bins | clothes heaps, cartons, a toppled rack or mannequin |
+| Electronics (7) | TV walls, kit shelves, pegboards | tech tables, plinths with products, glass counters | cartons, glass shards, papers |
+| Sports (4) | shoe-box walls, shelves, rails, pegboards | weight racks, roll cages, benches, mannequins | shoe boxes, clothes heaps |
+| General and food (6) | kit shelves, fridges | gondolas, goods bins, trolleys | fallen goods, cartons, glass shards |
+| Books, toys, shoes (3) | book shelves / shelves and pegboards / shoe walls | gondolas, tables, benches, an arcade cabinet, bins | books, toys, shoe boxes |
+| Homeware, furniture, lighting (3) | shelves, pegboards | sofas, tables, a bed, rugs, standing lamps | cartons, a cardboard pile |
+| Pharmacy, travel, museum (5) | medicine shelves / cork boards, pegboards | glass counters / luggage, benches / plinths and cases | papers, cartons |
+
+- **A fitting room in every clothing shop (17 of 17).** Two or three cubicles with curtains, mirrors and stools under a header, against a free
+  stretch of wall (with the walking strip in front) or free-standing with a back panel; the two most crowded shops (FASHION STORE,
+  URBAN CLOTHES) have a single cubicle.
+- **Posters and price boards** on every shop's bare wall: a frame and a coloured sheet, no lettering and no brand. A coloured band runs along
+  the top of the walls.
+- **Not touched:** the three anchors and IDEA's bistro, the food-court restaurants (their kitchens are recipes of their own), the locked stores
+  (KIBA, EMERCOM, ULTRA's room) and the closed and unlabelled units.
+
+### Budget and how it is counted
+
+- Limit: +2,000 parts over both levels, a part being every Part and MeshPart (kit pieces and invisible colliders included). Counted by running
+  the offline mock with and without the pass: stores 7,352 parts before (L1 4,611, L2 2,741), 9,280 after (L1 6,170, L2 3,110), so
+  **+1,928** (1,091 own, 632 kit pieces, 205 colliders; 271 kit props): fitting rooms 224, wall units 327, posters 248, wall bands 140, floor
+  fixtures 753, litter 236. The pass stops at 1,960 in all, 1,650 on L1 and 560 on L2 (it never reached them). A shop's share follows its
+  floor area (24 to 80 parts on L1, 16 to 38 on L2) and each phase may spend only a part of it. The log prints `[ZR] Meridian small shops
+  L1`, `L2` and `both floors` with these numbers; the L2 module's own part limit does not count them.
+- Every new part has CastShadow and CanTouch off; none has a light. The ones nobody bumps into (posters, bands, litter under a stud high, rugs,
+  hanging clothes) also have CanCollide and CanQuery off, so loot-snap rays, bullets and AI rays pass through; only fixtures that stand in
+  the way keep collision (kit colliders, partitions, bins, counters, stools, lamp poles). Colours come from one palette of 25 and sizes
+  repeat: a rail of clothes is one long part, a shelf of boxes one box.
+
+### Checked offline (mock: kit props are boxes there; nothing ran in Luau, Studio, on a phone or for frame rate)
+
+- `python3 tools/luau_check.py src`: 140 files, 0 failing; `StoresFill` has no undefined global in the mock's run.
+- Containers (397), loose spots (406) and doors (76) are identical with and without the pass.
+- No collidable part of ours stands in a loose spot's drop column, within 1.5 studs of a container, in an entrance's keep-out (9 studs
+  deep, the opening's width plus 3; wall units may touch its edge) or in the 7-stud lane in front of a stock door (the closest part
+  of ours stands 0.8 stud from a door leaf). None overlaps a recipe part by more than 0.35 stud; no poster or band sinks into one.
+- Walkable floor on a 1-stud grid with a 1.2-stud margin round every solid: each container, each stock door and each pair of entrances
+  that could reach each other before the pass still can (665 checks, none lost).
+
+### Remaining gaps (for `docs/design/EFT_PARITY.md`, which this change did not touch)
+
+- **Small-shop interiors are ours.** No source gives their fixtures, so racks, shelves, fitting rooms and clutter are by kind, not a copy
+  of any Tarkov shop; posters are blank coloured sheets.
+- **L2 shops stay sparse.** Their recipes already fill the floor, so 17 shops got +369 parts (SARA, ARENA, NA SVYAZI and TARKOVSTAR 7 to 16,
+  mostly posters, bands and litter); L1's shallow shops (VOYAGE, GERMAN, SPIEL, TEXHO) did not reach their targets for the same reason.
+- **Unverified in the engine:** the real part count and load time (the pass hands the thread back every 0.04 s), the look and scale of the
+  fixtures (kit meshes in `ZR_Assets`; a missing mesh is skipped), the loot snap and AI paths round them, and frame rate on a low-end
+  phone with about 1,900 more parts.
+
+### Files (small shops)
+
+| File | What |
+|---|---|
+| `src/server/Maps/Meridian/StoresFill.luau` | new: the pass (`B.shopFill`; `Fill.shop(a)`, `Fill.report(level)`), the styles by shop kind, the budget |
+| `src/server/Maps/Meridian/StoresL1.luau` | the `fill` adapter, called at the end of `shop()`, and the log line |
+| `src/server/Maps/Meridian/StoresL2.luau` | the same for the L2 rooms (`FILL_KIND`, Intourist's board kept clear) and the log lines |
+
 ## Tested in Studio (2026-11-01)
 
 The whole map ran in Studio on the T490 (one client, in-memory store); see `TEST_RESULTS.md`, Meridian Mall on Interchange.

@@ -182,6 +182,40 @@ return function(B)
 		f:lamps(nx, nd, {})
 	end
 
+	-- the furnishing pass of the small shops (StoresFill.luau): a fitting room, wall units, posters, floor fixtures and litter, added
+	-- after the recipe within a fixed part budget. It takes floor space in the frame like any prop and moves nothing the recipe placed;
+	-- a pass that is missing or fails leaves the shop as the recipe made it.
+	local Fill = nil
+	local fillMod = script.Parent:FindFirstChild("StoresFill")
+	if fillMod then
+		local okFill, resFill = pcall(function()
+			return require(fillMod)(B)
+		end)
+		if okFill then
+			Fill = resFill
+		else
+			warn("[ZR] Meridian stores L1: StoresFill did not load: " .. tostring(resFill))
+		end
+	end
+	local function fill(f, u, kind)
+		if not Fill then
+			return
+		end
+		Fill.shop({
+			id = f.id, level = 1, cf = f.cf, W = f.W, D = f.D, ceil = f.ceil, kind = kind, u = u,
+			rects = function()
+				local out = {}
+				for _, r in f.occ do
+					out[#out + 1] = { r[1], r[2], r[3], r[4] }
+				end
+				return out
+			end,
+			take = function(x0, d0, x1, d1)
+				f:reserve(x0, d0, x1, d1)
+			end,
+		})
+	end
+
 	-- a shop: containers first (they need their wall spots), the cash desk, the wall units, the island rows, a few front props
 	local function shop(f, u, s)
 		local rc = RECIPES[s.r]
@@ -213,6 +247,7 @@ return function(B)
 		end
 		loot(f, rc, s)
 		lights(f)
+		fill(f, u, s.r)
 	end
 
 	-- ── the stock room behind a deep shop: racks on the back wall, a container, a little loot ───────────────────────
@@ -541,6 +576,9 @@ return function(B)
 	end
 	table.sort(kinds)
 	print(string.format("[ZR] Meridian stores L1: %s, %.2fs", T.report(), os.clock() - t0))
+	if Fill then
+		print("[ZR] Meridian small shops L1: " .. Fill.report(1))
+	end
 	print("[ZR] Meridian stores L1 containers: " .. table.concat(kinds, ", "))
 	B.count = B.count or {}
 	B.count.storesL1 = n.parts

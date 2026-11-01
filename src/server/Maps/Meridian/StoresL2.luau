@@ -1727,6 +1727,52 @@ return function(B)
 		L2_ultra_med_locked_room = { ref = "ULTRA med (locked room)", name = "MEDIQ STORE ROOM" },
 	}
 
+	-- the furnishing pass of the small shops (StoresFill.luau): a fitting room, wall units, posters, floor fixtures and litter, added
+	-- after the recipe and the lamps, within its own part budget (these parts are not counted in LIMIT above). The frame's solids carry
+	-- what it takes, so nothing else is placed over it; a pass that is missing or fails leaves the shop as the recipe made it.
+	local Fill = nil
+	local fillMod = script.Parent:FindFirstChild("StoresFill")
+	if fillMod then
+		local okFill, resFill = pcall(function()
+			return require(fillMod)(B)
+		end)
+		if okFill then
+			Fill = resFill
+		else
+			warn("[ZR] Meridian StoresL2: StoresFill did not load: " .. tostring(resFill))
+		end
+	end
+	local FILL_KIND = {
+		clothing = true, general = true, pharmacy = true, electronics = true, furniture = true, museum = true, travel = true, sports = true,
+	}
+	local function fill(F, u, plan)
+		if not Fill or not FILL_KIND[plan.tint] then
+			return
+		end
+		local a = {
+			id = u.id, level = 2, cf = F.cf, W = F.w, D = F.d, ceil = F.h, kind = plan.tint, u = u,
+			rects = function()
+				local out = {}
+				for _, s in F.solids do
+					out[#out + 1] = { s[1], s[3] + F.hd, s[2], s[4] + F.hd }
+				end
+				for _, s in F.keeps do
+					out[#out + 1] = { s[1], s[3] + F.hd, s[2], s[4] + F.hd }
+				end
+				return out
+			end,
+			take = function(x0, d0, x1, d1)
+				F.solids[#F.solids + 1] = { x0, x1, d0 - F.hd, d1 - F.hd }
+			end,
+		}
+		if plan.ref == "Intourist" then
+			-- the departure board hangs on the middle of the back wall; the recipe does not keep that floor space
+			a.noPoster = { B = true }
+			a.extra = { { -6.5, F.d - 2.0, 6.5, F.d } }
+		end
+		Fill.shop(a)
+	end
+
 	-- the L0 rooms first (their budget is reserved), then the locked store, then the shops in id order
 	local rooms0 = {}
 	local l0 = B.units["L0_saferoom_exfil_room"]
@@ -1781,6 +1827,7 @@ return function(B)
 			if S then
 				S:lightUp()
 			end
+			fill(F, u, plan)
 			done[#done + 1] = id
 		end)
 		if not ok then
@@ -1806,6 +1853,10 @@ return function(B)
 		"[ZR] Meridian stores L2: %d rooms (%d L2 units, %d L0 rooms), %d kit props, %d parts (%d kit pieces and colliders, %d own), %d containers, %d loose spots, %d new doors, %d keyed doors, %d lamps, %d placements refused, %d cut for budget, %.2fs",
 		n.rooms, #done + mediqDone, #rooms0, n.props, n.kparts + n.parts, n.kparts, n.parts, n.containers, n.loose, n.doors, n.keyed, n.lights, n.rejected, n.cut, os.clock() - t0
 	))
+	if Fill then
+		print("[ZR] Meridian small shops L2: " .. Fill.report(2))
+		print("[ZR] Meridian small shops, both floors: " .. Fill.report())
+	end
 	-- an offline test harness sets B.debugStores to read the rooms back; the game never sets it
 	if B.debugStores then
 		local out = {}
