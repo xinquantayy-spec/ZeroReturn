@@ -61,7 +61,18 @@ SHELTER EXIT:
 - No path with the power on and the valve pulled while THE SHELTER's card door is locked. That is by design: the chain is power, then the valve in the L2 washroom, then CARD_MALL_VAULT at the door.
 - With the door unlocked (`door MM_SHELTER`): car park to the door, the door to the exit and the car park to the exit all have paths.
 
-Still by hand: the paid car taking the money and leaving, FENCE GAP refusing a player with a backpack, and the messages at each step of the shelter chain.
+Exit rules, player teleported into each zone, with the client's `extract` notes logged:
+
+| Exit | State | Note to the player |
+|---|---|---|
+| FENCE GAP | wearing the canvas bag | denied: BACKPACK SLOT MUST BE EMPTY |
+| SHELTER EXIT | power on, valve pulled | hold starts; stepping out cancels it |
+| SHELTER EXIT | power on, valve not pulled | denied: SEALED · FIND THE VALVE HIDDEN IN A WASHROOM |
+| SHELTER EXIT | power off | denied: NO POWER · THROW THE SWITCH AT THE SUBSTATION |
+| RIVER PATH | open | hold starts; stepping out cancels it |
+| SUBSTATION CAR | 250,000 on the profile | hold starts showing 20,000. After the normal hold the raid ends SUCCESS, money is 230,000, and raids and survived each go up by 1 |
+
+Gap: Tarkov's car exits (V-Ex) take 5,000 roubles per player for at most four players, are not there every raid, and leave once a group has used them. We have no per-raid chance and no departure, and our car uses the normal hold instead of the vehicle's longer countdown. The countdown length needs checking against Tarkov.
 
 ## Frame time in Studio: where it goes (2026-11-01, Meridian, KASSA)
 
