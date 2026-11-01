@@ -148,21 +148,15 @@
     - **FENCE GAP.** The guides also mention an orange oil tanker nearby. There is no tanker prop.
     - **SHELTER gun bench.** It stands 0.30 studs off its wall; the audit flags 0.25.
 
-72. **Grass blades inside STORE 3 along its north wall (seen 2026-11-02; cause not found).** Yellow grass blades stand
-    on the floor inside the office corner, at the foot of the north wall, by the roller door and the personnel door
-    (`docs/maps/evidence/BY_store3_wall_grass.jpg`). What was ruled out:
-    - The client's ground cover: none of its grass meshes stand inside the building.
-    - Terrain grass under the floor: the voxels inside are concrete. The concrete under buildings now reaches 3 studs
-      past the walls, and the blades are still there.
-    - The wall's foot grime decal: it is a flat texture, and the blades have depth.
-
-    The next suspects are:
-    - Roblox's terrain grass decoration, from the grass 4 studs outside the wall: its surface stands higher than the
-      floor inside, so a gap under the wall or the doors would let it show;
-    - something the doors draw.
-
-    Check the Terrain's Decoration and GrassLength settings in Studio. Hiding the wall part for a moment would show
-    where the blades grow from.
+72. **Grass blades inside STORE 3 along its north wall: fixed 2026-11-02.** The cause was terrain grass decoration from
+    voxels just outside the walls. The terrain itself was right: probes 0.5 studs inside the walls found grass at 14
+    points round STORE 3, where the voxels' surfaces blend into the next voxel's grass. Roblox draws a grass voxel's
+    blades a few studs past it, so with concrete only 3 studs out they rose through the floor along the walls.
+    - **Fix:** beyond the 3-stud concrete margin, every building on Border and Meridian now gets bare earth out to 7 studs
+      where the ground would be grass (`Ground.luau`, both maps).
+    - **Checked in Studio:** probes 0.7 studs inside the walls of all 67 Border and 49 Meridian buildings found no grass,
+      against 14 hits round STORE 3 before.
+    - **Not done:** the exact spot of the old picture was not found again for a picture of the floor after the fix.
 
 73. **The ambience sound atlas loads as 0.0 s long (seen 2026-11-02).** The client logs "the ambience atlas asset is 0.0 s
     long ... silent until ZR_SFX_Amb is re-uploaded". Everything that plays from it is silent:

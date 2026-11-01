@@ -62,8 +62,8 @@ Next round (`KNOWN_ISSUES` 69):
    - The green flare and flare exits: NORTH LINE and RIVER PATH open by flare, OLD PUMPS sends up green flares while it is there (`EFT_PARITY.md`, "Flare exits").
 
    Left from these:
-   - KNOWN_ISSUES 72: grass blades inside STORE 3;
    - KNOWN_ISSUES 73: the ambience atlas is silent until the owner re-uploads it.
+   (KNOWN_ISSUES 72, grass blades inside STORE 3, was fixed 2026-11-02: a bare-earth ring round every building.)
 3. **Performance on phones:** Border Yard and Meridian stream 16,000 to 18,600 parts near the player (KNOWN_ISSUES 65); try a smaller streaming radius in Studio's Workspace settings and merge plain walls, then measure in the device emulator.
 4. **Border Yard polish:** dorm interiors are done (furniture, washrooms, doors, glass; checked in Studio 2026-11-01). Still to do: the 0.16 interiors elsewhere, ladders, and the AI paths on Border stairs (KNOWN_ISSUES 68; the boiler cellar was inspected 2026-11-01).
 5. **Mounted guns, the rest:** the grenade launcher by hand, gamepad and touch, AI gunners firing a mounted gun, Blender art.

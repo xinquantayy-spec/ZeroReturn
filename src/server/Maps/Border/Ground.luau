@@ -697,24 +697,28 @@ return function(B)
 		end
 		-- under every building: concrete (class 3), so terrain grass never grows up through a ground floor (tall grass stood in
 		-- BLOCK A's ground-floor rooms, seen in Studio 2026-11-01). Three studs of margin round the footprint: a 4-stud
-		-- column straddling a wall line is concrete too (with one stud, grass blades stood along the inside of STORE 3's
-		-- north wall, 2026-11-02)
-		for _, b in L.blds do
-			local cxp, czp, w, d, rot = b[4], b[5], b[6], b[7], b[8]
-			if type(cxp) == "number" and type(czp) == "number" and type(w) == "number" and type(d) == "number" then
-				local a = math.rad(tonumber(rot) or 0)
-				local ca, sa = math.cos(a), math.sin(a)
-				local hw, hd = w / 2 + 3, d / 2 + 3
-				local reach = math.sqrt(hw * hw + hd * hd)
-				for i = colOf(cxp - reach), colOf(cxp + reach) do
-					local col = CL[i]
-					if col then
-						local x = xAt(i)
-						for k = rowOf(czp - reach), rowOf(czp + reach) do
-							if col[k] ~= nil then
-								local dx, dz = x - cxp, zAt(k) - czp
-								if math.abs(dx * ca + dz * sa) <= hw and math.abs(dz * ca - dx * sa) <= hd then
-									paint(i, k, 3)
+		-- column straddling a wall line is concrete too. Then bare earth (class 8) out to 7 studs where the ground would be
+		-- grass: Roblox draws a grass voxel's decoration a few studs past the voxel, so with concrete only 3 studs out the
+		-- blades still stood inside along the walls (STORE 3's north wall, KNOWN_ISSUES 72). Earth along a wall's foot reads
+		-- as its drip line. Two passes, so one building's earth never keeps a neighbour's concrete out.
+		local function eachBuilding(margin, fn)
+			for _, b in L.blds do
+				local cxp, czp, w, d, rot = b[4], b[5], b[6], b[7], b[8]
+				if type(cxp) == "number" and type(czp) == "number" and type(w) == "number" and type(d) == "number" then
+					local a = math.rad(tonumber(rot) or 0)
+					local ca, sa = math.cos(a), math.sin(a)
+					local hw, hd = w / 2 + margin, d / 2 + margin
+					local reach = math.sqrt(hw * hw + hd * hd)
+					for i = colOf(cxp - reach), colOf(cxp + reach) do
+						local col = CL[i]
+						if col then
+							local x = xAt(i)
+							for k = rowOf(czp - reach), rowOf(czp + reach) do
+								if col[k] ~= nil then
+									local dx, dz = x - cxp, zAt(k) - czp
+									if math.abs(dx * ca + dz * sa) <= hw and math.abs(dz * ca - dx * sa) <= hd then
+										fn(i, k, col)
+									end
 								end
 							end
 						end
@@ -722,6 +726,14 @@ return function(B)
 				end
 			end
 		end
+		eachBuilding(3, function(i, k)
+			paint(i, k, 3)
+		end)
+		eachBuilding(7, function(_, k, col)
+			if col[k] < 2 then
+				col[k] = 8
+			end
+		end)
 		for _, rd in L.roads do
 			local code = 5
 			if rd[2] == "G" then

@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## No grass through ground floors (2026-11-02)
+
+KNOWN_ISSUES 72, fixed.
+- **Before:** downward probes onto the terrain round STORE 3 found grass 0.5 studs inside the walls at 14 points. The terrain was concrete under the floor, but its surface blended into the grass voxels outside, and Roblox draws grass blades a few studs past a grass voxel.
+- **Change:** a ring of bare earth out to 7 studs round every building on both maps, wherever the ground would be grass.
+- **After:** probes 0.7 studs inside the walls found no grass under any of Border's 67 buildings (5,326 points) or Meridian's 49 (1,450 points). Inside STORE 3 along the north wall, no blades were seen.
+- **Tests:** all passing after the change (LogicTests 360, CharTests 47, LookTests 33, MapTests 38).
+
 ## Flare exits (2026-11-02)
 
 Border raids, one player, god mode, noon.
