@@ -1980,8 +1980,11 @@ function AI.reset()
 	director.nextTopUp = t + 6
 	task.spawn(function()
 		local W = ctx.World
-		local bossRaid = W.boss ~= nil and ((AI.forceBoss ~= nil) and AI.forceBoss or (math.random() < Config.BOSS_CHANCE))
+		-- a map's boss may carry its own chance and a list of zones to pick from (Interchange's Killa: 60 %, five zones)
+		local bossChance = (W.boss and W.boss.chance) or Config.BOSS_CHANCE
+		local bossRaid = W.boss ~= nil and ((AI.forceBoss ~= nil) and AI.forceBoss or (math.random() < bossChance))
 		AI.bossThisRaid = bossRaid
+		AI.bossZone = nil
 		for _, wp in W.watchPosts or {} do
 			if myGen ~= gen then
 				return
@@ -1993,7 +1996,10 @@ function AI.reset()
 			end
 		end
 		if bossRaid and W.boss then
-			local boss = AI.spawn("boss", W.boss.home, { route = W.boss.route, wp = 1, label = W.boss.label or "Foreman", name = W.boss.label, look = W.boss.look, loadout = W.boss.loadout })
+			local zones = W.boss.zones
+			local zone = (zones and #zones > 0) and zones[math.random(1, #zones)] or nil
+			AI.bossZone = zone and zone.name or nil
+			local boss = AI.spawn("boss", zone and zone.home or W.boss.home, { route = zone and zone.route or W.boss.route, wp = 1, label = W.boss.label or "Foreman", name = W.boss.label, look = W.boss.look, loadout = W.boss.loadout })
 			for i, p in W.boss.crew or {} do
 				if myGen ~= gen then
 					return

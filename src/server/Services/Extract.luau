@@ -1,7 +1,9 @@
 --!nonstrict
 -- Extraction zones: server checks position at 5 Hz; 6 s hold; leaving, dying or timer expiry cancels.
 -- Tarkov extract rules: open, paid (MK on exit), key (carry the key), chance (open or closed for the whole
--- raid, unknown until you get there), scav-only and power (works once a switch such as a generator is on). PMCs get their side's list, scavs every extract.
+-- raid, unknown until you get there), scav-only and power (works once a switch such as a generator is on; `also` names a
+-- switch that must be on first, as Interchange's shelter: mall power, then the washroom lever) and nobag (the Hole in the
+-- Fence: the backpack slot must be empty, checked on entering and again during the hold). PMCs get their side's list, scavs every extract.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
@@ -28,6 +30,20 @@ local function carries(h, id)
 	return false
 end
 
+-- is a backpack worn? (the inventory's `back` slot holds the pack's id)
+local function wearsBackpack(h)
+	return h ~= nil and h.slots ~= nil and h.slots.back ~= nil
+end
+
+-- the rules that can break while the hold runs (a pack put on mid-hold): nil, or (reason code, text)
+function Extract.holdBlocked(s, e)
+	local r = e and e.rule or {}
+	if r.kind == "nobag" and wearsBackpack(s.inv) then
+		return "BACKPACK", "BACKPACK SLOT MUST BE EMPTY"
+	end
+	return nil
+end
+
 -- nil when the extract can be used right now, else (reason code, text for the player)
 function Extract.blocked(player, s, e)
 	local r = e.rule or {}
@@ -35,8 +51,12 @@ function Extract.blocked(player, s, e)
 		return "CLOSED", "NOT AVAILABLE THIS RAID"
 	elseif r.kind == "scav" and not s.scav then
 		return "SCAV_ONLY", "SCAVS ONLY"
+	elseif r.kind == "power" and r.also and not ctx.World.switchOn(r.also) then
+		return "POWER", r.needsAlso or r.needs or "NO POWER"
 	elseif r.kind == "power" and not ctx.World.switchOn(r.switch) then
 		return "POWER", r.needs or "NO POWER"
+	elseif r.kind == "nobag" and wearsBackpack(s.inv) then
+		return "BACKPACK", "BACKPACK SLOT MUST BE EMPTY"
 	elseif r.kind == "key" and r.key and not carries(s.inv, r.key) then
 		local d = Items.defs[r.key]
 		return "KEY", "REQUIRES " .. string.upper(d and d.name or r.key)
@@ -99,11 +119,21 @@ function Extract.tick()
 					s.exDenied = nil
 				end
 			elseif s.state == "EXTRACTING" then
+				local whyHold, textHold = nil, nil
+				if zone == s.exZone then
+					whyHold, textHold = Extract.holdBlocked(s, ctx.World.extracts[zone])
+				end
 				if zone ~= s.exZone then
 					s.state = "ACTIVE"
 					s.exZone = nil
 					s.exEnds = nil
 					ctx.Remotes.note(player, "extract", { state = "cancel" })
+				elseif whyHold then
+					s.state = "ACTIVE"
+					s.exZone = nil
+					s.exEnds = nil
+					s.exDenied = zone
+					ctx.Remotes.note(player, "extract", { state = "denied", zone = zone, reason = whyHold, text = textHold })
 				elseif t >= s.exEnds then
 					if not complete(player, s, ctx.World.extracts[zone]) then
 						s.state = "ACTIVE"

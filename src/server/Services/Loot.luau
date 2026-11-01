@@ -171,6 +171,10 @@ local POOLS = {
 	mallkeys = {
 		{ id = "KEY_MALL_STAFF", w = 8 }, { id = "KEY_MEDIQ", w = 6 }, { id = "KEY_MALL_SECURITY", w = 3 },
 		{ id = "KEY_VOLTA_STORE", w = 2 }, { id = "CARD_MALL_VAULT", w = 1 },
+		-- Interchange rebuild (2026-11-01): the ten KEY_MM_* keys, the rare ones (gun shop, UNIT 14) the scarcest
+		{ id = "KEY_MM_RESCUE", w = 4 }, { id = "KEY_MM_NESTA_REG", w = 5 }, { id = "KEY_MM_KASSA_REG", w = 5 }, { id = "KEY_MM_BOLT_REG", w = 5 },
+		{ id = "KEY_MM_BOLT_OFFICE", w = 3 }, { id = "KEY_MM_BOLT_GOODS", w = 3 }, { id = "KEY_MM_SUBSTATION", w = 2.5 },
+		{ id = "KEY_MM_IRON_FRONT", w = 1.5 }, { id = "KEY_MM_IRON_GRATE", w = 1.5 }, { id = "KEY_MM_UNIT14", w = 0.8 },
 	},
 	mallgood = {
 		{ id = "GPU_CARD", w = 2 }, { id = "FLASH_MODULE", w = 6 }, { id = "GOLD_CHAIN", w = 6 }, { id = "CAPT_WATCH", w = 4 },
@@ -1027,6 +1031,12 @@ function Loot.caretakerLoadout(rand)
 	end
 	if rand:NextNumber() < 0.15 then
 		k.put("CARD_MALL_VAULT")
+	end
+	if rand:NextNumber() < 0.15 then
+		k.put("KEY_MM_IRON_FRONT")
+	end
+	if rand:NextNumber() < 0.1 then
+		k.put("KEY_MM_UNIT14")
 	end
 	if rand:NextNumber() < 0.4 then
 		k.put("GPU_CARD")

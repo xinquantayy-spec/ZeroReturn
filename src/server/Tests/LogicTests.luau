@@ -1718,6 +1718,103 @@ function T.run(ctx)
 		end
 	end
 
+	-- Meridian Mall on Interchange's rules (gameplay): the empty-backpack exit, the two-step power exit, minefields, the new keys
+	-- and what the map registered for them
+	if ctx and ctx.Extract and ctx.World and ctx.Hazards then
+		local EX, WD, HZ = ctx.Extract, ctx.World, ctx.Hazards
+		-- FENCE GAP (kind nobag): a worn backpack blocks it, an empty back slot does not, and it is checked again during the hold
+		local bare = { inv = { items = {}, slots = {} }, scav = false }
+		local packed = { inv = { items = {}, slots = { back = "g1" } }, scav = false }
+		local gap = { id = "T_GAP", rule = { kind = "nobag" } }
+		local c1, t1 = EX.blocked(nil, packed, gap)
+		check("extract nobag: a worn backpack blocks the exit, an empty back slot does not", c1 == "BACKPACK" and type(t1) == "string" and EX.blocked(nil, bare, gap) == nil)
+		check("extract nobag: a pack put on during the hold cancels it; other rules are never cancelled that way",
+			EX.holdBlocked(packed, gap) == "BACKPACK" and EX.holdBlocked(bare, gap) == nil and EX.holdBlocked(packed, { rule = { kind = "open" } }) == nil)
+		-- SHELTER EXIT: the mall power first, then the lever (rule power with `also`); each step reads its own text
+		local swA = { id = "T_A", on = false }
+		local swB = { id = "T_B", on = false }
+		WD.switches.T_A, WD.switches.T_B = swA, swB
+		local chain = { id = "T_SE", rule = { kind = "power", switch = "T_B", also = "T_A", needs = "B TEXT", needsAlso = "A TEXT" } }
+		local ca, ta = EX.blocked(nil, bare, chain)
+		swA.on = true
+		local cb, tb = EX.blocked(nil, bare, chain)
+		swB.on = true
+		local cc = EX.blocked(nil, bare, chain)
+		local plain = { id = "T_P", rule = { kind = "power", switch = "T_A", needs = "A TEXT" } }
+		swA.on = false
+		local cd, td = EX.blocked(nil, bare, plain)
+		WD.switches.T_A, WD.switches.T_B = nil, nil
+		check("extract power chain: no power says the first text, power without the lever the second, both on opens it; a plain power rule still reads its switch",
+			ca == "POWER" and ta == "A TEXT" and cb == "POWER" and tb == "B TEXT" and cc == nil and cd == "POWER" and td == "A TEXT")
+		-- minefield: a live charge answers within its radius, a spent one does not, a new raid arms it again
+		local mined = HZ.mineField({ Vector3.new(7000, 2000, 7000), Vector3.new(7100, 2000, 7000) })
+		local near = HZ.mineNear(Vector3.new(7001.5, 2000.4, 7001.5))
+		local far = HZ.mineNear(Vector3.new(7000 + HZ.MINE_R + 2, 2000, 7000))
+		local below = HZ.mineNear(Vector3.new(7000, 1980, 7000))
+		local okBoom = near ~= nil and pcall(HZ.detonate, near, nil, nil)
+		local spent = near ~= nil and near.live == false and HZ.mineNear(Vector3.new(7000, 2000, 7000)) == nil
+		HZ.reset()
+		local rearmed = near ~= nil and near.live == true and HZ.mineNear(Vector3.new(7000, 2000, 7000)) == near
+		for i = #HZ.mines, 1, -1 do
+			if HZ.mines[i] == mined then
+				table.remove(HZ.mines, i)
+			end
+		end
+		check("minefield: a live charge answers within its radius (not beyond it or far below), a spent one is silent, a new raid arms it again",
+			near ~= nil and far == nil and below == nil and okBoom and spent and rearmed and #mined.list == 2)
+		-- the keys the rebuild added: real key items with a door id, in the mall key pool, all of them found by the Caretaker's loadout or the pool
+		local mmKeys = { "KEY_MM_IRON_FRONT", "KEY_MM_IRON_GRATE", "KEY_MM_RESCUE", "KEY_MM_NESTA_REG", "KEY_MM_KASSA_REG", "KEY_MM_BOLT_REG", "KEY_MM_BOLT_OFFICE", "KEY_MM_BOLT_GOODS", "KEY_MM_SUBSTATION", "KEY_MM_UNIT14" }
+		local okMM, pooledMM = true, {}
+		for _, e in Loot.POOLS.mallkeys do
+			pooledMM[e.id] = true
+		end
+		for _, id in mmKeys do
+			local d = Items.defs[id]
+			okMM = okMM and d ~= nil and d.kind == "key" and d.key ~= nil and type(d.key.door) == "string" and (d.key.uses or 0) > 0 and pooledMM[id] == true
+		end
+		check("meridian keys: ten KEY_MM_* items exist with a door id and uses, all in the mall key pool; UNIT 14 is a keycard", okMM and Items.defs.KEY_MM_UNIT14.key.card == true and Items.defs.CARD_MALL_VAULT.key.door == "mm_shelter")
+		-- the map as built (skipped when it did not build): rules, sides, spawns, boss
+		local mm = WD.maps and WD.maps.meridian
+		if mm then
+			local ex = mm.extracts or {}
+			local se, fg = ex.SE, ex.FG
+			check("meridian extracts: seven, the shelter reads power (the lever as a second step when it exists), the fence gap needs an empty back slot",
+				ex.RS and ex.RC and ex.SC and ex.WC and ex.RP and se and fg and fg.rule.kind == "nobag" and se.rule.kind == "power" and se.rule.switch ~= nil
+				and (se.rule.switch == "MALL_POWER" or (se.rule.switch == "SHELTER_SWITCH" and se.rule.also == "MALL_POWER")))
+			local has = function(list, id)
+				for _, v in list or {} do
+					if v == id then
+						return true
+					end
+				end
+				return false
+			end
+			local nw, sw = mm.sideExtracts and mm.sideExtracts.nw, mm.sideExtracts and mm.sideExtracts.se
+			check("meridian sides: MallNW gets the rescue checkpoint, MallSE the rail siding, both the substation car, the shelter, the river path and the fence gap, only scavs the west camp",
+				has(nw, "RC") and not has(nw, "RS") and has(sw, "RS") and not has(sw, "RC") and has(nw, "SC") and has(sw, "SC") and has(nw, "SE") and has(sw, "SE")
+				and has(nw, "RP") and has(sw, "RP") and has(nw, "FG") and has(sw, "FG") and not has(nw, "WC") and not has(sw, "WC"))
+			local sideOk, nN, nS = true, 0, 0
+			for _, sp in mm.spawns or {} do
+				sideOk = sideOk and (sp.side == "nw" or sp.side == "se") and sp.extracts == mm.sideExtracts[sp.side]
+				if sp.side == "nw" then
+					nN += 1
+				else
+					nS += 1
+				end
+			end
+			check("meridian spawns: one group per reference cluster on its own half, each with its side's exits", sideOk and nN >= 8 and nS >= 8)
+			local b = mm.boss
+			check("meridian boss: THE CARETAKER at 60 percent with zones to choose from, or none when the shell is missing (the AI reads chance and zones)",
+				b == nil or (b.name == "THE CARETAKER" and b.chance == 0.6 and b.look == "bodyguard" and b.loadout == "caretakerLoadout" and #(b.zones or {}) >= 1 and b.zones[1].home ~= nil and #b.zones[1].route >= 3))
+			local posted = true
+			for _, wp in mm.watchPosts or {} do
+				posted = posted and mm.patrols[wp.route] ~= nil
+			end
+			check("meridian guards: every watch post has its route, scav zones plentiful", posted and #(mm.scavZones or {}) >= 10)
+			check("meridian hazards: a minefield on the west band", #HZ.mines >= 1)
+		end
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

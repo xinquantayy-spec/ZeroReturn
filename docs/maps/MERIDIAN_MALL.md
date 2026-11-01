@@ -230,3 +230,217 @@ field, 2 rail bed, 3 concrete, 4 gravel, 5 asphalt, 8 outside the limit, 9 pond 
 `inMall(x, z)` and `T` (the TerrainKit result); Outside adds the named points in `B.points`: `SUBSTATION_SWITCH`, `SUBSTATION_UTILITY`,
 `SUBSTATION_GATE`, `RESCUE_CHECKPOINT`, `RESCUE_GATE`, `WEST_CAMP`, `RESCUE_CAMP`, `KART_PIT`, `NESTA_TOWER`, `BOLTWORKS_TOWER`
 (world positions at standing height).
+
+## Part 3: gameplay (extracts, spawns, AI, the Caretaker, power, keys, dressing)
+
+Written 2026-11-01 by the gameplay agent, in parallel with the shell and the stores: `Play.luau` and `Dress.luau` in
+`src/server/Maps/Meridian/`, ten new key items, small additive edits to seven service and client files, and a group of checks in
+`src/server/Tests/LogicTests.luau`. `python3 tools/luau_check.py src` (structure only) passes. **Nothing here has run**: the build
+environment has no Luau runtime and Studio was not used. Counts marked (offline) were recomputed in Python from `Layout.luau` with
+the same rules; they are not output of the Luau code. This part replaces the "Play" and "Dress" bullets under "Not done yet" and the
+line under "Extracts (7)" that says FENCE GAP behaves as an open extract until Play adds `nobag`.
+
+### What `Play.luau` builds
+
+Each section runs under its own `pcall`, so a failure is logged (`[ZR] Meridian play: <section> failed`) and the rest still build. One
+summary line is printed: `[ZR] Meridian play: ... spawns, ... patrol routes, ... watch posts, ... scav zones, boss ..., ... mines ...`.
+Everything that depends on the shell (L1 and L2 points, the washroom, the security room) is checked against the floor parts the shell
+actually built and left out when absent, so the map still builds without `Mall.luau`.
+
+**Extracts (7)**, positions and sizes from `L.ext`:
+
+| Id | Name | Offered to | Rule as built |
+|---|---|---|---|
+| RS | RAIL SIDING | MallSE spawners | open |
+| RC | RESCUE CHECKPOINT | MallNW spawners | open |
+| SC | SUBSTATION CAR | both | paid, 20,000 MK |
+| SE | SHELTER EXIT | both | `power` with `also`: the mall power (`MALL_POWER`), then the washroom valve (`SHELTER_SWITCH`); a plain `MALL_POWER` rule if the valve could not be built |
+| WC | WEST CAMP | scavs only | scav |
+| RP | RIVER PATH | both | open |
+| FG | FENCE GAP | both | `nobag` |
+
+`W.sideExtracts`: nw = RC, SC, SE, RP, FG; se = RS, SC, SE, RP, FG. Scavs get all seven (existing rule). SE and WC stand on the L0 floor
+under the mall (y 0.1, compact boxes). `Extract.blocked` reads `also` first, so before the power is on a player reads the original
+"throw the switch at the substation" text and afterwards "sealed, find the valve hidden in a washroom". FENCE GAP refuses while the
+`back` slot holds a pack and cancels the hold if one is put on during it; the HUD shows "NO BACKPACK".
+
+**The valve** (`W.switches.SHELTER_SWITCH`): a water-service cabinet with a brass handle (6 parts) at `B.points.SHELTER_SWITCH`, else
+at `L.poi.WASHROOM` on L2. Prompt "Pull the handle", 2 s hold, 3 s delay; it answers only while `MALL_POWER` is on (a `B.powerHooks`
+entry) and the handle has not been pulled, and resets at every raid start. It is skipped, with a warning and the plain power rule, when
+there is no L2 floor part under the point; if the shell registered a switch of that id first, Play builds nothing and the rule reads the
+shell's. This stands for Tarkov's urinal flush, which reveals a keypad (see the gaps).
+
+**Electric locks**: Play sets `power = "MALL_POWER"` on every door of this map (registered in `W.doors`, no `map` yet) whose key is
+KEY_MM_IRON_FRONT, KEY_MM_IRON_GRATE, KEY_MEDIQ, CARD_MALL_VAULT or KEY_MM_UNIT14 (Tarkov: the Kiba doors, the ULTRA medical storage,
+the saferoom keypad and the Object keycards need the mall power). `Doors.use` then refuses the key until the switch is on ("NO POWER"
+toast, locked sound). Doors are matched by their key, never by their id.
+
+**IRONSIGHT alarm**: Play polls the door whose key is KEY_MM_IRON_FRONT twice a second. Three seconds after it opens, a red beacon
+(hung under the L1 ceiling at `L.hazard.ironAlarm`, 2 parts and one light without shadows, only where an L1 floor exists) flashes for up
+to 60 s and every 5 s `AI.hearShot` (loudness 1.6, about 320 studs) calls everything in earshot to the shop. The security terminal
+(switch `MM_ALARM`, prompt "Disable the alarm", 2 s hold, 3 parts) is built at `B.points.SECURITY_TERMINAL`, else at `L.poi.SECURITY_L1`,
+only on an L1 floor; using it silences the alarm for the rest of the raid. The alarm arms again when the door is locked again at the
+next raid. The terminal is not locked: the security room's own door (KEY_MALL_SECURITY) is the shell's or the stores' to place.
+
+**PMC spawns**: 25 (offline), `N1` to `N13` (side nw, MallNW) and `S1` to `S12` (side se, MallSE), one per `L.clusters` entry: the
+reference spawn point (`L.pmc`) with the most room within 30 studs of the cluster centre, else the nearest one moved to open ground
+(at most 40 studs); 3.4 studs above the ground, yaw from the reference, at least 6 studs from any building, 4 from the boundary, 3 from a
+fence, 6 from a rail, slope under 0.3. Reference points that stand on the mall's terraces end up on the ground beside the mall. Each
+spawn is named from the nearest label or yard (each name once) and carries its side's extracts.
+
+**AI**: six patrol routes and watch posts, each point kept only where it has its floor (outdoors: open ground within 20 studs; L0:
+inside `L.mall.levels[1].floor`; L1 and L2: a shell floor part of that level under the point). A route with fewer than two valid
+points is dropped with its post.
+
+| Route | Post | Level | Where |
+|---|---|---|---|
+| LOT | Car Park Guard | ground | WEST LOT 3, a loop |
+| DOCK | Dock Guard (stands at the head of the apron) | ground | NESTA DOCK APRON |
+| SUB | Substation Guard | ground | the apron west of THE SUBSTATION's main building |
+| L0B | Garage Guard | L0 | CAR PARK B |
+| L1C | Concourse Guard | L1 | the loop round the central concourse |
+| L2C | Gallery Guard | L2 | the upper gallery corridor, out and back |
+
+Scav zones (`W.scavZones`): the reference's scav and boss-zone points of the ten `L.scav` zones and the 2026 AI icons, each at its own
+level, plus 53 anchors of ours (the five west lots, the aprons, the yards, the camps, the halls and galleries on both floors); outdoors
+snapped to open ground, upstairs floor-checked, 12 studs apart, at most 4 per building. MapTests M01 needs 10.
+
+**THE CARETAKER** (`W.boss`): chance 0.6 (`L.bosses`), look `bodyguard`, loadout `caretakerLoadout`, no crew (Killa has no guards), five
+zones: CENTRAL CONCOURSE (L1), CENTRAL MALL (L2), KASSA HALL, BOLTWORKS HALL and NESTA HALL (L1), each a closed route of five or six
+points with its home at the first. The AI rolls the 60 % at raid start and, if it hits, picks one zone at random (`AI.bossZone`). A
+zone without a shell floor under at least three of its points is dropped; with none left there is no boss.
+
+**Visit zones** (`W.visitZones`, centre and radius): SUBSTATION, SHELTER, IRONSIGHT, CONCOURSE, WEST_CAMP, RESCUE_CAMP, KART_TRACK.
+
+**Hazards** (both bands lie outside the playable polygon, as in the reference): the east sniper band gets 53 (offline) stair-step strips
+40 studs long (`Hazards.sniperZone`, the same rules as Border Yard: a warning shot after 3 s, hits from 6 s), spawns and extracts within
+22 studs stay clear. The west minefield gets about 241 (offline) hidden charges on a jittered 34-stud grid, none within 12 studs of the
+playable edge (`Hazards.mineField`, new). A player within 3.4 studs of a live charge sets it off: a propane-sized blast under the feet
+and a 400-damage wound (cause MINE), so it kills. Each charge goes off once per raid; `Hazards.reset` arms them again.
+
+**Outdoor loose loot** (`kit.loose`, area "meridian", snapped): one to six spots per yard by what it is (WEST LOT and TRUCK yards pool
+`mall`, SUBSTATION `toolbox`, DOCK, SERVICE and CARGO `crate`, the rest `junk`), one beside each hut, camp, booth and rescue building
+(`junk`), 30 on the L0 floor (`mall`); never within 30 studs of another spot of Play's.
+
+**`B.geo`**: Play publishes its geometry tests to `Dress` (footprints, roads, fences, rails, rocks, the boundary, keep-outs for spawns,
+extracts, routes, posts, zones, doors, containers, loose loot and named points, a spatial index of the map's solid parts, and
+`floorAt(level, x, z)`). The index of solid parts is built on first use by scanning the map model once, so Play and Dress must run
+after the shell and the stores (they do: `init.luau` order).
+
+### Edits outside `src/server/Maps/Meridian/` (all small and additive)
+
+- `Services/Extract.luau`: kind `nobag` (`Extract.blocked` and the new `Extract.holdBlocked`, checked again every tick of the hold);
+  kind `power` takes an optional `also` (a switch that must be on first) and `needsAlso` (its text).
+- `Controllers/Hud.luau`: `Hud.exitStatus` shows "NO BACKPACK" for `nobag`.
+- `Services/Doors.luau`: a door with `power` (a switch id) is an electric lock; the key does nothing until that switch is on.
+- `Services/Hazards.luau`: `mineField`, `mineNear`, `detonate`, `mineStep` (run from the existing 0.5 s loop), re-armed by `reset`.
+- `Services/AI.luau`: `AI.reset` honours `W.boss.chance` and picks one of `W.boss.zones`; a boss without those behaves as before.
+- `shared/Items.luau`, `Services/Loot.luau`: the ten keys below, the `mallkeys` pool, the Caretaker's pockets.
+- `Tests/LogicTests.luau`: 11 checks before the summary: 5 always run (the nobag rule and its hold check, the two-step power rule,
+  the minefield, the ten keys), 6 when the map built (extract rules and sides, spawns by side, the boss, guard routes, mines exist).
+
+### Keys, doors and what power changes
+
+The shell and the stores choose the final door ids (the shell already has `MM_SHELTER` and `MM_UNIT14`); Play matches by key, so a
+different id changes nothing but this table. Uses follow the reference (tarkovforge, 2026): 40 for door and register keys, 10 for the
+two Object keycards. The stores agents place the key items as loose loot or in containers where `L.keys` says (map-local studs); the
+`mallkeys` pool also serves the generic key spots.
+
+| Key item | Uses | Door id expected | Opens | Power |
+|---|---|---|---|---|
+| KEY_MM_IRON_FRONT | 40 | MM_IRON_FRONT | IRONSIGHT front door, L1; opening it starts the alarm | yes |
+| KEY_MM_IRON_GRATE | 40 | MM_IRON_GRATE | IRONSIGHT inner grate (the weapon room) | yes |
+| KEY_MM_RESCUE | 40 | MM_RESCUE_N, MM_RESCUE_E, MM_RESCUE_W | RESCUE POINT, three doors, one use per opening | no |
+| KEY_MEDIQ (reused, 20 -> 40 uses) | 40 | MM_MEDIQ_STORE | MEDIQ STORE ROOM, L2 | yes |
+| KEY_VOLTA_STORE (reused) | 12 | MM_VOLTA_STORE | VOLTA stock room, L2 | no |
+| KEY_MM_NESTA_REG, KEY_MM_KASSA_REG, KEY_MM_BOLT_REG | 40 | MM_NESTA_CASH, MM_KASSA_CASH, MM_BOLT_CASH | the till office behind each anchor's tills (a container cannot be key-locked, so the register key opens the cash office) | no |
+| KEY_MM_BOLT_OFFICE, KEY_MM_BOLT_GOODS | 40 | MM_BOLT_OFFICE, MM_BOLT_GOODS | BOLTWORKS OFFICE, GOODS-IN | no |
+| KEY_MM_SUBSTATION | 40 | MM_SUB_UTILITY (Outside builds it) | THE SUBSTATION utility room | no |
+| CARD_MALL_VAULT ("Shelter Keycard", reused, 6 -> 10 uses) | 10 | MM_SHELTER | THE SHELTER door in CAR PARK C | yes |
+| KEY_MM_UNIT14 (card) | 10 | MM_UNIT14 | UNIT 14, L0 | yes |
+| KEY_MALL_SECURITY (kept) | 15 | MM_SECURITY | the security room that holds the alarm terminal | no |
+| KEY_MALL_STAFF (kept) | 20 | MM_STAFF_KITCHEN | the staff door of the L2 food-court kitchen | no |
+
+**Fate of the old keys**: KEY_MALL_SECURITY and KEY_MALL_STAFF are kept (no loot weight removed), each with the door named above.
+KEY_VOLTA_STORE and KEY_MEDIQ keep their ids. Key icons for the ten new items do not exist yet (the tiles show the item colour and short
+name until an art pass).
+
+Loot: the `mallkeys` pool (Loot.luau) holds all ten new keys (weights: RESCUE 4, the three register keys 5 each, BOLT OFFICE and GOODS 3 each,
+SUBSTATION 2.5, IRON FRONT and IRON GRATE 1.5 each, UNIT 14 0.8); THE CARETAKER carries KEY_MM_IRON_FRONT (15 %) and KEY_MM_UNIT14 (10 %).
+
+**What the mall power does** (the `MALL_POWER` lever in THE SUBSTATION, existing): the lamps (hooks appended to `B.powerHooks` by
+Outside and the shell), the electric locks above, the washroom valve; then, for the shelter, the valve and the keycard door. Without
+power IRONSIGHT's two doors, the MEDIQ store room, the shelter door and UNIT 14 cannot be opened even with the key.
+
+### What the shell and the stores must provide for this part
+
+1. `B.points.SHELTER_SWITCH`: a `Vector3` or `CFrame` at standing height on the L2 washroom floor (a `CFrame`'s look vector is the way the
+   cabinet faces). Without it Play uses `L.poi.WASHROOM`; with no L2 floor part there, SHELTER EXIT stays a plain power exit.
+2. `B.points.SECURITY_TERMINAL`: a point inside the security room on L1 (else `L.poi.SECURITY_L1`).
+3. Floor parts: every walkable L1 and L2 surface as an anchored, collidable, opaque part wider than 2 studs both ways and under 6
+   thick whose top is within 0.7 studs of 17.81 (L1) or 47.50 (L2). Play's L1 and L2 routes, scav zones, boss zones, the terminal and the
+   valve are placed only on such parts. The L0 floor must match `L.mall.levels[1].floor` with slab tops at y 0 (SHELTER EXIT and WEST CAMP
+   stand there; MapTests M03 needs an upward surface under them).
+4. Doors registered through the usual door call so they sit in `W.doors` with `key = "<item id>"`; do not set `power` yourselves (Play
+   does, by key), and do not register `SHELTER_SWITCH` or `MM_ALARM` (Play does).
+5. Anything that follows the power appends a `function(on)` to `B.powerHooks` and applies the off state itself when built.
+
+### Dress (`Dress.luau`)
+
+Cars, trolleys, barriers, cones, bins, sandbags and clutter, capped at 2,300 parts (a kit prop counts its pieces and colliders; a
+warning is printed above 2,500); every piece is tested against `B.geo`, so nothing but wrecks stands on a road and nothing blocks a
+spawn, an extract, a route, a post, a zone, a door, a container or loose loot. Sections (each under `pcall`): **lots** (cars in about one
+bay in eight on WEST LOT 2 to 6, in the bay frame Ground paints), **garages** (cars on the L0 floor: CAR PARK A to D 8, 7, 8 and 7, the
+NESTA, KASSA and BOLTWORKS garages 3, 4 and 3), **wrecks** (cars on the road shoulders, at most 40, three in five as cover wrecks),
+**furniture** (trolley rows and tipped trolleys, boom barriers with cones at lot entrances, bins, up to 14 street lamps), **camps**
+(sandbags, tyres, drums, a broken barrier at the camps, the checkpoint, the substation gate, the kart pit), **docks** (pallets, boxes,
+roll cages, jerry cans, dumpsters, vans, forklifts on the aprons and yards, up to 20 shipping containers in the cargo yards), **nature**
+(bushes, grass and rocks inside the boundary, at most 160). Cars use the Blender kit (sedan, hatch, smashed sedan); 28 % are burnt (dark
+tint) and an item lies beside 40 % of them (at most 26 loose spots). There is no cone prop in the kit, so a cone is two plain parts.
+Budget check: Ground 2,492 + Outside 1,022 (the mock's counts) + Dress at most 2,300 stays under the 6,000 of the spec; the real count is
+printed as `[ZR] Meridian dress: ... parts`.
+
+### Parity gaps from this part (copied to `docs/design/EFT_PARITY.md`)
+
+- **Second boss**: Tagilla (the hammer boss in the KASSA garage, 35 % in the 2026 sources, absent from SPT) is not built; the AI supports one
+  boss per map.
+- **Airdrops** (20 %, 6 or more players, 5 to 15 minutes in): no airdrop system exists; the numbers are in `L.hazard.airdrop`.
+- **Co-op, flare and transit extracts**: WEST CAMP is scav-only at the co-op spot, RIVER PATH is a plain open exit (no flare), and the two
+  transits (Streets, Customs) do not exist.
+- **SUBSTATION CAR** is a plain paid exit (20,000 MK, the 2026 figure): no car, no 50 % chance, no stay-by-the-car rule, no karma.
+- **SHELTER EXIT is simplified**: mall power, then a hidden valve in the L2 washroom (for the urinal flush that reveals a keypad), then the
+  keycard door, then the exit. Not copied: the keypad, the padlocked door with its inside button, the lever that opens Object-14, and
+  the Terragroup container with the Object #21WS keycard in the south-west container yard.
+- **Extract timers**: Tarkov gives each exit its own timer (3 to 60 s); here all use the standard hold.
+- **FENCE GAP** is built as a grade D optional extract (its 2026 status is uncertain in the sources).
+- **Mines and snipers**: what the bands do is in no source (the reference calls the west band a minefield and the east band "a deadly
+  sniper"); the 3.4-stud trigger, the blast and the 400-damage wound, and the sniper strips, are ours.
+- **IRONSIGHT alarm**: no siren sound (the audio atlas has none); the beacon, the terminal's place and the 60 s length are ours; the
+  reference gives only "about 3 s after the door opens" and "a terminal in the first-floor security room".
+- **Register keys** open the till offices, not the registers (a container cannot be key-locked here).
+- **THE CARETAKER**: Killa's routes, aggro and regeneration are in no source, so the zone routes and the existing Caretaker AI and kit
+  stand in for them. His spawn zones and 60 % are the reference's.
+- **Mounted guns and propane cylinders**: no source places any on Interchange, so none stand on Meridian.
+- **Spawns**: points the reference puts on the mall's terraces are moved to the ground; the 2026 sources call both corner exits neutral,
+  the build follows SPT (RAIL SIDING to MallSE, RESCUE CHECKPOINT to MallNW).
+- **Key art**: the ten new keys have no icon or model yet.
+
+### Unverified (part 3; nothing has run)
+
+Everything in `Play.luau` and `Dress.luau`, and the 11 new `LogicTests` checks and MapTests M01 to M05 for this map (written to hold,
+not run). In particular: the one-off scan of the map model for the solid-part index (time at server start with about 24,000 parts); that
+the shell's floor parts satisfy the floor test, which decides whether the L1 and L2 routes, the boss zones, the valve and the terminal
+exist; the valve's and terminal's fit in their rooms; the alarm's timing and what `AI.hearShot` does to the guards; the electric-lock
+messages; the mines' blast and wound on a real character and whether the sniper strips follow the band; the boss's walk along the
+upper corridors; the kit prop names in `ZR_Assets` (a missing one is skipped without a warning, so the cars could be fewer); the real
+part and light counts; frame rate on a low-end phone.
+
+### Files (part 3)
+
+| File | What |
+|---|---|
+| `src/server/Maps/Meridian/Play.luau` | extracts, valve, electric locks, alarm, spawns, routes and posts, scav zones, the Caretaker, visit zones, snipers, mines, loose loot, `B.geo` |
+| `src/server/Maps/Meridian/Dress.luau` | cars, trolleys, barriers, cones, bins, lamps, camps, docks, nature |
+| `src/server/Services/Extract.luau`, `Doors.luau`, `Hazards.luau`, `AI.luau`, `src/client/Controllers/Hud.luau` | the `nobag` and two-step power rules, electric locks, mines, per-zone boss |
+| `src/shared/Items.luau`, `src/server/Services/Loot.luau` | ten key items, key pool, the Caretaker's pockets |
+| `src/server/Tests/LogicTests.luau` | the Meridian rules group |

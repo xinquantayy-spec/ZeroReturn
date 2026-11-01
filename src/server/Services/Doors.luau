@@ -2,7 +2,8 @@
 -- Doors (M9, M10): hinged doors in the raid world. Locked doors open with the right key or keycard from the
 -- raid inventory (limited uses, Tarkov-style); once unlocked a door stays unlocked for the rest of the raid.
 -- Every raid starts with doors closed and locked (some ordinary doors are left ajar). AI open unlocked doors on
--- their way (AI.luau); pathfinding treats unlocked doors as passable and locked ones as walls.
+-- their way (AI.luau); pathfinding treats unlocked doors as passable and locked ones as walls. A door with `power`
+-- (a switch id) is an electric lock: the key does nothing until that switch is on.
 local TweenService = game:GetService("TweenService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
@@ -71,6 +72,12 @@ local function use(player, d)
 		return
 	end
 	if d.locked then
+		-- an electric lock (Interchange's IRONSIGHT doors, the shelter's keycard door): dead until the switch it names is on
+		if d.power and not ctx.World.switchOn(d.power) then
+			ctx.Remotes.fx("sfx", { n = "door_locked", p = d.cf.Position, v = 0.8 })
+			ctx.Remotes.note(player, "toast", { text = "NO POWER  ·  THE LOCK IS DEAD", tone = "warn" })
+			return
+		end
 		local kg, kit = findKey(s, d)
 		if not kg then
 			ctx.Remotes.fx("sfx", { n = "door_locked", p = d.cf.Position, v = 0.8 })

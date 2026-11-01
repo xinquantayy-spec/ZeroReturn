@@ -223,6 +223,51 @@ Gaps (not copied or not found):
 | Tarkov | Zero Return | To do |
 |---|---|---|
 | Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (the trio, cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
-| Interchange | Meridian Mall is our own layout | Rebuild on Interchange's layout the same way |
+| Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01; written, nothing run in Studio). Part 1 the outside, part 2 the mall shell and stores (other agents), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Part 3) | The second boss (the hammer boss), airdrops, co-op, flare and transit extracts, the car exit's car and karma, the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the list under "Interchange gameplay" below |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
+
+### Interchange gameplay: Meridian Mall, part 3 (2026-11-01)
+
+Researched first (`docs/maps/reference/INTERCHANGE_REFERENCE.md` sections 6 to 8: SPT data of the old map, tarkovforge and re3mr 2026,
+the wiki, keengamer, ggrecon, lfcarry), then built. Status: written and passed through `tools/luau_check.py` only; nothing has run in
+Studio, on a phone or on a console, and no frame rate was measured. Details and counts: `docs/maps/MERIDIAN_MALL.md`, "Part 3".
+
+Matched:
+- **Seven extracts at the reference's spots**, offered to the half of the perimeter SPT offers them to: RAIL SIDING (Railway Exfil) to
+  MallSE, RESCUE CHECKPOINT (Emercom Checkpoint) to MallNW, SUBSTATION CAR (Power Station V-Ex, paid), SHELTER EXIT (Saferoom Exfil),
+  RIVER PATH (Path to River), FENCE GAP (Hole in the Fence) to both, WEST CAMP (Scav Camp) scavs only.
+- **FENCE GAP needs an empty backpack slot** (SPT `RequiredSlot` Backpack): refused on entering and cancelled if a pack is put on during
+  the hold; the HUD says "NO BACKPACK".
+- **The mall power matters**: the Kiba (IRONSIGHT) doors, the ULTRA medical storage (MEDIQ store room), the saferoom card door and the
+  container-room card are electric locks, dead without power even with the key.
+- **Saferoom chain starts with the power**, then a hidden handle in a second-floor washroom, then the card door, then the exit.
+- **The Kiba alarm**: it sounds about 3 s after the outer door opens, calls bots, and is switched off at a terminal in a first-floor
+  security room.
+- **Killa as THE CARETAKER**: 60 % (tarkovforge 2026), five zones (the reference's), one picked each raid, no guards (SPT
+  `BossEscortAmount` 0).
+- **Spawns**: 13 + 12 groups (the reference's clusters) on the two halves; the 40-minute raid (2,400 s) was set in part 1.
+- **Keys**: 40 uses on door and register keys, 10 on the two Object keycards (tarkovforge key pages 2026); the ULTRA key (MEDIQ) now has 40.
+- **The west band is a minefield and the east band is a sniper band**, both outside the playable area as in the reference.
+
+Gaps (not copied or not found):
+- **Second boss**: Tagilla (hammer boss, KASSA garage, 35 % in the 2026 sources, absent from SPT) is not built; the AI keeps one boss per map.
+- **Airdrops** (20 %, 6 or more players, 5 to 15 minutes in): there is no airdrop system; the numbers sit in `L.hazard.airdrop`.
+- **Co-op, flare and transit extracts**: WEST CAMP is scav-only, RIVER PATH is a plain exit (no green flare), and the transits to Streets
+  and Customs do not exist.
+- **SUBSTATION CAR** is a plain paid exit (20,000 MK, the 2026 figure): no car, no 50 % chance (SPT), no stay-by-the-car rule, no karma.
+- **Saferoom chain simplified**: the urinal flush that reveals a keypad is a service valve in the washroom; not copied are the keypad,
+  the padlocked door with its inside button, the lever for the Object-14 container, and the Terragroup container (Object #21WS card) in the
+  south-west container yard.
+- **Extract timers**: Tarkov gives each exit its own (3 to 60 s, 60 s shared at the car); here every extract uses the standard hold.
+- **Bands' rules are in no source** ("deadly sniper", "minefield"): the mine radius (3.4 studs), the blast, the lethal wound and the
+  sniper strips are ours (the snipers copy Border Yard's).
+- **Alarm details**: no siren sound (the audio atlas has none), the beacon, the 60 s length and the terminal's position are ours (the
+  only source places terminals on a pre-0.12.4 map at grade D).
+- **Register keys open the till offices**, not the registers (a container cannot be key-locked here).
+- **Killa's AI and gear**: routes, aggro and regeneration are in no source; the existing Caretaker AI and kit stand in.
+- **Mounted guns and propane cylinders**: no source places any on Interchange, so none stand on Meridian.
+- **Spawns on the mall's terraces** are moved to the ground; the 2026 sources call both corner exits neutral, the build follows SPT.
+- **Art**: the ten new keys have no icon or model yet.
+- **Not run**: nothing above has been run in Studio, on a phone or on a console, and the new LogicTests group and MapTests M01 to M05 for
+  this map have not been run either.

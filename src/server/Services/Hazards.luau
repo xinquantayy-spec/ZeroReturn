@@ -1,7 +1,8 @@
 --!nonstrict
 -- Map hazards (Tarkov's Customs): orange propane cylinders explode when a bullet hits them or a blast reaches them
 -- (a fireball with heavy blast damage close in and a few fragments), and a burst one sets off its neighbours. Maps
--- register their cylinder spots while they build; every raid starts with all of them back in place.
+-- register their cylinder spots while they build; every raid starts with all of them back in place. Also the border
+-- snipers (watched strips along a map's edge) and minefields (hidden charges over a band of ground).
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local CollectionService = game:GetService("CollectionService")
 
@@ -94,11 +95,91 @@ function Hazards.blast(center, r, attacker)
 	end
 end
 
--- a new raid: every cylinder is back
+-- minefields (Tarkov's mines): hidden charges spread over a band of ground. Anyone within MINE_R studs of a live one sets it
+-- off: a blast under their feet and a lethal wound; one charge goes off once per raid. Maps hand in the charge positions
+-- (world Vector3, on the ground) while they build.
+Hazards.mines = {} -- sets: { cells = { [key] = { mine ... } }, list = { mine ... } }, mine = { x, y, z, live }
+Hazards.MINE_R, Hazards.MINE_CELL = 3.4, 48
+local function mineKey(cx, cz)
+	return (cx + 4096) * 8192 + (cz + 4096)
+end
+function Hazards.mineField(points)
+	local set = { cells = {}, list = {} }
+	for _, p in points do
+		local m = { x = p.X, y = p.Y, z = p.Z, live = true }
+		table.insert(set.list, m)
+		local k = mineKey(math.floor(m.x / Hazards.MINE_CELL), math.floor(m.z / Hazards.MINE_CELL))
+		set.cells[k] = set.cells[k] or {}
+		table.insert(set.cells[k], m)
+	end
+	table.insert(Hazards.mines, set)
+	return set
+end
+-- the live charge within MINE_R studs (flat) of pos, or nil
+function Hazards.mineNear(pos)
+	local cx, cz = math.floor(pos.X / Hazards.MINE_CELL), math.floor(pos.Z / Hazards.MINE_CELL)
+	local r2 = Hazards.MINE_R * Hazards.MINE_R
+	for _, set in Hazards.mines do
+		for i = -1, 1 do
+			for j = -1, 1 do
+				for _, m in set.cells[mineKey(cx + i, cz + j)] or {} do
+					if m.live and math.abs(m.y - pos.Y) < 9 then
+						local dx, dz = m.x - pos.X, m.z - pos.Z
+						if dx * dx + dz * dz < r2 then
+							return m
+						end
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+-- a charge goes off under a player (the blast wakes everything nearby; the wound is the kill)
+function Hazards.detonate(m, player, char)
+	m.live = false
+	local at = Vector3.new(m.x, m.y + 0.3, m.z)
+	if ctx.Grenades.blastAt then
+		ctx.Grenades.blastAt(at, "PROPANE_TANK", nil)
+	end
+	local part = char and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart"))
+	if part then
+		ctx.Combat.hitModel(char, {
+			dmg = 400, pen = 100, armorDmg = 0.2, bleedL = 1, bleedH = 1, part = part, hitPos = part.Position,
+			attacker = "MINE", from = at, weapon = "Land mine", ammo = "BLAST", cause = "MINE",
+		})
+	end
+	if player then
+		ctx.Remotes.note(player, "toast", { text = "MINE", tone = "warn" })
+	end
+end
+function Hazards.mineStep()
+	if #Hazards.mines == 0 then
+		return
+	end
+	for player, s in ctx.Raid.sessions() do
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if not s.done and root and hum and hum.Health > 0 then
+			local m = Hazards.mineNear(root.Position)
+			if m then
+				Hazards.detonate(m, player, char)
+			end
+		end
+	end
+end
+
+-- a new raid: every cylinder is back, every mine armed again
 function Hazards.reset()
 	for _, s in Hazards.spots do
 		if not s.model then
 			build(s)
+		end
+	end
+	for _, set in Hazards.mines do
+		for _, m in set.list do
+			m.live = true
 		end
 	end
 end
@@ -172,6 +253,10 @@ function Hazards.start()
 			local ok, err = pcall(Hazards.sniperStep, 0.5)
 			if not ok then
 				warn("[ZR] snipers:", err)
+			end
+			local okM, errM = pcall(Hazards.mineStep)
+			if not okM then
+				warn("[ZR] mines:", errM)
 			end
 		end
 	end)
