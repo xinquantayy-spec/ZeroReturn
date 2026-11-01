@@ -398,8 +398,7 @@ inside a solid part (a 2.4 x 5 x 2.4 stud capsule). It ran on flat ground and on
   showers and the kitchen's room are inferred (grade C) or ours (grade D). No common area or rest area is built as such (the lobby by
   the north tower and the top-floor kitchen stand in for them).
 - Windows (2026-11-01): the outer windows of A and B have thin panes. Tarkov's dorm windows are passable openings (the guides jump and
-  shoot through them); ours stop the body when whole (68 % of them, set by `winStyle`; the brief asked for panes with a few broken and
-  boarded), pass shots and sight (`CanQuery = false`), do not break when hit, and have no cracks, blinds or shutters. The windows of the
+  shoot through them); ours stop the body when whole. Since 2026-11-01 (main session) that is 30 % of them; 25 % are half broken, 35 % open and 10 % boarded (`winStyle`), so most are passable as in Tarkov. They pass shots and sight (`CanQuery = false`), do not break when hit, and have no cracks, blinds or shutters. The windows of the
   two end stair towers stay open holes. Lower the 0.68 in `winStyle` to leave more windows open. No light switches or power state; the
   lamps are always on.
 - Stairs are straight or dog-leg approximations on the reference stair footprints (5.5 studs of rise per half flight, about 30

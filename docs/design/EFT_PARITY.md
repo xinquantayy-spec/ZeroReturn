@@ -297,6 +297,22 @@ Gaps (not copied or not found):
   displays, price tags, posters and signage art (no logos by design), and any sound.
 - **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
 
+### Customs dorm interiors: Border Yard (2026-11-01)
+
+Built in `Living.luau`, checked in Studio (`TEST_RESULTS.md`, Border Yard dorm interiors):
+- Rooms: a fifth stripped, the rest lived in.
+- Doors: hinged on 118 of 128 unlocked rooms.
+- Washrooms and kitchen: a shared washroom on every floor (A 115/215/315, B 121/221) and a kitchen in A 308.
+- Windows: 30 % whole panes, the rest half broken, open or boarded.
+
+Gaps (details in `docs/maps/BORDER_YARD.md`, Gaps):
+- No L-shaped second-floor hall or the reference's room shapes.
+- No radiators, posters or switches.
+- Panes do not break when shot, and Tarkov's glass does.
+- The washrooms' places and B's washrooms are inferred.
+- No common or rest area as such.
+- The furniture shares are ours.
+
 ### Interchange small shops filled (2026-11-01)
 
 `StoresFill.luau` furnishes 45 small shops by kind, with 1,938 parts (`TEST_RESULTS.md`, Meridian small shops filled):

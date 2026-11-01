@@ -636,6 +636,31 @@ return function(B)
 				end)
 			end
 		end
+		-- under every building: concrete (class 3), so terrain grass never grows up through a ground floor (tall grass stood in
+		-- BLOCK A's ground-floor rooms, seen in Studio 2026-11-01); one stud of margin round the footprint
+		for _, b in L.blds do
+			local cxp, czp, w, d, rot = b[4], b[5], b[6], b[7], b[8]
+			if type(cxp) == "number" and type(czp) == "number" and type(w) == "number" and type(d) == "number" then
+				local a = math.rad(tonumber(rot) or 0)
+				local ca, sa = math.cos(a), math.sin(a)
+				local hw, hd = w / 2 + 1, d / 2 + 1
+				local reach = math.sqrt(hw * hw + hd * hd)
+				for i = colOf(cxp - reach), colOf(cxp + reach) do
+					local col = CL[i]
+					if col then
+						local x = xAt(i)
+						for k = rowOf(czp - reach), rowOf(czp + reach) do
+							if col[k] ~= nil then
+								local dx, dz = x - cxp, zAt(k) - czp
+								if math.abs(dx * ca + dz * sa) <= hw and math.abs(dz * ca - dx * sa) <= hd then
+									paint(i, k, 3)
+								end
+							end
+						end
+					end
+				end
+			end
+		end
 		for _, rd in L.roads do
 			local code = 5
 			if rd[2] == "G" then

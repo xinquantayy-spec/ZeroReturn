@@ -84,7 +84,7 @@ There are 28 props from the Blender wear kit (`ZR_WearKit`) on Quay 7:
   more.
 * The server accepts 0–3 only. Other numbers are rounded and clamped, and anything that is not a number is refused.
 * Leaving POTATO restores every material.
-* HOLD 30 FPS (on by default, owner 2026-11-01): a device that stays under 30 fps for 8 seconds steps down one GRAPHICS level (not in the first 20 s of a life, then 15 s between steps). With it off, a one-time notice points to Settings → GRAPHICS after 20 seconds under 24 fps. The
+* HOLD 30 FPS (on by default, owner 2026-11-01): a device that stays under 30 fps for 8 seconds steps down one GRAPHICS level (not in the first 20 s of a life, then 15 s between steps). It only judges while the game window is in front: it waits for the window to gain focus or for the first input, and pauses when focus is lost. Studio and a background window slow the frames otherwise. With it off, a one-time notice points to Settings → GRAPHICS after 20 seconds under 24 fps. The
   level is never lowered automatically.
 
 ## Lamps

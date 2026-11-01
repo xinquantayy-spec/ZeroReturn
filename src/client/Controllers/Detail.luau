@@ -544,16 +544,22 @@ function Detail.init(c)
 	end)
 	-- only judge the frame rate while the game window is in front: Studio (and a minimised or covered window) slows the frames
 	-- of a window in the background, which once stepped the level down to POTATO during a test (2026-11-01)
+	-- Focus is unknown at start (no event fires for a window that starts in the background), so the watcher waits for the
+	-- window to gain focus or for the player's first input.
 	local UIS = game:GetService("UserInputService")
-	local inFront = true
+	local inFront = false
+	local function front()
+		if not inFront then
+			inFront = true
+			calmUntil = math.max(calmUntil, os.clock() + 5)
+		end
+	end
 	UIS.WindowFocusReleased:Connect(function()
 		inFront = false
 		lowFor = 0
 	end)
-	UIS.WindowFocused:Connect(function()
-		inFront = true
-		calmUntil = math.max(calmUntil, os.clock() + 5)
-	end)
+	UIS.WindowFocused:Connect(front)
+	UIS.InputBegan:Connect(front)
 	local NAMES = { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt

@@ -753,11 +753,13 @@ return function(B)
 		g:NextNumber()
 		g:NextNumber()
 		local r = g:NextNumber()
-		if r < 0.68 then
+		-- Tarkov's dorm windows are mostly passable openings (players vault and shoot through them), so a whole pane is the
+		-- exception: 30 % whole, 25 % half broken, 35 % open, 10 % boarded (shares ours; panes do not break yet, EFT_PARITY)
+		if r < 0.30 then
 			return "whole"
-		elseif r < 0.80 then
+		elseif r < 0.55 then
 			return (g:NextNumber() < 0.5) and "high" or "low"
-		elseif r < 0.92 then
+		elseif r < 0.90 then
 			return "open"
 		end
 		return "boards"
