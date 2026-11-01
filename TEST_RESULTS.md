@@ -8,6 +8,22 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Meridian Mall on Interchange (2026-11-01)
+
+Studio on the T490, one client, in-memory store.
+
+| Check | How | Result |
+|---|---|---|
+| Automated | `dev:Invoke("tests")` with every part in | LogicTests 287/287, CharTests 46/46, LookTests 19/19, MapTests 38/38 (M05 failed before the stores added containers) |
+| Build | Server log | The map model holds 18,400 parts and builds in 8 to 9 s: ground (612,000 terrain columns), outside, the mall shell (5,360 parts, 149 lamps, 65 doors, 84 units), stores L1 (941 props, 250 containers, 233 loose spots), stores L2 (662 props, 148 containers, 165 loose spots), play, dress; no errors |
+| Fixes found by testing | Server log, screenshots | The shell stopped on an undefined glass colour (no walls, signs or stock rooms); the car park floor slabs were coplanar with the terrain (a camouflage pattern); barbed wire from the detail plan on the balustrades and ruin-grade cracks on every wall (now NoWire and the clean profile: 33,818 detail entries down to 10,962) |
+| Raid with AI | Raid on Meridian, the Caretaker forced on; positions after three minutes, ray down from every unit | 6 guards (car park, dock, substation, garage, concourse on L1, gallery on L2), the Caretaker in BOLTWORKS, 4 scavs; scavs walked 260 to 915 studs, up to L2; every unit on a floor or the ground; no errors |
+| Power | `switch MALL_POWER` | The shell's 149 lamps light; the five electric locks wait for it |
+| Look | Screenshots | KASSA's aisles and checkouts, the L2 gallery over the atrium with the food court, the car park; the deep halls are very dark even with power |
+| Frame rate | RenderStepped count, Studio quality 10 | 12 to 16 fps in the mall with about 16,800 parts streamed in, the same range as Border Yard that session. Indicative only |
+
+**Not verified:** every exit walked by hand (SHELTER EXIT's power and valve chain, FENCE GAP without a backpack, the paid car), the IRONSIGHT alarm, keyed doors by hand, phones, two clients.
+
 ## Border Yard on Customs, and the eyewear slot (2026-11-01)
 
 Studio on the T490, one client, in-memory store.

@@ -191,7 +191,7 @@ the item exists.
 - **Dress**: parked and burnt cars, trolleys, barriers, cones, bins, sandbags, nature at the edges.
 - Outdoor containers and loose loot exist only inside THE SUBSTATION (8 containers); the camps, huts and sheds are empty shells.
 
-## Parity gaps (to copy into `docs/design/EFT_PARITY.md`)
+## Parity gaps (copied to `docs/design/EFT_PARITY.md`)
 
 - Co-op extracts, transits and flares do not exist: WEST CAMP is scav-only at the reference's co-op spot, RIVER PATH is a plain open
   exit, SHELTER EXIT supports only the power rule (the hidden switch and the keycard panel are Play's).
@@ -914,7 +914,7 @@ onto a 6 stud strip of the shell itself. The small shops were checked only for w
    `B.points.SECURITY_TERMINAL` (Play's) to keep the terminal's floor free, and nothing else outside the shell's `B`.
 4. No file outside `src/server/Maps/Meridian/` and this document was edited.
 
-### Parity gaps from this part (for the main session to copy into `docs/design/EFT_PARITY.md`)
+### Parity gaps from this part (copied to `docs/design/EFT_PARITY.md`)
 
 - **Shop interiors are recipes, not copies.** Which shelf, counter and rack stands where in each of the reference's shops is in no source,
   so a shop is built from its kind, with about ten props (capped by floor area) rather than a shop's worth, to hold 30 fps on a phone.
@@ -1163,3 +1163,19 @@ low-end phone with about 2,750 more parts on top of the shell's.
 | `src/server/Maps/Meridian/StoresL2.luau` | the L2 units, the MEDIQ STORE ROOM, VOLTA's and the staff kitchen's stock rooms, THE SHELTER and UNIT 14: room frames and the placement rules, recipes by kind, special rooms, doors and keys, lamps, totals |
 | `src/server/Maps/Meridian/Stores.luau` | the dispatcher (the L1 agent's): runs `StoresL1` then `StoresL2`; unchanged |
 | `docs/design/EFT_PARITY.md` | the parity gaps above, as "Interchange upper floor stores and car-park rooms: Meridian Mall, part 4b" |
+
+## Tested in Studio (2026-11-01)
+
+The whole map ran in Studio on the T490 (one client, in-memory store); see `TEST_RESULTS.md`, Meridian Mall on Interchange.
+
+- Builds in 8 to 9 s at server start with no errors: 18,400 parts in the map model (mall shell 5,360; stores L1 941 props, 250
+  containers, 233 loose spots; stores L2 662 props, 148 containers, 165 loose spots; play; dress 2,060), 70 doors, 5 electric locks.
+- Fixed while testing: the shell failed on an undefined glass colour (no walls, signs or stock rooms were built); the L0 floor slabs were
+  coplanar with the terrain (a camouflage pattern on the car park floor; the terrain now lies 2.5 studs under the slabs); the detail plan
+  crowned the balustrades with barbed wire and cracked every wall like a ruin (the mall and both store levels now carry NoWire and the
+  clean profile: the map's detail entries went from 33,818 to 10,962).
+- AI walk the map: scavs crossed 260 to 915 studs in three minutes, up the ramps and escalators to L2; route guards walk, posted guards
+  hold; THE CARETAKER walks BOLTWORKS. MapTests 38/38 with the stores in.
+- Frame rate on the laptop in Studio: 12 to 16 fps in the mall (about 16,800 parts streamed in), the same range as Border Yard that
+  session. Phones are unmeasured.
+

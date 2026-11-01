@@ -227,6 +227,39 @@ Gaps (not copied or not found):
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
 
+### Interchange ground and outside: Meridian Mall, part 1 (2026-11-01)
+
+- Co-op extracts, transits and flares do not exist: WEST CAMP is scav-only at the reference's co-op spot, RIVER PATH is a plain open
+  exit, SHELTER EXIT supports only the power rule (the hidden switch and the keycard panel are Play's).
+- SUBSTATION CAR costs 20,000 MK (the 2026 figure; the car, the 50 % chance and karma are gaps); FENCE GAP's `nobag` rule is new.
+- The second boss (the hammer boss in the KASSA garage), mounted guns, propane cylinders, airdrop points and the lethal bands are not built.
+- The ponds and the east canal are dry ditches (the budget allows no terrain water), so there is no wading or swimming; the relief is
+  a smooth blend of 31 knots and 155 height samples, so peaks are lower than the reference; the rock mounds and berms are ours.
+- The roof height, the shelter room, UNIT 14, the washroom switch and the security terminal are grade D in the reference (placeholders).
+- The two south border rails (`rail_2`, `rail_3`) lie outside the limit and are not built.
+- Outdoor buildings are single rooms with one or two doors; the reference's real interiors of the camps and sheds are not copied.
+
+### Interchange main floor stores: Meridian Mall, part 4a (2026-11-01)
+
+- **Shop interiors are recipes, not copies.** Which shelf, counter and rack stands where in each of the reference's shops is in no source,
+  so a shop is built from its kind, with about ten props (capped by floor area) rather than a shop's worth, to hold 30 fps on a phone.
+  The 29 names, the signs and the sizes are the reference's; the fixtures are ours.
+- **Containers are the existing kinds only.** There are no ammo box, grenade box, duffel bag or PC case kinds, so IRONSIGHT has weapon boxes,
+  a safe, a drawer and a register (no ammo boxes, no grenade box, no armoured mannequins; the guns on its walls are scenery), and the
+  clothing shops' mannequins carry nothing. Container counts per shop are ours (249 on L1, 81 of them registers).
+- **RESCUE POINT** is medicine shelves, medbags, a drawer and a safe, with the three keyed doors; the reference's surgical and stimulant
+  containers are not separate kinds.
+- **Key spawns are pool rolls.** A loose spot can only roll a pool, so the five key tiles (NESTA, KASSA and the three BOLTWORKS keys) each
+  roll the whole mall key pool (any `KEY_MM_*` or older mall key) instead of holding their one key. The IRONSIGHT, RESCUE POINT and security
+  keys have no tile of their own (their `L.keys` positions are door and terminal icons) and come only from 16 low-chance spots; a key's
+  chance is its pool weight, not the reference's per-key rate (about 3.35 key rolls a raid on L1).
+- **Register keys open the till offices, not the registers** (already listed in Part 3; the registers themselves are open containers).
+- **The closed unit** north of VIKING reads `TO LET` on its sign; the reference's unlabelled store has no sign.
+- **The NESTA CANTEEN kitchen has no staff door** (it is open plan; `KEY_MALL_STAFF` opens the L2 food-court kitchen only).
+- **Not built on L1:** loot or props in the concourse, the atria and the halls outside the shops, shop shutters and glass doors, shop-window
+  displays, price tags, posters and signage art (no logos by design), and any sound.
+- **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
+
 ### Interchange upper floor stores and car-park rooms: Meridian Mall, part 4b (2026-11-01)
 
 Researched first (`docs/maps/reference/INTERCHANGE_REFERENCE.md` sections 4.4 and 8.1 to 8.5: the L2 store list and what each sells, the

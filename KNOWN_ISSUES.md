@@ -92,6 +92,8 @@
 
 65. **Border Yard streams in many parts at once.** At the map centre the client holds about 18,600 parts (Quay 7: 2,500), with the default streaming radius. In Studio it ran about 20% slower than Quay 7 (TEST_RESULTS, Border Yard raid with AI). Phones are unmeasured, and the 30 fps rule makes this the main risk on the map. Levers, in order: a smaller `StreamingTargetRadius` (set in Studio's Workspace properties; scripts cannot read it), fewer separate parts per building (merge plain walls into meshes), then lamps. Roblox's distant-model meshes (`LevelOfDetail = StreamingMesh`) are made when a place is published, so they do not help maps built by script at server start.
 
+66. **Meridian Mall: first-pass gaps.** Built and tested in Studio 2026-11-01 (`docs/maps/MERIDIAN_MALL.md`). Still to do: the IRONSIGHT, RESCUE POINT and security keys only drop from a few low-chance loose spots (key tiles roll the whole mall key pool); the small shops hold about 10 props each; the deep halls are very dark even with the power on (149 shell lamps at 0.8 brightness under ceilings 27 studs up); the 10 `KEY_MM_*` keys have no inventory pictures; no exit has been walked by hand yet; the mall streams about 16,800 parts near the player (see 65).
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.
