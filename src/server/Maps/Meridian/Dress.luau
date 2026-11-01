@@ -425,6 +425,32 @@ return function(B)
 			coneAt(x + dx * gap * k + drng:NextNumber(-0.4, 0.4), z + dz * gap * k + drng:NextNumber(-0.4, 0.4))
 		end
 	end
+	-- ── roads into the hills: a row of concrete barriers closes each road 6 studs short of the limit, clear of the exit
+	-- zones and the spawns (Maps/RoadEnds.luau; the RESCUE CHECKPOINT road has its own gate) ─────────────────────────
+	try("road ends", function()
+		local inside = B.insideLimit
+		if not inside then
+			return
+		end
+		local spawnsAt = {}
+		for _, sp in W.spawns or {} do
+			table.insert(spawnsAt, Vector2.new(sp.cf.Position.X - O.X, sp.cf.Position.Z - O.Z))
+		end
+		require(script.Parent.Parent.RoadEnds).new({
+			L = L, inside = inside, spawns = spawnsAt, rng = drng, size = COVER.BarrierBroken,
+			place = function(kind, x, z, ry, sz)
+				local y = ground(x, z) + 0.16
+				Props.cover(dm, kind, CF(x, y, z, ry), nil)
+				left -= 1 -- one mesh part, as coverAt counts it
+				local a = math.rad(ry)
+				local hx = (math.abs(math.cos(a)) * sz.X + math.abs(math.sin(a)) * sz.Z) / 2
+				local hz = (math.abs(math.sin(a)) * sz.X + math.abs(math.cos(a)) * sz.Z) / 2
+				box(x, y, z, hx, hz, sz.Y)
+				n.barrier += 1
+			end,
+		}).edges()
+	end)
+
 	try("furniture", function()
 		local lots = {}
 		for _, y in L.yards do

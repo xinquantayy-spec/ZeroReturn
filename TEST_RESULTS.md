@@ -34,8 +34,9 @@ moving under its own controller).
 west bank beside the exit, tied to a post (`docs/maps/evidence/BY_exit_smugglers_boat.jpg`). CITY LINE's track ran
 into the boundary rock, and now has its portal (`BY_exit_city_line_portal.jpg`).
 
-Roads into the rock: Border's roads crossed the boundary in 13 places (CROSSROADS among them) and ran into the rock.
-They are now closed by concrete barrier rows, and ARMY ROADBLOCK has a roadblock in front of its zone
+Roads into the rock: Border's roads crossed the boundary in 13 places (CROSSROADS among them), and Meridian's in 8. They
+all ran into the rock. They are now closed by concrete barrier rows (`Maps/RoadEnds.luau`; Meridian 31 barriers,
+`MM_road_end_barriers.jpg`), and ARMY ROADBLOCK has a roadblock in front of its zone
 (`BY_exit_army_roadblock.jpg`, `BY_road_end_barriers.jpg`). Border dress: cover pieces 118 to 164. Suites in a Border
 raid afterwards: LogicTests 341, CharTests 46, LookTests 33, MapTests 36, none failed. The first try put the
 roadblock inside the AR zone, and L03 (cover clear of exits and spawns) failed with 25 pieces.

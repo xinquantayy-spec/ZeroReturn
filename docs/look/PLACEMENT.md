@@ -99,9 +99,10 @@ Found on the Meridian exit walk-through (2026-11-02, TEST_RESULTS "Meridian exit
 - **SMUGGLERS' BOAT had no boat.** The exit was a beacon on the river bank. A small open motorboat is now moored
   off the west bank beside it, its deck just above the water (terrain water fills anything below), tied to a post on
   the bank (`Border/Play.luau`).
-- **Roads into the rock (Border).** Roads that leave the map ran straight into the boundary rock: 13 places, including
-  CROSSROADS. A row of concrete barriers now closes each road 6 studs short of the limit. A row is left out where it
-  would reach into an exit zone or near a spawn, so all cover keeps clear of play spots (LookTests L03).
+- **Roads into the rock (both maps).** Roads that leave the map ran straight into the boundary rock: 13 places on
+  Border, including CROSSROADS, and 8 on Meridian. A row of concrete barriers now closes each road 6 studs short of the
+  limit (`Maps/RoadEnds.luau`). A row is left out where it would reach into an exit zone or near a spawn, so all cover
+  keeps clear of play spots (LookTests L03). Meridian's RESCUE CHECKPOINT road keeps its own gate.
 - **ARMY ROADBLOCK had no roadblock.** The road just ended at the rock by the beacon. There is now a roadblock on the
   road in front of the zone: two staggered rows of barriers, sandbag walls on the shoulders and a guard booth
   (`Border/Dress.luau`, "road ends").

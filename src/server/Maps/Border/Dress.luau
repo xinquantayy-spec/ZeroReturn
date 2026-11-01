@@ -448,9 +448,8 @@ return function(B)
 	-- ── roads into the hills: a road that leaves the map used to run straight into the boundary rock. A line of concrete
 	-- barriers now closes it 6 studs short of the limit, as Tarkov closes its map edges. ARMY ROADBLOCK (RUAF Roadblock)
 	-- gets a manned roadblock on the road in front of its zone: two staggered rows of barriers, sandbag walls on the
-	-- shoulders and a booth. These are placed on the road directly (the road keeps every other prop off), and their boxes
-	-- keep later props off. Like all cover they keep clear of the exfil zones and the spawns (LookTests L03): a row that
-	-- would reach into one is left out.
+	-- shoulders and a booth. The rows and the clearance rules are Maps/RoadEnds.luau's; the pieces stand on the road
+	-- directly and their boxes keep later props off.
 	try("road ends", function()
 		local inside = B.inside
 		if not inside then
@@ -460,50 +459,20 @@ return function(B)
 		for _, sp in W.spawns or {} do
 			table.insert(spawnsAt, Vector2.new(sp.cf.Position.X - O.X, sp.cf.Position.Z - O.Z))
 		end
-		local function clearOfPlay(x, z, rad)
-			for _, e in L.ext do
-				if (Vector2.new(e[4], e[5]) - Vector2.new(x, z)).Magnitude < rad + math.max(e[6], e[8]) / 2 + 3 then
-					return false
-				end
-			end
-			for _, p in spawnsAt do
-				if (p - Vector2.new(x, z)).Magnitude < rad + 9 then
-					return false
-				end
-			end
-			return true
-		end
 		local function at(kind, x, z, ry, sz)
 			local y = ground(x, z) + 0.16
 			Props.cover(dm, kind, CF(x, y, z, ry), nil)
-			left -= 8
+			left -= 1 -- one mesh part, as coverAt counts it
 			local a = math.rad(ry)
 			local hx = (math.abs(math.cos(a)) * sz.X + math.abs(math.sin(a)) * sz.Z) / 2
 			local hz = (math.abs(math.sin(a)) * sz.X + math.abs(math.cos(a)) * sz.Z) / 2
 			box(x, y, z, hx, hz, sz.Y)
 			n.cover += 1
 		end
-		-- a row of barriers across a road (cx, cz) of width w whose way out is (ox, oz); `stagger` sets every other one
-		-- off along the road. The whole row or nothing.
-		local function barrierRow(cx, cz, ox, oz, w, stagger)
-			local sz = COVER.BarrierBroken
-			local k = math.max(1, math.ceil((w + 2) / (sz.X - 0.4)))
-			local ry = math.deg(math.atan2(-ox, -oz))
-			local spots = {}
-			for i = 1, k do
-				local s = (i - (k + 1) / 2) * (sz.X - 0.4)
-				local off = ((i % 2 == 0) and stagger or 0) + drng:NextNumber(-0.3, 0.3)
-				local x, z = cx - oz * s + ox * off, cz + ox * s + oz * off
-				if not clearOfPlay(x, z, sz.X / 2) then
-					return false
-				end
-				table.insert(spots, { x, z })
-			end
-			for _, p in spots do
-				at("BarrierBroken", p[1], p[2], ry + drng:NextNumber(-7, 7), sz)
-			end
-			return true
-		end
+		local RE = require(script.Parent.Parent.RoadEnds).new({
+			L = L, inside = inside, place = at, spawns = spawnsAt, rng = drng, size = COVER.BarrierBroken,
+		})
+		local clearOfPlay, barrierRow = RE.clear, RE.row
 		-- the roadblock in front of ARMY ROADBLOCK: the road through its zone, the way in from the map along it
 		local ar = nil
 		for _, e in L.ext do
@@ -571,32 +540,8 @@ return function(B)
 				end
 			end
 		end
-		-- every road's way off the map: where the road crosses the limit
-		for _, rd in L.roads do
-			local w, pts = rd[3], rd[4]
-			for s = 1, #pts / 2 - 1 do
-				local ax, az, bx, bz = pts[2 * s - 1], pts[2 * s], pts[2 * s + 1], pts[2 * s + 2]
-				local len = math.sqrt((bx - ax) * (bx - ax) + (bz - az) * (bz - az))
-				if len > 1 then
-					local ux, uz = (bx - ax) / len, (bz - az) / len
-					local steps = math.ceil(len / 2)
-					local px, pz, was = ax, az, inside(ax, az)
-					for q = 1, steps do
-						local x, z = ax + (bx - ax) * q / steps, az + (bz - az) * q / steps
-						local now = inside(x, z)
-						if was ~= now then
-							-- the inside point and the way out from it
-							local ix, iz, ox, oz = px, pz, ux, uz
-							if now then
-								ix, iz, ox, oz = x, z, -ux, -uz
-							end
-							barrierRow(ix - ox * 6, iz - oz * 6, ox, oz, w, 0.8)
-						end
-						px, pz, was = x, z, now
-					end
-				end
-			end
-		end
+		-- every road's way off the map
+		RE.edges()
 	end)
 
 	-- ── checkpoints: sandbags, a broken barrier and a drum round each guard post ───────────────────────────
