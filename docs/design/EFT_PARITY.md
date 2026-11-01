@@ -297,6 +297,20 @@ Gaps (not copied or not found):
   displays, price tags, posters and signage art (no logos by design), and any sound.
 - **Loot density** per container and per loose spot comes from the shared pools, with no per-spot tuning against the reference.
 
+### Wall finishes (2026-11-01, owner: "walls look repetitive and fake")
+
+Seven new MaterialVariants (gloss paint, whitewash, two wallpapers, wall tiles, brick, wood panelling), chosen per room or floor with a hue each (`docs/look/WALLS.md`):
+- Border's dorm corridors and stairwells have Tarkov's Soviet two-tone: gloss paint to 1.5 m, a dark line, whitewash above.
+- Checked in Studio: corridor before and after, room 104 in wallpaper (`TEST_RESULTS.md`).
+
+Gaps:
+- The reference is grade C: finishes and mix are inferred from period interiors, not read from Tarkov.
+- Wallpaper repeats every 2 m with the same stains.
+- Only Border's dorms and works pick finishes by room; the other maps use the weighted pick.
+- Stairwell bands do not follow the flights.
+- No stencilled signs, glazed brick, rendered concrete or plywood.
+- Texture origins are not aligned to floors or doors.
+
 ### Customs dorm interiors: Border Yard (2026-11-01)
 
 Built in `Living.luau`, checked in Studio (`TEST_RESULTS.md`, Border Yard dorm interiors):

@@ -113,10 +113,7 @@ changes), or `Tint = true` on the part or its Model; `Tint = false` keeps the co
 * **Reference is grade C.** No Tarkov wall-finish source was read; the finishes, weights (35/15/15/25/10) and hues are
   inferred. To close it: read interior screenshots of the Customs dormitory, Interchange and Factory and set the mix
   per map.
-* **Not uploaded, not run.** The seven variants have empty maps, so nothing changes on screen yet. No Studio run, no phone
-  or console check, no frame rate. Roblox's texture origin on a part is not known offline: scuffs near the foot of the gloss
-  and the seams of the wallpaper may not meet the floor or the band edge, and every wall piece is textured on its own, so
-  a pattern does not continue across a door.
+* **Uploaded and run in Studio (2026-11-01).** All seven variants render in raids: the dorm corridor two-tone with chips, and wallpaper A and B in rooms. On first use right after an upload, one Play session showed the new variants flat (the base material only). Decals and ImageLabels with the same images showed them, and the next Play session rendered them. So test new textures in a fresh Play session. Not checked: phone, console, and the frame-rate cost of the seven extra textures. Roblox's texture origin on a part is not set by us: scuffs near the foot of the gloss and the wallpaper seams may not meet the floor or the band edge, and every wall piece is textured on its own, so a pattern does not continue across a door.
 * **Pattern repeat.** Wallpaper repeats every 2 m with the same stains and a peeled strip; on a long wall this will
   show.
 * **Only Border's dorms and Works use the new finishes by room.** Quay 7 and the other maps get the weighted pick and the

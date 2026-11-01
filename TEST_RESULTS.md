@@ -46,6 +46,20 @@ So in a window that is not in front, Studio draws at most 15 frames a second whi
 
 Benchmark: set the workspace attribute `ZR_Bench` to a map id (`meridian`, `border`) in Edit mode and start a test. Dev.luau deploys the first player and walks the viewpoints. The client holds each view for 4 s, counts frames for 6 s and shows a table. Rows counted while the window was in the background are marked BACKGROUND.
 
+## Wall finishes and indoor light (2026-11-01)
+
+Studio Play mode on the T490. Owner: "the walls look repetitive and fake".
+
+| Check | Result |
+|---|---|
+| Light (dorm room 206, A/B by overriding Lighting on the client) | Indoor `Ambient` hardly changed the room; the indoor auto-gain (+0.55 exposure) did. That gain is now +0.35, and the daytime indoor fill is 74,77,80, down from 96,100,102. Rooms are darker than outside, with more falloff. Night interiors stay readable (lamps and night gain). |
+| Upload | 21 images (colour, normal and roughness for 7 variants) uploaded as Decals; image ids read with `InsertService`; `src/materials/*.model.json` filled |
+| Bug found | `World.applyWear` read `MaterialVariant.ColorMap`, which a game script may not do ("lacking capability Plugin"). The whole world build stopped and `ZR_Dev` never appeared. The read is now in a pcall, and unreadable counts as ready; same in LookTests. |
+| Automated | LogicTests 293/293, CharTests 46/46, LookTests 32/32 (13 new, L04), MapTests 38/38 |
+| Build | Border dorm walls: 180 band skins (10 on stairwells), 180 lines, 125 dividers in two leaves, 3 kitchen tile pieces: 488 parts. Border finishes: whitewash 635, wallpaper A 89, wallpaper B 102, gloss 189, peeling plaster 94 (it was every plaster wall), brick 1,148, wood panel 37, wall tiles 18. |
+| Look | Corridor before: every wall the same stained plaster. After: green gloss to 1.5 m with chips and a dark line, whitewash above, radiators. Room 104: faded lattice wallpaper with peeling seams and water stains. |
+| First-session glitch | In the first Play session after the upload, the new variants drew flat. In that session a Decal with the same image showed it, and a fresh runtime variant with an already-loaded old image worked. The next session rendered all seven, in a sky probe and in the raid. |
+
 ## Border Yard exits on the navigation mesh (2026-11-01)
 
 Studio Play mode, Roblox PathfindingService (agent radius 1.6 to 2, height 5.5, can jump) from the dorms yard and from RED STORES to every exit zone.
