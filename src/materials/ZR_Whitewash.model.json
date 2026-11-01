@@ -1,11 +1,10 @@
 {
-  "_comment": "ZR_Whitewash: matte whitewash / distemper, the default for lobbies, upper corridor walls and many rooms; 3.2 m per tile. The maps are empty on purpose: the main session uploads assets/textures/out/materials/ZR_MAT_Whitewash_Color.png, _Normal.png and _Rough.png and writes the three rbxassetid values here (never invent ids). World.applyWear skips this variant while ColorMap is empty, so nothing breaks before then.",
   "className": "MaterialVariant",
   "properties": {
     "BaseMaterial": "Plaster",
-    "ColorMap": "",
-    "NormalMap": "",
-    "RoughnessMap": "",
+    "ColorMap": "rbxassetid://93993167882976",
+    "NormalMap": "rbxassetid://115822399200375",
+    "RoughnessMap": "rbxassetid://79418446426990",
     "StudsPerTile": 10,
     "MaterialPattern": "Organic"
   }

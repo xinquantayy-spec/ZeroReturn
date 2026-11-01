@@ -1395,10 +1395,18 @@ end
 
 function World.applyWear(folder)
 	local MS = game:GetService("MaterialService")
-	local base = {} -- ready variants (a filled ColorMap): name -> base material
+	-- ready variants: name -> base material. A game script may not read MaterialVariant.ColorMap ("lacking capability
+	-- Plugin"; reading it stopped the whole world build in Studio, 2026-11-01), so a variant counts as ready unless the read
+	-- succeeds and says its map is empty.
+	local base = {}
 	for _, v in MS:GetChildren() do
-		if v:IsA("MaterialVariant") and v.ColorMap ~= "" then
-			base[v.Name] = v.BaseMaterial
+		if v:IsA("MaterialVariant") then
+			local ok, map = pcall(function()
+				return v.ColorMap
+			end)
+			if not ok or map ~= "" then
+				base[v.Name] = v.BaseMaterial
+			end
 		end
 	end
 	local memoFinish, memoTint, memoNoDetail, memoPick, memoName = {}, {}, {}, {}, {}

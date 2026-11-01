@@ -1,11 +1,10 @@
 {
-  "_comment": "ZR_WallTiles: glazed 15 cm wall tiles in a regular grid; 2.4 m per tile. The maps are empty on purpose: the main session uploads assets/textures/out/materials/ZR_MAT_WallTiles_Color.png, _Normal.png and _Rough.png and writes the three rbxassetid values here (never invent ids). World.applyWear skips this variant while ColorMap is empty, so nothing breaks before then.",
   "className": "MaterialVariant",
   "properties": {
     "BaseMaterial": "CeramicTiles",
-    "ColorMap": "",
-    "NormalMap": "",
-    "RoughnessMap": "",
+    "ColorMap": "rbxassetid://83620837571843",
+    "NormalMap": "rbxassetid://94996591881458",
+    "RoughnessMap": "rbxassetid://98749657207146",
     "StudsPerTile": 7.5,
     "MaterialPattern": "Regular"
   }

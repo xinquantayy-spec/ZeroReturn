@@ -1,11 +1,10 @@
 {
-  "_comment": "ZR_WallpaperB: vinyl geometric wallpaper (diamond lattice over soft stripes) in four 0.5 m rolls; 2 m per tile. The maps are empty on purpose: the main session uploads assets/textures/out/materials/ZR_MAT_WallpaperB_Color.png, _Normal.png and _Rough.png and writes the three rbxassetid values here (never invent ids). World.applyWear skips this variant while ColorMap is empty, so nothing breaks before then.",
   "className": "MaterialVariant",
   "properties": {
     "BaseMaterial": "Plaster",
-    "ColorMap": "",
-    "NormalMap": "",
-    "RoughnessMap": "",
+    "ColorMap": "rbxassetid://124542623119034",
+    "NormalMap": "rbxassetid://75522078331413",
+    "RoughnessMap": "rbxassetid://79729528624031",
     "StudsPerTile": 6.25,
     "MaterialPattern": "Regular"
   }

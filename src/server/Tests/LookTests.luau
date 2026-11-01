@@ -187,7 +187,11 @@ function T.run(ctx)
 			local ready, empty, missing = {}, {}, {}
 			for _, v in MS:GetChildren() do
 				if v:IsA("MaterialVariant") then
-					if v.ColorMap ~= "" then
+					-- a game script cannot read ColorMap (Plugin capability): unreadable counts as ready, as in applyWear
+					local ok, map = pcall(function()
+						return v.ColorMap
+					end)
+					if not ok or map ~= "" then
 						ready[v.Name] = v
 					else
 						empty[v.Name] = true
