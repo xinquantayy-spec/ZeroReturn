@@ -8,6 +8,34 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## THE CULT, Border Yard's night group (2026-11-02)
+
+Border raids, one player, THE CULT forced in with ZR_Dev `boss(true, "Priest")` and the other bosses forced out.
+
+- **Spawn:** the priest (850 health) and two to four warriors (440 each) appeared in one of the three zones, all prone with the knife at the hip. Seen: SQUAT WEST with two warriors, THE FRAME with four (`docs/maps/evidence/BY_cult_night.jpg`, `BY_cult_ambush.jpg`).
+- **Found and fixed:**
+  - At first nobody noticed a player standing still 14 studs away at night, because darkness and the narrow field of view kept them blind. Ambushers now pick out anyone within 22 studs all round.
+  - In daylight their heads showed bare under the hood that hangs down the back. They now wear black beanies.
+- **Ambush, god mode on:**
+  - With the player 12 studs from a warrior, it rose with the knife within 1.2 s and ran to 2 studs.
+  - The others got up, closed in, and a second one drew its knife.
+- **The poison:** god mode was off for 1.3 s. The stabs left "BLEEDING, POISONED" among the effects (ZR_Dev `hp`), and one stab to the head killed the player.
+- **Tests, all passing:**
+
+  | Suite | Passed | Failed | New |
+  |---|---|---|---|
+  | LogicTests | 365 | 0 | 5 in "cult": the group and its rules; the knife against the hammer; a stab poisons and POISONED shows, and the antidote cures it; the kits; the looks |
+  | CharTests | 47 | 0 | |
+  | LookTests | 33 | 0 | |
+  | MapTests | 38 | 0 | |
+
+**Not checked:**
+- the antidote used by hand in a raid;
+- the toxin running for minutes;
+- looting the priest;
+- two clients;
+- phones.
+
 ## Visual sweep of Border Yard (2026-11-02)
 
 Eight views at eye height or from above, one player, 13:00 clear:

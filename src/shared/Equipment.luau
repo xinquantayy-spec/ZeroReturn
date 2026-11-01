@@ -170,6 +170,12 @@ local LOOKS: { [string]: any } = {
 		overlays = join({ P("ZR_OV_Armband", "LeftUpperArm", "1E1F20", "Fabric") }, KNEE("2E3026")) },
 	kestrel = { jacket = "5C5640", pants = "4A4634", skin = "BF9C80", glove = "3A3428", boot = "3A3228",
 		overlays = join({ P("ZR_OV_Hood", "UpperTorso", "56523A", "Fabric", { region = "hood" }) }, KNEE("3E3A2C")) },
+	-- THE CULT (Border Yard's night group, Tarkov's cultists; docs/design/BOSS_CULT.md): dark brown hooded robes and black
+	-- gaiters; the priest in a near-black robe with a dark red armband
+	cultist = { jacket = "2E2924", pants = "26221E", skin = "B9A493", glove = "1C1A18", boot = "1E1C1A",
+		overlays = { P("ZR_OV_Hood", "UpperTorso", "2E2924", "Fabric", { region = "hood" }) } },
+	priest = { jacket = "1E1A18", pants = "1A1715", skin = "B3A08F", glove = "141210", boot = "161412",
+		overlays = { P("ZR_OV_Hood", "UpperTorso", "1E1A18", "Fabric", { region = "hood" }), P("ZR_OV_Armband", "LeftUpperArm", "6A1E1A", "Fabric") } },
 	-- Relay 7 traders (lobby NPCs), each in their trade's clothes: VOS the quartermaster (olive, red armband), HALE
 	-- the field medic (pale coat, blue gloves, red-cross armband), TILDA the outfitter (dark, fleece collar), the Fence
 	-- (hooded, shabby)

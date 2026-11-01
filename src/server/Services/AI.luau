@@ -68,6 +68,8 @@ for _, k in { "scav", "watch", "follower", "boss" } do
 end
 local FOV_COS = math.cos(math.rad(62))
 local CLOSE = 9
+-- an ambusher lying in wait (THE CULT) listens all round: within this it picks out anyone who comes near, dark or not
+local AMBUSH_SENSE = 22
 local WALK, RUN, CROUCH = 8, 15, 5
 
 local params = RaycastParams.new()
@@ -903,7 +905,11 @@ local function pickZone(u)
 end
 
 local function idle(u, t)
-	setStance(u, (u.loiterCrouch and u.loiterUntil and t < u.loiterUntil) and "c" or "s", 0.7)
+	if u.ambush and not u.provoked then
+		setStance(u, "p", 1) -- lying in wait at its post (THE CULT)
+	else
+		setStance(u, (u.loiterCrouch and u.loiterUntil and t < u.loiterUntil) and "c" or "s", 0.7)
+	end
 	if u.leader then
 		local L = u.leader
 		if not L.alive then
@@ -1207,12 +1213,21 @@ end
 -- Within 15 m of a target he can see, with nothing in the way, he runs straight at it with the hammer and swings
 -- within reach; shots do not stop the run, broken legs slow it (Health.mods). Otherwise he fights with his gun. The
 -- hammer cannot be looted: it is a few parts in his hand, on his back while he shoots.
-local CHARGE_RANGE, CHARGE_SPEED, HAMMER_REACH = 47, 18, 4.6
-local HAMMER = { dmg = 110, pen = 35, armorDmg = 0.8, bleedL = 0.3, bleedH = 0.1 }
+-- THE CULT's warriors and priest (Tarkov's cultists; docs/design/BOSS_CULT.md) charge the same way with a poisoned knife:
+-- a shorter run, quicker stabs at the body, and every wound poisons (Health toxin). u.charge = true or "hammer" | "knife".
+local MELEE = {
+	hammer = { range = 47, speed = 18, reach = 4.6, every = 1.3, head = 0.6, dmg = 110, pen = 35, armorDmg = 0.8, bleedL = 0.3, bleedH = 0.1, weapon = "SLEDGEHAMMER", ammo = "BLUNT" },
+	knife = { range = 40, speed = 17, reach = 4.0, every = 0.85, head = 0.15, dmg = 36, pen = 14, armorDmg = 0.3, bleedL = 0.5, bleedH = 0.2, weapon = "RITUAL KNIFE", ammo = "STAB", toxin = true },
+}
+AI.MELEE = MELEE
+local function meleeOf(u)
+	return MELEE[type(u.charge) == "string" and u.charge or "hammer"] or MELEE.hammer
+end
 local hammerTo
 local function makeHammer(u)
+	local knife = meleeOf(u) == MELEE.knife
 	local m = Instance.new("Model")
-	m.Name = "Sledgehammer"
+	m.Name = knife and "RitualKnife" or "Sledgehammer"
 	local function piece(size, color, mat)
 		local p = Instance.new("Part")
 		p.Size = size
@@ -1222,10 +1237,17 @@ local function makeHammer(u)
 		p.Parent = m
 		return p
 	end
-	local handle = piece(Vector3.new(0.22, 3.1, 0.22), Color3.fromRGB(92, 70, 48), Enum.Material.Wood)
+	local handle, head
+	if knife then
+		handle = piece(Vector3.new(0.16, 0.55, 0.16), Color3.fromRGB(40, 32, 28), Enum.Material.Wood)
+		head = piece(Vector3.new(0.05, 0.95, 0.22), Color3.fromRGB(118, 122, 124), Enum.Material.Metal) -- the blade
+		head.CFrame = handle.CFrame * CFrame.new(0, -0.75, 0)
+	else
+		handle = piece(Vector3.new(0.22, 3.1, 0.22), Color3.fromRGB(92, 70, 48), Enum.Material.Wood)
+		head = piece(Vector3.new(1.05, 0.58, 0.58), Color3.fromRGB(58, 60, 62), Enum.Material.Metal)
+		head.CFrame = handle.CFrame * CFrame.new(0, -1.55, 0)
+	end
 	handle.Name = "Handle"
-	local head = piece(Vector3.new(1.05, 0.58, 0.58), Color3.fromRGB(58, 60, 62), Enum.Material.Metal)
-	head.CFrame = handle.CFrame * CFrame.new(0, -1.55, 0)
 	local hw = Instance.new("WeldConstraint")
 	hw.Part0, hw.Part1 = handle, head
 	hw.Parent = head
@@ -1234,7 +1256,7 @@ local function makeHammer(u)
 	grip.Part1 = handle
 	grip.Parent = handle
 	m.Parent = u.model
-	u.hammer = { model = m, grip = grip }
+	u.hammer = { model = m, grip = grip, knife = knife }
 	hammerTo(u, false)
 end
 -- in hand (the head below the fist) or slung across the back
@@ -1244,6 +1266,19 @@ hammerTo = function(u, inHand)
 		return
 	end
 	local hand, torso = u.model:FindFirstChild("RightHand"), u.model:FindFirstChild("UpperTorso")
+	local hips = u.model:FindFirstChild("LowerTorso")
+	if hm.knife then
+		-- the knife: in the fist, blade down, or in a sheath at the right hip
+		if inHand and hand then
+			hm.grip.Part0 = hand
+			hm.grip.C0 = CFrame.new(0, -0.45, -0.15)
+		elseif hips then
+			hm.grip.Part0 = hips
+			hm.grip.C0 = CFrame.new(0.62, 0.1, 0) * CFrame.Angles(0, 0, math.rad(8))
+		end
+		hm.inHand = inHand
+		return
+	end
 	if inHand and hand then
 		hm.grip.Part0 = hand
 		hm.grip.C0 = CFrame.new(0, -0.9, -0.2)
@@ -1260,16 +1295,17 @@ local function swing(u, tm)
 		if not (u.alive and alive(tm)) then
 			return
 		end
+		local mp = meleeOf(u)
 		local tor = tm:FindFirstChild("UpperTorso") or tm:FindFirstChild("HumanoidRootPart")
-		if not tor or flat(tor.Position - u.root.Position).Magnitude > HAMMER_REACH + 1.2 then
+		if not tor or flat(tor.Position - u.root.Position).Magnitude > mp.reach + 1.2 then
 			return -- stepped out of reach during the wind-up
 		end
-		-- he swings at the head more often than not (Tarkov: the hammer kills in one hit on contact)
-		local part = (math.random() < 0.6 and tm:FindFirstChild("Head")) or tor
+		-- the hammer swings at the head more often than not (Tarkov: it kills in one hit on contact); the knife stabs the body
+		local part = (math.random() < mp.head and tm:FindFirstChild("Head")) or tor
 		ctx.Combat.hitModel(tm, {
-			dmg = HAMMER.dmg, pen = HAMMER.pen, armorDmg = HAMMER.armorDmg, bleedL = HAMMER.bleedL, bleedH = HAMMER.bleedH,
+			dmg = mp.dmg, pen = mp.pen, armorDmg = mp.armorDmg, bleedL = mp.bleedL, bleedH = mp.bleedH, toxin = mp.toxin,
 			part = part, hitPos = part.Position, attacker = u.model, from = u.head and u.head.Position or u.root.Position,
-			weapon = "SLEDGEHAMMER", ammo = "BLUNT",
+			weapon = mp.weapon, ammo = mp.ammo,
 		})
 		ctx.Remotes.fx("sfx", { n = "knife_hit", p = part.Position, v = 1 })
 	end)
@@ -1279,7 +1315,8 @@ local function chargeTick(u, t, tm, tpos, dist)
 	if not u.charge then
 		return false
 	end
-	local clear = u.visible and dist <= (u.charging and CHARGE_RANGE + 10 or CHARGE_RANGE)
+	local mp = meleeOf(u)
+	local clear = u.visible and dist <= (u.charging and mp.range + 10 or mp.range)
 		and worldClear(u.root.Position + Vector3.new(0, 1.5, 0), tpos + Vector3.new(0, 0.5, 0))
 	if not clear then
 		if u.charging then
@@ -1296,21 +1333,22 @@ local function chargeTick(u, t, tm, tpos, dist)
 			u.cover = nil
 		end
 		ctx.Remotes.fx("sfx", { n = "breath_heavy", p = u.root.Position, v = 1.4 }) -- no yell in the atlases yet (logged)
+		u.provoked = true -- an ambusher who has broken cover fights on with everything
 	end
 	local hs = ctx.Health.get(u.model)
 	local mods = hs and ctx.Health.mods(hs)
 	setStance(u, "s")
 	face(u, tpos)
 	u.wantFire = false
-	if dist > HAMMER_REACH - 1.6 then
-		u.hum.WalkSpeed = CHARGE_SPEED * (mods and mods.speed or 1) * ((mods and not mods.sprint) and 0.6 or 1)
+	if dist > mp.reach - 1.6 then
+		u.hum.WalkSpeed = mp.speed * (mods and mods.speed or 1) * ((mods and not mods.sprint) and 0.6 or 1)
 		u.moving = true
 		u.hum:MoveTo(tpos)
 	else
 		stop(u) -- at arm's length: no running into the target (or up onto it)
 	end
-	if dist <= HAMMER_REACH and t >= (u.nextSwing or 0) then
-		u.nextSwing = t + 1.3
+	if dist <= mp.reach and t >= (u.nextSwing or 0) then
+		u.nextSwing = t + mp.every
 		swing(u, tm)
 	end
 	return true
@@ -1351,6 +1389,15 @@ local function combat(u, t)
 	local threatEye = (u.visible and thead and thead.Position) or (tpos + Vector3.new(0, 1.3, 0))
 	local dist = flat(tpos - u.root.Position).Magnitude
 	if chargeTick(u, t, tm, tpos, dist) then
+		return
+	end
+	-- an ambusher (THE CULT: Tarkov's warriors lie prone in the dark) keeps still until the target comes within the
+	-- knife's run and in sight, or until it is hurt; after that it fights on with its gun as well
+	if u.ambush and not u.provoked then
+		setStance(u, "p", 1)
+		stop(u)
+		face(u, tpos)
+		u.wantFire = false
 		return
 	end
 	-- out of ammo: reload, switch to the sidearm, or break off
@@ -1559,7 +1606,7 @@ local function perceive(u, t, dt)
 			end
 			local vis = nil
 			if dist < range and t >= (u.blindUntil or 0) then
-				local inFov = dist < CLOSE or look:Dot(d.Unit) >= FOV_COS or (a >= 1 and dist < 45)
+				local inFov = dist < CLOSE or look:Dot(d.Unit) >= FOV_COS or (a >= 1 and dist < 45) or (u.ambush and dist < AMBUSH_SENSE)
 				if inFov then
 					vis = visiblePart(u, model, eye)
 				end
@@ -1571,6 +1618,9 @@ local function perceive(u, t, dt)
 				end
 				if dist < CLOSE then
 					rate *= 3
+				end
+				if u.ambush and dist < AMBUSH_SENSE then
+					rate = math.max(rate, 1.6)
 				end
 				a = math.min(1.6, a + rate * dt)
 				u.seen[model] = t
@@ -1787,7 +1837,7 @@ function AI.spawn(kind, pos, opts)
 		state = (opts.route or opts.post or opts.leader) and "PATROL" or "WANDER", route = opts.route, wp = opts.wp or 1,
 		post = opts.post, leader = opts.leader, slot = opts.slot,
 		aware = {}, lastPos = {}, seen = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
-		useCover = math.random() < skillOf.cover, turn = turn, charge = opts.charge,
+		useCover = math.random() < skillOf.cover, turn = turn, charge = opts.charge, ambush = opts.ambush,
 	}
 	u.w = weaponIn(u, "primary") or weaponIn(u, "secondary") or weaponIn(u, "holster")
 	table.insert(units, u)
@@ -2029,6 +2079,7 @@ function AI.onDamaged(model, attacker)
 	local t = now()
 	u.suppressedUntil = t + 1.2
 	u.alert = t + 30
+	u.provoked = true -- an ambusher that is hit gives up hiding
 	local amodel = nil
 	if typeof(attacker) == "Instance" then
 		if attacker:IsA("Player") then
@@ -2116,6 +2167,9 @@ function AI.reset()
 		-- all, AI.forceBossId[label] one of them (Dev "boss").
 		local bosses = W.bosses or (W.boss and { W.boss }) or {}
 		local rolled = {}
+		-- a night boss (THE CULT) rolls only in a raid that starts in the dark (Tarkov: cultists come out at night)
+		local env = ctx.Match and ctx.Match.env
+		local dark = env ~= nil and Env.daylight(env.clock0 or 12) < 0.35
 		for _, b in bosses do
 			local forced = AI.forceBoss
 			if AI.forceBossId and AI.forceBossId[b.label] ~= nil then
@@ -2123,6 +2177,8 @@ function AI.reset()
 			end
 			if forced ~= nil then
 				rolled[b] = forced
+			elseif b.night and not dark then
+				rolled[b] = false
 			else
 				rolled[b] = math.random() < (b.chance or Config.BOSS_CHANCE)
 			end
@@ -2152,18 +2208,21 @@ function AI.reset()
 				table.insert(AI.bossesThisRaid, b.label or "Foreman")
 				local boss = AI.spawn("boss", zone and zone.home or b.home, {
 					route = zone and zone.route or b.route, wp = 1, label = b.label or "Foreman", name = b.label, look = b.look,
-					loadout = b.loadout, hp = b.hp, charge = b.charge, skill = b.skill,
+					loadout = b.loadout, hp = b.hp, charge = b.charge, skill = b.skill, ambush = b.ambush,
+					post = (zone and zone.post) or b.post,
 				})
-				for i, p in b.crew or {} do
+				for i, p in (zone and zone.crew) or b.crew or {} do
 					if myGen ~= gen then
 						return
 					end
-					-- a crew member is a spot, or { pos, look, loadout, hp, label, skill } (THE HOUNDS: each his own man)
+					-- a crew member is a spot, or { pos, look, loadout, hp, label, skill } (THE HOUNDS: each his own man); with
+					-- `post` it keeps its own spot instead of following (THE CULT's warriors lying in wait round their priest)
 					if typeof(p) == "Vector3" then
 						AI.spawn("follower", p, { leader = boss, slot = i })
-					elseif type(p) == "table" and typeof(p.pos) == "Vector3" then
+					elseif type(p) == "table" and typeof(p.pos) == "Vector3" and (not p.chance or math.random() < p.chance) then
 						AI.spawn("follower", p.pos, {
-							leader = boss, slot = i, look = p.look, loadout = p.loadout, hp = p.hp, label = p.label, name = p.label, skill = p.skill,
+							leader = (not p.post) and boss or nil, slot = i, look = p.look, loadout = p.loadout, hp = p.hp, label = p.label,
+							name = p.label, skill = p.skill, charge = p.charge, ambush = p.ambush, post = p.post and p.pos or nil,
 						})
 					end
 				end

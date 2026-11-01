@@ -60,6 +60,7 @@ Next round (`KNOWN_ISSUES` 69):
    - AI paths into Border's boiler cellar and bunker K-11 (KNOWN_ISSUES 68). All 26 Border exits are now reached from every spawn.
    - THE HOUNDS, Border Yard's Goons: three bosses at 20 % from the Bastion, Tarkov's health, kits and five double pockets (`docs/design/BOSS_HOUNDS.md`).
    - The green flare and flare exits: NORTH LINE and RIVER PATH open by flare, OLD PUMPS sends up green flares while it is there (`EFT_PARITY.md`, "Flare exits").
+   - THE CULT, Border Yard's cultists: a priest and two to four warriors at night, prone ambushes, poisoned knives and the antidote (`docs/design/BOSS_CULT.md`).
 
    Left from these:
    - KNOWN_ISSUES 73: the ambience atlas is silent until the owner re-uploads it.
@@ -67,7 +68,7 @@ Next round (`KNOWN_ISSUES` 69):
 3. **Performance on phones:** Border Yard and Meridian stream 16,000 to 18,600 parts near the player (KNOWN_ISSUES 65); try a smaller streaming radius in Studio's Workspace settings and merge plain walls, then measure in the device emulator.
 4. **Border Yard polish:** dorm interiors are done (furniture, washrooms, doors, glass; checked in Studio 2026-11-01). Still to do: the 0.16 interiors elsewhere, ladders, and the AI paths on Border stairs (KNOWN_ISSUES 68; the boiler cellar was inspected 2026-11-01).
 5. **Mounted guns, the rest:** the grenade launcher by hand, gamepad and touch, AI gunners firing a mounted gun, Blender art.
-6. Then the remaining parity list in `EFT_PARITY.md`: hideout customisation, co-op extracts and transits, other boss groups (cultists, the partisan; the Goons are done), yellow flares for quests (the green flare and flare exits are done).
+6. Then the remaining parity list in `EFT_PARITY.md`: hideout customisation, co-op extracts and transits, other boss groups (the partisan; the Goons and the cultists are done), yellow flares for quests (the green flare and flare exits are done).
 
 **Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file). Decisions that can wait: publishing, a cross-server flea market (MemoryStore).
 

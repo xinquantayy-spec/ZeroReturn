@@ -259,7 +259,7 @@ Gaps (not copied or not found):
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, THE HOUNDS (the Goons, 2026-11-02), border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the other boss groups (cultists, the partisan), ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
+| Customs | Border Yard rebuilt on Customs' current layout at real scale (2026-11-01): terrain, river and both bridges, roads, rail, 67 buildings and 6 underground spaces with interiors (Block A and B dorms, fuel stop, old pumps, the Squat, stores 3, 4, 7 and 17, Red Stores, the Bastion with bunker K-13, the Derrick, the Frame, motor shop and boiler cellar, K-11, the Smugglers' Hole), 26 extracts with their rules, 12 spawns by side, the Broker and his crew, THE HOUNDS (the Goons) and THE CULT (the cultists, both 2026-11-02), border snipers, propane; `docs/maps/BORDER_YARD.md` | The real positions of the mounted guns (the system exists and two guns stand on the Bastion roof at our own positions: `docs/design/STATIONARY_WEAPONS.md`), co-op extracts and transits, the partisan, ladders (built as stairs: no climbing), glass, washrooms and denser furniture in the dorms, the 0.16 interiors the reference only gives as extents |
 | Interchange | Meridian Mall rebuilt on Interchange's layout at real scale (2026-11-01). Tested in Studio: the build, AI across the levels, every exit's path and rule, light by day and night, and the frame rate (`TEST_RESULTS.md`). Part 1 the outside, part 2 the mall shell (the car park, L1 and L2, atria, roof, stairs, dock bays and 84 empty store units; the stores' interiors are another agent's), part 3 the gameplay: 7 extracts with their rules (the shelter's power-then-valve chain, the empty-backpack fence gap), 25 PMC spawns on two halves, guard routes and posts, THE CARETAKER (60 %, five zones), what the mall power changes (electric locks, the IRONSIGHT alarm), a lethal minefield and a sniper band, ten new keys, car park dressing; `docs/maps/MERIDIAN_MALL.md` (Parts 2 and 3) | Co-op, flare and transit extracts, the car exit's karma pricing (the car itself is built: "Car exits" below), the shelter's keypad chain and the Terragroup container, per-extract timers, key art; the lists under "Interchange mall shell" and "Interchange gameplay" below |
 | Woods | Pinewatch, parked by the owner | - |
 | Hideout look | The bunker is kept, not ruined (2026-11-01): painted walls, grime only where it gathers | Hideout customisation (section 3) |
@@ -666,4 +666,25 @@ Gaps:
 - **Old Gas Station's signal** is our reading of "Green flares = Open". The interval is ours.
 - **No flare gun, no yellow flare** (quests), and no special slot.
 - **No art**: the item has no inventory picture yet.
+
+### THE CULT: Customs' cultists on Border Yard (2026-11-02)
+
+Researched first (tarkovforge's Cultist Priest page, live from tarkov.dev; timesaver.gg's priest guide for patch 1.1.5;
+v-tarkov's older page; `docs/design/BOSS_CULT.md`). Built in `Maps/Border/Play.luau`, `AI.luau`, `Health.luau`, `Loot.luau`,
+`Items.luau` and `Equipment.luau`. Checked in Studio with one player (TEST_RESULTS "THE CULT").
+
+Matched:
+- **Spawn:** a priest with two to four warriors, 20 % on Customs' map, night raids only, by the crackhouse and the
+  construction site.
+- **Health and armour:** the priest's 850 health; robes and no armour.
+- **Ambush:** warriors lie prone in the dark and spring up to stab anyone who comes close; hurt or spotted, they fight on
+  with suppressed SMGs.
+- **Poison:** a stab poisons with a toxin that keeps hurting until an antidote; the knife is the signature loot.
+
+Gaps:
+- **No raised hood** (a beanie stands in; the hood mesh hangs down the back).
+- **The toxin's numbers are ours** (1 hp/s over the body, faster thirst and hunger); only one cure (no Augmentin).
+- **The looted knife** has the field knife's stats and does not poison.
+- **The night rule** is "the raid starts in the dark", not Tarkov's exact hours.
+- **Zones are ours**; not on other maps; no cultist circle.
 

@@ -1065,7 +1065,7 @@ function T.run(ctx)
 		local bl = bm and bm.bosses
 		local hb = bl and bl[2]
 		check("hounds: Border Yard rolls the Broker and THE HOUNDS on their own (Tarkov's Goons: 20 % on Customs)",
-			bl ~= nil and #bl == 2 and bl[1].label == "Broker" and hb.label == "Halberd" and hb.chance == 0.2, bl and #bl)
+			bl ~= nil and #bl >= 2 and bl[1].label == "Broker" and hb.label == "Halberd" and hb.chance == 0.2, bl and #bl)
 		local crewOk = hb ~= nil and #hb.crew == 2 and hb.crew[1].label == "Mortar" and hb.crew[2].label == "Kestrel"
 			and typeof(hb.crew[1].pos) == "Vector3" and typeof(hb.crew[2].pos) == "Vector3"
 		check("hounds: HALBERD leads MORTAR and KESTREL, each with Tarkov's health (1,120, 910, 795) and the boss's skill",
@@ -1122,6 +1122,71 @@ function T.run(ctx)
 		local Eq = require(game:GetService("ReplicatedStorage").ZR.Equipment)
 		check("hounds: each of the three has a look of his own",
 			Eq.lookKey("halberd") == "halberd" and Eq.lookKey("mortar") == "mortar" and Eq.lookKey("kestrel") == "kestrel")
+	end
+
+	-- THE CULT (Border Yard's night group, Tarkov's cultists): the group, its rules, the knife, the toxin, the antidote, kits
+	if ctx and ctx.World and ctx.Loot and ctx.AI and ctx.Health then
+		local bl = ctx.World.maps.border and ctx.World.maps.border.bosses
+		local cult = nil
+		for _, b in bl or {} do
+			if b.label == "Priest" then
+				cult = b
+			end
+		end
+		local zonesOk = cult ~= nil and #cult.zones == 3
+		for _, z in cult and cult.zones or {} do
+			local optional = 0
+			for _, w in z.crew do
+				zonesOk = zonesOk and w.ambush == true and w.charge == "knife" and w.post == true and typeof(w.pos) == "Vector3"
+				if w.chance then
+					optional += 1
+				end
+			end
+			zonesOk = zonesOk and #z.crew == 4 and optional == 2 and typeof(z.post) == "Vector3"
+		end
+		check("cult: Border rolls THE CULT at 20 % in night raids only, in three zones, two to four warriors lying in wait",
+			cult ~= nil and cult.chance == 0.2 and cult.night == true and math.abs(cult.hp * 440 - 850) < 0.5 and zonesOk)
+		local K, H = ctx.AI.MELEE and ctx.AI.MELEE.knife, ctx.AI.MELEE and ctx.AI.MELEE.hammer
+		check("cult: the knife charge is shorter and quicker than the hammer, poisons, and leaves the hammer as it was",
+			K ~= nil and H ~= nil and K.toxin == true and K.range < H.range and K.every < H.every and H.dmg == 110 and not H.toxin)
+		-- a hit with the poisoned blade poisons; the toxin shows and shakes the aim; the antidote is a one-use injector
+		local poisoned, shown = false, false
+		local okR, rig = pcall(ctx.Chars.buildRig, "cultist", 1)
+		if okR and rig then
+			ctx.Health.attach(rig, { kind = "ai", holder = function()
+				return { slots = {}, items = {}, grids = {} }
+			end })
+			local hsR = ctx.Health.get(rig)
+			ctx.Health.hit(rig, { dmg = 12, pen = 0, part = rig:FindFirstChild("UpperTorso"), toxin = true, bleedL = 0, bleedH = 0 })
+			poisoned = hsR ~= nil and hsR.toxin ~= nil
+			if hsR then
+				local v = ctx.Health.vitals(hsR)
+				for _, e in v.effects do
+					shown = shown or e.label == "POISONED"
+				end
+				shown = shown and v.mods.tremor > 0
+			end
+			rig:Destroy()
+		end
+		local ad = Items.defs.ANTIDOTE
+		check("cult: the knife poisons, POISONED shows and the aim trembles; the antidote injector cures it",
+			poisoned and shown and ad ~= nil and ad.kind == "med" and ad.med.antidote == true and ad.med.uses == 1)
+		local function count(h, id)
+			local n = 0
+			for _, it in h.items do
+				if it.id == id then
+					n += 1
+				end
+			end
+			return n
+		end
+		local c1, pr = ctx.Loot.cultistLoadout(Random.new(4)), ctx.Loot.priestLoadout(Random.new(4))
+		local g = c1.slots.primary
+		check("cult: robes and no armour, a suppressed SMG; the priest carries the ritual knife",
+			g ~= nil and c1.items[g].id == "SPARROW_SMG" and count(c1, "SUPP_9") == 1 and c1.slots.armor == nil and count(pr, "RITUAL_KNIFE") >= 1
+				and Inv.check(c1) and Inv.check(pr))
+		local Eq = require(game:GetService("ReplicatedStorage").ZR.Equipment)
+		check("cult: the warriors and the priest look their own", Eq.lookKey("cultist") == "cultist" and Eq.lookKey("priest") == "priest")
 	end
 
 	-- flare exits (Extract kind "flare"): the green flare; NORTH LINE and RIVER PATH open by flare; OLD PUMPS shows green

@@ -83,7 +83,7 @@ T.offers = {
 	hale = {
 		o("BANDAGE", 1, 10), o("PAINKILLERS", 1, 5), o("MEDKIT_S", 1, 5), o("SPLINT", 1, 5), o("WATER", 1, 5), o("HARDTACK", 1, 5),
 		o("TOURNIQUET", 2, 5), o("MEDKIT_M", 2, 4), o("STEW", 2, 5), o("VOLT_DRINK", 2, 3),
-		o("HEMOSTAT", 3, 3), o("MEDKIT_L", 3, 2),
+		o("HEMOSTAT", 3, 3), o("MEDKIT_L", 3, 2), o("ANTIDOTE", 3, 1),
 		o("SURGKIT", 4, 1), o("MEDKIT_XL", 4, 1),
 	},
 	tilda = {

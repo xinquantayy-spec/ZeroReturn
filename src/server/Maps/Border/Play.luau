@@ -714,6 +714,37 @@ return function(B)
 		W.bosses = W.boss and { W.boss, hounds } or { hounds }
 	end)
 
+	-- THE CULT (Tarkov's cultists on Customs; docs/design/BOSS_CULT.md): a priest (850 health) and two to four warriors,
+	-- 20 %, in night raids only. tarkov.dev puts them at the Stronghold (here THE HOUNDS' home), the 2026 guides at the
+	-- crackhouse and garages and the construction site: our THE SQUAT (either side) and THE FRAME. The warriors lie prone
+	-- in the grass round their priest and charge with poisoned knives when someone comes near; hurt, they fight on with
+	-- suppressed SMGs.
+	local CULT_ZONES = {
+		{ "SQUAT WEST", 205, -378 },
+		{ "SQUAT EAST", 290, -378 },
+		{ "THE FRAME", -123, 125 },
+	}
+	local CULT_POSTS = { { 10, 6 }, { -10, 6 }, { 8, -10, 0.5 }, { -8, -10, 0.5 } } -- the last two in half the raids each
+	try("cult", function()
+		local zones = {}
+		for _, z in CULT_ZONES do
+			local home = route({ { z[2], z[3] } })[1]
+			local crew = {}
+			for _, o in CULT_POSTS do
+				table.insert(crew, {
+					pos = route({ { z[2] + o[1], z[3] + o[2] } })[1], label = "Cultist", look = "cultist", loadout = "cultistLoadout",
+					hp = 1, skill = "boss", charge = "knife", ambush = true, post = true, chance = o[3],
+				})
+			end
+			table.insert(zones, { name = z[1], home = home, post = home, crew = crew })
+		end
+		local cult = {
+			name = "THE CULT", label = "Priest", home = zones[1].home, route = nil, look = "priest", loadout = "priestLoadout",
+			chance = 0.2, night = true, hp = 850 / 440, skill = "boss", charge = "knife", ambush = true, zones = zones,
+		}
+		table.insert(W.bosses, cult)
+	end)
+
 	-- ── scav spawn zones ─────────────────────────────────────────────────────────────────────────────────
 	try("scav", function()
 		local zones, zpts, perBld = {}, {}, {}

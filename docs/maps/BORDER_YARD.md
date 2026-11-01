@@ -162,8 +162,8 @@ Parity gaps (to copy into `docs/design/EFT_PARITY.md`, which was outside part 1'
   using the car gives no karma; the 60 s countdown is grade C (from memory, to confirm: the wiki pages read do not state it, the map
   references quote a 60 s shared timer from SPT data).
 - Mounted weapons (AGS, NSV): built later with positions of our own (see "Gun nests" under the guard routes); propane cylinders and
-  two of the three other boss groups the reference lists (a sect priest with four warriors, a partisan) are not built; the knight with
-  two escorts was built 2026-11-02 as THE HOUNDS (`docs/design/BOSS_HOUNDS.md`).
+  the partisan is not built; the knight with two escorts and the sect priest with his warriors were built 2026-11-02 as THE HOUNDS and
+  THE CULT (`docs/design/BOSS_HOUNDS.md`, `docs/design/BOSS_CULT.md`).
 - Five scav exit names are ours (STORE 4 GATE, HUTS GATE, STORE 17 GATE, SHACK GATE, PUMPS GATE).
 - The reference outlines are 0.12-era shapes and the extract positions are good to 5 to 10 m (grades in `L.blds` and `L.ext`).
 
@@ -532,8 +532,8 @@ Budget 2,450 parts (counted as it goes); the run prints the real count.
   gunner's sight lines have not been seen in Studio.
 - Co-op extracts and transits: BOILER CELLAR is a plain key extract (a PMC must bring a scav in Tarkov); the transits to Factory,
   Interchange, Reserve and Shoreline that the reference lists do not exist.
-- THE HOUNDS (the knight with Big Pipe and Birdeye) were built 2026-11-02 (`docs/design/BOSS_HOUNDS.md`). The sect priest
-  with four warriors and the partisan are not built.
+- THE HOUNDS (the knight with Big Pipe and Birdeye) and THE CULT (the sect priest with his warriors) were built 2026-11-02
+  (`docs/design/BOSS_HOUNDS.md`, `docs/design/BOSS_CULT.md`). The partisan is not built.
 - The Broker appears by the global boss chance (`BOSS_CHANCE` 0.5 in the AI config), not the reference's per-map chance (39 to 60 %
   by source), and always at the dorms.
 - The four marksman perches in `L.snipers` (ARMY POST HUT, BOILER HOUSE ROOF, DEPOT ROOF, DERRICK ROOF) have no AI kind to fill them.

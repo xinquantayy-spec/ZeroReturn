@@ -1214,6 +1214,50 @@ function Loot.kestrelLoadout(rand)
 	return k.h
 end
 
+-- THE CULT (Border Yard's night group, Tarkov's cultists; docs/design/BOSS_CULT.md): robes and no armour, a suppressed SMG
+-- for when the ambush fails, the knife (the poisoned one they stab with is the AI's; the looted RITUAL_KNIFE cuts like a
+-- field knife), and now and then the antidote for their own blades. The priest carries the amulet and the better loot.
+function Loot.cultistLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 70, 95 }
+	k.slot("head", "BEANIE", { tint = "black" }) -- in place of a raised hood (the hood mesh only hangs down the back)
+	k.slot("face", "GAITER", { tint = "black" })
+	k.slot("rig", "RIG_CHEST", { tint = "black" })
+	local wg = k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", "A9_AP", 2)
+	k.mod(wg, "SUPP_9")
+	if rand:NextNumber() < 0.5 then
+		k.put("RITUAL_KNIFE")
+	end
+	k.put("BANDAGE")
+	if rand:NextNumber() < 0.25 then
+		k.put("ANTIDOTE")
+	end
+	k.roll("dorm_good", rand:NextInteger(0, 1))
+	return k.h
+end
+
+function Loot.priestLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 80, 100 }
+	k.slot("head", "BEANIE", { tint = "black" })
+	k.slot("face", "GAITER", { tint = "black" })
+	k.slot("rig", "RIG_CHEST", { tint = "black" })
+	local wg = k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", "A9_AP", 2)
+	k.mod(wg, "SUPP_9")
+	k.put("RITUAL_KNIFE")
+	if rand:NextNumber() < 0.6 then
+		k.put("RITUAL_AMULET")
+	end
+	if rand:NextNumber() < 0.5 then
+		k.put("ANTIDOTE")
+	end
+	k.put("BANDAGE")
+	k.roll("dorm_good", rand:NextInteger(1, 2))
+	return k.h
+end
+
 -- the Foreman's crew: plate carriers, AP or PS rounds, plenty of magazines
 function Loot.crewLoadout(rand)
 	rand = rand or Random.new()

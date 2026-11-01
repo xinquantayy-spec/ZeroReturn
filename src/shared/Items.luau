@@ -39,6 +39,8 @@ add("SPARROW_SMG", { name = "Sparrow SMG-9", short = "SMG-9", kind = "weapon", w
 add("HARROW12", { name = "Harrow-12 Pump", short = "H-12", kind = "weapon", w = 6, h = 1, mass = 1.4, value = 4800, caliber = "12", weapon = "HARROW", capacity = 6, desc = "12-gauge pump with a 6-shell tube. Load shells directly.", color = c("#5A4B3C") })
 add("TUNDRA_BOLT", { name = "Tundra Bolt Rifle", short = "TUNDRA", kind = "weapon", w = 6, h = 1, mass = 2.8, value = 40000, caliber = "7.6L", weapon = "TUNDRA", capacity = 5, rarity = "uncommon", desc = "Long bolt-action in 7.6x54. Five-round internal magazine.", color = c("#4F4A3B") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
+-- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
+add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
 add("FIELD_KNIFE", { name = "Field Knife", short = "KNIFE", kind = "melee", w = 1, h = 2, mass = 0.3, value = 4000, weapon = "KNIFE", desc = "Fixed-blade utility knife.", color = c("#5E5E58") })
 
 -- ── magazines ─────────────────────────────────────────────────────────────────
@@ -139,6 +141,8 @@ add("BANDAGE", { name = "Field Dressing", short = "DRESSING", kind = "med", w = 
 add("TOURNIQUET", { name = "Strap Tourniquet", short = "TQ", kind = "med", w = 1, h = 1, mass = 0.08, value = 6500, med = { heavy = true, limbsOnly = true, uses = 1, time = 3 }, desc = "Stops a heavy bleed on a limb.", color = MED })
 add("HEMOSTAT", { name = "Hemostatic Pack", short = "HEMO", kind = "med", w = 1, h = 1, mass = 0.1, value = 14000, rarity = "uncommon", med = { heavy = true, light = true, uses = 3, time = 2.5 }, desc = "Stops light and heavy bleeds. 3 uses.", color = MED })
 add("SPLINT", { name = "Ladder Splint", short = "SPLINT", kind = "med", w = 1, h = 1, mass = 0.1, value = 3500, med = { fracture = true, uses = 1, time = 4.5 }, desc = "Sets a fracture.", color = MED })
+-- the cult's toxin (THE CULT, Tarkov's cultist knife) is stopped only by an antidote (Tarkov: the xTG-12 or Augmentin)
+add("ANTIDOTE", { name = "Antidote Injector", short = "ANTIDOTE", kind = "med", w = 1, h = 1, mass = 0.05, value = 38000, rarity = "rare", med = { antidote = true, uses = 1, time = 3 }, desc = "An auto-injector against poisoning. It stops the toxin of a cultist's knife and heals nothing else.", color = MED })
 add("PAINKILLERS", { name = "Analgesic Tabs", short = "PAINKILL", kind = "med", w = 1, h = 1, mass = 0.05, value = 6000, med = { pain = true, uses = 4, time = 1.5, duration = 240 }, desc = "Suppresses pain for 4 minutes. 4 uses.", color = MED })
 add("MEDKIT_S", { name = "Pocket Aid Kit", short = "AID 100", kind = "med", w = 1, h = 1, mass = 0.2, value = 5000, med = { hp = 100, time = 2.5 }, desc = "Restores health (100 points). Does not stop bleeding.", color = MED })
 add("MEDKIT_M", { name = "Road Kit", short = "ROAD 220", kind = "med", w = 1, h = 2, mass = 0.4, value = 9000, med = { hp = 220, light = true, time = 3 }, desc = "Restores health (220 points), stops light bleeds.", color = MED })
@@ -261,6 +265,7 @@ loot("MED_TOOLS", "Surgical Tools", "TOOLS", 1, 2, 0.6, 28000, "uncommon", "Ster
 loot("OLD_COIN", "Old Coin", "COIN", 1, 1, 0.02, 20000, "uncommon", "Silver coin from a captain's cabin.", "#B8B8A8")
 loot("DECK_TRANSCEIVER", "Deck Transceiver", "XCVR", 2, 2, 1.8, 45000, "uncommon", "Ship-to-shore radio set. Heavy but in demand.", "#4B5652")
 loot("GOLD_CHAIN", "Gold Chain", "CHAIN", 1, 1, 0.05, 62000, "rare", "Heavy gold chain.", "#C9A13C")
+loot("RITUAL_AMULET", "Ritual Amulet", "AMULET", 1, 1, 0.1, 120000, "epic", "A tarnished amulet on a leather cord, carried by the cult's priest.", "#7A6A3E")
 loot("CAPT_WATCH", "Captain's Watch", "WATCH", 1, 1, 0.1, 85000, "rare", "Swiss-style dive watch.", "#B39A5A")
 loot("FLASH_MODULE", "Flash Module", "FLASH", 1, 1, 0.05, 70000, "rare", "Encrypted flash module.", "#4F6E8C")
 loot("INTEL_FOLDER", "Intel Folder", "INTEL", 1, 1, 0.2, 90000, "rare", "Stamped folder of shipping manifests.", "#9C7A4A")

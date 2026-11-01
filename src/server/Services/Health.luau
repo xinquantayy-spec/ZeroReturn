@@ -27,6 +27,10 @@ Health.PART_OF = PART_OF
 local SPILL = { larm = 0.7, rarm = 0.7, lleg = 1.0, rleg = 1.0, stomach = 1.5 }
 local LIMB = { larm = true, rarm = true, lleg = true, rleg = true }
 local BLEED_L, BLEED_H = 0.55, 1.5 -- hp/s
+-- the cult's poison (Tarkov's cultist knife: a toxin that keeps hurting after the fight until an antidote stops it):
+-- 1 hp/s spread over the body by each part's share, plus faster thirst and hunger. Our numbers; no source gives them.
+local TOXIN = { rate = 1.0, energy = 0.08, water = 0.12 }
+Health.TOXIN = TOXIN
 local MED_COST = { light = 40, heavy = 120, fracture = 100 }
 
 local function now()
@@ -308,6 +312,13 @@ function Health.hit(model, info)
 		if LIMB[key] and math.random() < (0.05 + dmg / 280) * (1 - (prof and Progress.bonus(prof.skills, "health") or 0)) then
 			hs.fract[key] = true
 		end
+		-- a poisoned blade (THE CULT): the wound poisons until an antidote
+		if info.toxin and not hs.toxin then
+			hs.toxin = { t0 = now() }
+			if hs.player then
+				ctx.Remotes.note(hs.player, "toast", { text = "POISONED  ·  ONLY AN ANTIDOTE STOPS IT", tone = "warn" })
+			end
+		end
 	end
 	hs.dirty = true
 	res.killed = hs.dead
@@ -349,7 +360,7 @@ function Health.mods(hs)
 		speed = (1 - legs * (painkilled and 0.06 or 0.14)) * (hs.using and 0.55 or 1),
 		sprint = (legs == 0 or painkilled) and not hs.using,
 		sway = 1 + arms * 0.45 + (pain and 0.35 or 0),
-		tremor = pain and 0.7 or 0,
+		tremor = pain and 0.7 or (hs.toxin and 0.4 or 0),
 		reload = 1 + arms * 0.25,
 		staminaRegen = (hs.energy <= 0 or hs.water <= 0) and 0.5 or 1,
 	}
@@ -378,6 +389,9 @@ function Health.vitals(hs)
 		table.insert(fx, { icon = I.PAIN, label = "PAINKILLERS", color = green })
 	elseif Health.inPain(hs) then
 		table.insert(fx, { icon = I.PAIN, label = "PAIN", color = red })
+	end
+	if hs.toxin then
+		table.insert(fx, { icon = I.SKULL, label = "POISONED", color = Color3.fromRGB(160, 230, 70) })
 	end
 	if hs.water <= 0 then
 		table.insert(fx, { icon = I.WATER, label = "DEHYDRATED", color = red })
@@ -462,6 +476,16 @@ local function plan(hs, d, it, part)
 		return nil, "NOT_USABLE"
 	end
 	local label = "USING " .. string.upper(d.name)
+	if m.antidote then
+		if not hs.toxin then
+			return nil, "NOTHING_TO_TREAT"
+		end
+		return { time = m.time or 3, label = label, apply = function()
+			hs.toxin = nil
+			hs.dirty = true
+			return 1
+		end }
+	end
 	if m.pain and not m.hp then
 		return { time = m.time or 1.5, label = label, apply = function()
 			local pprof = hs.player and ctx.Profiles.get(hs.player)
@@ -744,6 +768,18 @@ function Health.start()
 					for k in hs.bleedH do
 						applyDamage(hs, k, BLEED_H)
 						hs.cause = hs.cause or "BLEEDING"
+					end
+					if hs.toxin then
+						local _, m = total(hs)
+						for k, p in hs.parts do
+							if p.hp > 0 and not hs.dead then
+								applyDamage(hs, k, TOXIN.rate * p.max / math.max(1, m), true)
+							end
+						end
+						hs.cause = hs.cause or "POISON"
+						hs.energy = math.max(0, hs.energy - TOXIN.energy)
+						hs.water = math.max(0, hs.water - TOXIN.water)
+						hs.dirty = true
 					end
 					if hs.player then
 						local prof = ctx.Profiles.get(hs.player)
