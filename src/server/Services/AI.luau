@@ -76,6 +76,13 @@ local worldParams = RaycastParams.new()
 worldParams.FilterType = Enum.RaycastFilterType.Include
 worldParams.IgnoreWater = true -- terrain maps (M13): hills and ground count, lake water does not
 
+-- breakable glass (Glass.init): sight and aim checks are cast in a group that passes whole panes and their hit shells, so the AI
+-- sees and shoots through windows as in Tarkov (its bullets still meet the glass and break it)
+function AI.setSightGroup(group)
+	params.CollisionGroup = group
+	worldParams.CollisionGroup = group
+end
+
 local function now()
 	return os.clock()
 end

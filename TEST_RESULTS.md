@@ -70,6 +70,19 @@ Owner: "i dont want the leaves totally opaque", then "i want the see through fol
 | Tone | `SurfaceAppearance.Color` can be set by the client at runtime: each texture takes its tree's tone (checked: 0.996 grey on both). |
 | Errors | None in the output. |
 
+## Car exits and breakable glass in Studio (2026-11-01)
+
+Studio Play mode on the T490, one player, god mode, Border.
+
+| Check | Result |
+|---|---|
+| Automated | LogicTests 332/332 (car exits and glass groups included), CharTests 46/46, LookTests 32/32, MapTests 38/38 |
+| Car exit DC | Opened with `exitOpen`, 100,000 MK. The prompt reads "[F] PAY 25,000 MK · DORMS CAR". Paid by clicking the prompt button: money 75,000, one seat taken, "CAR LEAVES IN 00:52 · DORMS CAR" with a bar. A second payment is refused (money unchanged, still one seat). The car left at 0 and the raid ended in SUCCESS (survived 1, 173,720 extracted). Not tested: a second player (shared countdown, left behind, the fifth seat), the Meridian car. |
+| Glass | Two rounds at the BLOCK B washroom window from 8 studs: the pane went (transparency 1, no collision, no query) and the room behind showed through. No errors. |
+| Glass test bug found | Roblox ignores `CanQuery` on a part that collides, so a whole pane met every ordinary ray, the AI's sight included. Panes now go in group `ZR_Pane` and the AI's sight and aim rays in `ZR_Sight`, which passes them (docs/design/GLASS.md). |
+| Glass sound | The ambience atlas with the glass sounds was uploaded again (136853086315408). Studio read 0.0 s while it processed, and 77.8 s when checked again later in the session. |
+| Prompts from a script | `ProximityPrompt:InputHoldBegin()` from the test tool and a simulated F key did not pay. A mouse click on the prompt button did. Earlier, after a death, the camera stayed in a far orbit and no prompt showed until a fresh session. |
+
 ## Fog and draw cost (2026-11-01)
 
 Owner: fog only to improve rendering performance, the same on every graphics level. Measured in Studio Play on Border, camera 45 studs up at (0, 45, -5200) looking east along the map: 1,575 draw calls, 692k triangles.

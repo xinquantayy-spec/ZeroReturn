@@ -18,5 +18,5 @@ return {
 	-- ZR_SFX_Amb (atmosphere pass): mall room tone, mains hum, car park tone, drips, distant gunfire, the IRONSIGHT siren, the
 	-- generator (AmbAtlas.luau). Uploaded 2026-11-01 through the Blender pipeline (zr_upload, Audio). Empty = every ambience
 	-- layer, the siren and the generator stay silent (nothing is created, nothing errors).
-	AMB_ATLAS = "rbxassetid://100848289442450",
+	AMB_ATLAS = "rbxassetid://136853086315408",
 }

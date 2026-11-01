@@ -51,8 +51,11 @@ collision group `ZR_Glass` (folder `workspace.ZR_GlassHit`). `ZR_Glass` does not
 had to change**: sight, loot, grenades, the vault and the camera cast in `Default` and never meet a shell. Bullets and blows are
 cast in group `ZR_Shot` (`Ballistics.shotParams`), which collides with everything, so only they meet it.
 
-The pane itself stays solid for movement and stops no ray: registration sets `CanQuery = false` (the Border panes were built
-that way). `Ballistics.stepOnce` asks `Ballistics.through(res, dir, real)` at every hit; for a shell it gets the share kept and
+The pane itself stays solid for movement. Registration sets `CanQuery = false`, but **Roblox ignores `CanQuery` on a part that
+collides** (Studio 2026-11-01: a ray still met such a pane, a frame later too), so a whole pane meets every ordinary ray, as the
+Border panes always did. Registration therefore also puts the pane in group `ZR_Pane`. The AI's sight and aim checks are cast in
+group `ZR_Sight` (`AI.setSightGroup`, called by `Glass.init`), which passes `ZR_Pane` and `ZR_Glass` and meets everything else:
+the AI sees and aims through windows, as in Tarkov. `Ballistics.stepOnce` asks `Ballistics.through(res, dir, real)` at every hit; for a shell it gets the share kept and
 the distance to the far face (slab maths, clamped to 3 studs, plus 0.05), a real bullet (`fly`, not `trace`) breaks the pane
 (`Glass.shatter`), and the bullet carries on in the same step (at most 6 panes a step). `Combat.shoot`, `AI`, `Stationary` take
 the fifth `onHit` argument (`keep`) and multiply damage and penetration. If the groups cannot be made, `Ballistics.shotGroup`
@@ -77,9 +80,9 @@ line says so). No asset id was changed or invented.
 
 ## Changes to other systems
 
-- **Meridian's shop glass no longer stops rays.** It was a queryable part, so it blocked the AI's sight, grenade flight and
-  every other ray; now it passes them like the Border panes always did and only shots and blows meet it. The AI can see through
-  shop fronts and shoot through them (the glass breaks). Thrown grenades fly through a whole pane (they do for Border's).
+- **The AI sees through glass.** Whole panes (Border windows, Meridian shop fronts) used to block the AI's sight like walls. Now
+  its sight and aim rays pass them (group `ZR_Sight`), and it can shoot through them: its bullets meet the shell and break the
+  pane. Every other ordinary ray (grenade flight, the camera, the vault) still meets a whole pane, as before.
 - `Combat.melee` casts in the shot group and `Combat.filter` is unchanged.
 
 ## Check in Studio (the checks below have not been done)

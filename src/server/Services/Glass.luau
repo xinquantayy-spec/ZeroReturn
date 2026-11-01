@@ -25,6 +25,11 @@ local ctx
 Glass.TAG = "ZR_Glass" -- the tag a map puts on every breakable pane
 Glass.GROUP = "ZR_Glass" -- the hit shells' collision group (collides with nothing but shots)
 Glass.SHOT_GROUP = "ZR_Shot" -- the group bullets and blows are cast in
+-- Roblox ignores CanQuery on a part that collides, so a whole pane (it blocks walking) meets every ordinary ray. The panes go in
+-- their own group, and the AI's sight and aim checks are cast in ZR_Sight, which passes panes and shells: the AI sees through
+-- glass as in Tarkov (Studio 2026-11-01: the test ray still met a pane set CanQuery = false)
+Glass.PANE_GROUP = "ZR_Pane"
+Glass.SIGHT_GROUP = "ZR_Sight"
 
 -- every number that decides how glass behaves. Tarkov's own figures could not be found (docs/design/GLASS.md, Research): the
 -- loss is the owner's 5 to 10 %, taken in the middle.
@@ -100,11 +105,17 @@ local function makeGroups()
 	local ok, err = pcall(function()
 		ensureGroup(Glass.GROUP)
 		ensureGroup(Glass.SHOT_GROUP)
+		ensureGroup(Glass.PANE_GROUP)
+		ensureGroup(Glass.SIGHT_GROUP)
 		-- ordinary rays and bodies (group "Default") pass the shells; shots meet them and everything else
 		PhysicsService:CollisionGroupSetCollidable(Glass.GROUP, "Default", false)
 		PhysicsService:CollisionGroupSetCollidable(Glass.GROUP, Glass.GROUP, false)
 		PhysicsService:CollisionGroupSetCollidable(Glass.SHOT_GROUP, Glass.GROUP, true)
 		PhysicsService:CollisionGroupSetCollidable(Glass.SHOT_GROUP, "Default", true)
+		-- panes block bodies and meet shots and ordinary rays; sight rays pass panes and shells and meet everything else
+		PhysicsService:CollisionGroupSetCollidable(Glass.PANE_GROUP, Glass.GROUP, false)
+		PhysicsService:CollisionGroupSetCollidable(Glass.SIGHT_GROUP, Glass.PANE_GROUP, false)
+		PhysicsService:CollisionGroupSetCollidable(Glass.SIGHT_GROUP, Glass.GROUP, false)
 	end)
 	if not ok then
 		warn("[ZR] Glass: the collision groups could not be made, panes will not break:", err)
@@ -149,7 +160,8 @@ function Glass.register(pane)
 		return e
 	end
 	local shell = makeShell(pane)
-	e = { pane = pane, shell = shell, broken = false, orig = { t = pane.Transparency, c = pane.CanCollide } }
+	e = { pane = pane, shell = shell, broken = false, orig = { t = pane.Transparency, c = pane.CanCollide, g = pane.CollisionGroup } }
+	pane.CollisionGroup = Glass.PANE_GROUP
 	-- an intact pane stops no ray but a shot's or a blow's (those meet its shell). The Border panes were built that way; Meridian's
 	-- shop glass was queryable and stopped every ray (the AI's sight too), and now passes them like the Border panes do
 	pane.CanQuery = false
@@ -173,6 +185,11 @@ local function unregister(pane)
 	end
 	entries[pane] = nil
 	byShell[e.shell] = nil
+	if e.orig.g and pane.Parent then
+		pcall(function()
+			pane.CollisionGroup = e.orig.g
+		end)
+	end
 	e.dead = true
 	total -= 1
 	Glass.stats.panes = total
@@ -373,6 +390,9 @@ function Glass.init(c)
 	end
 	Ballistics.shotGroup = Glass.SHOT_GROUP
 	Ballistics.through = Glass.through
+	if c.AI and c.AI.setSightGroup then
+		c.AI.setSightGroup(Glass.SIGHT_GROUP)
+	end
 	local per = {}
 	if c.World and c.World.maps then
 		for id, m in c.World.maps do

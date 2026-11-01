@@ -2228,9 +2228,12 @@ function T.run(ctx)
 				end
 				return workspace:Raycast(from, fwd * 40, rp)
 			end
-			local plain, shot = cast(nil), cast(Ballistics.shotGroup)
-			check("glass: an ordinary ray passes a whole pane and its shell and reaches the wall; a ray cast in the shot group meets the shell",
-				plain ~= nil and plain.Instance.Name == "T_Wall" and shot ~= nil and shot.Instance == e.shell)
+			local plain, shot, sight = cast(nil), cast(Ballistics.shotGroup), cast(GL.SIGHT_GROUP)
+			local castOk = sight ~= nil and sight.Instance.Name == "T_Wall" and shot ~= nil and shot.Instance == e.shell and plain ~= nil and plain.Instance == pane
+			check("glass: a sight ray (the AI's group) passes a whole pane and its shell and reaches the wall; a shot meets the shell; an ordinary ray meets the pane (Roblox ignores CanQuery on a part that collides)"
+				.. (castOk and "" or string.format(" [sight %s, shot %s, plain %s, pane group %s]", sight and sight.Instance:GetFullName() or "nil",
+					shot and shot.Instance:GetFullName() or "nil", plain and plain.Instance:GetFullName() or "nil", pane.CollisionGroup)),
+				castOk)
 			local k1, f1 = nil, nil
 			if shot then
 				k1, f1 = GL.through(shot, fwd, false)

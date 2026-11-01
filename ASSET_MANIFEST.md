@@ -54,7 +54,7 @@ How meshes load and are placed:
 | ATLAS (ZR_SFX_Atlas) | 117513374968391 | Original. 52 short effects played by region (`synth_atlas.py`, `SoundAtlas.luau`). |
 | ENV_ATLAS (ZR_SFX_Env) | 111806710801040 | Original. Rain, roof rain, wind and insect loops; gusts, thunder, gulls, horn, creaks, doors, keys, pickup, UI (`synth_env.py`, `EnvAtlas.luau`). |
 | COMBAT_ATLAS (ZR_SFX_Combat) | 129340593261177 | Original. Grenade pin, lever, throw, bounces, near/far explosions, debris, stun bang, smoke pop and hiss loop, tinnitus loop, misfire click, stoppage clearing, jam, repair kit (`synth_combat.py`, `CombatAtlas.luau`). |
-| AMB_ATLAS (ZR_SFX_Amb) | 100848289442450 | Original, made and uploaded 2026-11-01. Mall room tone, mains hum, car park tone, three drips, three distant gunfire bursts, the IRONSIGHT siren, the generator loop (`synth_amb.py`, `AmbAtlas.luau`; `assets/audio/out/ZR_SFX_Amb.ogg`, 698 KB, 70.74 s). Set in `Sounds.AMB_ATLAS`; `docs/look/ATMOSPHERE.md`. |
+| AMB_ATLAS (ZR_SFX_Amb) | 136853086315408 | Original, made 2026-11-01; uploaded again the same day with the glass sounds appended (the first 70 s unchanged; the first upload was 100848289442450). Mall room tone, mains hum, car park tone, three drips, three distant gunfire bursts, the IRONSIGHT siren, the generator loop, glass breaking (`synth_amb.py`, `AmbAtlas.luau`; `assets/audio/out/ZR_SFX_Amb.ogg`, 772 KB). Set in `Sounds.AMB_ATLAS`; `docs/look/ATMOSPHERE.md`. |
 | IMPACT | – | Not made yet |
 
 Sound effects from the Creator Store that turned out to be rips of commercial games were rejected and are not used.
