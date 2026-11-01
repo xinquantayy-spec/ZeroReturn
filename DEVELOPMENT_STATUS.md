@@ -1,6 +1,6 @@
 # Zero Return: Development Status
 
-Build `0.9.2-m13`. Last updated 2026-11-01.
+Build `0.9.2-m13`. Last updated 2026-11-02.
 
 Zero Return is an original extraction shooter for Roblox. The core loop is inspired by Tarkov and the camera language by BODYCAM. Maps copy Tarkov's layouts with our own buildings and names (owner, 2026-11-01): **Quay 7** (industrial port), **Smelter** (factory-type) and **Meridian Mall** (mall-type, furnished and damaged with a Blender kit) are playable; **Border Yard** (customs-type) is designed; **Pinewatch** (woods-type) is built but parked by the owner (2026-10-29), kept in the repo and out of the map vote.
 
