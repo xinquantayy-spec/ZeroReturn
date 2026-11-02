@@ -212,6 +212,18 @@
     - `tests` now runs one at a time; a second call waits for the run in progress and returns its report. It also waits
       out a raid that is about to start.
 
+79. **Touch controls v2 have not run on a phone or tablet (2026-11-02).**
+    - Checked in Studio with touch forced and fingers driven one at a time by the test bridge (TEST_RESULTS "Touch
+      controls v2").
+    - Still to check on a device:
+      - two thumbs at once (stick and FIRE);
+      - the stick and buttons on notched screens and their safe areas;
+      - button sizes under a real thumb;
+      - Roblox giving up its own stick and jump (`GuiService.TouchControlsEnabled`);
+      - frame time with the controls on at 30 FPS.
+    - A saved layout across a real second session needs the DataStore (issue 1). The join load itself was replayed and
+      works.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

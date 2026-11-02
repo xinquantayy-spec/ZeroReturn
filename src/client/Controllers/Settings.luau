@@ -9,6 +9,8 @@ local Settings = {
 	data = {
 		fov = Config.FOV, sens = 1, quality = 3, autoGfx = true, shake = 1, reduceMotion = false, film = true, reticle = false, adsToggle = false,
 		grain = 0.5, lens = true, mblur = true, curve = false, hudScale = 1, hitfx = false,
+		aimOnFire = true, joyFloat = true, -- touch: FIRE aims down sights while held; the stick comes to the thumb (Touch.luau)
+		touchLayout = nil, -- touch: the player's own layout ({ [id] = { x, y, s, o, h } }, TouchLayout.sanitize)
 		wish = {}, -- Tarkov's wish list (item ids)
 		binds = {}, quick = {}, -- rebound PC keys (Input.setBinds) and Tarkov quick slots 4 to 0 (item guids)
 		-- Tarkov's GAME / POSTFX / SOUND / CONTROLS rows (docs/design/EFT_PARITY.md section 5)
@@ -144,6 +146,23 @@ function Settings.set(key, value)
 	end
 end
 
+-- settings with no default (absent until the player makes one) and the type the profile must hold for them
+local OPTIONAL = { touchLayout = "table" }
+
+-- the profile's settings as the server sent them on join: each known key of the right type replaces the default
+function Settings.fromServer(s)
+	if type(s) ~= "table" then
+		return
+	end
+	for k, v in s do
+		local want = OPTIONAL[k] or (Settings.data[k] ~= nil and type(Settings.data[k]))
+		if want and type(v) == want then
+			Settings.data[k] = v
+		end
+	end
+	Settings.apply()
+end
+
 function Settings.init(c)
 	ctx = c
 	groups.ui, groups.amb = group("ZR_Interface"), group("ZR_Ambient")
@@ -162,12 +181,7 @@ function Settings.init(c)
 	c.State.changed:Connect(function(snap)
 		if not loadedFromServer and snap.settings then
 			loadedFromServer = true
-			for k, v in snap.settings do
-				if Settings.data[k] ~= nil and type(v) == type(Settings.data[k]) then
-					Settings.data[k] = v
-				end
-			end
-			Settings.apply()
+			Settings.fromServer(snap.settings)
 		end
 	end)
 	-- graphics (quality): 3 HIGH by default on every platform, phones included (owner decision, M12);

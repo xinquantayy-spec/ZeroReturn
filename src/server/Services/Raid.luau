@@ -9,6 +9,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local InputMap = require(Shared.InputMap)
+local TouchLayout = require(Shared.TouchLayout)
 local TD = require(Shared.TraderData)
 local Grid = require(Shared.Grid)
 local WP = require(Shared.WeaponParts)
@@ -1072,7 +1073,8 @@ local function saveSettings(player, p)
 		return fail("BAD_INPUT")
 	end
 	if not (num("fov", 50, 100) and num("sens", 0.2, 3) and num("quality", 0, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
-		and bool("reduceMotion") and bool("film") and bool("reticle") and bool("adsToggle") and bool("lens") and bool("mblur") and bool("curve") and bool("hitfx")) then
+		and bool("reduceMotion") and bool("film") and bool("reticle") and bool("adsToggle") and bool("lens") and bool("mblur") and bool("curve") and bool("hitfx")
+		and bool("aimOnFire") and bool("joyFloat")) then
 		return fail("BAD_INPUT")
 	end
 	if s.quality then
@@ -1099,6 +1101,14 @@ local function saveSettings(player, p)
 			end
 			s.binds[b.action] = { key = b.key, mod = b.mod }
 		end
+	end
+	-- the touch layout (Settings, CONTROLS, EDIT TOUCH LAYOUT): only known controls, numbers in range (TouchLayout.sanitize);
+	-- an empty one is the defaults
+	if p.touchLayout ~= nil then
+		if type(p.touchLayout) ~= "table" then
+			return fail("BAD_INPUT")
+		end
+		s.touchLayout = TouchLayout.sanitize(p.touchLayout)
 	end
 	-- Tarkov's wish list: { wish = { id = item id, on = bool } }
 	if p.wish ~= nil then
@@ -1158,7 +1168,7 @@ function Raid.init(c)
 	ctx = c
 	ctx.Remotes.onReq("deploy", Raid.deploy, 1, 2)
 	ctx.Remotes.onReq("inv", Raid.inv, 12, 16)
-	ctx.Remotes.onReq("settings", saveSettings, 2, 4)
+	ctx.Remotes.onReq("settings", saveSettings, 2, 4, 32) -- a touch layout holds up to 24 controls (TouchLayout.ELEMENTS)
 	ctx.Remotes.onReq("sync", function(player)
 		Raid.push(player)
 		return ok()

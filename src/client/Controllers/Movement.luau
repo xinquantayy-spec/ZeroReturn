@@ -38,8 +38,15 @@ local function alive()
 end
 Movement.alive = alive
 
+-- wantSprint is the wish (Shift held; the touch stick past its ring; the pad's L3 toggle), sprinting what the body does:
+-- the run starts once the raider moves and may run, and a held Shift starts it again after a stop or a vault (Tarkov)
+Movement.wantSprint = false
+
 function Movement.stopSprint()
 	Movement.sprinting = false
+	if ctx and ctx.Input.device() ~= "KBM" then
+		Movement.wantSprint = false -- a toggle (pad, touch) ends with the run; a held Shift keeps wanting
+	end
 end
 
 -- firing / aiming is blocked during stance transitions and vaults
@@ -69,6 +76,15 @@ local function setStance(st)
 		Movement.leanTarget = 0
 	end
 end
+
+-- the touch stick runs when pushed past its ring (Touch.luau): the wish to run, as a held Shift is
+function Movement.setSprint(on)
+	Movement.wantSprint = on == true
+	if not Movement.wantSprint then
+		Movement.sprinting = false
+	end
+end
+
 Movement.setStance = setStance
 
 -- carried weight from the snapshot (raid kit only; the hideout stash is not carried)
@@ -230,8 +246,23 @@ local function update(dt)
 	local over = math.clamp((w - wOver) / (wCrit - wOver), 0, 1)
 	local crit = math.clamp((w - wCrit) / (wMax - wCrit), 0, 1)
 	local canSprint = Movement.stance == "s" and not W.aiming and (not mods or mods.sprint ~= false) and crit <= 0 and os.clock() > exhaustedUntil and not Movement.vaulting
+	-- the run starts when wanted, moving and able: up from crouch, out of a lean, the sights down
+	local couldRun = (Movement.stance == "s" or Movement.stance == "c") and not W.aiming and (not mods or mods.sprint ~= false)
+		and crit <= 0 and os.clock() > exhaustedUntil and not Movement.vaulting
+	if Movement.wantSprint and not Movement.sprinting and moving and couldRun and Movement.stamina > 0 then
+		if Movement.stance ~= "s" then
+			setStance("s") -- Tarkov: running from a crouch stands you up
+		end
+		Movement.sprinting = true
+		Movement.leanTarget = 0
+		W.cancelAim()
+		canSprint = true
+	end
 	if Movement.sprinting and (not moving or Movement.stamina <= 0 or not canSprint) then
 		Movement.sprinting = false
+		if not moving and ctx.Input.device() == "Gamepad" then
+			Movement.wantSprint = false -- the pad's L3 toggle ends when the stick lets go (as in console shooters)
+		end
 		if Movement.stamina <= 0 then
 			exhaustedUntil = os.clock() + 3 -- winded: no sprint until breath recovers a little
 			if ctx.Effects.breath then
@@ -342,20 +373,21 @@ function Movement.init(c)
 	ctx = c
 	local Input = c.Input
 	Input.on("Sprint", function(down)
-		if c.Weapon.aiming then
-			return -- Shift while aiming holds breath (read in update)
-		end
 		if Input.device() == "KBM" then
-			Movement.sprinting = down
-		elseif down then
-			Movement.sprinting = not Movement.sprinting
-		end
-		if Movement.sprinting then
-			if Movement.stance ~= "s" then
-				setStance("s")
+			Movement.wantSprint = down -- held: run whenever moving and able (Shift while aiming holds breath instead)
+			if not down then
+				Movement.sprinting = false
 			end
-			Movement.leanTarget = 0
-			c.Weapon.cancelAim()
+			return
+		end
+		if c.Weapon.aiming then
+			return -- L3 / the touch BREATH button while aiming hold breath (read in update)
+		end
+		if down then
+			Movement.wantSprint = not (Movement.wantSprint or Movement.sprinting)
+			if not Movement.wantSprint then
+				Movement.sprinting = false
+			end
 		end
 	end)
 	Input.on("Crouch", function(down)
@@ -378,18 +410,30 @@ function Movement.init(c)
 	end
 	Input.on("LeanLeft", lean(-1))
 	Input.on("LeanRight", lean(1))
-	UIS.JumpRequest:Connect(function()
+	-- Space (or the touch JUMP button, Movement.jumpPress): out of prone first, a vault over what is in front, else a jump
+	local function jumpRequest()
 		if c.Input.isMounted() then
-			return
+			return true
 		end
 		if Movement.stance == "p" then
 			setStance("c")
-			return
+			return true
 		end
 		if vaultAvail and not Movement.vaulting and not c.Input.isMenu() then
 			doVault(vaultAvail)
+			return true
 		end
-	end)
+		return false
+	end
+	UIS.JumpRequest:Connect(jumpRequest)
+	function Movement.jumpPress()
+		if not jumpRequest() then
+			local hum = alive()
+			if hum then
+				hum.Jump = true
+			end
+		end
+	end
 	UIS.InputChanged:Connect(function(input, gp)
 		if gp or input.UserInputType ~= Enum.UserInputType.MouseWheel or c.Input.isMenu() or not c.State.inRaid() then
 			return

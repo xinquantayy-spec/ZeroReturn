@@ -69,8 +69,9 @@ function Remotes.ok(data: any?): any
 	return { ok = true, data = data }
 end
 
-function Remotes.onReq(action: string, fn: (Player, any) -> any, rate: number?, burst: number?)
-	reqHandlers[action] = { fn = fn, rate = rate or 5, burst = burst or 8 }
+-- maxKeys: how many entries one table of the payload may hold (16 unless the action needs more, like a touch layout)
+function Remotes.onReq(action: string, fn: (Player, any) -> any, rate: number?, burst: number?, maxKeys: number?)
+	reqHandlers[action] = { fn = fn, rate = rate or 5, burst = burst or 8, maxKeys = maxKeys or 16 }
 end
 
 function Remotes.onAct(action: string, fn: (Player, any) -> (), rate: number?, burst: number?)
@@ -92,7 +93,7 @@ function Remotes.dispatch(player: Player, action: any, payload: any): any
 		Remotes.strike(player, "unknown action " .. action)
 		return fail("BAD_INPUT")
 	end
-	if payload ~= nil and (type(payload) ~= "table" or not Util.sane(payload, 16, 3)) then
+	if payload ~= nil and (type(payload) ~= "table" or not Util.sane(payload, h.maxKeys or 16, 3)) then
 		Remotes.strike(player, "bad payload " .. action)
 		return fail("BAD_INPUT")
 	end

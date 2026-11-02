@@ -87,7 +87,7 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Stationary guns (NSV, AGS-30): man the gun, aim, fire, leave | F is Interact; Tarkov documents no control for them, so how to leave and how to zoom were not found | Done 2026-11-01 with controls of our own: the prompt (F, pad X, tap) mounts; mouse / right stick / screen drag aims; fire and zoom follow the Fire and Aim keys, right trigger and left trigger, the FIRE and ZOOM buttons; F, B or LEAVE gets off (section below) | Sounds, animation, the real positions |
 | Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, zeroing, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Page Up/Down, Y and F1 to F12 | Hold breath (Shift while aiming), magnification (Alt+RMB, in steps) and zeroing (Page Up/Down) | Walk, walk speed, side step, blind fire, switch sights, voice lines, gestures |
 | Rebinding with press, double press, hold and release | Settings, Controls | Missing | Keybinding screen |
-| Gamepad and touch (exception 3: Tarkov is keys and mouse only) | none | Done 2026-11-02: every control above but the slot keys and quick slots has a gamepad and a touch way (the next weapon and MED stand in for those). Settings, CONTROLS lists them on that device (section below) | A real controller and phone |
+| Gamepad and touch (exception 4: Tarkov is keys and mouse only) | none | Done 2026-11-02: every control above but the slot keys and quick slots has a gamepad and a touch way (the next weapon and MED stand in for those). Settings, CONTROLS lists them on that device. Touch layout v2: icon buttons, tap and hold pairs, a MORE tray, a med wheel, a walk-and-run stick, FIRE that aims and steers, and an editor for every control (`docs/design/TOUCH_CONTROLS.md`, sections below) | A real controller and phone |
 
 ## 5. Settings
 
@@ -842,11 +842,11 @@ Gaps:
 
 Researched first: Tarkov's own keys for these controls (section 4: Shift+T, Alt+B, Page Up/Down, Alt+RMB, L, Alt, Shift
 while aiming; Prima Games' controls guide). Tarkov has no gamepad or touch controls, so these mappings are ours
-(exception 3). Built in `InputMap.luau`, `Input.luau` (shared-button arbitration), `Touch.luau`, `Camera.luau`,
+(exception 4). Built in `InputMap.luau`, `Input.luau` (shared-button arbitration), `Touch.luau`, `Camera.luau`,
 `Weapon.luau`, `NightVision.luau`, `Grenade.luau` and `Screens.luau`. Checked in Studio with the gamepad and touch paths
 driven by the test bridge (TEST_RESULTS "Gamepad and touch controls"); no real controller or phone.
 
-Ours (exception 3):
+Ours (exception 4):
 - **Gamepad, one rule for every shared button:** a short tap and a hold do different things, and with LT held (aiming)
   some taps do more (`padHow`, `padAim` in `InputMap`):
   - D-up: heal / free look (hold; the right stick turns the head) / zeroing up (aiming)
@@ -856,7 +856,7 @@ Ours (exception 3):
   - R3: magazine check / chamber check (hold) / fire-mode check (aiming)
   - B: crouch / prone (hold); Y: inventory / inspect the weapon (hold)
   - Hold breath: L3 (sprint) while aiming, as Shift is on keys.
-- **Touch:**
+- **Touch** (replaced the same day by the v2 layout, next section):
   - CHK: hold to check the chamber. SWAP: hold to inspect the weapon.
   - New MODE button: a tap switches the fire mode; held, it opens a weapon tray under the menu row with CHECK, ZERO +,
     ZERO - and SIGHT.
@@ -870,3 +870,57 @@ Gaps:
 - **Not on hardware:** no controller, phone or tablet has run these.
 - **A variable scope's power on the pad and the tray** was only checked with a sight that has none (the tap did nothing,
   as it should). The handler is the same as Alt+RMB's.
+
+### Touch controls v2: icons, fewer buttons, a walk-and-run stick, FIRE that aims (2026-11-02)
+
+Tarkov has no touch controls, so every choice here is ours (exception 4). The owner asked for:
+
+- symbols instead of words;
+- fewer buttons, with the rare ones behind a button that opens;
+- a stick that walks and then runs;
+- a layout that can be resized and moved;
+- Call of Duty: Mobile's FIRE, which aims down sights and steers with the thumb;
+- round buttons.
+
+Researched first:
+
+- Activision's guide to Call of Duty: Mobile's controls: per-weapon one-tap ADS, joystick sprint, custom layout with
+  size and opacity, fixed stick and fixed fire options.
+- PocketGamer on PUBG Mobile: the run lock ahead of the thumb, the eye button for free look, a left fire button.
+- PocketGamer on Arena Breakout's best layouts: three and four fingers, auto ADS, fire for the left index finger.
+
+The full design, with sources, is in `docs/design/TOUCH_CONTROLS.md`. Built in `TouchLayout.luau` (new), `Touch.luau`
+(rewritten), `Movement.luau`, `Weapon.luau`, `Settings.luau`, `Screens.luau`, `Input.luau`, `Raid.luau` and
+`Remotes.luau`. Checked in Studio with touch forced (TEST_RESULTS "Touch controls v2").
+
+Ours (exception 4):
+- **Icons, round buttons:** 32 icons of our own (`gen_touch_icons.py`). The menu row (settings, exits, bag) is rounded
+  squares; everything else is round.
+- **Fewer buttons on screen:** 14 round controls in a raid (HOLD BREATH appears only while aiming) where v1 had more,
+  all with words. Ten actions moved into the MORE tray, and a hold gives five buttons a second job:
+  - RELOAD: check the magazine
+  - CROUCH: prone
+  - SWAP: inspect
+  - MODE: check the fire mode
+  - MED: the best med now
+- **MED wheel:** AUTO, then quick slots 4 to 0 with their items (Tarkov's quick slots).
+- **Stick:**
+  - It walks with analog speed. Pushed past its ring forward, it runs (Tarkov's sprint).
+  - Let go on the lock above it and the run continues until the stick is touched again.
+  - It floats to the thumb, or stays fixed (FLOATING STICK).
+- **FIRE:** held, it aims down sights and the view follows the thumb (AIM WHEN FIRING, on by default). Off, it fires
+  from the hip.
+- **Editor** (Settings, CONTROLS, EDIT TOUCH LAYOUT): move, resize (60 to 160 %), fade (25 to 100 %), hide or show
+  every control; reset; save to the profile.
+  - The server keeps only known controls with numbers in range (`TouchLayout.sanitize`).
+  - LEFT FIRE, the device and the goggles start hidden and can be shown.
+- **Stationary guns:** their FIRE, ZOOM and LEAVE take the places of FIRE, AIM and RELOAD in the player's layout.
+- **Roblox's own touch stick and jump** are turned off while ours show.
+
+Gaps:
+- **Not on hardware:** no phone or tablet has run v2. Two thumbs at once were not exercised (the bridge drives one
+  finger at a time), and real notches and safe areas were not checked (KNOWN_ISSUES 79).
+- **Saved layout across sessions:** the join load was replayed from a fresh server snapshot. A real second session needs
+  the DataStore (KNOWN_ISSUES 1).
+- **No gyro aiming:** Arena Breakout recommends it for two-finger players. Roblox exposes the gyro
+  (`UserInputService.GyroscopeEnabled`), but it is not built yet.

@@ -69,6 +69,7 @@ Goal: BODYCAM look with an R.E.P.O.-style lens-warped HUD, real-player multiplay
 | Flare exits | Done (2026-11-02), checked in Studio with one player | Tarkov's green signal flare (1 x 2, 0.19 kg; VOS LL1, found where red flares are). NORTH LINE (Border) and RIVER PATH (Meridian) are closed until a green flare goes up under the open sky in their signal area, then open for everyone for the raid; stepping into the area shows "SIGNAL AREA". OLD PUMPS sends up green flares while it is there this raid (Tarkov's "Green flares = Open"). Gaps in `EFT_PARITY.md`, "Flare exits": who it opens for is ours, no flare gun, no yellow flares. |
 | Gamepad and touch weapon controls | Done (2026-11-02), checked in Studio through the test bridge | Every Tarkov control but the slot keys now has a gamepad and a touch way (KNOWN_ISSUES 76). A shared pad button tells a tap from a hold and aiming from not (`padHow`, `padAim`). R3 is the checks, D-up and D-down zero while aiming, D-left is the sight while aiming, hold Y inspects, hold B goes prone, hold D-up looks around. Touch adds MODE (fire mode; held, a tray with the check, zeroing and sight) and LOOK (drag for free look); CHK and SWAP have hold actions. The CONTROLS list shows the device's buttons. Not tried on a controller or phone. |
 | HUD and touch layout | Done (2026-11-02), checked in Studio with touch forced | The touch menu row (SET, EXIT, BAG) moved to the top centre, in the top bar's free band, off the raid clock (KNOWN_ISSUES 75). The exits list shows every exit and transit: before, at most 6 rows (8 after the transits work). It shrinks or splits into two columns to fit, drops down under the row on touch, and fades the thumb buttons under it. Scavs no longer get PMC-only exits (Border: K-13, North Line; Meridian: the shelter, the river path, the fence gap). Vitals start below Roblox's menu; touch toasts clear RUN (77). Not checked on a phone. |
+| Touch controls v2 | Done (2026-11-02), checked in Studio with touch forced | Owner: symbols not words, fewer buttons, a stick that walks and runs, CoD Mobile's FIRE, round buttons, a layout to customise. Researched CoD Mobile, PUBG Mobile and Arena Breakout. 32 icons of our own; 14 round controls in a raid (v1 had more, with words); five buttons do a second job when held; a MORE tray for the rare actions; a MED wheel for quick slots 4 to 0; the stick runs past its ring and locks the run; FIRE aims down sights while held and steers with the thumb (AIM WHEN FIRING); FLOATING STICK on or off; an editor (move, size, opacity, hide, reset) saved to the profile. Found and fixed: a saved layout was never loaded on joining. Not run on a phone (KNOWN_ISSUES 79). `docs/design/TOUCH_CONTROLS.md`. |
 | Hideout style | Done (2026-11-02), checked in Studio with one player | Tarkov 0.16's hideout customisation for Relay 7: walls (7 styles), floor (5) and ceiling (4), unlocked by level and chosen in the hideout screen's STYLE section; each client paints the shared bunker with its own player's choice. Gaps in `docs/design/HIDEOUT_STYLE.md`: level unlocks only, no posters, collectibles or range targets, no visiting. |
 | Transits | Done (2026-11-02), checked in Studio with one player | Tarkov's map-to-map transits: TRANSIT TO MERIDIAN MALL at the trailer lot's wood on Border Yard and TRANSIT TO BORDER YARD at Meridian's highway south end. They open 60 s into the raid; a 20 s countdown in the zone (no other exit meanwhile; a squad only together) takes you to the other map's transit with your gear and wounds and gives you that map's exits. The first arrival rolls that map's chance exits and lets out six scavs. Gaps in `docs/design/TRANSITS.md`: one raid clock for both maps, the new map has no bosses or car, no items sent to the stash. |
 | Co-op exits | Done (2026-11-02), checked in Studio with one player and stand-ins | Tarkov's co-op exits: BOILER CELLAR (Customs' Boiler Room Basement) and WEST CAMP (Interchange's Scav Camp) open only for a PMC and a player scav standing in the zone together; each hold runs while the other is still there, and both gain Fence standing (+0.2, our number). The extract notices now name the exit. Gaps in `EFT_PARITY.md`, "Co-op exits": not seen with two real players, no rule against partners who shot each other. |
@@ -197,27 +198,36 @@ Notes:
 
 ## Controls
 
+PC keys are Tarkov's defaults and can be rebound (Settings, CONTROLS). On a gamepad, a shared button tells a tap from a
+hold and aiming from not (`InputMap` padHow / padAim). Touch is the v2 layout (`docs/design/TOUCH_CONTROLS.md`): icon
+buttons, and every control can be moved, resized, faded or hidden.
+
 | Action | Keyboard and mouse | Gamepad | Touch |
 |---|---|---|---|
-| Fire / Aim | LMB / RMB | R2 / L2 | FIRE / ADS |
-| Reload | R | X (an open interaction prompt takes X first) | RLD |
-| Sprint / Crouch | Shift / C or Ctrl | L3 / B | RUN / CRCH |
-| Heal | H | D-pad Up | MED |
-| Fire mode | V | D-pad Right | – |
-| Primary / secondary / sidearm / knife | 1 / 2 / 3 / 4 | D-pad Left cycles | SWAP cycles |
-| Lean left / right (toggle) | Q / E | LB / RB | LN-L / LN-R |
-| Prone | Z | – | PRN |
-| Crouch depth / walking speed | C + wheel / wheel | – | – |
-| Hold breath (while aiming) | Shift | – | – |
-| Vault / mantle | Space at waist- or chest-high cover | A (jump) | jump |
-| Free look | hold Alt | – | – |
-| Mag check | T | R3 | CHK |
-| Weapon light | L | – | – |
-| Grenade | hold G, release to throw (hold RMB as you release: underhand) | hold D-pad Down (a tap shows the exits) | NADE |
-| Exits list | O | D-pad Down | EXIT |
-| Inventory | Tab or I | Y | BAG |
-| Settings | P | Select | SET |
-| Interact | F | X | tap prompt |
+| Fire / Aim | LMB / RMB | R2 / L2 | FIRE (aims while held, drag to steer) / AIM |
+| Reload | R | X (an open interaction prompt takes X first) | RELOAD |
+| Sprint / Crouch | Shift / C | L3 / B | stick past its ring (let go on the lock: keeps running) / CROUCH |
+| Prone | X | hold B | hold CROUCH |
+| Best med now | – (quick slots) | D-up | hold MED |
+| Quick slots | 4 to 0 | – (inventory) | MED wheel |
+| Fire mode / check it | B / Alt+B | D-right / R3 while aiming | MODE / hold MODE |
+| Weapons | 1 / 2 / 3 / V | D-left cycles | SWAP cycles |
+| Lean left / right | Q / E | LB / RB | LEAN L / LEAN R |
+| Crouch depth / walking speed | C + wheel / wheel | – | – (the stick is analog) |
+| Hold breath (while aiming) | Shift | L3 | HOLD BREATH |
+| Jump / vault | Space | A | JUMP |
+| Free look | hold Alt | hold D-up | LOOK (drag) |
+| Magazine / chamber check | Alt+T / Shift+T | R3 / hold R3 | hold RELOAD / MORE tray |
+| Tactical device / its mode | T / Ctrl+T | hold D-right / hold D-right while aiming | MORE tray (or the device button) |
+| Inspect weapon | L | hold Y | hold SWAP |
+| Zeroing | Page Up / Page Down | D-up / D-down while aiming | MORE tray |
+| Night vision | N | hold D-left | MORE tray (or the NV button) |
+| Grenade | hold G, let go to throw (hold RMB as you let go: underhand) | hold D-down | GRENADE (hold, drag, let go) |
+| Exits list | O | D-down | EXITS |
+| Inventory | Tab | Y | BAG |
+| Settings | P | Select | SETTINGS |
+| Interact | F | X | tap the prompt |
+| Stationary gun: fire / zoom / leave | LMB / RMB / F | R2 / L2 / B | GUN FIRE (drag to traverse) / GUN ZOOM / LEAVE |
 
 ## Architecture
 

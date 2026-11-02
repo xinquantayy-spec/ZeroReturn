@@ -5,6 +5,7 @@ local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Controllers = script.Parent:WaitForChild("Controllers")
+local Items = require(game:GetService("ReplicatedStorage"):WaitForChild("ZR"):WaitForChild("Items"))
 
 local ORDER = { "UiKit", "State", "Settings", "Input", "Effects", "Camera", "Movement", "Weapon", "Grenade", "Animator", "Hud", "Post", "NightVision", "Eyewear", "Atmos", "Ambience", "Detail", "Interact", "Stationary", "Touch", "Inventory", "Character", "QuickSlots", "Modding", "Inspect", "Screens", "Trade", "Menus", "Lobby", "LobbyStyle" }
 local ctx = {}
@@ -199,10 +200,53 @@ if RunService:IsStudio() then
 			-- a = touch button action (or "tray:<action>"), b = { secs, dx, dy }: a finger held, optionally dragged
 			local o = b or {}
 			return tostring(ctx.Touch.simulate(a, o[1], (o[2] or o[3]) and Vector2.new(o[2] or 0, o[3] or 0) or nil))
+		elseif cmd == "quick" then
+			-- a = slot ("4".."0"), b = item kind ("med", "grenade"...): bind the first such item in the pockets or rig
+			local d = ctx.State.data
+			local rig = d.slots and d.slots.rig
+			for _, grid in { d.grids.pockets, rig and d.grids[rig] } do
+				for g in grid or {} do
+					local it = d.items[g]
+					local def = it and Items.defs[it.id]
+					if def and def.kind == b then
+						ctx.Settings.setQuick(a, g)
+						return it.id
+					end
+				end
+			end
+			return "none"
+		elseif cmd == "stick" then
+			-- a = { dx, dy, secs, release, landX, landY }: the touch stick held at that offset (in radii; dy -1.5 runs),
+			-- the thumb landing (landX, landY) radii off the stick's centre
+			local o = a or {}
+			return HttpService:JSONEncode(ctx.Touch.stick(o[1] or 0, o[2] or -1, o[3] or 0.5, o[4], o[5], o[6]))
+		elseif cmd == "touchState" then
+			return HttpService:JSONEncode(ctx.Touch.state())
+		elseif cmd == "touchEdit" then
+			-- a = "open", "save" or "cancel"
+			if a == "open" then
+				ctx.Touch.edit(true)
+			else
+				ctx.Touch.edit(false, a == "save")
+			end
+			return "ok"
 		elseif cmd == "setting" then
 			-- a = key, b = value (as the settings screen would set it; saved with the profile)
 			ctx.Settings.set(a, b)
 			return tostring(ctx.Settings.data[a])
+		elseif cmd == "rejoinSettings" then
+			-- the join load replayed: the touch layout forgotten here, a fresh snapshot asked for, the profile's settings
+			-- loaded from it the way a new session does (Settings.fromServer); returns what came back
+			ctx.Settings.data.touchLayout = nil
+			ctx.Settings.apply()
+			local clock = ctx.State.dataClock
+			ctx.State.req("sync", {})
+			local t0 = os.clock()
+			while ctx.State.dataClock == clock and os.clock() - t0 < 3 do
+				task.wait()
+			end
+			ctx.Settings.fromServer(ctx.State.data.settings)
+			return HttpService:JSONEncode({ layout = ctx.Settings.data.touchLayout or false, fire = { ctx.Touch.rectOf("fire") } })
 		elseif cmd == "aim" then
 			ctx.Weapon.setAim(a == true)
 			return "ok"

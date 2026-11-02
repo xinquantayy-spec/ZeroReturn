@@ -422,13 +422,15 @@ local LABELS = {
 		Light = "HOLD D-RIGHT", DeviceMode = "LT + HOLD D-RIGHT", ToggleNVG = "HOLD D-LEFT", SightMode = "LT + D-LEFT",
 		ZeroUp = "LT + D-UP", ZeroDown = "LT + D-DOWN",
 	},
+	-- touch (Touch.luau, TouchLayout.luau): the controls are icons; these name them as the layout editor does
 	Touch = {
-		Interact = "TAP", CycleWeapon = "SWAP", MagCheck = "CHK", Grenade = "NADE", ChamberCheck = "HOLD CHK", FireMode = "MODE",
-		Reload = "RLD", Sprint = "RUN", Crouch = "CRCH", LeanLeft = "LN-L", LeanRight = "LN-R", Extracts = "EXIT", Inventory = "BAG",
-		Settings = "SET",
-		FireModeCheck = "HOLD MODE", InspectWeapon = "HOLD SWAP", FreeLook = "LOOK", Light = "LGT", DeviceMode = "HOLD LGT",
-		ToggleNVG = "NV", ZeroUp = "HOLD MODE", ZeroDown = "HOLD MODE", SightMode = "HOLD MODE", Prone = "PRN", Heal = "MED",
-		Sidearm = "SWAP", Primary = "SWAP", Secondary = "SWAP", Knife = "SWAP",
+		Interact = "TAP", Fire = "FIRE", Aim = "AIM", Reload = "RELOAD", Sprint = "STICK PAST ITS RING", Crouch = "CROUCH",
+		Prone = "HOLD CROUCH", Heal = "HOLD MED", MagCheck = "HOLD RELOAD", ChamberCheck = "MORE", FireMode = "MODE",
+		FireModeCheck = "HOLD MODE", InspectWeapon = "HOLD WEAPON", FreeLook = "LOOK (DRAG)", Light = "MORE", DeviceMode = "MORE",
+		ToggleNVG = "MORE", ZeroUp = "MORE", ZeroDown = "MORE", SightMode = "MORE", CycleWeapon = "WEAPON", Grenade = "GRENADE",
+		LeanLeft = "LEAN LEFT", LeanRight = "LEAN RIGHT", Extracts = "EXITS", Inventory = "BAG", Settings = "SETTINGS",
+		Sidearm = "WEAPON", Primary = "WEAPON", Secondary = "WEAPON", Knife = "WEAPON",
+		Quick4 = "MED", Quick5 = "MED", Quick6 = "MED", Quick7 = "MED", Quick8 = "MED", Quick9 = "MED", Quick0 = "MED",
 	},
 }
 -- the PC label of an action from its (rebound) keys, chords included ("ALT+T")

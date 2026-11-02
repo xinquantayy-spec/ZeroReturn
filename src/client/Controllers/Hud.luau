@@ -60,7 +60,7 @@ Hud.SZ = SZ
 local MAX_EXITS = 30
 local exitArea = { touch = false, y0 = 200, y1 = 900, gap = 5, vit = { 0, 0 }, rec = { 0, 0 } } -- where the list may stand (layout())
 local toastTop, toastStep, squadBottom, squadStep = 0.36, 0.04, 0.93, 0.045
-local toastX = 0.04 -- the toasts' left edge (moved right of the touch RUN button when they would meet it)
+local toastX = 0.04 -- the toasts' left edge (moved right of the touch stick when they would meet it)
 local SIDE_L, SIDE_R = 0.04, 0.96
 
 -- stack objects downward from y0 (pixels); each entry = { obj, size }; returns the y below the last one
@@ -98,10 +98,10 @@ local function layout()
 	-- the top centre (Touch.luau; KNOWN_ISSUES 75) and the list drops down under it, clear of the thumb buttons
 	local rightEnd = stack({ { O.rec, SZ.rec }, { O.dev, SZ.dev }, { O.clock, SZ.clock } }, SIDE_R, top, gap)
 	local row = ctx.Touch and ctx.Touch.topRowBottom and ctx.Touch.topRowBottom()
-	-- on touch the toasts start right of the RUN button when their stack would reach it (KNOWN_ISSUES 77)
+	-- on touch the toasts start right of the movement stick when their stack would reach it (KNOWN_ISSUES 77)
 	toastX = SIDE_L
 	if row and ctx.Touch.rectOf then
-		local x0, y0, x1, y1 = ctx.Touch.rectOf("Sprint")
+		local x0, y0, x1, y1 = ctx.Touch.rectOf("joy")
 		if x0 then
 			local gp = gui.AbsolutePosition
 			local ty0 = toastTop * H - SZ.toast * u * 0.5

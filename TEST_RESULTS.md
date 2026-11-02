@@ -8,6 +8,65 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Touch controls v2 (2026-11-02)
+
+Setup:
+- One player, touch forced with `ZR_ClientDev` "device".
+- The Studio viewport is 1156 x 465, not a phone.
+- Places: the Relay 7 hideout and Border PMC raids with the R-17.
+- Controls were driven through the bridge:
+  - "touch" (`Touch.simulate`): a finger's press, hold and drag;
+  - "stick" (`Touch.stick`);
+  - "touchEdit" and real mouse clicks on the editor's buttons.
+
+Results:
+- **Look:** every control shows its icon. The menu row is rounded squares; the rest are round. Screenshots:
+  - the raid layout: `UI12_touch_v2_raid.jpg`
+  - the med wheel: `UI13_touch_v2_med_wheel.jpg`
+  - the tray: `UI14_touch_v2_tray.jpg`
+  - the editor: `UI15_touch_v2_editor.jpg`
+  - a stationary gun: `UI16_touch_v2_stationary_gun.jpg`
+- **Stick, floating:**
+  - Walked 14.5 studs in 1.6 s; pushed past the ring forward, ran 24.9 studs.
+  - Let go on the lock: kept running (25.8 studs); a touch on the stick ended it.
+- **Stick, fixed (FLOATING STICK off):**
+  - A thumb landing 0.8 radii right and 0.4 down left the stick in place and moved the knob there. With the floating
+    stick, the stick moved to the thumb instead.
+  - The touch area shrank to a 295 px square around the stick.
+  - A forward push past the ring ran 18.3 studs in 1.2 s.
+- **FIRE:**
+  - Held, it aimed down sights and let go after. A 100 px drag turned the view 13.9 degrees.
+  - With AIM WHEN FIRING off, a 0.9 s hold fired 4 rounds from the hip, not aiming. Back on, it aimed while held.
+- **Tap and hold buttons:**
+  - CROUCH: a tap crouched; a hold went prone (the icon changed).
+  - MODE: a tap changed the fire mode; a hold checked it.
+  - RELOAD: a hold checked the magazine.
+- **MED wheel:** a tap opened AUTO and quick slot 4 (painkillers, bound with "quick"). The buttons under it faded.
+- **MORE tray:** with the R-17 (no device, a fixed sight) it held 6 items: magazine, chamber, fire-mode check, inspect,
+  zero up, zero down. The sight, device and goggle items stayed out, as they could do nothing. MODE under it faded.
+- **Stationary gun:** the HMG-12 on Border was mounted through its prompt.
+  - GUN FIRE, GUN ZOOM and LEAVE stood where FIRE, AIM and RELOAD stand.
+  - The stick, CROUCH, JUMP, GRENADE, MED, MORE, LOOK, the leans and EXITS hid; SETTINGS and BAG stayed.
+  - GUN FIRE held 0.6 s with a 120 px drag fired 8 rounds and traversed the gun 26.9 degrees.
+  - GUN ZOOM taps went FOV 85 to 49.2 and back.
+  - LEAVE got off the gun, and the weapon's buttons came back.
+- **Editor:**
+  - Dragging moved FIRE. SIZE + made it 137 px. HIDE hid LEAN LEFT. SAVE kept both.
+  - RESET then SAVE (mouse clicks) brought the defaults back, and the profile's layout was cleared.
+  - Junk in a saved layout (an unknown control, x = 5) was dropped by the server.
+- **The layout across a join:** this found a bug, now fixed.
+  - The bug: the settings loader only took keys that have a default, and the layout has none, so a saved layout was
+    never loaded on joining.
+  - The fix: `Settings.fromServer` with an optional `touchLayout` table.
+  - The check: the "rejoinSettings" bridge forgets the layout, asks for a fresh snapshot and loads it as a new session
+    does. FIRE came back at x 0.78 and 148 px, with LEAN LEFT hidden.
+- **Logic tests** (388 passed, 0 failed), CharTests 47, LookTests 33 and MapTests 38. The new touch tests:
+  - every icon and action exists;
+  - no control overlaps another or leaves the screen on four phone and tablet sizes;
+  - `sanitize` works;
+  - a full 24-control layout passes the settings request (it used to stop at 16 keys) and junk is refused.
+- **Not verified:** a phone or tablet, two thumbs at once, real safe areas, a real second session (DataStore).
+
 ## Gamepad and touch controls: checks, zeroing, sight, inspect, free look (2026-11-02)
 
 One player, a Border PMC raid with the R-17. The gamepad was forced with `ZR_ClientDev` "device" and its buttons pressed

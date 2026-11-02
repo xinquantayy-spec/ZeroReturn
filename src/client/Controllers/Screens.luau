@@ -623,6 +623,9 @@ local SETTING_TABS = {
 	{ "CONTROLS", {
 		{ "SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },
 		{ "AIM SENSITIVITY", "aimSens", "num", 0.2, 3, 0.1, "%.1f" },
+		-- touch (Touch.luau): FIRE brings the sights up while held (CoD Mobile's ADS fire); the stick comes to the thumb
+		{ "TOUCH: AIM WHEN FIRING", "aimOnFire", "bool" },
+		{ "TOUCH: FLOATING STICK", "joyFloat", "bool" },
 	} },
 }
 -- the PC keys a player can rebind, in Tarkov's order and wording
@@ -795,7 +798,7 @@ function Screens.settings(tab, keepCapture)
 		local dev = ctx.Input.device()
 		local padView = dev == "Gamepad" or dev == "Touch"
 		local head = (dev == "Gamepad" and "GAMEPAD  ·  a short tap and a hold do different things; with LT held (aiming) D-UP, D-DOWN, D-LEFT and R3 do more")
-			or (dev == "Touch" and "TOUCH  ·  a held button does its second action; hold MODE for the weapon tray (fire-mode check, zeroing, sight)")
+			or (dev == "Touch" and "TOUCH  ·  a held button does its second action; MORE holds the rarely used; EDIT TOUCH LAYOUT moves and resizes them")
 			or "KEY BINDINGS  ·  CHANGE, then press a key (hold ALT, SHIFT or CTRL for a combination; BACKSPACE cancels)"
 		K.label(scroll, head, 12, {
 			Position = UDim2.fromOffset(0, y0), Size = UDim2.new(1, -150, 0, 24), TextColor3 = K.C.dim,
@@ -805,6 +808,16 @@ function Screens.settings(tab, keepCapture)
 		reset.Activated:Connect(function()
 			S.resetBinds()
 			Screens.settings()
+		end)
+		-- the touch layout editor (Touch.edit): move, resize, fade and hide every touch control
+		local editT = K.button(scroll, "EDIT TOUCH LAYOUT", {
+			Name = "EditTouch", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -146, 0, y0), Size = UDim2.fromOffset(170, 24), TextSize = 11,
+		})
+		editT.Activated:Connect(function()
+			closeModal()
+			if ctx.Touch and ctx.Touch.edit then
+				ctx.Touch.edit(true)
+			end
 		end)
 		for i, r in BIND_ROWS do
 			local action, name = r[1], r[2]

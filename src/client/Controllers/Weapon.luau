@@ -1002,7 +1002,16 @@ function Weapon.deviceState()
 	local laser = ms.laser == true and (not ms.light or mode ~= "light")
 	return light, laser
 end
--- a light or a laser on the gun in hand (the touch LGT button shows only then)
+-- a light or a laser on the gun in hand (the touch device button and its tray item show only then)
+-- the touch tray asks: a light/laser combo (its mode can change), a sight with more than one power
+function Weapon.hasCombo()
+	return vm ~= nil and vm.ms ~= nil and (vm.ms.light and vm.ms.laser) and true or false
+end
+
+function Weapon.hasZoom()
+	return vm ~= nil and vm.zooms ~= nil and #vm.zooms > 1
+end
+
 function Weapon.hasDevice()
 	return vm ~= nil and vm.ms ~= nil and (vm.ms.light == true or vm.ms.laser == true)
 end

@@ -235,6 +235,89 @@ function T.run(ctx)
 			.. (#noPad > 0 and (" (missing: " .. table.concat(noPad, ", ") .. ")") or ""), #noPad == 0)
 		check("input map: the shared gamepad buttons are the seven planned ones, each press telling its actions apart (tap, hold, aiming)" .. (badPad and (" (" .. badPad .. ")") or ""), badPad == nil)
 	end
+	-- touch controls (Touch.luau; TouchLayout.luau): every control's icon and action exist, the defaults do not overlap on
+	-- common phone and tablet screens, and the server keeps only a clean layout
+	do
+		local TLm = require(Shared.TouchLayout)
+		local IMt = require(Shared.InputMap)
+		local seenId, badEl = {}, nil
+		for _, e in TLm.ELEMENTS do
+			if seenId[e.id] then
+				badEl = "duplicate " .. e.id
+			end
+			seenId[e.id] = true
+			if e.icon and TLm.ICON[e.icon] == nil then
+				badEl = badEl or ("no icon " .. e.icon)
+			end
+			for _, a in { e.press, e.tap, e.hold } do
+				if a and not IMt[a] then
+					badEl = badEl or ("no action " .. a)
+				end
+			end
+			if e.x >= 0 and (e.x > 1 or e.y < 0 or e.y > 1) then
+				badEl = badEl or ("off screen " .. e.id)
+			end
+		end
+		for _, t in TLm.TRAY do
+			if not IMt[t.action] or TLm.ICON[t.icon] == nil then
+				badEl = badEl or ("tray " .. t.action)
+			end
+		end
+		check("touch: every control has its icon and an action the input map knows; ids are unique" .. (badEl and (" (" .. badEl .. ")") or ""), badEl == nil)
+		local overlap = nil
+		for _, scr in { { 844, 390 }, { 667, 375 }, { 932, 430 }, { 1024, 768 } } do
+			local W, H = scr[1], scr[2]
+			local u = math.clamp(H / 390, 1, 1.35)
+			local list = {}
+			for _, e in TLm.ELEMENTS do
+				if e.shown and not e.mount and e.x >= 0 then
+					table.insert(list, e)
+				end
+			end
+			for i = 1, #list do
+				local a = list[i]
+				local ra = a.size * u / 2
+				if a.x * W - ra < 0 or a.x * W + ra > W or a.y * H - ra < 0 or a.y * H + ra > H then
+					overlap = overlap or string.format("%s off a %dx%d screen", a.id, W, H)
+				end
+				for j = i + 1, #list do
+					local b = list[j]
+					local d = math.sqrt(((a.x - b.x) * W) ^ 2 + ((a.y - b.y) * H) ^ 2)
+					if d < ra + b.size * u / 2 then
+						overlap = overlap or string.format("%s and %s on %dx%d", a.id, b.id, W, H)
+					end
+				end
+			end
+		end
+		check("touch: the default controls neither overlap nor leave the screen on 844x390, 667x375, 932x430 and 1024x768" .. (overlap and (" (" .. overlap .. ")") or ""), overlap == nil)
+		local clean = TLm.sanitize({
+			fire = { x = 0.5, y = 2, s = 9, o = 0, h = true }, nope = { x = 0.1 }, aim = { x = 0 / 0, y = math.huge, s = "big" },
+			reload = "x", jump = { h = "yes" },
+		})
+		-- through the settings request (the real one, for the playtest's player): a full layout of every control passes the
+		-- payload check, comes back cleaned, and junk is refused; the player's own layout is put back after
+		local pl = game:GetService("Players"):GetPlayers()[1]
+		local profT = pl and ctx.Profiles.get(pl)
+		if profT and profT.settings then
+			local before = profT.settings.touchLayout
+			local full = {}
+			for _, e in TLm.ELEMENTS do
+				full[e.id] = { x = 0.5, y = 0.5, s = 1.2, o = 0.8, h = false }
+			end
+			full.fire.s = 9
+			local r1 = ctx.Remotes.dispatch(pl, "settings", { touchLayout = full })
+			local savedT = profT.settings.touchLayout
+			local okFull = r1 and r1.ok and savedT ~= nil and savedT.fire ~= nil and savedT.fire.s == 1.6 and savedT.jump ~= nil
+			task.wait(0.6) -- the request's rate limit
+			local r2 = ctx.Remotes.dispatch(pl, "settings", { touchLayout = "junk" })
+			profT.settings.touchLayout = before
+			check("touch: the settings request takes a layout of all " .. #TLm.ELEMENTS .. " controls, keeps it cleaned, and refuses one that is not a table",
+				okFull and r2 ~= nil and not r2.ok)
+		end
+		check("touch: a layout keeps only known controls, numbers clamped (position 0-1, size 60-160 %, opacity 25-100 %), NaN and junk dropped",
+			clean ~= nil and clean.fire.y == 1 and clean.fire.s == 1.6 and clean.fire.o == 0.25 and clean.fire.h == true and clean.nope == nil
+				and clean.aim == nil and clean.reload == nil and clean.jump == nil and TLm.sanitize({}) == nil and TLm.sanitize("x") == nil)
+	end
 	-- M11 part B (Tarkov): no mechanical malfunctions above 93 % condition, likelier as it wears; big magazines feed badly
 	do
 		local C = ctx.Combat
