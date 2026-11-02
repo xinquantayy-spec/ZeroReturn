@@ -177,6 +177,10 @@ add("FLARE_GREEN", { name = "Green Signal Flare", short = "GREEN FLARE", kind = 
 
 -- ── weapon maintenance (M11) ─────────────────────────────────────────────────
 add("WEAPON_KIT", { name = "Gunsmith Repair Kit", short = "GUN KIT", kind = "repair", w = 2, h = 1, mass = 1.1, value = 34000, rarity = "uncommon", repair = { points = 150 }, desc = "Springs, pins and a cleaning set. Restores weapon durability out of raid (150 points), with less wear than a trader repair.", color = c("#5B5E52") })
+-- Tarkov 0.15's tripwire installation kit (Jaeger, LL3; 1x1, 0.35 kg; single use): with one on you, a grenade in hand
+-- can be set as a tripwire (B, or X on a pad, while it is in hand). Tarkov keeps it in a special slot, kept on death;
+-- the game has no special slots, so it rides in the rig, pockets or bag like other tools (docs/design/BOSS_FORESTER.md)
+add("TRIPWIRE_KIT", { name = "Tripwire installation kit", short = "TRIPWIRE", kind = "loot", w = 1, h = 1, mass = 0.35, value = 24500, rarity = "rare", desc = "Wire, two stakes and a clip for a grenade's pin. With a grenade in hand, B (X on a gamepad, MODE on touch) sets it as a tripwire across a path. Used up by the tripwire.", color = c("#5E5A4A") })
 add("MULTITOOL", { name = "Multitool", short = "MTOOL", kind = "loot", w = 2, h = 1, mass = 0.25, value = 18000, rarity = "uncommon", desc = "Pliers, drivers and a file in one. Carrying it lets you change vital weapon parts (barrels, gas blocks, handguards, pistol grips, receivers) during a raid.", color = c("#8A3E32") })
 
 -- ── keys, quest items ─────────────────────────────────────────────────────────

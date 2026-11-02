@@ -3,9 +3,12 @@
 -- walk: a wire at shin height between two stakes, a grenade at the foot of one. A raider who walks or crawls through it
 -- pulls the pin: the grenade drops and goes off on its own fuse (Tarkov: each grenade keeps its own delay). A shot that
 -- meets the wire or a blast close by sets it off too. Look at it from close by and hold the prompt to disarm it (11 s,
--- 3 s with a multitool: Tarkov's numbers) and keep the grenade. AI never set one off (our choice: the bots walk the same
--- doorways). Every wire is checked where it is laid: both stakes on one floor, nothing across the wire, nothing where a
--- stake goes, the door's leaf swinging the other way.
+-- 3 s with a multitool: Tarkov's numbers) and keep the grenade. AI never set off the Forester's (our choice: the bots
+-- walk the same doorways). Every wire is checked where it is laid: both stakes on one floor, nothing across the wire,
+-- nothing where a stake goes, the door's leaf swinging the other way.
+-- Raiders set their own too (Tarkov 0.15): a tripwire kit and a grenade in hand, then B; the wire runs from near their
+-- feet to where they look, the kit and the grenade are used up, the bots and everyone else set it off, and it disarms
+-- itself after 10 minutes, leaving the grenade.
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
@@ -28,6 +31,13 @@ local CFG = {
 	disarm = 11, -- seconds by hand (Tarkov)
 	disarmTool = 3, -- with a multitool (Tarkov)
 	grenades = { "GREN_F7", "GREN_RK5" },
+	-- a raider's own wire (Tarkov 0.15: a kit and a grenade in hand; "minimum and maximum length limits", numbers not
+	-- published, so these are ours; it disarms itself after 10 minutes, Shacknews)
+	minLen = 2.5, -- studs, about 0.8 m
+	maxLen = 12, -- about 3.8 m
+	plantReach = 7, -- the near end lies this close to the raider
+	life = 600,
+	kit = "TRIPWIRE_KIT",
 }
 Tripwires.CFG = CFG
 local WIRE = Color3.fromRGB(150, 150, 138) -- bare steel wire: thin, but it catches the light if you look for it
@@ -227,6 +237,90 @@ function Tripwires.place(fa, fb, item, owner)
 	return t
 end
 
+-- ── a raider's own wire (Tarkov 0.15) ───────────────────────────────────────────
+-- the kit's guid in a holder, or nil
+function Tripwires.kitIn(inv)
+	for g, it in inv.items do
+		if it.id == CFG.kit and Inv.locate(inv, g) ~= nil then
+			return g
+		end
+	end
+	return nil
+end
+
+-- the checks and the setting, for a session and a root given (LogicTests call it with stand-ins): grenade g (a guid in
+-- the raider's holder) on a wire from near point a to point b. Returns the wire, or nil and why.
+function Tripwires.plantFor(s, root, g, a, b, owner)
+	if not s or s.done or (s.state and s.state ~= "ACTIVE") or not root then
+		return nil, "NOT_NOW"
+	end
+	if typeof(a) ~= "Vector3" or typeof(b) ~= "Vector3" or a ~= a or b ~= b then
+		return nil, "BAD"
+	end
+	local inv = s.inv
+	local it = type(g) == "string" and inv.items[g]
+	local d = it and Items.defs[it.id]
+	if not (d and d.kind == "grenade" and Inv.locate(inv, g) ~= nil) then
+		return nil, "NO_GRENADE"
+	end
+	local kit = Tripwires.kitIn(inv)
+	if not kit then
+		return nil, "NO_KIT"
+	end
+	local flat = (b - a) * Vector3.new(1, 0, 1)
+	if flat.Magnitude < CFG.minLen then
+		return nil, "SHORT"
+	elseif flat.Magnitude > CFG.maxLen then
+		return nil, "LONG"
+	end
+	if (a - root.Position).Magnitude > CFG.plantReach then
+		return nil, "FAR"
+	end
+	setFilter()
+	local fa, fb, why = Tripwires.fit(a, b)
+	if not fa then
+		return nil, string.upper(string.gsub(why or "blocked", " ", "_"))
+	end
+	for _, t in Tripwires.list do
+		if t.armed and (t.mid - (fa + fb) / 2 - Vector3.new(0, CFG.height, 0)).Magnitude < 2 then
+			return nil, "CROWDED"
+		end
+	end
+	local id = it.id
+	Inv.consume(inv, g, 1)
+	Inv.consume(inv, kit, 1)
+	local t = Tripwires.place(fa, fb, id, owner)
+	t.byPlayer = true
+	t.expires = os.clock() + CFG.life
+	return t
+end
+
+local WHY = {
+	NO_KIT = "YOU NEED A TRIPWIRE KIT", NO_GRENADE = "NO GRENADE IN HAND", SHORT = "TOO SHORT FOR A TRIPWIRE",
+	LONG = "TOO LONG FOR A TRIPWIRE", FAR = "TOO FAR AWAY", NO_FLOOR = "NEEDS FLAT GROUND AT BOTH ENDS",
+	UNEVEN = "THE GROUND IS TOO UNEVEN", BLOCKED = "SOMETHING IS IN THE WAY", STAKE_IN_SOMETHING = "NO ROOM FOR A STAKE",
+	CROWDED = "ANOTHER TRIPWIRE IS THERE",
+}
+-- the act from a raider's client (Grenades: "nade" op "wire"): a = the near end, b = the far end (floor points)
+function Tripwires.plant(player, g, a, b)
+	local s = ctx.Raid.session(player)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not hum or hum.Health <= 0 then
+		return nil, "NOT_NOW"
+	end
+	local t, why = Tripwires.plantFor(s, root, g, a, b, player)
+	if not t then
+		ctx.Remotes.note(player, "toast", { text = WHY[why] or "THE TRIPWIRE WOULD NOT HOLD HERE", tone = "warn" })
+		return nil, why
+	end
+	ctx.Raid.afterChange(player, true)
+	ctx.Remotes.note(player, "toast", { text = "TRIPWIRE SET: " .. string.upper(Items.defs[t.item].name), tone = "info" })
+	ctx.Remotes.fx("sfx", { n = "nade_pin", p = t.ga, v = 0.35 })
+	return t
+end
+
 -- ── setting it off and taking it apart ───────────────────────────────────────
 local function trigger(t, _why)
 	if not t.armed then
@@ -374,8 +468,37 @@ function Tripwires.clear()
 end
 
 -- ── who walks into them ──────────────────────────────────────────────────────
-local last = {} -- [player] = the root's last position
+local last = {} -- [player or AI unit] = the root's last position
 local acc = 0
+-- a raider's wire left alone for CFG.life disarms itself (Tarkov); its grenade stays at the stake for anyone to take
+local function expire(t)
+	t.armed = false
+	if t.model then
+		t.model:Destroy()
+		t.model = nil
+	end
+	local g, it = Inv.newItem(t.item, 1)
+	ctx.Loot.spawnPile(t.ga, { { g = g, it = it, subs = {} } })
+end
+Tripwires.expire = expire
+
+local function stepped(key, root, isPlayer)
+	local p1 = root.Position
+	local p0 = last[key] or p1
+	last[key] = p1
+	if (p1 - p0).Magnitude > 14 then
+		p0 = p1 -- a teleport is not a step
+	end
+	for _, t in Tripwires.list do
+		if t.armed and (t.byPlayer or isPlayer) then
+			local up = p1.Y - t.floorY
+			if up > -1 and up < 6 and (p1 - t.mid).Magnitude < t.len + 8 and Tripwires.crosses(t.a, t.b, p0, p1, CFG.pad) then
+				trigger(t, key)
+			end
+		end
+	end
+end
+
 local function watch(dt)
 	acc += dt
 	if acc < 0.1 then
@@ -386,23 +509,27 @@ local function watch(dt)
 		table.clear(last)
 		return
 	end
+	local now, mine = os.clock(), false
+	for _, t in Tripwires.list do
+		if t.armed and t.expires and now > t.expires then
+			expire(t)
+		end
+		mine = mine or (t.armed and t.byPlayer == true)
+	end
+	-- the bots walk into a raider's wire (Tarkov: players, bots and items set them off); the Forester's own they know
+	if mine and ctx.AI and ctx.AI.units then
+		for _, u in ctx.AI.units do
+			if u.alive and u.root and u.root.Parent then
+				stepped(u, u.root, false)
+			else
+				last[u] = nil
+			end
+		end
+	end
 	for player, s in ctx.Raid.sessions() do
 		local root = not s.done and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if root then
-			local p1 = root.Position
-			local p0 = last[player] or p1
-			last[player] = p1
-			if (p1 - p0).Magnitude > 14 then
-				p0 = p1 -- a teleport is not a step
-			end
-			for _, t in Tripwires.list do
-				if t.armed then
-					local up = p1.Y - t.floorY
-					if up > -1 and up < 6 and (p1 - t.mid).Magnitude < t.len + 8 and Tripwires.crosses(t.a, t.b, p0, p1, CFG.pad) then
-						trigger(t, player)
-					end
-				end
-			end
+			stepped(player, root, true)
 		else
 			last[player] = nil
 		end

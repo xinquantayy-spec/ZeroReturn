@@ -58,6 +58,8 @@ T.offers = {
 		o("RED_DOT", 1, 1), o("GRIP_V", 1, 2), o("LIGHT_T", 1, 2), o("GREN_RK5", 1, 4), o("GREN_SMOKE", 1, 3), o("FLARE_GREEN", 1, 2),
 		o("KST_RIFLE", 2, 1), o("KST_MAG", 2, 6), o("A76_PS", 2, 8, 60), o("A62_HP", 2, 6, 60), o("R17_MAG40", 2, 3),
 		o("SUPP_9", 2, 1), o("BRAKE_76", 2, 1), o("GREN_STUN", 2, 3), o("GREN_F7", 2, 3), o("WEAPON_KIT", 2, 1),
+		-- Tarkov's Jaeger sells the tripwire kit at LL3 after his task chain (no Jaeger here, no task gate)
+		o("TRIPWIRE_KIT", 3, 2),
 		o("TUNDRA_BOLT", 3, 1), o("A76L_LPS", 3, 4, 40), o("A62_AP", 3, 4, 60), o("A9_AP", 3, 4, 50), o("A12_SLUG", 3, 4, 20),
 		o("SUPP_62", 3, 1), o("SCOPE_4X", 3, 1),
 		o("A76_BP", 4, 3, 60), o("A76L_SNB", 4, 2, 40),

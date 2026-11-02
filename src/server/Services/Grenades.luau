@@ -322,6 +322,19 @@ local function pull(player, want)
 	ctx.Remotes.fx("sfx", { n = "nade_pin", p = head.Position, v = 0.55 }, player)
 end
 
+-- the grenade goes back without being thrown (the tripwire mode took it): the pin is in again
+local function stow(player)
+	local ps = P[player]
+	if ps then
+		ps.pull, ps.g = nil, nil
+	end
+	local char = player.Character
+	if char then
+		char:SetAttribute("Nade", false)
+	end
+end
+Grenades._stow = stow
+
 local function throw(player, p)
 	local ps, s = stateOf(player)
 	if not s or s.done or not ps.pull then
@@ -415,6 +428,18 @@ function Grenades.init(c)
 			pull(player, p.g)
 		elseif p.op == "throw" and type(p.x) == "number" and type(p.y) == "number" and type(p.z) == "number" then
 			throw(player, p)
+		elseif p.op == "stow" then
+			stow(player)
+		elseif p.op == "wire" and type(p.a) == "table" and type(p.b) == "table" then
+			-- a tripwire (Tarkov 0.15): the grenade in hand goes on a wire instead of being thrown (Tripwires.plant)
+			stow(player)
+			local function v(t)
+				return type(t[1]) == "number" and type(t[2]) == "number" and type(t[3]) == "number" and Vector3.new(t[1], t[2], t[3]) or nil
+			end
+			local a, b = v(p.a), v(p.b)
+			if a and b and ctx.Tripwires then
+				ctx.Tripwires.plant(player, p.g, a, b)
+			end
 		end
 	end, 3, 4)
 	Players.PlayerRemoving:Connect(function(pl)
