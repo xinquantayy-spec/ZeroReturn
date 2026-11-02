@@ -243,27 +243,11 @@ function NV.init(c)
 	cc.Name = "ZR_NightVision"
 	cc.Enabled = false
 	cc.Parent = Lighting
-	-- N (Tarkov). Gamepad: hold D-left (a tap there is the next weapon, Weapon controller). Touch: NV.
-	local padTok = nil
+	-- N (Tarkov). Gamepad: hold D-left (Input.luau tells the hold from the next weapon's tap). Touch: NV.
 	c.Input.on("ToggleNVG", function(down)
-		if c.Input.device() ~= "Gamepad" then
-			if down then
-				toggle()
-			end
-			return
+		if down then
+			toggle()
 		end
-		if not down then
-			padTok = nil
-			return
-		end
-		local tok = {}
-		padTok = tok
-		task.delay(0.4, function()
-			if padTok == tok then
-				padTok = nil
-				toggle()
-			end
-		end)
 	end)
 	RunService.RenderStepped:Connect(function(dt)
 		local ok, err = pcall(apply, dt)

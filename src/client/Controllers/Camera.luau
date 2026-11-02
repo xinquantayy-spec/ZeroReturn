@@ -129,22 +129,24 @@ local function update(dt)
 	local sens = (S.sens or 1) * (aiming and (ctx.Weapon.aimSens and ctx.Weapon.aimSens() or 0.62) * (S.aimSens or 1) or (1 + (gear and gear.turn or 0) / 100))
 	local free = not menu and ctx.Input.down("FreeLook") and not aiming
 	if not menu then
+		-- the mouse, the right stick and touch drags; with free look held (Alt, hold D-up, drag LOOK) they turn the head
+		-- and not the body (up to 100 degrees either way and 60 up or down, our limits)
 		local md = UIS:GetMouseDelta()
-		if free then
-			Camera.freeYaw = math.clamp(Camera.freeYaw - math.rad(md.X * 0.2 * sens), math.rad(-100), math.rad(100))
-			Camera.freePitch = math.clamp(Camera.freePitch - math.rad(md.Y * 0.2 * sens), math.rad(-60), math.rad(60))
-			md = Vector2.zero
-		end
-		Camera.yaw -= math.rad(md.X * 0.2 * sens)
-		Camera.pitch -= math.rad(md.Y * 0.2 * sens)
+		local dYaw = -math.rad(md.X * 0.2 * sens) - math.rad(lookAcc.X * 0.28 * sens)
+		local dPitch = -math.rad(md.Y * 0.2 * sens) - math.rad(lookAcc.Y * 0.28 * sens)
 		if stick.Magnitude > 0.14 then
 			local s = (stick.Magnitude - 0.14) / 0.86
 			local v = stick.Unit * s * s
-			Camera.yaw -= v.X * dt * 3.4 * sens
-			Camera.pitch += v.Y * dt * 2.5 * sens
+			dYaw -= v.X * dt * 3.4 * sens
+			dPitch += v.Y * dt * 2.5 * sens
 		end
-		Camera.yaw -= math.rad(lookAcc.X * 0.28 * sens)
-		Camera.pitch -= math.rad(lookAcc.Y * 0.28 * sens)
+		if free then
+			Camera.freeYaw = math.clamp(Camera.freeYaw + dYaw, math.rad(-100), math.rad(100))
+			Camera.freePitch = math.clamp(Camera.freePitch + dPitch, math.rad(-60), math.rad(60))
+		else
+			Camera.yaw += dYaw
+			Camera.pitch += dPitch
+		end
 	end
 	lookAcc = Vector2.zero
 	Camera.pitch = math.clamp(Camera.pitch, math.rad(-80), math.rad(80))

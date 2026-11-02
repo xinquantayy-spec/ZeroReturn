@@ -25,7 +25,10 @@
 10. **Prone keeps the upright collision box.** The humanoid root stays upright when prone (the body lies flat visually and as a hitbox), so you cannot crawl under objects lower than about 3 studs.
 11. **Weapons are part-built.** All weapons and attachments use the shared `WeaponModels` spec (consistent first and third person). The earlier R17 Blender viewmodel mesh is retired; M10 re-authors weapon meshes in Blender against the same anchors.
 12. **Inventory on short windows.** With a viewport shorter than about 600 px, the lower equipment slots (primary, holster, secondary) slide under the detail strip. Needs a scrollable gear column (M11).
-13. **Movement extras not yet verified on devices.** Lean, prone and crouch-depth have touch buttons and gamepad shoulder buttons only for lean; free look (Alt) and hold breath (Shift while aiming) are keyboard-only so far.
+13. **Movement extras not yet verified on devices.** Lean, prone and crouch-depth have touch buttons. On a gamepad, lean
+    is on the shoulder buttons and prone is a held B. Since 2026-11-02 free look is a held D-up on a gamepad and the
+    LOOK button on touch. Hold breath is L3 or RUN held while aiming. None of this has been tried on a real controller or
+    phone.
 14. **Character materials are vertex colours only.** The M16 body and gear have no texture maps. Body segments and soft gear use Roblox's built-in Fabric, which looks coarse up close, and first-person sleeves use SmoothPlastic. A subtle custom fabric MaterialVariant is still to make.
 
 15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (1,018 points since the M12 cover props).
@@ -185,19 +188,24 @@
     - The vitals start below Roblox's own menu on small screens.
     - Checked in Studio with touch forced (TEST_RESULTS "HUD and touch layout"); not on a phone.
 
-76. **Gamepad and touch still miss some weapon controls (2026-11-02).** The tactical device, its mode and the goggles now
-    have both (hold D-right, hold D-left; LGT, NV). Still keyboard-only:
-    - the chamber check (Shift+T) and fire-mode check (Alt+B);
-    - zeroing (Page Up / Page Down) and a variable scope's power (Alt + right mouse);
-    - inspecting the weapon (L);
-    - the slot keys 1, 2, 3 and V (the pad and touch cycle weapons instead);
-    - free look and hold breath (see 13).
+76. ~~**Gamepad and touch still miss some weapon controls (2026-11-02).**~~ **Resolved 2026-11-02**
+    (`docs/design/EFT_PARITY.md`, "Gamepad and touch for the weapon checks").
+    - Gamepad: R3 tap / hold / aiming for the magazine, chamber and fire-mode checks; D-up / D-down while aiming for
+      zeroing; D-left while aiming for the sight; hold Y to inspect; hold B to go prone; hold D-up for free look.
+    - Touch: hold CHK or SWAP; the new MODE button (its tray holds the check, zeroing and sight); the new LOOK button.
+    - Left as before: the slot keys 1, 2, 3 and V (cycling reaches them).
+    - Checked through the test bridge in Studio, not on a controller or phone.
 
 77. ~~**Touch: toasts can fall on the RUN button (found while checking 75, 2026-11-02).**~~ **Resolved 2026-11-02.**
     - Toasts stack on the left under the vitals, and on a short screen their rows reached RUN at (0.10, 0.48) of the
       touch area.
     - On touch they now start right of RUN when the stack would reach it (`Hud.layout`, `Touch.rectOf`).
     - Seen in Studio (`docs/maps/evidence/UI07_touch_toasts_beside_run.jpg`); not on a phone.
+
+78. **The stationary-gun tests fail when run at the very start of a playtest (seen 2026-11-02).** Run as the first
+    `tests` call (3 to 20 s in), 9 to 12 of them fail. A second run seconds later passes all 384. In Studio the player
+    is put back into a raid at the start, and a new raid frees every gun, which upsets the tests' stand-in operators.
+    Run the tests once the raid has started, or give the tests their own raid state.
 
 ## Tool limitations (not game bugs)
 

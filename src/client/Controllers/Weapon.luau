@@ -900,6 +900,7 @@ function Weapon.magCheck(chamber)
 		return
 	end
 	Weapon.checking = true
+	Weapon.lastCheck = chamber and "chamber" or "mag"
 	inspectT0 = nil
 	checkT0 = os.clock()
 	ctx.State.act("magcheck", chamber and { chamber = true } or nil)
@@ -911,6 +912,11 @@ function Weapon.magCheck(chamber)
 			checkT0 = nil
 		end
 	end)
+end
+
+-- for the Studio bridge's state: the inspection, the zero and the scope's power of the weapon in hand
+function Weapon.debugState()
+	return { inspecting = inspectT0 ~= nil, zero = vm and Weapon.zeros[vm.g] or nil, zoom = vm and vm.zoom or nil }
 end
 
 -- the fire mode as Tarkov names it (FULL AUTO, SINGLE...)
@@ -986,7 +992,7 @@ end
 -- and "laser" (Tarkov); the server decides what others see (Combat.setLight)
 Weapon.deviceMode = "both"
 local DEVICE_LABEL = { both = "LIGHT + LASER", light = "LIGHT", laser = "LASER" }
-local PAD_HOLD = 0.4 -- a shared gamepad or touch button: released sooner is a tap, held this long the other action
+local PAD_HOLD = 0.35 -- touch LGT: released sooner is a tap, held this long the mode (Input.HOLD, the gamepad's, is the same)
 function Weapon.deviceState()
 	if not vm or not Weapon.light then
 		return false, false
@@ -1456,24 +1462,9 @@ function Weapon.init(c)
 			c.State.toast("FIRE MODE: " .. (MODE_NAMES[Weapon.modeName] or Weapon.modeName))
 		end
 	end
-	-- gamepad D-right and D-left are shared (InputMap): a tap (released within PAD_HOLD) is the fire mode or the next
-	-- weapon, a hold the tactical device (Light below) or the goggles (NightVision)
-	local padDown = {}
-	local function padTap(action, down)
-		if down then
-			padDown[action] = os.clock()
-			return false
-		end
-		local t = padDown[action]
-		padDown[action] = nil
-		return t ~= nil and os.clock() - t < PAD_HOLD
-	end
+	-- shared gamepad buttons (D-right: a tap is the fire mode, a hold the tactical device) are told apart in Input.luau
 	Input.on("FireMode", function(down)
-		if c.Input.device() == "Gamepad" then
-			if padTap("FireMode", down) then
-				nextFireMode()
-			end
-		elseif down then
+		if down then
 			nextFireMode()
 		end
 	end)
@@ -1503,6 +1494,7 @@ function Weapon.init(c)
 	-- Alt+B: check the fire mode without changing it (Tarkov)
 	Input.on("FireModeCheck", function(down)
 		if down and vm and not Weapon.melee and Weapon.modeName then
+			Weapon.modeCheckedAt = os.clock()
 			c.Effects.sfx("selector", SoundService, 0.25, 1.1)
 			c.State.toast("FIRE MODE: " .. (MODE_NAMES[Weapon.modeName] or Weapon.modeName))
 		end
@@ -1541,12 +1533,13 @@ function Weapon.init(c)
 			c.State.toast(string.format("SCOPE %dx", vm.zoom))
 		end
 	end)
-	-- the tactical device: T (Tarkov). Gamepad: hold D-right, held while aiming switches a combo's mode. Touch: a tap on
-	-- LGT turns it on and off, holding it switches the mode (a light or a laser alone turns on and off either way).
+	-- the tactical device: T (Tarkov). Gamepad: hold D-right (Input.luau tells the hold from the fire mode's tap); held
+	-- while aiming it is DeviceMode. Touch: a tap on LGT turns it on and off, holding it switches the mode (a light or a
+	-- laser alone turns on and off either way).
 	local devHold = nil
 	Input.on("Light", function(down)
 		local dev = c.Input.device()
-		if dev ~= "Gamepad" and dev ~= "Touch" then
+		if dev ~= "Touch" then
 			if down then
 				Weapon.toggleLight()
 			end
@@ -1568,7 +1561,7 @@ function Weapon.init(c)
 			end
 			devHold = nil
 			local combo = vm and vm.ms.light and vm.ms.laser
-			if combo and (dev == "Touch" or Weapon.aiming) then
+			if combo then
 				Weapon.cycleDeviceMode()
 			else
 				Weapon.toggleLight()
@@ -1576,16 +1569,18 @@ function Weapon.init(c)
 		end)
 	end)
 	Input.on("DeviceMode", function(down)
-		if down then
+		if not down then
+			return
+		end
+		-- a gamepad hold while aiming: a light or a laser alone just turns on and off
+		if c.Input.device() == "Gamepad" and not (vm and vm.ms.light and vm.ms.laser) then
+			Weapon.toggleLight()
+		else
 			Weapon.cycleDeviceMode()
 		end
 	end)
 	Input.on("CycleWeapon", function(down)
-		if c.Input.device() == "Gamepad" then
-			if padTap("CycleWeapon", down) then
-				Weapon.cycleWeapon()
-			end
-		elseif down then
+		if down then
 			Weapon.cycleWeapon()
 		end
 	end)

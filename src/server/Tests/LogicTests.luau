@@ -175,9 +175,14 @@ function T.run(ctx)
 			and IM.ChamberCheck.mod == "Shift" and IM.Knife.keys[1] == Enum.KeyCode.V and IM.Quick4.keys[1] == Enum.KeyCode.Four)
 		check("input map: T is the tactical device and Ctrl+T its mode (Tarkov)", IM.Light.keys[1] == Enum.KeyCode.T and IM.Light.mod == nil
 			and IM.DeviceMode.keys[1] == Enum.KeyCode.T and IM.DeviceMode.mod == "Ctrl")
-		-- the gamepad has fewer buttons than the keyboard: a D-pad button may carry two actions, a tap and a hold, and only
-		-- these three pairs share one (the controllers tell the tap from the hold)
-		local PAIRS = { DPadDown = "Extracts+Grenade", DPadRight = "FireMode+Light", DPadLeft = "CycleWeapon+ToggleNVG" }
+		-- the gamepad has fewer buttons than Tarkov has keys (KNOWN_ISSUES 76): a button may carry several actions told
+		-- apart by a tap or a hold (padHow) and by aiming or not (padAim); only these seven buttons are shared, and no two
+		-- of their actions may fire from the same press (a press and a hold may: B crouches, then lies down)
+		local SHARED = {
+			DPadUp = "FreeLook+Heal+ZeroUp", DPadDown = "Extracts+Grenade+ZeroDown", DPadRight = "DeviceMode+FireMode+Light",
+			DPadLeft = "CycleWeapon+SightMode+ToggleNVG", ButtonR3 = "ChamberCheck+FireModeCheck+MagCheck",
+			ButtonB = "Crouch+Prone", ButtonY = "InspectWeapon+Inventory",
+		}
 		local byPad = {}
 		for action, spec in IM do
 			if spec.context ~= "mount" and spec.context ~= "menu" then
@@ -187,19 +192,48 @@ function T.run(ctx)
 				end
 			end
 		end
+		local function clash(a, b)
+			local sa, sb = IM[a], IM[b]
+			local aimApart = sa.padAim ~= nil and sb.padAim ~= nil and sa.padAim ~= sb.padAim
+			if aimApart then
+				return false
+			end
+			local ha, hb = sa.padHow or "press", sb.padHow or "press"
+			if (ha == "press" and hb == "hold") or (ha == "hold" and hb == "press") then
+				return false
+			end
+			return ha == hb or ha == "press" or hb == "press"
+		end
 		local badPad = nil
 		for key, list in byPad do
 			table.sort(list)
-			if #list > 1 and PAIRS[key] ~= table.concat(list, "+") then
+			if #list > 1 and SHARED[key] ~= table.concat(list, "+") then
 				badPad = key .. ": " .. table.concat(list, "+")
 			end
+			for i = 1, #list do
+				for j = i + 1, #list do
+					if clash(list[i], list[j]) then
+						badPad = badPad or (key .. ": " .. list[i] .. " and " .. list[j] .. " fire from the same press")
+					end
+				end
+			end
 		end
-		for key in PAIRS do
-			if not byPad[key] or #byPad[key] ~= 2 then
+		for key in SHARED do
+			if not byPad[key] or #byPad[key] < 2 then
 				badPad = badPad or (key .. " is not shared")
 			end
 		end
-		check("input map: shared gamepad buttons are only the tap/hold pairs on D-down, D-right and D-left" .. (badPad and (" (" .. badPad .. ")") or ""), badPad == nil)
+		local noPad = {}
+		for action, spec in IM do
+			if #(spec.pad or {}) == 0 and not ({ Sidearm = true, Primary = true, Secondary = true, Knife = true })[action]
+				and not string.match(action, "^Quick") then
+				table.insert(noPad, action)
+			end
+		end
+		table.sort(noPad)
+		check("input map: every control but the slot keys and quick slots has a gamepad way (D-left cycles the weapons, D-up heals)"
+			.. (#noPad > 0 and (" (missing: " .. table.concat(noPad, ", ") .. ")") or ""), #noPad == 0)
+		check("input map: the shared gamepad buttons are the seven planned ones, each press telling its actions apart (tap, hold, aiming)" .. (badPad and (" (" .. badPad .. ")") or ""), badPad == nil)
 	end
 	-- M11 part B (Tarkov): no mechanical malfunctions above 93 % condition, likelier as it wears; big magazines feed badly
 	do

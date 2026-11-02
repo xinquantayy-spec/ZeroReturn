@@ -1,8 +1,15 @@
 --!strict
 -- Single source of truth for action bindings (PC keys, gamepad, touch label). Movement/jump/look stay
 -- with Roblox's PlayerModule + our camera. Interact uses ProximityPrompts (F / ButtonX / tap); Q/E lean (Tarkov).
--- Gamepad D-pad buttons are shared: a tap does one thing, a hold another. D-down: extracts / grenade (Grenade
--- controller); D-right: fire mode / tactical device; D-left: next weapon / goggles (Weapon and NightVision).
+-- The gamepad has fewer buttons than Tarkov has keys, so some are shared (Input.luau tells them apart; KNOWN_ISSUES 76):
+--   padHow = "tap"   the action fires when the button is let go within Input.HOLD (0.35 s)
+--   padHow = "hold"  it fires once the button has been held that long, and ends when it is let go
+--   padHow = nil     it fires on the press, as an unshared button does
+--   padAim = true / false  only while aiming / only while not aiming (nil: either)
+-- So D-up is heal (tap), free look (hold) and, aiming, zeroing up; D-down the exits (tap), a grenade (hold) and, aiming,
+-- zeroing down; D-right the fire mode (tap) and the tactical device (hold; aiming, its mode); D-left the next weapon
+-- (tap; aiming, the sight's mode) and the goggles (hold); R3 the magazine check (tap; aiming, the fire-mode check) and
+-- the chamber check (hold); B crouch (press) and prone (hold); Y the inventory (tap) and inspecting the weapon (hold).
 -- PC keys are Tarkov's defaults (docs/design/EFT_PARITY.md section 4): `mod` makes a chord with Alt, Shift or
 -- Ctrl (Alt+T checks the magazine, Shift+T the chamber, Alt+B the fire mode); a key's plain action only fires
 -- when none of its chord modifiers is held. Players can rebind PC keys (Settings, CONTROLS); Esc stays Roblox's
@@ -15,11 +22,11 @@ return {
 	Sprint = { keys = { K.LeftShift }, pad = { K.ButtonL3 }, touch = "RUN", context = "play" },
 	Crouch = { keys = { K.C }, pad = { K.ButtonB }, touch = "CRCH", context = "play" },
 	-- Tarkov heals from quick slots (4 to 0) or the inventory; gamepad and touch keep a MED button
-	Heal = { keys = {}, pad = { K.DPadUp }, touch = "MED", context = "play" },
-	FireMode = { keys = { K.B }, pad = { K.DPadRight }, context = "play" },
-	FireModeCheck = { keys = { K.B }, mod = "Alt", pad = {}, context = "play" },
-	Extracts = { keys = { K.O }, pad = { K.DPadDown }, touch = "EXIT", context = "play" },
-	Inventory = { keys = { K.Tab }, pad = { K.ButtonY }, touch = "BAG", context = "global" },
+	Heal = { keys = {}, pad = { K.DPadUp }, padHow = "tap", padAim = false, touch = "MED", context = "play" },
+	FireMode = { keys = { K.B }, pad = { K.DPadRight }, padHow = "tap", touch = "MODE", context = "play" },
+	FireModeCheck = { keys = { K.B }, mod = "Alt", pad = { K.ButtonR3 }, padHow = "tap", padAim = true, context = "play" },
+	Extracts = { keys = { K.O }, pad = { K.DPadDown }, padHow = "tap", padAim = false, touch = "EXIT", context = "play" },
+	Inventory = { keys = { K.Tab }, pad = { K.ButtonY }, padHow = "tap", touch = "BAG", context = "global" },
 	Settings = { keys = { K.P }, pad = { K.ButtonSelect }, touch = "SET", context = "global" },
 	Back = { keys = { K.Backspace }, pad = { K.ButtonB }, context = "menu" },
 	-- Tarkov: 1 sidearm (holster), 2 weapon on sling, 3 weapon on back, V melee
@@ -27,28 +34,30 @@ return {
 	Primary = { keys = { K.Two }, pad = {}, context = "play" },
 	Secondary = { keys = { K.Three }, pad = {}, context = "play" },
 	Knife = { keys = { K.V }, pad = {}, context = "play" },
-	CycleWeapon = { keys = {}, pad = { K.DPadLeft }, touch = "SWAP", context = "play" },
-	MagCheck = { keys = { K.T }, mod = "Alt", pad = { K.ButtonR3 }, context = "play" },
-	ChamberCheck = { keys = { K.T }, mod = "Shift", pad = {}, context = "play" },
+	CycleWeapon = { keys = {}, pad = { K.DPadLeft }, padHow = "tap", padAim = false, touch = "SWAP", context = "play" },
+	MagCheck = { keys = { K.T }, mod = "Alt", pad = { K.ButtonR3 }, padHow = "tap", padAim = false, touch = "CHK", context = "play" },
+	ChamberCheck = { keys = { K.T }, mod = "Shift", pad = { K.ButtonR3 }, padHow = "hold", context = "play" },
 	-- T: the tactical device on and off. Gamepad: hold D-right (a tap is the fire mode). Touch: LGT.
-	Light = { keys = { K.T }, pad = { K.DPadRight }, touch = "LGT", context = "play" },
+	Light = { keys = { K.T }, pad = { K.DPadRight }, padHow = "hold", padAim = false, touch = "LGT", context = "play" },
 	-- Tarkov: Ctrl+T switches a tactical device's mode (light, laser, both on a combo). Gamepad: hold D-right while
-	-- aiming. Touch: hold LGT. (Both in the Weapon controller's Light handler.)
-	DeviceMode = { keys = { K.T }, mod = "Ctrl", pad = {}, context = "play" },
+	-- aiming. Touch: hold LGT (the Weapon controller's Light handler).
+	DeviceMode = { keys = { K.T }, mod = "Ctrl", pad = { K.DPadRight }, padHow = "hold", padAim = true, context = "play" },
 	-- Tarkov: N flips the goggles (or a face shield) up and down. Gamepad: hold D-left (a tap cycles weapons).
-	ToggleNVG = { keys = { K.N }, pad = { K.DPadLeft }, touch = "NV", context = "play" },
-	-- Tarkov: Alt + right mouse changes a sight's mode (a variable scope's magnification)
-	SightMode = { keys = { K.MouseRightButton }, mod = "Alt", pad = {}, context = "play" },
-	-- Tarkov: Page Up / Page Down set the sight's zeroing distance
-	ZeroUp = { keys = { K.PageUp }, pad = {}, context = "play" },
-	ZeroDown = { keys = { K.PageDown }, pad = {}, context = "play" },
-	InspectWeapon = { keys = { K.L }, pad = {}, context = "play" },
+	ToggleNVG = { keys = { K.N }, pad = { K.DPadLeft }, padHow = "hold", touch = "NV", context = "play" },
+	-- Tarkov: Alt + right mouse changes a sight's mode (a variable scope's magnification). Gamepad: D-left while aiming.
+	SightMode = { keys = { K.MouseRightButton }, mod = "Alt", pad = { K.DPadLeft }, padHow = "tap", padAim = true, context = "play" },
+	-- Tarkov: Page Up / Page Down set the sight's zeroing distance. Gamepad: D-up / D-down while aiming.
+	ZeroUp = { keys = { K.PageUp }, pad = { K.DPadUp }, padHow = "tap", padAim = true, context = "play" },
+	ZeroDown = { keys = { K.PageDown }, pad = { K.DPadDown }, padHow = "tap", padAim = true, context = "play" },
+	InspectWeapon = { keys = { K.L }, pad = { K.ButtonY }, padHow = "hold", context = "play" },
 	LeanLeft = { keys = { K.Q }, pad = { K.ButtonL1 }, touch = "LN-L", context = "play" },
 	LeanRight = { keys = { K.E }, pad = { K.ButtonR1 }, touch = "LN-R", context = "play" },
-	Prone = { keys = { K.X }, pad = {}, touch = "PRN", context = "play" },
-	FreeLook = { keys = { K.LeftAlt }, pad = {}, context = "play" },
+	Prone = { keys = { K.X }, pad = { K.ButtonB }, padHow = "hold", touch = "PRN", context = "play" },
+	-- Tarkov: hold Alt to look around without turning. Gamepad: hold D-up (the right stick turns the head). Touch: LOOK
+	-- (drag it).
+	FreeLook = { keys = { K.LeftAlt }, pad = { K.DPadUp }, padHow = "hold", padAim = false, touch = "LOOK", context = "play" },
 	-- G: hold to pull the pin, release to throw (hold aim for underhand). Gamepad: hold D-down (a tap is Extracts).
-	Grenade = { keys = { K.G }, pad = { K.DPadDown }, touch = "NADE", context = "play" },
+	Grenade = { keys = { K.G }, pad = { K.DPadDown }, padHow = "hold", padAim = false, touch = "NADE", context = "play" },
 	-- stationary guns (Stationary controller): while mounted these replace the personal-weapon actions (context "mount").
 	-- Fire and zoom follow the player's Fire and Aim keys (`like`); F leaves, Tarkov's interact key, since the game has no
 	-- documented control for its stationary weapons

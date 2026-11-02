@@ -87,6 +87,7 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Stationary guns (NSV, AGS-30): man the gun, aim, fire, leave | F is Interact; Tarkov documents no control for them, so how to leave and how to zoom were not found | Done 2026-11-01 with controls of our own: the prompt (F, pad X, tap) mounts; mouse / right stick / screen drag aims; fire and zoom follow the Fire and Aim keys, right trigger and left trigger, the FIRE and ZOOM buttons; F, B or LEAVE gets off (section below) | Sounds, animation, the real positions |
 | Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, zeroing, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Page Up/Down, Y and F1 to F12 | Hold breath (Shift while aiming), magnification (Alt+RMB, in steps) and zeroing (Page Up/Down) | Walk, walk speed, side step, blind fire, switch sights, voice lines, gestures |
 | Rebinding with press, double press, hold and release | Settings, Controls | Missing | Keybinding screen |
+| Gamepad and touch (exception 3: Tarkov is keys and mouse only) | none | Done 2026-11-02: every control above but the slot keys and quick slots has a gamepad and a touch way (the next weapon and MED stand in for those). Settings, CONTROLS lists them on that device (section below) | A real controller and phone |
 
 ## 5. Settings
 
@@ -836,3 +837,36 @@ Gaps:
 - **Our wording, not Tarkov's:** the list writes requirements out ("NEEDS POWER", "CO-OP EXTRACTION") where Tarkov
   marks a condition with a question mark.
 - **Not checked on a phone** or in the device emulator; the narrow-screen fit was checked with the HUD scale at 1.4.
+
+### Gamepad and touch for the weapon checks, zeroing, sight, inspect and free look (2026-11-02)
+
+Researched first: Tarkov's own keys for these controls (section 4: Shift+T, Alt+B, Page Up/Down, Alt+RMB, L, Alt, Shift
+while aiming; Prima Games' controls guide). Tarkov has no gamepad or touch controls, so these mappings are ours
+(exception 3). Built in `InputMap.luau`, `Input.luau` (shared-button arbitration), `Touch.luau`, `Camera.luau`,
+`Weapon.luau`, `NightVision.luau`, `Grenade.luau` and `Screens.luau`. Checked in Studio with the gamepad and touch paths
+driven by the test bridge (TEST_RESULTS "Gamepad and touch controls"); no real controller or phone.
+
+Ours (exception 3):
+- **Gamepad, one rule for every shared button:** a short tap and a hold do different things, and with LT held (aiming)
+  some taps do more (`padHow`, `padAim` in `InputMap`):
+  - D-up: heal / free look (hold; the right stick turns the head) / zeroing up (aiming)
+  - D-down: exits / grenade (hold) / zeroing down (aiming)
+  - D-right: fire mode / tactical device (hold) / device mode (aiming, hold)
+  - D-left: next weapon / goggles (hold) / sight mode (aiming)
+  - R3: magazine check / chamber check (hold) / fire-mode check (aiming)
+  - B: crouch / prone (hold); Y: inventory / inspect the weapon (hold)
+  - Hold breath: L3 (sprint) while aiming, as Shift is on keys.
+- **Touch:**
+  - CHK: hold to check the chamber. SWAP: hold to inspect the weapon.
+  - New MODE button: a tap switches the fire mode; held, it opens a weapon tray under the menu row with CHECK, ZERO +,
+    ZERO - and SIGHT.
+  - New LOOK button: dragged, it turns the head (free look).
+  - Hold breath: hold RUN while aiming.
+- **Settings, CONTROLS:** with a gamepad or touch the list shows that device's buttons instead of the PC keys.
+
+Gaps:
+- **No slot keys on gamepad or touch:** 1, 2, 3 and V are reached by cycling (D-left, SWAP); quick slots 4 to 0 by MED
+  and the inventory.
+- **Not on hardware:** no controller, phone or tablet has run these.
+- **A variable scope's power on the pad and the tray** was only checked with a sight that has none (the tap did nothing,
+  as it should). The handler is the same as Alt+RMB's.

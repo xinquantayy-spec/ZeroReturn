@@ -138,6 +138,9 @@ if RunService:IsStudio() then
 				input = ctx.Input.backend, device = ctx.Input.device(), invOpen = ctx.Inventory.open,
 				modal = ctx.Screens.modal and ctx.Screens.modal:FindFirstChildOfClass("TextLabel").Text or nil,
 				prompt = ctx.Interact.current and ctx.Interact.current.ObjectText or nil,
+				stance = M.stance, freeLook = ctx.Input.down("FreeLook"), freeYaw = math.deg(ctx.Camera.freeYaw or 0),
+				lastCheck = W.lastCheck, modeCheckedAt = W.modeCheckedAt, now = os.clock(), tray = ctx.Touch.tray and ctx.Touch.tray(),
+				gun = W.debugState and W.debugState() or nil, nade = ctx.Grenade and ctx.Grenade.state or nil,
 			})
 		elseif cmd == "fire" then
 			return ctx.Weapon.fireForTest(a or 1)
@@ -184,8 +187,18 @@ if RunService:IsStudio() then
 			ctx.Screens.close()
 			return "ok"
 		elseif cmd == "settings" then
-			ctx.Screens.settings()
+			ctx.Screens.settings(a) -- a = a tab name ("CONTROLS") or nil
 			return "ok"
+		elseif cmd == "pad" then
+			-- a = gamepad button name ("DPadUp"), b = seconds held: through the shared-button arbitration (Input.padButton)
+			ctx.Input.padButton(a, true)
+			task.wait(b or 0.1)
+			ctx.Input.padButton(a, false)
+			return "ok"
+		elseif cmd == "touch" then
+			-- a = touch button action (or "tray:<action>"), b = { secs, dx, dy }: a finger held, optionally dragged
+			local o = b or {}
+			return tostring(ctx.Touch.simulate(a, o[1], (o[2] or o[3]) and Vector2.new(o[2] or 0, o[3] or 0) or nil))
 		elseif cmd == "setting" then
 			-- a = key, b = value (as the settings screen would set it; saved with the profile)
 			ctx.Settings.set(a, b)

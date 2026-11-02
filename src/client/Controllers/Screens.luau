@@ -630,6 +630,7 @@ local BIND_ROWS = {
 	{ "Reload", "RELOAD" }, { "Sprint", "SPRINT" }, { "Crouch", "CROUCH" }, { "Prone", "PRONE" }, { "LeanLeft", "LEAN LEFT" },
 	{ "LeanRight", "LEAN RIGHT" }, { "FreeLook", "FREE LOOK" }, { "FireMode", "FIRE MODE" }, { "FireModeCheck", "CHECK FIRE MODE" },
 	{ "MagCheck", "CHECK MAGAZINE" }, { "ChamberCheck", "CHECK CHAMBER" }, { "Light", "TACTICAL DEVICE" }, { "DeviceMode", "DEVICE MODE" }, { "InspectWeapon", "INSPECT WEAPON" },
+	{ "ZeroUp", "ZEROING UP" }, { "ZeroDown", "ZEROING DOWN" }, { "SightMode", "SIGHT MODE" }, { "ToggleNVG", "NIGHT VISION" },
 	{ "Sidearm", "SIDEARM" }, { "Primary", "WEAPON ON SLING" }, { "Secondary", "WEAPON ON BACK" }, { "Knife", "MELEE WEAPON" },
 	{ "Grenade", "GRENADE" }, { "Extracts", "TIME (TWICE: EXITS)" }, { "Inventory", "INVENTORY" }, { "Settings", "SETTINGS" },
 	{ "Quick4", "QUICK SLOT 4" }, { "Quick5", "QUICK SLOT 5" }, { "Quick6", "QUICK SLOT 6" }, { "Quick7", "QUICK SLOT 7" },
@@ -788,12 +789,19 @@ function Screens.settings(tab, keepCapture)
 		end
 	end
 	if binds then
-		-- key bindings (PC): CHANGE waits for a key, Alt / Shift / Ctrl held make a chord; BKSP cancels
+		-- key bindings (PC): CHANGE waits for a key, Alt / Shift / Ctrl held make a chord; BKSP cancels. With a gamepad or
+		-- touch the list shows that device's buttons instead (they are fixed; KNOWN_ISSUES 76)
 		local y0 = rowsH + 8
-		K.label(scroll, "KEY BINDINGS  ·  CHANGE, then press a key (hold ALT, SHIFT or CTRL for a combination; BACKSPACE cancels)", 12, {
+		local dev = ctx.Input.device()
+		local padView = dev == "Gamepad" or dev == "Touch"
+		local head = (dev == "Gamepad" and "GAMEPAD  ·  a short tap and a hold do different things; with LT held (aiming) D-UP, D-DOWN, D-LEFT and R3 do more")
+			or (dev == "Touch" and "TOUCH  ·  a held button does its second action; hold MODE for the weapon tray (fire-mode check, zeroing, sight)")
+			or "KEY BINDINGS  ·  CHANGE, then press a key (hold ALT, SHIFT or CTRL for a combination; BACKSPACE cancels)"
+		K.label(scroll, head, 12, {
 			Position = UDim2.fromOffset(0, y0), Size = UDim2.new(1, -150, 0, 24), TextColor3 = K.C.dim,
 		})
 		local reset = K.button(scroll, "RESET ALL", { Name = "ResetBinds", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, y0), Size = UDim2.fromOffset(130, 24), TextSize = 11 })
+		reset.Visible = not padView
 		reset.Activated:Connect(function()
 			S.resetBinds()
 			Screens.settings()
@@ -806,20 +814,26 @@ function Screens.settings(tab, keepCapture)
 			K.label(row, name, 12, { Position = UDim2.fromOffset(8, 0), Size = UDim2.new(0.46, -8, 1, 0) })
 			local waiting = capture and capture.action == action
 			local custom = d.binds and d.binds[action]
-			K.label(row, waiting and "PRESS A KEY" or ctx.Input.pcLabel(action), 13, {
-				Name = "Key", Position = UDim2.fromScale(0.46, 0), Size = UDim2.new(0.22, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center,
-				FontFace = K.bold, TextColor3 = waiting and K.C.ochre or (custom and K.C.green or K.C.text),
+			local keyText = waiting and "PRESS A KEY" or ctx.Input.pcLabel(action)
+			if padView then
+				keyText = ctx.Input.deviceLabel(dev, action) or "-"
+			end
+			K.label(row, keyText, padView and 11 or 13, {
+				Name = "Key", Position = UDim2.fromScale(0.46, 0), Size = UDim2.new(padView and 0.54 or 0.22, padView and -8 or 0, 1, 0),
+				TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold, TextColor3 = waiting and K.C.ochre or (custom and K.C.green or K.C.text),
 			})
-			local ch = K.button(row, "CHANGE", { Name = "Change", Position = UDim2.fromScale(0.69, 0.1), Size = UDim2.new(0.15, -4, 0.8, 0), TextSize = 10 })
-			ch.Activated:Connect(function()
-				startCapture(action)
-				Screens.settings(nil, true)
-			end)
-			local df = K.button(row, "DEFAULT", { Name = "Default", Position = UDim2.fromScale(0.84, 0.1), Size = UDim2.new(0.16, -4, 0.8, 0), TextSize = 10, TextColor3 = custom and K.C.text or K.C.dim })
-			df.Activated:Connect(function()
-				S.setBind(action, nil)
-				Screens.settings()
-			end)
+			if not padView then
+				local ch = K.button(row, "CHANGE", { Name = "Change", Position = UDim2.fromScale(0.69, 0.1), Size = UDim2.new(0.15, -4, 0.8, 0), TextSize = 10 })
+				ch.Activated:Connect(function()
+					startCapture(action)
+					Screens.settings(nil, true)
+				end)
+				local df = K.button(row, "DEFAULT", { Name = "Default", Position = UDim2.fromScale(0.84, 0.1), Size = UDim2.new(0.16, -4, 0.8, 0), TextSize = 10, TextColor3 = custom and K.C.text or K.C.dim })
+				df.Activated:Connect(function()
+					S.setBind(action, nil)
+					Screens.settings()
+				end)
+			end
 		end
 	end
 	local close = K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
@@ -876,26 +890,21 @@ function Screens.init(c)
 			end
 		end
 	end)
-	-- gamepad D-down also readies a grenade when held: there the list opens on a short tap (on release)
-	local exDown, lastO = 0, 0
+	-- gamepad D-down also readies a grenade when held: Input.luau sends the exits only for a short tap
+	local lastO = 0
 	c.Input.on("Extracts", function(down)
-		if c.Input.device() ~= "Gamepad" then
-			if down then
-				-- Tarkov: O checks the time, a double tap lists the exits (the touch button lists them at once)
-				local t = os.clock()
-				if c.Input.device() == "KBM" and t - lastO > 0.45 then
-					lastO = t
-					c.Hud.timeCheck()
-					return
-				end
-				lastO = 0
-				Screens.exits()
-			end
+		if not down then
 			return
 		end
-		if down then
-			exDown = os.clock()
-		elseif os.clock() - exDown < 0.3 and not (c.Grenade and c.Grenade.busy()) then
+		-- Tarkov: O checks the time, a double tap lists the exits (the pad and the touch button list them at once)
+		local t = os.clock()
+		if c.Input.device() == "KBM" and t - lastO > 0.45 then
+			lastO = t
+			c.Hud.timeCheck()
+			return
+		end
+		lastO = 0
+		if not (c.Grenade and c.Grenade.busy()) then
 			Screens.exits()
 		end
 	end)

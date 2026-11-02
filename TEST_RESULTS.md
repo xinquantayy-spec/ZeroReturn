@@ -8,6 +8,35 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Gamepad and touch controls: checks, zeroing, sight, inspect, free look (2026-11-02)
+
+One player, a Border PMC raid with the R-17. The gamepad was forced with `ZR_ClientDev` "device" and its buttons pressed
+through the new "pad" command, which goes through the same tap/hold/aim arbitration as a controller. Touch buttons were
+pressed through "touch" (`Touch.simulate`), which runs a finger's press, hold and drag.
+
+- **Gamepad:**
+  - B: a tap crouched and another stood up; held, prone; a tap from prone crouched.
+  - D-right tap: AUTO to SEMI. R3: a tap checked the magazine, a hold the chamber.
+  - D-up: held, free look on while held and off after.
+  - Aiming: D-up raised the zero 100 to 150 and D-down lowered it to 100. R3 checked the fire mode, with no magazine
+    check. D-left did nothing with the R-17's fixed sight, and the weapon did not change.
+  - Y: held, the weapon inspection without the inventory; tapped, the inventory opened and a second tap closed it.
+  - D-left taps: primary, holster, melee. D-right held in melee: nothing, as there is no device.
+  - D-down: a tap listed the exits (all 10 rows: 9 exits and the transit, `UI10_pad_exits_pmc_west.jpg`). Held, it
+    started a grenade ("NO GRENADES IN RIG OR POCKETS" for this kit, `UI11_pad_grenade_hold.jpg`).
+- **Touch:**
+  - MODE: a tap went AUTO to SEMI. Held, it opened the tray (`UI09_touch_weapon_tray.jpg`).
+  - The tray: CHECK checked the fire mode; ZERO + twice and ZERO - once went 100, 150, 200, 150. A MODE tap with the
+    tray open closed it without changing the mode.
+  - CHK: a tap checked the magazine, a hold the chamber. SWAP: held, the inspection; tapped, the next weapon.
+  - LOOK dragged 120 px: free look on, head turned 26.9 degrees, off when let go.
+- **Settings, CONTROLS** with the gamepad: the list shows HOLD B, HOLD D-UP, LT + R3 and the rest
+  (`UI08_controls_gamepad.jpg`).
+- **Tests, all passing on the second run:** LogicTests 384 (the input-map test now checks the seven shared buttons, and
+  a new one checks that every control but the slot keys has a gamepad way), CharTests 47, LookTests 33, MapTests 38.
+  - The first run, at the start of the playtest, failed 9 stationary-gun tests (KNOWN_ISSUES 78).
+- **Not verified:** a real controller, a phone or tablet, the IAS and CAS backends with real buttons, a variable scope.
+
 ## HUD and touch layout: the menu row, the exits list (2026-11-02)
 
 One player; touch forced with `ZR_ClientDev` "device" (the Studio viewport, 1156 x 465, is not a phone); a Border scav

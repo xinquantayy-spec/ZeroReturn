@@ -133,6 +133,66 @@ function Input.trigger(action, isDown)
 	dispatch(action, isDown)
 end
 
+-- ── shared gamepad buttons (InputMap padHow / padAim; KNOWN_ISSUES 76) ──────────────────────────────────────────
+-- Each action bound to a pad button hears that button; this decides which of them a press is: a tap (let go within
+-- HOLD), a hold (held that long; it ends when the button is let go) or a plain press, and for padAim whether the player
+-- was aiming when the button went down.
+Input.HOLD = 0.35
+local ictx
+local padState = {} -- [action] = { t0, held } for the press in progress
+local function aimingNow()
+	return ictx ~= nil and ictx.Weapon ~= nil and ictx.Weapon.aiming == true
+end
+
+local function padEvent(action, spec, isDown)
+	local how = spec.padHow
+	if how == nil and spec.padAim == nil then
+		dispatch(action, isDown)
+		return
+	end
+	if isDown then
+		if spec.padAim ~= nil and spec.padAim ~= aimingNow() then
+			padState[action] = nil -- this press is the other variant's
+			return
+		end
+		local st = { t0 = os.clock(), held = false }
+		padState[action] = st
+		if how == "hold" then
+			task.delay(Input.HOLD, function()
+				if padState[action] == st and not blocked(spec) then
+					st.held = true
+					dispatch(action, true)
+				end
+			end)
+		elseif how ~= "tap" then
+			st.held = true
+			dispatch(action, true)
+		end
+		return
+	end
+	local st = padState[action]
+	padState[action] = nil
+	if not st then
+		return
+	end
+	if st.held then
+		dispatch(action, false)
+	elseif how == "tap" and os.clock() - st.t0 < Input.HOLD and not blocked(spec) then
+		dispatch(action, true)
+		dispatch(action, false)
+	end
+end
+
+-- tests and the Studio bridge: press or let go of a gamepad button by name ("DPadUp"), as the bindings would hear it
+function Input.padButton(keyName, isDown)
+	local key = Enum.KeyCode[keyName]
+	for action, spec in InputMap do
+		if table.find(spec.pad or {}, key) and (not isDown or not blocked(spec)) then
+			padEvent(action, spec, isDown)
+		end
+	end
+end
+
 local function setupIAS()
 	return pcall(function()
 		for name, prio in { play = 10, mount = 12, global = 15, menu = 20 } do
@@ -163,10 +223,18 @@ local function setupIAS()
 						if UIS:GetFocusedTextBox() or (kbd and not keyboardOk(action)) then
 							return
 						end
-						dispatch(action, true)
+						if kbd then
+							dispatch(action, true)
+						else
+							padEvent(action, spec, true)
+						end
 					end)
 					a.Released:Connect(function()
-						dispatch(action, false)
+						if kbd then
+							dispatch(action, false)
+						else
+							padEvent(action, spec, false)
+						end
 					end)
 					if kbd or not Input.actions[action] then
 						Input.actions[action] = a
@@ -205,9 +273,17 @@ local function setupCAS()
 					if UIS:GetFocusedTextBox() or (kbd and not keyboardOk(action)) then
 						return Enum.ContextActionResult.Pass
 					end
-					dispatch(action, true)
+					if obj and obj.UserInputType.Name:find("Gamepad") then
+						padEvent(action, spec, true)
+					else
+						dispatch(action, true)
+					end
 				elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
-					dispatch(action, false)
+					if obj and obj.UserInputType.Name:find("Gamepad") then
+						padEvent(action, spec, false)
+					else
+						dispatch(action, false)
+					end
 				end
 				return Enum.ContextActionResult.Pass
 			end, false, 2000, table.unpack(inputs))
@@ -260,6 +336,9 @@ end
 
 function Input.setMenu(open)
 	menu = open
+	if open then
+		table.clear(padState)
+	end
 	if Input.backend == "IAS" and contexts.play then
 		for name, c in contexts do
 			c.Enabled = contextOn(name)
@@ -285,6 +364,7 @@ function Input.setMounted(on)
 		return
 	end
 	mounted = on
+	table.clear(padState)
 	for action, spec in InputMap do
 		if (spec.context == "play" or spec.context == "mount") and down[action] then
 			dispatch(action, false)
@@ -337,8 +417,19 @@ local LABELS = {
 		Fire = "RT", Aim = "LT", Reload = "X", Sprint = "L3", Crouch = "B", Heal = "D-UP", FireMode = "D-RIGHT", Extracts = "D-DOWN", Inventory = "Y",
 		Settings = "VIEW", Back = "B", Interact = "X", CycleWeapon = "D-LEFT", MagCheck = "R3", LeanLeft = "LB", LeanRight = "RB",
 		Grenade = "HOLD D-DOWN", MountFire = "RT", MountZoom = "LT", MountLeave = "B",
+		Prone = "HOLD B", ChamberCheck = "HOLD R3", FireModeCheck = "LT + R3", InspectWeapon = "HOLD Y", FreeLook = "HOLD D-UP",
+		Sidearm = "D-LEFT", Primary = "D-LEFT", Secondary = "D-LEFT", Knife = "D-LEFT",
+		Light = "HOLD D-RIGHT", DeviceMode = "LT + HOLD D-RIGHT", ToggleNVG = "HOLD D-LEFT", SightMode = "LT + D-LEFT",
+		ZeroUp = "LT + D-UP", ZeroDown = "LT + D-DOWN",
 	},
-	Touch = { Interact = "TAP", CycleWeapon = "SWAP", MagCheck = "CHK", Grenade = "NADE" },
+	Touch = {
+		Interact = "TAP", CycleWeapon = "SWAP", MagCheck = "CHK", Grenade = "NADE", ChamberCheck = "HOLD CHK", FireMode = "MODE",
+		Reload = "RLD", Sprint = "RUN", Crouch = "CRCH", LeanLeft = "LN-L", LeanRight = "LN-R", Extracts = "EXIT", Inventory = "BAG",
+		Settings = "SET",
+		FireModeCheck = "HOLD MODE", InspectWeapon = "HOLD SWAP", FreeLook = "LOOK", Light = "LGT", DeviceMode = "HOLD LGT",
+		ToggleNVG = "NV", ZeroUp = "HOLD MODE", ZeroDown = "HOLD MODE", SightMode = "HOLD MODE", Prone = "PRN", Heal = "MED",
+		Sidearm = "SWAP", Primary = "SWAP", Secondary = "SWAP", Knife = "SWAP",
+	},
 }
 -- the PC label of an action from its (rebound) keys, chords included ("ALT+T")
 function Input.pcLabel(action)
@@ -352,6 +443,11 @@ function Input.pcLabel(action)
 	return (mod and (string.upper(mod) .. "+") or "") .. Input.keyName(keys[1])
 end
 
+-- an action's gamepad or touch label, or nil when that device has no way to it
+function Input.deviceLabel(dev, action)
+	return LABELS[dev] and LABELS[dev][action] or nil
+end
+
 function Input.label(action)
 	local dev = Input.device()
 	if dev ~= "KBM" and LABELS[dev] and LABELS[dev][action] then
@@ -361,6 +457,7 @@ function Input.label(action)
 end
 
 function Input.init(_ctx)
+	ictx = _ctx
 	container = script
 	build()
 	print("[ZR] input backend:", Input.backend)

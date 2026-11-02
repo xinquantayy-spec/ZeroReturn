@@ -22,7 +22,7 @@ local CF, ANG, R = CFrame.new, CFrame.Angles, math.rad
 local THROW_T = 0.62 -- throw animation; the weapon comes back up after it
 local RELEASE = 0.17 -- the grenade leaves the hand this far into the throw
 
-local st0, wantThrow, under, itemId, padT, nextAllowed = 0, false, false, nil, nil, 0
+local st0, wantThrow, under, itemId, nextAllowed = 0, false, false, nil, 0
 local handsFrame = -1
 local frameN = 0
 local vmNade = nil -- first-person grenade { model, parts, offs, item }
@@ -134,7 +134,6 @@ end
 local function reset()
 	Grenade.state = nil
 	wantThrow = false
-	padT = nil
 	if vmNade then
 		vmNade.model:Destroy()
 		vmNade = nil
@@ -630,13 +629,6 @@ local function step(dt)
 		-- no weapon in hands (Weapon.update did not run): still show the grenade
 		Grenade.hands(now, ctx.Camera.aimCFrame or cam.CFrame)
 	end
-	-- gamepad: a held D-down readies a grenade
-	if padT and now - padT >= 0.3 then
-		padT = nil
-		if ctx.Input.down("Grenade") then
-			Grenade.begin()
-		end
-	end
 	-- grenades in flight
 	local sn = workspace:GetServerTimeNow()
 	for id, f in flying do
@@ -715,15 +707,11 @@ function Grenade.init(c)
 		fxFolder.Name = "ZR_Fx"
 		fxFolder.Parent = workspace
 	end
+	-- G; gamepad: hold D-down (Input.luau tells the hold from the exits' tap); touch: NADE
 	c.Input.on("Grenade", function(down)
 		if down then
-			if c.Input.device() == "Gamepad" then
-				padT = os.clock() -- a tap is the extract list; holding readies the grenade (step)
-			else
-				Grenade.begin()
-			end
+			Grenade.begin()
 		else
-			padT = nil
 			Grenade.release()
 		end
 	end)
