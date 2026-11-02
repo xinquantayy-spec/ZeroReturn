@@ -202,10 +202,15 @@
     - On touch they now start right of RUN when the stack would reach it (`Hud.layout`, `Touch.rectOf`).
     - Seen in Studio (`docs/maps/evidence/UI07_touch_toasts_beside_run.jpg`); not on a phone.
 
-78. **The stationary-gun tests fail when run at the very start of a playtest (seen 2026-11-02).** Run as the first
-    `tests` call (3 to 20 s in), 9 to 12 of them fail. A second run seconds later passes all 384. In Studio the player
-    is put back into a raid at the start, and a new raid frees every gun, which upsets the tests' stand-in operators.
-    Run the tests once the raid has started, or give the tests their own raid state.
+78. ~~**The stationary-gun tests failed on the first run of a playtest (seen 2026-11-02).**~~ **Resolved 2026-11-02.**
+    - Run first after a playtest started, 6 to 13 timing tests failed (stationary guns, a propane chain), and a run
+      seconds later passed all 384.
+    - The cause was two runs at once. The first MCP call to a fresh playtest server times out ("Target is not
+      reachable") but still starts a run. The retry started a second run, and the first run's clean-up put back
+      `Stationary.sessionOf` while the second still had stand-ins mounted. The added failure details showed it: the
+      test's stub was gone mid-run.
+    - `tests` now runs one at a time; a second call waits for the run in progress and returns its report. It also waits
+      out a raid that is about to start.
 
 ## Tool limitations (not game bugs)
 

@@ -457,9 +457,35 @@ function C.chartests()
 	return (CT.run(ctx))
 end
 
+-- one run at a time: a second call while tests run waits for that run and gets its report. Two runs at once swap each
+-- other's stand-ins out (the stationary tests replace Stationary.sessionOf and put it back at the end), which is what
+-- KNOWN_ISSUES 78 was: an MCP call that timed out had started a run that was still going when the next call began one.
+local testsRun = nil -- { done, report } of the run in progress
 function C.tests()
+	if testsRun and not testsRun.done then
+		local mine = testsRun
+		while not mine.done do
+			task.wait(0.25)
+		end
+		return "(joined a run already in progress)\n" .. mine.report
+	end
+	local run = { done = false, report = "" }
+	testsRun = run
 	local folder = script.Parent.Parent:FindFirstChild("Tests")
 	local report = {}
+	-- a raid that starts mid-run resets the world under the tests (every stationary gun is freed): wait out a queue
+	-- about to start, and the first seconds of a raid that just did
+	local t0 = os.clock()
+	while ctx.Match.state == "MATCHING" and os.clock() - t0 < 60 do
+		task.wait(0.5)
+	end
+	local since = ctx.Match.startedAt and (workspace:GetServerTimeNow() - ctx.Match.startedAt) or math.huge
+	if since < 4 then
+		task.wait(4 - since)
+	end
+	if os.clock() - t0 > 0.5 then
+		table.insert(report, string.format("(waited %.0f s for a raid to start first)", os.clock() - t0))
+	end
 	for _, m in folder:GetChildren() do
 		if m:IsA("ModuleScript") then
 			local ok, res = pcall(function()
@@ -468,7 +494,9 @@ function C.tests()
 			table.insert(report, m.Name .. ": " .. (ok and res or ("ERROR " .. tostring(res))))
 		end
 	end
-	return table.concat(report, "\n")
+	run.report = table.concat(report, "\n")
+	run.done = true
+	return run.report
 end
 
 -- economy test helpers (M9)

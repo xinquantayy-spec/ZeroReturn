@@ -1926,12 +1926,13 @@ function T.run(ctx)
 			local origin = Vector3.new(9000, 2500, 0)
 			-- stand-ins, passing everything else through: the test's stand-in operators have sessions of their own, its guns count
 			-- their rounds instead of flying them (until useReal), its guard is "seen" by anyone it points at
-			ST.sessionOf = function(p)
+			local stubSession = function(p)
 				if typeof(p) == "Instance" then
 					return realSession(p)
 				end
 				return sessions[p]
 			end
+			ST.sessionOf = stubSession
 			ST.fire = function(g, who)
 				if mine[g] and not useReal then
 					fired += 1
@@ -2034,8 +2035,14 @@ function T.run(ctx)
 				local freed = gun.op == nil and ST.gunOf(opA) == nil and opA.Character:GetAttribute("Mounted") == nil and gun.prompt.Enabled == true and gun.model:GetAttribute("Op") == ""
 				local tooSoon = ST.mount(opA, gun)
 				task.wait(ST.RESTART + 0.15)
+				local humA = opA.Character:FindFirstChildOfClass("Humanoid")
+				local why = string.format(" [freed %s, tooSoon %s, crew %s, dist %.1f, health %s, stub %s, root %s, mounted %s]", tostring(freed),
+					tostring(tooSoon), tostring(gun.crew ~= nil), (rootA.Position - SG.opSpot(gun.frame, gun.spec)).Magnitude,
+					tostring(humA and humA.Health), tostring(ST.sessionOf == stubSession), tostring(opA.Character:FindFirstChild("HumanoidRootPart") ~= nil),
+					tostring(ST.gunOf(opA) ~= nil))
 				local later = ST.mount(opA, gun)
-				check("stationary: leaving frees the gun; the same raider cannot grab it again at once but can a moment later", freed and not tooSoon and later and gun.op == opA)
+				local ok = freed and not tooSoon and later and gun.op == opA
+				check("stationary: leaving frees the gun; the same raider cannot grab it again at once but can a moment later" .. (ok and "" or why), ok)
 
 				-- the operator is put off the gun: too far from the spot, the raid ends, death
 				opA.Character:PivotTo(CFrame.new(spot + Vector3.new(0, STAND, 0) + gun.frame:VectorToWorldSpace(Vector3.new(0, 0, 5))))
@@ -2147,13 +2154,20 @@ function T.run(ctx)
 
 				-- guards: who may post, the reach, the burst fire, walking off
 				local opM = operator("Mike", nearSpot(0))
-				ST.mount(opM, gun)
+				local gotOn = ST.mount(opM, gun)
+				local humM = opM.Character:FindFirstChildOfClass("Humanoid")
+				local hsM = ctx.Health.of(opM)
+				local whyM = string.format(" [mounted %s, op %s, crew %s, health %s, dist %.1f, stub %s, session %s, using %s, nade %s]",
+					tostring(gotOn), tostring(gun.op and gun.op.Name), tostring(gun.crew ~= nil), tostring(humM and humM.Health),
+					(opM.Character.HumanoidRootPart.Position - SG.opSpot(gun.frame, gun.spec)).Magnitude, tostring(ST.sessionOf == stubSession),
+					tostring(ST.sessionOf(opM) ~= nil), tostring(hsM and hsM.using), tostring(ctx.Grenades.busy(opM)))
 				ST.guns = { gun }
 				local manned = ST.gunNear(spot + Vector3.new(0, STAND, 0), 4)
 				ST.leave(opM)
 				local free = ST.gunNear(spot + Vector3.new(0, STAND, 0), 4)
 				ST.guns = realGuns
-				check("stationary: a gun with a raider on it is no post for a guard, a free one is", manned == nil and free == gun)
+				local okM = manned == nil and free == gun
+				check("stationary: a gun with a raider on it is no post for a guard, a free one is" .. (okM and "" or whyM), okM)
 				local eyeL = SG.eye(gunL.frame, gunL.spec, 0)
 				local left = gun.frame:VectorToWorldSpace(Vector3.new(-1, 0, 0))
 				check("stationary: a guard's reach is the arcs and the kind's range (ahead yes; behind, to the side or past 190 studs no; the launcher not inside 40 studs)",

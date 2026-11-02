@@ -34,7 +34,9 @@ pressed through "touch" (`Touch.simulate`), which runs a finger's press, hold an
   (`UI08_controls_gamepad.jpg`).
 - **Tests, all passing on the second run:** LogicTests 384 (the input-map test now checks the seven shared buttons, and
   a new one checks that every control but the slot keys has a gamepad way), CharTests 47, LookTests 33, MapTests 38.
-  - The first run, at the start of the playtest, failed 9 stationary-gun tests (KNOWN_ISSUES 78).
+  - The first run, at the start of the playtest, failed 9 stationary-gun tests. The cause was two test runs at once
+    (KNOWN_ISSUES 78, resolved): the timed-out first MCP call had started one. `tests` now runs one at a time. On a
+    fresh playtest the retry joined the run in progress and reported 384 passed, 0 failed.
 - **Not verified:** a real controller, a phone or tablet, the IAS and CAS backends with real buttons, a variable scope.
 
 ## HUD and touch layout: the menu row, the exits list (2026-11-02)
@@ -70,8 +72,9 @@ raid, a Border PMC raid and a Meridian PMC raid.
   under it (`UI07_touch_toasts_beside_run.jpg`).
 - **Tests, all passing:** LogicTests 383, CharTests 47, LookTests 33, MapTests 38. Two LogicTests changed: a scav's list
   leaves out the PMC-only exits, and a scav arriving at Meridian by transit gets 3 exits.
-  - The first run, three seconds after the playtest started, failed 12 stationary-gun timing tests. A run 20 s in
-    passed them all: the server was still busy starting.
+  - The first run, three seconds after the playtest started, failed 12 stationary-gun tests. A run 20 s in passed
+    them all. This was first put down to the server still starting; the real cause was two runs at once (KNOWN_ISSUES
+    78).
 - **Not verified:** a real phone or tablet, the device emulator, the Roblox menu opened wider over the row, a portrait
   screen.
 
