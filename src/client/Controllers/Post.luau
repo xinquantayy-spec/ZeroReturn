@@ -129,6 +129,89 @@ local function build()
 	fx.dof.NearIntensity = 0
 end
 
+-- ── Tarkov's malfunction glow (audit gameplay.11; BattleUIMalfunctionGlow, as read for the TRP spec) ──────────────
+-- A glow in the lower right corner, a 513 x 493 picture at 1080p hanging 40 past the corner, added over the screen: red
+-- when a malfunction happens or is reminded (seven short flashes over 1.16 s), yellow when an inspection names the kind
+-- (one pulse over 0.62 s), green when it is cleared (two pulses over 0.51 s); at half strength, full while the
+-- low-health effect is on. Here three soft quarter-ellipses on the corner (no picture to upload), built on first use and
+-- hidden between glows (Weapon.luau decides when).
+local GLOW = {
+	examined = { color = Color3.fromRGB(255, 46, 34), flashes = 7, dur = 1.16 },
+	type = { color = Color3.fromRGB(255, 196, 40), flashes = 1, dur = 0.62 },
+	repaired = { color = Color3.fromRGB(70, 230, 100), flashes = 2, dur = 0.51 },
+}
+local GLOW_LAYERS = { { size = 1, alpha = 0.3 }, { size = 0.66, alpha = 0.45 }, { size = 0.36, alpha = 0.6 } }
+local glowFrame, glowOn = nil, nil
+local glowLayers = {}
+
+local function sizeGlow()
+	if glowFrame and gui then
+		local s = math.max(gui.AbsoluteSize.Y, 1) / 1080
+		glowFrame.Size = UDim2.fromOffset(513 * s, 493 * s)
+		glowFrame.Position = UDim2.new(1, 40 * s, 1, 40 * s)
+	end
+end
+
+local function buildGlow()
+	glowFrame = Instance.new("Frame")
+	glowFrame.Name = "MalfGlow"
+	glowFrame.BackgroundTransparency = 1
+	glowFrame.AnchorPoint = Vector2.new(1, 1)
+	glowFrame.ZIndex = 8
+	glowFrame.Visible = false
+	glowFrame.Parent = gui
+	for i, L in GLOW_LAYERS do
+		local e = Instance.new("Frame")
+		e.Name = "Layer" .. i
+		e.BorderSizePixel = 0
+		e.AnchorPoint = Vector2.new(0.5, 0.5)
+		e.Position = UDim2.fromScale(1, 1)
+		e.Size = UDim2.fromScale(2 * L.size, 2 * L.size)
+		e.BackgroundTransparency = 1
+		e.ZIndex = 8
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = e
+		-- clear toward the screen's middle, full at the corner (the ellipse's centre sits on it)
+		local gr = Instance.new("UIGradient")
+		gr.Rotation = 45
+		gr.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 0) })
+		gr.Parent = e
+		e.Parent = glowFrame
+		glowLayers[i] = e
+	end
+	sizeGlow()
+end
+
+function Post.malfGlow(kind)
+	local g = GLOW[kind]
+	if not g or not gui then
+		return
+	end
+	if not glowFrame then
+		buildGlow()
+	end
+	glowOn = { g = g, t0 = os.clock() }
+	for _, e in glowLayers do
+		e.BackgroundColor3 = g.color
+	end
+	glowFrame.Visible = true
+end
+
+local function updateGlow()
+	local g = glowOn.g
+	local p = (os.clock() - glowOn.t0) / g.dur
+	if p >= 1 then
+		glowOn = nil
+		glowFrame.Visible = false
+		return
+	end
+	local a = math.sin(((p * g.flashes) % 1) * math.pi) * (Post.low > 0.05 and 1 or 0.5)
+	for i, e in glowLayers do
+		e.BackgroundTransparency = 1 - GLOW_LAYERS[i].alpha * a
+	end
+end
+
 function Post.apply()
 	local S = ctx.Settings.data
 	local q = S.quality or 2
@@ -157,6 +240,7 @@ function Post.apply()
 	end
 	grainBase = g
 	grainShown = -1
+	sizeGlow()
 end
 
 local function updateGrain()
@@ -244,6 +328,9 @@ local function step(dt)
 		return -- Studio capture mode (dev bridge "studio")
 	end
 	local S = ctx.Settings.data
+	if glowOn then
+		updateGlow()
+	end
 	-- grain: re-seed position at ~24 fps (film cadence)
 	grainClock += dt
 	if grainClock > 1 / 24 then

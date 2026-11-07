@@ -5,6 +5,8 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Progress = require(Shared.Progress)
 local Hearing = require(Shared.Hearing)
+local Weapons = require(Shared.Weapons)
+local Items = require(Shared.Items)
 
 local T = {}
 
@@ -56,6 +58,53 @@ function T.run(ctx)
 		ctx.Profiles.get = realGet
 		check("syncSkills writes SkillCovert on the character (" .. tostring(err) .. ")", ok and model:GetAttribute("SkillCovert") == Progress.SKILL_MAX)
 		model:Destroy()
+	end)
+
+	-- ── gameplay.11: Tarkov's heat, wear and malfunction rules (Weapons.luau, Combat.luau) ──────────────────────
+	guard("malfunction rules", function()
+		local O, M = Weapons.OVERHEAT, Weapons.MALF
+		-- the recorded AKM (TRP spec): 0.0164727 by the durability at 35 %, B 0.1771, rate of fire 600
+		check("durability curve: the recorded AKM's chance at 35 %", near(Weapons.durMalf(0.1771, 600, 35), 0.0164727, 2e-6))
+		check("durability curve: worse as the gun wears (80, 60, 35, 10)", Weapons.durMalf(0.1771, 650, 10) > Weapons.durMalf(0.1771, 650, 35) and Weapons.durMalf(0.1771, 650, 35) > Weapons.durMalf(0.1771, 650, 60) and Weapons.durMalf(0.1771, 650, 60) > Weapons.durMalf(0.1771, 650, 80))
+		local t95 = Weapons.malfParts(Weapons.R17, 95, 0.174, Weapons.magMalf(Items.defs.R17_MAG60), 0)
+		check("from 93 %: no durability, round or magazine malfunctions, even with a 60-round magazine", t95 == 0)
+		local t95hot, _, _, _, h95 = Weapons.malfParts(Weapons.R17, 95, 0.174, 3, 150)
+		check("from 93 %: the heat's chance still counts (4.75 per mille at 150)", near(h95, 4.75) and near(t95hot, 0.00475))
+		check("heat's chance: none below 100, 0.5 per mille at 100, 9 at 200", Weapons.heatMalf(99) == 0 and near(Weapons.heatMalf(100), 0.5) and near(Weapons.heatMalf(200), 9))
+		local tot, pd, pr, pm = Weapons.malfParts(Weapons.KST, 35, 0.174, 0.09, 0)
+		check("the recorded AKM's total at 35 % with its magazine and round: 0.01674", near(tot, 0.01674, 1e-5) and near(pr, 0.174) and near(pm, 0.09) and pd > 0.016)
+		check("per round: the round's chance is a part of the total (Weapons.roundMalf)", Weapons.roundMalf("A76_PS") > 0 and Weapons.roundMalf(nil) == Weapons.ROUND_MALF_DEFAULT)
+		-- heat: Tarkov's 0-200 scale and its cooling
+		check("heat: a rifle shot adds the recorded AKM's 1.31, capped at 200", near(Weapons.heatShot(0, "rifle"), 1.31) and Weapons.heatShot(199.5, "rifle") == 200)
+		check("heat: cools about 4.2 a second from 200 and 3 a second when cool (the recorded AKM)", near(Weapons.heatNow(200, 1), 200 - 4.208, 0.01) and near(Weapons.heatNow(50, 10), 50 - 30.03, 0.05) and Weapons.heatNow(10, 60) == 0)
+		check("heat: wear x1 to 100, x2 at 150, x3 at 200", near(Weapons.heatWearMul(90), 1) and near(Weapons.heatWearMul(150), 2) and near(Weapons.heatWearMul(200), 3))
+		check("heat: spread x1 to 100, x1.5 at 200", near(Weapons.heatSpread(90), 1) and near(Weapons.heatSpread(200), 1.5))
+		-- the greatest durability while hot
+		check("hot shots cut the greatest durability: 0.15 at 150", near(Weapons.wearMax(80, 100, 150, 0.5), 99.85))
+		check("...0.2 to 0.7 drawn at 200", near(Weapons.wearMax(80, 100, 200, 0), 99.8) and near(Weapons.wearMax(80, 100, 200, 1), 99.3))
+		check("...not below 100 heat, not when the durability is that close to it, never under 55", Weapons.wearMax(80, 100, 99, 0.5) == 100 and Weapons.wearMax(99.9, 100, 150, 0.5) == 100 and near(Weapons.wearMax(40, 55.2, 200, 1), 55) and Weapons.wearMax(40, 54, 200, 1) == 54)
+		-- the rate of fire and the cook-off thresholds
+		check("rate of fire when hot: a factor of 0.85 to 1.15 above 140", near(Weapons.rateFactor(0), 0.85) and near(Weapons.rateFactor(1), 1.15) and O.RATE_ABOVE == 140)
+		check("cook-off from 170 at a 0.2 chance within 3 s; the bolt holds at 200 until 170", O.COOKOFF_FROM == 170 and O.COOKOFF_CHANCE == 0.2 and O.COOKOFF_DELAY[2] == 3 and O.SLIDE_AT == 200 and O.SLIDE_FREE == 170)
+		-- which malfunction
+		check("which: a roll above the total is no malfunction", Weapons.malfKind(0.5, 0.5, 0.01, 0.174, 0, 0, 50, true) == nil)
+		check("which: the durability's weights (feed, misfire, eject, soft jam)", Weapons.malfKind(0, 0.5, 0.5, 0, 0, 0, 50, true) == "eject" and Weapons.malfKind(0, 0.05, 0.5, 0, 0, 0, 50, true) == "feed" and Weapons.malfKind(0, 0.15, 0.5, 0, 0, 0, 50, true) == "misfire")
+		local kSoft, hSoft = Weapons.malfKind(0, 0.95, 0.5, 0, 0, 0, 50, true)
+		local kHard, hHard = Weapons.malfKind(0, 0.99, 0.5, 0, 0, 0, 0, true)
+		check("which: a jammed bolt is soft above 5 %, may be hard at 5 % or less", kSoft == "jam" and hSoft == false and kHard == "jam" and hHard == true)
+		check("which: the magazine's part gives feed failures, only with rounds left", Weapons.malfKind(0.001, 0.3, 0, 0, 2, 0, 50, true) == "feed" and Weapons.malfKind(0.001, 0.3, 0, 0, 2, 0, 50, false) == nil)
+		local heatMisfire = false
+		for _, k in { 0, 0.2, 0.4, 0.6, 0.8, 0.99 } do
+			heatMisfire = heatMisfire or Weapons.malfKind(0, k, 0, 0, 0, 9, 50, true) == "misfire"
+		end
+		check("which: heat never causes a misfire; the round's part is mostly misfires", not heatMisfire and Weapons.malfKind(0, 0.5, 0, 0.174, 0, 0, 50, true) == "misfire")
+		-- the pistol's quick draw (Combat.drawTime)
+		local C = ctx.Combat
+		check("quick draw: a loaded pistol within 5 s of a long gun's malfunction comes out 3x as fast", near(C.drawTime(0.45, "holster", 10, 13, 5), 0.15) and C.drawTime(0.45, "holster", 10, 16, 5) == 0.45
+			and C.drawTime(0.45, "holster", 10, 13, 0) == 0.45 and C.drawTime(0.45, "holster", nil, 13, 5) == 0.45 and C.drawTime(0.75, "primary", 10, 13, 5) == 0.75 and M.QUICKDRAW == 5)
+		check("Combat.malfChance: none at 95 % even with a drum, rising with wear, the drum and heat add below 93 %",
+			C.malfChance(95, Items.defs.R17_MAG60, 0) == 0 and C.malfChance(20, nil, 0) > C.malfChance(50, nil, 0) and C.malfChance(50, Items.defs.R17_MAG60, 0) > C.malfChance(50, nil, 0) and C.malfChance(50, nil, 150) > C.malfChance(50, nil, 0))
+		check("reminder glow at the third ask within 2 s, 150 ms after the shot", M.GLOW_ASKS == 3 and M.GLOW_WINDOW == 2 and M.GLOW_DELAY == 0.15)
 	end)
 
 	local summary = string.format("%d passed, %d failed", passed, failed)

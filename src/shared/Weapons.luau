@@ -52,4 +52,230 @@ W.HEAD_MULT = 1 -- Tarkov: no generic multipliers; body-part HP pools do the wor
 W.FALLOFF_START = 0.35 -- fraction of range before damage falls off
 W.FALLOFF_MIN = 0.6
 
+-- ── heat, wear and malfunctions (Tarkov; audit gameplay.11) ──────────────────────────────────────────────────────
+-- Pure rules used by the server (Combat: wear, malfunctions, cook-offs) and the client (Weapon: spread, the rate of fire
+-- when hot). Tarkov's own rules and globals: the EFT wiki's Weapon_malfunctions page; the game's code as read for the TRP
+-- spec (github.com/JuanFNQ/TRP, docs/spec/malfunctions.md, 2026-10-25, with a recorded AKM); SPT's copy of the globals
+-- (github.com/7ripleSeven7s/spt-diffpatch, test/g-test.json: Overheat and Malfunction). Heat runs 0 to 200 as in Tarkov.
+W.OVERHEAT = {
+	MAX = 200, -- MaxOverheat
+	PROBLEMS = 100, -- OverheatProblemsStart: the wiki's medium stage, where heat starts to hurt
+	WEAR = { 1, 3 }, -- DurReduceMinMult, DurReduceMaxMult: a shot's wear x1 at 100, x3 at 200
+	MALF = { 0.5, 9 }, -- MinMalfChance, MaxMalfChance: the heat's malfunction chance, per mille, from 100 to 200
+	SPREAD = 1.5, -- MaxCOIIncreaseMult: a shot's spread x1 at 100, x1.5 at 200
+	MAXWEAR = { 0.1, 0.2 }, -- MinWearOnOverheat, MaxWearOnOverheat: greatest durability a hot shot takes, 100 to 200
+	MAXWEAR_TOP = { 0.2, 0.7 }, -- MinWearOnMaxOverheat, MaxWearOnMaxOverheat: drawn at the top heat
+	MAXWEAR_FLOOR = 55, -- OverheatWearLimit 0.55: heat never takes the greatest durability below 55
+	RATE_ABOVE = 140, -- FirerateOverheatBorder: the wiki's severe stage changes the rate of fire
+	RATE = { 0.85, 1.15 }, -- FirerateReduceMinMult, FirerateReduceMaxMult: the factor drawn
+	COOKOFF_FROM = 170, -- AutoshotMinOverheat
+	COOKOFF_CHANCE = 0.2, -- AutoshotChance
+	COOKOFF_DELAY = { 0.05, 3 }, -- the delay drawn, to AutoshotPossibilityDuration 3 s
+	SLIDE_AT = 200, -- StartSlideOverheat: the wiki's maximum stage holds the bolt
+	SLIDE_FREE = 170, -- FixSlideOverheat: until a shot leaves the heat at 170 or below
+	COOL_C = 6, -- MaxOverheatCoolCoef
+	COOL = 3, -- CoolFactorGun x the parts' CoolFactor of the AKM: 4.2 a second from 200, about 3 below 120
+}
+-- heat one shot adds: the recorded AKM's 1.30777 with its stock parts for the rifles; the other classes keep the ratios
+-- this game used before (SMG 0.82, pistol 1.09, shotgun 2.7, bolt 3.2 of a rifle's)
+W.HEAT_SHOT = { rifle = 1.31, smg = 1.07, pistol = 1.43, shotgun = 3.57, bolt = 4.16 }
+W.MALF = {
+	IGNORE_ABOVE = 93, -- DurRangeToIgnoreMalfs 93-100: no durability, round or magazine malfunctions (heat's stay)
+	HARD_BELOW = 5, -- a hard jammed bolt (Tarkov's hard slide) only at 5 % or less
+	QUICKDRAW = 5, -- TimeToQuickdrawPistol: seconds after a malfunction during which the pistol comes out fast
+	QUICKDRAW_MULT = 3, -- OutToIdleSpeedMultForPistol 3 (and IdleToOutSpeedMultOnMalf 3 putting the gun away)
+	GLOW_DELAY = 0.15, -- the red glow 150 ms after the shot that malfunctioned
+	GLOW_ASKS = 3, -- ShowGlowAttemptsCount: a reminder glow shows at the third ask...
+	GLOW_WINDOW = 2, -- ...within 2 s of the first
+	-- the kinds each source gives (Tarkov's weights): eject = Tarkov's "jam" (failure to eject), soft and hard = its
+	-- soft and hard slide (a jammed bolt)
+	DUR = { feed = 0.1, misfire = 0.1, eject = 0.6, soft = 0.2, hard = { 0.3, 0.8 } }, -- Dur*Wt
+	AMMO = { misfire = 0.7, feed = 0.2, eject = 0.1 }, -- Ammo*Wt (the misfire's over the round's two chances summed)
+	HEAT = { feed = 0.35, eject = 0.25, soft = 0.7, hard = { 0.3, 1.2 } }, -- Overheat*Wt; no misfire
+}
+-- BaseMalfunctionChance (Tarkov's template B): the AKM's 0.1771, solved from its recorded chance at 35 % durability
+-- (0.0164727, TRP spec). It is the only figure verified for Tarkov 1.0, so every gun has it for now; the curve's own
+-- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
+-- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
+W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771 }
+-- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
+-- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
+W.ROUND_MALF = {}
+W.ROUND_MALF_DEFAULT = 0.174
+
+local function lerp(a: number, b: number, k: number): number
+	return a + (b - a) * math.clamp(k, 0, 1)
+end
+local function hot(h: number): number -- 0 at 100, 1 at 200
+	local O = W.OVERHEAT
+	return (h - O.PROBLEMS) / (O.MAX - O.PROBLEMS)
+end
+
+-- the heat now from the last shot's heat L, dt seconds after it: Tarkov's straight fall at a rate L sets
+function W.heatNow(L: number, dt: number, cool: number?): number
+	if L <= 0 then
+		return 0
+	end
+	local O = W.OVERHEAT
+	local k = cool or O.COOL
+	local rate = k
+	if L >= 1 then
+		rate = L * k / (L - (L / O.MAX + 0.0338 * O.COOL_C + 0.2925) ^ (9.667 + 0.0668 * O.COOL_C))
+	end
+	return math.max(0, L - math.max(0, dt) * rate)
+end
+
+-- the heat after one more shot of a weapon class
+function W.heatShot(hNow: number, class: string?): number
+	return math.min(W.OVERHEAT.MAX, hNow + (W.HEAT_SHOT[class or ""] or W.HEAT_SHOT.rifle))
+end
+
+-- a shot's wear multiplier by the last shot's heat
+function W.heatWearMul(h: number): number
+	return lerp(W.OVERHEAT.WEAR[1], W.OVERHEAT.WEAR[2], hot(h))
+end
+
+-- a shot's spread multiplier by the last shot's heat
+function W.heatSpread(h: number): number
+	return lerp(1, W.OVERHEAT.SPREAD, hot(h))
+end
+
+-- the greatest durability a shot this hot takes (roll 0..1: the draw at the top heat)
+function W.heatMaxWear(h: number, roll: number): number
+	local O = W.OVERHEAT
+	if h < O.PROBLEMS then
+		return 0
+	elseif h >= O.MAX then
+		return lerp(O.MAXWEAR_TOP[1], O.MAXWEAR_TOP[2], roll)
+	end
+	return lerp(O.MAXWEAR[1], O.MAXWEAR[2], hot(h))
+end
+
+-- the greatest durability after a hot shot: cut only while the durability is below it by more than the cut, and
+-- never below 55 (TRP spec, "Hot shots wear the greatest durability too")
+function W.wearMax(wear: number, wmax: number, h: number, roll: number): number
+	local cut = W.heatMaxWear(h, roll)
+	local floor = W.OVERHEAT.MAXWEAR_FLOOR
+	if cut <= 0 or wmax < floor or wmax - wear <= cut then
+		return wmax
+	end
+	return math.max(floor, wmax - cut)
+end
+
+-- the rate-of-fire factor drawn above 140 (roll 0..1)
+function W.rateFactor(roll: number): number
+	return lerp(W.OVERHEAT.RATE[1], W.OVERHEAT.RATE[2], roll)
+end
+
+-- the durability's malfunction chance (a probability): Tarkov's curve by B, the template's rate of fire FR and the
+-- durability's whole part
+function W.durMalf(B: number, FR: number, wear: number): number
+	local w = math.floor(math.clamp(wear, 0, 100))
+	local e
+	if w > 59 then
+		e = 3 + (100 - w) / (20 - 10 / (FR / 10) ^ 0.322)
+	else
+		e = ((50 - w ^ 1.286 / 4.8) / (FR ^ 0.17 / 2.9815 + 2.1)) * math.log10(101 - w)
+	end
+	return ((B + 1) ^ e - 1) / 1000
+end
+
+-- the heat's malfunction chance, per mille: none below 100
+function W.heatMalf(h: number): number
+	if h < W.OVERHEAT.PROBLEMS then
+		return 0
+	end
+	return lerp(W.OVERHEAT.MALF[1], W.OVERHEAT.MALF[2], hot(h))
+end
+
+-- a magazine's malfunction chance, per mille (MagazineMalfChanceMult 1): the recorded AKM magazine's 0.09 for the
+-- usual ones; the 40-round and bigger keep this game's earlier figures (2 and 3) for the wiki's feed failures from
+-- "high-capacity and drum magazines"
+function W.magMalf(magDef: any?): number
+	if not magDef then
+		return 0
+	end
+	local cap = magDef.capacity or 0
+	return (cap >= 50 and 3) or (cap >= 40 and 2) or 0.09
+end
+
+function W.roundMalf(ammoId: string?): number
+	return (ammoId and W.ROUND_MALF[ammoId]) or W.ROUND_MALF_DEFAULT
+end
+
+-- a shot's malfunction chance, worked out before it (Tarkov's GetTotalMalfunctionChance): the durability's part (a
+-- probability) plus the round's, the magazine's and the heat's (per mille); from 93 % only the heat's counts.
+-- Returns total, durability, round, magazine, heat.
+function W.malfParts(wdef: any, wear: number, roundPm: number?, magPm: number?, h: number): (number, number, number, number, number)
+	local dur, rnd, mag = 0, 0, 0
+	if wear < W.MALF.IGNORE_ABOVE then
+		dur = math.min(1, W.durMalf(W.BASE_MALF[wdef.id] or 0.1771, wdef.rpm or 600, wear))
+		rnd = roundPm or 0
+		mag = magPm or 0
+	end
+	local heat = W.heatMalf(h)
+	return dur + (rnd + mag + heat) / 1000, dur, rnd, mag, heat
+end
+
+local function pick(k: number, list: { any }): any
+	local sum = 0
+	for _, e in list do
+		sum += e[2]
+	end
+	if sum <= 0 then
+		return nil
+	end
+	local x = k * sum
+	for _, e in list do
+		x -= e[2]
+		if x < 0 then
+			return e[1]
+		end
+	end
+	return list[#list][1]
+end
+
+-- which malfunction (Tarkov's GetMalfunctionSources, then GetSpecificMalfunctionVariants): u (0..1) against the total
+-- picks none or a source, in the order durability, round, magazine (only with rounds left in it), heat; k (0..1) picks
+-- the kind by that source's weights. Returns kind ("misfire", "eject", "feed", "jam") and whether a jam is hard.
+function W.malfKind(u: number, k: number, dur: number, rnd: number, mag: number, heat: number, wear: number, rounds: boolean): (string?, boolean)
+	local parts = { { "dur", dur }, { "rnd", rnd / 1000 }, { "mag", rounds and mag / 1000 or 0 }, { "heat", heat / 1000 } }
+	local src
+	local x = u
+	for _, p in parts do
+		x -= p[2]
+		if x < 0 then
+			src = p[1]
+			break
+		end
+	end
+	if not src then
+		return nil, false
+	end
+	local M = W.MALF
+	local hardK = wear <= M.HARD_BELOW and (M.HARD_BELOW - wear) / M.HARD_BELOW or nil
+	local kind
+	if src == "dur" then
+		kind = pick(k, {
+			{ "feed", rounds and M.DUR.feed or 0 }, { "misfire", M.DUR.misfire }, { "eject", M.DUR.eject },
+			{ "soft", rounds and M.DUR.soft or 0 }, { "hard", hardK and lerp(M.DUR.hard[1], M.DUR.hard[2], hardK) or 0 },
+		})
+	elseif src == "rnd" then
+		kind = pick(k, { { "misfire", M.AMMO.misfire / math.max(rnd, 1e-6) }, { "feed", rounds and M.AMMO.feed or 0 }, { "eject", M.AMMO.eject } })
+	elseif src == "mag" then
+		kind = "feed"
+	else
+		kind = pick(k, {
+			{ "feed", rounds and M.HEAT.feed or 0 }, { "eject", M.HEAT.eject }, { "soft", rounds and M.HEAT.soft or 0 },
+			{ "hard", hardK and lerp(M.HEAT.hard[1], M.HEAT.hard[2], hardK) or 0 },
+		})
+	end
+	if kind == "soft" then
+		return "jam", false
+	elseif kind == "hard" then
+		return "jam", true
+	end
+	return kind, false
+end
+
 return W

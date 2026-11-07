@@ -128,39 +128,67 @@ function Combat.damage(model, hum, amount, attacker, fromPos)
 	return res and res.killed or false
 end
 
--- ── M11 part B: wear, heat and malfunctions (Tarkov; docs/design/EFT_PARITY.md) ─────────────────────────────
--- Every shot wears the gun (more when hot). Mechanical malfunctions only below 93 % condition, likelier the worse it
--- is; big magazines cause feed failures at any condition; medium heat doubles the chance, maximum heat jams the bolt.
--- The malfunction stays with the gun until cleared: L (inspect) identifies it, then Shift+T clears it. A misfire
--- loses the round; a hard jam (5 % condition or less) may take more than one try.
+-- ── M11 part B: wear, heat and malfunctions (Tarkov; audit gameplay.11; rules in Weapons.luau) ─────────────────────
+-- Every shot that fires wears the gun, up to three times faster when hot (100 to 200 heat), and a hot shot also takes
+-- some of its greatest durability. Before each shot Tarkov's four chances are summed: the durability's curve (none from
+-- 93 %), the round's, the magazine's (none from 93 % either) and the heat's (from 100). Above 140 the rate of fire may
+-- change (the client draws the factor, the server allows it); from 170 the gun may fire one round by itself (a
+-- cook-off); at 200 the bolt holds and jams again on every shot until the heat is back to 170. The malfunction stays
+-- with the gun until cleared: L (inspect) identifies it, then Shift+T clears it. A misfire loses the round; a hard jam
+-- (5 % condition or less) may take more than one try. For 5 s after a long gun malfunctions a loaded pistol comes out
+-- three times as fast.
 Combat.BURN = { rifle = 0.05, smg = 0.04, pistol = 0.035, shotgun = 0.08, bolt = 0.07 } -- condition points per shot
-local HEAT = { rifle = 0.011, smg = 0.009, pistol = 0.012, shotgun = 0.03, bolt = 0.035 } -- heat per shot (1 = max)
-local HEAT_TAU = 30 -- seconds for the heat to fall to 1/e
 Combat.FIX_TIME = { misfire = 0.9, eject = 1.3, feed = 1.6, jam = 2.2 }
 Combat.MALF_NAMES = { misfire = "MISFIRE", eject = "FAILURE TO EJECT", feed = "FAILURE TO FEED", jam = "JAMMED BOLT" }
-local heatOf = {} -- [weapon guid] = { h, t }
+local heatOf = {} -- [weapon guid] = { h = the last shot's heat, t = its time, slide = bolt held, cook = cook-off drawn }
 
+-- a weapon's heat now, on Tarkov's 0-200 scale
 function Combat.heat(wg, t)
 	local e = heatOf[wg]
-	return e and e.h * math.exp(-((t or os.clock()) - e.t) / HEAT_TAU) or 0
+	return e and Weapons.heatNow(e.h, (t or os.clock()) - e.t) or 0
 end
 
--- per-shot chances: mechanical (by condition) and magazine (by capacity)
-function Combat.malfChance(wear, magDef, heat)
-	local mech = wear < 93 and 0.01 * ((93 - wear) / 93) ^ 1.5 or 0
-	local feed = 0
-	if magDef and (magDef.capacity or 0) >= 40 then
-		feed = (magDef.capacity >= 50) and 0.003 or 0.002
-	end
-	if (heat or 0) >= 0.6 then
-		mech, feed = mech * 2, feed * 2
-	end
-	return mech, feed
+-- a shot's malfunction chance (Weapons.malfParts, Tarkov's four parts) for a condition, a magazine and a heat (0-200).
+-- Returns the total, then the durability's, the round's, the magazine's and the heat's parts. wdef defaults to the R-17,
+-- the round to Tarkov's recorded figure.
+function Combat.malfChance(wear, magDef, heat, wdef, ammoId)
+	return Weapons.malfParts(wdef or Weapons.R17, wear or 100, Weapons.roundMalf(ammoId), Weapons.magMalf(magDef), heat or 0)
 end
 
-local function setMalf(player, wit, kind, hard)
+-- rounds ready in the weapon in a slot (its magazine's, or its own for a tube)
+local function roundsIn(s, g)
+	local it = g and s.inv.items[g]
+	local d = it and Items.defs[it.id]
+	if not d then
+		return 0
+	end
+	local rounds = (d.family and it.mag and s.inv.items[it.mag]) or ((not d.family) and it) or nil
+	return rounds and rounds.a or 0
+end
+
+local function setMalf(player, wit, kind, hard, slot)
 	wit.mf, wit.mfk, wit.mfh = kind, nil, hard or nil
+	if slot == "primary" or slot == "secondary" then
+		ws(player).malfT = os.clock() -- a long gun: the pistol's quick draw is ready for 5 s (Combat.drawDelay)
+	end
 	ctx.Remotes.note(player, "malf", { state = "on" })
+end
+
+-- Tarkov's cook-off: delay s after a shot, a gun still at rest (no shot since, not reloading or drawing), loaded and
+-- working fires one round by itself. The client fires it, so it goes through the same checks as any shot.
+local function cookOff(player, s, wg, shotT, delay)
+	task.delay(delay, function()
+		local w = W[player]
+		if not w or w.last ~= shotT or ctx.Raid.session(player) ~= s or s.done or not alive(player) then
+			return
+		end
+		local g, wit = Combat.activeWeapon(s)
+		local now = os.clock()
+		if g ~= wg or not wit or wit.mf or roundsIn(s, g) <= 0 or now < w.reloadUntil or w.tube or now < (w.drawUntil or 0) then
+			return
+		end
+		ctx.Remotes.note(player, "malf", { state = "cookoff" })
+	end)
 end
 
 -- L: inspecting the gun identifies its malfunction
@@ -255,6 +283,11 @@ function Combat.shoot(player, seq, origin, dir)
 	-- fire rate: a small bucket instead of a strict gap between shots, so network jitter that bunches two honest shots
 	-- does not drop one (audit quick win tech.10); the average still cannot pass the gun's rate by more than 10 %
 	local rate = wdef.rpm / 60 * 1.1
+	-- above 140 heat Tarkov changes the rate of fire by 0.85 to 1.15 (audit gameplay.11): the client draws the factor,
+	-- so a hot gun may fire up to 15 % faster
+	if wg and Combat.heat(wg, t) > Weapons.OVERHEAT.RATE_ABOVE then
+		rate *= Weapons.OVERHEAT.RATE[2]
+	end
 	w.fireTokens = math.min(2, (w.fireTokens or 2) + (t - (w.fireT or t)) * rate)
 	w.fireT = t
 	if w.fireTokens < 1 then
@@ -304,26 +337,51 @@ function Combat.shoot(player, seq, origin, dir)
 	if mag.a <= 0 then
 		mag.at = nil
 	end
-	-- wear, heat, malfunctions (M11 part B)
-	local malf
+	-- wear, heat, malfunctions (M11 part B; Tarkov's rules, audit gameplay.11)
+	local malf, hard
 	if wg and wit and not wdef.melee then
-		local h = Combat.heat(wg, t) + (HEAT[wdef.class] or 0.012)
-		heatOf[wg] = { h = h, t = t }
+		local O = Weapons.OVERHEAT
+		local rec = heatOf[wg] or { h = 0, t = t }
+		local hNow = Weapons.heatNow(rec.h, t - rec.t)
 		local wear = wit.wear or 100
-		wit.wear = math.max(0, wear - (Combat.BURN[wdef.class] or 0.05) * (h >= 0.6 and 1.5 or 1))
-		local mech, feed = Combat.malfChance(wear, mag ~= wit and Items.defs[mag.id] or nil, h)
-		if h >= 1 then
+		local loaded = (mag.a or 0) > 0 -- rounds left in the magazine (or the tube) after this one
+		-- worked out before the shot: the bolt held at 200 jams again on any shot above 170 (no draw); else Tarkov's chance
+		if rec.slide and hNow > O.SLIDE_FREE and loaded then
 			malf = "jam"
-		elseif math.random() < feed then
-			malf = "feed"
-		elseif math.random() < mech then
-			local r = math.random()
-			malf = r < 0.25 and "misfire" or r < 0.55 and "eject" or r < 0.7 and "feed" or "jam"
+		else
+			local _, pd, pr, pm, ph = Combat.malfChance(wear, mag ~= wit and Items.defs[mag.id] or nil, hNow, wdef, ammoDef and ammoDef.id)
+			malf, hard = Weapons.malfKind(math.random(), math.random(), pd, pr, pm, ph, wear, loaded)
 		end
 		if malf == "misfire" then
-			-- the primer fails: the round is lost and nothing leaves the barrel
-			setMalf(player, wit, "misfire")
+			-- the primer fails: the round is lost, nothing leaves the barrel, no heat and no wear (Tarkov)
+			setMalf(player, wit, "misfire", false, s.active)
 			return
+		end
+		-- the shot fires: its heat, then the wear by that heat, and a hot shot's cut to the greatest durability
+		local h = Weapons.heatShot(hNow, wdef.class)
+		rec.h, rec.t = h, t
+		if h >= O.SLIDE_AT then
+			rec.slide = true
+		elseif h <= O.SLIDE_FREE then
+			rec.slide = nil
+		end
+		heatOf[wg] = rec
+		wit.wear = math.max(0, wear - (Combat.BURN[wdef.class] or 0.05) * Weapons.heatWearMul(h))
+		local wmax = wit.wmax or 100
+		local newMax = Weapons.wearMax(wit.wear, wmax, h, math.random())
+		if newMax < wmax then
+			wit.wmax = math.max(wit.wear, newMax)
+		end
+		-- the cook-off: drawn once by the first shot that reaches 170, again only after a shot below it
+		if h >= O.COOKOFF_FROM then
+			if not rec.cook then
+				rec.cook = true
+				if math.random() < O.COOKOFF_CHANCE then
+					cookOff(player, s, wg, t, O.COOKOFF_DELAY[1] + math.random() * (O.COOKOFF_DELAY[2] - O.COOKOFF_DELAY[1]))
+				end
+			end
+		else
+			rec.cook = nil
 		end
 	end
 	Combat.stats.accepted += 1
@@ -389,7 +447,7 @@ function Combat.shoot(player, seq, origin, dir)
 	local tracer = ammoDef and ammoDef.ammo and ammoDef.ammo.tracer or nil
 	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = predHit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat, sub = (ammoDef and ammoDef.ammo.subsonic) or nil }, player)
 	if malf then
-		setMalf(player, wit, malf, malf == "jam" and (wit.wear or 100) <= 5)
+		setMalf(player, wit, malf, hard, s.active)
 	end
 end
 
@@ -542,6 +600,15 @@ function Combat.draw(player, slot)
 	ctx.Raid.push(player)
 end
 
+-- a weapon's draw time. Tarkov's quick draw (audit gameplay.11; TimeToQuickdrawPistol, OutToIdleSpeedMultForPistol):
+-- for 5 s after a long gun malfunctions (malfT), a pistol with a round in it comes out three times as fast
+function Combat.drawTime(base, slot, malfT, now, rounds)
+	if slot == "holster" and malfT and now - malfT < Weapons.MALF.QUICKDRAW and (rounds or 0) > 0 then
+		return base / Weapons.MALF.QUICKDRAW_MULT
+	end
+	return base
+end
+
 -- a weapon came into the hands: cancel reloads/checks, block firing for its draw time, light off
 function Combat.drawDelay(player, slot)
 	local s = ctx.Raid.session(player)
@@ -556,7 +623,7 @@ function Combat.drawDelay(player, slot)
 	w.reloadToken = nil
 	w.reloadUntil = 0
 	w.checking = nil
-	local t = Weapons[d.weapon].draw or 0.6
+	local t = Combat.drawTime(Weapons[d.weapon].draw or 0.6, slot, w.malfT, os.clock(), roundsIn(s, g))
 	w.drawUntil = os.clock() + t
 	if player.Character then
 		player.Character:SetAttribute("WeaponLight", false)
