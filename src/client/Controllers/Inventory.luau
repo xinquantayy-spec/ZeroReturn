@@ -34,7 +34,8 @@ local SEARCH_CAT = {
 local gridTargets, slotTargets = {}, {}
 local drag = nil
 local busy = false
-local firstFocus = nil
+local openTabBtn = nil -- the open character tab's button: the gamepad's default selection (audit ui.5)
+local focusTab = false -- the next draw puts the gamepad selection on the open tab (a tab change), not where it was
 local status = nil -- { text, t0, dur }
 local hoverG = nil
 local hover = nil -- drop target under the cursor, from engine MouseEnter events (matches what the user sees)
@@ -69,6 +70,16 @@ local SLOT_LAYOUT = {
 	{ "holster", 0, 9, 4, 2 }, { "melee", 4, 9, 3, 2 },
 }
 local SLOT_ROWS = 11
+
+-- Tarkov's character tabs along the top of the screen: GEAR (the inventory itself), HEALTH, SKILLS, MASTERING, TASKS (in
+-- and out of a raid since audit ui.14; Tarkov's character screen has it in the main menu too), and OVERALL out of a raid
+local function tabList(inRaid)
+	local tabs = { "GEAR", "HEALTH", "SKILLS", "MASTERING", "TASKS" }
+	if not inRaid then
+		table.insert(tabs, "OVERALL")
+	end
+	return tabs
+end
 
 -- ── helpers ────────────────────────────────────────────────────────────────────
 local function data()
@@ -161,6 +172,20 @@ end
 local function inside(obj, pos)
 	local p, s = obj.AbsolutePosition, obj.AbsoluteSize
 	return pos.X >= p.X and pos.Y >= p.Y and pos.X < p.X + s.X and pos.Y < p.Y + s.Y
+end
+
+-- every column keeps its place when the screen is drawn again (a move, new server state, a tab change); a redraw used
+-- to send a long stash back to the top, and the gamepad selection found again could sit out of view
+local scrollAt = {} -- [column key] = CanvasPosition
+local function keepScroll(sf, key)
+	task.defer(function()
+		if sf.Parent and scrollAt[key] then
+			sf.CanvasPosition = scrollAt[key]
+		end
+	end)
+	sf:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+		scrollAt[key] = sf.CanvasPosition
+	end)
 end
 
 local function mouse()
@@ -721,9 +746,6 @@ local function drawGrid(parent, view, ref, cid, title, cw, ch, cell, x0, y0, cli
 					placeSelected(ref, { c = cid, x = xx, y = yy, r = rot })
 				end
 			end)
-			if not firstFocus then
-				firstFocus = cb
-			end
 		end
 	end
 	for guid, p in (view.grids and view.grids[cid]) or {} do
@@ -929,7 +951,7 @@ function detail(parent, w, h, selOverride)
 	end
 	if not it then
 		local dev = ctx.Input.device()
-		local hint = dev == "Gamepad" and "Select an item (A), then a free cell or slot."
+		local hint = dev == "Gamepad" and "Select an item (A), then a free cell or slot. LB / RB switch tabs, B closes."
 			or (dev == "Touch" or compact) and "Tap an item, then a free cell or slot (switch panels on the left), or use its buttons here."
 			or "Drag items between grids. Right-click for actions, Ctrl+click quick move, Alt+click equip, R rotates while dragging."
 		K.label(det, hint, compact and 13 or 12, { Size = UDim2.fromScale(1, 1), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Center })
@@ -1093,24 +1115,42 @@ end
 function Inventory.renderCompact(d, W, H, inRaid)
 	local weight = gearWeight(d)
 	local closeW, gap = 84, 6
-	local tabs = { "GEAR", "HEALTH", "SKILLS", "MASTERING", inRaid and "TASKS" or "OVERALL" }
+	local tabs = tabList(inRaid)
 	if not table.find(tabs, Inventory.tab) then
 		Inventory.tab = "GEAR"
 	end
+	-- the tabs keep 150 pt for the weight and money; past that (six tabs on a 667-pt phone) the row scrolls sideways and
+	-- the open tab is brought into view
 	local tw = math.clamp(math.floor((W - closeW - 3 * gap - 150) / #tabs) - 4, 76, 104)
-	local tabBar = K.frame(panel, { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(gap, gap), Size = UDim2.fromOffset(#tabs * (tw + 4), 40) })
+	local rowW = #tabs * (tw + 4)
+	local barW = math.min(rowW, math.max(tw + 4, W - closeW - 3 * gap - 150))
+	local tabBar = K.new("ScrollingFrame", {
+		Name = "Tabs", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(gap, gap), Size = UDim2.fromOffset(barW, 40),
+		CanvasSize = UDim2.fromOffset(rowW, 40), ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 0, Selectable = false,
+	}, panel)
 	K.list(tabBar, Enum.FillDirection.Horizontal, 4)
-	for _, t in tabs do
+	for i, t in tabs do
 		local on = Inventory.tab == t
-		local b = K.button(tabBar, t, { Name = "Tab_" .. t, Size = UDim2.fromOffset(tw, 40), TextSize = 13, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+		local b = K.button(tabBar, t, { Name = "Tab_" .. t, LayoutOrder = i, Size = UDim2.fromOffset(tw, 40), TextSize = 13, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
 		b.Activated:Connect(function()
 			if Inventory.tab ~= t then
 				Inventory.tab = t
 				Inventory.render()
 			end
 		end)
+		if on then
+			openTabBtn = b
+			if rowW > barW then
+				local x = math.clamp((i - 1) * (tw + 4) - (barW - tw) / 2, 0, rowW - barW)
+				task.defer(function()
+					if tabBar.Parent then
+						tabBar.CanvasPosition = Vector2.new(x, 0)
+					end
+				end)
+			end
+		end
 	end
-	local infoX = gap + #tabs * (tw + 4) + gap
+	local infoX = gap + barW + gap
 	local info = string.format("%.1f KG", weight)
 	if not inRaid then
 		info ..= string.format("  ·  %s %s", Util.commas(d.money or 0), Config.CURRENCY)
@@ -1128,6 +1168,7 @@ function Inventory.renderCompact(d, W, H, inRaid)
 			ScrollBarThickness = 6, CanvasSize = UDim2.new(), Selectable = false,
 		}, panel)
 		body.CanvasSize = UDim2.fromOffset(0, ctx.Character.draw(Inventory.tab, body, W - 2 * gap - 12, H - top - gap) + 20)
+		keepScroll(body, "tab:" .. Inventory.tab)
 		return
 	end
 	-- the rail: three panels, the open one lit; the item picked up stays picked up across panels
@@ -1184,11 +1225,9 @@ function Inventory.renderCompact(d, W, H, inRaid)
 	for i = nS + 1, #slotTargets do
 		slotTargets[i].clip = slotTargets[i].clip or view
 	end
+	keepScroll(view, "panel:" .. Inventory.cpanel .. ((Inventory.cpanel == "OTHER" and inRaid and loot) and (":" .. tostring(loot.cid)) or ""))
 	local det = K.frame(panel, { BackgroundTransparency = 1, Position = UDim2.new(0, gap, 1, -detailH - gap), Size = UDim2.new(1, -2 * gap, 0, detailH) })
 	detail(det, W - 2 * gap, detailH)
-	if ctx.Input.device() == "Gamepad" then
-		K.focus(firstFocus)
-	end
 end
 
 -- snapshots can arrive many times a second (looting, a fight): redraw at most four times a second for them, as the
@@ -1207,36 +1246,8 @@ function Inventory.renderSoon()
 	end)
 end
 
-function Inventory.render()
-	if not Inventory.open then
-		return
-	end
-	lastRender = os.clock()
-	local d = data()
-	if not d or not d.slots then
-		return
-	end
-	if selected and not (viewOf(selected.ref) and viewOf(selected.ref).items[selected.g]) then
-		selected = nil
-	end
-	if panel then
-		panel:Destroy()
-	end
-	closeMenu()
-	table.clear(gridTargets)
-	table.clear(slotTargets)
-	hover = nil
-	firstFocus = nil
-	local inRaid = ctx.State.inRaid()
-	local vp = K.viewport(gui)
-	compact = vp.Y < COMPACT_H
-	local W = compact and math.floor(vp.X) or math.floor(math.min(vp.X - 12, 1360))
-	local H = compact and math.floor(vp.Y) or math.floor(math.min(vp.Y - 8, 800))
-	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
-	K.stroke(panel, K.C.line, 0.45)
-	if compact then
-		return Inventory.renderCompact(d, W, H, inRaid)
-	end
+-- the PC layout: header, character tabs, then Tarkov's three columns and the info bar
+local function renderWide(d, W, H, inRaid)
 	-- header
 	local weight = gearWeight(d)
 	local head = inRaid and ("FIELD KIT  //  " .. Maps.nameOf(ctx.State.raid and ctx.State.raid.map)) or "HIDEOUT  //  STASH & GEAR"
@@ -1251,24 +1262,28 @@ function Inventory.render()
 	K.label(panel, info, 12, { Position = UDim2.fromOffset(12, 28), Size = UDim2.fromOffset(W - 220, 16), TextColor3 = weight > 40 and K.C.orange or K.C.dim })
 	local close = K.button(panel, "CLOSE [" .. ctx.Input.label("Inventory") .. "]", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(150, 30) })
 	close.Activated:Connect(Inventory.close)
-	-- Tarkov's character tabs along the top: GEAR (this screen), HEALTH, SKILLS, MASTERING, then OVERALL out of a raid or
-	-- TASKS in one. On narrow screens (phones) the tabs narrow so the row keeps clear of the header text.
-	local tabs = { "GEAR", "HEALTH", "SKILLS", "MASTERING", inRaid and "TASKS" or "OVERALL" }
+	-- Tarkov's character tabs along the top (tabList). On narrow windows the tabs narrow so the row keeps clear of the
+	-- header text (Roboto Mono is 0.6 em a glyph: 9.6 px at 16 px)
+	local tabs = tabList(inRaid)
 	if not table.find(tabs, Inventory.tab) then
 		Inventory.tab = "GEAR"
 	end
-	local tw = math.clamp(math.floor((W - 168 - 250) / #tabs) - 4, 60, 92)
+	local headW = 12 + math.ceil(#head * 9.6) + 16
+	local tw = math.clamp(math.floor((W - 168 - math.max(250, headW)) / #tabs) - 4, 56, 92)
 	local tabBar = K.frame(panel, { Name = "Tabs", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -168, 0, 8), Size = UDim2.fromOffset(#tabs * (tw + 4), 30) })
 	K.list(tabBar, Enum.FillDirection.Horizontal, 4)
-	for _, t in tabs do
+	for i, t in tabs do
 		local on = Inventory.tab == t
-		local b = K.button(tabBar, t, { Name = "Tab_" .. t, Size = UDim2.fromOffset(tw, 30), TextSize = tw < 76 and 10 or 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+		local b = K.button(tabBar, t, { Name = "Tab_" .. t, LayoutOrder = i, Size = UDim2.fromOffset(tw, 30), TextSize = tw < 76 and 10 or 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
 		b.Activated:Connect(function()
 			if Inventory.tab ~= t then
 				Inventory.tab = t
 				Inventory.render()
 			end
 		end)
+		if on then
+			openTabBtn = b
+		end
 	end
 	if Inventory.tab ~= "GEAR" and ctx.Character then
 		local body = K.new("ScrollingFrame", {
@@ -1276,6 +1291,7 @@ function Inventory.render()
 			ScrollBarThickness = 5, CanvasSize = UDim2.new(), Selectable = false,
 		}, panel)
 		body.CanvasSize = UDim2.fromOffset(0, ctx.Character.draw(Inventory.tab, body, W - 40, H - 64) + 20)
+		keepScroll(body, "tab:" .. Inventory.tab)
 		return
 	end
 	-- Tarkov's three columns: your gear, your containers, then the stash (or what you are looting)
@@ -1310,12 +1326,51 @@ function Inventory.render()
 	for i = nS + 1, #slotTargets do
 		slotTargets[i].clip = right
 	end
+	keepScroll(left, "col:Gear")
+	keepScroll(mid, "col:Containers")
+	keepScroll(right, "col:Other" .. ((inRaid and loot) and (":" .. tostring(loot.cid)) or ""))
 	-- info bar (the hovered or selected item; INSPECT in its menu opens the full card)
 	local det = K.frame(panel, { BackgroundTransparency = 1, Position = UDim2.new(0, 12, 1, -detailH - 8), Size = UDim2.new(1, -24, 0, detailH) })
 	detail(det, W - 24, detailH)
-	if ctx.Input.device() == "Gamepad" then
-		K.focus(firstFocus)
+end
+
+function Inventory.render()
+	if not Inventory.open then
+		return
 	end
+	lastRender = os.clock()
+	local d = data()
+	if not d or not d.slots then
+		return
+	end
+	if selected and not (viewOf(selected.ref) and viewOf(selected.ref).items[selected.g]) then
+		selected = nil
+	end
+	-- where the gamepad selection was, to find it again in the new drawing (a tab change lands on the open tab instead)
+	local keep = (panel and not focusTab) and ctx.Input.focusPath(panel) or nil
+	focusTab = false
+	if panel then
+		panel:Destroy()
+	end
+	closeMenu()
+	table.clear(gridTargets)
+	table.clear(slotTargets)
+	hover = nil
+	openTabBtn = nil
+	local inRaid = ctx.State.inRaid()
+	local vp = K.viewport(gui)
+	compact = vp.Y < COMPACT_H
+	local W = compact and math.floor(vp.X) or math.floor(math.min(vp.X - 12, 1360))
+	local H = compact and math.floor(vp.Y) or math.floor(math.min(vp.Y - 8, 800))
+	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
+	K.stroke(panel, K.C.line, 0.45)
+	if compact then
+		Inventory.renderCompact(d, W, H, inRaid)
+	else
+		renderWide(d, W, H, inRaid)
+	end
+	-- the gamepad selection (audit ui.5): only with a pad; where it was, else the open tab
+	ctx.Input.refocus(panel, keep, openTabBtn)
 end
 
 -- ── drag & drop (mouse) ────────────────────────────────────────────────────────
@@ -1510,9 +1565,36 @@ function Inventory.init(c)
 		if down and Inventory.open then
 			if menu then
 				closeMenu()
-			else
+			elseif not (ctx.Inspect and ctx.Inspect.closeTop()) then -- the top inspect window goes first (audit ui.5)
 				Inventory.close()
 			end
+		end
+	end)
+	-- LB / RB: the previous / next character tab, wrapping round; the selection lands on the new tab (audit ui.5)
+	local function stepTab(dir)
+		if not Inventory.open or (ctx.Modding and ctx.Modding.open_) then
+			return
+		end
+		local tabs = tabList(ctx.State.inRaid())
+		local i = table.find(tabs, Inventory.tab) or 1
+		Inventory.tab = tabs[(i - 1 + dir) % #tabs + 1]
+		focusTab = true
+		Inventory.render()
+	end
+	c.Input.on("TabPrev", function(down)
+		if down then
+			stepTab(-1)
+		end
+	end)
+	c.Input.on("TabNext", function(down)
+		if down then
+			stepTab(1)
+		end
+	end)
+	-- the hint line, ROTATE and the selection follow the device in use (a pad picked up or put down)
+	c.Input.deviceChanged:Connect(function()
+		if Inventory.open then
+			Inventory.render()
 		end
 	end)
 	c.State.changed:Connect(function()

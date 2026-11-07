@@ -17,6 +17,8 @@ local P = require(Shared.Progress)
 local Trade = { open = nil }
 local ctx, K
 local ui = { tab = "vos", scroll = {}, cpanel = "GOODS" }
+-- the relay radio's tabs, left to right (LB / RB step through them on a gamepad; audit ui.5)
+local RADIO_TABS = { "vos", "hale", "tilda", "fence", "flea", "messenger", "handbook" }
 -- ui-3a: on a phone (under about 500 pt of height) the trade tab shows one panel at a time: GOODS, STASH or DEAL
 local compact = false
 local live = {} -- { label, at (server os.time), fmt }
@@ -880,8 +882,8 @@ function Trade.traders(tab, sub)
 		ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new(), ScrollBarThickness = 0, Selectable = false,
 	}, f)
 	K.list(tabs, Enum.FillDirection.Horizontal, 6)
-	local first
-	for _, id in { "vos", "hale", "tilda", "fence", "flea", "messenger", "handbook" } do
+	local first, firstX, tabW = nil, 0, 0
+	for i, id in RADIO_TABS do
 		local st = econ.traders and econ.traders[id]
 		local label = (id == "flea" and "FLEA MARKET") or (id == "messenger" or id == "handbook") and string.upper(id) or string.format("%s  ·  LL%d", TD.defs[id].name, st and st.ll or 1)
 		if id == "messenger" and ctx.Menus then
@@ -891,8 +893,9 @@ function Trade.traders(tab, sub)
 			end
 		end
 		local sel = ui.tab == id
+		tabW = compact and math.max(112, math.floor((w - 36) / 7)) or math.min(170, math.floor((w - 36) / 7))
 		local b = K.button(tabs, label, {
-			Size = UDim2.fromOffset(compact and math.max(112, math.floor((w - 36) / 7)) or math.min(170, math.floor((w - 36) / 7)), tabH), TextSize = 13,
+			Size = UDim2.fromOffset(tabW, tabH), TextSize = 13, LayoutOrder = i,
 			BackgroundColor3 = sel and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = sel and K.C.ochre or K.C.dim,
 		})
 		b.Name = "Tab_" .. string.upper(id)
@@ -902,8 +905,16 @@ function Trade.traders(tab, sub)
 			end
 		end)
 		if sel then
-			first = b
+			first, firstX = b, (i - 1) * (tabW + 6)
 		end
+	end
+	-- a phone's strip scrolls: the open tab is brought into view (LB / RB walk off its edge; audit ui.5)
+	if first then
+		task.defer(function()
+			if tabs.Parent then
+				tabs.CanvasPosition = Vector2.new(math.max(0, firstX - math.max(0, (w - tabW) / 2)), 0)
+			end
+		end)
 	end
 	local top = compact and 86 or 88
 	local bodyH = h - top - (compact and 0 or 42)
@@ -922,7 +933,8 @@ function Trade.traders(tab, sub)
 	local close = compact and K.button(f, "CLOSE", { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(84, 36), TextSize = 13 })
 		or K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(ctx.Screens.close)
-	K.focus(first)
+	-- the gamepad lands on the open tab, and keeps its place when new server state draws the screen again (audit ui.5)
+	ctx.Screens.focus(first)
 end
 
 -- ── hideout ──────────────────────────────────────────────────────────────────
@@ -1033,7 +1045,7 @@ function Trade.hideout()
 	end
 	local close = K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(ctx.Screens.close)
-	K.focus(close)
+	ctx.Screens.focus(close)
 end
 
 function Trade.refresh()
@@ -1049,6 +1061,25 @@ end
 function Trade.init(c)
 	ctx = c
 	K = c.UiKit
+	-- LB / RB: the previous / next radio tab (traders, flea market, messenger, handbook), wrapping round (audit ui.5)
+	local function stepTab(dir)
+		if not (Trade.open == "traders" and ctx.Screens.modal and ctx.Screens.modal == Trade.frame) then
+			return
+		end
+		local i = table.find(RADIO_TABS, ui.tab) or 0
+		ctx.Screens.tabSwitch = true
+		Trade.traders(RADIO_TABS[(i - 1 + dir) % #RADIO_TABS + 1])
+	end
+	c.Input.on("TabPrev", function(down)
+		if down then
+			stepTab(-1)
+		end
+	end)
+	c.Input.on("TabNext", function(down)
+		if down then
+			stepTab(1)
+		end
+	end)
 	-- redraw on new server state while a terminal screen is open (debounced), tick the timers every second
 	c.State.changed:Connect(function()
 		dirty = true

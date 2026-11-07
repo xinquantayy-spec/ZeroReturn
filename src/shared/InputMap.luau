@@ -30,6 +30,10 @@ return {
 	Inventory = { keys = { K.Tab }, pad = { K.ButtonY }, padHow = "tap", touch = "BAG", context = "global" },
 	Settings = { keys = { K.P }, pad = { K.ButtonSelect }, touch = "SETTINGS", context = "global" },
 	Back = { keys = { K.Backspace }, pad = { K.ButtonB }, context = "menu" },
+	-- in a menu the bumpers step through the open screen's tabs, the console convention (Tarkov has no gamepad,
+	-- exception 4; audit ui.5). Lean has them on foot; the "play" context is off while a menu is open.
+	TabPrev = { keys = {}, pad = { K.ButtonL1 }, context = "menu" },
+	TabNext = { keys = {}, pad = { K.ButtonR1 }, context = "menu" },
 	-- Tarkov: 1 sidearm (holster), 2 weapon on sling, 3 weapon on back, V melee
 	Sidearm = { keys = { K.One }, pad = {}, context = "play" },
 	Primary = { keys = { K.Two }, pad = {}, context = "play" },
