@@ -176,8 +176,10 @@ function P.masteryFor(mastering: any?, weaponId: string?): number
 	return P.masteryLevel(gid, mastering and mastering[gid])
 end
 
--- karma (Fence standing): -3 .. 3. Low karma turns the locals hostile and lengthens the scav cooldown.
-P.KARMA = { min = -3, max = 3, start = 0.2, killScav = -0.25, killPlayerScav = -0.4, scavExtract = 0.03, coop = 0.2, hostileBelow = -1 }
+-- karma (Fence standing): -7 .. 6, EFT's range (audit economy.5: Fence's LL2 needs 6.0, TraderData.fenceLoyalty; his
+-- prices follow the standing, TraderData.fencePriceMul). EFT starts every player at 0.2. Low karma turns the locals
+-- hostile and lengthens the scav cooldown (both ours, below and in scavCooldown).
+P.KARMA = { min = -7, max = 6, start = 0.2, killScav = -0.25, killPlayerScav = -0.4, scavExtract = 0.03, coop = 0.2, hostileBelow = -1 }
 
 function P.scavCooldown(base: number, karma: number?): number
 	return math.floor(base * (1 - 0.08 * math.clamp(karma or 0, -3, 3)))

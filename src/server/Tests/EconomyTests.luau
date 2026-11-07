@@ -1,11 +1,15 @@
 --!nonstrict
 -- Economy regression checks for the audit's quick wins (docs/audit/2026-11-07/economy.md): the flea market's category
--- gates and ban list (economy.3). Run with the other test modules via ZR_Dev "tests"; ctx is the server's service
--- table. Most checks call the shared modules' pure functions; the rest use stand-in profiles, never a real player's.
+-- gates and ban list (economy.3), Fence's loyalty and prices from karma (economy.5). Run with the other test modules
+-- via ZR_Dev "tests"; ctx is the server's service table. Most checks call the shared modules' pure functions; the rest
+-- use stand-in profiles, never a real player's.
+local Services = script.Parent.Parent:WaitForChild("Services")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local FR = require(Shared.FleaRules)
 local P = require(Shared.Progress)
+local TD = require(Shared.TraderData)
+local Settle = require(Services.Settle)
 
 local T = {}
 
@@ -78,6 +82,55 @@ function T.run(ctx)
 			local m = ctx.Flea.market({ known = { ARMOR_C6 = true, TH_T7 = true } })
 			check("flea market: banned items are left out, gated ones are listed (greyed out on the client)",
 				m.offers.ARMOR_C6 == nil and m.offers.TH_T7 == nil and m.offers.R17_RIFLE ~= nil and #m.offers.R17_RIFLE > 0)
+		end
+	end
+
+	-- economy.5: Fence's LL from karma (EFT: LL2 at a standing of 6.0) and EFT's PriceModifier on his goods both ways
+	do
+		check("karma runs over EFT's Fence standing range, -7 to 6, from 0.2", P.KARMA.min == -7 and P.KARMA.max == 6 and P.KARMA.start == 0.2)
+		check("fence loyalty: LL1 below 6.0 (also when negative), LL2 from 6.0 (a float just under 6 counts as 6.00)",
+			TD.fenceLoyalty(P.KARMA.start) == 1 and TD.fenceLoyalty(-7) == 1 and TD.fenceLoyalty(5.98) == 1
+				and TD.fenceLoyalty(6) == 2 and TD.fenceLoyalty(6 - 1e-9) == 2 and TD.fenceLoyalty(nil) == 1)
+		check("fence price modifier: EFT's table by whole point of standing, rounded down and clamped to -7..6",
+			TD.fencePriceMul(-7) == 1.2 and TD.fencePriceMul(-10) == 1.2 and TD.fencePriceMul(-0.5) == 1.05 and TD.fencePriceMul(0.2) == 1
+				and TD.fencePriceMul(2.99) == 0.95 and TD.fencePriceMul(5) == 0.85 and TD.fencePriceMul(6) == 0.8 and TD.fencePriceMul(9) == 0.8)
+		local ll2 = nil
+		for _, o in TD.offers.fence do
+			if o.ll == 2 then
+				ll2 = o
+			end
+		end
+		local bandage = TD.offers.fence[3]
+		local base = Items.defs[bandage.id].value * bandage.n * TD.defs.fence.markup
+		check("fence prices move with karma both ways (dearer when it is low, cheaper when high)",
+			bandage.id == "BANDAGE" and TD.price("fence", bandage, 1, -7) > TD.price("fence", bandage, 1, 0.2)
+				and TD.price("fence", bandage, 1, 0.2) > TD.price("fence", bandage, 1, 6)
+				and TD.price("fence", bandage, 1, 6) == math.ceil(base * 0.8) and TD.price("fence", bandage, 1, nil) == math.ceil(base))
+		local rifle = TD.offers.vos[1]
+		check("karma leaves the other traders' prices alone", TD.price("vos", rifle, 1, -7) == TD.price("vos", rifle, 1, 6) and TD.price("vos", rifle, 1, 6) == TD.price("vos", rifle, 1))
+		if ctx and ctx.Economy then
+			local fp = Settle.newProfile()
+			fp.karma = 5.5
+			local llLow = ctx.Economy.loyalty(fp, "fence")
+			fp.karma = 6
+			local llTop = ctx.Economy.loyalty(fp, "fence")
+			fp.xp = 0
+			local st = ctx.Economy.stateFor(fp)
+			local mailed = 0
+			for _, m in fp.msgs or {} do
+				if m.f == "fence" then
+					mailed += 1
+				end
+			end
+			ctx.Economy.stateFor(fp)
+			local mailedAgain = 0
+			for _, m in fp.msgs or {} do
+				if m.f == "fence" then
+					mailedAgain += 1
+				end
+			end
+			check("fence LL2 at karma 6 for a level 1 player with no trades: his LL2 offer opens and he writes once",
+				ll2 ~= nil and llLow == 1 and llTop == 2 and st.traders.fence.ll == 2 and ll2.ll <= st.traders.fence.ll and mailed == 1 and mailedAgain == 1)
 		end
 	end
 

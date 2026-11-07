@@ -7,6 +7,7 @@ local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local QD = require(Shared.QuestData)
 local TD = require(Shared.TraderData)
+local P = require(Shared.Progress)
 local Inv = require(script.Parent.Inv)
 
 local Quests = {}
@@ -221,7 +222,7 @@ local function questReq(player, p)
 			ctx.Economy.standing(prof, q.trader).rep += r.rep
 		end
 		if r.karma then
-			prof.karma = math.clamp((prof.karma or 0) + r.karma, -3, 3)
+			prof.karma = math.clamp((prof.karma or P.KARMA.start) + r.karma, P.KARMA.min, P.KARMA.max)
 		end
 		-- reward items arrive like insurance returns: straight to the stash when there is room
 		if r.items and #r.items > 0 then
