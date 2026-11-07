@@ -7,6 +7,7 @@ export type MapDef = {
 	kind: string,
 	raidTime: number,
 	desc: string,
+	scavOpen: number?, -- seconds into the raid before player scavs may enter (nil: from the start)
 }
 
 local Maps = {}
@@ -33,6 +34,8 @@ Maps.defs = {
 		name = "MERIDIAN MALL",
 		kind = "SHOPPING MALL",
 		raidTime = 2400,
+		-- EFT lets player scavs in from 17 minutes on most maps, not Factory-type ones (audit ai-7a)
+		scavOpen = 1020,
 		desc = "A three-level mall at full scale: a garage under three anchor stores, the L1 and L2 galleries around the atria, a food court, loading docks, and a service tunnel below. Outside it: the substation, the west camp, the rescue camp and checkpoint, and mined and sniper-covered edges. Long raids. Throw the switch at the substation to power the mall and the hidden shelter exit; the Caretaker walks the mall in some raids.",
 	},
 	border = {
@@ -40,6 +43,7 @@ Maps.defs = {
 		name = "BORDER YARD",
 		kind = "CUSTOMS ZONE",
 		raidTime = 2400,
+		scavOpen = 1020, -- as Meridian (audit ai-7a)
 		desc = "A customs zone on a river crossing at full scale: two dormitory blocks, a fuel stop and a tank farm, the derrick and the frame, big warehouses, the red stores and a trailer lot in the trees, bunkers under the yards, the main bridge and the rail lines. Long raids; the Broker keeps the dorms in some raids.",
 	},
 } :: { [string]: MapDef }
@@ -55,6 +59,12 @@ Maps.parked = {
 		desc = "Pine woods on rolling hills: a sawmill, a lake with a boathouse, an ambushed convoy, a ranger lookout and an old shelter under the ridge. Big and open; the Sawyer works the mill in some raids.",
 	},
 } :: { [string]: MapDef }
+
+-- when player scavs may enter a raid of this map that started at startedAt and ends at endsAt: from, until
+function Maps.scavWindow(id: string?, startedAt: number, endsAt: number, cutoff: number): (number, number)
+	local d = id and Maps.defs[id]
+	return startedAt + ((d and d.scavOpen) or 0), endsAt - cutoff
+end
 
 function Maps.valid(id: any): boolean
 	return type(id) == "string" and Maps.defs[id] ~= nil

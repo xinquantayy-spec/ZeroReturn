@@ -771,7 +771,8 @@ function Lobby.scavHatch()
 	end
 	local m = ctx.State.match
 	local now = workspace:GetServerTimeNow()
-	local direct = m and m.state == "RUNNING" and now < (m.scavUntil or 0)
+	-- (EFT's window, audit ai-7a: scav entry opens some minutes in on the big maps; before it the run queues)
+	local direct = m and m.state == "RUNNING" and now >= (m.scavFrom or 0) and now < (m.scavUntil or 0)
 	if direct then
 		fade(1, 0.9)
 		task.delay(0.95, function()
@@ -789,7 +790,9 @@ function Lobby.scavHatch()
 	if res and res.ok and res.data and res.data.status then
 		ctx.State.match = res.data.status
 		ctx.State.matchClock = os.clock()
-		ctx.State.toast("SCAV RUN QUEUED  ·  WAIT BY THE HATCH")
+		local st = res.data.status
+		local opens = st.state == "RUNNING" and (st.scavFrom or 0) - workspace:GetServerTimeNow() or 0
+		ctx.State.toast(opens > 0 and ("SCAV RUN QUEUED  ·  ENTRY OPENS IN %02d:%02d"):format(opens // 60, opens % 60) or "SCAV RUN QUEUED  ·  WAIT BY THE HATCH")
 	elseif not (res and res.ok) then
 		ctx.State.toast("SCAV RUN FAILED: " .. string.gsub(tostring(res and (res.msg or res.code) or "?"), "_", " "), "warn")
 	end

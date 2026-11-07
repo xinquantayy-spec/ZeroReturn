@@ -599,6 +599,12 @@ function C.money(name, n)
 	return prof.money
 end
 
+-- scavAnytime(true): player scavs may enter a running raid before EFT's window opens (Studio tests); false: the window
+function C.scavAnytime(on)
+	ctx.Match.devScavAnytime = on == true
+	return "devScavAnytime=" .. tostring(ctx.Match.devScavAnytime)
+end
+
 -- set a player's scav karma (Fence standing, EFT's -7 to 6): karma(name, 6) makes Fence LL2
 function C.karma(name, v)
 	local p = plr(name)

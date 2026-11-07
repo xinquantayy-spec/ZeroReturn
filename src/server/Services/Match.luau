@@ -224,7 +224,8 @@ function Match.status(player)
 	local q = player and queue[player]
 	return {
 		state = Match.state, raidId = Match.id, startsAt = Match.startsAt, endsAt = Match.endsAt, lateUntil = Match.lateUntil,
-		scavUntil = Match.endsAt - Config.SCAV_CUTOFF, queued = q and q.kind or nil, inQueue = count(queue),
+		scavUntil = Match.endsAt - Config.SCAV_CUTOFF, scavFrom = (Maps.scavWindow(Match.map, Match.startedAt, Match.endsAt, Config.SCAV_CUTOFF)),
+		queued = q and q.kind or nil, inQueue = count(queue),
 		inRaid = liveSessions(), maxPlayers = Config.MAX_PLAYERS, scavReadyAt = prof and prof.scavReadyAt or 0, serverTime = os.time(),
 		env = (Match.state == "RUNNING") and Match.env or Match.nextEnv,
 		map = (Match.state == "RUNNING") and Match.map or nil, votes = Match.tally(), vote = q and q.vote or nil,
@@ -328,6 +329,17 @@ function Match.pickSpawn()
 	return best
 end
 
+-- a player scav goes in at a scav spot away from every raider (EFT: scav spawn points; audit ai-7a), else at the PMC
+-- insertion point farthest from them. Scav spots stand on the floor; a spawn frame stands at the body's root (+3.4)
+function Match.scavSpawn()
+	local zones = ctx.World.scavZones
+	local p = zones and #zones > 0 and ctx.AI and ctx.AI.safeSpot and ctx.AI.safeSpot(zones, 120)
+	if p then
+		return { id = "SCAV", cf = CFrame.new(p + Vector3.new(0, 3.1, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0) }
+	end
+	return Match.pickSpawn()
+end
+
 -- a late-joining squad member inserts where the squad went in (within the late-join window)
 function Match.spawnFor(player, kind)
 	local sid = squadOf[player]
@@ -336,7 +348,7 @@ function Match.spawnFor(player, kind)
 		ss.n += 1
 		return ss.spawn, ss.n
 	end
-	local spawn = Match.pickSpawn()
+	local spawn = (kind == "scav") and Match.scavSpawn() or Match.pickSpawn()
 	if sid then
 		Match.squadSpawn[sid .. kind] = { spawn = spawn, raid = Match.id, t = now(), n = 1 }
 	end
@@ -377,7 +389,9 @@ function Match.canEnter(kind)
 	end
 	local t = now()
 	if kind == "scav" then
-		return t <= Match.endsAt - Config.SCAV_CUTOFF
+		-- EFT's window (audit ai-7a): from 17 minutes in on the big maps, until SCAV_CUTOFF before the end
+		local from, till = Maps.scavWindow(Match.map, Match.startedAt, Match.endsAt, Config.SCAV_CUTOFF)
+		return (t >= from or Match.devScavAnytime == true) and t <= till
 	end
 	return t <= Match.lateUntil
 end
@@ -448,12 +462,22 @@ local function startRaid()
 	Match.state = "RUNNING"
 	Match.id = Util.guid()
 	Match.raids += 1
-	Match.startedAt = t
-	Match.endsAt = t + (Maps.defs[Match.map] and Maps.defs[Match.map].raidTime or Config.RAID_DURATION)
-	Match.lateUntil = t + Config.LATE_JOIN
+	-- only player scavs queued: they go into a raid already that far along, as EFT's scavs do (audit ai-7a); with PMCs
+	-- queued too the raid starts fresh and the scavs wait in the queue until their window opens (tick)
+	local scavOnly, anyone = true, false
+	for player, q in queue do
+		if player.Parent then
+			anyone = true
+			scavOnly = scavOnly and q.kind == "scav"
+		end
+	end
+	local open = (anyone and scavOnly and Maps.defs[Match.map] and Maps.defs[Match.map].scavOpen) or 0
+	Match.startedAt = t - open
+	Match.endsAt = Match.startedAt + (Maps.defs[Match.map] and Maps.defs[Match.map].raidTime or Config.RAID_DURATION)
+	Match.lateUntil = Match.startedAt + Config.LATE_JOIN
 	Match.emptySince = nil
 	Match.env = Match.nextEnv or (Match.forceEnv and table.clone(Match.forceEnv)) or Env.roll(envRng)
-	Match.env.t0 = t
+	Match.env.t0 = Match.startedAt -- (a raid that starts along has its clock that far along too)
 	Match.nextEnv = nil
 	table.clear(Match.usedSpawns)
 	table.clear(Match.squadSpawn)
@@ -472,8 +496,11 @@ local function startRaid()
 	ctx.Raid.resetWorld() -- (also clears the cars' seats and shows or hides each car by this roll)
 	-- group the queue: squad members of the same kind share a spawn
 	local groups, bySquad = {}, {}
+	local waiting = {}
 	for player, q in queue do
-		if player.Parent then
+		if player.Parent and q.kind == "scav" and not Match.canEnter("scav") then
+			waiting[player] = q -- a player scav before the window: stays queued (tick lets them in)
+		elseif player.Parent then
 			local sid = squadOf[player]
 			local key = sid and (sid .. q.kind)
 			if key and bySquad[key] then
@@ -488,8 +515,11 @@ local function startRaid()
 		end
 	end
 	table.clear(queue)
+	for player, q in waiting do
+		queue[player] = q
+	end
 	for _, g in groups do
-		local spawn = Match.pickSpawn()
+		local spawn = (g.kind == "scav") and Match.scavSpawn() or Match.pickSpawn()
 		if g.key then
 			Match.squadSpawn[g.key] = { spawn = spawn, raid = Match.id, t = t, n = #g.players }
 		end
@@ -633,6 +663,21 @@ local function tick()
 		if t >= Match.endsAt then
 			endRaid("TIME")
 			return
+		end
+		-- player scavs who queued before their window (audit ai-7a) go in once it opens
+		if next(queue) and Match.canEnter("scav") then
+			local let = false
+			for player, q in queue do
+				if q.kind == "scav" and player.Parent and Match.canEnter("scav") then
+					queue[player] = nil
+					let = true
+					local spawn, idx = Match.spawnFor(player, "scav")
+					task.spawn(ctx.Raid.enter, player, "scav", spawn, idx)
+				end
+			end
+			if let then
+				Match.broadcast()
+			end
 		end
 		-- nobody inside: end early so the next raid starts fresh (and queued players get in)
 		if liveSessions() == 0 and not Match.holdOpen then

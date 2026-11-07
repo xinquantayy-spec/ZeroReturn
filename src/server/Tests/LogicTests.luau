@@ -677,6 +677,19 @@ function T.run(ctx)
 		check("every barter ingredient can be found, bought or crafted" .. (#missing > 0 and (" (missing: " .. table.concat(missing, ", ") .. ")") or ""),
 			#missing == 0)
 	end
+	-- audit ai-7a: EFT's player scav window. From 17 minutes in on Border Yard and Meridian Mall (Customs, Interchange),
+	-- from the start on Smelter and Quay 7, until SCAV_CUTOFF before the end
+	do
+		local MapsW = require(Shared.Maps)
+		local bf, bt = MapsW.scavWindow("border", 1000, 3400, Config.SCAV_CUTOFF)
+		local mf = MapsW.scavWindow("meridian", 0, 2400, Config.SCAV_CUTOFF)
+		local sf, st = MapsW.scavWindow("smelter", 50, 1250, Config.SCAV_CUTOFF)
+		local qf = MapsW.scavWindow("quay7", 0, 1500, Config.SCAV_CUTOFF)
+		check("player scavs: in from 17 minutes on Border Yard and Meridian, from the start on Smelter and Quay 7, until the cutoff",
+			bf == 2020 and bt == 3400 - Config.SCAV_CUTOFF and mf == 1020 and sf == 50 and st == 1250 - Config.SCAV_CUTOFF and qf == 0)
+		check("player scavs: Match lets them in by the window and has a scav spawn", ctx and ctx.Match and type(ctx.Match.scavSpawn) == "function"
+			and type(ctx.Match.canEnter) == "function")
+	end
 	-- audit ai-2: EFT's sleep. Calm units over 300 m (937.5 studs) from every raider sleep; they wake inside 265 m, and the
 	-- gap between keeps them from flickering; a unit that is not calm never falls asleep
 	if ctx and ctx.AI and ctx.AI.sleepState then
