@@ -231,7 +231,8 @@ end
 -- ── FLEA MARKET ──────────────────────────────────────────────────────────────
 -- Tarkov's flea market: BROWSE (categories and search over the operators' offers, cheapest first, PURCHASE with a
 -- quantity), WISH LIST, MY OFFERS (time left, REMOVE) and ADD OFFER (found-in-raid stash items, the asking price and
--- Tarkov's listing fee, worked out by the same rules as the server). It opens at level 15.
+-- Tarkov's listing fee, worked out by the same rules as the server). It opens at level 15; EFT 1.0's gated categories
+-- show greyed out with the level they need (FleaRules.levelFor, audit economy.3).
 local FR = require(Shared.FleaRules)
 local flea = { view = "browse", cat = "ALL", search = "", qty = "1", at = 0 }
 local ROW_MAX = 100
@@ -330,10 +331,14 @@ local function browse(f, x, y, w, h, d, refresh)
 		K.label(list, "Choose a category or search for an item.", 12, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), TextColor3 = K.C.dim })
 		return
 	end
+	local myLevel = (d.econ and d.econ.level) or 1
 	local order = 0
 	for _, id in allItems() do
 		local def = Items.defs[id]
 		local offers = flea.market[id]
+		-- EFT 1.0's category gates (audit economy.3): a gated offer shows greyed out with the level it needs
+		local need = FR.levelFor(id)
+		local gated = myLevel < need
 		local show = offers and #offers > 0
 		if show and flea.view == "wish" then
 			show = wish[id] == true
@@ -349,11 +354,19 @@ local function browse(f, x, y, w, h, d, refresh)
 				end
 				local r, pw = itemRow(list, order, id, def.name, true)
 				r.Name = "Offer_" .. id .. "_" .. o.i
+				if gated then
+					r.BackgroundTransparency = 0.6
+				end
 				K.label(r, CAT[def.kind] .. "  ·  AVG " .. Util.commas(FR.marketPrice(id)), 11, { Position = UDim2.fromOffset(pw + 10, 22), Size = UDim2.fromOffset(340, 16), TextColor3 = K.C.dim })
-				cell(r, o.seller, 446, 150, K.C.text)
-				cell(r, o.left > 0 and ("x" .. o.left) or "SOLD OUT", 606, 90, o.left > 0 and K.C.text or K.C.red)
-				cell(r, Util.commas(o.price) .. " " .. Config.CURRENCY, 706, 130, K.C.ochre)
-				if o.left > 0 then
+				cell(r, o.seller, 446, 150, gated and K.C.dim or K.C.text)
+				cell(r, o.left > 0 and ("x" .. o.left) or "SOLD OUT", 606, 90, gated and K.C.dim or (o.left > 0 and K.C.text or K.C.red))
+				cell(r, Util.commas(o.price) .. " " .. Config.CURRENCY, 706, 130, gated and K.C.dim or K.C.ochre)
+				if gated then
+					K.label(r, "REQUIRES LEVEL " .. need, 12, {
+						Name = "Locked", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(140, 30),
+						TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = K.C.orange,
+					})
+				elseif o.left > 0 then
 					local b = K.button(r, "PURCHASE", { Name = "Buy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(100, 30), TextSize = 12 })
 					b.Activated:Connect(function()
 						local n = math.clamp(math.floor(tonumber(flea.qty) or 1), 1, o.left)
