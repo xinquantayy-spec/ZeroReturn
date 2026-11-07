@@ -36,7 +36,7 @@
    6.17,
    4.1541
   ],
-  "tris": 7194
+  "tris": 3816
  },
  "ZR_MK_GondolaSparse__metal": {
   "center": [
@@ -75,7 +75,7 @@
    6.7,
    6.3769
   ],
-  "tris": 1947
+  "tris": 1151
  },
  "ZR_MK_GondolaToppled__metal": {
   "center": [
@@ -114,7 +114,7 @@
    3.9154,
    12.3956
   ],
-  "tris": 792
+  "tris": 678
  },
  "ZR_MK_WallShelf__metal": {
   "center": [
@@ -144,16 +144,16 @@
  },
  "ZR_MK_WallShelf__plastic": {
   "center": [
-   -0.0288,
+   -0.0229,
    4.14,
    -0.1191
   ],
   "size": [
-   7.9177,
+   7.9057,
    7.32,
    1.9583
   ],
-  "tris": 4272
+  "tris": 2308
  },
  "ZR_MK_WallShelfSparse__metal": {
   "center": [
@@ -183,16 +183,16 @@
  },
  "ZR_MK_WallShelfSparse__plastic": {
   "center": [
-   -0.0162,
+   -0.0107,
    3.9,
    -0.9343
   ],
   "size": [
-   7.8925,
+   7.8815,
    7.8,
    3.5886
   ],
-  "tris": 1395
+  "tris": 779
  },
  "ZR_MK_WallShelfMeds__metal": {
   "center": [
@@ -231,7 +231,7 @@
    7.32,
    1.8997
   ],
-  "tris": 4164
+  "tris": 2042
  },
  "ZR_MK_WallShelfBooks__metal": {
   "center": [
@@ -270,7 +270,7 @@
    7.32,
    1.9515
   ],
-  "tris": 1848
+  "tris": 842
  },
  "ZR_MK_WallShelfTools__metal": {
   "center": [
@@ -309,7 +309,7 @@
    7.8,
    3.8468
   ],
-  "tris": 984
+  "tris": 554
  },
  "ZR_MK_Fridge__glass": {
   "center": [
@@ -352,16 +352,16 @@
  },
  "ZR_MK_Fridge__plastic": {
   "center": [
-   -0.0155,
+   -0.0153,
    3.5312,
-   -0.0385
+   -0.037
   ],
   "size": [
-   7.3649,
+   7.3464,
    4.6023,
-   1.837
+   1.834
   ],
-  "tris": 3225
+  "tris": 1937
  },
  "ZR_MK_FridgeBroken__glass": {
   "center": [
@@ -404,16 +404,16 @@
  },
  "ZR_MK_FridgeBroken__plastic": {
   "center": [
-   -0.0573,
+   -0.0568,
    2.94,
    -1.6735
   ],
   "size": [
-   7.4485,
+   7.429,
    5.88,
    5.107
   ],
-  "tris": 3423
+  "tris": 2085
  },
  "ZR_MK_Checkout__metal": {
   "center": [
@@ -530,7 +530,7 @@
    1.7085,
    3.424
   ],
-  "tris": 124
+  "tris": 108
  },
  "ZR_MK_TrolleyTipped__rubber": {
   "center": [
@@ -608,7 +608,7 @@
    9.5,
    6.76
   ],
-  "tris": 1752
+  "tris": 1002
  },
  "ZR_MK_Kiosk__wood": {
   "center": [
@@ -1297,7 +1297,7 @@
    5.98,
    1.08
   ],
-  "tris": 1191
+  "tris": 693
  },
  "ZR_MK_VendingBroken__glass": {
   "center": [
@@ -1349,7 +1349,7 @@
    5.98,
    1.08
   ],
-  "tris": 522
+  "tris": 304
  },
  "ZR_MK_ATM__metal": {
   "center": [

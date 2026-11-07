@@ -14,7 +14,7 @@ return {
 	{ key = "ZR_Nature", id = 120650690065241 }, -- M13 nature kit: 24 ZR_NAT_* pines and birches (trunk + crown; crowns as needle and leaf cards with foliage-atlas UVs since 2026-11-01), rocks, logs, bushes, ground cover (build_nature.py)
 	-- M13 Meridian Mall kit (ZR_MK_<Prop>__<material> pieces, see KitMeta.luau and Maps/Kit.luau)
 	{ key = "ZR_MallKitA", id = 133338997186647 }, -- structure and fixtures: storefronts, shutters, columns, ceiling holes, balustrades, escalator, fountain, wall breach, collapsed slab, rubble (build_mall_kit_a.py)
-	{ key = "ZR_MallKitB", id = 110014146320763 }, -- store furnishings: gondolas, wall shelves, fridges, checkouts, trolleys, kiosks, racks, mannequins, food court, cinema, gym, homewares (build_mall_kit_b.py)
+	{ key = "ZR_MallKitB", id = 127419668580872 }, -- (2026-11-08: lighter goods in the dusty palette, audit art.6/art.8; was 110014146320763) store furnishings: gondolas, wall shelves, fridges, checkouts, trolleys, kiosks, racks, mannequins, food court, cinema, gym, homewares (build_mall_kit_b.py)
 	{ key = "ZR_MallKitC", id = 129684075485706 }, -- back of house and outdoor: pallet racks, cages, lockers, desks, generator, forklift, dock doors, cargo lift, cars, barrier, shelters, rooftop units (build_mall_kit_c.py)
 	-- M13 item models for loose loot (ZR_IT_<item>__<material> pieces, see ItemMeta.luau; build_items_export.py)
 	{ key = "ZR_ItemsA", id = 91684040376497 }, -- magazines, ammunition, grenades, weapon mods, repair kit, secure containers

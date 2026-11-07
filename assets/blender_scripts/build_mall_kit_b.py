@@ -3,6 +3,9 @@
    then g["export"]() -> assets/exports/ZR_MallKitB.fbx (+ .blend, .meta.json, .props.json)
 Origin bottom-centre, front toward Blender -Y (Roblox LookVector). Shelf products are low-poly blocks, cans and
 bottles in packaging colours (original, no brands). All geometry is original and procedural.
+2026-11-08 (audit art.6, art.8): goods are pulled toward the dusty palette with a grime gradient (darker at the foot),
+and the product set is lighter: no faces against the shelf or the back panel, a one-quad label, six-sided cans and
+bottles without hidden caps, the jar lid painted on its top. About half the triangles of a stocked shelf.
 """
 import math, os, sys, random
 import bmesh
@@ -46,6 +49,76 @@ def mul(c, k):
     return shade(c, k)
 
 
+# ── art.6: shop goods in the dusty palette ─────────────────────────────────────
+GRIME = (0.55, 0.53, 0.49, 1)
+
+
+def goods(c):
+    """a packaging colour pulled toward the dusty palette (was 12 % toward grey; saturated packs stood out of the grade)"""
+    return mix(c, GRIME, 0.3)
+
+
+def _new_faces(b, before):
+    return [f for f in b.bm.faces if f not in before]
+
+
+def _grime(b, faces, z0, h, low=0.78):
+    """darken toward the foot of an item: dust and handling grime gather low (art.6)"""
+    for f in faces:
+        for l in f.loops:
+            t = max(0.0, min(1.0, (l.vert.co.z - z0) / max(h, 1e-4)))
+            c = l[b.col]
+            k = low + (1 - low) * t
+            l[b.col] = (c[0] * k, c[1] * k, c[2] * k, 1.0)
+
+
+def _cull(b, faces, dirs):
+    """delete the faces whose normal points along one of dirs (hidden against a shelf, a panel or another part)"""
+    if not dirs:
+        return
+    b.bm.normal_update()
+    kill = [f for f in faces if any(f.normal.dot(d) > 0.9 for d in dirs)]
+    if kill:
+        bmesh.ops.delete(b.bm, geom=kill, context="FACES_ONLY")
+
+
+DOWN, UP = Vector((0, 0, -1)), Vector((0, 0, 1))
+
+
+def lbox(b, center, size, color, hide=(), grime=True, rot=(0, 0, 0)):
+    """a box without its hidden faces (art.8), with the grime gradient"""
+    before = set(b.bm.faces)
+    b.box(center, size, color, rot=rot)
+    new = _new_faces(b, before)
+    if grime:
+        _grime(b, new, center[2] - size[2] / 2, size[2])
+    _cull(b, new, hide)
+
+
+def lcyl(b, a, top, r1, color, r2=None, seg=6, hide=(DOWN,), cap_col=None, grime=True):
+    """an upright cylinder or cone without its hidden caps; cap_col paints the top cap (a jar's lid)"""
+    before = set(b.bm.faces)
+    b.cyl(a, top, r1, color, r2=r2, seg=seg)
+    new = _new_faces(b, before)
+    if grime:
+        _grime(b, new, min(a[2], top[2]), abs(top[2] - a[2]))
+    if cap_col is not None:
+        b.bm.normal_update()
+        for f in new:
+            if f.normal.dot(UP) > 0.9:
+                for l in f.loops:
+                    l[b.col] = cap_col
+    _cull(b, new, hide)
+
+
+def label(b, cx, y, z0, z1, w, color, nsgn):
+    """a one-quad label on a product's front, facing nsgn along Y (2 triangles instead of a 12-triangle band)"""
+    vs = [b.bm.verts.new(v) for v in ((cx - w / 2, y, z0), (cx + w / 2, y, z0), (cx + w / 2, y, z1), (cx - w / 2, y, z1))]
+    f = b.bm.faces.new(vs if nsgn < 0 else list(reversed(vs)))  # this winding faces -Y; reversed faces +Y
+    for l in f.loops:
+        l[b.col] = color
+
+
 def frange(a, b, s):
     out = []
     x = a
@@ -56,46 +129,51 @@ def frange(a, b, s):
 
 
 # ── products ───────────────────────────────────────────────────────────────────
-def products(b, r, x0, x1, ya, yb, z, hmax, density=0.92, palette=PACK, kinds=("box", "box", "can", "bottle", "jar"), fallen=0.06):
+def products(b, r, x0, x1, ya, yb, z, hmax, density=0.92, palette=PACK, kinds=("box", "box", "can", "bottle", "jar"), fallen=0.06,
+             back_hidden=True):
     """a shelf strip from x0 to x1, depth ya (front) .. yb (back), standing on z; front facings in detail, the
-    rest of the row as one darker filler block behind them"""
+    rest of the row as one darker filler block behind them. back_hidden: a panel stands behind the strip, so the
+    faces toward it are left out (not on an open counter)"""
     depth = abs(yb - ya)
     sgn = 1 if yb > ya else -1
+    back = Vector((0, sgn, 0))
+    hid = (DOWN, back) if back_hidden else (DOWN,)
     x = x0 + 0.03
     while x < x1 - 0.12:
         if r.random() > density:
             x += r.uniform(0.25, 0.7)
             continue
         kind = r.choice(kinds)
-        col = mix(r.choice(palette), (0.72, 0.71, 0.68, 1), 0.12)
+        col = goods(r.choice(palette))
         if kind == "box":
             w = min(r.uniform(0.28, 0.62), x1 - x)
             h = min(hmax - 0.05, r.uniform(0.5, 1.15))
             d = depth * r.uniform(0.7, 0.95)
             if r.random() < fallen:
-                b.box((x + w / 2, ya + sgn * (0.25), z + 0.14), (w * 0.95, h * 0.9, 0.26), col, rot=(0, 0, r.uniform(-0.3, 0.3)))
+                lbox(b, (x + w / 2, ya + sgn * (0.25), z + 0.14), (w * 0.95, h * 0.9, 0.26), col, hide=(DOWN,), rot=(0, 0, r.uniform(-0.3, 0.3)))
             else:
-                b.box((x + w / 2, ya + sgn * d / 2, z + h / 2), (w - 0.03, d, h), col)
-                b.box((x + w / 2, ya + sgn * 0.001 - sgn * 0.002, z + h * 0.62), (w - 0.06, 0.012, h * 0.22), mul(col, 1.25))  # label band
+                lbox(b, (x + w / 2, ya + sgn * d / 2, z + h / 2), (w - 0.03, d, h), col, hide=hid)
+                label(b, x + w / 2, ya - sgn * 0.004, z + h * 0.51, z + h * 0.73, w - 0.06, mul(col, 1.25), -sgn)
             x += w
         elif kind in ("can", "jar"):
             dia = r.uniform(0.2, 0.3) if kind == "can" else r.uniform(0.26, 0.36)
             h = min(hmax - 0.05, r.uniform(0.32, 0.46) if kind == "can" else r.uniform(0.34, 0.5))
             cx = x + dia / 2
-            b.cyl((cx, ya + sgn * dia / 2, z), (cx, ya + sgn * dia / 2, z + h), dia / 2, col if kind == "can" else mul(col, 0.9), seg=7)
-            if kind == "jar":
-                b.cyl((cx, ya + sgn * dia / 2, z + h), (cx, ya + sgn * dia / 2, z + h + 0.07), dia * 0.42, mul(PACK[0], 0.9), seg=7)
-            b.box((cx, ya + sgn * (dia + (depth - dia) / 2), z + h * 0.48), (dia * 0.9, max(0.05, depth - dia - 0.04), h * 0.95), mul(col, 0.55))
+            lcyl(b, (cx, ya + sgn * dia / 2, z), (cx, ya + sgn * dia / 2, z + h), dia / 2, col if kind == "can" else mul(col, 0.9),
+                 cap_col=mul(goods(PACK[0]), 0.9) if kind == "jar" else None)
+            lbox(b, (cx, ya + sgn * (dia + (depth - dia) / 2), z + h * 0.48), (dia * 0.9, max(0.05, depth - dia - 0.04), h * 0.95), mul(col, 0.55),
+                 hide=hid, grime=False)
             x += dia + 0.02
-        else:  # bottle
+        else:  # bottle: a body and a tapered shoulder and neck
             dia = r.uniform(0.24, 0.3)
             h = min(hmax - 0.08, r.uniform(0.75, 1.05))
             cx = x + dia / 2
             yc = ya + sgn * dia / 2
-            b.cyl((cx, yc, z), (cx, yc, z + h * 0.68), dia / 2, col, seg=7)
-            b.cyl((cx, yc, z + h * 0.68), (cx, yc, z + h * 0.88), dia / 2, col, r2=dia * 0.18, seg=7)
-            b.cyl((cx, yc, z + h * 0.88), (cx, yc, z + h), dia * 0.16, mul(col, 0.7), seg=6)
-            b.box((cx, ya + sgn * (dia + (depth - dia) / 2), z + h * 0.4), (dia * 0.9, max(0.05, depth - dia - 0.04), h * 0.8), mul(col, 0.5))
+            lcyl(b, (cx, yc, z), (cx, yc, z + h * 0.68), dia / 2, col, hide=(DOWN, UP))
+            lcyl(b, (cx, yc, z + h * 0.68), (cx, yc, z + h * 0.86), dia / 2, col, r2=dia * 0.17, hide=(DOWN, UP), grime=False)
+            lcyl(b, (cx, yc, z + h * 0.86), (cx, yc, z + h), dia * 0.16, mul(col, 0.7), seg=5, grime=False)
+            lbox(b, (cx, ya + sgn * (dia + (depth - dia) / 2), z + h * 0.4), (dia * 0.9, max(0.05, depth - dia - 0.04), h * 0.8), mul(col, 0.5),
+                 hide=hid, grime=False)
             x += dia + 0.03
 
 
@@ -104,16 +182,16 @@ def floor_spill(b, r, cx, cy, rad, n, palette=PACK):
     for _ in range(n):
         a, d = r.uniform(0, 6.283), rad * math.sqrt(r.random())
         x, y = cx + math.cos(a) * d, cy + math.sin(a) * d
-        col = mix(r.choice(palette), (0.7, 0.7, 0.68, 1), 0.15)
+        col = goods(r.choice(palette))
         if r.random() < 0.6:
             w, h, dd = r.uniform(0.3, 0.6), r.uniform(0.18, 0.3), r.uniform(0.5, 1.0)
-            b.box((x, y, h / 2), (w, dd, h), col, rot=(0, 0, r.uniform(0, 6.28)))
+            lbox(b, (x, y, h / 2), (w, dd, h), col, hide=(DOWN,), rot=(0, 0, r.uniform(0, 6.28)))
         else:
             dia, L = r.uniform(0.2, 0.3), r.uniform(0.32, 0.9)
             ang = r.uniform(0, 6.28)
             dv = Vector((math.cos(ang), math.sin(ang), 0)) * L / 2
             c = Vector((x, y, dia / 2))
-            b.cyl(c - dv, c + dv, dia / 2, col, seg=7)
+            b.cyl(c - dv, c + dv, dia / 2, col, seg=6)
 
 
 # ── shelving ───────────────────────────────────────────────────────────────────
@@ -339,11 +417,11 @@ def kiosk(name, seed, burnt=False):
         pr.box((0, -LY / 2 - 0.32, 9.0), (LX + 0.6, 0.12, 1.0), hexc("2E5E7E"))
         pr.box((0, LY / 2 + 0.32, 9.0), (LX + 0.6, 0.12, 1.0), hexc("2E5E7E"))
         # stock on the counters and racks inside
-        products(pr, r, -LX / 2 + 1.4, LX / 2 - 1.4, -LY / 2 + 0.25, -LY / 2 + 1.05, 3.3, 1.0, density=0.6, kinds=("box", "box", "jar"))
+        products(pr, r, -LX / 2 + 1.4, LX / 2 - 1.4, -LY / 2 + 0.25, -LY / 2 + 1.05, 3.3, 1.0, density=0.6, kinds=("box", "box", "jar"), back_hidden=False)
         me.box((0, 0.3, 2.0), (LX - 3.0, 0.1, 4.0), STEEL)
         for z in (1.2, 2.4, 3.6):
             me.box((0, 0.6, z), (LX - 3.2, 0.6, 0.05), STEEL)
-            products(pr, r, -LX / 2 + 1.7, LX / 2 - 1.7, 0.35, 0.9, z + 0.03, 1.0, density=0.7)
+            products(pr, r, -LX / 2 + 1.7, LX / 2 - 1.7, 0.35, 0.9, z + 0.03, 1.0, density=0.7, back_hidden=False)
         pr.box((2.5, LY / 2 - 0.4, 0.6), (1.0, 1.0, 1.2), FAB_DARK)  # stool
     return P
 
@@ -855,6 +933,19 @@ def clear(prefix):
                 bpy.data.meshes.remove(m)
 
 
+# art.6: every prop of the batch a little toward the dusty palette (the goods another 30 % in products())
+PALETTE_PULL = 0.15
+
+
+def pull(P, k=PALETTE_PULL):
+    for mat, b in P.b.items():
+        if mat in ("glass", "neon", "glow"):
+            continue
+        for f in b.bm.faces:
+            for l in f.loops:
+                l[b.col] = mix(l[b.col], GRIME, k)
+
+
 def build(names=None, budget=45.0):
     import time
     scn = scene()
@@ -863,6 +954,7 @@ def build(names=None, budget=45.0):
     for nm in (names or list(PROPS)):
         clear("ZR_MK_%s__" % nm)
         P = PROPS[nm]()
+        pull(P)
         objs = P.finish(scn.collection, **BAKE.get(nm, {}))
         out[nm] = sum(len(o.data.polygons) for o in objs)
         if time.time() - t0 > budget:
