@@ -432,7 +432,8 @@ local function noiseOf(model)
 	local n = rawNoise(model)
 	local pl = n > 0 and Players:GetPlayerFromCharacter(model)
 	local prof = pl and ctx.Profiles.get(pl)
-	return prof and n * (1 - Progress.bonus(prof.skills, "covert")) or n
+	-- EFT's elite Covert Movement takes 60 % off (1.2 % a level; the 51st level would pass it)
+	return prof and n * (1 - math.min(0.6, Progress.bonus(prof.skills, "covert"))) or n
 end
 
 local function visiblePart(u, model, eye)
@@ -951,8 +952,14 @@ local function idle(u, t)
 			-- an orphaned follower keeps walking its own group's loop (the leader's), not the map's main boss route
 			-- (audit ai.7: a HOUNDS or CULT follower used to take the Broker's)
 			u.leader = nil
-			u.route = L.route or (ctx.World.boss and ctx.World.boss.route)
-			u.wp = 1
+			if L.kind == "scav" then
+				-- a scav group's man goes back to wandering the zones alone (audit ai.8)
+				u.route = nil
+				u.state = "WANDER"
+			else
+				u.route = L.route or (ctx.World.boss and ctx.World.boss.route)
+				u.wp = 1
+			end
 		else
 			-- the guards spread round their leader: left and right behind him, then wider out to the sides and back
 			-- (audit ai.6: slots 2 to 4 all stood on one spot)
@@ -1971,12 +1978,53 @@ local function safeSpot(list, minDist)
 end
 AI.safeSpot = safeSpot
 
-local function spawnScav()
+-- scavs come alone or in small groups (audit ai.8). EFT spreads its scavs over the spawn zones in groups; the SPT mod
+-- Donuts' default weights for live-like group sizes are 210, 210, 45, 25 and 10 for one to five men (about 42 % alone).
+-- A server here holds ten scavs at most (Config.SCAV_CAP), so groups stop at three: 45 % alone, 45 % pairs, 10 % threes.
+local GROUP_W = { 210, 210, 45 }
+local function groupSize(room)
+	local top = math.clamp(room or #GROUP_W, 1, #GROUP_W)
+	local total = 0
+	for i = 1, top do
+		total += GROUP_W[i]
+	end
+	local r = math.random() * total
+	for i = 1, top do
+		r -= GROUP_W[i]
+		if r <= 0 then
+			return i
+		end
+	end
+	return 1
+end
+AI.groupSize = groupSize
+
+-- a group at p: the leader wanders the zones and the others walk with him in the guards' slots (they take up wandering
+-- on their own if he dies); `room` caps the group (the cap or the start count), `zones` another map's scav zones
+local GROUP_AT = { Vector3.new(0, 0, 0), Vector3.new(-3, 0, 2), Vector3.new(3, 0, 2) }
+local function spawnGroup(p, room, zones)
+	local n = groupSize(room)
+	local lead = AI.spawn("scav", p + GROUP_AT[1], { zones = zones })
+	if not lead then
+		return 0, nil
+	end
+	local made = 1
+	for i = 2, n do
+		if AI.spawn("scav", p + GROUP_AT[i], { zones = zones, leader = lead, slot = i - 1 }) then
+			made += 1
+		end
+	end
+	return made, lead
+end
+AI.spawnGroup = spawnGroup
+
+-- returns how many scavs it put down (0 when no zone is far enough from every raider)
+local function spawnScav(room)
 	local p = safeSpot(ctx.World.scavZones or {}, 70)
 	if p then
-		return AI.spawn("scav", p + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)))
+		return (spawnGroup(p + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2)), room))
 	end
-	return nil
+	return 0
 end
 AI.spawnScav = spawnScav
 
@@ -1989,9 +2037,12 @@ function AI.populate(mapId, n)
 	end
 	local made = 0
 	for _ = 1, n do
+		if made >= n then
+			break
+		end
 		local p = safeSpot(zones, 70)
-		if p and AI.spawn("scav", p + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)), { zones = zones }) then
-			made += 1
+		if p then
+			made += (spawnGroup(p + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2)), n - made, zones))
 		end
 	end
 	return made
@@ -2011,17 +2062,18 @@ local function directorTick()
 	-- early in the raid: top the scav count up as raiders join
 	if t < director.topUpUntil and t >= director.nextTopUp and liveCount("scav") < desiredScavs() then
 		director.nextTopUp = t + 4
-		spawnScav()
+		spawnScav(desiredScavs() - liveCount("scav"))
 	end
-	-- waves through the raid
+	-- waves through the raid: 2 or 3 scavs, alone or as one group (never past the cap)
 	if t >= director.nextWave then
 		director.nextWave = t + rnd(Config.SCAV_WAVE_EVERY * 0.8, Config.SCAV_WAVE_EVERY * 1.2)
 		if left > 300 then
 			director.waves += 1
-			for _ = 1, math.random(2, 3) do
-				if liveCount("scav") < Config.SCAV_CAP then
-					spawnScav()
-				end
+			local want = math.min(math.random(2, 3), Config.SCAV_CAP - liveCount("scav"))
+			local made, tries = 0, 0
+			while made < want and tries < 4 do
+				tries += 1
+				made += spawnScav(want - made)
 			end
 		end
 	end
@@ -2343,11 +2395,13 @@ function AI.reset()
 		if not bossRaid and W.patrols.FD then
 			AI.spawn("watch", W.patrols.FD[1], { route = W.patrols.FD, wp = 1 })
 		end
+		-- the raid's first scavs, alone and in groups, until SCAV_START stand on the map
+		local made = 0
 		for _ = 1, Config.SCAV_START do
-			if myGen ~= gen then
+			if myGen ~= gen or made >= Config.SCAV_START then
 				return
 			end
-			spawnScav()
+			made += spawnScav(Config.SCAV_START - made)
 		end
 	end)
 end

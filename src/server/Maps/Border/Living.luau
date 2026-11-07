@@ -2035,6 +2035,9 @@ return function(B)
 		f:loose(47.5, 0.7, 19.5, "junk", 0.4)
 		f:loose(-4, 0.7, -9.2, "junk", 0.3)
 		points.FUEL_SHOP = f:pt(3, y1 + 0.5, 22)
+		-- the open forecourt east of the pump islands, under the canopy: home of the Broker's fuel-stop zone (Reshala's
+		-- new gas station on Customs; audit ai.3)
+		points.FUEL_STOP_FORECOURT = f:pt(16, y1 + 0.5, -12)
 	end
 
 	-- ── OLD PUMPS ────────────────────────────────────────────────────────────────────────────────────────────────────

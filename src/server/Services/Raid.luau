@@ -16,6 +16,7 @@ local WP = require(Shared.WeaponParts)
 local Inv = require(script.Parent.Inv)
 local Settle = require(script.Parent.Settle)
 local Progress = require(Shared.Progress)
+local QuestData = require(Shared.QuestData)
 
 local Raid = {}
 local ctx
@@ -1169,6 +1170,15 @@ local function saveSettings(player, p)
 		end
 		s.wish = s.wish or {}
 		s.wish[wq.id] = wq.on or nil
+	end
+	-- pinned tasks (Tarkov 0.16.7: a pinned task stays at the top of the TASKS list): { pin = { id = task id, on = bool } }
+	if p.pin ~= nil then
+		local pq = p.pin
+		if type(pq) ~= "table" or type(pq.id) ~= "string" or not QuestData.byId[pq.id] or type(pq.on) ~= "boolean" then
+			return fail("BAD_INPUT")
+		end
+		s.pins = s.pins or {}
+		s.pins[pq.id] = pq.on or nil
 	end
 	-- Tarkov quick slots 4 to 0: { quick = { slot = "4", g = item guid or "" to clear } }; one key per item
 	if p.quick ~= nil then

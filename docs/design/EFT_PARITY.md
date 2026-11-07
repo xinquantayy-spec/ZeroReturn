@@ -1088,3 +1088,20 @@ Matches Tarkov now:
   at most 20 at a time; they settle and stay for 20 s.
 
 All the particle images are Roblox's own (rbxasset textures); nothing new was uploaded.
+
+### The Broker and scav groups (M3, 2026-11-08)
+
+Matches Tarkov now:
+- **The Broker (ai.3, our Reshala):** EFT's three Customs zones in our places: the dorms, the fuel stop (the new gas
+  station) and the Bastion (the Stronghold). He spawns in 45 % of raids (EFT's 39-57 %) with 752 health and four guards
+  of 630 (ai.2). He wears no armour or helmet and carries his own kit and his own look, not the Foreman's loot.
+- **Scav groups (ai.8):** scavs spawn alone or in groups. A group's leader wanders and the others walk with him;
+  if he dies, they wander on alone.
+
+Still a gap:
+- **Group sizes:** EFT's spawns can hold four or five scavs. Ours stop at three because a server holds ten scavs at most:
+  45 % alone, 45 % in pairs, 10 % in threes. These are the Donuts mod's live-like weights (210/210/45), cut at three.
+  BSG publishes no wave table, so this is the closest public source.
+- **Dorm guards:** they start in the courtyard, 75 to 95 studs from the Broker's lobby, and walk in to him. In EFT his
+  guards spawn beside him.
+

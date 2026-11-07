@@ -215,7 +215,9 @@ function CT.run(ctx)
 	check("C02", "backpack moved back by the carrier, body camera forward", packZ ~= nil and math.abs(packZ - (AssetMeta.ZR_EQ_PackA.Z + 0.17)) < 0.01 and camZ ~= nil and camZ < AssetMeta.ZR_EQ_BodyCam.Z - 0.2)
 
 	-- ── C04: delayed asset loading: the latest equipment wins, the fallback never changes protection ─────────
-	local stash = lib and lib:FindFirstChild("ZR_EQ_HelmetB")
+	-- (the server builds from its own library, ServerStorage.ZR_Assets, since audit tech.13)
+	local slib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
+	local stash = slib and slib:FindFirstChild("ZR_EQ_HelmetB")
 	if stash then
 		stash.Parent = nil -- simulate a batch that has not arrived yet
 		local m4 = dummy("guard")
@@ -234,7 +236,7 @@ function CT.run(ctx)
 		apply(m4, h4)
 		local revFb = m4:GetAttribute("AppearanceRev")
 		local cls = Items.defs[h4.items[h4.slots.head].id].armor.class
-		stash.Parent = lib
+		stash.Parent = slib
 		ctx.Assets.announce("chartest")
 		task.wait()
 		check("C04", "missing mesh: neutral fallback box, decorative only", fb1 == "ZR_EQ_HelmetB(fallback)" and fbSafe == true)

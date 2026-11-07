@@ -325,6 +325,29 @@ function T.run(ctx)
 			profT.settings.touchLayout = before
 			check("touch: the settings request takes a layout of all " .. #TLm.ELEMENTS .. " controls, keeps it cleaned, and refuses one that is not a table",
 				okFull and r2 ~= nil and not r2.ok)
+			-- pinned tasks (audit ui.14, Tarkov 0.16.7): a known task pins and unpins; an unknown id or a bad shape is refused
+			local QD = require(Shared.QuestData)
+			local qid = QD.list and QD.list[1] and QD.list[1].id
+			if not qid then
+				for id in QD.byId do
+					qid = id
+					break
+				end
+			end
+			local pinsBefore = profT.settings.pins
+			task.wait(0.6)
+			local p1 = ctx.Remotes.dispatch(pl, "settings", { pin = { id = qid, on = true } })
+			local pinned = profT.settings.pins ~= nil and profT.settings.pins[qid] == true
+			task.wait(0.6)
+			local p2 = ctx.Remotes.dispatch(pl, "settings", { pin = { id = qid, on = false } })
+			local unpinned = profT.settings.pins ~= nil and profT.settings.pins[qid] == nil
+			task.wait(0.6)
+			local p3 = ctx.Remotes.dispatch(pl, "settings", { pin = { id = "NOT_A_TASK", on = true } })
+			task.wait(0.6)
+			local p4 = ctx.Remotes.dispatch(pl, "settings", { pin = qid })
+			profT.settings.pins = pinsBefore
+			check("tasks: a pin is kept in the settings and taken off again; an unknown task or a bad shape is refused",
+				qid ~= nil and p1 and p1.ok and pinned and p2 and p2.ok and unpinned and p3 and not p3.ok and p4 and not p4.ok)
 		end
 		check("touch: a layout keeps only known controls, numbers clamped (position 0-1, size 60-160 %, opacity 25-100 %), NaN and junk dropped",
 			clean ~= nil and clean.fire.y == 1 and clean.fire.s == 1.6 and clean.fire.o == 0.25 and clean.fire.h == true and clean.nope == nil
@@ -544,12 +567,91 @@ function T.run(ctx)
 	do
 		local bb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.border and ctx.World.maps.border.boss
 		checkOn("border", "the Broker has Reshala's 752 health and his guards 630", bb ~= nil and math.abs(bb.hp * 440 - 752) < 1e-6 and math.abs(bb.crewHp * 440 - 630) < 1e-6)
+		-- audit ai.3: Reshala's three zones, his own chance, look and kit (no armour, no helmet, none of the Foreman's loot)
+		local bk = Loot.brokerLoadout(Random.new(5))
+		local foreman = false
+		for _, it in bk.items do
+			if it.id == "KEY_OFFICE" or it.id == "LEDGER" or it.id == "BRASS_LION" then
+				foreman = true
+			end
+		end
+		-- every zone stands on the map at its own building, its guards and loop round its home (a first version doubled the
+		-- map offset, so the guards spawned off the map, and its fuel stop fell back to a storage block across the map).
+		-- The dorm guards wait in the courtyard, 75-95 studs from the lobby, and his dorm loop reaches 134 studs out.
+		local bw = ctx and ctx.World and ctx.World.maps and ctx.World.maps.border
+		local near = bb ~= nil and bb.zones ~= nil and bw ~= nil and bw.bounds ~= nil
+		local mapsF = script.Parent.Parent:FindFirstChild("Maps")
+		local layM = mapsF and mapsF:FindFirstChild("Border") and mapsF.Border:FindFirstChild("Layout")
+		local okL, Lay = false, nil
+		if layM then
+			okL, Lay = pcall(require, layM)
+		end
+		local at = {}
+		if near and okL and type(Lay) == "table" then
+			local ox, oz = bw.bounds.x0 - Lay.box[1], bw.bounds.z0 - Lay.box[2]
+			for _, e in Lay.blds do
+				at[e[2]] = Vector3.new(ox + e[4], 0, oz + e[5])
+			end
+		end
+		local function onMap(p)
+			local b = bw.bounds
+			return p.X > b.x0 and p.X < b.x1 and p.Z > b.z0 and p.Z < b.z1
+		end
+		local WANT = { DORMS = "BLOCK A", ["FUEL STOP"] = "FUEL STOP", BASTION = "THE BASTION" }
+		for _, z in (near and bb.zones) or {} do
+			local c = at[WANT[z.name] or ""]
+			near = near and c ~= nil and onMap(z.home) and (Vector3.new(z.home.X, 0, z.home.Z) - c).Magnitude < 110
+			for _, p in z.crew or {} do
+				near = near and onMap(p) and (p - z.home).Magnitude < 100
+			end
+			for _, p in z.route or {} do
+				near = near and onMap(p) and (p - z.home).Magnitude < 150
+			end
+		end
+		checkOn("border", "the Broker's zones stand on the map at the dorms, the fuel stop and the Bastion, guards and loop round each home", near)
+		checkOn("border", "the Broker: three zones (dorms, fuel stop, Bastion), 45 %, his own look; no armour, helmet or Foreman loot",
+			bb ~= nil and bb.zones ~= nil and #bb.zones == 3 and bb.chance == 0.45 and bb.look == "broker" and bb.loadout == "brokerLoadout"
+				and bk.slots.armor == nil and bk.slots.head == nil and bk.slots.holster ~= nil and not foreman)
 		local mb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.meridian and ctx.World.maps.meridian.boss
 		checkOn("meridian", "the Caretaker has Killa's 890 health and five double pockets", mb ~= nil and math.abs(mb.hp * 440 - 890) < 1e-6
 			and (function()
 				local h = Loot.caretakerLoadout(Random.new(3))
 				return h.pocketsW == 5 and h.pocketsH == 2
 			end)())
+	end
+	-- audit tech.13: clients get only the meshes they clone; the server keeps the whole library in ServerStorage
+	do
+		local sl = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
+		local cl = game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+		if sl and cl and ctx and ctx.Assets and ctx.Assets.clientNeeds and #sl:GetChildren() > 0 then
+			local need, extra, missing = 0, 0, 0
+			for _, d in sl:GetChildren() do
+				if ctx.Assets.clientNeeds(d.Name) then
+					need += 1
+					missing += cl:FindFirstChild(d.Name) and 0 or 1
+				end
+			end
+			for _, d in cl:GetChildren() do
+				extra += ctx.Assets.clientNeeds(d.Name) and 0 or 1
+			end
+			check(string.format("clients get only the meshes they clone (%d of the library's %d)", #cl:GetChildren(), #sl:GetChildren()),
+				missing == 0 and extra == 0 and #cl:GetChildren() == need and need < #sl:GetChildren()
+					and cl:FindFirstChild("ZR_MK_Van__paint") == nil and cl:FindFirstChild("ZR_NAT_Grass") ~= nil)
+		end
+	end
+	-- audit ai.8: scavs spawn alone or in groups of two or three (45 / 45 / 10 %), never more than the room left
+	if ctx and ctx.AI and ctx.AI.groupSize then
+		local gs = ctx.AI.groupSize
+		local n, solo, three, over, capped = 3000, 0, 0, 0, true
+		for _ = 1, n do
+			local s = gs(3)
+			solo += (s == 1) and 1 or 0
+			three += (s == 3) and 1 or 0
+			over += (s > 3 or s < 1) and 1 or 0
+			capped = capped and gs(1) == 1 and gs(2) <= 2 and gs(0) == 1
+		end
+		check("scavs spawn alone (about 45 %), in pairs or in threes (about 10 %), never past the room left",
+			over == 0 and capped and math.abs(solo / n - 0.45) < 0.04 and math.abs(three / n - 0.097) < 0.025)
 	end
 
 	-- ammo + magazines
@@ -1801,7 +1903,7 @@ function T.run(ctx)
 		end
 		check("lobby: under 300 kit props", kits > 200 and kits < 300)
 		check("lobby: at most 6 shadow-casting lights", shadows <= 6)
-		local lib = game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+		local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 		if lib and lib:FindFirstChild("ZR_MK_Van__paint") then
 			check("lobby: every kit prop built from its meshes", fallback == 0)
 		end

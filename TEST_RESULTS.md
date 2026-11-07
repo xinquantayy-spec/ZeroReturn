@@ -8,6 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3: the Broker, scav groups and a lighter mesh library (audit ai.3, ai.8, tech.13; 2026-11-08)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests 412/412, CharTests 47/47, LookTests 33/33, MapTests 41/41. |
+| The Broker, three zones | Forced on Border for four raids: he came up at the Bastion twice, the fuel stop once and the dorms once, at 752 health. His four guards had 630 each and stood 2 to 11 studs from him at the Bastion and the fuel stop (on the forecourt, under the canopy). At the dorms they were 15 to 32 studs away 5 s in, walking in from the courtyard. |
+| Bug found and fixed | The first version doubled the map offset, so the fuel-stop and Bastion guards spawned off the map and fell. The fuel stop had also fallen back to building 8, a storage block across the map. The test now checks every zone is on the map at its own building. |
+| Scav groups | Border raid start: one leader with two followers (1 to 6 studs apart) and one scav alone, 4 in all (SCAV_START). 40 s later the three had walked about 220 studs together, the followers 16 studs behind the leader. |
+| Mesh library (tech.13) | The server keeps all 1,009 meshes in ServerStorage; clients get 527 (the mall and bunker kits, trees, rocks, logs and cover props stay on the server). On the client in the lobby: 696 bunker kit pieces streamed in. On Border: 152 tree trunks and 148 crowns with their meshes, the client's own grass and wear kit, and a normal-looking view (screenshot). CharTests' delayed-load test now takes the helmet mesh out of the server's library. |
+| Not seen | A group's man going back to wandering after his leader dies; waves of groups later in a raid; the memory or join-time saving on a phone. |
+
 ## M3 quick wins, batch 5: settings, messenger and shot visuals (2026-11-08)
 
 | Test | Result |

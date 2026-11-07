@@ -2,7 +2,7 @@
 -- Builds the safehouse and every raid map at server start (deterministic, no saved place data needed). Each map
 -- sits at its own origin; Match picks one per raid (map vote) and World.activate points the per-raid tables
 -- (spawns, extracts, patrols, loose spots, AI zones, boss) at it. Containers and doors of every map stay live.
--- Uploaded Blender meshes (ReplicatedStorage.ZR_Assets) replace part-built fallbacks when available.
+-- Uploaded Blender meshes (ServerStorage.ZR_Assets, the whole library) replace part-built fallbacks when available.
 local Lighting = game:GetService("Lighting")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -371,9 +371,9 @@ local function sign(parent, face, text, textColor, bg)
 	return g
 end
 
--- mesh asset or nil (ReplicatedStorage.ZR_Assets populated by the Assets service)
+-- mesh asset or nil (ServerStorage.ZR_Assets, filled by the Assets service)
 local function mesh(key, parent, bottomCF, color)
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 	local src = lib and lib:FindFirstChild(key)
 	if not src then
 		return nil

@@ -197,6 +197,18 @@
   "sha1": "f78047a6088f0d4962ad9013a7b6a96993bd009c",
   "uploaded": "2026-10-28 21:40:45"
  },
+ "ZR_EyeGear": {
+  "assetId": "77373343248745",
+  "file": "assets\\exports\\ZR_EyeGear.fbx",
+  "sha1": "d0ad8572f3c6ff716c1c7c53aa517110aa2c420a",
+  "uploaded": "2026-11-01 02:47:57"
+ },
+ "ZR_Foliage_Color": {
+  "assetId": "77955732744737",
+  "file": "assets\\textures\\out\\foliage\\ZR_Foliage_Color.png",
+  "sha1": "180d1aaf7c478cf6887c6b54f543b2944e1105b6",
+  "uploaded": "2026-11-01 19:38:57"
+ },
  "ZR_Gear": {
   "assetId": "75319988582613",
   "file": "assets\\exports\\ZR_Gear.fbx",
@@ -269,6 +281,12 @@
   "sha1": "a9202b4b94c2fe8f8bba795c5d32b18252c101b0",
   "uploaded": "2026-10-29 13:27:28"
  },
+ "ZR_ItemIcons_3": {
+  "assetId": "140388311535010",
+  "file": "assets\\renders\\items\\ZR_ItemIcons_3.png",
+  "sha1": "cc4edb41fda8f2ad3d71af26b80e5a620f8b10f0",
+  "uploaded": "2026-11-01 14:56:56"
+ },
  "ZR_ItemsA": {
   "assetId": "91684040376497",
   "file": "assets\\exports\\ZR_ItemsA.fbx",
@@ -304,6 +322,24 @@
   "file": "assets\\textures\\out\\materials\\ZR_MAT_AsphaltCracked_Rough.png",
   "sha1": "fa250fb2c895b5213ff008d562c74a35f623dd40",
   "uploaded": "2026-10-29 06:17:49"
+ },
+ "ZR_MAT_BrickWall_Color": {
+  "assetId": "109014461663114",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_BrickWall_Color.png",
+  "sha1": "48ab075f85b78b375ea89810c4698f77282e458a",
+  "uploaded": "2026-11-01 18:38:59"
+ },
+ "ZR_MAT_BrickWall_Normal": {
+  "assetId": "71660400181439",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_BrickWall_Normal.png",
+  "sha1": "9bb190e13ff3c9093d28950d9f1f13e153f6e006",
+  "uploaded": "2026-11-01 18:39:50"
+ },
+ "ZR_MAT_BrickWall_Rough": {
+  "assetId": "138106179506780",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_BrickWall_Rough.png",
+  "sha1": "f9e46a6467eceda123591617f6ea56342719574f",
+  "uploaded": "2026-11-01 18:39:54"
  },
  "ZR_MAT_CarpetWorn_Color": {
   "assetId": "139110568844231",
@@ -455,6 +491,24 @@
   "sha1": "2c0c5dd8f57d8a1d675d66e47205751f874f8483",
   "uploaded": "2026-10-29 06:17:45"
  },
+ "ZR_MAT_PaintGloss_Color": {
+  "assetId": "109281316214770",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_PaintGloss_Color.png",
+  "sha1": "d1a1291a3fe2361caaaac6bece3c0317c08e5e39",
+  "uploaded": "2026-11-01 18:38:40"
+ },
+ "ZR_MAT_PaintGloss_Normal": {
+  "assetId": "117325128902405",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_PaintGloss_Normal.png",
+  "sha1": "275fc4100772e49a2fbcff98122ab7deb74b0b45",
+  "uploaded": "2026-11-01 18:39:14"
+ },
+ "ZR_MAT_PaintGloss_Rough": {
+  "assetId": "139357525723518",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_PaintGloss_Rough.png",
+  "sha1": "f958220c5c43906e6791b68ba679fea75679cf9a",
+  "uploaded": "2026-11-01 18:39:17"
+ },
  "ZR_MAT_PlasterPeel_Color": {
   "assetId": "80119792102810",
   "file": "assets\\textures\\out\\materials\\ZR_MAT_PlasterPeel_Color.png",
@@ -515,6 +569,96 @@
   "sha1": "30faf03af36e5cd33f37aa4f0c7e1b975b1b9f3f",
   "uploaded": "2026-10-29 09:13:26"
  },
+ "ZR_MAT_WallTiles_Color": {
+  "assetId": "80646542384444",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WallTiles_Color.png",
+  "sha1": "2fa04f96798dac7cade9176b050f7f38672509f2",
+  "uploaded": "2026-11-01 18:38:55"
+ },
+ "ZR_MAT_WallTiles_Normal": {
+  "assetId": "72100408580699",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WallTiles_Normal.png",
+  "sha1": "000e5eb4371b20adf14293d04839c7e12986be30",
+  "uploaded": "2026-11-01 18:39:43"
+ },
+ "ZR_MAT_WallTiles_Rough": {
+  "assetId": "70674309232593",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WallTiles_Rough.png",
+  "sha1": "fd85e09ccbcdc87f1d3e86d056abeea197fe2d42",
+  "uploaded": "2026-11-01 18:39:47"
+ },
+ "ZR_MAT_WallpaperA_Color": {
+  "assetId": "81676095110322",
+  "file": "assets\\textures\\out\\walls_v2\\ZR_MAT_WallpaperA_Color.png",
+  "sha1": "f990c377d977ce0e458245cf750c5ef7f4a7920d",
+  "uploaded": "2026-11-01 23:05:21"
+ },
+ "ZR_MAT_WallpaperA_Normal": {
+  "assetId": "118369182515975",
+  "file": "assets\\textures\\out\\walls_v2\\ZR_MAT_WallpaperA_Normal.png",
+  "sha1": "356e104b9821376816978af6dc98ce262cba6586",
+  "uploaded": "2026-11-01 23:05:25"
+ },
+ "ZR_MAT_WallpaperA_Rough": {
+  "assetId": "75236518775457",
+  "file": "assets\\textures\\out\\walls_v2\\ZR_MAT_WallpaperA_Rough.png",
+  "sha1": "fe23e2a4f5455b6f607640052875149899016182",
+  "uploaded": "2026-11-01 23:05:29"
+ },
+ "ZR_MAT_WallpaperB_Color": {
+  "assetId": "102953379277425",
+  "file": "assets\\textures\\out\\walls_v2\\ZR_MAT_WallpaperB_Color.png",
+  "sha1": "8bff0dd07712c6a4ecc5ce5aec6b89716451125a",
+  "uploaded": "2026-11-01 23:05:33"
+ },
+ "ZR_MAT_WallpaperB_Normal": {
+  "assetId": "135426025418518",
+  "file": "assets\\textures\\out\\walls_v2\\ZR_MAT_WallpaperB_Normal.png",
+  "sha1": "d4cf0f93c0d000bd75ce54d9f5140d661a6879f3",
+  "uploaded": "2026-11-01 23:05:36"
+ },
+ "ZR_MAT_WallpaperB_Rough": {
+  "assetId": "86148362939116",
+  "file": "assets\\textures\\out\\walls_v2\\ZR_MAT_WallpaperB_Rough.png",
+  "sha1": "be1c3dd8eff46aeaed8404660e0e7c406e3ed3f5",
+  "uploaded": "2026-11-01 23:05:38"
+ },
+ "ZR_MAT_Whitewash_Color": {
+  "assetId": "137737831326206",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_Whitewash_Color.png",
+  "sha1": "6e8b8695e765f581a1265e0663e40db67c901fa3",
+  "uploaded": "2026-11-01 18:38:44"
+ },
+ "ZR_MAT_Whitewash_Normal": {
+  "assetId": "124319211603397",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_Whitewash_Normal.png",
+  "sha1": "0a9fbbe5e3310110814de6d9b2a59fc05cc8d661",
+  "uploaded": "2026-11-01 18:39:21"
+ },
+ "ZR_MAT_Whitewash_Rough": {
+  "assetId": "74901756160482",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_Whitewash_Rough.png",
+  "sha1": "29a1136b1a85ae427314aa4100581716dc4ef385",
+  "uploaded": "2026-11-01 18:39:24"
+ },
+ "ZR_MAT_WoodPanel_Color": {
+  "assetId": "133023644080277",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WoodPanel_Color.png",
+  "sha1": "3530efec1bb382e9bdd7dbe562965fb168534605",
+  "uploaded": "2026-11-01 18:39:05"
+ },
+ "ZR_MAT_WoodPanel_Normal": {
+  "assetId": "103888275846526",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WoodPanel_Normal.png",
+  "sha1": "6c2e10819746bedabb76f7eeac805d83bef4c3a6",
+  "uploaded": "2026-11-01 18:39:57"
+ },
+ "ZR_MAT_WoodPanel_Rough": {
+  "assetId": "112730869690975",
+  "file": "assets\\textures\\out\\materials\\ZR_MAT_WoodPanel_Rough.png",
+  "sha1": "65fc0da3d399dcefb64bc665914e77a69942438a",
+  "uploaded": "2026-11-01 18:40:01"
+ },
  "ZR_MAT_WoodWeathered_Color": {
   "assetId": "93244541264980",
   "file": "assets\\textures\\out\\materials\\ZR_MAT_WoodWeathered_Color.png",
@@ -552,16 +696,22 @@
   "uploaded": "2026-10-29 09:42:05"
  },
  "ZR_Nature": {
-  "assetId": "131399075967241",
+  "assetId": "120650690065241",
   "file": "assets\\exports\\ZR_Nature.fbx",
-  "sha1": "a1f941d40696c15bb970f7cd6bd6cd1bd6f9b0c1",
-  "uploaded": "2026-10-29 07:27:41"
+  "sha1": "9cc5d81bb5c32214ce9162bd23d435e0b4110b43",
+  "uploaded": "2026-11-01 19:52:09"
  },
  "ZR_Operator": {
   "assetId": "89318251225515",
   "file": "assets\\exports\\ZR_Operator.fbx",
   "sha1": "12a413b7f6b6ff66f84a3ac35591124b632f8399",
   "uploaded": "2026-10-28 17:00:14"
+ },
+ "ZR_SFX_Amb": {
+  "assetId": "136853086315408",
+  "file": "assets\\audio\\out\\ZR_SFX_Amb.ogg",
+  "sha1": "6fc0b6069957c0a447c218159f06bab5d025c307",
+  "uploaded": "2026-11-01 20:10:08"
  },
  "ZR_SFX_Atlas": {
   "assetId": "117513374968391",
@@ -617,6 +767,60 @@
   "sha1": "48f4c794b1fef54be283f25ccb366921270a13fa",
   "uploaded": "2026-10-28 14:51:33"
  },
+ "ZR_SKY_clear_down": {
+  "assetId": "140412398670717",
+  "file": "assets\\textures\\sky\\ZR_SKY_clear_down.png",
+  "sha1": "a1dd8c7b379be62613869f22d448f4337a1d7b8e",
+  "uploaded": "2026-11-08 03:35:13"
+ },
+ "ZR_SKY_clear_side": {
+  "assetId": "128447504936134",
+  "file": "assets\\textures\\sky\\ZR_SKY_clear_side.png",
+  "sha1": "c299652eb535de894ad8efdbbf38729e04d64796",
+  "uploaded": "2026-11-08 03:35:03"
+ },
+ "ZR_SKY_clear_up": {
+  "assetId": "85149812426622",
+  "file": "assets\\textures\\sky\\ZR_SKY_clear_up.png",
+  "sha1": "f4e0af18b55bf180b6a4358dc7b62a21ac28e30b",
+  "uploaded": "2026-11-08 03:35:07"
+ },
+ "ZR_SKY_night_down": {
+  "assetId": "120313509536363",
+  "file": "assets\\textures\\sky\\ZR_SKY_night_down.png",
+  "sha1": "874328fe0c4d961d0c65674684983daa7c95b79d",
+  "uploaded": "2026-11-08 03:35:41"
+ },
+ "ZR_SKY_night_side": {
+  "assetId": "99594038836638",
+  "file": "assets\\textures\\sky\\ZR_SKY_night_side.png",
+  "sha1": "5da857c4c4236cb951d083b3a9ba78f33ef0a539",
+  "uploaded": "2026-11-08 03:35:33"
+ },
+ "ZR_SKY_night_up": {
+  "assetId": "130406015831321",
+  "file": "assets\\textures\\sky\\ZR_SKY_night_up.png",
+  "sha1": "6eb4e85be5853468accc86a7200e79bc0dc3f577",
+  "uploaded": "2026-11-08 03:35:37"
+ },
+ "ZR_SKY_overcast_down": {
+  "assetId": "113675142965964",
+  "file": "assets\\textures\\sky\\ZR_SKY_overcast_down.png",
+  "sha1": "85606a4d9a38dc4f40d3b7c4f160189fb597dfc9",
+  "uploaded": "2026-11-08 03:35:28"
+ },
+ "ZR_SKY_overcast_side": {
+  "assetId": "78984454408791",
+  "file": "assets\\textures\\sky\\ZR_SKY_overcast_side.png",
+  "sha1": "327748cb764be903f4581d2b092a25b0b5acb4b2",
+  "uploaded": "2026-11-08 03:35:16"
+ },
+ "ZR_SKY_overcast_up": {
+  "assetId": "132098354951677",
+  "file": "assets\\textures\\sky\\ZR_SKY_overcast_up.png",
+  "sha1": "5de16ba03c1c1d4b9a08f23f6822020c29fbdae3",
+  "uploaded": "2026-11-08 03:35:22"
+ },
  "ZR_TEX_Drops": {
   "assetId": "106817814250743",
   "file": "assets\\textures\\out\\ZR_TEX_Drops.png",
@@ -670,6 +874,12 @@
   "file": "assets\\textures\\out\\ZR_TEX_Splash.png",
   "sha1": "d4ee484a154f00bdb29704dcecaad4a54d9ae003",
   "uploaded": "2026-10-28 19:11:37"
+ },
+ "ZR_TEX_TouchIcons": {
+  "assetId": "112837097438845",
+  "file": "assets\\textures\\out\\ZR_TEX_TouchIcons.png",
+  "sha1": "d2763f958d161d923e3b4e5993680d0aea1646f6",
+  "uploaded": "2026-11-02 08:42:21"
  },
  "ZR_TEX_Vignette": {
   "assetId": "102205556504643",

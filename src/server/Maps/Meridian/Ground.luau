@@ -1308,7 +1308,7 @@ return function(B)
 	-- ── rock fields and boulders (nature kit; a plain rock when the kit did not load) ──────────────────────
 	step("rocks", function()
 		local rk = kit.model("Rocks", map)
-		local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+		local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 		local function tint(amt)
 			local k = 1 - rng:NextNumber(0, amt)
 			return Color3.new(k, k, k)

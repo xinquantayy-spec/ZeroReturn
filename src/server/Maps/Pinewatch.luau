@@ -586,7 +586,7 @@ return function(kit, root)
 	end
 
 	-- nature kit pieces (ZR_Nature): origin at the base; nil when the kit is missing
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 	local function nat(parent, key, cf, scale, color, solid)
 		local t = lib and lib:FindFirstChild(key)
 		if not t then

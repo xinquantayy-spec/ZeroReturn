@@ -43,7 +43,7 @@ function Chars.buildRig(kind, variant)
 	hrp.BottomSurface = Enum.SurfaceType.Smooth
 	hrp.Parent = model
 	parts.HumanoidRootPart = hrp
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 	for name, spec in RigSpec.parts do
 		local mesh = lib and lib:FindFirstChild("ZR_BLK_" .. name)
 		local p
@@ -130,7 +130,7 @@ local function band(char, partName, color)
 	if not host then
 		return nil
 	end
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 	local src = lib and lib:FindFirstChild("ZR_OV_Armband")
 	local p
 	if src then

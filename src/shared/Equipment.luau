@@ -157,6 +157,9 @@ local LOOKS: { [string]: any } = {
 		overlays = join({ P("ZR_OV_PaddedJacket", "UpperTorso", "7E5F36", "Fabric", { shell = "jacket" }), P("ZR_OV_FleeceCollar", "UpperTorso", "CFC6B0", "Fabric") },
 			pair("ZR_OV_BootCuffs", "LowerLeg", "8A8478", "Fabric")),
 		covers = { armorVisual = true } },
+	-- THE BROKER (Border Yard's dealer, our Reshala; audit ai.3): a dark tracksuit, no armour and no helmet, a gold chain
+	broker = { jacket = "2B313B", pants = "262A31", skin = "C9A58A", glove = "C9A58A", boot = "1E1D1C",
+		overlays = { P("ZR_OV_FleeceCollar", "UpperTorso", "C9A24A", "Metal") } },
 	-- THE STOKER (Meridian's garage boss, our Tagilla): a boiler stoker in navy work clothes and a scorched leather
 	-- apron-vest, knee pads; his plate carrier and welding mask are items and stay in view
 	stoker = { jacket = "2E3742", pants = "2A2D30", skin = "B8957A", glove = "4A3A2A", boot = "2A2622",
