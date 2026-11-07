@@ -6,6 +6,7 @@
 -- server hitbox pose (stance, crouch depth, lean, aim pitch, weapon hold) written to Motor6D.C0; ragdoll.
 -- Clients animate on top through Motor6D.Transform (Animator.luau), using the same RigMath solver.
 local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
@@ -229,8 +230,11 @@ function Chars.setWeapon(char, holder, g)
 				l.Angle = 42
 				l.Brightness = 3.2
 				l.Color = Color3.fromRGB(255, 244, 222)
-				l.Shadows = true
+				-- no shadows from here (audit tech.12): each client turns them on for the lights within 60 studs of its
+				-- camera (Weapon.luau), so a night raid never has 30 shadow-casting spotlights
+				l.Shadows = false
 				l.Enabled = char:GetAttribute("WeaponLight") == true
+				CollectionService:AddTag(l, "ZR_WeaponLight")
 				l.Parent = b.lightPart
 			end
 			if b.laserPart then

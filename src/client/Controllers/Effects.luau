@@ -246,8 +246,15 @@ function Effects.deafen(amount, dur)
 	end
 end
 
+-- written only when the deafness or the effects volume changes (audit tech.12: no per-frame writes of unchanged values)
+local deafShown, volShown = -1, -1
 local function updateDeaf()
 	local k = Effects.deafLevel()
+	local fxVol = ctx.Settings.fxVolume and ctx.Settings.fxVolume() or 1
+	if fxVol == volShown and (k == deafShown or (k > 0 and math.abs(k - deafShown) < 0.002)) then
+		return -- (the last step down to 0 is always written)
+	end
+	deafShown, volShown = k, fxVol
 	if deafEq then
 		deafEq.Enabled = k > 0.01
 		deafEq.HighGain = -40 * k
@@ -255,7 +262,7 @@ local function updateDeaf()
 		deafEq.LowGain = -6 * k
 	end
 	if world then
-		world.Volume = (1 - 0.5 * k) * (ctx.Settings.fxVolume and ctx.Settings.fxVolume() or 1)
+		world.Volume = (1 - 0.5 * k) * fxVol
 	end
 	if tinnitus then
 		tinnitus.Volume = (tinnitusGain or 0.5) * 1.2 * k

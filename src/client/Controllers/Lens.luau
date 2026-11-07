@@ -414,7 +414,8 @@ function TextObj:layout()
 			end
 		end
 		glyph.main.Position = UDim2.fromOffset(X, Y)
-		glyph.main.Visible = true
+		-- a glyph faded out completely is hidden rather than drawn see-through (audit tech.12)
+		glyph.main.Visible = g.alpha < 0.99
 		if glyph.r then
 			local r = math.sqrt(nx * nx + ny * ny)
 			local dx, dy = 1, 0
@@ -424,8 +425,8 @@ function TextObj:layout()
 			local m = caPx * (0.7 + r * 0.9)
 			glyph.r.Position = UDim2.fromOffset(X + dx * m, Y + dy * m)
 			glyph.b.Position = UDim2.fromOffset(X - dx * m, Y - dy * m)
-			glyph.r.Visible = caPx > 0
-			glyph.b.Visible = caPx > 0
+			glyph.r.Visible = caPx > 0 and g.alpha < 0.98
+			glyph.b.Visible = caPx > 0 and g.alpha < 0.98
 		end
 	end
 	for i = ti + 1, #self.tPool do
@@ -441,8 +442,9 @@ function TextObj:layout()
 		self.glowImg.Rotation = rot
 		local c = (self.segs[1] and self.segs[1].color) or self.color
 		self.glowImg.ImageColor3 = c
-		self.glowImg.ImageTransparency = self.glow + (1 - self.glow) * self.alpha
-		self.glowImg.Visible = #list > 0
+		local gt = self.glow + (1 - self.glow) * self.alpha
+		self.glowImg.ImageTransparency = gt
+		self.glowImg.Visible = #list > 0 and gt < 0.99
 	end
 	self.width = total
 end

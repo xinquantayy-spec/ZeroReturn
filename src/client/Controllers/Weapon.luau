@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local UIS = game:GetService("UserInputService")
+local CollectionService = game:GetService("CollectionService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Ballistics = require(Shared.Ballistics)
 local Progress = require(Shared.Progress)
@@ -114,6 +115,8 @@ local kickZ, kickRot, kickRoll = 0, 0, 0
 local sway = CFrame.identity
 local scopeGui, scopeImg, scopeBars, reflexDot
 local tpLightT = 0
+local tpLights = {} -- third-person weapon lights (tag ZR_WeaponLight) -> true
+local TP_SHADOW_RANGE = 60 -- studs (audit tech.12)
 
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -1191,14 +1194,26 @@ local function update(dt)
 	local o = vm
 	local show = o ~= nil and (inRaid or practicing()) and hum ~= nil and not ctx.Input.isMenu() and not ctx.Camera.orbit and not ctx.Input.isMounted()
 	-- local player's own third-person weapon light stays off (the viewmodel lamp lights the scene)
-	if now - tpLightT > 0.25 and char then
+	if now - tpLightT > 0.25 then
 		tpLightT = now
-		for _, c in char:GetChildren() do
-			if c.Name == "TPWeapon" then
-				local l = c:FindFirstChild("WeaponLight")
-				if l and l.Enabled then
-					l.Enabled = false
+		if char then
+			for _, c in char:GetChildren() do
+				if c.Name == "TPWeapon" then
+					local l = c:FindFirstChild("WeaponLight")
+					if l and l.Enabled then
+						l.Enabled = false
+					end
 				end
+			end
+		end
+		-- shadows (audit tech.12): besides the first-person lamp, only other people's weapon lights within 60 studs
+		-- of the camera cast them (the server makes them without)
+		local camPos = cam.CFrame.Position
+		for l in tpLights do
+			local p = l.Parent
+			local want = l.Enabled and p ~= nil and p:IsA("BasePart") and (p.Position - camPos).Magnitude < TP_SHADOW_RANGE
+			if l.Shadows ~= want then
+				l.Shadows = want
 			end
 		end
 	end
@@ -1783,6 +1798,16 @@ function Weapon.init(c)
 		resetActions()
 		lastActiveG = nil
 		watchChar(char)
+	end)
+	-- other people's weapon lights, as they stream in and out (their shadows follow the distance, in update)
+	for _, l in CollectionService:GetTagged("ZR_WeaponLight") do
+		tpLights[l] = true
+	end
+	CollectionService:GetInstanceAddedSignal("ZR_WeaponLight"):Connect(function(l)
+		tpLights[l] = true
+	end)
+	CollectionService:GetInstanceRemovedSignal("ZR_WeaponLight"):Connect(function(l)
+		tpLights[l] = nil
 	end)
 	RunService:BindToRenderStep("ZR_Weapon", Enum.RenderPriority.Camera.Value + 2, update)
 end

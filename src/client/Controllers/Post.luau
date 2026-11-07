@@ -32,8 +32,46 @@ local lastLook, turnBlur = nil, 0
 local grainClock, probeClock = 0, 0
 local baseExposure = 0.1
 local grainBase, grainShown = 0.5, -1
+local bloomFx -- the server's BloomEffect (Post.apply finds it)
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+-- write a property only when it moved by a visible step (audit tech.12): the frame loop below computes every value each
+-- frame, but the engine is told only when one changes. Post.apply clears this, so the next frame writes everything.
+local written = {} -- [object][property] = the value last written
+local function put(obj, prop, v, eps)
+	local w = written[obj]
+	if not w then
+		w = {}
+		written[obj] = w
+	end
+	local last = w[prop]
+	if last ~= nil then
+		local kind = typeof(v)
+		if kind == "number" then
+			if math.abs(v - last) < eps then
+				return
+			end
+		elseif kind == "Color3" then
+			if math.abs(v.R - last.R) < eps and math.abs(v.G - last.G) < eps and math.abs(v.B - last.B) < eps then
+				return
+			end
+		elseif v == last then
+			return
+		end
+	end
+	w[prop] = v
+	obj[prop] = v
+end
+-- a full-screen overlay's see-through amount; hidden outright while it is fully see-through (audit tech.12)
+local function fade(o, prop, tr)
+	tr = math.clamp(tr, 0, 1)
+	local vis = tr < 0.995
+	put(o, "Visible", vis)
+	if vis then
+		put(o, prop, tr, 0.004)
+	end
+end
 
 local function effect(class, name)
 	local e = Lighting:FindFirstChild(name)
@@ -220,6 +258,7 @@ function Post.apply()
 	-- indoors (it is the most expensive post effect, ~5 ms a frame on an integrated GPU at full quality)
 	fx.dof.Enabled = q >= 3 and indoorTarget < 0.6
 	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
+	bloomFx = bloom
 	if bloom then
 		bloom.Enabled = q >= 2
 		bloom.Intensity = 0.55
@@ -241,6 +280,7 @@ function Post.apply()
 	grainBase = g
 	grainShown = -1
 	sizeGlow()
+	table.clear(written) -- the next frame writes every value again (settings, a new screen size, Studio capture mode)
 end
 
 local function updateGrain()
@@ -360,16 +400,20 @@ local function step(dt)
 	if fx.dof.Enabled ~= wantDof then
 		fx.dof.Enabled = wantDof
 	end
-	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
+	-- the server's bloom, found again only if it went missing (no search every frame)
+	if not (bloomFx and bloomFx.Parent) and probeClock == 0 then
+		bloomFx = Lighting:FindFirstChildOfClass("BloomEffect")
+	end
+	local bloom = bloomFx
 	Post.burstAmt = math.max(0, Post.burstAmt - dt * 4)
 	Post.flash = math.max(0, Post.flash - dt * 5)
 	updateGrain()
 	-- indoors the auto-gain lifts less than it did (0.55): rooms stay darker than the day outside, with light falling off from the
 	-- windows, instead of an evenly lit box (owner, 2026-11-01: walls looked flat and fake)
 	exposure = baseExposure + Post.envExposure + indoor * 0.35 + Post.burstAmt * 0.6 + Post.flash * 2.2 + Post.nvExposure
-	Lighting.ExposureCompensation = exposure
+	put(Lighting, "ExposureCompensation", exposure, 0.002)
 	if bloom and bloom.Enabled then
-		bloom.Intensity = 0.55 + Post.burstAmt * 1.2 + Post.nvBloom
+		put(bloom, "Intensity", 0.55 + Post.burstAmt * 1.2 + Post.nvBloom, 0.005)
 	end
 	-- damage / pain / low health (from the server health model)
 	local v = ctx.State.vitals
@@ -381,30 +425,33 @@ local function step(dt)
 	Post.pain += (tgtPain - Post.pain) * math.min(1, dt * 1.5)
 	Post.low += (tgtLow - Post.low) * math.min(1, dt * 2)
 	Post.dmg = math.max(0, Post.dmg - dt * 1.3)
-	red.ImageTransparency = 1 - Post.dmg * 0.85
+	-- the overlays below are hidden while fully see-through, and every value is written only on change (audit tech.12)
+	fade(red, "ImageTransparency", 1 - Post.dmg * 0.85)
 	local low = Post.low
-	tunnel.ImageTransparency = 1 - math.clamp(Post.pain * 0.55 + low * 0.45, 0, 0.8)
+	fade(tunnel, "ImageTransparency", 1 - math.clamp(Post.pain * 0.55 + low * 0.45, 0, 0.8))
 	local cz = concussLevel()
 	local wl = Post.whiteLevel()
-	white.BackgroundTransparency = 1 - math.clamp(wl, 0, 1)
+	fade(white, "BackgroundTransparency", 1 - math.clamp(wl, 0, 1))
 	local sm = math.clamp(Post.smoke, 0, 1)
-	veil.BackgroundTransparency = 1 - sm * 0.82
+	fade(veil, "BackgroundTransparency", 1 - sm * 0.82)
 	if sm > 0.01 then
-		veil.BackgroundColor3 = Color3.fromRGB(150, 154, 150):Lerp(Post.hazeTint, 0.35):Lerp(Color3.new(0, 0, 0), math.clamp(1 - Post.lum, 0, 0.8))
+		put(veil, "BackgroundColor3", Color3.fromRGB(150, 154, 150):Lerp(Post.hazeTint, 0.35):Lerp(Color3.new(0, 0, 0), math.clamp(1 - Post.lum, 0, 0.8)), 0.004)
 	end
-	fx.grade.Saturation = -0.1 - low * 0.45 - Post.pain * 0.15 - cz * 0.45
-	fx.grade.Contrast = 0.14 + Post.pain * 0.08 - cz * 0.1
-	fx.grade.TintColor = Color3.fromRGB(236, 243, 235):Lerp(Color3.fromRGB(255, 214, 205), Post.dmg * 0.6)
-	fx.grade.Brightness = -0.015 - cz * 0.06
-	fx.blur.Size = math.max(turnBlur, Post.dmg * 6, Post.pain * 2, cz * 14, wl * 10)
+	put(fx.grade, "Saturation", -0.1 - low * 0.45 - Post.pain * 0.15 - cz * 0.45, 0.002)
+	put(fx.grade, "Contrast", 0.14 + Post.pain * 0.08 - cz * 0.1, 0.002)
+	put(fx.grade, "TintColor", Color3.fromRGB(236, 243, 235):Lerp(Color3.fromRGB(255, 214, 205), Post.dmg * 0.6), 0.004)
+	put(fx.grade, "Brightness", -0.015 - cz * 0.06, 0.002)
+	local blur = math.max(turnBlur, Post.dmg * 6, Post.pain * 2, cz * 14, wl * 10)
+	put(fx.blur, "Size", blur, 0.05)
+	put(fx.blur, "Enabled", blur >= 0.05) -- a blur of nothing is switched off rather than drawn
 	-- lens: the soft edge grows with motion and eases off while aiming down sights
 	local M, W = ctx.Movement, ctx.Weapon
 	local moving = math.clamp(turnBlur / 3 + ((M and M.sprinting) and 0.45 or 0), 0, 1)
 	lensMotion += (moving - lensMotion) * math.min(1, dt * 5)
 	lensAim += (((W and W.aiming) and 1 or 0) - lensAim) * math.min(1, dt * 7)
 	if haze then
-		haze.ImageColor3 = Post.hazeTint
-		haze.ImageTransparency = 1 - math.clamp(0.82 + 0.3 * lensMotion - 0.35 * lensAim + Post.dmg * 0.2, 0, 1)
+		put(haze, "ImageColor3", Post.hazeTint, 0.004)
+		put(haze, "ImageTransparency", 1 - math.clamp(0.82 + 0.3 * lensMotion - 0.35 * lensAim + Post.dmg * 0.2, 0, 1), 0.004)
 	end
 end
 
