@@ -107,6 +107,44 @@ function T.run(ctx)
 		check("reminder glow at the third ask within 2 s, 150 ms after the shot", M.GLOW_ASKS == 3 and M.GLOW_WINDOW == 2 and M.GLOW_DELAY == 0.15)
 	end)
 
+	-- ── tech.16: analytics events (Services/Analytics.luau; Roblox records them only in a published game) ─────────
+	guard("analytics", function()
+		local A = ctx.Analytics
+		check("analytics: loaded by Raid.init", A ~= nil)
+		if not A then
+			return
+		end
+		check("analytics: level bands for the custom field", A.levelBand(1) == "Level - 1-4" and A.levelBand(12) == "Level - 10-19" and A.levelBand(40) == "Level - 30-40")
+		check("analytics: no recent hit means another cause of death", A.killerKind(nil) == "Killer - Other")
+		-- a stand-in player (a plain table): nothing is ever sent for it, the events only reach the recent list
+		local fake = { Name = "ZR_AnalyticsTest" }
+		local s = { map = "test_map", scav = false }
+		local okFlow, errFlow = pcall(function()
+			check("analytics: no frame-rate report without a raid", A.perf(fake, { fps = 50, q = 3, dev = "pc", t = 300 }) == false)
+			A.deploy(fake, s)
+			local dep = A.recent[#A.recent]
+			check("analytics: Deploy carries the map, the side and the level band", dep ~= nil and dep.name == "Deploy" and dep.fields ~= nil
+				and dep.fields[Enum.AnalyticsCustomFieldKeys.CustomField01.Name] == "Map - test_map" and dep.fields[Enum.AnalyticsCustomFieldKeys.CustomField02.Name] == "Side - PMC")
+			check("analytics: no report before the raid ends", A.perf(fake, { fps = 50, q = 3, dev = "pc", t = 300 }) == false)
+			A.raidEnd(fake, s, "MIA", { time = 1234.6 }, nil)
+			local mia = A.recent[#A.recent]
+			check("analytics: MIA logged with the raid's length", mia ~= nil and mia.name == "MIA" and mia.value == 1234)
+			check("analytics: a report shorter than 30 s or malformed is refused", A.perf(fake, { fps = 50, q = 3, dev = "pc", t = 10 }) == false and A.perf(fake, { fps = 0 / 0, t = 300 }) == false and A.perf(fake, "x") == false)
+			check("analytics: one frame-rate report per raid", A.perf(fake, { fps = 47.6, q = 1, dev = "phone", t = 300 }) == true and A.perf(fake, { fps = 47.6, q = 1, dev = "phone", t = 300 }) == false)
+			local fr = A.recent[#A.recent]
+			check("analytics: RaidFps carries the rounded average, device, graphics level and map", fr ~= nil and fr.name == "RaidFps" and fr.value == 48
+				and fr.fields[Enum.AnalyticsCustomFieldKeys.CustomField01.Name] == "Device - phone" and fr.fields[Enum.AnalyticsCustomFieldKeys.CustomField02.Name] == "Graphics - LOW"
+				and fr.fields[Enum.AnalyticsCustomFieldKeys.CustomField03.Name] == "Map - test_map")
+			A.raidEnd(fake, s, "SUCCESS", { time = 900, runThrough = true }, nil)
+			local ex = A.recent[#A.recent]
+			check("analytics: Extract tells a run-through from a survival", ex ~= nil and ex.name == "Extract" and ex.fields[Enum.AnalyticsCustomFieldKeys.CustomField03.Name] == "Exit - Run through")
+			A.raidEnd(fake, s, "KIA", { time = 60 }, nil)
+			check("analytics: Death logged with the killer's kind", A.recent[#A.recent].name == "Death" and A.recent[#A.recent].fields[Enum.AnalyticsCustomFieldKeys.CustomField03.Name] == "Killer - Other")
+		end)
+		A.forget(fake)
+		check("analytics: the event flow ran without an error (" .. tostring(errFlow) .. ")", okFlow)
+	end)
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

@@ -793,6 +793,7 @@ function Detail.init(c)
 	-- default) a device that stays under 30 for 8 seconds steps down one GRAPHICS level (never during the first 20 s of a
 	-- life or right after a step, while things stream in); with it off, a one-time hint under 24 fps for 20 s as before
 	local frames, window, lowFor, hinted = 0, 0, 0, false
+	local raidFrames, raidTime, wasInRaid = 0, 0, false -- this raid's frames and seconds (the analytics report)
 	local calmUntil = os.clock() + 20
 	local Players = game:GetService("Players")
 	Players.LocalPlayer.CharacterAdded:Connect(function()
@@ -846,6 +847,21 @@ function Detail.init(c)
 		window += dt
 		if window >= 1 then
 			local fps = frames / window
+			-- the raid's average frame rate for the server's analytics (audit tech.16): counted while the window is in
+			-- front, reported once with the GRAPHICS level and the device class when the raid ends
+			local inRaid = ctx.State.inRaid()
+			if inRaid and inFront then
+				raidFrames += frames
+				raidTime += window
+			end
+			if wasInRaid and not inRaid then
+				if raidTime >= 30 then
+					local S0 = ctx.Settings and ctx.Settings.data
+					ctx.State.act("perf", { fps = raidFrames / raidTime, q = S0 and S0.quality or Detail.level, dev = ctx.Settings.deviceClass(), t = math.floor(raidTime) })
+				end
+				raidFrames, raidTime = 0, 0
+			end
+			wasInRaid = inRaid
 			frames, window = 0, 0
 			local S = ctx.Settings and ctx.Settings.data
 			local auto = S and S.autoGfx ~= false
