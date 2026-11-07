@@ -282,7 +282,10 @@ local function update(dt)
 	Movement.breath = W.aiming and ctx.Input.down("Sprint") and Movement.arms > 2
 	if W.aiming then
 		local mass = W.mass or 3
-		local drain = Config.ADS_DRAIN + mass * 0.25 + (Movement.breath and Config.BREATH_DRAIN or 0)
+		-- Tarkov: a heavy gun tires the arms faster, good ergonomics slower (audit gameplay.10): x1.3 at 0 ergonomics,
+		-- x1 at 50, x0.7 at 100
+		local ergoK = 1.3 - math.clamp(W.ergo or 50, 0, 100) * 0.006
+		local drain = (Config.ADS_DRAIN + mass * 0.25) * ergoK + (Movement.breath and Config.BREATH_DRAIN or 0)
 		if Movement.stance == "p" then
 			drain *= 0.35 -- rested on the ground
 		elseif Movement.stance == "c" then

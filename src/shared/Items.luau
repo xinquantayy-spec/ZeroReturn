@@ -154,7 +154,7 @@ add("SURGKIT", { name = "Field Surgical Kit", short = "SURGERY", kind = "med", w
 add("WATER", { name = "Water Bottle", short = "WATER", kind = "food", w = 1, h = 2, mass = 0.6, value = 8000, food = { water = 60, time = 4 }, desc = "Hydration +60.", color = c("#7FA8B8") })
 add("STEW", { name = "Canned Stew", short = "STEW", kind = "food", w = 1, h = 1, mass = 0.4, value = 6500, food = { energy = 55, water = -5, time = 5 }, desc = "Energy +55.", color = c("#8F6A4A") })
 add("HARDTACK", { name = "Hardtack", short = "HARDTACK", kind = "food", w = 1, h = 1, mass = 0.15, value = 3000, food = { energy = 30, water = -12, time = 3 }, desc = "Energy +30, dries you out.", color = c("#A48C64") })
-add("VOLT_DRINK", { name = "Volt Energy Drink", short = "VOLT", kind = "food", w = 1, h = 2, mass = 0.4, value = 11000, rarity = "uncommon", food = { energy = 20, water = 35, stamina = 60, time = 3 }, desc = "Energy +20, hydration +35, stamina boost.", color = c("#6E8F3C") })
+add("VOLT_DRINK", { name = "Volt Energy Drink", short = "VOLT", kind = "food", w = 1, h = 2, mass = 0.4, value = 11000, rarity = "uncommon", food = { energy = 20, water = 35, stamina = 60, time = 3 }, desc = "Energy +20, hydration +35; stamina recovers 50 % faster for a minute.", color = c("#6E8F3C") })
 -- M13 Meridian Mall: groceries
 add("JUICE", { name = "Fruit Juice Carton", short = "JUICE", kind = "food", w = 1, h = 2, mass = 0.5, value = 7000, food = { water = 45, energy = 10, time = 3 }, desc = "Hydration +45, energy +10. Still sealed.", color = c("#C8962E") })
 add("CHOC_BAR", { name = "Chocolate Bar", short = "CHOC", kind = "food", w = 1, h = 1, mass = 0.1, value = 5000, food = { energy = 25, water = -6, time = 2 }, desc = "Energy +25.", color = c("#6E3E2A") })

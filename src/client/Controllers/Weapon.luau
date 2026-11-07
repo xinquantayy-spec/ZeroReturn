@@ -1140,6 +1140,7 @@ local function update(dt)
 	-- pose blends
 	local gear = ctx.Movement and ctx.Movement.gear
 	local ergo = (o and (o.def.ergo + o.ms.ergo) or 50) * (1 + (gear and gear.ergo or 0) / 100)
+	Weapon.ergo = ergo -- the aiming stamina drain reads it (Movement.luau)
 	aimA += ((Weapon.aiming and 1 or 0) - aimA) * math.min(1, dt * (6 + ergo / 10))
 	local M = ctx.Movement
 	sprintA += (((M and M.sprinting) and 1 or 0) - sprintA) * math.min(1, dt * 9)

@@ -62,6 +62,32 @@ local exitArea = { touch = false, y0 = 200, y1 = 900, gap = 5, vit = { 0, 0 }, r
 local toastTop, toastStep, squadBottom, squadStep = 0.36, 0.04, 0.93, 0.045
 local toastX = 0.04 -- the toasts' left edge (moved right of the touch stick when they would meet it)
 local SIDE_L, SIDE_R = 0.04, 0.96
+-- the device's safe area (a notch or rounded corners; audit ui.11): the HUD draws edge to edge for the bodycam lens, so
+-- a hidden probe with DeviceSafeInsets tells how far in the side columns must start
+local safeProbe = nil
+local function safeSides(W)
+	if not safeProbe then
+		local pg = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
+		if not pg then
+			return 0.04, 0.96
+		end
+		local sg = Instance.new("ScreenGui")
+		sg.Name = "ZR_SafeProbe"
+		sg.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+		sg.ResetOnSpawn = false
+		sg.Enabled = true
+		local f = Instance.new("Frame")
+		f.Size = UDim2.fromScale(1, 1)
+		f.BackgroundTransparency = 1
+		f.Parent = sg
+		sg.Parent = pg
+		safeProbe = f
+	end
+	local full = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.X or W
+	local l = math.max(0, safeProbe.AbsolutePosition.X)
+	local r = math.max(0, full - (safeProbe.AbsolutePosition.X + safeProbe.AbsoluteSize.X))
+	return math.max(0.04, (l + 8) / math.max(1, W)), math.min(0.96, 1 - (r + 8) / math.max(1, W))
+end
 
 -- stack objects downward from y0 (pixels); each entry = { obj, size }; returns the y below the last one
 local function stack(list, x, y0, gap)
@@ -81,6 +107,7 @@ local function layout()
 	end
 	L:resize()
 	local u, H, W = L.unit, math.max(1, L.H), math.max(1, L.W)
+	SIDE_L, SIDE_R = safeSides(W)
 	local gap = 7 * u
 	local top = 0.058 * H + 4 * u
 	-- Roblox's own menu sits at the left end of the top bar (GuiService.TopbarInset is the free band right of it): on a

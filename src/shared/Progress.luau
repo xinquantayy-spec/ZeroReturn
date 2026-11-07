@@ -47,7 +47,8 @@ P.SKILLS = {
 	perception = { cat = "MENTAL", name = "PERCEPTION", desc = "You hear footsteps from further away.", per = 0.008 },
 	intellect = { cat = "MENTAL", name = "INTELLECT", desc = "Examining is faster; repair kits take less off the maximum.", per = 0.008 },
 	attention = { cat = "MENTAL", name = "ATTENTION", desc = "Searching containers and bodies is faster.", per = 0.005 },
-	charisma = { cat = "MENTAL", name = "CHARISMA", desc = "Traders sell to you for less. Grows with the other mental skills.", per = 0.003 },
+	-- Tarkov's Charisma (audit economy.6): 0.1 % off insurance, repairs and paid exits a level; no trader discount
+	charisma = { cat = "MENTAL", name = "CHARISMA", desc = "Insurance, repairs and paid exits cost 0.1 % less a level. Grows with the other mental skills.", per = 0.001 },
 	-- practical
 	covert = { cat = "PRACTICAL", name = "COVERT MOVEMENT", desc = "Your footsteps carry less far.", per = 0.008 },
 	search = { cat = "PRACTICAL", name = "SEARCH", desc = "Searching containers and bodies is faster.", per = 0.004 },

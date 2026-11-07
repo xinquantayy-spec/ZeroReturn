@@ -158,7 +158,7 @@ local function buy(player, prof, p)
 	if boughtCount(prof, key, w) + qty > offer.limit then
 		return fail("OUT_OF_STOCK", "Sold out until the restock.")
 	end
-	local price = TD.price(tid, offer, ll, P.bonus(prof.skills, "charisma")) * qty
+	local price = TD.price(tid, offer, ll) * qty
 	if prof.money < price then
 		return fail("NOT_ENOUGH_MONEY", "Not enough money.")
 	end
@@ -174,7 +174,7 @@ local function buy(player, prof, p)
 	if done == 0 then
 		return fail("NO_SPACE", "No room in your stash.")
 	end
-	local paid = TD.price(tid, offer, ll, P.bonus(prof.skills, "charisma")) * done
+	local paid = TD.price(tid, offer, ll) * done
 	prof.money -= paid
 	standing(prof, tid).spent += paid
 	addBought(prof, key, w, done)
@@ -192,7 +192,7 @@ local function repair(player, prof, p)
 	if not it then
 		return fail("NO_ITEM")
 	end
-	local pts, cost, newMax = TD.repairQuote(tid, it)
+	local pts, cost, newMax = TD.repairQuote(tid, it, P.bonus(prof.skills, "charisma"))
 	if not pts then
 		return fail("NOT_REPAIRABLE", TD.defs[tid].name .. " can't repair that.")
 	end

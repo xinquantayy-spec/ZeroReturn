@@ -986,6 +986,21 @@ function T.run(ctx)
 		local who, price = TD.bestBuyer(chain, 0)
 		check("best buyer for valuables", who == "hale" and price == math.floor(Items.defs.GOLD_CHAIN.value * 0.5))
 		check("quest items are not sold", TD.bestBuyer({ id = "LEDGER", n = 1 }, 0) == nil)
+		-- audit economy.6 and .8: Charisma is 0.1 % a level off repairs (not trader prices); the Sealed Drive has a task
+		local worn = { id = "R17_RIFLE", n = 1, wear = 60, wmax = 90 }
+		local _, c0 = TD.repairQuote("vos", worn)
+		local _, c1 = TD.repairQuote("vos", worn, 0.05)
+		check("charisma: repairs cost less with it, trader prices ignore it", c0 ~= nil and c1 ~= nil and c1 < c0 and P.SKILLS.charisma.per == 0.001
+			and TD.price("vos", rifle, 1) == TD.price("vos", rifle, 1, nil))
+		local drive = false
+		for _, q in QD.list do
+			for _, o in q.obj do
+				if o.kind == "handin" and o.item == "SEALED_DRIVE" then
+					drive = true
+				end
+			end
+		end
+		check("the Sealed Drive is wanted by a task", drive)
 		check("fence pays more with good karma", TD.sellPrice("fence", chain, 3) > TD.sellPrice("fence", chain, -3))
 		check("dog tags are worth more for veterans", Items.valueOf({ id = "DOGTAG", n = 1, tag = { lvl = 10 } }) > Items.valueOf({ id = "DOGTAG", n = 1, tag = { lvl = 1 } }))
 		-- data consistency

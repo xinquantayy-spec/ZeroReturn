@@ -65,7 +65,8 @@ function Flea.offersFor(id, window)
 		seed = (seed * 31 + string.byte(c)) % 2147483647
 	end
 	local rng = Random.new(seed)
-	local rare = d.rarity == "rare" and 0.5 or (d.rarity == "uncommon" and 0.8 or 1)
+	-- the rarer the item, the fewer people sell it (audit economy.2: epic and legendary used to get the most offers)
+	local rare = ({ uncommon = 0.8, rare = 0.5, epic = 0.3, legendary = 0.15 })[d.rarity or ""] or 1
 	local n = math.clamp(math.floor(rng:NextNumber() * 4 * rare + 1), 1, 4)
 	local out = {}
 	local mp = Flea.marketPrice(id)
@@ -89,12 +90,9 @@ function Flea.saleRate(price, marketPrice)
 		return 0.18
 	elseif r <= 1.25 then
 		return 0.05
-	elseif r <= 1.6 then
-		return 0.012
-	elseif r <= 2.5 then
-		return 0.002
 	end
-	return 0 -- nobody pays that much
+	-- the simulated buyers stop at about 1.25x the market price (audit economy.1): above that only a real player buys
+	return 0
 end
 
 return Flea

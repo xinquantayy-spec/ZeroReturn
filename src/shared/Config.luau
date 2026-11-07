@@ -2,7 +2,7 @@
 -- Zero Return: tunable constants shared by server and client (read-only).
 local Config = {
 	GAME_NAME = "ZERO RETURN",
-	BUILD = "0.9.2-m13",
+	BUILD = "0.10.0-audit", -- the one build label (Version.luau, unused and stale, was removed: audit tech.15)
 	MAP_NAME = "QUAY 7",
 	RECORDER = "FIELD RECORDER M4",
 	CURRENCY = "MK",

@@ -364,7 +364,7 @@ function Health.mods(hs)
 		sway = 1 + arms * 0.45 + (pain and 0.35 or 0),
 		tremor = pain and 0.7 or (hs.toxin and 0.4 or 0),
 		reload = 1 + arms * 0.25,
-		staminaRegen = (hs.energy <= 0 or hs.water <= 0) and 0.5 or 1,
+		staminaRegen = ((hs.energy <= 0 or hs.water <= 0) and 0.5 or 1) * (((hs.boostUntil or 0) > os.clock()) and 1.5 or 1),
 	}
 	return m
 end
@@ -470,6 +470,11 @@ local function plan(hs, d, it, part)
 		return { time = f.time or 3, label = "CONSUMING " .. string.upper(d.name), apply = function()
 			hs.energy = math.clamp(hs.energy + (f.energy or 0), 0, 100)
 			hs.water = math.clamp(hs.water + (f.water or 0), 0, 100)
+			if f.stamina then
+				-- an energy drink's boost (audit gameplay.8): stamina comes back half as fast again for f.stamina seconds
+				hs.boostUntil = os.clock() + f.stamina
+				hs.dirty = true
+			end
 			return 1
 		end }
 	end

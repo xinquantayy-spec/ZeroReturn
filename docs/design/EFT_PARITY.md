@@ -1053,3 +1053,21 @@ Ours (performance, exception 3):
   light only within 150 studs of the camera. The bunker, 4,000 studs from every map, gets no raid effects.
 - **AI cost (ai.10, ai.11):** AI stream in and out whole (Atomic) and skip the climbing, swimming, seated and flying
   states.
+
+### Audit quick wins, batch 4: economy, skills and touch (M3, 2026-11-07)
+
+Matches Tarkov now:
+- **Flea market (economy.1, .2):** the simulated buyers stop at 1.25x the market price; epic and legendary items get
+  fewer offers than rare ones.
+- **Charisma (economy.6):** 0.1 % off insurance, repairs and paid exits a level; trader prices no longer drop with it.
+- **The Sealed Drive (economy.8)** is wanted by a new task: Tilda's "Sealed Records" (two, found in raid).
+- **VOLT (gameplay.8):** the drink speeds stamina recovery by half for a minute, as its description says.
+- **Ergonomics (gameplay.10):** aiming tires the arms 1.3x as fast at 0 ergonomics, 0.7x at 100.
+- **Bosses and player scavs (ai.4):** the Caretaker, the cultists, MORTAR and KESTREL shoot player scavs on sight; the
+  other bosses leave a scav alone while its karma holds.
+
+Ours (exception 4, touch and phones):
+- **MORE tray captions (ui.10):** a word under each icon; MORE and LOOK moved off the centre of the screen.
+- **Safe area (ui.11):** the HUD's side columns start inside a notch or rounded corner.
+
+Also: the unused `Version.luau` was removed and the build label is `0.10.0-audit` (tech.15).

@@ -60,6 +60,10 @@ Q.list = {
 	{ id = "T4", trader = "tilda", name = "Heavy Plate", level = 7, after = "T3",
 		desc = "The Foreman wears the best plate on the quay. Take it off him.",
 		obj = { kill("boss", 1) }, reward = { money = 120000, xp = 4000, rep = 0.12, items = { { "ARMOR_C4", 1 } } } },
+	-- the Sealed Drive had no use (audit economy.8): Tilda wants what is on it, like Tarkov's data-carrier tasks
+	{ id = "T5", trader = "tilda", name = "Sealed Records", level = 9, after = "T3",
+		desc = "The evacuation office kept its records on sealed drives. Find two and bring them to me unopened.",
+		obj = { handin("SEALED_DRIVE", 2) }, reward = { money = 180000, xp = 5000, rep = 0.12 } },
 	-- FENCE
 	{ id = "F1", trader = "fence", name = "Local Rules", level = 1, after = nil,
 		desc = "Go in as one of the locals and come back. Twice. Don't make enemies.",

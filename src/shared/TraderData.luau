@@ -202,7 +202,7 @@ function T.condition(it: any): (number?, number?, number?)
 end
 
 -- a trader's repair of an item: points restored, cost, the new maximum (nil = nothing to repair / not theirs)
-function T.repairQuote(traderId: string, it: any): (number?, number?, number?)
+function T.repairQuote(traderId: string, it: any, discount: number?): (number?, number?, number?)
 	local r = T.REPAIRS[traderId]
 	local d = Items.defs[it.id]
 	if not r or not d or not r.kinds[d.kind] or (d.kind == "rig" and not d.armor) then
@@ -220,7 +220,8 @@ function T.repairQuote(traderId: string, it: any): (number?, number?, number?)
 	else
 		cost = math.ceil(pts * d.value * r.rate)
 	end
-	return pts, math.max(1, cost), math.max(1, max - pts * deg)
+	-- discount: Charisma (Tarkov: 0.1 % off a level)
+	return pts, math.max(1, math.ceil(cost * (1 - (discount or 0)))), math.max(1, max - pts * deg)
 end
 
 -- the trader paying the most for an item: id, price

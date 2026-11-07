@@ -372,8 +372,9 @@ function Extract.pay(player, s, e, t)
 		return false, why, text
 	end
 	local r = e.rule
-	local cost = r.cost or 0
 	local prof = ctx.Profiles.get(player)
+	-- Charisma: 0.1 % off a level (Tarkov; audit economy.6)
+	local cost = math.floor((r.cost or 0) * (1 - Progress.bonus(prof and prof.skills, "charisma")))
 	if not prof or prof.money < cost then
 		return false, "MONEY", "NOT ENOUGH MONEY  -  THE FARE IS " .. Util.commas(cost) .. " " .. Config.CURRENCY
 	end
@@ -474,10 +475,11 @@ local function complete(player, s, e)
 	end
 	if r.kind == "paid" then
 		local prof = ctx.Profiles.get(player)
-		if not prof or prof.money < (r.cost or 0) then
+		local cost = math.floor((r.cost or 0) * (1 - Progress.bonus(prof and prof.skills, "charisma")))
+		if not prof or prof.money < cost then
 			return false
 		end
-		prof.money -= r.cost or 0
+		prof.money -= cost
 		ctx.Profiles.markDirty(player)
 	end
 	ctx.Raid.finalize(player, "SUCCESS")

@@ -426,7 +426,8 @@ function tray(open)
 		end
 	end
 	local size = 46 * unit()
-	local gap = 10
+	local capH = 14 -- a caption under each icon (audit ui.10)
+	local gap = 10 + capH
 	local cols = math.min(5, #list)
 	local rows = math.ceil(#list / cols)
 	local W, H = gui.AbsoluteSize.X, gui.AbsoluteSize.Y
@@ -444,6 +445,19 @@ function tray(open)
 		b.ZIndex = 6
 		b.BackgroundTransparency = 0.2
 		iconLabel(b, t.icon, 0.62).ZIndex = 7
+		local cap = Instance.new("TextLabel")
+		cap.Name = "Caption"
+		cap.BackgroundTransparency = 1
+		cap.AnchorPoint = Vector2.new(0.5, 0)
+		cap.Position = UDim2.new(0.5, 0, 1, 2)
+		cap.Size = UDim2.fromOffset(size + gap - 4, capH)
+		cap.Text = t.short or t.name
+		cap.TextScaled = true
+		cap.FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold)
+		cap.TextColor3 = Color3.fromRGB(226, 228, 220)
+		cap.TextStrokeTransparency = 0.4
+		cap.ZIndex = 7
+		cap.Parent = b
 		b.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.Touch then
 				Touch.trayUntil = os.clock() + 5

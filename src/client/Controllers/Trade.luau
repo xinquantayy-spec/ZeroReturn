@@ -415,7 +415,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 			local locked = o.ll > st.ll
 			local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 			local left = o.limit - used
-			local price = e.kind == "offer" and TD.price(tid, o, st.ll, charisma()) or nil
+			local price = e.kind == "offer" and TD.price(tid, o, st.ll) or nil
 			local on = ui.sel and ui.sel.kind == e.kind and ui.sel.i == e.i
 			local t = itemTile(sf, e.items, e.g, (p[1] - 1) * cellW + 1, (p[2] - 1) * cellW + 1, p[3] * cellW - 2, p[4] * cellW - 2, {
 				name = (e.kind == "offer" and "Offer_" or "Barter_") .. o.id,
@@ -596,7 +596,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 	local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 	local left = math.max(0, o.limit - used)
 	if e.kind == "offer" then
-		local unit = TD.price(tid, o, st.ll, charisma())
+		local unit = TD.price(tid, o, st.ll)
 		ui.qty = math.clamp(ui.qty, 1, math.max(1, math.min(10, left)))
 		local total = unit * ui.qty
 		local afford = (d.money or 0) >= total
@@ -720,7 +720,7 @@ local function servicesTab(f, x, y, w, h, d, tid)
 		.. " Every repair lowers the item's maximum durability a little; a repair kit wears it less.", K.C.dim, 11)
 	local any = false
 	for g, it in d.items or {} do
-		local pts, cost, newMax = TD.repairQuote(tid, it)
+		local pts, cost, newMax = TD.repairQuote(tid, it, charisma())
 		if pts then
 			any = true
 			local def = Items.defs[it.id]

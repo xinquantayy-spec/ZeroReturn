@@ -134,6 +134,8 @@ end
 
 -- pure rule (tested): AI never fight each other (the Watch and the scavs keep an uneasy truce); AI scavs and
 -- the boss group leave player scavs alone unless that scav turned on them; the Watch shoots every raider.
+AI.SCAV_HOSTILE = { Caretaker = true, Cultist = true, Priest = true, Mortar = true, Kestrel = true }
+
 function AI.hostileTo(faction, w)
 	if w.unit then
 		return false
@@ -178,6 +180,11 @@ local function hostile(u, w)
 			u.grudge[w.player] = true -- too close: he remembers you
 		end
 		return on
+	end
+	-- EFT's bosses who shoot player scavs on sight (audit ai.4): Killa (our Caretaker), the cultists, Big Pipe and
+	-- Birdeye (MORTAR and KESTREL); the rest leave a scav alone while its karma holds
+	if w.s and w.s.scav and AI.SCAV_HOSTILE[u.label] then
+		return true
 	end
 	return AI.hostileTo(u.faction, w)
 end

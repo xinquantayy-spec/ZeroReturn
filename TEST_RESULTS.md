@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3 quick wins, batch 4: economy, skills and touch (2026-11-07)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests **408/408** (new: Charisma lowers repair quotes and not trader prices; the Sealed Drive has a task), CharTests 47/47, LookTests 33/33, MapTests 41/41. |
+| MORE tray (touch forced) | Opened in a Quay 7 raid: MAG, CHAMBER, MODE?, INSPECT, ZERO + and ZERO - captions under the icons. The screenshot showed LOOK over the raid clock; moved below it (not re-shot yet). |
+| Not seen in play | The VOLT boost, the ergonomics drain, the boss hostility to player scavs, the flea buyer cap, the safe-area margins on a notched phone. |
+
 ## M3 quick wins, batch 3: sound, sniper and AI cost (2026-11-07)
 
 | Test | Result |

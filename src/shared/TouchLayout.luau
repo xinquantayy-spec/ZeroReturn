@@ -42,8 +42,10 @@ T.ELEMENTS = {
 	{ id = "mode", name = "FIRE MODE / HOLD: CHECK IT", icon = "MODE", x = 0.59, y = 0.49, size = 46, shown = true, tap = "FireMode", hold = "FireModeCheck", raid = true },
 	{ id = "leanL", name = "LEAN LEFT", icon = "LEAN_L", x = 0.70, y = 0.33, size = 44, shown = true, press = "LeanLeft", raid = true },
 	{ id = "leanR", name = "LEAN RIGHT", icon = "LEAN_R", x = 0.80, y = 0.33, size = 44, shown = true, press = "LeanRight", raid = true },
-	{ id = "look", name = "FREE LOOK (DRAG)", icon = "LOOK", x = 0.59, y = 0.33, size = 44, shown = true, press = "FreeLook", drag = true, raid = true },
-	{ id = "more", name = "MORE (THE RARELY USED)", icon = "MORE", x = 0.49, y = 0.33, size = 44, shown = true, special = "tray", raid = true },
+	-- LOOK and MORE sit off the screen's centre line, where they covered the view (audit ui.10); LOOK stays below the
+	-- recorder column's raid clock
+	{ id = "look", name = "FREE LOOK (DRAG)", icon = "LOOK", x = 0.89, y = 0.31, size = 44, shown = true, press = "FreeLook", drag = true, raid = true },
+	{ id = "more", name = "MORE (THE RARELY USED)", icon = "MORE", x = 0.60, y = 0.20, size = 44, shown = true, special = "tray", raid = true },
 	{ id = "breath", name = "HOLD BREATH (WHILE AIMING)", icon = "BREATH", x = 0.31, y = 0.58, size = 50, shown = true, press = "Sprint", raid = true },
 	-- off at first (the editor shows them): a second fire button for the left thumb, and the device and goggles, which
 	-- the tray holds
@@ -68,16 +70,17 @@ end
 
 -- the tray (MORE): the rarely used, each an icon; `need` hides one that cannot do anything now (Touch.luau)
 T.TRAY = {
-	{ action = "MagCheck", icon = "MAGCHECK", name = "CHECK MAGAZINE" },
-	{ action = "ChamberCheck", icon = "CHAMBER", name = "CHECK CHAMBER" },
-	{ action = "FireModeCheck", icon = "MODECHECK", name = "CHECK FIRE MODE" },
-	{ action = "InspectWeapon", icon = "INSPECT", name = "INSPECT WEAPON" },
-	{ action = "ZeroUp", icon = "ZERO_UP", name = "ZEROING UP" },
-	{ action = "ZeroDown", icon = "ZERO_DOWN", name = "ZEROING DOWN" },
-	{ action = "SightMode", icon = "SIGHT", name = "SIGHT MODE", need = "zoom" },
-	{ action = "Light", icon = "LIGHT", name = "TACTICAL DEVICE", need = "device" },
-	{ action = "DeviceMode", icon = "DEVICE", name = "DEVICE MODE", need = "combo" },
-	{ action = "ToggleNVG", icon = "NV", name = "NIGHT VISION", need = "goggles" },
+	-- short: the caption under the icon (audit ui.10)
+	{ action = "MagCheck", icon = "MAGCHECK", name = "CHECK MAGAZINE", short = "MAG" },
+	{ action = "ChamberCheck", icon = "CHAMBER", name = "CHECK CHAMBER", short = "CHAMBER" },
+	{ action = "FireModeCheck", icon = "MODECHECK", name = "CHECK FIRE MODE", short = "MODE?" },
+	{ action = "InspectWeapon", icon = "INSPECT", name = "INSPECT WEAPON", short = "INSPECT" },
+	{ action = "ZeroUp", icon = "ZERO_UP", name = "ZEROING UP", short = "ZERO +" },
+	{ action = "ZeroDown", icon = "ZERO_DOWN", name = "ZEROING DOWN", short = "ZERO -" },
+	{ action = "SightMode", icon = "SIGHT", name = "SIGHT MODE", need = "zoom", short = "SIGHT" },
+	{ action = "Light", icon = "LIGHT", name = "TACTICAL DEVICE", need = "device", short = "DEVICE" },
+	{ action = "DeviceMode", icon = "DEVICE", name = "DEVICE MODE", need = "combo", short = "DEV MODE" },
+	{ action = "ToggleNVG", icon = "NV", name = "NIGHT VISION", need = "goggles", short = "NV" },
 }
 
 T.LIMITS = { s = { 0.6, 1.6 }, o = { 0.25, 1 } }

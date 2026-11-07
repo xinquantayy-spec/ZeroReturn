@@ -222,7 +222,8 @@ local function quote(p: any, list: { string }, userId: number): (number, { strin
 			table.insert(todo, x)
 		end
 	end
-	return cost, todo
+	-- Charisma: 0.1 % off a level (Tarkov; audit economy.6)
+	return math.floor(cost * (1 - Progress.bonus(p.skills, "charisma"))), todo
 end
 
 local function insureList(p: any, list: { string }, userId: number): (number?, string?)
