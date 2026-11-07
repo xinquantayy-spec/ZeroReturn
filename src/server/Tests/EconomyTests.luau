@@ -1,8 +1,9 @@
 --!nonstrict
 -- Economy regression checks for the audit's quick wins (docs/audit/2026-11-07/economy.md): the flea market's category
--- gates and ban list (economy.3), Fence's loyalty and prices from karma (economy.5). Run with the other test modules
--- via ZR_Dev "tests"; ctx is the server's service table. Most checks call the shared modules' pure functions; the rest
--- use stand-in profiles, never a real player's.
+-- gates and ban list (economy.3), Fence's loyalty and prices from karma (economy.5), the secure containers' paths and
+-- filter (economy.7), the map tasks and boss targets (economy.9) and the flare category (economy.11). Run with the
+-- other test modules via ZR_Dev "tests"; ctx is the server's service table. Most checks call the shared modules' pure
+-- functions; the rest use stand-in profiles, never a real player's.
 local Services = script.Parent.Parent:WaitForChild("Services")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
@@ -275,6 +276,34 @@ function T.run(ctx)
 			check("the Foreman and the Broker are bosses on the maps that are built",
 				(not built.quay7 or labels.Foreman == true) and (not built.border or labels.Broker == true))
 		end
+	end
+
+	-- economy.11: flares in the handbook and the flea categories (EFT files the RSP-30 under special equipment); the
+	-- client's category table is read from the synced client module, which needs nothing client-only to load
+	do
+		local sps = game:GetService("StarterPlayer"):FindFirstChild("StarterPlayerScripts")
+		local client = sps and sps:FindFirstChild("ZRClient")
+		local controllers = client and client:FindFirstChild("Controllers")
+		local mod = controllers and controllers:FindFirstChild("Menus")
+		local okM, Menus = false, nil
+		if mod then
+			okM, Menus = pcall(require, mod)
+		end
+		if okM and type(Menus) == "table" and Menus.CAT then
+			local missing = {}
+			for _, d in Items.defs do
+				if d.kind ~= "hazard" and not Menus.CAT[d.kind] and not table.find(missing, d.kind) then
+					table.insert(missing, d.kind)
+				end
+			end
+			check("handbook: flares under SPECIAL EQUIPMENT, a category in the list, every item kind has one"
+				.. (#missing > 0 and (" (none for " .. table.concat(missing, ", ") .. ")") or ""),
+				Menus.CAT.flare == "SPECIAL EQUIPMENT" and table.find(Menus.CATS, "SPECIAL EQUIPMENT") ~= nil and #missing == 0)
+		else
+			check("handbook: the client's Menus module loads for the category check", false)
+		end
+		check("flea: the green flare lists and sells from level 15; the red one stays off the market (EFT)",
+			FR.canBuy("FLARE_GREEN", FR.LEVEL) == true and not FR.tradeable("FLARE_RED"))
 	end
 
 	local summary = string.format("%d passed, %d failed", passed, failed)
