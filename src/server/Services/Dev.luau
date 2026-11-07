@@ -599,6 +599,17 @@ function C.money(name, n)
 	return prof.money
 end
 
+-- set a player's scav karma (Fence standing, EFT's -7 to 6): karma(name, 6) makes Fence LL2
+function C.karma(name, v)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	if type(v) == "number" then
+		prof.karma = math.clamp(v, -7, 6)
+	end
+	ctx.Raid.afterChange(p, false)
+	return prof.karma
+end
+
 -- found-in-raid items straight into the stash (hand-in tests)
 function C.fir(name, id, n)
 	local p = plr(name)
