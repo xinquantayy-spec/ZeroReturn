@@ -1,2 +1,6 @@
 [tools]
 rojo = "rojo-rbx/rojo@7.7.1"
+# the code gate (audit tech-8, tools/gate.py): lint, format check and type check
+selene = "Kampfkarren/selene@0.27.1"
+stylua = "JohnnyMorganz/StyLua@2.0.2"
+luau-lsp = "JohnnyMorganz/luau-lsp@1.40.0"

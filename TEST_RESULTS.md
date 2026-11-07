@@ -18,6 +18,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Server closed mid-raid | `ZR_Dev finalize SERVER_CLOSED` with a found-in-raid item added: kit and item kept (32 items), item not found-in-raid, survived count unchanged, profile invariant OK, the bunker message sent. Report: "SERVER CLOSED - KIT KEPT", one orange line, CARRIED OUT and FOUND IN RAID (0). The first version stacked the run-through line on top of it; fixed. |
 | Bunker health kept | `ZR_Dev keepHealth` took 30 off the thorax in the bunker: the profile kept 55; the next raid started at 419/440 (the bunker had healed some of it). |
 | Line-of-sight probe | Found three blocked containers or doors before the fixes: a first aid bag inside a stair, lockers behind a treadmill row, and two doors that open into a wall on one side (KNOWN_ISSUES 80). |
+| Code gate (tech-8) | New `tools/luau_lint.py` (a Luau parser that resolves every name) passed a self-test of undefined reads, missing locals, generics, interpolation, if-expressions and `continue`, then found one real bug in `src`: the gunsmith repair kit used an undefined `prof`, so every repair failed. Fixed; in Studio the first repair returned ok and a second "It is in full condition." `tools/gate.py` now runs before every sync. |
 | Not tested | A real server shutdown, the saves-down kick (live only), reconnect and server-per-raid (need the published place), phones and consoles. |
 
 ## Touch controls v2 (2026-11-02)

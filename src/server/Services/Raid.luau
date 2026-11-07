@@ -927,6 +927,8 @@ function Raid.inv(player, p)
 			return fail("NOTHING_TO_REPAIR", "It is in full condition.")
 		end
 		kit.pts = left - pts
+		-- out of raid the holder is the profile (luau_lint found `prof` undefined here, 2026-11-07: every repair errored)
+		local prof = ctx.Profiles.get(player) or me
 		local newMax = max - pts * TD.KIT_DEGRADE * (1 - Progress.bonus(prof.skills, "intellect"))
 		ctx.Economy.skillUp(player, prof, "intellect", 3)
 		it.wear, it.wmax = math.min(newMax, cur + pts), newMax

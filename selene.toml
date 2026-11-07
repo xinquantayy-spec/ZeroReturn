@@ -1,0 +1,11 @@
+# selene for Zero Return (tools/gate.py): Roblox's standard library; style lints off, bug lints on
+std = "roblox"
+
+[lints]
+unused_variable = "warn"
+shadowing = "allow"
+global_usage = "deny"
+undefined_variable = "deny"
+mixed_table = "allow"
+multiple_statements = "allow"
+empty_if = "warn"
