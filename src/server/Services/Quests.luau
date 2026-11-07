@@ -129,39 +129,67 @@ local KILL_MATCH = {
 	any = { scav = true, pscav = true, watch = true, pmc = true, boss = true, follower = true },
 }
 
-function Quests.onKill(player, kind)
+-- does a kill objective take this kill? label: the victim's Label attribute (a boss's name), for objectives that name
+-- one boss (audit economy.9: "kill the Foreman" used to take any boss)
+function Quests.killMatches(o, kind, label)
+	return o.kind == "kill" and KILL_MATCH[o.target] ~= nil and KILL_MATCH[o.target][kind] == true and (o.boss == nil or o.boss == label)
+end
+
+function Quests.onKill(player, kind, label)
 	local prof = ctx.Profiles.get(player)
 	if not prof then
 		return
 	end
 	for _, q in active(prof) do
 		for i, o in q.obj do
-			if o.kind == "kill" and KILL_MATCH[o.target] and KILL_MATCH[o.target][kind] then
+			if Quests.killMatches(o, kind, label) then
 				bump(player, prof, q, i)
 			end
 		end
 	end
+end
+
+-- the map a raid session is on (a transit moves it; Raid sets it at the start)
+local function mapOf(s)
+	return s.map or (ctx.Match and ctx.Match.map)
+end
+
+-- does an extract objective take this extraction? (exit, scav or PMC, and the map when the objective names one)
+function Quests.extractMatches(o, s, mapId)
+	return o.kind == "extract" and (o.scav == nil or o.scav == (s.scav == true)) and (not o.exfil or o.exfil == s.exZone) and (not o.map or o.map == mapId)
 end
 
 function Quests.onExtract(player, prof, s)
+	local mapId = mapOf(s)
 	for _, q in active(prof) do
 		for i, o in q.obj do
-			if o.kind == "extract" and (o.scav == nil or o.scav == (s.scav == true)) and (not o.exfil or o.exfil == s.exZone) then
+			if Quests.extractMatches(o, s, mapId) then
 				bump(player, prof, q, i)
 			end
 		end
 	end
 end
 
+-- the visit zone an objective means for a raid session: the zone of that name in the session's own map (audit economy.9:
+-- the zones of the active map were used, wrong after a transit; zone names repeat across maps), or nil
+function Quests.zoneFor(o, s, mapId)
+	if o.kind ~= "visit" or (o.map and o.map ~= mapId) or (o.scav ~= nil and o.scav ~= (s.scav == true)) then
+		return nil
+	end
+	local m = mapId and ctx.World.maps and ctx.World.maps[mapId]
+	local zones = (m and m.visitZones) or (mapId == ctx.World.activeMap and ctx.World.visitZones) or {}
+	return zones[o.zone]
+end
+
 local function visitTick()
-	local zones = ctx.World.visitZones or {}
 	for player, s in ctx.Raid.sessions() do
 		local prof = not s.done and ctx.Profiles.get(player)
 		local root = prof and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if root then
+			local mapId = mapOf(s)
 			for _, q in active(prof) do
 				for i, o in q.obj do
-					local z = o.kind == "visit" and zones[o.zone]
+					local z = Quests.zoneFor(o, s, mapId)
 					if z and (prof.quests[q.id].p[tostring(i)] or 0) < 1 and (root.Position - z.pos).Magnitude <= z.r then
 						bump(player, prof, q, i)
 					end
@@ -227,16 +255,19 @@ local function questReq(player, p)
 		end
 		prof.quests[q.id].s = "claimed"
 		local r = q.reward or {}
-		-- a reward of items alone (EFT's collector pays no money or XP) leaves the zero amounts out
+		-- zero amounts are left out (EFT's collector pays the container alone, its Trophy XP and standing alone)
 		local rew = {}
-		if (r.money or 0) > 0 or not r.items then
-			table.insert(rew, Util.commas(r.money or 0) .. " " .. Config.CURRENCY)
+		if (r.money or 0) > 0 then
+			table.insert(rew, Util.commas(r.money) .. " " .. Config.CURRENCY)
 		end
 		if (r.xp or 0) > 0 then
 			table.insert(rew, r.xp .. " XP")
 		end
 		for _, e in r.items or {} do
 			table.insert(rew, Items.defs[e[1]].name .. (((e[2] or 1) > 1) and (" x" .. e[2]) or ""))
+		end
+		if #rew == 0 then
+			table.insert(rew, "your standing")
 		end
 		ctx.Economy.mail(prof, q.trader, "Task complete: " .. q.name .. ". Your reward: " .. table.concat(rew, ", ") .. ".")
 		prof.money += r.money or 0

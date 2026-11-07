@@ -206,6 +206,77 @@ function T.run(ctx)
 		end
 	end
 
+	-- economy.9: tasks on the visit zones of Border Yard, Meridian Mall and the Smelter, each on its own map; the two boss
+	-- tasks name their boss (the Foreman, the Broker), so another boss's kill no longer counts
+	do
+		local QD = require(Shared.QuestData)
+		local Maps = require(Shared.Maps)
+		local perMap, namesOk, mapsOk, bossTasks, anyBoss = {}, true, true, {}, false
+		for _, q in QD.list do
+			for _, o in q.obj do
+				if o.kind == "visit" then
+					namesOk = namesOk and QD.ZONE_NAMES[o.zone] ~= nil
+					mapsOk = mapsOk and o.map ~= nil and Maps.defs[o.map] ~= nil
+					if o.map then
+						perMap[o.map] = (perMap[o.map] or 0) + 1
+					end
+				elseif o.kind == "extract" and o.map then
+					mapsOk = mapsOk and Maps.defs[o.map] ~= nil
+				elseif o.kind == "kill" and o.target == "boss" then
+					if o.boss then
+						bossTasks[o.boss] = q.id
+					else
+						anyBoss = true
+					end
+				end
+			end
+		end
+		check("tasks visit places on Border Yard, Meridian Mall and the Smelter, every zone named for the UI and tied to a map",
+			(perMap.border or 0) >= 4 and (perMap.meridian or 0) >= 3 and (perMap.smelter or 0) >= 1 and namesOk and mapsOk)
+		check("the two boss tasks name their boss: Heavy Plate the Foreman, Dealer's Due the Broker; none takes any boss",
+			bossTasks.Foreman == "T4" and bossTasks.Broker == "V7" and not anyBoss and QD.BOSS_NAMES.Foreman ~= nil and QD.BOSS_NAMES.Broker ~= nil)
+		check("task text names the boss and the map", QD.describe(QD.byId.T4.obj[1]) == "Eliminate the Foreman"
+			and string.find(QD.describe(QD.byId.V5.obj[1]), "BORDER YARD", 1, true) ~= nil)
+		if ctx and ctx.Quests and ctx.World then
+			local Q = ctx.Quests
+			local foreman = QD.byId.T4.obj[1]
+			check("a named boss counts only for itself; a follower or another boss does not",
+				Q.killMatches(foreman, "boss", "Foreman") and not Q.killMatches(foreman, "boss", "Caretaker") and not Q.killMatches(foreman, "follower", "Foreman")
+					and not Q.killMatches(foreman, "boss", nil) and Q.killMatches({ kind = "kill", target = "boss", n = 1 }, "boss", "Halberd"))
+			local exM = QD.byId.T6.obj[4]
+			check("an extract objective with a map counts on that map only",
+				Q.extractMatches(exM, { scav = false }, "meridian") and not Q.extractMatches(exM, { scav = false }, "border")
+					and Q.extractMatches(QD.byId.F3.obj[2], { scav = true }, "border") and not Q.extractMatches(QD.byId.F3.obj[2], { scav = false }, "border"))
+			-- the zones themselves exist where those maps are built (a lean server builds only some, tech-4b)
+			local missing, seen = {}, 0
+			for _, q in QD.list do
+				for _, o in q.obj do
+					local m = o.kind == "visit" and o.map and ctx.World.maps and ctx.World.maps[o.map]
+					if m then
+						seen += 1
+						if not (m.visitZones and m.visitZones[o.zone]) or Q.zoneFor(o, { scav = o.scav == true }, o.map) == nil then
+							table.insert(missing, o.map .. ":" .. o.zone)
+						end
+					end
+				end
+			end
+			check("every task zone exists in its built map (" .. seen .. " checked)" .. (#missing > 0 and (": missing " .. table.concat(missing, ", ")) or ""), #missing == 0)
+			local derrick = QD.byId.V5.obj[1]
+			check("a zone counts only in its own map and, for a scav errand, only as a scav",
+				Q.zoneFor(derrick, {}, "meridian") == nil and Q.zoneFor(QD.byId.F3.obj[1], { scav = false }, "border") == nil)
+			-- the named bosses are bosses of the built maps (their Label: b.label, the Foreman by default)
+			local labels, built = {}, {}
+			for id, m in ctx.World.maps or {} do
+				built[id] = true
+				for _, b in m.bosses or (m.boss and { m.boss }) or {} do
+					labels[b.label or "Foreman"] = true
+				end
+			end
+			check("the Foreman and the Broker are bosses on the maps that are built",
+				(not built.quay7 or labels.Foreman == true) and (not built.border or labels.Broker == true))
+		end
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

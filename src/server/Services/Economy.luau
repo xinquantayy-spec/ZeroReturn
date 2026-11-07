@@ -450,7 +450,8 @@ function Economy.onKill(player, victimPlayer, victimModel, headshot)
 		s.karmaDelta = (s.karmaDelta or 0) + P.KARMA.killPlayerScav
 	end
 	if ctx.Quests then
-		ctx.Quests.onKill(player, kind)
+		-- the victim's Label names a boss for tasks that want one boss (audit economy.9)
+		ctx.Quests.onKill(player, kind, victimModel and victimModel:GetAttribute("Label") or nil)
 	end
 end
 
