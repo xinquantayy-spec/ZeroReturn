@@ -353,15 +353,17 @@ function T.run(ctx)
 			clean ~= nil and clean.fire.y == 1 and clean.fire.s == 1.6 and clean.fire.o == 0.25 and clean.fire.h == true and clean.nope == nil
 				and clean.aim == nil and clean.reload == nil and clean.jump == nil and TLm.sanitize({}) == nil and TLm.sanitize("x") == nil)
 	end
-	-- M11 part B (Tarkov): no mechanical malfunctions above 93 % condition, likelier as it wears; big magazines feed badly
+	-- M11 part B, Tarkov's rules since audit gameplay.11: from 93 % condition only heat causes malfunctions (even with a
+	-- drum); below it they rise with wear, and drums and heat (0-200, from 100) add their own chances. GameplayTests has the rest
 	do
 		local C = ctx.Combat
-		local m95 = C.malfChance(95, nil, 0)
+		local m95 = C.malfChance(95, Items.defs.R17_MAG60, 0)
 		local m50 = C.malfChance(50, nil, 0)
 		local m20 = C.malfChance(20, nil, 0)
-		local _, f60 = C.malfChance(100, Items.defs.R17_MAG60, 0)
-		local m50hot = C.malfChance(50, nil, 0.7)
-		check("malfunctions: none above 93%, rising with wear, x2 when hot, drums feed badly", m95 == 0 and m50 > 0 and m20 > m50 and f60 > 0 and math.abs(m50hot - 2 * m50) < 1e-9)
+		local f50 = C.malfChance(50, Items.defs.R17_MAG60, 0)
+		local m50hot = C.malfChance(50, nil, 150)
+		check("malfunctions (Tarkov): none from 93% even with a drum, rising with wear, drums and heat add below it",
+			m95 == 0 and m50 > 0 and m20 > m50 and f50 > m50 and m50hot > m50)
 		local TDm = require(Shared.TraderData)
 		local pts, cost, newMax = TDm.repairQuote("vos", { id = "R17_RIFLE", wear = 60 })
 		check("trader repair: 40 points, a cost, the maximum drops", pts == 40 and cost and cost > 0 and newMax and newMax < 100 and newMax > 90)
