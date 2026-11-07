@@ -12,6 +12,7 @@ local Settings = {
 		aimOnFire = true, joyFloat = true, -- touch: FIRE aims down sights while held; the stick comes to the thumb (Touch.luau)
 		touchLayout = nil, -- touch: the player's own layout ({ [id] = { x, y, s, o, h } }, TouchLayout.sanitize)
 		wish = {}, -- Tarkov's wish list (item ids)
+		pins = {}, -- pinned tasks (task ids; Tarkov 0.16.7 keeps them at the top of the TASKS list)
 		binds = {}, quick = {}, -- rebound PC keys (Input.setBinds) and Tarkov quick slots 4 to 0 (item guids)
 		-- Tarkov's GAME / POSTFX / SOUND / CONTROLS rows (docs/design/EFT_PARITY.md section 5)
 		headBob = 1, quickBar = 1, aimSens = 1,

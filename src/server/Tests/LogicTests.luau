@@ -325,6 +325,29 @@ function T.run(ctx)
 			profT.settings.touchLayout = before
 			check("touch: the settings request takes a layout of all " .. #TLm.ELEMENTS .. " controls, keeps it cleaned, and refuses one that is not a table",
 				okFull and r2 ~= nil and not r2.ok)
+			-- pinned tasks (audit ui.14, Tarkov 0.16.7): a known task pins and unpins; an unknown id or a bad shape is refused
+			local QD = require(Shared.QuestData)
+			local qid = QD.list and QD.list[1] and QD.list[1].id
+			if not qid then
+				for id in QD.byId do
+					qid = id
+					break
+				end
+			end
+			local pinsBefore = profT.settings.pins
+			task.wait(0.6)
+			local p1 = ctx.Remotes.dispatch(pl, "settings", { pin = { id = qid, on = true } })
+			local pinned = profT.settings.pins ~= nil and profT.settings.pins[qid] == true
+			task.wait(0.6)
+			local p2 = ctx.Remotes.dispatch(pl, "settings", { pin = { id = qid, on = false } })
+			local unpinned = profT.settings.pins ~= nil and profT.settings.pins[qid] == nil
+			task.wait(0.6)
+			local p3 = ctx.Remotes.dispatch(pl, "settings", { pin = { id = "NOT_A_TASK", on = true } })
+			task.wait(0.6)
+			local p4 = ctx.Remotes.dispatch(pl, "settings", { pin = qid })
+			profT.settings.pins = pinsBefore
+			check("tasks: a pin is kept in the settings and taken off again; an unknown task or a bad shape is refused",
+				qid ~= nil and p1 and p1.ok and pinned and p2 and p2.ok and unpinned and p3 and not p3.ok and p4 and not p4.ok)
 		end
 		check("touch: a layout keeps only known controls, numbers clamped (position 0-1, size 60-160 %, opacity 25-100 %), NaN and junk dropped",
 			clean ~= nil and clean.fire.y == 1 and clean.fire.s == 1.6 and clean.fire.o == 0.25 and clean.fire.h == true and clean.nope == nil
