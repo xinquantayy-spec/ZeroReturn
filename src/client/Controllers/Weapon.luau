@@ -3,7 +3,8 @@
 -- (WeaponModels, the same one the third-person weapon uses) at viewmodel scale, held by procedural two-bone arms.
 -- Slots 1-4 / cycle with draw times, per-weapon fire modes (auto/semi/pump/bolt), magazine and shell-by-shell
 -- reloads, mag check (estimate only), knife, optics (irons / reflex dot / 4x scope overlay with zoom-scaled
--- sensitivity), suppressors, tactical light. The server owns ammo, cadence, reload/draw timing and damage;
+-- sensitivity), suppressors, tactical light, Tarkov's recoil (Recoil.luau; Camera keeps the springs, the shot and the
+-- sights follow the gun). The server owns ammo, cadence, reload/draw timing and damage;
 -- the client predicts the round count only for dry-fire feedback (Tarkov shows no ammo counter).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -23,6 +24,7 @@ local WP = require(Shared.WeaponParts)
 local GunBuild = require(Shared.GunBuild)
 local Equipment = require(Shared.Equipment)
 local RigSpec = require(Shared.RigSpec)
+local Recoil = require(Shared.Recoil)
 
 local Weapon = {
 	aiming = false, reloading = false, healing = false, drawing = false, checking = false, light = false, scoped = false,
@@ -112,6 +114,11 @@ local drawT0, drawDur = -10, 0.6
 local switching = nil -- { slot, t0 } while the server swaps weapons
 local lastActiveG = nil
 local kickZ, kickRot, kickRoll = 0, 0, 0
+-- Tarkov's recoil (Recoil.luau): the profile refilled on each shot, the shot's place in its series, the reflex dot's
+-- offset on screen (pixels)
+local recProf = Recoil.blank()
+local burstN, prevShotT = 0, -10
+local dotX, dotY = 0, 0
 local sway = CFrame.identity
 local scopeGui, scopeImg, scopeBars, reflexDot
 local tpLightT = 0
@@ -663,6 +670,16 @@ local function updateOptics(show)
 	scopeGui.Enabled = scoped or dotOn
 	scopeImg.Visible = scoped
 	reflexDot.Visible = dotOn and not scoped
+	if dotOn and not scoped then
+		-- the dot shows where the gun points: it rides up with the gun's recoil against the camera, then converges
+		-- (written only when it moves half a pixel, so a still aim costs nothing)
+		local rp, ry = ctx.Camera.gunRel()
+		local ox, oy = Recoil.screen(rp, ry, cam.FieldOfView, cam.ViewportSize.Y)
+		if math.abs(ox - dotX) + math.abs(oy - dotY) > 0.5 then
+			dotX, dotY = ox, oy
+			reflexDot.Position = UDim2.new(0.5, math.floor(ox + 0.5), 0.5, math.floor(oy + 0.5))
+		end
+	end
 	if scoped then
 		local v = cam.ViewportSize
 		local w = math.max(0, (v.X - v.Y) / 2 + 2)
@@ -745,7 +762,8 @@ local function fireOnce()
 	local def = o.def
 	local t = os.clock()
 	local auto = def.modes[Weapon.mode] == "AUTO" or def.modes[Weapon.mode] == "BURST"
-	if t - Weapon.lastShot < 60 / (def.rpm * (auto and heatRate(o.g) or 1)) then
+	local period = 60 / (def.rpm * (auto and heatRate(o.g) or 1))
+	if t - Weapon.lastShot < period then
 		return
 	end
 	-- M11 part B: a malfunctioning gun clicks (L identifies it, Shift+T clears it)
@@ -777,7 +795,18 @@ local function fireOnce()
 		tubeT0 = nil -- firing interrupts shell-by-shell loading (the server does the same)
 		Weapon.reloading = false
 	end
-	Weapon.lastShot = t
+	-- full auto keeps its rate on slow frames (a phone at 30 fps fired an 800 RPM gun at 600): the next shot is due a
+	-- cycle after this one was due, carrying at most half a cycle so a hitch cannot bunch shots. A single shot and the
+	-- first of a burst count from the frame (the server's bucket allows the rate plus 10 %, Combat.shoot)
+	if auto and t - Weapon.lastShot < period * 2 then
+		Weapon.lastShot = math.max(Weapon.lastShot + period, t - period * 0.5)
+	else
+		Weapon.lastShot = t
+	end
+	-- the shot's place in its series: Tarkov's full auto settles after the gun's stable shot (Recoil.kick); single shots
+	-- each kick in full however fast they come
+	burstN = auto and Recoil.nextIndex(burstN, t - prevShotT, period) or 1
+	prevShotT = t
 	seq += 1
 	if not practicing() then
 		Weapon.ammo -= 1
@@ -787,6 +816,10 @@ local function fireOnce()
 	local M = ctx.Movement
 	local crouch = M and M.crouching
 	local camCF = ctx.Camera.aimCFrame or cam.CFrame -- free look does not move the weapon
+	-- the shot leaves along the gun: the camera turned by the gun's recoil against it (Tarkov: bullets leave the barrel,
+	-- and the sights show the barrel, not the middle of the screen)
+	local relP, relY = ctx.Camera.gunRel()
+	local aimCF = camCF * CFrame.Angles(relP, relY, 0)
 	local spread = (Weapon.aiming and def.aimSpread or def.hipSpread) * (Weapon.aiming and (o.ms.acc or 1) or 1)
 	if not Weapon.aiming and select(2, Weapon.deviceState()) then
 		spread *= 0.8 -- a visible laser steadies hip fire (Tarkov: while it is on)
@@ -811,7 +844,7 @@ local function fireOnce()
 		spread *= 0.8
 	end
 	local r = math.rad(spread) * 0.5
-	local dir = (camCF * CFrame.Angles((math.random() * 2 - 1) * r, (math.random() * 2 - 1) * r, 0)).LookVector
+	local dir = (aimCF * CFrame.Angles((math.random() * 2 - 1) * r, (math.random() * 2 - 1) * r, 0)).LookVector
 	local origin = camCF.Position
 	if practicing() then
 		-- (act payloads carry plain numbers only)
@@ -848,14 +881,19 @@ local function fireOnce()
 		ctx.Effects.impactSound(res.Position, body, res.Material)
 	end
 	ctx.Effects.gunSound(def.id, SoundService, o.ms.suppressed, false)
-	local k = (Weapon.aiming and 0.72 or 1) * (crouch and 0.85 or 1) * o.ms.recoil
-	-- the weapon class's skill (Tarkov's weapon skills): less recoil
+	-- Tarkov's recoil (Recoil.luau, audit gameplay-1a): the build's figures after the weapon skill and Recoil Control,
+	-- the gear's ergonomics, the pose, the shot's place in its series. The kick goes into the gun's and the camera's
+	-- springs; convergence brings both back, so nothing climbs for good
 	local econ = ctx.State.data and ctx.State.data.econ
-	k *= 1 - Progress.bonus(econ and econ.skills, Progress.WEAPON_SKILL[def.class] or "")
-	ctx.Camera.kick(def.recoilV * k, (math.random() * 2 - 1) * def.recoilH * k)
-	kickZ += 0.045 * k
-	kickRot += math.rad(2.2) * k
-	kickRoll += (math.random() * 2 - 1) * math.rad(1.2) * k
+	local prof = Recoil.profile(def, o.ms.recoil, Weapon.ergo, econ and econ.skills, recProf)
+	local pv, ph, pb = Recoil.pose(M and M.stance, M and M.depth)
+	local jp, jy, jb = Recoil.kick(prof, burstN, pv, ph, pb, math.random(), math.random(), math.random())
+	ctx.Camera.recoilShot(prof, jp, jy, prof.thump * pb)
+	-- what the hands show on top (Tarkov 0.16's visual recoil): the rearward kick into the shoulder, a flip about the
+	-- grip that fades as you aim (it would lift the sights off the aim) and a random turn
+	kickZ += jb
+	kickRot += math.rad(math.min(jp, 3)) * 0.8 * (1 - aimA * 0.8)
+	kickRoll += (math.random() * 2 - 1) * math.rad(0.5 + 0.3 * math.min(jp, 3))
 	local mode = def.modes[Weapon.mode]
 	if mode == "PUMP" or mode == "BOLT" then
 		cycleKind = mode
@@ -1305,7 +1343,9 @@ local function update(dt)
 	local wallHit = workspace:Raycast(camCF.Position, camCF.LookVector * 1.7, rayParams)
 	local push = wallHit and (1.7 - wallHit.Distance) or 0
 	local pull = CFrame.new(0, -push * 0.12, push * 0.75) * CFrame.Angles(push * 0.22, 0, 0)
-	local grip = camCF * base * bob * sway * pull * CFrame.new(0, 0, kickZ) * CFrame.Angles(kickRot, 0, kickRoll)
+	-- the gun's recoil against the camera turns the whole gun about the eye, so the sights stay on where it shoots
+	local relP, relY = ctx.Camera.gunRel()
+	local grip = camCF * CFrame.Angles(relP, relY, 0) * base * bob * sway * pull * CFrame.new(0, 0, kickZ) * CFrame.Angles(kickRot, 0, kickRoll)
 	o.grip = grip
 	-- hands, magazine, pump, bolt, shell
 	local lHand = (o.kind == "melee") and (camCF * L_REST) or (grip * o.lHand)

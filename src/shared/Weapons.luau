@@ -3,40 +3,65 @@
 -- rpm, ergo (ADS speed / sway), recoil (vertical/horizontal), reload times (tactical vs empty), modes.
 -- aimSpread is the aimed accuracy in degrees on Tarkov's scale (x60 = MOA): rifles about 3 MOA, the SMG 6, the bolt
 -- rifle 1, the pistol 12, the shotgun's slug 36 (2026-10-31 parity pass; recoil and sway still limit real groups).
+--
+-- Recoil (Tarkov's model, audit decision gameplay-1a; the rules are in Recoil.luau). recoilV / recoilH: the default
+-- build's vertical and horizontal recoil as Tarkov shows them for the gun each copies, divided by 100 (the gunsmith
+-- screen shows x100): Tarkov's base figure times its default preset's part modifiers summed, Tarkov 1.0 after the
+-- 1.0.4.5 barrel and handguard rework (tarkovforge.com weapon and attachment pages, read 2026-11-08):
+--   R-17 = M4A1 119 / 342, -33.4 % (M4SS stock -20.5, carbine buffer tube -0.5, 14.5" barrel -7.4, A2 flash hider -5)
+--   KS-7 = AKM 121 / 298, -26 % (wooden stock -22, slant brake -4)
+--   SMG-9 = MP5 56 / 275, -23 % (our default has the A3 stock; Tarkov's preset shows 43 / 209, the A2 stock's -24 %)
+--   Harrow-12 = MP-133 397 / 522, -27 % (wooden stock -24, 510 mm barrel -3)
+--   Tundra = Mosin infantry 288 / 877, -38.3 % (730 mm barrel -18.3, infantry stock -20; our base has the barrel)
+--   P-9 = MP-443 Grach 425 / 310 (none of its parts change it)
+-- (The EFT wiki's infoboxes still show the M4A1 at 84 / 243 and the Mosin at 202 / 614, a flat -29 and -30 %: most
+-- likely the figures from before 1.0.4.5 moved recoil from handguards to barrels.)
+-- Tarkov's horizontal figure is the rearward kick into the shoulder; the sideways throw comes from the recoil angle's
+-- dispersion (VK "Tarkovskoe Metadvizhenie", 13 March 2023). Ours, by class (Tarkov's per-gun figures were out of reach:
+-- tarkov.dev and SPT's item templates): recoilAngle (90 = straight up, more = left), recoilDisp (degrees either side;
+-- the same article gives 12 for the steadiest rifle, 35 for a jumpy SMG), recoilConv (the pull back to the aim point, a
+-- second, at 50 ergonomics), recoilCam (the camera's share of the gun's kick), recoilStable (full auto settles after
+-- this shot; 0 for guns that cannot fire it).
 local W = {
 	R17 = {
 		id = "R17", item = "R17_RIFLE", name = "R-17", class = "rifle", rpm = 650, range = 900, velocity = 880,
-		ergo = 48, recoilV = 1.05, recoilH = 0.38, reload = 2.3, reloadEmpty = 2.9, hipSpread = 2.6, aimSpread = 0.05,
+		ergo = 48, recoilV = 0.79, recoilH = 2.28, reload = 2.3, reloadEmpty = 2.9, hipSpread = 2.6, aimSpread = 0.05,
+		recoilAngle = 90, recoilDisp = 18, recoilConv = 6, recoilCam = 0.4, recoilStable = 4,
 		moveSpread = 1.6, modes = { "AUTO", "SEMI" }, loudness = 1, viewmodel = "R17", draw = 0.75,
 		slots = { rail = true, muzzle = "6.2", under = true, side = true },
 	},
 	KST = {
 		id = "KST", item = "KST_RIFLE", name = "KS-7", class = "rifle", rpm = 600, range = 800, velocity = 715,
-		ergo = 40, recoilV = 1.45, recoilH = 0.55, reload = 2.5, reloadEmpty = 3.1, hipSpread = 2.9, aimSpread = 0.057,
+		ergo = 40, recoilV = 0.9, recoilH = 2.21, reload = 2.5, reloadEmpty = 3.1, hipSpread = 2.9, aimSpread = 0.057,
+		recoilAngle = 90, recoilDisp = 26, recoilConv = 5, recoilCam = 0.5, recoilStable = 4,
 		moveSpread = 1.8, modes = { "AUTO", "SEMI" }, loudness = 1.1, viewmodel = "KST", draw = 0.8,
 		slots = { rail = true, muzzle = "7.6", under = true, side = true },
 	},
 	SPARROW = {
 		id = "SPARROW", item = "SPARROW_SMG", name = "SMG-9", class = "smg", rpm = 800, range = 450, velocity = 400,
-		ergo = 70, recoilV = 0.6, recoilH = 0.3, reload = 2.0, reloadEmpty = 2.6, hipSpread = 2.0, aimSpread = 0.1,
+		ergo = 70, recoilV = 0.43, recoilH = 2.12, reload = 2.0, reloadEmpty = 2.6, hipSpread = 2.0, aimSpread = 0.1,
+		recoilAngle = 90, recoilDisp = 20, recoilConv = 7, recoilCam = 0.35, recoilStable = 5,
 		moveSpread = 1.2, modes = { "AUTO", "SEMI" }, loudness = 0.8, viewmodel = "SPARROW", draw = 0.6,
 		slots = { rail = true, muzzle = "9", under = true, side = true },
 	},
 	HARROW = {
 		id = "HARROW", item = "HARROW12", name = "Harrow-12", class = "shotgun", rpm = 70, range = 300, velocity = 400,
-		ergo = 52, recoilV = 3.2, recoilH = 0.9, reload = 0.55, reloadEmpty = 0.55, hipSpread = 3.2, aimSpread = 0.6,
+		ergo = 52, recoilV = 2.9, recoilH = 3.81, reload = 0.55, reloadEmpty = 0.55, hipSpread = 3.2, aimSpread = 0.6,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 4, recoilCam = 0.6, recoilStable = 0,
 		moveSpread = 1.6, modes = { "PUMP" }, loudness = 1.3, internal = true, pelletSpread = 2.6, viewmodel = "HARROW", draw = 0.8,
 		slots = { rail = true, side = true },
 	},
 	TUNDRA = {
 		id = "TUNDRA", item = "TUNDRA_BOLT", name = "Tundra", class = "bolt", rpm = 45, range = 1400, velocity = 830,
-		ergo = 30, recoilV = 3.8, recoilH = 0.7, reload = 0.75, reloadEmpty = 0.75, hipSpread = 4.0, aimSpread = 0.017,
+		ergo = 30, recoilV = 1.78, recoilH = 5.41, reload = 0.75, reloadEmpty = 0.75, hipSpread = 4.0, aimSpread = 0.017,
+		recoilAngle = 90, recoilDisp = 8, recoilConv = 4, recoilCam = 0.5, recoilStable = 0,
 		moveSpread = 2.4, modes = { "BOLT" }, loudness = 1.4, internal = true, viewmodel = "TUNDRA", draw = 0.9,
 		slots = { rail = true },
 	},
 	P9 = {
 		id = "P9", item = "P9_PISTOL", name = "P-9", class = "pistol", rpm = 420, range = 300, velocity = 360,
-		ergo = 85, recoilV = 1.3, recoilH = 0.45, reload = 1.7, reloadEmpty = 2.1, hipSpread = 1.8, aimSpread = 0.2,
+		ergo = 85, recoilV = 4.25, recoilH = 3.1, reload = 1.7, reloadEmpty = 2.1, hipSpread = 1.8, aimSpread = 0.2,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
 		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.85, viewmodel = "P9", draw = 0.45,
 		slots = { muzzle = "9", side = true },
 	},
