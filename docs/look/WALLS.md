@@ -1,10 +1,10 @@
 # Wall finishes: more kinds of wall (2026-11-01)
 
 Owner request (2026-11-01): "the walls look repetitive and fake ... not higher resolution, but more variants, other types
-of walls, as in Escape from Tarkov". **Status: written and passed through `tools/luau_check.py` (structure only). Nothing
-here has been run in Studio, on a phone or on a console, and no frame rate was measured. The seven textures were made and
-checked for seams offline (contact sheet `assets/textures/out/walls_preview.png`) but are not uploaded: their
-`MaterialVariant` slots are empty, so no wall looks different until the main session uploads them and fills in the ids.**
+of walls, as in Escape from Tarkov". **Status (updated 2026-11-08): the seven textures were checked for seams offline
+(contact sheet `assets/textures/out/walls_preview.png`), uploaded on 2026-11-01 (the ids are in `src/materials/*.model.json`)
+and seen in Studio the same day: the dorm corridors' two-tone, wallpaper in the rooms, LookTests L04 passing (TEST_RESULTS,
+"Wall finishes and indoor light"). Nothing here has run on a phone or on a console, and no frame rate was measured.**
 
 ## 1. Why the walls looked alike
 
@@ -37,8 +37,8 @@ them, an OpenGL normal map and a roughness map. Studs per tile use 3.125 studs =
 | `ZR_BrickWall` | Brick, regular | 6.5 | brick courses, mortar, tone variation | brick halls (Store 4, Store 17), every thin brick wall |
 | `ZR_WoodPanel` | WoodPlanks, regular | 5.0 | vertical panelling, grain, varnish wear | offices, guard rooms |
 
-Each is a Rojo model `src/materials/<Name>.model.json` with empty `ColorMap`, `NormalMap` and `RoughnessMap`. The code
-skips a variant while its `ColorMap` is empty, so the map keeps its old look until the ids are filled in.
+Each is a Rojo model `src/materials/<Name>.model.json` with its `ColorMap`, `NormalMap` and `RoughnessMap` ids (filled in
+on 2026-11-01). The code skips a variant whose `ColorMap` is empty, so a new variant changes nothing until its ids are in.
 
 ## 4. Rules
 
@@ -102,7 +102,7 @@ changes), or `Tint = true` on the part or its Model; `Tint = false` keeps the co
   cannot be touched or shot, and `World.applyWear` on 24 throwaway walls. The build log line `[ZR] Wall finishes:` counts
   the parts per finish.
 
-## 6. To do before it shows
+## 6. Making it show (done 2026-11-01; the steps for a new variant)
 
 1. Upload the three PNGs of each variant (`assets/textures/out/materials/ZR_MAT_<Name>_{Color,Normal,Rough}.png`).
 2. Paste the ids into `src/materials/<Name>.model.json` (`ColorMap`, `NormalMap`, `RoughnessMap`), then sync.

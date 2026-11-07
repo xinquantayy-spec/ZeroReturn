@@ -16,8 +16,9 @@ older PCs. Three layers do that work, and a graphics setting decides how much of
   * cracked asphalt.
 * **Wall finishes (2026-11-01):** seven more variants (gloss paint, whitewash, two wallpapers, glazed tiles, brick, wood
   panelling) so rooms stop all wearing the same plaster. A wall takes one from its `Finish` attribute or from a weighted pick
-  per room, and the Border dorm corridors are two-tone. Their texture slots are empty until the PNGs are uploaded, and nothing
-  changes on screen until then: `docs/look/WALLS.md`.
+  per room, and the Border dorm corridors are two-tone. Their textures were uploaded on 2026-11-01 (the ids are in
+  `src/materials/*.model.json`) and were seen in Studio the same day (TEST_RESULTS, "Wall finishes and indoor light"):
+  `docs/look/WALLS.md`.
 * `World.applyWear` picks a variant for each part by its material and shape. Slabs become floor concrete, long
   perimeter walls become precast panels, and roads become cracked asphalt. A part can ask for a specific one with
   the `Wear` attribute.
@@ -77,7 +78,9 @@ There are 28 props from the Blender wear kit (`ZR_WearKit`) on Quay 7:
 
 ## Graphics setting (Settings → GRAPHICS)
 
-**HIGH is the default on every platform, phones included** (owner decision). Lower levels are opt-in.
+**The starting level depends on the device** (owner's pick tech-3b, 2026-11-07): phones start at LOW, consoles at MEDIUM and
+PCs at HIGH, and each kind of device keeps its own level (`Settings.luau`). Until then HIGH was the default everywhere,
+phones included. Not yet seen on a phone or a console (KNOWN_ISSUES 81).
 
 | Level | Detail rings (studs) | Post effects | Materials | Shadows | Other |
 |---|---|---|---|---|---|

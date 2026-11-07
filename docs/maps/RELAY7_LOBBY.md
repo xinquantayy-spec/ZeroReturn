@@ -1,7 +1,10 @@
 # Relay 7: the lobby bunker
 
 The safehouse is a physical lobby: a worn cold-war relay bunker where every Tarkov screen has a station, and every
-screen still opens from its key. The owner approved the design on 2026-10-29 (the claude.ai doc "Zero Return Lobby:
+screen is meant to still open from its key. Today only the inventory (Tab), settings (P) and, in a raid, the time and
+exits (O) have keys (`InputMap.luau`); traders, flea market, messenger, handbook, hideout, deploy and the gunsmith bench
+open at their stations (`Interact.luau`). Tarkov's menu bar (audit ui-6a, approved 2026-11-07) will open them from
+anywhere; it is not built yet. The owner approved the design on 2026-10-29 (the claude.ai doc "Zero Return Lobby:
 Research and Concept"): a bunker setting, trader NPCs, hideout modules in the bunker with each player's own levels,
 deploy by van with your squad, free range ammo, and one bunker shared by everyone on the server (up to 12).
 
