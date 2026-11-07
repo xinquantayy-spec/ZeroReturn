@@ -10,8 +10,14 @@
 - Done (the section 7 entries of `docs/design/EFT_PARITY.md`, TEST_RESULTS): M1 release blockers; M2 lean servers
   (tech-4b) and phone menus (ui-3a); M3 quick wins in five batches; the Broker on Reshala's zones (ai.3); scav groups
   (ai.8); the mesh library split (tech.13).
-- In progress: the remaining quick wins, on the economy, ui, gameplay and docs helper branches; the coordinator merges
-  them and runs the Studio checks, among them the M11 part B malfunction check (gameplay.12).
+- Merged into main 2026-11-08, NOT yet checked in Studio (Studio hung at 03:20 SGT with an "Error" window; the owner must
+  restart it): the economy, ui, gameplay and docs helpers' quick wins (EFT_PARITY "batch 6"); the coordinator's pins,
+  mall kit B (new upload 127419668580872), sky textures (decals uploaded, image ids not yet resolved), AI sleep (ai-2),
+  the player scav window (ai-7a). Every source file on the PC matches main at d527088 or later (sync_points in the
+  coordinator's scratchpad). First Studio session: run ZR_Dev "tests" (Logic, Char, Look, Map, Economy, Ui, Gameplay),
+  then the helpers' check lists on the coordination board, then the M11 malfunction check (gameplay.12), rain (art.12),
+  the lighting style (art.1) and the kit origins (art.9).
+- M4 batch 1 running on helper branches: ai (ai-3a, EFT's AI senses and aim, owns AI.luau) and recoil (gameplay-1a).
 - The gaps by area: `docs/design/EFT_PARITY.md` sections 8 (AI), 9 (core gameplay), 10 (economy) and 11 (art); the look
   rules for new art: `docs/look/ART_BIBLE.md`.
 - Parked: the players' tripwire kit. The server side is merged on branch `wip/tripwire-kit`, the client is not built, and the branch is not on main.
