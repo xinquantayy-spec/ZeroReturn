@@ -396,6 +396,7 @@ function Combat.shoot(player, seq, origin, dir)
 	local wskill = Progress.WEAPON_SKILL[wdef.class]
 	local prof = ctx.Profiles.get(player)
 	ctx.Economy.skillUp(player, prof, wskill, 0.08)
+	ctx.Economy.skillUp(player, prof, "recoil", 0.05) -- Tarkov's Recoil Control trains on every shot (gameplay-1a)
 	local predHit = false
 	local firstPos, firstNormal, firstMat
 	for i = 1, pellets do

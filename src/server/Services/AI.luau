@@ -27,6 +27,7 @@ local GR = require(Shared.Grenades)
 local Ballistics = require(Shared.Ballistics)
 local Progress = require(Shared.Progress)
 local BotData = require(Shared.BotData)
+local Recoil = require(Shared.Recoil)
 local KARMA_HOSTILE = Progress.KARMA.hostileBelow
 
 local AI = {}
@@ -921,7 +922,8 @@ local function shoot(u, t)
 	if u.stance == "c" and not u.moving then
 		err *= 0.85
 	end
-	err += (u.burstN or 0) * w.def.recoilV * 0.28
+	-- (recoilV holds Tarkov's figure / 100 since gameplay-1a; kickDeg gives the old per-shot kick in degrees)
+	err += (u.burstN or 0) * Recoil.kickDeg(w.def) * 0.28
 	if not u.visible then
 		err += 2
 	end

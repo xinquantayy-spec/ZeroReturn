@@ -62,11 +62,14 @@ P.SKILLS = {
 	heavyvests = { cat = "PRACTICAL", name = "HEAVY VESTS", desc = "Class 4-6 armour slows you less.", per = 0.008 },
 	crafting = { cat = "PRACTICAL", name = "CRAFTING", desc = "Hideout crafts finish sooner.", per = 0.006 },
 	-- combat
-	rifles = { cat = "COMBAT", name = "ASSAULT RIFLES", desc = "Less recoil with assault rifles.", per = 0.004 },
-	smg = { cat = "COMBAT", name = "SUBMACHINE GUNS", desc = "Less recoil with submachine guns.", per = 0.004 },
-	pistols = { cat = "COMBAT", name = "PISTOLS", desc = "Less recoil with pistols.", per = 0.004 },
-	shotguns = { cat = "COMBAT", name = "SHOTGUNS", desc = "Less recoil with shotguns.", per = 0.004 },
-	boltaction = { cat = "COMBAT", name = "BOLT-ACTION RIFLES", desc = "Less recoil with bolt-action rifles.", per = 0.004 },
+	-- weapon skills and Recoil Control: 0.3 % less recoil a level each (SPT's copy of Tarkov's globals; the recoil
+	-- thread, gameplay-1a). Recoil Control trains on every shot with any gun
+	rifles = { cat = "COMBAT", name = "ASSAULT RIFLES", desc = "Less recoil with assault rifles.", per = 0.003 },
+	smg = { cat = "COMBAT", name = "SUBMACHINE GUNS", desc = "Less recoil with submachine guns.", per = 0.003 },
+	pistols = { cat = "COMBAT", name = "PISTOLS", desc = "Less recoil with pistols.", per = 0.003 },
+	shotguns = { cat = "COMBAT", name = "SHOTGUNS", desc = "Less recoil with shotguns.", per = 0.003 },
+	boltaction = { cat = "COMBAT", name = "BOLT-ACTION RIFLES", desc = "Less recoil with bolt-action rifles.", per = 0.003 },
+	recoil = { cat = "COMBAT", name = "RECOIL CONTROL", desc = "Less recoil with every gun.", per = 0.003 },
 	throwables = { cat = "COMBAT", name = "THROWABLES", desc = "Grenades fly further.", per = 0.004 },
 	melee = { cat = "COMBAT", name = "MELEE", desc = "Knife hits do more damage.", per = 0.006 },
 }
@@ -74,7 +77,7 @@ P.SKILL_ORDER = {
 	"endurance", "strength", "vitality", "health", "stress", "metabolism",
 	"perception", "intellect", "attention", "charisma",
 	"covert", "search", "surgery", "troubleshooting", "lightvests", "heavyvests", "crafting",
-	"rifles", "smg", "pistols", "shotguns", "boltaction", "throwables", "melee",
+	"rifles", "smg", "pistols", "shotguns", "boltaction", "recoil", "throwables", "melee",
 }
 -- the weapon skill that a weapon class trains and improves
 P.WEAPON_SKILL = { rifle = "rifles", smg = "smg", pistol = "pistols", shotgun = "shotguns", bolt = "boltaction" }

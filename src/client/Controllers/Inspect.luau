@@ -72,8 +72,9 @@ local function sheet(items, g, it, d, opts)
 			add("ERGONOMICS", f.ergo, f.ergo / 100)
 			add("ACCURACY", string.format("%.2f MOA", f.moa), 1 - f.moa / 8)
 			add("SIGHTING RANGE", f.range .. " m", f.range / 1000)
-			add("VERTICAL RECOIL", f.recoilV, f.recoilV / 250)
-			add("HORIZONTAL RECOIL", f.recoilH, f.recoilH / 120)
+			-- Tarkov's figures since gameplay-1a: up to about 600 vertical (pistols, shotguns) and 900 horizontal
+			add("VERTICAL RECOIL", f.recoilV, f.recoilV / 600)
+			add("HORIZONTAL RECOIL", f.recoilH, f.recoilH / 900)
 			add("MUZZLE VELOCITY", f.velocity .. " m/s", f.velocity / 1000)
 			if #f.missing > 0 then
 				local miss = {}
