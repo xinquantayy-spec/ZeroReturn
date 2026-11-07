@@ -783,10 +783,17 @@ local function fireOnce()
 	local res = workspace:Raycast(origin, dir * def.range, rayParams)
 	local hit = res and res.Position or (origin + dir * def.range)
 	local muzzle = (o.grip * CFrame.new(o.muzzle)).Position
-	if not o.ms.suppressed and not Weapon.scoped then
-		ctx.Effects.flash(muzzle, 0.12)
-		if ctx.Post then
-			ctx.Post.burst(0.1)
+	-- the spent case out of the ejection port, right and back (audit art.5); a bolt gun ejects when worked, not here
+	if def.class ~= "bolt" then
+		local port = o.grip * CFrame.new(0.06, 0.1, -0.3)
+		ctx.Effects.casing(port.Position, port.RightVector - port.LookVector * 0.3, def.class == "shotgun" and "shell" or ((def.class == "rifle" or def.class == "dmr") and "rifle" or "pistol"))
+	end
+	if not Weapon.scoped then
+		-- first person: the flash by the muzzle device (none behind a suppressor, bigger off a brake; audit art.3)
+		local fk = o.ms.suppressed and 0 or (o.ms.flash or 1)
+		ctx.Effects.flash(muzzle, 0.12, dir, fk)
+		if ctx.Post and fk > 0 then
+			ctx.Post.burst(0.1 * fk)
 		end
 	end
 	local it, d = activeItem()
@@ -797,7 +804,7 @@ local function fireOnce()
 	if res then
 		local m = res.Instance:FindFirstAncestorOfClass("Model")
 		local body = m and m:FindFirstChildOfClass("Humanoid") ~= nil
-		ctx.Effects.impact(res.Position, res.Normal, body)
+		ctx.Effects.impact(res.Position, res.Normal, body, res.Material)
 		ctx.Effects.impactSound(res.Position, body, res.Material)
 	end
 	ctx.Effects.gunSound(def.id, SoundService, o.ms.suppressed, false)

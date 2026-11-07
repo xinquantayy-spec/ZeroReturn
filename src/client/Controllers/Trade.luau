@@ -884,6 +884,12 @@ function Trade.traders(tab, sub)
 	for _, id in { "vos", "hale", "tilda", "fence", "flea", "messenger", "handbook" } do
 		local st = econ.traders and econ.traders[id]
 		local label = (id == "flea" and "FLEA MARKET") or (id == "messenger" or id == "handbook") and string.upper(id) or string.format("%s  ·  LL%d", TD.defs[id].name, st and st.ll or 1)
+		if id == "messenger" and ctx.Menus then
+			local n = ctx.Menus.unread(d)
+			if n > 0 and ui.tab ~= "messenger" then
+				label ..= "  (" .. n .. ")" -- Tarkov's unread count (audit ui.6)
+			end
+		end
 		local sel = ui.tab == id
 		local b = K.button(tabs, label, {
 			Size = UDim2.fromOffset(compact and math.max(112, math.floor((w - 36) / 7)) or math.min(170, math.floor((w - 36) / 7)), tabH), TextSize = 13,
@@ -902,6 +908,7 @@ function Trade.traders(tab, sub)
 	local top = compact and 86 or 88
 	local bodyH = h - top - (compact and 0 or 42)
 	if ui.tab == "messenger" and ctx.Menus then
+		ctx.Menus.markRead(d)
 		ctx.Menus.messenger(f, 0, top, w, bodyH, d, Trade.refresh)
 	elseif ui.tab == "handbook" and ctx.Menus then
 		ctx.Menus.handbook(f, 0, top, w, bodyH, d, Trade.refresh)

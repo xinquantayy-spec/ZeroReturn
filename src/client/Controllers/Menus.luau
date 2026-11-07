@@ -521,9 +521,52 @@ function Menus.flea(f, x, y, w, h, d, refresh)
 	end
 end
 
+-- Tarkov's messenger keeps an unread count, and a new message pops a notice (audit ui.6). Read means older than the
+-- time the messenger was last opened (Settings msgSeen, saved with the profile).
+function Menus.unread(d)
+	local seen = (ctx.Settings and ctx.Settings.data.msgSeen) or 0
+	local n = 0
+	for _, m in (d and d.msgs) or {} do
+		if (m.t or 0) > seen then
+			n += 1
+		end
+	end
+	return n
+end
+
+function Menus.markRead(d)
+	local newest = 0
+	for _, m in (d and d.msgs) or {} do
+		newest = math.max(newest, m.t or 0)
+	end
+	if newest > ((ctx.Settings and ctx.Settings.data.msgSeen) or 0) then
+		ctx.Settings.set("msgSeen", newest)
+	end
+end
+
+local FROM = { system = "SYSTEM", insurance = "INSURANCE" }
 function Menus.init(c)
 	ctx = c
 	K = c.UiKit
+	-- a notice when a message arrives (not for the ones already there on joining)
+	local lastT = nil
+	c.State.changed:Connect(function(snap)
+		local msgs = snap and snap.msgs
+		if type(msgs) ~= "table" then
+			return
+		end
+		local newest, from = 0, nil
+		for _, m in msgs do
+			if (m.t or 0) >= newest then
+				newest, from = m.t or 0, m.f
+			end
+		end
+		if lastT ~= nil and newest > lastT then
+			local who = FROM[from] or (TD.defs[from] and TD.defs[from].name) or "SOMEONE"
+			c.State.toast("NEW MESSAGE  ·  " .. string.upper(who) .. "  ·  RELAY RADIO, MESSENGER", "info")
+		end
+		lastT = newest
+	end)
 end
 
 return Menus

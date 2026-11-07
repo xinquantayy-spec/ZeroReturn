@@ -379,20 +379,64 @@ end
 
 -- muzzle flash: a small round glow and a short light. size: the glow's diameter (first person passes a smaller
 -- one, since the viewmodel muzzle sits right in front of the camera)
-function Effects.flash(pos, size)
-	size = size or 0.22
-	local part = tmpPart(Vector3.new(size, size, size), CFrame.new(pos), Color3.fromHex("FFD9A0"), Enum.Material.Neon, 0.3)
-	part.Shape = Enum.PartType.Ball
-	-- the light only near the camera (audit tech.6): a flash 150 studs off lights nothing anyone can see
-	local cam = workspace.CurrentCamera
-	if not cam or (cam.CFrame.Position - pos).Magnitude < 150 then
-		local l = Instance.new("PointLight")
-		l.Color = Color3.fromHex("FFC98A")
-		l.Range = 9
-		l.Brightness = 1.6
-		l.Parent = part
+-- the muzzle flash (audit art.3): a hot core, a star of flame for two or three frames along the shot, sized by the muzzle
+-- device (kind: a brake 1.35, a flash hider 0.55, a suppressor 0), and a wisp of smoke that drifts off. Textures are
+-- Roblox's own particle images.
+local function burst(pos, dir, props, n)
+	local p = tmpPart(Vector3.new(0.1, 0.1, 0.1), dir and CFrame.lookAt(pos, pos + dir) or CFrame.new(pos), Color3.new(1, 1, 1), nil, 1)
+	local e = Instance.new("ParticleEmitter")
+	for k, v in props do
+		e[k] = v
 	end
-	fade(part, 0.045)
+	e.Rate = 0
+	e.Parent = p
+	e:Emit(n)
+	task.delay(1.6, function()
+		p:Destroy()
+	end)
+	return p
+end
+
+function Effects.flash(pos, size, dir, kind)
+	size = size or 0.22
+	local k = type(kind) == "number" and kind or 1
+	local cam = workspace.CurrentCamera
+	local near = not cam or (cam.CFrame.Position - pos).Magnitude < 150
+	if k > 0 then
+		local part = tmpPart(Vector3.new(size, size, size) * k, CFrame.new(pos), Color3.fromHex("FFD9A0"), Enum.Material.Neon, 0.3)
+		part.Shape = Enum.PartType.Ball
+		-- the light only near the camera (audit tech.6): a flash 150 studs off lights nothing anyone can see
+		if near then
+			local l = Instance.new("PointLight")
+			l.Color = Color3.fromHex("FFC98A")
+			l.Range = 9 * k
+			l.Brightness = 1.6
+			l.Parent = part
+		end
+		fade(part, 0.045)
+		if near and quality() >= 1 then
+			-- the star: flame facing every way for 0.03 to 0.06 s, pushed out along the barrel
+			burst(pos, dir, {
+				Texture = "rbxasset://textures/particles/fire_main.dds", LightEmission = 1, LightInfluence = 0,
+				Color = ColorSequence.new(Color3.fromHex("FFE2B0"), Color3.fromHex("FF9A3C")),
+				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size * 4.5 * k), NumberSequenceKeypoint.new(1, size * 2 * k) }),
+				Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 1) }),
+				Lifetime = NumberRange.new(0.03, 0.06), Speed = NumberRange.new(dir and 6 or 0, dir and 14 or 2),
+				SpreadAngle = Vector2.new(dir and 12 or 180, dir and 12 or 180), EmissionDirection = Enum.NormalId.Front,
+				Rotation = NumberRange.new(0, 360), ZOffset = 1,
+			}, 3)
+		end
+	end
+	if near and quality() >= 2 then
+		-- the wisp of smoke, suppressed or not
+		burst(pos, dir, {
+			Texture = "rbxasset://textures/particles/smoke_main.dds", Color = ColorSequence.new(Color3.fromHex("B9B4AA")),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 1.1) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 1) }),
+			Lifetime = NumberRange.new(0.5, 0.9), Speed = NumberRange.new(0.6, 1.6), SpreadAngle = Vector2.new(20, 20),
+			EmissionDirection = Enum.NormalId.Front, Acceleration = Vector3.new(0, 1.2, 0), Rotation = NumberRange.new(0, 360),
+		}, 2)
+	end
 end
 
 function Effects.impactSound(pos, isBody, material)
@@ -406,31 +450,117 @@ function Effects.impactSound(pos, isBody, material)
 	Effects.sfx(name, pos, 0.75, 0.95 + math.random() * 0.1, 110)
 end
 
-function Effects.impact(pos, normal, isBody)
-	if quality() >= 2 or isBody then
-		local p = tmpPart(Vector3.new(0.2, 0.2, 0.2), CFrame.new(pos), Color3.new(1, 1, 1), nil, 1)
-		local e = Instance.new("ParticleEmitter")
-		e.Texture = "rbxasset://textures/particles/smoke_main.dds"
-		e.Color = ColorSequence.new(isBody and Color3.fromHex("3A3532") or Color3.fromHex("A7A398"))
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1.4) })
-		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
-		e.Lifetime = NumberRange.new(0.4, 0.8)
-		e.Speed = NumberRange.new(2, 5)
-		e.SpreadAngle = Vector2.new(25, 25)
-		e.Rate = 0
-		e.EmissionDirection = Enum.NormalId.Top
-		e.Parent = p
-		if normal then
-			p.CFrame = CFrame.lookAt(pos, pos + normal) * CFrame.Angles(-math.pi / 2, 0, 0)
-		end
-		e:Emit((quality() >= 3) and 8 or 4)
-		task.delay(1.2, function()
-			p:Destroy()
-		end)
+-- what a bullet throws up, by what it hits (audit art.4): sparks off metal, splinters off wood, dirt and a dust ring off
+-- the ground, grit and dust off concrete and stone, a splash off water; a body gives a dark red puff (art-7a)
+local IMPACT = {
+	metal = { tex = "rbxasset://textures/particles/sparkles_main.dds", color = { "FFE9B0", "FF9E3A" }, size = { 0.12, 0.02 }, life = { 0.15, 0.35 }, speed = { 12, 22 }, spread = 55, n = 8, light = 1, grav = -60, dust = "8C8984" },
+	wood = { tex = "rbxasset://textures/particles/smoke_main.dds", color = { "7A5A3A", "5C4630" }, size = { 0.18, 0.05 }, life = { 0.3, 0.6 }, speed = { 6, 12 }, spread = 40, n = 7, grav = -40, dust = "8E7A62" },
+	dirt = { tex = "rbxasset://textures/particles/smoke_main.dds", color = { "5E5244", "4A4136" }, size = { 0.35, 0.12 }, life = { 0.35, 0.7 }, speed = { 6, 12 }, spread = 30, n = 8, grav = -50, dust = "7C7262" },
+	gravel = { tex = "rbxasset://textures/particles/smoke_main.dds", color = { "77736C", "5D5A55" }, size = { 0.2, 0.06 }, life = { 0.3, 0.6 }, speed = { 8, 14 }, spread = 40, n = 7, grav = -55, dust = "908B83" },
+	concrete = { tex = "rbxasset://textures/particles/smoke_main.dds", color = { "A7A398", "8C887E" }, size = { 0.16, 0.05 }, life = { 0.25, 0.5 }, speed = { 8, 15 }, spread = 40, n = 6, grav = -50, dust = "A7A398" },
+	water = { tex = "rbxasset://textures/particles/smoke_main.dds", color = { "C9D4D6", "9FB0B3" }, size = { 0.3, 0.1 }, life = { 0.4, 0.7 }, speed = { 10, 16 }, spread = 15, n = 10, grav = -70, dust = nil },
+}
+Effects.IMPACT = IMPACT
+
+-- the chipped ring round a bullet hole, by surface
+local CHIP = { concrete = "A9A59C", gravel = "9A958C", metal = "C4C0B8", wood = "C29A6B" }
+
+-- ejected cases (audit art.5): client-only, pooled, at most 20 in the world; the shooter's own gun and shooters close
+-- by. A small brass cylinder thrown right and back, spinning, settling for a few seconds.
+local casings = {}
+function Effects.casing(at, right, kind)
+	if quality() < 1 then
+		return
 	end
-	if not isBody and normal then
-		local m = tmpPart(Vector3.new(0.05, 0.22, 0.22), CFrame.lookAt(pos + normal * 0.02, pos + normal * 2) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromHex("1E1E1C"), Enum.Material.SmoothPlastic, 0.1)
+	local cam = workspace.CurrentCamera
+	if cam and (cam.CFrame.Position - at).Magnitude > 60 then
+		return
+	end
+	local big = kind == "rifle"
+	local c = Instance.new("Part")
+	c.Name = "Casing"
+	c.Shape = Enum.PartType.Cylinder
+	c.Size = big and Vector3.new(0.17, 0.045, 0.045) or Vector3.new(0.09, 0.04, 0.04)
+	c.Color = kind == "shell" and Color3.fromHex("8E2C24") or Color3.fromHex("B8913E")
+	c.Material = Enum.Material.Metal
+	c.CanCollide = true
+	c.CanQuery = false
+	c.CanTouch = false
+	c.Massless = false
+	c.CustomPhysicalProperties = PhysicalProperties.new(0.3, 0.4, 0.35) -- light: it never shoves anyone
+	c.CFrame = CFrame.new(at) * CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
+	c.Parent = fx
+	local r = (right and right.Magnitude > 0) and right.Unit or Vector3.xAxis
+	c.AssemblyLinearVelocity = r * (6 + math.random() * 3) + Vector3.new(0, 5 + math.random() * 2, 0)
+	c.AssemblyAngularVelocity = Vector3.new(math.random(-30, 30), math.random(-30, 30), math.random(-30, 30))
+	table.insert(casings, c)
+	if #casings > 20 then
+		local old = table.remove(casings, 1)
+		if old then
+			old:Destroy()
+		end
+	end
+	task.delay(6, function()
+		if c.Parent then
+			c.Anchored = true -- lies where it fell, no physics cost
+		end
+	end)
+	task.delay(20, function()
+		local i = table.find(casings, c)
+		if i then
+			table.remove(casings, i)
+		end
+		c:Destroy()
+	end)
+end
+
+function Effects.impact(pos, normal, isBody, material)
+	local fam = isBody and "body" or (material == Enum.Material.Water and "water") or (material and Effects.surfaceOf(material)) or "concrete"
+	local q = quality()
+	if q >= 2 or isBody then
+		local cf = normal and CFrame.lookAt(pos, pos + normal) or CFrame.new(pos)
+		if isBody then
+			burst(pos, normal, {
+				Texture = "rbxasset://textures/particles/smoke_main.dds", Color = ColorSequence.new(Color3.fromHex("5A1C18"), Color3.fromHex("3A1512")),
+				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0.9) }),
+				Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) }),
+				Lifetime = NumberRange.new(0.25, 0.5), Speed = NumberRange.new(2, 5), SpreadAngle = Vector2.new(30, 30),
+				EmissionDirection = Enum.NormalId.Front,
+			}, q >= 3 and 6 or 4)
+		else
+			local f = IMPACT[fam] or IMPACT.concrete
+			-- the bits: fast, thrown out of the surface, falling
+			burst(pos, normal, {
+				Texture = f.tex, LightEmission = f.light or 0, Color = ColorSequence.new(Color3.fromHex(f.color[1]), Color3.fromHex(f.color[2])),
+				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, f.size[1]), NumberSequenceKeypoint.new(1, f.size[2]) }),
+				Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.8, 0.2), NumberSequenceKeypoint.new(1, 1) }),
+				Lifetime = NumberRange.new(f.life[1], f.life[2]), Speed = NumberRange.new(f.speed[1], f.speed[2]),
+				SpreadAngle = Vector2.new(f.spread, f.spread), EmissionDirection = Enum.NormalId.Front, Acceleration = Vector3.new(0, f.grav, 0),
+				Drag = 2, Rotation = NumberRange.new(0, 360),
+			}, q >= 3 and f.n or math.ceil(f.n / 2))
+			-- and the dust cloud that hangs a moment
+			if f.dust then
+				burst(pos, normal, {
+					Texture = "rbxasset://textures/particles/smoke_main.dds", Color = ColorSequence.new(Color3.fromHex(f.dust)),
+					Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1.4) }),
+					Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 1) }),
+					Lifetime = NumberRange.new(0.5, 0.9), Speed = NumberRange.new(1.5, 4), SpreadAngle = Vector2.new(25, 25),
+					EmissionDirection = Enum.NormalId.Front, Drag = 3,
+				}, q >= 3 and 5 or 3)
+			end
+		end
+		local _ = cf
+	end
+	if not isBody and normal and fam ~= "water" and fam ~= "dirt" then
+		-- the hole (audit art.4): a chipped ring in the surface's own light colour round a dark core. (The wear set's
+		-- "old bullet holes" decal is a strip of holes and read as a smear on a single hit, checked in Studio.)
+		local ring = CHIP[fam] or CHIP.concrete
+		local face = CFrame.lookAt(pos + normal * 0.012, pos + normal * 2) * CFrame.Angles(0, math.pi / 2, 0)
+		local m = tmpPart(Vector3.new(0.02, 0.32, 0.32), face, Color3.fromHex(ring), Enum.Material.SmoothPlastic, 0.25)
 		m.Shape = Enum.PartType.Cylinder
+		local core = tmpPart(Vector3.new(0.02, 0.13, 0.13), face * CFrame.new(0.006, 0, 0), Color3.fromHex("161614"), Enum.Material.SmoothPlastic, 0)
+		core.Shape = Enum.PartType.Cylinder
+		core.Parent = m
 		table.insert(marks, m)
 		if #marks > 40 then
 			table.remove(marks, 1):Destroy()
@@ -448,13 +578,18 @@ function Effects.remoteShot(d)
 	if typeof(d.o) ~= "Vector3" or typeof(d.p) ~= "Vector3" then
 		return
 	end
-	if not d.s then
-		Effects.flash(d.o)
+	-- a suppressed shot shows no flash, only its wisp of smoke; the shooter's device is not sent, so a bare muzzle's size
+	local shotDir = (d.p - d.o).Magnitude > 0.01 and (d.p - d.o).Unit or nil
+	Effects.flash(d.o, nil, shotDir, d.s and 0 or 1)
+	if shotDir then
+		-- the shooter's case, out to his right (Effects.casing keeps it to shooters within 60 studs)
+		local right = shotDir:Cross(Vector3.yAxis)
+		Effects.casing(d.o - shotDir * 1.2 + right * 0.15, right, (d.w == "HARROW" and "shell") or ((d.w == "SPARROW" or d.w == "P9") and "pistol") or "rifle")
 	end
 	if d.t then
 		Effects.tracer(d.o, d.p) -- tracer rounds only (Tarkov)
 	end
-	Effects.impact(d.p, d.n, d.h)
+	Effects.impact(d.p, d.n, d.h, typeof(d.m) == "EnumItem" and d.m or nil)
 	Effects.impactSound(d.p, d.h, d.m)
 	local cam = workspace.CurrentCamera
 	local dist = cam and (cam.CFrame.Position - d.o).Magnitude or 0

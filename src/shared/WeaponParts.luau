@@ -485,6 +485,11 @@ function W.sum(items: any, g: string): any
 		st.accPct += p.acc or 0
 		st.velPct += p.vel or 0
 		st.loud *= p.loud or 1
+		if p.cat == "muzzle" then
+			-- the muzzle flash it leaves (Effects.flash): a brake throws more, a flash hider less, a suppressor none
+			st.flash = (p.loud or 1) < 0.6 and 0 or (string.find(string.lower(p.desc or ""), "flash hider", 1, true) and 0.55)
+				or ((p.loud or 1) > 1.05 and 1.35) or 1
+		end
 		st.mass += p.mass or 0
 		st.light = st.light or p.light == true
 		st.laser = st.laser or p.laser == true
@@ -553,7 +558,7 @@ function W.stats(items: any, g: string): any
 		vel = math.max(0.5, (1 + s.velPct / 100) / (1 + d.velPct / 100)),
 		loud = s.loud / math.max(0.05, d.loud),
 		zoom = s.zoom, reflex = s.reflex, holo = s.holo, light = s.light, laser = s.laser,
-		suppressed = s.loud < 0.6, range = s.range, capacity = s.capacity, sight = s.sight, mass = s.mass,
+		suppressed = s.loud < 0.6, range = s.range, capacity = s.capacity, sight = s.sight, mass = s.mass, flash = s.flash or 1,
 		operable = W.operable(items, g),
 		-- absolute Tarkov-style figures for the screens
 		ergoPts = s.ergo, recoilPct = s.recoilPct, accPct = s.accPct, velPct = s.velPct,

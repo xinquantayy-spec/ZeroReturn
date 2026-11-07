@@ -220,7 +220,7 @@ function M.build(items, it, origin: CFrame, scale: number)
 	end
 	if g and WP.isBase(it.id) then
 		local st = WP.stats(items, g)
-		out.zoom, out.reflex, out.suppressed = st.zoom, st.reflex, st.suppressed
+		out.zoom, out.reflex, out.suppressed, out.flash = st.zoom, st.reflex, st.suppressed, st.flash
 	end
 	return out
 end

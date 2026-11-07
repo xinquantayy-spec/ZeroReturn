@@ -8,6 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3 quick wins, batch 5: settings, messenger and shot visuals (2026-11-08)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests 408/408, CharTests 47/47, LookTests 33/33, MapTests 39/39 (two activation checks skip while a raid runs). |
+| Settings | CONTROLS showed MOUSE, AIM, GAMEPAD and TOUCH SENSITIVITY and INVERT Y AXIS; the tabs read GAME, GRAPHICS, SOUND, POSTFX, CONTROLS. |
+| Messenger | `ZR_Dev mail vos`: the notice "NEW MESSAGE · VOS · RELAY RADIO, MESSENGER" showed; the tab read MESSENGER (3), and plain MESSENGER after it was opened once. |
+| Shots | Firing at a Quay 7 wall and the concrete deck: dust puffs on the wall, cases on the ground (7 in the effects folder, capped), chipped-ring bullet holes. The first version used the wear set's hole decal, which showed as a striped smear; replaced. |
+| Touch | MORE tray captions under the icons; LOOK now sits below the raid clock (re-shot). |
+| Not seen | The flash itself (it lasts 0.05 s, shorter than a screenshot takes), sparks off metal, splinters off wood, a splash, hold-to-repeat, invert Y in play, double-click use. |
+
 ## M3 quick wins, batch 4: economy, skills and touch (2026-11-07)
 
 | Test | Result |

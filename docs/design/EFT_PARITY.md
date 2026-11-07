@@ -1071,3 +1071,20 @@ Ours (exception 4, touch and phones):
 - **Safe area (ui.11):** the HUD's side columns start inside a notch or rounded corner.
 
 Also: the unused `Version.luau` was removed and the build label is `0.10.0-audit` (tech.15).
+
+### Audit quick wins, batch 5: settings, messenger and shot visuals (M3, 2026-11-08)
+
+Matches Tarkov now:
+- **Settings (ui.7, ui.8):** the tabs in Tarkov's order (GAME, GRAPHICS, SOUND, POSTFX, CONTROLS); separate MOUSE,
+  GAMEPAD and TOUCH sensitivity beside AIM SENSITIVITY; INVERT Y AXIS; MALFUNCTION NOTIFICATIONS (off: no flashing notice,
+  inspect to find out); DOUBLE-CLICK QUICK USE (a med or food item); - and + repeat while held.
+- **Messenger (ui.6):** the MESSENGER tab shows the unread count, and a new message pops a notice naming the sender.
+- **Muzzle flash (art.3):** a hot core, a star of flame for two or three frames along the barrel and a wisp of smoke;
+  a brake throws a bigger flash, a flash hider a smaller one, a suppressor only the smoke. First person shows it too.
+- **Impacts by surface (art.4):** sparks off metal, splinters off wood, dirt off the ground, grit and dust off concrete
+  and stone, a splash off water, a dark red puff off a body; bullet holes are a chipped ring in the surface's colour round
+  a dark core (the wear set's hole decal is a strip of holes and read as a smear on one hit).
+- **Ejected cases (art.5):** brass from your own gun and from shooters within 60 studs, red shells from the shotgun,
+  at most 20 at a time; they settle and stay for 20 s.
+
+All the particle images are Roblox's own (rbxasset textures); nothing new was uploaded.

@@ -108,6 +108,18 @@ function C.finalize(name, outcome, lootId)
 	})
 end
 
+-- a message in the player's messenger, as a trader or the system sends one (the unread count and notice, audit ui.6)
+function C.mail(name, from, text)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	if not prof then
+		return "no profile"
+	end
+	ctx.Economy.mail(prof, from or "system", text or "Test message.")
+	ctx.Raid.push(p)
+	return #prof.msgs
+end
+
 -- the bunker character's health as the profile would keep it (Raid.keepHideoutHealth), after taking `dmg` off the thorax
 function C.keepHealth(name, dmg)
 	local p = plr(name)
