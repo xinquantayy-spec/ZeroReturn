@@ -302,7 +302,7 @@ Still a gap:
 | Each spawn wave carries its own difficulty (Customs' dorm and scav-base waves hard) | Every scav rolls the map's 10/50/40 | With ai-2b's waves |
 | Scav caps per map (Customs 19, Interchange 30); bots leave after 20 to 30 min | 10 scavs at most (`SCAV_CAP`) and 18 AI in all (`AI_MAX`); they sleep beyond 300 m (ai-2) but never leave | ai-2b: EFT's caps, after a live-server test at 20, 30 and 45 AI (needs the private test place) |
 | Scav groups of up to four or five | Three at most (45 % alone, 45 % pairs, 10 % threes) | Bigger groups once ai-2b raises the cap |
-| Raiders only on Reserve and Labs; sniper scavs on Customs | The Watch: 8 guards on Border Yard (2 on the Bastion's guns) and 6 on Meridian, hostile to player scavs; no sniper scavs (the border sniper is a hazard beyond the map edge) | ai-1a: EFT's roster on both maps |
+| Raiders only on Reserve and Labs; sniper scavs on Customs | Built 2026-11-08 (ai-1a, Studio check pending): Border Yard and Meridian's posts, routes and the Bastion's gunners are scavs; marksmen (hard, a scoped Tundra) on the reference's perches: the derrick always, the boiler house and depot roofs half the time, the block post empty, as EFT's waves | The Watch stays on Quay 7 and Smelter (our maps); EFT's marksmen are the sniper-scav role, ours use BotData's marksman numbers |
 | Voice lines, call-outs, boss voices, a warning to player scavs | Silent; call-outs share positions without a sound | ai-4a: recorded voice packs (the audio quota, KNOWN_ISSUES 6) |
 | Bots loot bodies and loose loot; what they take is lost to insurance | AI never loot | ai-8a |
 | Killa's LMG, Big Pipe's grenade launcher, Birdeye's marksman rifle, Tagilla's semi-auto 12 gauge, Reshala's golden pistol | Stand-ins: the Caretaker's shotgun, MORTAR throws grenades, the Stoker's pump gun, the Broker's plain pistol | ai-5b: the LMG and the launcher; stand-ins for the rest |
@@ -1336,3 +1336,5 @@ and 10; the gaps they found are in the same tables.
   now see about three times as far as before, so the AI's script time must be measured again on Border Yard.
 - **Recoil (gameplay-1a, the recoil thread):** Tarkov's model with convergence (section 9); a phone at 30 FPS now keeps a
   gun's full rate of fire (it fired an 800 RPM gun at about 600).
+- **EFT's roster (ai-1a, coordinator):** no Watch on Border Yard and Meridian Mall; scavs on their posts and the
+  Bastion's guns; marksmen on Customs' perches (section 8).
