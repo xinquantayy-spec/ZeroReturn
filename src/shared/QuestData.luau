@@ -4,7 +4,9 @@
 --   handin  { item, n }                                                    (found-in-raid items, handed in at turn-in)
 --   extract { n, exfil? , scav? }                                          (survive and extract; optionally via an exfil)
 --   visit   { zone }                                                       (reach a place during a raid; World.visitZones)
--- Rewards: money, xp, rep (trader standing), items { { id, n } }.
+-- Unlocking: level, after (the task before it); optionally needs { ids } (more tasks to have finished), karma (the
+-- Fence standing it needs) and ll (the loyalty level it needs with every trader but Fence; audit economy.7).
+-- Rewards: money, xp, rep (trader standing), karma, items { { id, n } }.
 local Q = {}
 
 local function kill(target: string, n: number): any
@@ -68,6 +70,18 @@ Q.list = {
 	{ id = "F1", trader = "fence", name = "Local Rules", level = 1, after = nil,
 		desc = "Go in as one of the locals and come back. Twice. Don't make enemies.",
 		obj = { extract(2, nil, true) }, reward = { money = 10000, xp = 400, karma = 0.5 } },
+	-- Pouch L (audit economy.7) as EFT's Kappa, the reward of Fence's "The Collector": since 1.1.0 it needs character
+	-- level 40, LL4 with every trader, a Fence standing of 3.0 and the last task of each trader's chain (timesaver.gg,
+	-- 24 Jul 2026, quoting Battlestate), then 44 collectibles, one each, all found in raid, for the container alone: "no
+	-- rouble or XP payout" (timesaver.gg checklist, 26 Sep 2026). Ours: ten of the rarest valuables, one from each corner
+	-- of the maps.
+	{ id = "F2", trader = "fence", name = "Keepsakes", level = 40, after = "F1", needs = { "V4", "H4", "T4", "T5" }, karma = 3, ll = 4,
+		desc = "I keep a cabinet of things nobody else can find. Bring me one of each, found out there with your own hands, and the best pouch I have is yours.",
+		obj = {
+			handin("OLD_COIN", 1), handin("CAPT_WATCH", 1), handin("GOLD_CHAIN", 1), handin("BRASS_LION", 1), handin("RITUAL_AMULET", 1),
+			handin("INTEL_FOLDER", 1), handin("FLASH_MODULE", 1), handin("COLD_WALLET", 1), handin("GPU_CARD", 1), handin("PHONE", 1),
+		},
+		reward = { items = { { "SECURE_L", 1 } } } },
 }
 
 Q.byId = {}

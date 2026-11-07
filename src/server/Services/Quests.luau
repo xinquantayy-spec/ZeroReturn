@@ -28,6 +28,22 @@ function Quests.status(prof, q)
 	if ctx.Economy.level(prof) < (q.level or 1) then
 		return "locked"
 	end
+	-- EFT 1.1.0's collector rules (audit economy.7): more finished tasks, a Fence standing, a loyalty level everywhere
+	for _, id in q.needs or {} do
+		if not (prof.quests[id] and prof.quests[id].s == "claimed") then
+			return "locked"
+		end
+	end
+	if q.karma and (prof.karma or P.KARMA.start) < q.karma then
+		return "locked"
+	end
+	if q.ll then
+		for _, tid in TD.list do
+			if tid ~= "fence" and ctx.Economy.loyalty(prof, tid) < q.ll then
+				return "locked"
+			end
+		end
+	end
 	return "available"
 end
 
@@ -211,7 +227,14 @@ local function questReq(player, p)
 		end
 		prof.quests[q.id].s = "claimed"
 		local r = q.reward or {}
-		local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
+		-- a reward of items alone (EFT's collector pays no money or XP) leaves the zero amounts out
+		local rew = {}
+		if (r.money or 0) > 0 or not r.items then
+			table.insert(rew, Util.commas(r.money or 0) .. " " .. Config.CURRENCY)
+		end
+		if (r.xp or 0) > 0 then
+			table.insert(rew, r.xp .. " XP")
+		end
 		for _, e in r.items or {} do
 			table.insert(rew, Items.defs[e[1]].name .. (((e[2] or 1) > 1) and (" x" .. e[2]) or ""))
 		end
@@ -240,7 +263,8 @@ local function questReq(player, p)
 			end
 			table.insert(prof.claims, { readyAt = 0, bundles = bundles, raid = "task:" .. q.id })
 		end
-		ctx.Remotes.note(player, "toast", { text = string.format("TASK COMPLETE: %s  +%s %s", string.upper(q.name), Util.commas(r.money or 0), Config.CURRENCY), tone = "good" })
+		local gain = (r.money or 0) > 0 and string.format("  +%s %s", Util.commas(r.money), Config.CURRENCY) or ""
+		ctx.Remotes.note(player, "toast", { text = string.format("TASK COMPLETE: %s%s", string.upper(q.name), gain), tone = "good" })
 		if up then
 			ctx.Remotes.note(player, "toast", { text = "LEVEL UP: " .. ctx.Economy.level(prof), tone = "good" })
 		end

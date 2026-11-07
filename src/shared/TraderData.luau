@@ -147,6 +147,10 @@ T.barters = {
 		b("ARMOR_C3", 1, 1, { { "DUCT_TAPE", 2 }, { "WIRES", 2 }, { "BOLTS", 1 } }),
 		b("ARMOR_C4", 2, 1, { { "GOLD_CHAIN", 1 }, { "WIRES", 2 }, { "DUCT_TAPE", 2 } }),
 		b("BAG_RAID", 3, 1, { { "DECK_TRANSCEIVER", 1 }, { "FUEL_CAN", 1 }, { "GOLD_CHAIN", 1 } }),
+		-- Pouch M (audit economy.7) as EFT's Beta container: Peacekeeper's LL2 barter, one a restock, for a 6-STEN-140-M
+		-- military battery, 3 Iridium thermal vision modules, 3 Virtex processors and 5 military cables (EFT's assort as
+		-- SPT copies it, traders/5935c25fb3acc3127c3d8cd9). Ours: the deep-cycle battery, coated lenses, flash modules, wires
+		b("SECURE_M", 2, 1, { { "BATTERY", 1 }, { "CRACKED_LENS", 3 }, { "FLASH_MODULE", 3 }, { "WIRES", 5 } }),
 	},
 	fence = {},
 }

@@ -134,6 +134,78 @@ function T.run(ctx)
 		end
 	end
 
+	-- economy.7: Pouch M from TILDA's LL2 barter (EFT's Beta), Pouch L from FENCE's collector task (EFT's Kappa); weapon
+	-- parts, grenades and eyewear (and goggles, headsets) go into secure containers, guns and armour still do not
+	do
+		local K = Items.SECURE_KINDS
+		check("secure containers take weapon parts, goggles, grenades, eyewear and headsets",
+			K.mod == true and K.nvg == true and K.grenade == true and K.eyewear == true and K.headset == true and K.ammo == true and K.key == true)
+		check("secure containers still refuse guns, armour, helmets, rigs, packs and other secure containers",
+			not K.weapon and not K.pistol and not K.armor and not K.helmet and not K.rig and not K.backpack and not K.secure)
+		local sp = Settle.newProfile()
+		local Inv = require(Services.Inv)
+		local function enters(id)
+			local g, it = Inv.newItem(id, 1)
+			Inv.place(sp, g, it, { "stash" })
+			local ok, why = Inv.canEnter(sp, g, sp.slots.secure)
+			Inv.take(sp, g)
+			return ok, why
+		end
+		local _, whyRifle = enters("R17_RIFLE")
+		check("Inv: a sight, a grenade and glasses enter Pouch S; a rifle is refused",
+			enters("RED_DOT") == true and enters("GREN_RK5") == true and enters("GLASSES_BG1") == true and enters("SUPP_62") == true
+				and whyRifle == "SECURE_RESTRICTED")
+		local beta = nil
+		for _, bt in TD.barters.tilda do
+			if bt.id == "SECURE_M" then
+				beta = bt
+			end
+		end
+		local okGive = beta ~= nil
+		for _, need in (beta and beta.give) or {} do
+			okGive = okGive and Items.defs[need[1]] ~= nil and need[2] >= 1
+		end
+		check("Pouch M: TILDA's barter at loyalty 2, one a restock, for real items", beta ~= nil and beta.ll == 2 and beta.limit == 1 and okGive)
+		local QD = require(Shared.QuestData)
+		local kappa = QD.byId.F2
+		local rewardL = false
+		for _, e in (kappa and kappa.reward.items) or {} do
+			rewardL = rewardL or e[1] == "SECURE_L"
+		end
+		check("Pouch L: FENCE's collector task pays the pouch alone (EFT: no money or XP), level 40, karma 3, LL4, the chains' last tasks",
+			kappa ~= nil and kappa.trader == "fence" and rewardL and (kappa.reward.money or 0) == 0 and (kappa.reward.xp or 0) == 0
+				and kappa.level == 40 and kappa.karma == 3 and kappa.ll == 4 and #kappa.needs == 4)
+		local handOk = kappa ~= nil and #kappa.obj >= 10
+		for _, o in (kappa and kappa.obj) or {} do
+			handOk = handOk and o.kind == "handin" and o.n == 1 and Items.defs[o.item] ~= nil and Items.defs[o.item].kind == "loot"
+		end
+		check("Pouch L: ten or more valuables, one each, found in raid", handOk)
+		if ctx and ctx.Quests and ctx.Economy and kappa then
+			local qp = Settle.newProfile()
+			local before = ctx.Quests.status(qp, kappa)
+			qp.xp = P.xpFor(40)
+			for _, id in { "F1", "V4", "H4", "T4", "T5" } do
+				qp.quests[id] = { s = "claimed", p = {} }
+			end
+			qp.karma = 3
+			local top = TD.LL[4]
+			for _, tid in { "vos", "hale", "tilda" } do
+				qp.traders[tid] = { spent = top.spent, rep = top.rep }
+			end
+			local open = ctx.Quests.status(qp, kappa)
+			qp.karma = 2.9
+			local lowKarma = ctx.Quests.status(qp, kappa)
+			qp.karma = 3
+			qp.traders.hale.spent = 0
+			local lowLL = ctx.Quests.status(qp, kappa)
+			qp.traders.hale.spent = top.spent
+			qp.quests.T5 = nil
+			local lowTasks = ctx.Quests.status(qp, kappa)
+			check("Pouch L task: locked until level 40, karma 3.0, LL4 with VOS, HALE and TILDA and the four chains are done",
+				before == "locked" and open == "available" and lowKarma == "locked" and lowLL == "locked" and lowTasks == "locked")
+		end
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")
