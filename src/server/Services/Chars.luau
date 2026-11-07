@@ -6,6 +6,7 @@
 -- server hitbox pose (stance, crouch depth, lean, aim pitch, weapon hold) written to Motor6D.C0; ragdoll.
 -- Clients animate on top through Motor6D.Transform (Animator.luau), using the same RigMath solver.
 local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
@@ -14,6 +15,7 @@ local Items = require(Shared.Items)
 local WeaponModels = require(Shared.WeaponModels)
 local RigSpec = require(Shared.RigSpec)
 local RigMath = require(Shared.RigMath)
+local Progress = require(Shared.Progress)
 
 local Equipment = require(Shared.Equipment)
 
@@ -228,8 +230,11 @@ function Chars.setWeapon(char, holder, g)
 				l.Angle = 42
 				l.Brightness = 3.2
 				l.Color = Color3.fromRGB(255, 244, 222)
-				l.Shadows = true
+				-- no shadows from here (audit tech.12): each client turns them on for the lights within 60 studs of its
+				-- camera (Weapon.luau), so a night raid never has 30 shadow-casting spotlights
+				l.Shadows = false
 				l.Enabled = char:GetAttribute("WeaponLight") == true
+				CollectionService:AddTag(l, "ZR_WeaponLight")
 				l.Parent = b.lightPart
 			end
 			if b.laserPart then
@@ -503,6 +508,24 @@ function Chars.pose(char, st)
 	end
 end
 
+-- the walker's Covert Movement level on the character (attribute SkillCovert, audit gameplay.9): every client's
+-- Effects.footstep shortens this character's step radius from it, as Tarkov's skill quietens your steps for others.
+-- Set at spawn and refreshed with each stance act, since the skill trains while moving crouched (Economy.start); a
+-- player scav uses the PMC's skills, as in Tarkov.
+function Chars.covertLevel(prof)
+	return prof and prof.skills and Progress.skillLevel(prof.skills.covert) or 0
+end
+
+function Chars.syncSkills(player, char)
+	if not char or not ctx then
+		return
+	end
+	local lvl = Chars.covertLevel(ctx.Profiles.get(player))
+	if char:GetAttribute("SkillCovert") ~= lvl then
+		char:SetAttribute("SkillCovert", lvl)
+	end
+end
+
 -- stance act from the owning client (validated): attributes for every client's animator + server hitboxes
 function Chars.applyStance(player, p)
 	local char = player.Character
@@ -526,6 +549,7 @@ function Chars.applyStance(player, p)
 	if type(p.p) == "number" and p.p == p.p then
 		char:SetAttribute("Pitch", math.clamp(math.floor(p.p), -85, 85))
 	end
+	Chars.syncSkills(player, char)
 	Chars.pose(char)
 end
 
@@ -588,6 +612,7 @@ function Chars.spawn(player: Player, cf: CFrame, holder: any?, activeSlot: strin
 	char:SetAttribute("Pitch", 0)
 	local kind = opts.scav and "scav" or "player"
 	char:SetAttribute("Scav", opts.scav == true)
+	Chars.syncSkills(player, char)
 	local variant = opts.scav and math.random(1, Equipment.variants("scav")) or 1
 	if holder then
 		local gear = Chars.gearOf(holder, activeSlot)

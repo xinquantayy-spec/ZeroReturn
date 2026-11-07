@@ -33,6 +33,17 @@ end
 local function ok(data)
 	return ctx.Remotes.ok(data)
 end
+-- analytics hooks (audit tech.16; Services/Analytics.luau, loaded by Raid.init): optional like Glass, and every call is
+-- guarded, so a fault in it never touches a raid
+local function track(fn, ...)
+	local A = ctx and ctx.Analytics
+	if A and A[fn] then
+		local okT, errT = pcall(A[fn], ...)
+		if not okT then
+			warn("[ZR] analytics", fn, errT)
+		end
+	end
+end
 
 function Raid.session(player)
 	return sessions[player]
@@ -394,6 +405,7 @@ function Raid.enter(player, kind, spawn, idx)
 	Raid.push(player)
 	ctx.Remotes.note(player, "raid", Raid.raidInfo(s))
 	ctx.Match.touch(player)
+	track("deploy", player, s)
 	return true
 end
 
@@ -530,6 +542,7 @@ function Raid.finalize(player, outcome)
 		end)
 	end
 	ctx.Match.touch(player)
+	track("raidEnd", player, s, outcome, summary, char0)
 	return receipt, summary
 end
 
@@ -1215,9 +1228,11 @@ local function onPlayerAdded(player)
 		end
 		return
 	end
+	local isNew = not prof.msgs
 	if not prof.msgs then
 		ctx.Economy.mail(prof, "system", "Welcome to Relay 7. Trade at the counters, plan at the ops table, board the van. Insurance returns and task rewards are reported here.")
 	end
+	track("join", player, isNew)
 	ctx.Chars.spawn(player, Raid.safeSpawnCF(player), nil)
 	Raid.push(player)
 	ctx.Remotes.note(player, "match", ctx.Match.status(player))
@@ -1231,6 +1246,19 @@ end
 
 function Raid.init(c)
 	ctx = c
+	do
+		local okA, A = pcall(require, script.Parent.Analytics)
+		local okI, errI = false, A
+		if okA then
+			okI, errI = pcall(A.init, c)
+		end
+		if okI then
+			ctx.Analytics = A
+		else
+			warn("[ZR] Analytics failed to load, no analytics this server:", errI)
+			ctx.Remotes.onAct("perf", function() end, 0.2, 2) -- clients still report their frame rate: take it quietly
+		end
+	end
 	ctx.Remotes.onReq("deploy", Raid.deploy, 1, 2)
 	ctx.Remotes.onReq("inv", Raid.inv, 12, 16)
 	ctx.Remotes.onReq("settings", saveSettings, 2, 4, 32) -- a touch layout holds up to 24 controls (TouchLayout.ELEMENTS)

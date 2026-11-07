@@ -107,7 +107,59 @@ local NUM = { "ClockTime", "Brightness", "EnvironmentDiffuseScale", "Environment
 local COL = { "Ambient", "OutdoorAmbient", "ColorShift_Top" }
 local cur -- smoothed values actually applied
 
+-- write a lighting value only when it moved by a visible step (audit tech.12): the light eases toward its target every
+-- frame, but the engine is told only when a value changes enough to see. A snap (deploy, return), the end of Studio
+-- capture mode and a resync every 5 s write everything again.
+local written = {} -- [object][property] = the value last written
+local writtenAt = 0
+local EPS = {
+	ClockTime = 0.004, Brightness = 0.004, EnvironmentDiffuseScale = 0.003, EnvironmentSpecularScale = 0.003,
+	Density = 0.002, Offset = 0.002, Glare = 0.01, Haze = 0.01, Cover = 0.002, Saturation = 0.002, Contrast = 0.002,
+	FogStart = 1, FogEnd = 2, GlobalWind = 0.05,
+}
+local function put(obj, prop, v)
+	local w = written[obj]
+	if not w then
+		w = {}
+		written[obj] = w
+	end
+	local last = w[prop]
+	if last ~= nil then
+		local kind = typeof(v)
+		if kind == "number" then
+			if math.abs(v - last) < (EPS[prop] or 0.002) then
+				return
+			end
+		elseif kind == "Color3" then
+			if math.abs(v.R - last.R) < 0.004 and math.abs(v.G - last.G) < 0.004 and math.abs(v.B - last.B) < 0.004 then
+				return
+			end
+		elseif kind == "Vector3" then
+			if (v - last).Magnitude < (EPS[prop] or 0.05) then
+				return
+			end
+		elseif v == last then
+			return
+		end
+	end
+	w[prop] = v
+	obj[prop] = v
+end
+-- ClockTime wraps at 24: 23.999 -> 0.001 is a small step, not a large one
+local function putClock(v)
+	local w = written[Lighting]
+	local last = w and w.ClockTime
+	if last ~= nil and math.abs(((v - last + 12) % 24) - 12) < EPS.ClockTime then
+		return
+	end
+	put(Lighting, "ClockTime", v)
+end
+
 local function blend(target, k)
+	if not cur or k >= 1 or os.clock() - writtenAt > 5 then
+		table.clear(written)
+		writtenAt = os.clock()
+	end
 	if not cur or k >= 1 then
 		cur = table.clone(target)
 	else
@@ -128,14 +180,22 @@ local function blend(target, k)
 			end
 		end
 	end
+	putClock(cur.ClockTime)
 	for _, key in NUM do
-		Lighting[key] = cur[key]
+		if key ~= "ClockTime" then
+			put(Lighting, key, cur[key])
+		end
 	end
 	for _, key in COL do
-		Lighting[key] = cur[key]
+		put(Lighting, key, cur[key])
 	end
 	if atm then
-		atm.Density, atm.Offset, atm.Color, atm.Decay, atm.Glare, atm.Haze = cur.atmDensity, cur.atmOffset, cur.atmColor, cur.atmDecay, cur.atmGlare, cur.atmHaze
+		put(atm, "Density", cur.atmDensity)
+		put(atm, "Offset", cur.atmOffset)
+		put(atm, "Color", cur.atmColor)
+		put(atm, "Decay", cur.atmDecay)
+		put(atm, "Glare", cur.atmGlare)
+		put(atm, "Haze", cur.atmHaze)
 	end
 	-- FOG weather: classic distance fog closes the view (opaque from fogEnd on), and the Atmosphere is parked meanwhile, since
 	-- Roblox uses the classic fog only when there is none. The fog takes the overcast sky's colour, so what lies beyond reads as sky
@@ -143,9 +203,9 @@ local function blend(target, k)
 	if fogOn then
 		local c = cur.cloudColor
 		local k = 0.86
-		Lighting.FogColor = Color3.new(c.R * k, c.G * k, c.B * k)
-		Lighting.FogStart = cur.fogEnd * 0.08
-		Lighting.FogEnd = cur.fogEnd
+		put(Lighting, "FogColor", Color3.new(c.R * k, c.G * k, c.B * k))
+		put(Lighting, "FogStart", cur.fogEnd * 0.08)
+		put(Lighting, "FogEnd", cur.fogEnd)
 	end
 	if fogOn ~= fogParked then
 		fogParked = fogOn
@@ -153,19 +213,24 @@ local function blend(target, k)
 			atm.Parent = (not fogOn) and Lighting or nil
 		end
 		if not fogOn then
-			Lighting.FogStart, Lighting.FogEnd = 0, 100000
+			put(Lighting, "FogStart", 0)
+			put(Lighting, "FogEnd", 100000)
 		end
 	end
 	Atmos.fogEnd = fogOn and cur.fogEnd or nil
 	if clouds then
-		clouds.Cover, clouds.Density, clouds.Color = cur.cloudCover, cur.cloudDensity, cur.cloudColor
+		put(clouds, "Cover", cur.cloudCover)
+		put(clouds, "Density", cur.cloudDensity)
+		put(clouds, "Color", cur.cloudColor)
 	end
 	if grade then
-		grade.Saturation, grade.Contrast, grade.TintColor = cur.gradeSat, cur.gradeContrast, cur.gradeTint
+		put(grade, "Saturation", cur.gradeSat)
+		put(grade, "Contrast", cur.gradeContrast)
+		put(grade, "TintColor", cur.gradeTint)
 	end
 	ctx.Post.envExposure = cur.exposure
 	ctx.Post.grainMul = cur.grain
-	workspace.GlobalWind = cur.wind
+	put(workspace, "GlobalWind", cur.wind)
 end
 
 -- ── rain ─────────────────────────────────────────────────────────────────────
@@ -310,9 +375,87 @@ local SEASON_TERRAIN = {
 local SEASON_FOLIAGE = { autumn = rgb(255, 192, 116), winter = rgb(214, 226, 238), spring = rgb(224, 255, 214) }
 local baseTerrain
 local seasonApplied = "summer"
+
+-- bushes, grass and tree crowns (the nature kit's pieces) take the season's tint over their own colours. Each piece is
+-- tinted as it arrives (audit tech.9): the map's as they stream into ZR_World (DescendantAdded), the client's ground
+-- cover as Detail builds it (Atmos.tintNature). A season change re-tints the pieces already here, a few hundred a frame.
+-- No whole-workspace scan: trees and bushes that stream in after the deploy get the season too.
+-- (strong tables: an Instance key in a weak table can vanish while the part still exists; pieces that left are pruned)
+local natParts = {} -- nature pieces seen -> true
+local natBase = {} -- piece -> its own colour
+local natCount, natKept = 0, 0 -- pieces registered, and how many were left after the last prune
+local retint = nil -- { list, i } while a season change works through the pieces
+local RETINT_BUDGET = 400 -- pieces a frame
+local PRUNE_AFTER = 3000 -- new pieces between prunes of the ones that streamed out or were dropped
+
+local function isFoliage(n)
+	return string.sub(n, 1, 7) == "ZR_NAT_" and not string.find(n, "_T$") and not string.find(n, "Rock") and not string.find(n, "Log") and not string.find(n, "Stump")
+end
+
+local function tintOne(d)
+	local base = natBase[d]
+	if not base then
+		base = d.Color
+		natBase[d] = base
+	end
+	local season = seasonApplied
+	local tint = SEASON_FOLIAGE[season]
+	-- winter lays snow on them (toward white); autumn and spring tint them
+	d.Color = (season == "winter" and base:Lerp(rgb(236, 240, 246), 0.6)) or (tint and Color3.new(base.R * tint.R, base.G * tint.G, base.B * tint.B)) or base
+end
+
+-- a nature piece arrived (streamed in, or built by Detail): it takes the season now
+function Atmos.tintNature(d)
+	if d.ClassName == "MeshPart" and isFoliage(d.Name) then
+		if not natParts[d] then
+			natParts[d] = true
+			natCount += 1
+		end
+		if seasonApplied ~= "summer" then
+			tintOne(d)
+		elseif natBase[d] == nil then
+			natBase[d] = d.Color -- its own colour, kept for a later season
+		end
+	end
+end
+
+local function stepRetint()
+	local r = retint
+	local stop = math.min(#r.list, r.i + RETINT_BUDGET - 1)
+	for i = r.i, stop do
+		local d = r.list[i]
+		if d.Parent then
+			tintOne(d)
+		end
+	end
+	r.i = stop + 1
+	if r.i > #r.list then
+		retint = nil
+	end
+end
+
+-- forget the pieces that streamed out or were dropped (their Parent is nil once removed or destroyed)
+local function pruneNature()
+	local n = 0
+	for d in natParts do
+		if d.Parent == nil then
+			natParts[d] = nil
+			natBase[d] = nil
+		else
+			n += 1
+		end
+	end
+	natCount, natKept = n, n
+end
+
 local function applySeason(season)
 	season = season or "summer"
 	if season == seasonApplied then
+		if retint then
+			stepRetint()
+		elseif natCount - natKept > PRUNE_AFTER then
+			pruneNature()
+		end
 		return
 	end
 	seasonApplied = season
@@ -327,19 +470,13 @@ local function applySeason(season)
 	for _, m in TERRAIN_MATS do
 		terrain:SetMaterialColor(m, set[m.Name] or baseTerrain[m])
 	end
-	-- bushes, grass and tree crowns (the nature kit's pieces) take the season's tint over their own colours
-	local tint = SEASON_FOLIAGE[season]
-	for _, d in workspace:GetDescendants() do
-		if d:IsA("MeshPart") and string.sub(d.Name, 1, 7) == "ZR_NAT_" and not string.find(d.Name, "_T$") and not string.find(d.Name, "Rock") and not string.find(d.Name, "Log") and not string.find(d.Name, "Stump") then
-			local base = d:GetAttribute("BaseColor")
-			if not base then
-				base = d.Color
-				d:SetAttribute("BaseColor", base)
-			end
-			-- winter lays snow on them (toward white); autumn and spring tint them
-			d.Color = (season == "winter" and base:Lerp(rgb(236, 240, 246), 0.6)) or (tint and Color3.new(base.R * tint.R, base.G * tint.G, base.B * tint.B)) or base
-		end
+	pruneNature()
+	local list = {}
+	for d in natParts do
+		table.insert(list, d)
 	end
+	retint = { list = list, i = 1 }
+	stepRetint()
 end
 
 local function stopRain()
@@ -365,7 +502,11 @@ local function mix(name, target, dt)
 		return
 	end
 	b.v += (target - b.v) * math.min(1, dt * 1.5)
-	b.s.Volume = b.v * b.gain
+	local vol = b.v * b.gain
+	if math.abs(vol - (b.shown or -1)) > 0.002 then
+		b.shown = vol -- written only on change (audit tech.12)
+		b.s.Volume = vol
+	end
 end
 
 -- ── lens droplets ────────────────────────────────────────────────────────────
@@ -444,6 +585,39 @@ local function setLamps(on)
 	end
 end
 
+-- ── shadows of the map's own lights (audit tech.12) ────────────────────────────────────────────────────────
+-- Only the lights within about 60 studs of the camera cast shadows (and the first-person weapon lamp, and other people's
+-- weapon lights in the same range: Weapon.luau). The lights the server made with shadows (the bunker's key lights, a
+-- control-room lamp) are registered as they stream in and switched by distance 4 times a second; the rest stay without.
+local mapLights = {} -- light -> true (strong keys; pruned when it leaves)
+local LIGHT_SHADOW_R = 60
+local lightClock = 0
+local function addMapLight(d)
+	local cn = d.ClassName
+	if (cn == "PointLight" or cn == "SpotLight" or cn == "SurfaceLight") and d.Shadows then
+		mapLights[d] = true
+	end
+end
+local function lightShadows(camPos)
+	for l in mapLights do
+		local p = l.Parent
+		if not p then
+			mapLights[l] = nil
+		else
+			local pos = (p:IsA("BasePart") and p.Position) or (p:IsA("Attachment") and p.WorldPosition) or nil
+			local want = pos ~= nil and (pos - camPos).Magnitude < LIGHT_SHADOW_R
+			if l.Shadows ~= want then
+				l.Shadows = want
+			end
+		end
+	end
+end
+-- what streams into the world: nature pieces take the season, shadow lights are registered
+local function worldAdded(d)
+	Atmos.tintNature(d)
+	addMapLight(d)
+end
+
 -- ── main loop ────────────────────────────────────────────────────────────────
 local placeClock = 0
 local timers = {}
@@ -466,9 +640,16 @@ local function serverNow()
 	return workspace:GetServerTimeNow()
 end
 
+local wasFrozen = false
+local ambV -- the ambience bed's volume as eased here
 local function step(dt)
 	if Atmos.frozen then
+		wasFrozen = true
 		return -- Studio capture mode (dev bridge "studio"): neutral light, no weather
+	end
+	if wasFrozen then
+		wasFrozen = false
+		table.clear(written) -- capture mode wrote its own light: write ours again
 	end
 	local raid = ctx.State.inRaid() and ctx.State.raid or nil
 	local e = raid and raid.env or nil
@@ -492,6 +673,11 @@ local function step(dt)
 	Atmos.rain = rain
 	-- the season paints the world on deploy; in winter the rain cells drop snow
 	applySeason(e and e.season or nil)
+	lightClock += dt
+	if lightClock > 0.25 then
+		lightClock = 0
+		lightShadows(cam.CFrame.Position)
+	end
 	setSnow(e ~= nil and e.season == "winter" and rain > 0)
 	local wetRain = snowing and 0 or rain
 	-- rain particles (re-placed a few times a second; the grid follows the camera)
@@ -525,7 +711,11 @@ local function step(dt)
 	if drops then
 		local target = (wetRain > 0 and indoor < 0.5) and (0.25 + 0.45 * wetRain) or 0
 		wet += (target - wet) * math.min(1, dt * ((target > wet) and 0.08 or 0.04))
-		drops.ImageTransparency = 1 - wet
+		-- hidden while dry, written only on change (audit tech.12)
+		put(drops, "Visible", wet > 0.005)
+		if wet > 0.005 then
+			put(drops, "ImageTransparency", 1 - wet)
+		end
 	end
 	-- sound beds
 	local inRaid = e ~= nil
@@ -536,7 +726,9 @@ local function step(dt)
 	local amb = ctx.Effects.ambience
 	if amb then
 		local target = inRaid and (0.35 * (1 - rain * 0.6) * (1 - Atmos.dark * 0.45) * (1 - indoor * 0.4)) or 0.12
-		amb.Volume += (target - amb.Volume) * math.min(1, dt)
+		ambV = ambV or amb.Volume
+		ambV += (target - ambV) * math.min(1, dt)
+		put(amb, "Volume", ambV)
 	end
 	-- lamps: on in the dark, fog or heavy cloud
 	if inRaid then
@@ -577,6 +769,26 @@ function Atmos.init(c)
 	CollectionService:GetInstanceAddedSignal("ZR_Lamp"):Connect(function(head)
 		lamp(head, lampsOn)
 	end)
+	-- the map's nature pieces take the season as they stream in (audit tech.9); what is already here when the client
+	-- starts is registered once in the background, a few thousand a frame
+	local function hookWorld(w)
+		w.DescendantAdded:Connect(worldAdded)
+		for i, d in w:GetDescendants() do
+			worldAdded(d)
+			if i % 3000 == 0 then
+				task.wait()
+			end
+		end
+	end
+	workspace.ChildAdded:Connect(function(ch)
+		if ch.Name == "ZR_World" and ch:IsA("Folder") then
+			task.spawn(hookWorld, ch) -- a rebuilt world
+		end
+	end)
+	local w = workspace:FindFirstChild("ZR_World")
+	if w then
+		task.spawn(hookWorld, w)
+	end
 	local lastWarn = 0
 	RunService:BindToRenderStep("ZR_Atmos", Enum.RenderPriority.Camera.Value + 4, function(dt)
 		local ok, err = pcall(step, dt)

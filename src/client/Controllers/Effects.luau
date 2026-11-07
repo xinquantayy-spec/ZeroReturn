@@ -10,6 +10,7 @@ local Atlas = require(Shared.SoundAtlas)
 local EnvAtlas = require(Shared.EnvAtlas)
 local CombatAtlas = require(Shared.CombatAtlas)
 local AmbAtlas = require(Shared.AmbAtlas)
+local Hearing = require(Shared.Hearing)
 -- breaking glass: the spray, the sound and the floor shards (docs/design/GLASS.md); optional, a fault in it must not take the other effects down
 -- airdrops: the plane, its flares and the falling crate (Services/Airdrop.luau); optional like the glass
 local okAirdropFx, AirdropFx = pcall(require, script.Parent.AirdropFx)
@@ -245,8 +246,15 @@ function Effects.deafen(amount, dur)
 	end
 end
 
+-- written only when the deafness or the effects volume changes (audit tech.12: no per-frame writes of unchanged values)
+local deafShown, volShown = -1, -1
 local function updateDeaf()
 	local k = Effects.deafLevel()
+	local fxVol = ctx.Settings.fxVolume and ctx.Settings.fxVolume() or 1
+	if fxVol == volShown and (k == deafShown or (k > 0 and math.abs(k - deafShown) < 0.002)) then
+		return -- (the last step down to 0 is always written)
+	end
+	deafShown, volShown = k, fxVol
 	if deafEq then
 		deafEq.Enabled = k > 0.01
 		deafEq.HighGain = -40 * k
@@ -254,7 +262,7 @@ local function updateDeaf()
 		deafEq.LowGain = -6 * k
 	end
 	if world then
-		world.Volume = (1 - 0.5 * k) * (ctx.Settings.fxVolume and ctx.Settings.fxVolume() or 1)
+		world.Volume = (1 - 0.5 * k) * fxVol
 	end
 	if tinnitus then
 		tinnitus.Volume = (tinnitusGain or 0.5) * 1.2 * k
@@ -302,6 +310,13 @@ end
 local stepParams = RaycastParams.new()
 stepParams.FilterType = Enum.RaycastFilterType.Exclude
 
+-- the listener's own skills (Perception) from the profile the server sends
+local function mySkills()
+	local d = ctx and ctx.State.data
+	local econ = d and d.econ
+	return econ and econ.skills
+end
+
 -- footstep at a foot position; intensity 0..1 (crouch/slow quiet, sprint loud). Own steps are quieter.
 function Effects.footstep(pos, intensity, model, own)
 	stepParams.FilterDescendantsInstances = { model, workspace.CurrentCamera, fx }
@@ -319,17 +334,22 @@ function Effects.footstep(pos, intensity, model, own)
 		vol *= 0.35
 	end
 	local speed = 0.94 + math.random() * 0.12
+	local gearReach = 1
 	if own then
 		Effects.sfx(name, SoundService, vol, speed)
 	else
 		-- an active headset lifts quiet sounds: other people's steps are louder and carry further
 		local hs = headset()
-		-- how far steps carry (Tarkov after 0.14.5.5, audit gameplay.5): about 43 m (134 studs) crouch-walking slowly,
-		-- over 100 m (312 studs) sprinting; intensity runs 0.11 (slow crouch) to 1.25 (sprint)
-		Effects.sfx(name, hit and hit.Position or pos, vol * (hs and 1.35 or 1), speed, (120 + intensity * 160) * (hs and 1.3 or 1))
+		-- how far steps carry (Hearing.stepRadius: Tarkov's distances, then the skills, audit gameplay.9): the listener's
+		-- Perception and the walker's Covert Movement on this surface, his level from the SkillCovert attribute the
+		-- server sets (Chars.syncSkills); his kit's rattle carries less far by the same skill
+		local level = model and model:GetAttribute("SkillCovert")
+		local skills = mySkills()
+		gearReach = Hearing.perceptionReach(skills) * (1 - Hearing.covertQuiet(level, nil))
+		Effects.sfx(name, hit and hit.Position or pos, vol * (hs and 1.35 or 1), speed, Hearing.stepRadius(intensity, hs, skills, level, fam))
 	end
 	if intensity > 0.9 and math.random() < 0.35 then
-		Effects.sfx("gear_rattle", own and SoundService or pos, vol * 0.5, 1, 40)
+		Effects.sfx("gear_rattle", own and SoundService or pos, vol * 0.5, 1, 40 * gearReach)
 	end
 end
 

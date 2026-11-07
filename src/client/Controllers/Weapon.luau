@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local UIS = game:GetService("UserInputService")
+local CollectionService = game:GetService("CollectionService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Ballistics = require(Shared.Ballistics)
 local Progress = require(Shared.Progress)
@@ -100,8 +101,10 @@ local tubeT0, tubePeriod = nil, 0.55
 local cycleT0, cycleDur, cycleKind = nil, 0, nil -- pump / bolt cycling after a shot
 local slashT0, slashSent = nil, false
 local checkT0, checkDur = nil, 1.1
-local HEAT = { rifle = 0.011, smg = 0.009, pistol = 0.012, shotgun = 0.03, bolt = 0.035 } -- as Combat.luau
-local heat, heatT = 0, 0
+-- each gun's heat as the server keeps it (Weapons.heatNow / heatShot, Tarkov's 0-200 scale, audit gameplay.11), for the
+-- spread from 100 and the rate of fire above 140: [weapon guid] = { h = the last shot's heat, t, rate = factor drawn }
+local heatOf = {}
+local glowFirst, glowAsks = -10, 0 -- the reminder glow's asks within its window
 local MODE_NAMES = { AUTO = "FULL AUTO", SEMI = "SINGLE", BURST = "BURST", PUMP = "PUMP-ACTION", BOLT = "BOLT-ACTION" }
 local inspectT0 = nil -- L: Tarkov's weapon inspection (the gun turned to show one side, then the other)
 local INSPECT_TIME = 2.6
@@ -112,6 +115,8 @@ local kickZ, kickRot, kickRoll = 0, 0, 0
 local sway = CFrame.identity
 local scopeGui, scopeImg, scopeBars, reflexDot
 local tpLightT = 0
+local tpLights = {} -- third-person weapon lights (tag ZR_WeaponLight) -> true
+local TP_SHADOW_RANGE = 60 -- studs (audit tech.12)
 
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -708,11 +713,39 @@ local function canFire()
 	return alive() ~= nil
 end
 
+-- Tarkov's malfunction glow (audit gameplay.11; BattleUIMalfunctionGlow): red 150 ms after the shot that malfunctioned
+-- and on a reminder, yellow when an inspection names the kind, green when it is cleared; MALFUNCTION NOTIFICATIONS
+-- turns it off, as Tarkov's MalfunctionVisability does
+local function malfGlow(kind)
+	if ctx.Settings.data.malfNotes ~= false and ctx.Post and ctx.Post.malfGlow then
+		ctx.Post.malfGlow(kind)
+	end
+end
+-- a reminder (the trigger on a malfunctioning gun) shows the red glow only at the third ask within 2 s of the first,
+-- and not again in that window (ShowGlowAttemptsCount 3)
+local function remindGlow()
+	local t = os.clock()
+	if t - glowFirst > Weapons.MALF.GLOW_WINDOW then
+		glowFirst, glowAsks = t, 0
+	end
+	glowAsks += 1
+	if glowAsks == Weapons.MALF.GLOW_ASKS then
+		malfGlow("examined")
+	end
+end
+
+-- the rate-of-fire factor a hot gun drew (Tarkov: above 140, kept until a shot's heat is 140 or below)
+local function heatRate(g)
+	local hr = g and heatOf[g]
+	return hr and hr.rate or 1
+end
+
 local function fireOnce()
 	local o = vm
 	local def = o.def
 	local t = os.clock()
-	if t - Weapon.lastShot < 60 / def.rpm then
+	local auto = def.modes[Weapon.mode] == "AUTO" or def.modes[Weapon.mode] == "BURST"
+	if t - Weapon.lastShot < 60 / (def.rpm * (auto and heatRate(o.g) or 1)) then
 		return
 	end
 	-- M11 part B: a malfunctioning gun clicks (L identifies it, Shift+T clears it)
@@ -720,6 +753,7 @@ local function fireOnce()
 		if not dryLatch then
 			dryLatch = true
 			ctx.Effects.sound(Sounds.DRY_FIRE, SoundService, 0.6)
+			remindGlow()
 		end
 		return
 	end
@@ -757,13 +791,19 @@ local function fireOnce()
 	if not Weapon.aiming and select(2, Weapon.deviceState()) then
 		spread *= 0.8 -- a visible laser steadies hip fire (Tarkov: while it is on)
 	end
-	-- M11 part B: a hot barrel throws shots wider (medium overheating and up; the server keeps the real heat)
-	local t0 = os.clock()
-	heat = heat * math.exp(-(t0 - heatT) / 30) + (HEAT[def.class] or 0.012)
-	heatT = t0
-	if heat > 0.6 then
-		spread *= 1 + (heat - 0.6) * 1.5
+	-- heat (Tarkov, audit gameplay.11; the server keeps the same for wear and malfunctions): from 100 a hot barrel throws
+	-- shots wider (x1.5 at 200); above 140 the rate of fire changes by a factor drawn once (0.85 to 1.15)
+	local hk = o.g or "?"
+	local hr = heatOf[hk] or { h = 0, t = t }
+	local hNow = Weapons.heatNow(hr.h, t - hr.t)
+	spread *= Weapons.heatSpread(hNow)
+	hr.h, hr.t = Weapons.heatShot(hNow, def.class), t
+	if hr.h > Weapons.OVERHEAT.RATE_ABOVE then
+		hr.rate = hr.rate or Weapons.rateFactor(math.random())
+	else
+		hr.rate = nil
 	end
+	heatOf[hk] = hr
 	if ctx.Camera.speed > 2 then
 		spread += def.moveSpread * (Weapon.aiming and 0.35 or 1)
 	end
@@ -1066,6 +1106,27 @@ function Weapon.rebuild()
 	end
 end
 
+-- Tarkov's cook-off (audit gameplay.11): the server says the hot gun fires one round by itself. It goes out through the
+-- usual shot path as soon as the gun's own cycle allows (so the server's rate check passes), if the gun is still up,
+-- loaded and working; no trigger is needed.
+function Weapon.cookOff(tries)
+	if not vm or Weapon.melee or not ctx.State.inRaid() or Weapon.malf then
+		return
+	end
+	local def = vm.def
+	local auto = def.modes[Weapon.mode] == "AUTO" or def.modes[Weapon.mode] == "BURST"
+	local wait = 60 / (def.rpm * (auto and heatRate(vm.g) or 1)) - (os.clock() - Weapon.lastShot)
+	if wait > 0 then
+		if (tries or 0) < 3 then
+			task.delay(wait + 0.02, Weapon.cookOff, (tries or 0) + 1)
+		end
+		return
+	end
+	if canFire() then
+		fireOnce()
+	end
+end
+
 function Weapon.fireForTest(n)
 	if not vm then
 		return "no weapon"
@@ -1133,14 +1194,26 @@ local function update(dt)
 	local o = vm
 	local show = o ~= nil and (inRaid or practicing()) and hum ~= nil and not ctx.Input.isMenu() and not ctx.Camera.orbit and not ctx.Input.isMounted()
 	-- local player's own third-person weapon light stays off (the viewmodel lamp lights the scene)
-	if now - tpLightT > 0.25 and char then
+	if now - tpLightT > 0.25 then
 		tpLightT = now
-		for _, c in char:GetChildren() do
-			if c.Name == "TPWeapon" then
-				local l = c:FindFirstChild("WeaponLight")
-				if l and l.Enabled then
-					l.Enabled = false
+		if char then
+			for _, c in char:GetChildren() do
+				if c.Name == "TPWeapon" then
+					local l = c:FindFirstChild("WeaponLight")
+					if l and l.Enabled then
+						l.Enabled = false
+					end
 				end
+			end
+		end
+		-- shadows (audit tech.12): besides the first-person lamp, only other people's weapon lights within 60 studs
+		-- of the camera cast them (the server makes them without)
+		local camPos = cam.CFrame.Position
+		for l in tpLights do
+			local p = l.Parent
+			local want = l.Enabled and p ~= nil and p:IsA("BasePart") and (p.Position - camPos).Magnitude < TP_SHADOW_RANGE
+			if l.Shadows ~= want then
+				l.Shadows = want
 			end
 		end
 	end
@@ -1159,7 +1232,9 @@ local function update(dt)
 	else
 		local Mv = ctx.Movement
 		local target = (switching and 0) or (nadeBusy() and 0) or (Weapon.healing and 0.3) or ((Mv and Mv.vaulting) and 0.2) or 1
-		raise += (target - raise) * math.min(1, dt * 9)
+		-- the quick draw after a malfunction: the jammed gun goes away three times as fast (IdleToOutSpeedMultOnMalf)
+		local quickOut = switching ~= nil and switching.slot == "holster" and now < (Weapon.quickDrawUntil or 0)
+		raise += (target - raise) * math.min(1, dt * (quickOut and 9 * Weapons.MALF.QUICKDRAW_MULT or 9))
 	end
 	kickZ -= kickZ * math.min(1, dt * 14)
 	kickRot -= kickRot * math.min(1, dt * 12)
@@ -1652,20 +1727,36 @@ function Weapon.init(c)
 			return
 		end
 		if d.state == "on" then
+			if not Weapon.malf then
+				-- it just happened (audit gameplay.11): Tarkov's red glow 150 ms after the shot, and for 5 s a loaded
+				-- pistol comes out three times as fast if a long gun jammed (the server times the draw)
+				task.delay(Weapons.MALF.GLOW_DELAY, malfGlow, "examined")
+				if (Weapon.slot == "primary" or Weapon.slot == "secondary") and weaponIn("holster") then
+					Weapon.quickDrawUntil = os.clock() + Weapons.MALF.QUICKDRAW
+				end
+			end
 			Weapon.malf = Weapon.malf or "?"
 			if Weapon.malf == "?" then
 				Weapon.malfName = nil
 			end
 		elseif d.state == "known" then
+			if not d.again then
+				malfGlow("type") -- Tarkov's yellow glow: the inspection named the kind
+			end
 			Weapon.malf = d.kind or "?"
 			Weapon.malfName = d.name
 		elseif d.state == "fixing" then
 			Weapon.checking = true
 			checkT0, checkDur = os.clock(), d.t or 1.2
 		elseif d.state == "off" then
+			if Weapon.malf then
+				malfGlow("repaired") -- Tarkov's green glow: cleared
+			end
 			Weapon.malf, Weapon.malfName = nil, nil
 			Weapon.checking = false
 			checkT0 = nil
+		elseif d.state == "cookoff" then
+			Weapon.cookOff()
 		end
 	end)
 	c.State.on("magcheck", function(d)
@@ -1707,6 +1798,16 @@ function Weapon.init(c)
 		resetActions()
 		lastActiveG = nil
 		watchChar(char)
+	end)
+	-- other people's weapon lights, as they stream in and out (their shadows follow the distance, in update)
+	for _, l in CollectionService:GetTagged("ZR_WeaponLight") do
+		tpLights[l] = true
+	end
+	CollectionService:GetInstanceAddedSignal("ZR_WeaponLight"):Connect(function(l)
+		tpLights[l] = true
+	end)
+	CollectionService:GetInstanceRemovedSignal("ZR_WeaponLight"):Connect(function(l)
+		tpLights[l] = nil
 	end)
 	RunService:BindToRenderStep("ZR_Weapon", Enum.RenderPriority.Camera.Value + 2, update)
 end
