@@ -31,7 +31,7 @@ local function health(f, w, h)
 	local ox = 10
 	K.label(f, "HEALTH", 15, { FontFace = K.bold, Position = UDim2.fromOffset(ox, 0), Size = UDim2.fromOffset(300, 20) })
 	if not (inRaid and v and v.parts) then
-		K.label(f, "Out of the raid your operator is treated and rested: every body part is at full health.", 12, {
+		K.label(f, "Out of the raid your operator recovers slowly in the bunker, faster with the medstation. Wounds that have not healed are still there when the next raid starts.", 12, {
 			Position = UDim2.fromOffset(ox, 24), Size = UDim2.fromOffset(w * 0.55, 34), TextWrapped = true, TextColor3 = K.C.dim,
 		})
 	end

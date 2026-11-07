@@ -415,6 +415,9 @@ local function reach(player, c, slack)
 	if (root.Position - c.part.Position).Magnitude > Config.INTERACT_RANGE + (slack or 0) then
 		return false, "TOO_FAR"
 	end
+	if ctx.Guard and ctx.Guard.canSee and not ctx.Guard.canSee(char, c.part, 1.2) then
+		return false, "NO_LINE_OF_SIGHT"
+	end
 	return true, s
 end
 Loot.reach = reach

@@ -527,6 +527,7 @@ end
 local OUTCOME = {
 	SUCCESS = { "EXTRACTED", "green" }, KIA = { "KILLED IN ACTION", "red" }, MIA = { "MISSING IN ACTION", "orange" },
 	DISCONNECTED = { "SIGNAL LOST  -  RAID FORFEITED", "orange" },
+	SERVER_CLOSED = { "SERVER CLOSED  -  KIT KEPT", "orange" },
 }
 
 local function itemList(parent, x, y, w, h, title, list, color)
@@ -547,34 +548,39 @@ end
 
 function Screens.summary(s)
 	local o = OUTCOME[s.outcome] or { s.outcome, "text" }
-	local f, w, h = modal(720, 470, "RAID REPORT  //  " .. o[1] .. (s.runThrough and " (RUN THROUGH)" or "") .. (s.scav and "  ·  SCAV" or ""))
+	-- a raid cut off by the server closing is settled as a run-through; its own line says so
+	local closed = s.outcome == "SERVER_CLOSED"
+	local runThrough = s.runThrough and not closed
+	local f, w, h = modal(720, 470, "RAID REPORT  //  " .. o[1] .. (runThrough and " (RUN THROUGH)" or "") .. (s.scav and "  ·  SCAV" or ""))
 	f:FindFirstChildOfClass("TextLabel").TextColor3 = K.C[o[2]]
 	line(f, 30, string.format("DURATION %s   ·   KILLS %d   ·   +%d XP%s   ·   RAID %s", Util.clock(s.time or 0), s.kills or 0, s.xp or 0,
 		s.levelUp and ("   ·   LEVEL UP: " .. tostring(s.level)) or "", string.sub(s.raidId or "", 1, 8)), s.levelUp and K.C.green or K.C.dim, 12)
-	if s.runThrough then
+	if runThrough then
 		line(f, 44, "RUN THROUGH: you extracted too quickly with too little done. Your loot is kept but is not found-in-raid.", K.C.orange, 12)
 	end
 	if ctx.State.deathInfo and s.outcome == "KIA" then
 		line(f, 44, ctx.State.deathInfo, K.C.red, 12)
 	elseif s.outcome == "MIA" then
 		line(f, 44, "THE RAID CLOCK RAN OUT BEFORE YOU REACHED AN EXFIL. INSURED GEAR WILL BE RETURNED.", K.C.orange, 12)
+	elseif s.outcome == "SERVER_CLOSED" then
+		line(f, 44, "THE SERVER CLOSED DURING THE RAID. YOU KEEP WHAT YOU CARRIED; NOTHING IS FOUND IN RAID.", K.C.orange, 12)
 	end
 	local colW = math.floor((w - 12) / 2)
-	local top = (s.outcome == "KIA" or s.outcome == "MIA" or s.runThrough) and 68 or 56 -- room for the death / MIA / run-through line
+	local top = (s.outcome == "KIA" or s.outcome == "MIA" or closed or runThrough) and 68 or 56 -- room for the death / MIA / closed / run-through line
 	local listH = h - 140 - (top - 56)
 	local retained = s.retained or {}
 	local lost = s.lost or {}
 	local kept = s.kept or {}
-	if s.scav and s.outcome ~= "SUCCESS" then
+	if s.scav and s.outcome ~= "SUCCESS" and not closed then
 		line(f, 70, "The scav kit is gone. Your PMC, stash and health were never at risk.", K.C.dim, 13)
-	elseif s.outcome == "SUCCESS" then
+	elseif s.outcome == "SUCCESS" or closed then
 		itemList(f, 0, top, colW, listH, (s.scav and "TO YOUR STASH  (" or "CARRIED OUT  (") .. #retained .. ")", retained, K.C.green)
 		itemList(f, colW + 12, top, colW, listH, "FOUND IN RAID  (" .. #(s.found or {}) .. ")", s.found or {}, K.C.ochre)
 	else
 		itemList(f, 0, top, colW, listH, "SECURE CONTAINER KEPT  (" .. #kept .. ")", kept, K.C.green)
 		itemList(f, colW + 12, top, colW, listH, "LOST  (" .. #lost .. ")", lost, K.C.red)
 	end
-	local net = s.outcome == "SUCCESS" and ("+" .. Util.commas(s.value or 0)) or ("-" .. Util.commas(s.value or 0))
+	local net = (s.outcome == "SUCCESS" or closed) and ("+" .. Util.commas(s.value or 0)) or ("-" .. Util.commas(s.value or 0))
 	local sold = (s.sold or 0) > 0 and string.format("   ·   NO STASH SPACE: SOLD +%s %s", Util.commas(s.sold), Config.CURRENCY) or ""
 	line(f, h - 78, string.format("NET VALUE  %s %s   ·   FOUND IN RAID %d%s", net, Config.CURRENCY, #(s.found or {}), sold), K.C.ochre, 14)
 	local b = K.button(f, "RETURN TO SAFEHOUSE", { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.fromOffset(280, 42), TextSize = 15, TextColor3 = K.C.ochre })

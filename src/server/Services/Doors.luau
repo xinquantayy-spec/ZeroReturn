@@ -78,6 +78,10 @@ local function use(player, d)
 	if not s or s.done or not root or (root.Position - d.cf.Position).Magnitude > 10 then
 		return
 	end
+	-- no opening doors through walls (audit quick win tech.5): the ray from the head may only meet the door itself
+	if ctx.Guard and ctx.Guard.canSee and d.part and not ctx.Guard.canSee(player.Character, d.part, 1.5) then
+		return
+	end
 	if d.sealed then
 		ctx.Remotes.fx("sfx", { n = "door_locked", p = d.cf.Position, v = 0.8 })
 		ctx.Remotes.note(player, "toast", { text = "SEALED FROM THE INSIDE", tone = "warn" })

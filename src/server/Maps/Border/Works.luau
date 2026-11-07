@@ -3314,10 +3314,11 @@ return function(B)
 			K("Drum", -32, 18, 0, FY)
 			K("JerryCans", -30, 20, 20, FY)
 			for _, c in { { "toolbox", "Pump engineer's chest", -34, 8, FY }, { "techbox", "Pump panel", 30, -6, FY }, { "crate", "Spare seals", 30, 4, FY }, { "locker", "Locker", -hw + 1.8, -12, FY },
-				{ "medbag", "First aid bag", 33, 20, FY }, { "weaponbox", "Locked case", -30, -13.5, Y2 }, { "toolbox", "Gallery chest", 30, 13.5, Y2 },
+				{ "medbag", "First aid bag", 33, 12, FY }, { "weaponbox", "Locked case", -30, -13.5, Y2 }, { "toolbox", "Gallery chest", 30, 13.5, Y2 },
 				{ "techbox", "Valve panel", 0, -23.4, Y2, FACE.n }, { "crate", "Gallery crate", 0, 21, Y2 }, { "jacket", "Engineer's coat", hw - T - 1, 6, FY } } do
 				-- the gallery case and chest stood over the stair shafts (SH1, SH2), 7.7 studs over the floor below; the valve
-				-- panel faced the wall (placement audit, 2026-11-01)
+				-- panel faced the wall (placement audit, 2026-11-01); the first aid bag sat in the east stair's first steps
+				-- (LOS probe, 2026-11-07)
 				cont(c[1], c[2], c[3], c[4], c[6] or 0, c[5], true)
 			end
 			cont("safe", "Chief engineer's safe", 34, 8, FACE.e, Y2, true)

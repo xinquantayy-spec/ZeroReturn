@@ -79,13 +79,18 @@ function State.init(_ctx)
 	local st = Net.get(Net.State)
 	local note = Net.get(Net.Note)
 	if not (req and st and note) then
-		warn("[ZR] remotes missing; server not ready")
+		-- Net.get waits as long as the server takes; this only happens if the remotes are renamed
+		warn("[ZR] remotes missing")
 		return
 	end
 	st.OnClientEvent:Connect(function(snap)
 		State.data = snap
 		State.dataClock = os.clock()
 		State.raid = snap.raid
+		if not State.ready then
+			-- the join card (src/first/Loading.client.luau) closes on this
+			game:GetService("Players").LocalPlayer:SetAttribute("ZR_Ready", true)
+		end
 		State.ready = true
 		changed:Fire(snap)
 	end)

@@ -167,8 +167,9 @@ function Remotes.init(_ctx: any)
 		end
 	end)
 	shoot.OnServerEvent:Connect(function(player: Player, seq: any, origin: any, dir: any)
-		-- generous bucket (fire-rate itself is enforced in Combat); stops floods cheaply
-		if not Remotes.allow(player, "shoot", 14, 16) then
+		-- generous bucket (fire-rate itself is enforced in Combat), sized above the fastest gun (the SMG-9 at 800 rpm is
+		-- 13.3 shots a second); stops floods cheaply
+		if not Remotes.allow(player, "shoot", 18, 20) then
 			return Remotes.strike(player, "shoot flood")
 		end
 		if shootHandler then

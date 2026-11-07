@@ -80,6 +80,46 @@ function C.endRaid()
 	return "ended"
 end
 
+-- settle one player's raid with a given outcome (SERVER_CLOSED, KIA, MIA...), optionally after adding a found-in-raid
+-- item to the raid kit, and report what the profile kept
+function C.finalize(name, outcome, lootId)
+	local p = plr(name)
+	local s = ctx.Raid.session(p)
+	if not s then
+		return "not in a raid"
+	end
+	local lg = nil
+	if lootId then
+		local g, it = Inv.newItem(lootId, 1, { fip = true })
+		if Inv.place(s.inv, g, it, Inv.loadOrder(s.inv)) then
+			lg = g
+		end
+	end
+	local prof = ctx.Profiles.get(p)
+	local before = prof and table.clone(prof.stats)
+	local receipt, summary = ctx.Raid.finalize(p, outcome)
+	local loot = lg and prof.items[lg]
+	return HttpService:JSONEncode({
+		outcome = receipt and receipt.outcome, summaryOutcome = summary and summary.outcome, runThrough = summary and summary.runThrough,
+		retained = receipt and #receipt.retained, lost = receipt and #receipt.lost, found = summary and #summary.found,
+		loot = lg and (loot and { kept = true, fir = loot.fir == true, fip = loot.fip == true } or { kept = false }) or nil,
+		survivedBefore = before and before.survived, survivedAfter = prof and prof.stats.survived,
+		lastMail = prof and prof.msgs and prof.msgs[#prof.msgs] and prof.msgs[#prof.msgs].x, invariant = prof and select(2, Inv.check(prof)) or "ok",
+	})
+end
+
+-- the bunker character's health as the profile would keep it (Raid.keepHideoutHealth), after taking `dmg` off the thorax
+function C.keepHealth(name, dmg)
+	local p = plr(name)
+	local hs = p.Character and ctx.Health.get(p.Character)
+	if hs and dmg and hs.parts and hs.parts.thorax then
+		hs.parts.thorax.hp = math.max(1, hs.parts.thorax.hp - dmg)
+	end
+	local ok = ctx.Raid.keepHideoutHealth(p)
+	local prof = ctx.Profiles.get(p)
+	return HttpService:JSONEncode({ kept = ok, thorax = prof and prof.health and prof.health.parts and prof.health.parts.thorax, live = hs and hs.parts.thorax.hp, inRaid = hs and hs.inRaid })
+end
+
 -- keep a raid running with nobody inside (to inspect bodies after a death)
 function C.hold(on)
 	ctx.Match.holdOpen = on ~= false

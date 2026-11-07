@@ -138,18 +138,48 @@ function Settings.setQuick(slot, g)
 	end
 end
 
+-- Graphics level, FOV, sensitivity and grain are kept per kind of device, so a phone does not inherit the PC's HIGH
+-- (audit tech-3 and quick win tech.8). Phones start at LOW, consoles at MEDIUM, PCs at HIGH; HOLD 30 FPS (Detail)
+-- still steps the level down when a device cannot keep up.
+local PER_DEVICE = { quality = true, fov = true, sens = true, grain = true }
+local CLASS_QUALITY = { phone = 1, console = 2, pc = 3 }
+local deviceClass = nil
+function Settings.deviceClass(): string
+	if not deviceClass then
+		local UIS = game:GetService("UserInputService")
+		local GuiService = game:GetService("GuiService")
+		if GuiService:IsTenFootInterface() then
+			deviceClass = "console"
+		elseif UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled then
+			deviceClass = "phone"
+		else
+			deviceClass = "pc"
+		end
+	end
+	return deviceClass
+end
+
 function Settings.set(key, value)
 	Settings.data[key] = value
+	local payload = { [key] = value }
+	if PER_DEVICE[key] then
+		local cls = Settings.deviceClass()
+		Settings.data.dev = Settings.data.dev or {}
+		Settings.data.dev[cls] = Settings.data.dev[cls] or {}
+		Settings.data.dev[cls][key] = value
+		payload.dev = { [cls] = { [key] = value } }
+	end
 	Settings.apply()
 	if ctx then
-		ctx.State.req("settings", { [key] = value })
+		ctx.State.req("settings", payload)
 	end
 end
 
 -- settings with no default (absent until the player makes one) and the type the profile must hold for them
-local OPTIONAL = { touchLayout = "table" }
+local OPTIONAL = { touchLayout = "table", dev = "table" }
 
--- the profile's settings as the server sent them on join: each known key of the right type replaces the default
+-- the profile's settings as the server sent them on join: each known key of the right type replaces the default, then
+-- this device's own graphics level, FOV, sensitivity and grain (or its class's starting level) go on top
 function Settings.fromServer(s)
 	if type(s) ~= "table" then
 		return
@@ -158,6 +188,19 @@ function Settings.fromServer(s)
 		local want = OPTIONAL[k] or (Settings.data[k] ~= nil and type(Settings.data[k]))
 		if want and type(v) == want then
 			Settings.data[k] = v
+		end
+	end
+	local cls = Settings.deviceClass()
+	local mine = type(Settings.data.dev) == "table" and Settings.data.dev[cls]
+	if not (type(mine) == "table" and type(mine.quality) == "number") and cls ~= "pc" then
+		-- first time on this kind of device: its starting level (a PC keeps the level saved before levels were per device)
+		Settings.data.quality = CLASS_QUALITY[cls] or Settings.data.quality
+	end
+	if type(mine) == "table" then
+		for k in PER_DEVICE do
+			if type(mine[k]) == type(Settings.data[k]) then
+				Settings.data[k] = mine[k]
+			end
 		end
 	end
 	Settings.apply()

@@ -224,6 +224,19 @@
     - A saved layout across a real second session needs the DataStore (issue 1). The join load itself was replayed and
       works.
 
+80. **Two Border Yard doors open into a wall on one side (found by the line-of-sight probe, 2026-11-07).**
+    - `LV_A127` (BLOCK A): a concrete slab 11 studs wide stands 1.4 studs outside it.
+    - `LV61_D1` (SQUAT KIOSK): a brick panel stands 1.8 studs outside it.
+    - Both work from inside. MapTests M13 lists them on every run; the art-1a map re-base rebuilds these buildings.
+    - Fixed on the same day: a first aid bag inside the pump house's east stair, and a treadmill row standing a stud in
+      front of the Meridian sports store's lockers.
+
+81. **Not yet checked where it matters (M1, 2026-11-07).**
+    - SERVER_CLOSED was run through the dev bridge (`ZR_Dev finalize`), not by closing a real server: Studio's stop
+      button ends the session without the 30 s `BindToClose` window a live server gets.
+    - The kick when saves are down (Store OFFLINE) only happens on a live server; Studio always falls back to memory.
+    - Per-device graphics levels (phones start at LOW, consoles at MEDIUM) have not been seen on a phone or a console.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

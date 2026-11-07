@@ -8,6 +8,18 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M1 release blockers (2026-11-07)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests **396/396** (new: server-closed settlement for a PMC and a scav, line of sight through a wall, guard falls and walls), CharTests 47/47, LookTests 33/33, MapTests **40/40** (new M12: all 971 containers searchable from a spot within reach; new M13: all 441 doors usable from at least one side). |
+| Server start | Boot log: models loaded in 3.7 s (13.4 s before the parallel fetch), ready at 17.9 s (26.5 s before). Studio on the owner's PC, so a live server will differ. |
+| Join card | Seen at 00:04: "SERVER STARTING · BUILDING MERIDIAN", the progress bar, "ABOUT 12 S LEFT". |
+| Server closed mid-raid | `ZR_Dev finalize SERVER_CLOSED` with a found-in-raid item added: kit and item kept (32 items), item not found-in-raid, survived count unchanged, profile invariant OK, the bunker message sent. Report: "SERVER CLOSED - KIT KEPT", one orange line, CARRIED OUT and FOUND IN RAID (0). The first version stacked the run-through line on top of it; fixed. |
+| Bunker health kept | `ZR_Dev keepHealth` took 30 off the thorax in the bunker: the profile kept 55; the next raid started at 419/440 (the bunker had healed some of it). |
+| Line-of-sight probe | Found three blocked containers or doors before the fixes: a first aid bag inside a stair, lockers behind a treadmill row, and two doors that open into a wall on one side (KNOWN_ISSUES 80). |
+| Not tested | A real server shutdown, the saves-down kick (live only), reconnect and server-per-raid (need the published place), phones and consoles. |
+
 ## Touch controls v2 (2026-11-02)
 
 Setup:

@@ -1729,8 +1729,16 @@ function World.build()
 	endMap("quay7", map)
 	-- M13: the other maps, each built at its own origin by its own module (src/server/Maps). A module that fails is
 	-- left out (logged, its half-built parts removed) so the server still starts with the maps that did build.
+	-- the share of the map-building time each module map takes (measured 2026-11-07: Meridian 7.2 s, Border 3.6 s,
+	-- Smelter under 0.1 s), for the join card's progress bar (ZR_BootP: the maps fill 0.25 to 0.95)
+	local BUILD_SHARE = { smelter = 0.02, meridian = 0.64, border = 0.34 }
+	local builtShare = 0
 	local function moduleMap(id, moduleName)
 		local trig = #root.Triggers:GetChildren()
+		local RS = game:GetService("ReplicatedStorage")
+		RS:SetAttribute("ZR_Boot", "BUILDING " .. string.upper(id)) -- the join card
+		RS:SetAttribute("ZR_BootP", 0.25 + 0.7 * builtShare)
+		builtShare += BUILD_SHARE[id] or 0
 		beginMap(id)
 		local t0 = os.clock()
 		local ok, res = pcall(function()

@@ -17,18 +17,37 @@ Store.failNext = 0 -- test hook: number of upcoming writes to fail (Studio only)
 local memory: { [string]: any } = {}
 local ds: GlobalDataStore? = nil
 
+-- A live server never keeps progress in memory: it retries the probe for about half a minute, and if the DataStore
+-- stays down it runs OFFLINE. Every write still goes to the DataStore (so the server recovers by itself when it comes
+-- back), and a player whose profile cannot load is told why and sent away (Raid.onPlayerAdded) instead of playing a
+-- session that is never kept. Only Studio without API access falls back to the in-memory store; the HUD shows
+-- SAVING OFF whenever the mode is not DATASTORE.
 function Store.init(_ctx: any)
-	local name = RunService:IsStudio() and Config.DATASTORE_DEV or Config.DATASTORE_LIVE
-	local ok, err = pcall(function()
-		ds = DataStoreService:GetDataStore(name)
-		;(ds :: any):GetAsync("__probe")
-	end)
-	if ok then
-		Store.mode = "DATASTORE"
-		print("[ZR] Profiles: DataStore", name)
-	else
+	local studio = RunService:IsStudio()
+	local name = studio and Config.DATASTORE_DEV or Config.DATASTORE_LIVE
+	local attempts = studio and 1 or 6
+	local lastErr = nil
+	for i = 1, attempts do
+		local ok, err = pcall(function()
+			ds = DataStoreService:GetDataStore(name)
+			;(ds :: any):GetAsync("__probe")
+		end)
+		if ok then
+			Store.mode = "DATASTORE"
+			print("[ZR] Profiles: DataStore", name)
+			return
+		end
+		lastErr = err
+		if i < attempts then
+			task.wait(math.min(2 ^ i, 10))
+		end
+	end
+	if studio then
 		Store.mode = "MEMORY"
-		warn("[ZR] Profiles: DataStore unavailable (" .. tostring(err) .. ") -> in-memory store, data lasts until server shutdown")
+		warn("[ZR] Profiles: DataStore unavailable (" .. tostring(lastErr) .. ") -> in-memory store (Studio only), data lasts until server shutdown")
+	else
+		Store.mode = "OFFLINE"
+		warn("[ZR] Profiles: DataStore unavailable on a live server (" .. tostring(lastErr) .. "): no progress is kept in memory; profiles load once it answers")
 	end
 end
 
@@ -46,12 +65,19 @@ local function update(key: string, fn: (any) -> any): (boolean, any)
 		memory[key] = Util.copy(nv)
 		return true, Util.copy(nv)
 	end
+	if not ds then
+		return false, "DATASTORE_DOWN"
+	end
 	local result
 	local ok, err = pcall(function()
 		result = (ds :: any):UpdateAsync(key, fn)
 	end)
 	if not ok then
 		return false, err
+	end
+	if Store.mode == "OFFLINE" then
+		Store.mode = "DATASTORE"
+		print("[ZR] Profiles: DataStore answers again; saving is on")
 	end
 	return true, result
 end

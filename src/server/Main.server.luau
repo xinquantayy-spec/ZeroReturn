@@ -4,6 +4,19 @@ local Services = script.Parent:WaitForChild("Services")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 
+-- start-up phases: shown on the clients' join card (ReplicatedStorage attribute ZR_Boot) and logged with their times
+local RS = game:GetService("ReplicatedStorage")
+local bootT0, bootLog = os.clock(), {}
+-- how far along each phase starts (ZR_BootP, the join card's progress bar; the maps fill 0.25 to 0.95, World.luau)
+local BOOT_P = { STARTING = 0, ["CONNECTING TO SAVES"] = 0.03, ["LOADING MODELS"] = 0.06, ["BUILDING THE MAPS"] = 0.25, ["STARTING SERVICES"] = 0.95, READY = 1 }
+local function boot(phase: string)
+	RS:SetAttribute("ZR_Boot", phase)
+	RS:SetAttribute("ZR_BootP", BOOT_P[phase])
+	table.insert(bootLog, string.format("%s at %.1fs", phase, os.clock() - bootT0))
+end
+RS:SetAttribute("ZR_BootT0", workspace:GetServerTimeNow()) -- the join card's estimate counts from the server's start
+boot("STARTING")
+
 local ctx = {}
 for _, name in { "Remotes", "Store", "Profiles", "Inv", "Settle", "Assets", "World", "DetailPlan", "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Dev" } do
 	ctx[name] = require(Services:WaitForChild(name))
@@ -47,10 +60,14 @@ do
 end
 
 ctx.Remotes.init(ctx)
+boot("CONNECTING TO SAVES")
 ctx.Store.init(ctx)
 ctx.Profiles.init(ctx)
+boot("LOADING MODELS")
 ctx.Assets.init(ctx)
+boot("BUILDING THE MAPS")
 ctx.World.build()
+boot("STARTING SERVICES")
 -- M12: the cosmetic detail plan reads the finished map once (walls, openings, floors) and publishes it for the
 -- clients' detail layer; it yields while it works, so the rest of the server starts in the meantime
 task.spawn(function()
@@ -102,6 +119,7 @@ if ctx.Tripwires then
 	end
 end
 ctx.Remotes.open()
+boot("READY")
 ctx.Profiles.start()
 ctx.Health.start()
 ctx.Extract.start()
@@ -120,3 +138,4 @@ if ctx.Airdrop then
 	ctx.Airdrop.start()
 end
 print("[ZR] server ready", Config.BUILD, "persistence:", ctx.Store.mode)
+print("[ZR] boot: " .. table.concat(bootLog, ", "))

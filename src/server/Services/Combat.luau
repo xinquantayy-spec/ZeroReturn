@@ -241,9 +241,15 @@ function Combat.shoot(player, seq, origin, dir)
 	if not wdef or wdef.melee then
 		return reject("no weapon", player)
 	end
-	if t - w.last < (60 / wdef.rpm) * 0.8 then
+	-- fire rate: a small bucket instead of a strict gap between shots, so network jitter that bunches two honest shots
+	-- does not drop one (audit quick win tech.10); the average still cannot pass the gun's rate by more than 10 %
+	local rate = wdef.rpm / 60 * 1.1
+	w.fireTokens = math.min(2, (w.fireTokens or 2) + (t - (w.fireT or t)) * rate)
+	w.fireT = t
+	if w.fireTokens < 1 then
 		return reject("fire rate", player)
 	end
+	w.fireTokens -= 1
 	local hs = ctx.Health.of(player)
 	if hs and hs.using then
 		return reject("shot while treating", nil)

@@ -288,6 +288,96 @@ function T.run(ctx)
 			#pts >= 6 and open and spread and clear, #pts)
 	end
 
+	-- M12 every container can be searched (audit quick win tech.5 added a line-of-sight check to looting): from at least
+	-- one spot within reach where a character fits, the ray from head height meets the container or its own furniture
+	if ctx.Guard and ctx.Guard.canSee then
+		local excl = {}
+		for _, n in { "ZR_AI", "ZR_Loot", "ZR_Loose", "ZR_Corpses", "ZR_Fx", "ZR_Traps", "ZR_GlassHit", "ZR_Traders", "ZR_Airdrops" } do
+			local f = workspace:FindFirstChild(n)
+			if f then
+				table.insert(excl, f)
+			end
+		end
+		local rp = RaycastParams.new()
+		rp.FilterType = Enum.RaycastFilterType.Exclude
+		rp.RespectCanCollide = true
+		rp.FilterDescendantsInstances = excl
+		local op = OverlapParams.new()
+		op.FilterType = Enum.RaycastFilterType.Exclude
+		op.RespectCanCollide = true
+		op.FilterDescendantsInstances = excl
+		local head = Instance.new("Part")
+		head.Name, head.Anchored, head.CanCollide, head.CanQuery, head.Size = "Head", true, false, false, Vector3.one
+		local probe = Instance.new("Model")
+		head.Parent = probe
+		local blind, n = {}, 0
+		for i, c in W.containers do
+			local a = c.part
+			if a and a.Parent then
+				n += 1
+				local stood, seen = false, false
+				for k = 0, 7 do
+					local ang = k * math.pi / 4
+					for _, dist in { 3, 4.5 } do
+						local p = a.Position + Vector3.new(math.cos(ang) * dist, 0, math.sin(ang) * dist)
+						local down = workspace:Raycast(p + Vector3.new(0, 1.5, 0), Vector3.new(0, -12, 0), rp)
+						if down and down.Normal.Y > 0.7 then
+							local hp = down.Position + Vector3.new(0, 4.6, 0)
+							if #workspace:GetPartBoundsInRadius(hp, 0.6, op) == 0 and #workspace:GetPartBoundsInRadius(down.Position + Vector3.new(0, 2.5, 0), 0.8, op) == 0 then
+								stood = true
+								head.CFrame = CFrame.new(hp)
+								seen = seen or ctx.Guard.canSee(probe, a, 1.2)
+							end
+						end
+					end
+				end
+				if stood and not seen then
+					table.insert(blind, c.id)
+				end
+			end
+			if i % 150 == 0 then
+				task.wait()
+			end
+		end
+		check("M12 every container can be searched from a spot within reach (line of sight)", #blind == 0 and n > 0, n .. " checked; blind: " .. table.concat(blind, ","))
+		-- M13 every door can be used from at least one side (Doors.use checks line of sight too); a door with a solid wall
+		-- right behind it on one side is listed (a door into a wall)
+		local walled, shut, nd = {}, {}, 0
+		for id, d in W.doors do
+			local slab = d.part
+			if slab and slab.Parent then
+				nd += 1
+				local sides = {}
+				for _, sgn in { 1, -1 } do
+					local stood, seen = 0, false
+					for _, dist in { 1.5, 2.5, 4, 5.5 } do
+						for _, lat in { -0.75, 0, 0.75 } do
+							local p = ((d.cf or slab.CFrame) * CFrame.new(lat, 0, sgn * dist)).Position -- the closed position
+							local down = workspace:Raycast(p + Vector3.new(0, 1, 0), Vector3.new(0, -slab.Size.Y - 4, 0), rp)
+							if down and down.Normal.Y > 0.7 then
+								local hp = down.Position + Vector3.new(0, 4.6, 0)
+								if #workspace:GetPartBoundsInRadius(hp, 0.5, op) == 0 then
+									stood += 1
+									head.CFrame = CFrame.new(hp)
+									seen = seen or ctx.Guard.canSee(probe, slab, 1.5)
+								end
+							end
+						end
+					end
+					sides[sgn] = stood == 0 or seen
+				end
+				if not sides[1] and not sides[-1] then
+					table.insert(shut, id)
+				elseif not sides[1] or not sides[-1] then
+					table.insert(walled, id)
+				end
+			end
+		end
+		probe:Destroy()
+		check("M13 every door can be used from at least one side (line of sight)", #shut == 0 and nd > 0,
+			nd .. " checked; shut: " .. table.concat(shut, ",") .. "; walled on one side (KNOWN_ISSUES): " .. table.concat(walled, ","))
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

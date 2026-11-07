@@ -384,6 +384,9 @@ function Raid.enter(player, kind, spawn, idx)
 	local cf = spawn.cf * CFrame.new((i % 3 - 1) * 4 + math.random() * 1.5, 0, math.floor(i / 3) * 4 + math.random() * 1.5)
 	-- the bunker is far from the maps (streaming): load the insertion point before the character lands there
 	pcall(player.RequestStreamAroundAsync, player, cf.Position, 4)
+	if not scav then
+		Raid.keepHideoutHealth(player)
+	end
 	ctx.Chars.spawn(player, cf, s.inv, s.active, { scav = scav })
 	s.nvDown = nil
 	s.gearKey = gearKey(s.inv, s.active, s.nvDown)
@@ -391,6 +394,19 @@ function Raid.enter(player, kind, spawn, idx)
 	ctx.Remotes.note(player, "raid", Raid.raidInfo(s))
 	ctx.Match.touch(player)
 	return true
+end
+
+-- bunker recovery is kept (audit quick win gameplay.1): the hideout character's health goes into the profile before
+-- a PMC raid and when the player leaves, so the next raid starts from it instead of from the last raid's end
+function Raid.keepHideoutHealth(player)
+	local prof = ctx.Profiles.get(player)
+	local char = player.Character
+	local hs = char and ctx.Health and ctx.Health.get(char)
+	if prof and hs and not hs.dead and not hs.inRaid then
+		prof.health = ctx.Health.save(hs)
+		return true
+	end
+	return false
 end
 
 local function itemsList(h, filter)
@@ -415,20 +431,30 @@ function Raid.finalize(player, outcome)
 	local char0 = player.Character
 	local hs0 = char0 and ctx.Health and ctx.Health.get(char0)
 	local death = (outcome == "KIA" and char0) and Raid.deathInfo(char0) or nil
+	-- SERVER_CLOSED (audit tech-7): a raid cut off by the server closing (an update, a crash) ends as if the raider
+	-- had left at that moment with everything on them, but nothing counts as found in raid and it is not a survival.
+	-- Nobody loses a kit to a shutdown. (Tarkov has no Roblox-style server shutdowns; this is ours.)
+	local closed = outcome == "SERVER_CLOSED"
+	local settleAs = closed and "SUCCESS" or outcome
 	if prof and not s.scav then
 		-- Tarkov: survivors keep their wounds (recovering in the hideout); death resets health.
 		-- A player-scav raid never touches the PMC's health.
-		prof.health = (outcome == "SUCCESS" and hs0 and not hs0.dead) and ctx.Health.save(hs0) or nil
-		if outcome ~= "SUCCESS" and hs0 then
+		prof.health = (settleAs == "SUCCESS" and hs0 and not hs0.dead) and ctx.Health.save(hs0) or nil
+		if settleAs ~= "SUCCESS" and hs0 then
 			prof.health = { energy = math.max(40, math.floor(hs0.energy)), water = math.max(40, math.floor(hs0.water)) }
 		end
 	end
 	-- run-through (Tarkov): extracted very quickly having done almost nothing -> loot is not found-in-raid
-	local runThrough = outcome == "SUCCESS" and not s.scav and (now() - s.started) < Progress.XP.runThrough.time and (s.xp or 0) < Progress.XP.runThrough.xp
+	local runThrough = closed or (outcome == "SUCCESS" and not s.scav and (now() - s.started) < Progress.XP.runThrough.time and (s.xp or 0) < Progress.XP.runThrough.xp)
 	local receipt, err = nil, nil
 	local xpGained, levelUp = 0, false
 	if prof then
-		receipt, err = Settle.finalize(prof, s.id, outcome, s.inv, os.time(), { runThrough = runThrough })
+		receipt, err = Settle.finalize(prof, s.id, settleAs, s.inv, os.time(), { runThrough = runThrough, closed = closed })
+		if receipt and closed then
+			receipt.outcome = outcome
+			-- the player is disconnected with the server, so the bunker messenger tells them on their next visit
+			ctx.Economy.mail(prof, "system", "The server closed during your raid. You kept everything you carried, but none of it counts as found in raid and the raid is not counted as survived.")
+		end
 		if receipt then
 			xpGained, levelUp = ctx.Economy.afterRaid(player, prof, s, outcome, runThrough)
 			prof.stats.kills += s.kills
@@ -1074,11 +1100,33 @@ local function saveSettings(player, p)
 	end
 	if not (num("fov", 50, 100) and num("sens", 0.2, 3) and num("quality", 0, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
 		and bool("reduceMotion") and bool("film") and bool("reticle") and bool("adsToggle") and bool("lens") and bool("mblur") and bool("curve") and bool("hitfx")
-		and bool("aimOnFire") and bool("joyFloat")) then
+		and bool("aimOnFire") and bool("joyFloat") and bool("autoGfx")) then
 		return fail("BAD_INPUT")
 	end
 	if s.quality then
 		s.quality = math.floor(s.quality + 0.5) -- graphics preset: 0 POTATO, 1 LOW, 2 MEDIUM, 3 HIGH
+	end
+	-- per kind of device (Settings.luau): { dev = { phone|console|pc = { quality, fov, sens, grain } } }
+	if p.dev ~= nil then
+		if type(p.dev) ~= "table" then
+			return fail("BAD_INPUT")
+		end
+		local LIM = { quality = { 0, 3 }, fov = { 50, 100 }, sens = { 0.2, 3 }, grain = { 0, 1 } }
+		s.dev = type(s.dev) == "table" and s.dev or {}
+		for cls, vals in p.dev do
+			if (cls ~= "phone" and cls ~= "console" and cls ~= "pc") or type(vals) ~= "table" then
+				return fail("BAD_INPUT")
+			end
+			local d = type(s.dev[cls]) == "table" and s.dev[cls] or {}
+			for k, v in vals do
+				local lim = LIM[k]
+				if not lim or type(v) ~= "number" or not Util.finite(v) then
+					return fail("BAD_INPUT")
+				end
+				d[k] = math.clamp(k == "quality" and math.floor(v + 0.5) or v, lim[1], lim[2])
+			end
+			s.dev[cls] = d
+		end
 	end
 	-- key rebinding, one action per request: { bind = { action, key (KeyCode name, nil = default), mod } }
 	if p.bindsReset == true then
@@ -1146,7 +1194,11 @@ local function onPlayerAdded(player)
 	local prof, recovered = ctx.Profiles.load(player)
 	if not prof then
 		if player.Parent then
-			player:Kick("Zero Return: profile unavailable (" .. tostring(recovered) .. "). Please rejoin in a minute.")
+			if ctx.Store.mode == "OFFLINE" then
+				player:Kick("Zero Return: Roblox's save service isn't answering this server, so it can't keep your progress. Nothing was lost. Please rejoin in a few minutes.")
+			else
+				player:Kick("Zero Return: profile unavailable (" .. tostring(recovered) .. "). Please rejoin in a minute.")
+			end
 		end
 		return
 	end
@@ -1183,12 +1235,15 @@ function Raid.start()
 	Players.PlayerRemoving:Connect(function(player)
 		if sessions[player] then
 			Raid.finalize(player, "DISCONNECTED")
+		else
+			Raid.keepHideoutHealth(player)
 		end
 		ctx.Profiles.release(player)
 	end)
 	game:BindToClose(function()
-		for player in sessions do
-			Raid.finalize(player, "DISCONNECTED")
+		-- a closing server refunds every raid in progress (SERVER_CLOSED above) instead of taking the kits
+		for player, s in sessions do
+			Raid.finalize(player, (s.done or s.dead) and "DISCONNECTED" or "SERVER_CLOSED")
 		end
 		pcall(ctx.Match.settleInsurance)
 		local pending = 0

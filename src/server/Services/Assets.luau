@@ -34,10 +34,13 @@ local function lib()
 	return l
 end
 
--- load one batch into the library; returns ok, meshes added
-local function loadBatch(entry)
+-- load one batch into the library; returns ok, meshes added (pre: a model LoadAsset already fetched for it)
+local function loadBatch(entry, pre)
 	local l = lib()
-	local ok, model = pcall(InsertService.LoadAsset, InsertService, entry.id)
+	local ok, model = true, pre
+	if not model then
+		ok, model = pcall(InsertService.LoadAsset, InsertService, entry.id)
+	end
 	if not ok or not model then
 		return false, 0, model
 	end
@@ -61,7 +64,9 @@ local function loadBatch(entry)
 		end
 	end
 	model:Destroy()
-	tagFoliage(l)
+	if not pre then
+		tagFoliage(l)
+	end
 	return true, n
 end
 
@@ -79,8 +84,36 @@ function Assets.init(_ctx)
 	lib()
 	local loaded, failedN = 0, 0
 	local retry = {}
+	-- fetch every batch at once, at most 8 at a time (one by one took about 13 s of the server's start-up on 2026-11-07),
+	-- then add them to the library in AssetIds order, so a name two batches share still goes to the first
+	local entries = {}
 	for _, entry in AssetIds do
-		local ok, n, err = loadBatch(entry)
+		table.insert(entries, entry)
+	end
+	local fetched, pending, running = {}, #entries, 0
+	for i, entry in entries do
+		while running >= 8 do
+			task.wait()
+		end
+		running += 1
+		task.spawn(function()
+			local ok, model = pcall(InsertService.LoadAsset, InsertService, entry.id)
+			fetched[i] = { ok = ok, model = model }
+			running -= 1
+			pending -= 1
+		end)
+	end
+	while pending > 0 do
+		task.wait()
+	end
+	for i, entry in entries do
+		local f = fetched[i]
+		local ok, n, err
+		if f and f.ok and f.model then
+			ok, n, err = loadBatch(entry, f.model)
+		else
+			ok, n, err = false, 0, f and f.model
+		end
 		if ok then
 			loaded += n
 		else
@@ -90,6 +123,7 @@ function Assets.init(_ctx)
 			warn("[ZR] asset load failed", entry.key, entry.id, err)
 		end
 	end
+	tagFoliage(lib())
 	print(string.format("[ZR] Assets: %d meshes loaded, %d batches failed, library has %d", loaded, failedN, #lib():GetChildren()))
 	if #retry > 0 then
 		task.spawn(function()

@@ -337,6 +337,9 @@ end
 -- opts.runThrough: survived but too quickly with too little done -> found items are not found-in-raid.
 function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, now: number, opts: any?): (any?, string?)
 	local runThrough = opts ~= nil and opts.runThrough == true
+	-- opts.closed: the server closed mid-raid (Raid.finalize SERVER_CLOSED). Everything carried is kept, nothing becomes
+	-- found-in-raid and the raid does not count as survived, for a PMC or a player scav alike.
+	local closed = opts ~= nil and opts.closed == true
 	if p.finalized[raidId] then
 		return nil, "ALREADY_FINALIZED"
 	end
@@ -364,7 +367,7 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 							local it = x.it
 							if it.fip then
 								it.fip = nil
-								it.fir = true
+								it.fir = not closed or nil
 							end
 							it.ins = nil
 						end
@@ -382,8 +385,10 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 			end
 			p.money += sold
 			receipt.sold = sold
-			p.stats.scavSurvived += 1
-			p.stats.extractedValue += receipt.value
+			if not closed then
+				p.stats.scavSurvived += 1
+				p.stats.extractedValue += receipt.value
+			end
 		end
 		p.pendingRaid = nil
 		p.finalized[raidId] = { o = outcome, t = now }
@@ -417,8 +422,10 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 		p.slots = raid.slots
 		receipt.retained = summarize(raid)
 		receipt.value = Inv.value(raid)
-		p.stats.survived += 1
-		p.stats.extractedValue += receipt.value
+		if not closed then
+			p.stats.survived += 1
+			p.stats.extractedValue += receipt.value
+		end
 	else
 		-- the secure container (and contents) always comes home; found-in-raid status is lost
 		if raid then

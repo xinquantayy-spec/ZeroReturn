@@ -3,6 +3,30 @@
   "servePort": 34873,
   "tree": {
     "$className": "DataModel",
+    "Workspace": {
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 64,
+        "StreamingTargetRadius": 768,
+        "StreamOutBehavior": "Opportunistic",
+        "StreamingIntegrityMode": "PauseOutsideLoadedArea"
+      }
+    },
+    "Lighting": {
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "LightingStyle": "Soft",
+        "PrioritizeLightingQuality": true,
+        "GlobalShadows": true
+      }
+    },
+    "ReplicatedFirst": {
+      "$ignoreUnknownInstances": true,
+      "ZR_Loading": {
+        "$path": "src/first/Loading.client.luau"
+      }
+    },
     "ReplicatedStorage": {
       "$ignoreUnknownInstances": true,
       "ZR": {

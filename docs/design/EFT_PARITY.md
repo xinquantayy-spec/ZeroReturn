@@ -924,3 +924,42 @@ Gaps:
   the DataStore (KNOWN_ISSUES 1).
 - **No gyro aiming:** Arena Breakout recommends it for two-finger players. Roblox exposes the gyro
   (`UserInputService.GyroscopeEnabled`), but it is not built yet.
+
+### Release blockers, M1 (2026-11-07)
+
+The audit (`docs/audit/2026-11-07/`) and the owner's picks (start-1a: release blockers first) put these first. Tarkov
+was checked for each one that has a Tarkov side; the rest are Roblox's (exception 3).
+
+Matches Tarkov:
+- **No looting or opening doors through walls.** Tarkov's interactions need the object in front of you; the server now
+  refuses a search, a loot move or a door when a solid wall stands between the head and the target (`Guard.canSee`, a
+  1.2-stud margin for the container's own furniture, 1.5 for the door's frame). A probe of all 971 containers and 441
+  doors found every container and every door usable from a spot within reach (MapTests M12 and M13).
+- **Health between raids.** Tarkov keeps your wounds after a raid and heals you slowly out of raid, faster with the
+  medstation. The bunker character's health is now saved before a PMC raid and when the player leaves, so recovery in
+  the bunker is kept instead of the raid starting from the last raid's end.
+- **The loading screen shows progress.** Tarkov 1.0.1.0 (December 2025) added a raid loading bar with the time left and
+  the total wait. Our join card shows the server's boot stage, a progress bar, "ABOUT n S LEFT" and the wait.
+
+Ours (exception 3, Roblox):
+- **A server that closes mid-raid (an update, a crash) settles every raid in progress as SERVER_CLOSED:** the kit and
+  everything carried are kept, nothing becomes found-in-raid and the raid does not count as survived, for a PMC or a
+  player scav. The report says so, and the bunker messenger tells the player on their next visit. Tarkov has no
+  Roblox-style shutdowns.
+- **Saves:** a live server whose DataStore does not answer after six tries turns players away with a message instead of
+  letting them play unsaved. In Studio it falls back to the in-memory store (SAVING OFF on the HUD).
+- **Graphics level, FOV, sensitivity and grain are kept per kind of device** (phone, console, PC). Phones start at
+  LOW, consoles at MEDIUM, PCs at HIGH (tech-3b).
+- **Anti-cheat:** the movement guard (speed, falls, walls, hovering; kicks after ten pull-backs in a minute) and a
+  fire-rate token bucket (the weapon's rate plus 10 %, a burst of two). Tarkov's own anti-cheat is not visible to players.
+- **Faster server start:** the mesh library loads in parallel (models 13.4 s to 3.7 s; ready 26.5 s to 17.9 s in Studio).
+
+Owner's choice (exception 2):
+- **The block body stays (art-3a).** Tarkov's operators are realistic human models; ours keep the block body with
+  Blender-made gear on it.
+
+Gaps:
+- **Reconnecting to a raid (tech-7d) and one server per raid (gameplay-7a)** need the published private test place:
+  TeleportService does not work in an unpublished Studio place (KNOWN_ISSUES 1).
+- **Two doors open into a wall on one side** (Border Yard: `LV_A127` in BLOCK A, `LV61_D1` at the SQUAT KIOSK;
+  KNOWN_ISSUES 80). The art-1a map re-base rebuilds these buildings.

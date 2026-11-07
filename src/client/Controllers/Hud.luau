@@ -389,7 +389,14 @@ local function slowUpdate()
 	else
 		O.rec:set({ { icon = I.DOT, color = C.white, alpha = 0.55, size = SZ.rec * 0.66 }, { t = "STBY", color = C.white }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
 	end
-	O.dev:set({ { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Maps.nameOf(raid and raid.map) or "RELAY 7"), color = C.dim, alpha = 0.2 } })
+	-- SAVING OFF whenever the server keeps progress anywhere but Roblox's DataStore (Studio's in-memory store, or a live
+	-- server whose DataStore is down: Store.luau), so nobody plays on thinking it is kept
+	local persist = ctx.State.data and ctx.State.data.persistence
+	local devLine = { { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Maps.nameOf(raid and raid.map) or "RELAY 7"), color = C.dim, alpha = 0.2 } }
+	if persist ~= nil and persist ~= "DATASTORE" then
+		table.insert(devLine, { t = "  ·  SAVING OFF", color = C.red, alpha = 0.1 })
+	end
+	O.dev:set(devLine)
 	signalCheck(inRaid and raid or nil)
 	-- clock / money
 	if inRaid and raid then

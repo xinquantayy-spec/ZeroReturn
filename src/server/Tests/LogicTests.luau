@@ -451,6 +451,39 @@ function T.run(ctx)
 	do
 		local h, up = ctx.Guard.limits(18, 0.25)
 		check("movement guard limits: sprint plus vault allowed, teleports caught", h > 18 * 0.25 + 3 and h < 30 and up > 7 and up < 30)
+		-- hardened 2026-11-07 (audit tech-6): falls fit, a 60-stud drop from rest is a teleport, walls stop a straight line
+		check("movement guard: a real fall fits, a 60-stud drop from standing does not", ctx.Guard.maxDrop(40, 0.25) > 40 * 0.25 + 1 and ctx.Guard.maxDrop(0, 0.25) * 2 < 60)
+		local wall = Instance.new("Part")
+		wall.Anchored, wall.CanCollide, wall.Size, wall.Transparency = true, true, Vector3.new(1, 12, 12), 1
+		wall.CFrame = CFrame.new(0, 900, 0)
+		wall.Parent = workspace
+		local across = ctx.Guard.throughWall(Vector3.new(-5, 900, 0), Vector3.new(5, 900, 0))
+		local along = ctx.Guard.throughWall(Vector3.new(-5, 900, 8), Vector3.new(5, 900, 8))
+		wall.CanCollide = false
+		local ghost = ctx.Guard.throughWall(Vector3.new(-5, 900, 0), Vector3.new(5, 900, 0))
+		wall:Destroy()
+		check("movement guard: a move through a solid wall is caught, beside it or through a non-solid part is not", across and not along and not ghost)
+		-- line of sight for looting and doors (audit quick win tech.5): a wall between the head and the target blocks,
+		-- the target's own furniture around it does not
+		local head = Instance.new("Part")
+		head.Name, head.Anchored, head.CanCollide, head.CanQuery, head.Size = "Head", true, false, false, Vector3.one
+		head.CFrame = CFrame.new(-6, 900, 0)
+		local fakeChar = Instance.new("Model")
+		head.Parent = fakeChar
+		local drawer = Instance.new("Part")
+		drawer.Anchored, drawer.Size, drawer.CFrame = true, Vector3.new(1, 1, 1), CFrame.new(6, 900, 0)
+		drawer.Parent = workspace
+		local blocker = Instance.new("Part")
+		blocker.Anchored, blocker.Size, blocker.CFrame = true, Vector3.new(1, 12, 12), CFrame.new(0, 900, 0)
+		blocker.Parent = workspace
+		local seenThroughWall = ctx.Guard.canSee(fakeChar, drawer, 1.2)
+		blocker.CFrame = CFrame.new(5.2, 900, 0) -- now the desk the drawer sits in, just in front of it
+		local seenInDesk = ctx.Guard.canSee(fakeChar, drawer, 1.2)
+		blocker:Destroy()
+		local seenClear = ctx.Guard.canSee(fakeChar, drawer, 1.2)
+		drawer:Destroy()
+		fakeChar:Destroy()
+		check("line of sight: a wall blocks looting and doors, the container's own furniture does not", not seenThroughWall and seenInDesk and seenClear)
 	end
 	-- the INSPECT window's per-class penetration chances use the same formula as hits (Health.luau)
 	check("penetration chance formula shared", math.abs(Items.penChance(26, 2, 1) - 0.75) < 1e-6 and Items.penChance(26, 4, 1) == 0 and Items.penChance(72, 6, 1) == 1)
@@ -553,6 +586,18 @@ function T.run(ctx)
 	local sec3 = raid3.slots.secure
 	local rd = Settle.finalize(prof3, "raidD", "DISCONNECTED", nil, 2)
 	check("crash settles as loss, secure restored", rd ~= nil and prof3.pendingRaid == nil and #rd.lost > 0 and prof3.slots.secure == sec3 and inv(prof3))
+
+	-- audit tech-7: a server closing mid-raid keeps the kit, but nothing is found in raid and it is not a survival
+	local prof4 = Settle.newProfile()
+	local raid4 = Settle.deploy(prof4, "raidC", 1)
+	local wg4 = raid4.slots.primary
+	local cg, ci = Inv.newItem("SEALED_DRIVE", 1, { fip = true })
+	Inv.place(raid4, cg, ci, Inv.loadOrder(raid4))
+	local survived4 = prof4.stats.survived
+	local rc4 = Settle.finalize(prof4, "raidC", "SUCCESS", raid4, 2, { runThrough = true, closed = true })
+	check("server closed: kit and loot kept", rc4 ~= nil and prof4.slots.primary == wg4 and prof4.items[cg] ~= nil and prof4.pendingRaid == nil and inv(prof4))
+	check("server closed: loot not found in raid", prof4.items[cg] and prof4.items[cg].fir == nil and prof4.items[cg].fip == nil)
+	check("server closed: not counted as survived", prof4.stats.survived == survived4)
 
 	local old = { schema = 1, items = {}, settings = { fov = 90 } }
 	Settle.migrate(old)
@@ -763,6 +808,16 @@ function T.run(ctx)
 		Settle.deployScav(pr2, "SCAV4", 1000, kit2)
 		local rk = Settle.finalize(pr2, "SCAV4", "KIA", kit2, 1100)
 		check("scav death leaves the PMC untouched", rk ~= nil and n(pr2) == before and pr2.pendingRaid == nil and pr2.slots.primary ~= nil and inv(pr2))
+		-- a server closing mid-raid: the scav's haul still comes home, but not as found in raid or as a survival
+		local pr3 = Settle.newProfile()
+		local kit3 = Loot.scavLoadout(Random.new(10))
+		Settle.deployScav(pr3, "SCAV5", 1000, kit3)
+		local sg3, sit3 = Inv.newItem("GOLD_CHAIN", 1)
+		sit3.fip = true
+		Inv.place(kit3, sg3, sit3, Inv.loadOrder(kit3))
+		local rs3 = Settle.finalize(pr3, "SCAV5", "SUCCESS", kit3, 1100, { runThrough = true, closed = true })
+		check("scav server closed: haul kept, not found in raid", rs3 ~= nil and pr3.items[sg3] ~= nil and pr3.items[sg3].fir == nil and inv(pr3))
+		check("scav server closed: not counted as survived", pr3.stats.scavSurvived == 0 and pr3.stats.extractedValue == 0)
 	end
 
 	-- M7: insurance (insure, lose the kit on a body, settle at raid end, claim after the delay)
