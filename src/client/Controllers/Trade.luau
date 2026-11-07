@@ -137,6 +137,11 @@ end
 -- ── traders ──────────────────────────────────────────────────────────────────
 local function loyaltyText(econ, tid)
 	local st = econ.traders and econ.traders[tid] or { ll = 1, spent = 0, rep = 0 }
+	if tid == "fence" then
+		-- Fence's loyalty is karma alone (EFT: LL2 at standing 6.0, no level or money; audit economy.5)
+		return (st.ll or 1) >= 2 and string.format("LOYALTY 2 (MAX)  ·  KARMA %.2f", econ.karma or 0)
+			or string.format("LOYALTY 1  ·  NEXT: KARMA %.1f (%.2f)", TD.FENCE_LL2 or 6, econ.karma or 0)
+	end
 	local nextL = TD.LL[st.ll + 1]
 	if not nextL then
 		return string.format("LOYALTY %d (MAX)  ·  STANDING %.2f", st.ll, st.rep or 0)
@@ -429,7 +434,8 @@ local function tradeTab(f, x, y, w, h, d, tid)
 			local locked = o.ll > st.ll
 			local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 			local left = o.limit - used
-			local price = e.kind == "offer" and TD.price(tid, o, st.ll) or nil
+			-- karma moves Fence's prices (the server charges the same; other traders ignore it, audit economy.5)
+			local price = e.kind == "offer" and TD.price(tid, o, st.ll, econ.karma) or nil
 			local on = ui.sel and ui.sel.kind == e.kind and ui.sel.i == e.i
 			local t = itemTile(sf, e.items, e.g, (p[1] - 1) * cellW + 1, (p[2] - 1) * cellW + 1, p[3] * cellW - 2, p[4] * cellW - 2, {
 				name = (e.kind == "offer" and "Offer_" or "Barter_") .. o.id,
@@ -612,7 +618,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 	local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 	local left = math.max(0, o.limit - used)
 	if e.kind == "offer" then
-		local unit = TD.price(tid, o, st.ll)
+		local unit = TD.price(tid, o, st.ll, econ.karma)
 		ui.qty = math.clamp(ui.qty, 1, math.max(1, math.min(10, left)))
 		local total = unit * ui.qty
 		local afford = (d.money or 0) >= total
