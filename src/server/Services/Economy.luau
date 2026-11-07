@@ -9,6 +9,7 @@ local Items = require(Shared.Items)
 local WP = require(Shared.WeaponParts)
 local Util = require(Shared.Util)
 local TD = require(Shared.TraderData)
+local QD = require(Shared.QuestData)
 local P = require(Shared.Progress)
 local Inv = require(script.Parent.Inv)
 
@@ -47,25 +48,50 @@ local function standing(prof, tid)
 end
 Economy.standing = standing
 
--- loyalty level: player level, money spent and earned with the trader, reputation. Fence's comes from karma alone
--- (EFT: LL2 at a Fence standing of 6.0; TraderData.fenceLoyalty, audit economy.5): his only task pays karma, so the
--- standing rule left him at LL1 for good.
+-- loyalty level: each trader's own table (TraderData.LOYALTY: EFT 1.1.0's player level and standing; money spent is
+-- counted but asks nothing). Fence's comes from karma alone (EFT: LL2 at a Fence standing of 6.0; TraderData.fenceLoyalty,
+-- audit economy.5): his only task pays karma, so the standing rule left him at LL1 for good.
 function Economy.loyalty(prof, tid)
 	if tid == "fence" then
 		return TD.fenceLoyalty(prof.karma or P.KARMA.start)
 	end
-	local lvl = Economy.level(prof)
-	local tr = prof.traders[tid] or { spent = 0, rep = 0 }
-	local ll = 1
-	for i = 2, #TD.LL do
-		local req = TD.LL[i]
-		if lvl >= req.level and (tr.spent or 0) >= req.spent and (tr.rep or 0) >= req.rep then
-			ll = i
-		else
-			break
+	local tr = prof.traders and prof.traders[tid]
+	return TD.loyaltyOf(tid, Economy.level(prof), tr and tr.rep or 0, tr and tr.spent or 0)
+end
+
+-- ── old saves (decision economy-2a: four traders became EFT's eight) ─────────────────────────────────────────────
+-- Profiles keep standing per trader id; VOS, HALE, TILDA and FENCE keep their ids and what was earned with them, the
+-- new traders start at LL1. Two things moved with the split, once per profile (trv, the trader data version):
+-- the standing of a claimed task that changed trader goes with the task (so standing stays the sum of each trader's
+-- task rewards, as on a new profile), and this restock's purchase counts are cleared (they are kept by offer index,
+-- and the offer lists changed). Money spent stays where it was spent.
+Economy.TRADERS_V = 2
+-- the trader each moved task had before (QuestData has the new one)
+Economy.MOVED_TASKS = { V5 = "vos", V7 = "vos", T2 = "tilda", T3 = "tilda", T4 = "tilda", T5 = "tilda", T7 = "tilda" }
+function Economy.migrate(prof)
+	if type(prof) ~= "table" then
+		return false
+	end
+	prof.traders = prof.traders or {}
+	prof.bought = prof.bought or {}
+	prof.quests = prof.quests or {}
+	if (tonumber(prof.trv) or 1) >= Economy.TRADERS_V then
+		return false
+	end
+	for id, old in Economy.MOVED_TASKS do
+		local q = QD.byId[id]
+		local st = prof.quests[id]
+		local rep = q and q.reward and q.reward.rep
+		if q and q.trader ~= old and type(st) == "table" and st.s == "claimed" and rep and rep > 0 then
+			local from = standing(prof, old)
+			from.rep = math.max(0, (from.rep or 0) - rep)
+			local to = standing(prof, q.trader)
+			to.rep = (to.rep or 0) + rep
 		end
 	end
-	return ll
+	table.clear(prof.bought)
+	prof.trv = Economy.TRADERS_V
+	return true
 end
 
 local function boughtCount(prof, key, w)
@@ -188,7 +214,8 @@ local function buy(player, prof, p)
 	return true
 end
 
--- SERVICES: a trader repairs an item (weapons at VOS, armour at TILDA); each repair lowers the maximum (Tarkov)
+-- SERVICES: a trader repairs an item (weapons at VOS and KOVAC, weapons and armour at ROOK, as EFT's Prapor, Mechanic and
+-- Skier); each repair lowers the maximum (Tarkov), and the price follows the trader's loyalty level (TraderData.REPAIRS)
 local function repair(player, prof, p)
 	local tid = p.trader
 	if type(tid) ~= "string" or type(p.g) ~= "string" or #p.g > 40 then
@@ -198,7 +225,7 @@ local function repair(player, prof, p)
 	if not it then
 		return fail("NO_ITEM")
 	end
-	local pts, cost, newMax = TD.repairQuote(tid, it, P.bonus(prof.skills, "charisma"))
+	local pts, cost, newMax = TD.repairQuote(tid, it, P.bonus(prof.skills, "charisma"), Economy.loyalty(prof, tid))
 	if not pts then
 		return fail("NOT_REPAIRABLE", TD.defs[tid].name .. " can't repair that.")
 	end
@@ -486,6 +513,8 @@ end
 
 -- the state block the client needs for traders / profile screens
 function Economy.stateFor(prof)
+	-- an old save moves to the eight traders before anything reads it (the snapshot is built before any request)
+	Economy.migrate(prof)
 	local w = window(os.time())
 	local traders = {}
 	for _, id in TD.list do
@@ -493,11 +522,11 @@ function Economy.stateFor(prof)
 		local ll = Economy.loyalty(prof, id)
 		traders[id] = { ll = ll, spent = tr.spent or 0, rep = tr.rep or 0 }
 		-- a new loyalty level arrives as a message from the trader (Tarkov's messenger); Fence's comes with karma, before
-		-- any trade with him
+		-- any trade with him. EFT's levels open goods; prices stay
 		if (prof.traders[id] or ll > 1) and ll > (tr.llSeen or 1) then
 			tr = standing(prof, id)
 			tr.llSeen = ll
-			Economy.mail(prof, id, string.format("Loyalty level %d. New goods and better prices are yours.", ll))
+			Economy.mail(prof, id, string.format("Loyalty level %d. New goods are open to you.", ll))
 		end
 	end
 	local bought = {}
@@ -536,6 +565,7 @@ local function tradeReq(player, p)
 	if p.trader ~= nil and (type(p.trader) ~= "string" or not TD.defs[p.trader]) then
 		return fail("BAD_INPUT")
 	end
+	Economy.migrate(prof)
 	local res
 	if p.op == "buy" then
 		res = buy(player, prof, p)
