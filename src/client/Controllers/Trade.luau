@@ -322,6 +322,18 @@ local function inspect(items, g, key, unknown)
 	end
 end
 
+-- right-click, or Tarkov's middle mouse button, opens a tile's inspect window (audit ui.9); `middle` may do otherwise
+-- (examine an unknown stash item)
+local function onInspect(t, fn, middle)
+	t.MouseButton2Click:Connect(fn)
+	t.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton3 then
+			local f = middle or fn
+			f()
+		end
+	end)
+end
+
 local function tradeTab(f, x, y, w, h, d, tid)
 	local econ = d.econ or {}
 	local st = econ.traders and econ.traders[tid] or { ll = 1 }
@@ -435,7 +447,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 				end
 				Trade.refresh()
 			end)
-			t.MouseButton2Click:Connect(function()
+			onInspect(t, function()
 				inspect(e.items, e.g, "offer:" .. tid .. ":" .. e.kind .. e.i)
 			end)
 		end
@@ -467,7 +479,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 				end
 				Trade.refresh()
 			end)
-			t.MouseButton2Click:Connect(function()
+			onInspect(t, function()
 				inspect(d.items, g, "stash:" .. g)
 			end)
 		end
@@ -518,9 +530,11 @@ local function tradeTab(f, x, y, w, h, d, tid)
 				ui.mode = "sell"
 				Trade.refresh()
 			end)
-			t.MouseButton2Click:Connect(function()
+			onInspect(t, function()
 				inspect(d.items, g, "stash:" .. g, not kn)
-			end)
+			end, not kn and function()
+				ctx.State.req("inv", { op = "examine", g = g, from = "me" }) -- Tarkov's middle mouse examines an unknown item
+			end or nil)
 		end
 	end
 	end -- showStash
@@ -576,7 +590,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 		end
 	end
 	if not e then
-		K.label(deal, "Select an item to buy it, or click items in your stash to sell them. Right-click any item to inspect it.", 12, {
+		K.label(deal, "Select an item to buy it, or click items in your stash to sell them. Right-click or middle-click any item to inspect it.", 12, {
 			Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -20, 1, 0), TextColor3 = K.C.dim, TextWrapped = true,
 		})
 		return

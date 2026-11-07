@@ -15,6 +15,7 @@ local Grid = require(Shared.Grid)
 local Util = require(Shared.Util)
 local Maps = require(Shared.Maps)
 local TD = require(Shared.TraderData)
+local Drop = require(Shared.DropRules) -- what a drag-and-drop would do (the fit cue, audit ui.9)
 
 local Inventory = { open = false, tab = "GEAR", cpanel = "GEAR" }
 -- ui-3a: on a phone (under about 500 pt of height) one panel at a time behind a rail: EQUIPMENT, BAGS, STASH (or LOOT)
@@ -39,14 +40,23 @@ local focusTab = false -- the next draw puts the gamepad selection on the open t
 local status = nil -- { text, t0, dur }
 local hoverG = nil
 local hover = nil -- drop target under the cursor, from engine MouseEnter events (matches what the user sees)
+local updateCue -- the green / red fit cue (set below; audit ui.9)
+local targetOf = setmetatable({}, { __mode = "k" }) -- cell, tile or slot button -> its drop target (the gamepad's cue)
 
 local function hoverOn(obj, target)
+	targetOf[obj] = target
 	obj.MouseEnter:Connect(function()
 		hover = target
+		if updateCue then
+			updateCue()
+		end
 	end)
 	obj.MouseLeave:Connect(function()
 		if hover == target then
 			hover = nil
+			if updateCue then
+				updateCue()
+			end
 		end
 	end)
 end
@@ -372,7 +382,9 @@ local function actionsFor(ref, g)
 	local mine = ref == "me"
 	local list = {}
 	local function add(label, fn, tone)
-		table.insert(list, { label = label, fn = fn, tone = tone })
+		local e = { label = label, fn = fn, tone = tone }
+		table.insert(list, e)
+		return e
 	end
 	if not known(it.id) then
 		add("EXAMINE", function()
@@ -475,9 +487,12 @@ local function actionsFor(ref, g)
 		end)
 	end
 	if mine and inRaid and view.slots.secure ~= g then
-		add("DROP", function()
+		-- in a raid Tarkov's discard (Del) puts the item on the ground: our DROP (audit ui.9)
+		local function drop()
 			req({ op = "drop", g = g })
-		end, "warn")
+		end
+		local entry = add("DROP", drop, "warn")
+		entry.discard = drop
 	end
 	if mine and not inRaid and insurable(view, g) then
 		local cost = insureCost(view, g)
@@ -511,17 +526,18 @@ local function actionsFor(ref, g)
 				end, "warn")
 			end
 		end
-		-- Tarkov asks before throwing an item away (audit ui.2): the first press arms it, a second within 3 s confirms
+		-- Tarkov asks before throwing an item away (audit ui.2): the first press arms it, a second within 3 s confirms.
+		-- The Delete key on the hovered or selected item goes through the same two presses (audit ui.9)
 		local armed = Inventory.discardArmed
 		local confirm = armed and armed.g == g and os.clock() - armed.t < 3
-		add(confirm and "CONFIRM DISCARD" or "DISCARD", function()
+		local function discard(byKey)
 			if confirm then
 				Inventory.discardArmed = nil
 				req({ op = "discard", g = g })
 				selected = nil
 			else
 				Inventory.discardArmed = { g = g, t = os.clock() }
-				ctx.State.toast("PRESS DISCARD AGAIN TO THROW IT AWAY", "warn")
+				ctx.State.toast(byKey and "PRESS DEL AGAIN TO THROW IT AWAY" or "PRESS DISCARD AGAIN TO THROW IT AWAY", "warn")
 				Inventory.render()
 				task.delay(3.1, function()
 					if Inventory.open and Inventory.discardArmed and Inventory.discardArmed.g == g then
@@ -530,7 +546,13 @@ local function actionsFor(ref, g)
 					end
 				end)
 			end
+		end
+		local entry = add(confirm and "CONFIRM DISCARD" or "DISCARD", function()
+			discard(false)
 		end, "warn")
+		entry.discard = function()
+			discard(true)
+		end
 	end
 	return list
 end
@@ -609,6 +631,21 @@ local function onTileClick(ref, g)
 		selected = { g = g, ref = ref }
 	end
 	Inventory.render()
+end
+
+-- Tarkov's middle mouse button: an unknown item is examined, a known one opens its INSPECT window (audit ui.9)
+local function middleClick(ref, g)
+	local v = viewOf(ref)
+	local it = v and v.items[g]
+	if not it then
+		return
+	end
+	closeMenu()
+	if known(it.id) then
+		Inventory.inspect({ ref = ref, g = g })
+	else
+		req({ op = "examine", g = g, from = ref })
+	end
 end
 
 local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
@@ -690,6 +727,8 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			openMenu(ref, g, mouse())
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 and not (drag and drag.started) then
+			middleClick(ref, g)
 		end
 	end)
 	t.MouseEnter:Connect(function()
@@ -1355,6 +1394,7 @@ function Inventory.render()
 	closeMenu()
 	table.clear(gridTargets)
 	table.clear(slotTargets)
+	table.clear(targetOf)
 	hover = nil
 	openTabBtn = nil
 	local inRaid = ctx.State.inRaid()
@@ -1371,6 +1411,10 @@ function Inventory.render()
 	end
 	-- the gamepad selection (audit ui.5): only with a pad; where it was, else the open tab
 	ctx.Input.refocus(panel, keep, openTabBtn)
+	-- the fit cue goes back on the new grids (a redraw mid-drag, an item picked up, ROTATE)
+	if updateCue then
+		updateCue()
+	end
 end
 
 -- ── drag & drop (mouse) ────────────────────────────────────────────────────────
@@ -1392,11 +1436,112 @@ local function dropTarget(pos)
 	return nil
 end
 
+-- ── the fit cue (audit ui.9) ───────────────────────────────────────────────────────
+-- While an item is dragged the cells it would take light green when the server should take the drop and red when it
+-- would refuse it (Tarkov's drag highlight, from memory: no source found); a slot lights whole; turning the item with
+-- R moves the cells. DropRules decides, with the same plan endDrag sends.
+local cue = nil
+local function clearCue()
+	if cue then
+		cue:Destroy()
+		cue = nil
+	end
+end
+
+local function planFor(dd, tgt)
+	local src, dst = viewOf(dd.ref), tgt and viewOf(tgt.ref)
+	if not (src and dst) then
+		return nil
+	end
+	return Drop.plan(src, dd.g, dst, tgt, dd, ctx.State.inRaid())
+end
+
+local function showCue(tgt, plan)
+	local host, pos, size
+	if plan and plan.slot then
+		for _, s in slotTargets do
+			if s.ref == tgt.ref and s.slot == plan.slot and s.frame.Parent then
+				host, pos, size = s.frame, UDim2.new(), UDim2.fromScale(1, 1)
+			end
+		end
+	elseif plan then
+		for _, t in gridTargets do
+			if t.ref == tgt.ref and t.cid == plan.cid and t.frame.Parent then
+				-- the cells inside the grid (an item hanging over the edge lights what is left, in red)
+				local x0, y0 = math.max(1, plan.x), math.max(1, plan.y)
+				local x1, y1 = math.min(t.w, plan.x + plan.w - 1), math.min(t.h, plan.y + plan.h - 1)
+				if x1 >= x0 and y1 >= y0 then
+					host = t.frame
+					pos = UDim2.fromOffset((x0 - 1) * t.cell + 1, (y0 - 1) * t.cell + 1)
+					size = UDim2.fromOffset((x1 - x0 + 1) * t.cell - 2, (y1 - y0 + 1) * t.cell - 2)
+				end
+			end
+		end
+	end
+	if not host then
+		clearCue()
+		return
+	end
+	if not (cue and cue.Parent == host) then
+		clearCue()
+		cue = K.frame(host, { Name = "FitCue", Active = false, ZIndex = 8, BackgroundTransparency = 0.55 })
+		pcall(function()
+			cue.Interactable = false -- the cells and tiles under it keep telling where the cursor is
+		end)
+		K.stroke(cue, K.C.green, 0, 2)
+	end
+	local col = plan.ok and K.C.green or K.C.red
+	cue.Position, cue.Size, cue.BackgroundColor3 = pos, size, col
+	local st = cue:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Color = col
+	end
+end
+
+updateCue = function()
+	if drag and drag.started then
+		local tgt = dropTarget(mouse())
+		local plan = tgt and planFor(drag, tgt)
+		showCue(tgt, plan)
+		-- the dragged picture's outline says the same (ochre over nothing)
+		local st = ghost and ghost:FindFirstChildOfClass("UIStroke")
+		if st then
+			st.Color = plan and (plan.ok and K.C.green or K.C.red) or K.C.ochre
+		end
+		return
+	end
+	-- an item picked up by a tap, a click or A, then placed on a cell or slot (touch, gamepad, mouse): the cue follows the
+	-- gamepad selection, or the cell under the cursor, laid as placing it would (its corner there, turned by ROTATE / R)
+	local tgt = nil
+	if Inventory.open and selected then
+		if ctx.Input.device() == "Gamepad" then
+			local obj = GuiService.SelectedObject
+			tgt = obj and targetOf[obj]
+		else
+			tgt = hover
+		end
+	end
+	if tgt and tgt.kind == "slot" then
+		-- a tap on a worn item picks that one up instead (onTileClick): only an empty slot takes the carried item
+		local v = viewOf(tgt.ref)
+		if v and v.slots and v.slots[tgt.slot] then
+			tgt = nil
+		end
+	end
+	local plan = tgt and planFor({ ref = selected.ref, g = selected.g, r = rot, r0 = rot, grabX = 0, grabY = 0 }, tgt)
+	if plan and not plan.noop then
+		showCue(tgt, plan)
+	else
+		clearCue()
+	end
+end
+
 local function endDrag()
 	if ghost then
 		ghost:Destroy()
 		ghost = nil
 	end
+	clearCue()
 	local dd = drag
 	drag = nil
 	if not dd then
@@ -1410,49 +1555,12 @@ local function endDrag()
 	if DEBUG then
 		print("[ZR] drop", dd.g:sub(1, 6), "at", mouse(), tgt and (tgt.kind .. " " .. tostring(tgt.slot or tgt.cid) .. " " .. tostring(tgt.x) .. "," .. tostring(tgt.y)) or "nothing")
 	end
-	if not tgt then
-		return
+	-- the same plan the cue showed: a slot, an item to combine with (its corner cell), or free cells with the grabbed
+	-- cell under the cursor; back over its own tile nothing moves. A red drop is still sent: the server is the judge
+	local plan = tgt and planFor(dd, tgt)
+	if plan and not plan.noop then
+		req({ op = "move", g = dd.g, from = dd.ref, to = tgt.ref, dest = plan.dest })
 	end
-	if tgt.kind == "slot" then
-		req({ op = "move", g = dd.g, from = dd.ref, to = tgt.ref, dest = { slot = tgt.slot } })
-		return
-	end
-	local view = viewOf(tgt.ref)
-	local occupant = nil
-	if tgt.occupied and tgt.occupied ~= dd.g then
-		local p = view and view.grids and view.grids[tgt.cid] and view.grids[tgt.cid][tgt.occupied]
-		if p then
-			req({ op = "move", g = dd.g, from = dd.ref, to = tgt.ref, dest = { c = tgt.cid, x = p.x, y = p.y, r = 0 } })
-			return
-		end
-	end
-	if tgt.occupied == dd.g then
-		return
-	end
-	if view and view.grids and view.grids[tgt.cid] then
-		for og, p in view.grids[tgt.cid] do
-			local it = view.items[og]
-			local d = it and defs[it.id]
-			if d and og ~= dd.g then
-				local sw, sh = sizeOf(it)
-				local w, h = Grid.dims(sw, sh, p.r)
-				if tgt.x >= p.x and tgt.x < p.x + w and tgt.y >= p.y and tgt.y < p.y + h then
-					occupant = p
-				end
-			end
-		end
-	end
-	local dest
-	if occupant then
-		dest = { c = tgt.cid, x = occupant.x, y = occupant.y, r = 0 }
-	else
-		local gx, gy = dd.grabX, dd.grabY
-		if dd.r ~= (dd.r0 or dd.r) then
-			gx, gy = gy, gx
-		end
-		dest = { c = tgt.cid, x = math.max(1, tgt.x - gx), y = math.max(1, tgt.y - gy), r = dd.r }
-	end
-	req({ op = "move", g = dd.g, from = dd.ref, to = tgt.ref, dest = dest })
 end
 
 local function updateGhost()
@@ -1461,7 +1569,8 @@ local function updateGhost()
 	end
 	local c = drag.cell
 	if not ghost then
-		ghost = K.frame(gui, { Name = "DragGhost", BackgroundColor3 = K.C.ochre, BackgroundTransparency = 0.6, ZIndex = 60, Active = false })
+		-- no fill: the green / red cells show through under the picture (audit ui.9)
+		ghost = K.frame(gui, { Name = "DragGhost", BackgroundColor3 = K.C.ochre, BackgroundTransparency = 1, ZIndex = 60, Active = false })
 		pcall(function()
 			ghost.Interactable = false
 		end)
@@ -1480,9 +1589,12 @@ local function updateGhost()
 	local key = string.format("%d_%d", drag.w, drag.h)
 	if d and ghost:GetAttribute("IconKey") ~= key then
 		ghost:SetAttribute("IconKey", key)
-		local old = ghost:FindFirstChild("Icon")
-		if old then
-			old:Destroy()
+		-- the old picture goes (a gun's is a GunPicture frame, anything else's an Icon)
+		for _, name in { "Icon", "GunPicture" } do
+			local old = ghost:FindFirstChild(name)
+			if old then
+				old:Destroy()
+			end
 		end
 		local pw, ph = drag.w * c - 2, drag.h * c - 2
 		local items = drag.items
@@ -1518,6 +1630,7 @@ function Inventory.close()
 	rot = 0
 	drag = nil
 	closeMenu()
+	clearCue()
 	if ghost then
 		ghost:Destroy()
 		ghost = nil
@@ -1597,6 +1710,12 @@ function Inventory.init(c)
 			Inventory.render()
 		end
 	end)
+	-- a gamepad carrying a picked-up item: the fit cue follows the selection from cell to cell (audit ui.9)
+	GuiService:GetPropertyChangedSignal("SelectedObject"):Connect(function()
+		if Inventory.open and updateCue then
+			updateCue()
+		end
+	end)
 	c.State.changed:Connect(function()
 		if Inventory.open then
 			Inventory.renderSoon()
@@ -1639,6 +1758,7 @@ function Inventory.init(c)
 				selected = nil
 			end
 			updateGhost()
+			updateCue()
 		end
 	end)
 	UIS.InputEnded:Connect(function(input)
@@ -1655,8 +1775,22 @@ function Inventory.init(c)
 				drag.w, drag.h = drag.h, drag.w
 				drag.r = 1 - drag.r
 				updateGhost()
+				updateCue()
 			else
 				rot = 1 - rot
+				updateCue()
+			end
+		elseif input.KeyCode == Enum.KeyCode.Delete and not UIS:GetFocusedTextBox() and not (drag and drag.started) then
+			-- Tarkov: Del discards the item under the cursor (else the one picked up), through the same two presses as
+			-- DISCARD; in a raid it goes on the ground, as DROP does (audit ui.9)
+			local t = hoverG or selected
+			if t then
+				for _, a in actionsFor(t.ref, t.g) do
+					if a.discard then
+						a.discard()
+						break
+					end
+				end
 			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton1 and menu and not inside(menu, mouse()) then
 			closeMenu()
