@@ -24,12 +24,14 @@ local R = {}
 -- ── Tarkov's globals ──────────────────────────────────────────────────────────────────────────────────────────────
 R.SCALING = 1 -- RecoilScaling
 R.CONVERGENCE_MULT = 1 -- RecoilConvergenceMult
--- recoil by pose: RecoilXIntensityByPose (the climb), RecoilYIntensityByPose (sideways), RecoilZIntensityByPose
--- (rearward); each is { prone, crouched, standing } = { 0.6, 0.7, 1 }, { 0.7, 0.7, 1 }, { 0.7, 0.7, 1 }
+-- recoil by pose: RecoilXIntensityByPose { 0.6, 0.7, 1 }, RecoilYIntensityByPose and RecoilZIntensityByPose
+-- { 0.7, 0.7, 1 }. Our reading: X the climb, Y sideways, Z rearward, each { prone, crouched, standing } (standing must
+-- be the 1, and the sway's ProceduralIntensityByPose { 0.6, 0.7, 1 } is least when prone)
 R.PRONE = { 0.6, 0.7, 0.7 }
 R.CROUCH = { 0.7, 0.7, 0.7 }
 -- weapon skills (WeaponSkillRecoilBonusPerLevel) and Recoil Control (RecoilControl.RecoilBonusPerLevel): 0.3 % less
--- recoil a level each, -15.3 % at elite (tarkovforge.com Assault Rifles: "-0.3% per level, up to -15% at Elite")
+-- recoil a level each, -15.3 % at elite (tarkovforge.com Assault Rifles: "-0.3% per level, up to -15% at Elite");
+-- the two multiply (our reading)
 R.WEAPON_SKILL_PER = 0.003
 R.CONTROL_PER = 0.003
 -- the springs. RecoilHandDamping 0.45 and RecoilDamping 0.7 read as the velocity kept per physics step at Unity's
@@ -39,7 +41,7 @@ R.CAM_RISE = -math.log(0.7) * 50
 
 -- ── ours ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 -- degrees of climb per point of Tarkov's vertical figure: a default R-17 (Tarkov's M4A1, 79) peaks at 1.2 degrees a
--- shot and hangs about 1.5 degrees up in full auto
+-- shot; in full auto it flies to about 2.9 in the first shots and hangs near 1.3
 R.DEG_PER_V = 0.015
 -- pistols and shotguns show figures 3 to 5 times a rifle's for a kick nowhere near that much bigger
 R.CLASS_K = { pistol = 0.5, shotgun = 0.7 } :: { [string]: number }
@@ -57,7 +59,7 @@ local function lerp(a: number, b: number, k: number): number
 end
 
 -- recoil multipliers for the pose (climb, sideways, rearward). depth: Movement's crouch depth, 0 near standing to 1
--- fully down; Tarkov blends its crouch figure in with the pose's height
+-- fully down; the crouch figure blends in with the height (our reading)
 function R.pose(stance: string?, depth: number?): (number, number, number)
 	if stance == "p" then
 		return R.PRONE[1], R.PRONE[2], R.PRONE[3]

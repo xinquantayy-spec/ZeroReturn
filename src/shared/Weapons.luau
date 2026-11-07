@@ -10,10 +10,12 @@
 -- 1.0.4.5 barrel and handguard rework (tarkovforge.com weapon and attachment pages, read 2026-11-08):
 --   R-17 = M4A1 119 / 342, -33.4 % (M4SS stock -20.5, carbine buffer tube -0.5, 14.5" barrel -7.4, A2 flash hider -5)
 --   KS-7 = AKM 121 / 298, -26 % (wooden stock -22, slant brake -4)
---   SMG-9 = MP5 56 / 275, -23 % (A3 stock; Tarkov's own MP5 has the A2 stock, -24 %: 43 / 209 on the EFT wiki)
+--   SMG-9 = MP5 56 / 275, -23 % (our default has the A3 stock; Tarkov's preset shows 43 / 209, the A2 stock's -24 %)
 --   Harrow-12 = MP-133 397 / 522, -27 % (wooden stock -24, 510 mm barrel -3)
 --   Tundra = Mosin infantry 288 / 877, -38.3 % (730 mm barrel -18.3, infantry stock -20; our base has the barrel)
 --   P-9 = MP-443 Grach 425 / 310 (none of its parts change it)
+-- (The EFT wiki's infoboxes still show the M4A1 at 84 / 243 and the Mosin at 202 / 614, a flat -29 and -30 %: most
+-- likely the figures from before 1.0.4.5 moved recoil from handguards to barrels.)
 -- Tarkov's horizontal figure is the rearward kick into the shoulder; the sideways throw comes from the recoil angle's
 -- dispersion (VK "Tarkovskoe Metadvizhenie", 13 March 2023). Ours, by class (Tarkov's per-gun figures were out of reach:
 -- tarkov.dev and SPT's item templates): recoilAngle (90 = straight up, more = left), recoilDisp (degrees either side;
