@@ -273,7 +273,20 @@ Matches Tarkov now:
   while its karma holds (EFT's data, ai.4).
 - **Scav groups:** alone, in pairs or in threes; the leader wanders and the others follow (ai.8). A follower whose leader
   dies keeps his own group's route (ai.7).
-- **Senses:** sight builds awareness over time; rain and fog shorten it; no seeing through vegetation; weapon lights give
+- **EFT's numbers for senses and aim (ai-3a, 2026-11-08, Studio check pending; `src/shared/BotData.luau`, from SPT's copy
+  of the game data):** sight and cone per role (scavs 125/129/137 m over 70/70/75° each side by difficulty, raiders
+  127 m, Reshala 140 m, Killa and Tagilla 137 m all round, Big Pipe 170 m, Birdeye 250 m); notice time 0.1 s close, 1 s
+  at 90 m, 3 s at 160 m (bosses faster); calm bots see less far; hearing 10/30 m for scavs (26/56 raiders and Reshala,
+  36/66 Killa, Tagilla, Goons, cultists); memory 52 s (Knight 104 s) and 22 s of searching; aim that starts wide and
+  settles; a hit knocks a scav's aim 19-32° for 1.17 s; EFT 1.0's narrower cones, first-contact delay, repeat
+  detection and no head aim on someone unseen for 15 s; rain cuts sight by up to 35 %; scavs roll easy, normal or hard
+  10/50/40 per spawn. Our roles without an EFT twin: the Watch as raiders, the Foreman as Glukhar, the Sawyer as Shturman.
+- **Sleep (ai-2, 2026-11-08, Studio check pending):** calm bots more than 300 m from every raider sleep and wake inside
+  265 m (EFT's DistToSleep and DistToActivate).
+- **Player scavs' window (ai-7a, 2026-11-08, Studio check pending):** from 17 minutes in on Border Yard and Meridian
+  (from the start on Smelter and Quay 7), at scav spots away from raiders; a queue of scavs alone starts a raid already
+  17 minutes along.
+- **Senses (ours, kept):** sight builds awareness over time; rain and fog shorten it; no seeing through vegetation; weapon lights give
   you away; doors a player works are heard within about 19 m (ai.12); a hit or near miss gives a rough position, not the
   exact one (ai.13).
 - **Fighting:** cover, peeking, suppression, healing with real meds, grenades, doors, searching the last known position;
@@ -285,16 +298,14 @@ Still a gap:
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Scavs see 120 m over 130°, marksmen 137 m, bosses 137 to 142 m (Birdeye 250 m); they notice you in 0.1 s close, 1 s at 90 m, 3 s at 160 m | Scavs 125 studs (40 m), guards 165 (53 m), bosses 170 (54 m) over 124°; 15 to 20 m at night | ai-3a: port EFT's numbers |
-| Hearing 10 to 30 m; memory 52 s (Knight 104 s) | Footsteps 8 to 16 m, gunfire about 64 m; memory about 20 to 25 s | ai-3a |
-| Aim that settles over 1.5 s, hit affection, a mix of difficulties; since 1.0 slower repeat detection and no head aim after 15 s unseen | A 3° penalty over 2.5 s, a small hit penalty, one skill per kind; instant re-acquire, a head share in every burst | ai-3a |
-| Scav caps per map (Customs 19, Interchange 30); bots sleep beyond 300 m and leave after 20 to 30 min | 10 scavs at most (`SCAV_CAP`) and 18 AI in all (`AI_MAX`); they never sleep or leave | ai-2b: EFT's caps with sleep |
+| Every bot's own sight, cone, notice time, hearing, memory, aim settling and hit knock | Ported (ai-3a, above). Read as ours: VisibleAngle as degrees off the look direction (read as the whole cone, every cone halves and Killa would not see behind him); the 1.0 presets taken over the bot files; notice time past 160 m extrapolated | Check in Studio; the gunfire hearing radius stays ours (EFT gives no figure); HearingSense, DISPERSION_COEF, per-role ScatteringPerMeter, MAX_AIMING_UPGRADE_BY_TIME and PANIC_* not ported |
+| Each spawn wave carries its own difficulty (Customs' dorm and scav-base waves hard) | Every scav rolls the map's 10/50/40 | With ai-2b's waves |
+| Scav caps per map (Customs 19, Interchange 30); bots leave after 20 to 30 min | 10 scavs at most (`SCAV_CAP`) and 18 AI in all (`AI_MAX`); they sleep beyond 300 m (ai-2) but never leave | ai-2b: EFT's caps, after a live-server test at 20, 30 and 45 AI (needs the private test place) |
 | Scav groups of up to four or five | Three at most (45 % alone, 45 % pairs, 10 % threes) | Bigger groups once ai-2b raises the cap |
 | Raiders only on Reserve and Labs; sniper scavs on Customs | The Watch: 8 guards on Border Yard (2 on the Bastion's guns) and 6 on Meridian, hostile to player scavs; no sniper scavs (the border sniper is a hazard beyond the map edge) | ai-1a: EFT's roster on both maps |
 | Voice lines, call-outs, boss voices, a warning to player scavs | Silent; call-outs share positions without a sound | ai-4a: recorded voice packs (the audio quota, KNOWN_ISSUES 6) |
 | Bots loot bodies and loose loot; what they take is lost to insurance | AI never loot | ai-8a |
 | Killa's LMG, Big Pipe's grenade launcher, Birdeye's marksman rifle, Tagilla's semi-auto 12 gauge, Reshala's golden pistol | Stand-ins: the Caretaker's shotgun, MORTAR throws grenades, the Stoker's pump gun, the Broker's plain pistol | ai-5b: the LMG and the launcher; stand-ins for the rest |
-| Player scavs from 17 min in (not on Factory, Reserve or Ground Zero), at scav spawn points | From the start until 6 min are left, at PMC spawns | ai-7a |
 | PvE mode with AI PMCs | None | ai-6b, after ai-2 and ai-3 |
 | Leaning, prone and vaulting bots; flanking and group pushes; shooting and looking at bodies | Not built; peeking steps sideways from full cover | Later |
 | Health per body part for bosses | Spread evenly over the parts | Logged per boss (`docs/design/BOSS_*.md`) |
@@ -1321,3 +1332,5 @@ and 10; the gaps they found are in the same tables.
 - **Docs:** sections 8 to 11 (AI, core gameplay, economy, art), the art bible (`docs/look/ART_BIBLE.md`).
 - **Coordinator:** scav groups (ai.8), the Broker's zones fixed, the mesh library split (tech.13), the hazy sky textures
   (art.2, not yet switched on), mall kit B halved in triangles and dulled (art.6, art.8), AI sleep beyond 300 m (ai-2).
+- **AI senses and aim (ai-3a, the ai thread):** EFT's numbers per role from SPT's copy of the game data (section 8); scavs
+  now see about three times as far as before, so the AI's script time must be measured again on Border Yard.
