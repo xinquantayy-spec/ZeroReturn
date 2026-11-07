@@ -167,6 +167,31 @@ function T.run(ctx)
 			okGive = okGive and Items.defs[need[1]] ~= nil and need[2] >= 1
 		end
 		check("Pouch M: TILDA's barter at loyalty 2, one a restock, for real items", beta ~= nil and beta.ll == 2 and beta.limit == 1 and okGive)
+		-- what the pouches ask for can be found: in a container pool (the amulet: the cult priest's kit, 60 %)
+		local Loot = require(Services.Loot)
+		local function inPools(id)
+			for _, pool in Loot.POOLS do
+				for _, e in pool do
+					if e.id == id and (e.w or 0) > 0 then
+						return true
+					end
+				end
+			end
+			return false
+		end
+		local unfound = {}
+		for _, need in (beta and beta.give) or {} do
+			if not inPools(need[1]) then
+				table.insert(unfound, need[1])
+			end
+		end
+		local QDk = require(Shared.QuestData)
+		for _, o in (QDk.byId.F2 and QDk.byId.F2.obj) or {} do
+			if not inPools(o.item) and not (o.item == "RITUAL_AMULET" and Loot.priestLoadout ~= nil) then
+				table.insert(unfound, o.item)
+			end
+		end
+		check("the pouches' barter and hand-in items all spawn" .. (#unfound > 0 and (": not " .. table.concat(unfound, ", ")) or ""), #unfound == 0)
 		local QD = require(Shared.QuestData)
 		local kappa = QD.byId.F2
 		local rewardL = false
