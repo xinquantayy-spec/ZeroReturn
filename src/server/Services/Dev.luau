@@ -445,8 +445,9 @@ function C.ai()
 			local m = it.mag and u.inv.items[it.mag] or it
 			rounds = tostring(m.a or 0)
 		end
-		table.insert(out, string.format("%s[%s] %s hp=%d pos=%s w=%s(%s) tgt=%s cover=%s st=%s", u.name, u.faction, u.state, u.hum and math.floor(u.hum.Health) or -1,
-			p and string.format("%d,%d,%d", p.X, p.Y, p.Z) or "?", u.w and u.w.def.id or "-", rounds, u.target and u.target.Name or "-", tostring(u.cover ~= nil), tostring(u.stance)))
+		table.insert(out, string.format("%s[%s] %s hp=%d pos=%s w=%s(%s) tgt=%s cover=%s st=%s%s%s", u.name, u.faction, u.state, u.hum and math.floor(u.hum.Health) or -1,
+			p and string.format("%d,%d,%d", p.X, p.Y, p.Z) or "?", u.w and u.w.def.id or "-", rounds, u.target and u.target.Name or "-", tostring(u.cover ~= nil), tostring(u.stance),
+			u.asleep and " ASLEEP" or "", u.leader and (" lead=" .. tostring(u.leader.name)) or ""))
 	end
 	return table.concat(out, "\n") .. string.format("\ncover points: %d (ready %s), waves %d, boss %s, grenades %s", ctx.AI.cover.n, tostring(ctx.AI.cover.ready), ctx.AI.director.waves, tostring(ctx.AI.bossThisRaid), HttpService:JSONEncode(ctx.AI.nadeStats or {}))
 end

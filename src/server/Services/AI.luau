@@ -535,6 +535,70 @@ local function stop(u)
 	u.sprint = false
 end
 
+-- ── sleep (audit ai-2): EFT puts bots more than 300 m from every player to sleep ──────────────────────
+-- A calm unit that far from every raider stops thinking and stands anchored; it wakes when a raider comes within
+-- 280 m (the gap keeps it from flickering at the edge), when it is hurt or when it hears a shot.
+-- 3.125 studs a metre (the real-scale maps)
+local SLEEP_FAR, WAKE_NEAR = 300 * 3.125, 280 * 3.125
+AI.SLEEP_FAR, AI.WAKE_NEAR = SLEEP_FAR, WAKE_NEAR
+-- the next state: asleep (true) or awake, from the nearest raider's distance and whether the unit is calm
+function AI.sleepState(asleep: boolean, nearest: number, calm: boolean): boolean
+	if asleep then
+		return nearest > WAKE_NEAR
+	end
+	return calm and nearest > SLEEP_FAR
+end
+local raiderCache = { t = -1, list = {} }
+local function raiderPositions()
+	local t = os.clock()
+	if t - raiderCache.t < 0.5 then
+		return raiderCache.list
+	end
+	local list = {}
+	for player, s in ctx.Raid.sessions() do
+		local root = not s.done and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			table.insert(list, root.Position)
+		end
+	end
+	raiderCache.t, raiderCache.list = t, list
+	return list
+end
+local function wake(u)
+	if u.asleep then
+		u.asleep = false
+		if u.root and u.root.Parent then
+			u.root.Anchored = false
+		end
+	end
+end
+AI.wake = wake
+-- true while the unit sleeps (its loop then checks once a second instead of thinking)
+local function sleepTick(u)
+	if not u.root or not u.root.Parent then
+		return false
+	end
+	local me, nearest = u.root.Position, math.huge
+	for _, p in raiderPositions() do
+		local d = (p - me).Magnitude
+		if d < nearest then
+			nearest = d
+		end
+	end
+	local t = now()
+	local calm = (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN") and t >= (u.alert or 0) and not u.target
+	local want = AI.sleepState(u.asleep == true, nearest, calm)
+	if want and not u.asleep then
+		stop(u)
+		u.asleep = true
+		u.root.AssemblyLinearVelocity = Vector3.zero
+		u.root.Anchored = true
+	elseif not want and u.asleep then
+		wake(u)
+	end
+	return u.asleep == true
+end
+
 local function newPath()
 	-- radius 1.0 (the body is 2 studs wide): at 1.6, 1.4 or 1.2 no path led up Border's dog-leg stairs (4.7-stud flights
 	-- between rails), so the AI never followed anyone upstairs in the dorms (Studio 2026-11-01, KNOWN_ISSUES 68)
@@ -1928,11 +1992,16 @@ function AI.spawn(kind, pos, opts)
 	task.spawn(function()
 		task.wait(math.random() * 0.2)
 		while u.alive and model.Parent and myGen == gen do
-			local okk, err = pcall(think, u)
-			if not okk then
-				warn("[ZR] AI think", err)
+			local okS, asleep = pcall(sleepTick, u)
+			if okS and asleep then
+				task.wait(1)
+			else
+				local okk, err = pcall(think, u)
+				if not okk then
+					warn("[ZR] AI think", err)
+				end
+				task.wait(0.2)
 			end
-			task.wait(0.2)
 		end
 	end)
 	return u
@@ -2091,6 +2160,7 @@ function AI.hearShot(pos, shooter, except, loudness)
 			local d = (u.root.Position - pos).Magnitude
 			local deaf = (t < (u.deafUntil or 0)) and 0.2 or 1
 			if d < radius * u.skill.hearing * deaf then
+				wake(u)
 				u.alert = t + 25
 				if u.state ~= "ENGAGE" and u.state ~= "FLEE" and d < radius * 0.55 * u.skill.hearing then
 					u.state = "INVESTIGATE"
@@ -2220,6 +2290,7 @@ function AI.onDamaged(model, attacker)
 		return
 	end
 	local t = now()
+	wake(u)
 	u.suppressedUntil = t + 1.2
 	u.alert = t + 30
 	u.provoked = true -- an ambusher that is hit gives up hiding

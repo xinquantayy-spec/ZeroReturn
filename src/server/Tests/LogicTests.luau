@@ -639,6 +639,14 @@ function T.run(ctx)
 					and cl:FindFirstChild("ZR_MK_Van__paint") == nil and cl:FindFirstChild("ZR_NAT_Grass") ~= nil)
 		end
 	end
+	-- audit ai-2: EFT's sleep. Calm units over 300 m (937.5 studs) from every raider sleep; they wake inside 280 m, and the
+	-- gap between keeps them from flickering; a unit that is not calm never falls asleep
+	if ctx and ctx.AI and ctx.AI.sleepState then
+		local ss, FAR, NEAR = ctx.AI.sleepState, ctx.AI.SLEEP_FAR, ctx.AI.WAKE_NEAR
+		check("AI sleep: calm and over 300 m from every raider sleeps; wakes inside 280 m; holds its state between; never while alert",
+			FAR == 937.5 and NEAR == 875 and ss(false, 1000, true) == true and ss(false, 1000, false) == false and ss(false, 900, true) == false
+				and ss(true, 900, true) == true and ss(true, 870, true) == false and ss(true, math.huge, false) == true)
+	end
 	-- audit ai.8: scavs spawn alone or in groups of two or three (45 / 45 / 10 %), never more than the room left
 	if ctx and ctx.AI and ctx.AI.groupSize then
 		local gs = ctx.AI.groupSize
