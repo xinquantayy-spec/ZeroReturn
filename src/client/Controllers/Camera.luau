@@ -1,20 +1,24 @@
 --!nonstrict
 -- First-person bodycam: scriptable camera with mount lag, footfall bob, strafe/turn roll, idle breathing,
--- landing dips, damage flinch, recoil climb + recovery, wide lens FOV with ADS narrowing.
--- Mouse, right stick and touch-drag look. Reduce-motion aware.
+-- landing dips, damage flinch, Tarkov's recoil (Recoil.luau: the gun and camera springs), wide lens FOV with ADS
+-- narrowing. Mouse, right stick and touch-drag look. Reduce-motion aware.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local RigMath = require(Shared.RigMath)
+local Recoil = require(Shared.Recoil)
 
--- freeYaw / freePitch: Alt free look (the body and weapon keep their aim); aimCFrame = camera without free look
-local Camera = { yaw = 0, pitch = 0, bobPhase = 0, speed = 0, freeYaw = 0, freePitch = 0, aimCFrame = nil }
+-- freeYaw / freePitch: Alt free look (the body and weapon keep their aim); aimCFrame = camera without free look.
+-- gunP / gunY: the gun's recoil offset from the aim point; recP / recY: the camera recoil in aimCFrame (radians)
+local Camera = { yaw = 0, pitch = 0, bobPhase = 0, speed = 0, freeYaw = 0, freePitch = 0, aimCFrame = nil, gunP = 0, gunY = 0, recP = 0, recY = 0 }
 local ctx
 local cam = workspace.CurrentCamera
 local player = Players.LocalPlayer
 local recoilP, recoilY, roll = 0, 0, 0
+local rec = Recoil.new() -- the recoil springs; Weapon kicks them on each shot, update steps them
+local thump, thumpS = 0, 1 -- the buttstock's camera roll (radians) and its side
 local flinchP, flinchY, flinchR = 0, 0, 0
 local land, landV = 0, 0
 local shakeAmt = 0 -- blast shake (radians), decays
@@ -31,11 +35,21 @@ function Camera.addLook(dx, dy)
 	lookAcc += Vector2.new(dx, dy)
 end
 
-function Camera.kick(pDeg, yDeg)
-	local k = (ctx.Settings.data.shake or 1)
-	Camera.pitch += math.rad(pDeg) * 0.6
-	recoilP += math.rad(pDeg) * 0.4 * k
-	recoilY += math.rad(yDeg) * k
+-- a shot's recoil (Weapon.fireOnce): the kick (degrees, Recoil.kick) goes into the gun's and the camera's springs; th
+-- is the buttstock's roll (radians, Tarkov 0.16's camera shake). Nothing moves the aim for good: convergence brings
+-- the gun back to where you aimed, and the same rule holds for mouse, stick and touch, since look input and recoil add
+-- separately.
+function Camera.recoilShot(prof, jp, jy, th)
+	Recoil.shot(rec, prof, jp, jy)
+	local S = ctx.Settings.data
+	thump = math.max(thump, (th or 0) * (S.shake or 1) * (S.reduceMotion and 0.3 or 1))
+	thumpS = math.random() < 0.5 and -1 or 1
+end
+
+-- where the gun points against the camera (radians: up, left). Bullets leave the barrel and the sights sit on it, so
+-- the shot and the sight picture take this on top of aimCFrame.
+function Camera.gunRel()
+	return Camera.gunP - Camera.recP, Camera.gunY - Camera.recY
 end
 
 -- damage flinch (radians-ish impulse scaled by severity)
@@ -160,9 +174,21 @@ local function update(dt)
 		Camera.freeYaw -= Camera.freeYaw * kr
 		Camera.freePitch -= Camera.freePitch * kr
 	end
-	local k = math.min(1, dt * 10)
-	recoilP -= recoilP * k
-	recoilY -= recoilY * k
+	-- recoil: the springs step exactly (the same climb at 30 and 144 frames a second)
+	Recoil.step(rec, dt)
+	local gp, gy = Recoil.gun(rec)
+	Camera.gunP, Camera.gunY = math.rad(gp), math.rad(gy)
+	if ctx.Weapon.scoped then
+		-- a magnified scope shows the world along the gun, so the view takes all of the gun's recoil
+		recoilP, recoilY = Camera.gunP, Camera.gunY
+	else
+		-- the camera's own, smaller kick; SCREEN SHAKE scales only this, never where the gun points
+		local cp, cy = Recoil.cam(rec)
+		local ks = S.shake or 1
+		recoilP, recoilY = math.rad(cp) * ks, math.rad(cy) * ks
+	end
+	Camera.recP, Camera.recY = recoilP, recoilY
+	thump *= math.exp(-22 * dt) -- the same few hundredths of a second at any frame rate
 	local kf = math.min(1, dt * 7)
 	flinchP -= flinchP * kf
 	flinchY -= flinchY * kf
@@ -249,7 +275,8 @@ local function update(dt)
 	else
 		smoothPos = target
 	end
-	local leanRoll = -(M and M.lean or 0) * 0.2
+	-- the buttstock's thump rolls the view (Tarkov 0.16); a roll does not move where the gun points
+	local leanRoll = -(M and M.lean or 0) * 0.2 + thump * thumpS
 	local aimRot = CFrame.Angles(0, Camera.yaw + breathY + flinchY + shY, 0) * CFrame.Angles(Camera.pitch + recoilP + breathP + flinchP + shP + land * 0.02, recoilY, roll + stepRoll + flinchR + leanRoll + shR)
 	local offset = CFrame.new(bobX, bobY + land * 0.35, 0)
 	Camera.aimCFrame = CFrame.new(smoothPos) * aimRot * offset
