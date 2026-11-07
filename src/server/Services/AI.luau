@@ -537,9 +537,10 @@ end
 
 -- ── sleep (audit ai-2): EFT puts bots more than 300 m from every player to sleep ──────────────────────
 -- A calm unit that far from every raider stops thinking and stands anchored; it wakes when a raider comes within
--- 280 m (the gap keeps it from flickering at the edge), when it is hurt or when it hears a shot.
+-- 265 m (the gap keeps it from flickering at the edge), when it is hurt or when it hears a shot. EFT's map data:
+-- DistToSleep 300 and DistToActivate 265 on Customs, 260 on Interchange (SPT's copy, BotLocationModifier).
 -- 3.125 studs a metre (the real-scale maps)
-local SLEEP_FAR, WAKE_NEAR = 300 * 3.125, 280 * 3.125
+local SLEEP_FAR, WAKE_NEAR = 300 * 3.125, 265 * 3.125
 AI.SLEEP_FAR, AI.WAKE_NEAR = SLEEP_FAR, WAKE_NEAR
 -- the next state: asleep (true) or awake, from the nearest raider's distance and whether the unit is calm
 function AI.sleepState(asleep: boolean, nearest: number, calm: boolean): boolean
