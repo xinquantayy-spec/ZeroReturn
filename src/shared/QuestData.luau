@@ -30,8 +30,8 @@ local function visit(zone: string, map: string?, scav: boolean?): any
 end
 
 Q.list = {
-	-- VOS (EFT's Prapor) and his chain; V5 is KOVAC's now and V7 BRAM's (decision economy-2a). V1 is after EFT's "Debut"
-	-- (Prapor: eliminate 5 scavs on Customs; tarkovforge.com/traders/prapor)
+	-- VOS (EFT's Prapor) and his chain; V5 is KOVAC's now and V7 BRAM's (decision economy-2a). V1 is after EFT's "Debut",
+	-- Prapor's first task (eliminate scavs on Customs)
 	{ id = "V1", trader = "vos", name = "Signal Check", level = 1, after = nil,
 		desc = "Scavs keep cutting the relay cables. Thin them out.",
 		obj = { kill("scav", 5) }, reward = { money = 15000, xp = 500, rep = 0.05, items = { { "R17_MAG40", 1 } } } },
