@@ -115,6 +115,10 @@ local function makeMesh(e)
 	if def.transparency then
 		m.Transparency = def.transparency
 	end
+	-- ground cover takes the raid's season as it is built (audit tech.9: no scan of the workspace at deploy)
+	if string.sub(key, 1, 7) == "ZR_NAT_" and ctx and ctx.Atmos and ctx.Atmos.tintNature then
+		ctx.Atmos.tintNature(m)
+	end
 	return m
 end
 

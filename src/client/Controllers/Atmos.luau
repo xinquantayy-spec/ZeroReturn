@@ -375,9 +375,87 @@ local SEASON_TERRAIN = {
 local SEASON_FOLIAGE = { autumn = rgb(255, 192, 116), winter = rgb(214, 226, 238), spring = rgb(224, 255, 214) }
 local baseTerrain
 local seasonApplied = "summer"
+
+-- bushes, grass and tree crowns (the nature kit's pieces) take the season's tint over their own colours. Each piece is
+-- tinted as it arrives (audit tech.9): the map's as they stream into ZR_World (DescendantAdded), the client's ground
+-- cover as Detail builds it (Atmos.tintNature). A season change re-tints the pieces already here, a few hundred a frame.
+-- No whole-workspace scan: trees and bushes that stream in after the deploy get the season too.
+-- (strong tables: an Instance key in a weak table can vanish while the part still exists; pieces that left are pruned)
+local natParts = {} -- nature pieces seen -> true
+local natBase = {} -- piece -> its own colour
+local natCount, natKept = 0, 0 -- pieces registered, and how many were left after the last prune
+local retint = nil -- { list, i } while a season change works through the pieces
+local RETINT_BUDGET = 400 -- pieces a frame
+local PRUNE_AFTER = 3000 -- new pieces between prunes of the ones that streamed out or were dropped
+
+local function isFoliage(n)
+	return string.sub(n, 1, 7) == "ZR_NAT_" and not string.find(n, "_T$") and not string.find(n, "Rock") and not string.find(n, "Log") and not string.find(n, "Stump")
+end
+
+local function tintOne(d)
+	local base = natBase[d]
+	if not base then
+		base = d.Color
+		natBase[d] = base
+	end
+	local season = seasonApplied
+	local tint = SEASON_FOLIAGE[season]
+	-- winter lays snow on them (toward white); autumn and spring tint them
+	d.Color = (season == "winter" and base:Lerp(rgb(236, 240, 246), 0.6)) or (tint and Color3.new(base.R * tint.R, base.G * tint.G, base.B * tint.B)) or base
+end
+
+-- a nature piece arrived (streamed in, or built by Detail): it takes the season now
+function Atmos.tintNature(d)
+	if d.ClassName == "MeshPart" and isFoliage(d.Name) then
+		if not natParts[d] then
+			natParts[d] = true
+			natCount += 1
+		end
+		if seasonApplied ~= "summer" then
+			tintOne(d)
+		elseif natBase[d] == nil then
+			natBase[d] = d.Color -- its own colour, kept for a later season
+		end
+	end
+end
+
+local function stepRetint()
+	local r = retint
+	local stop = math.min(#r.list, r.i + RETINT_BUDGET - 1)
+	for i = r.i, stop do
+		local d = r.list[i]
+		if d.Parent then
+			tintOne(d)
+		end
+	end
+	r.i = stop + 1
+	if r.i > #r.list then
+		retint = nil
+	end
+end
+
+-- forget the pieces that streamed out or were dropped (their Parent is nil once removed or destroyed)
+local function pruneNature()
+	local n = 0
+	for d in natParts do
+		if d.Parent == nil then
+			natParts[d] = nil
+			natBase[d] = nil
+		else
+			n += 1
+		end
+	end
+	natCount, natKept = n, n
+end
+
 local function applySeason(season)
 	season = season or "summer"
 	if season == seasonApplied then
+		if retint then
+			stepRetint()
+		elseif natCount - natKept > PRUNE_AFTER then
+			pruneNature()
+		end
 		return
 	end
 	seasonApplied = season
@@ -392,19 +470,13 @@ local function applySeason(season)
 	for _, m in TERRAIN_MATS do
 		terrain:SetMaterialColor(m, set[m.Name] or baseTerrain[m])
 	end
-	-- bushes, grass and tree crowns (the nature kit's pieces) take the season's tint over their own colours
-	local tint = SEASON_FOLIAGE[season]
-	for _, d in workspace:GetDescendants() do
-		if d:IsA("MeshPart") and string.sub(d.Name, 1, 7) == "ZR_NAT_" and not string.find(d.Name, "_T$") and not string.find(d.Name, "Rock") and not string.find(d.Name, "Log") and not string.find(d.Name, "Stump") then
-			local base = d:GetAttribute("BaseColor")
-			if not base then
-				base = d.Color
-				d:SetAttribute("BaseColor", base)
-			end
-			-- winter lays snow on them (toward white); autumn and spring tint them
-			d.Color = (season == "winter" and base:Lerp(rgb(236, 240, 246), 0.6)) or (tint and Color3.new(base.R * tint.R, base.G * tint.G, base.B * tint.B)) or base
-		end
+	pruneNature()
+	local list = {}
+	for d in natParts do
+		table.insert(list, d)
 	end
+	retint = { list = list, i = 1 }
+	stepRetint()
 end
 
 local function stopRain()
@@ -659,6 +731,26 @@ function Atmos.init(c)
 	CollectionService:GetInstanceAddedSignal("ZR_Lamp"):Connect(function(head)
 		lamp(head, lampsOn)
 	end)
+	-- the map's nature pieces take the season as they stream in (audit tech.9); what is already here when the client
+	-- starts is registered once in the background, a few thousand a frame
+	local function hookWorld(w)
+		w.DescendantAdded:Connect(Atmos.tintNature)
+		for i, d in w:GetDescendants() do
+			Atmos.tintNature(d)
+			if i % 3000 == 0 then
+				task.wait()
+			end
+		end
+	end
+	workspace.ChildAdded:Connect(function(ch)
+		if ch.Name == "ZR_World" and ch:IsA("Folder") then
+			task.spawn(hookWorld, ch) -- a rebuilt world
+		end
+	end)
+	local w = workspace:FindFirstChild("ZR_World")
+	if w then
+		task.spawn(hookWorld, w)
+	end
 	local lastWarn = 0
 	RunService:BindToRenderStep("ZR_Atmos", Enum.RenderPriority.Camera.Value + 4, function(dt)
 		local ok, err = pcall(step, dt)
