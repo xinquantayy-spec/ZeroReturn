@@ -585,6 +585,39 @@ local function setLamps(on)
 	end
 end
 
+-- ── shadows of the map's own lights (audit tech.12) ────────────────────────────────────────────────────────
+-- Only the lights within about 60 studs of the camera cast shadows (and the first-person weapon lamp, and other people's
+-- weapon lights in the same range: Weapon.luau). The lights the server made with shadows (the bunker's key lights, a
+-- control-room lamp) are registered as they stream in and switched by distance 4 times a second; the rest stay without.
+local mapLights = {} -- light -> true (strong keys; pruned when it leaves)
+local LIGHT_SHADOW_R = 60
+local lightClock = 0
+local function addMapLight(d)
+	local cn = d.ClassName
+	if (cn == "PointLight" or cn == "SpotLight" or cn == "SurfaceLight") and d.Shadows then
+		mapLights[d] = true
+	end
+end
+local function lightShadows(camPos)
+	for l in mapLights do
+		local p = l.Parent
+		if not p then
+			mapLights[l] = nil
+		else
+			local pos = (p:IsA("BasePart") and p.Position) or (p:IsA("Attachment") and p.WorldPosition) or nil
+			local want = pos ~= nil and (pos - camPos).Magnitude < LIGHT_SHADOW_R
+			if l.Shadows ~= want then
+				l.Shadows = want
+			end
+		end
+	end
+end
+-- what streams into the world: nature pieces take the season, shadow lights are registered
+local function worldAdded(d)
+	Atmos.tintNature(d)
+	addMapLight(d)
+end
+
 -- ── main loop ────────────────────────────────────────────────────────────────
 local placeClock = 0
 local timers = {}
@@ -640,6 +673,11 @@ local function step(dt)
 	Atmos.rain = rain
 	-- the season paints the world on deploy; in winter the rain cells drop snow
 	applySeason(e and e.season or nil)
+	lightClock += dt
+	if lightClock > 0.25 then
+		lightClock = 0
+		lightShadows(cam.CFrame.Position)
+	end
 	setSnow(e ~= nil and e.season == "winter" and rain > 0)
 	local wetRain = snowing and 0 or rain
 	-- rain particles (re-placed a few times a second; the grid follows the camera)
@@ -734,9 +772,9 @@ function Atmos.init(c)
 	-- the map's nature pieces take the season as they stream in (audit tech.9); what is already here when the client
 	-- starts is registered once in the background, a few thousand a frame
 	local function hookWorld(w)
-		w.DescendantAdded:Connect(Atmos.tintNature)
+		w.DescendantAdded:Connect(worldAdded)
 		for i, d in w:GetDescendants() do
-			Atmos.tintNature(d)
+			worldAdded(d)
 			if i % 3000 == 0 then
 				task.wait()
 			end
