@@ -589,7 +589,7 @@ function Raid.deathInfo(char)
 		info.weapon = lh.weapon
 		info.ammo = lh.ammo
 		info.part = ctx.Health.NAMES[lh.part]
-		info.dist = (root and typeof(lh.from) == "Vector3") and math.floor((root.Position - lh.from).Magnitude * 0.28) or nil
+		info.dist = (root and typeof(lh.from) == "Vector3") and math.floor((root.Position - lh.from).Magnitude * 0.32) or nil -- 0.32 m a stud, as INSPECT (audit gameplay.6)
 	end
 	return info
 end

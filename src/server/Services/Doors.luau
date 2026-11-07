@@ -113,9 +113,19 @@ local function use(player, d)
 		task.delay(d.card and 0.5 or 0.25, function()
 			set(d, true)
 		end)
+		Doors.heard(d, player)
 		return
 	end
 	set(d, not d.open)
+	Doors.heard(d, player)
+end
+
+-- a door a player works is a quiet noise the AI nearby can hear (Tarkov; audit ai.12): about 19 m, close enough to
+-- come and look within about 10 m
+function Doors.heard(d, player)
+	if ctx.AI and ctx.AI.hearShot then
+		ctx.AI.hearShot(d.cf.Position, player, nil, 0.3)
+	end
 end
 
 -- AI: open a closed, unlocked door they are walking through (returns true if it started opening)

@@ -1091,6 +1091,7 @@ function Loot.caretakerLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
 	k.wear = { 85, 100 }
+	k.doublePockets() -- Killa carries five double pockets too (audit ai.5)
 	k.slot("armor", "ARMOR_C6", { dur = rand:NextInteger(60, 80), tint = "black" })
 	k.slot("head", "HELMET_C5", { dur = rand:NextInteger(30, 45) })
 	k.slot("rig", "RIG_CHEST", { tint = "black" })

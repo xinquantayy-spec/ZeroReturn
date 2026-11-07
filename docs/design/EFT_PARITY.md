@@ -995,3 +995,23 @@ A PC (500 pt or taller) keeps Tarkov's layouts unchanged.
 
 Gaps: no phone has run these (tech-2b); the Hideout, flea market, messenger and handbook use the full-screen window but
 no layout of their own yet.
+
+### Audit quick wins, batch 1: ballistics, health and AI (M3, 2026-11-07)
+
+Brought to Tarkov's numbers (sources in `docs/audit/2026-11-07/gameplay.md` and `ai.md`):
+- **Velocity factor (gameplay.2):** a bullet's damage and penetration scale with the share of its muzzle speed it still
+  has (tarkov-ballistics.com), for players and AI. It replaced a straight fall-off by weapon range.
+- **Fragmentation (gameplay.3):** rounds with 20 or more penetration roll their fragmentation chance for +50 % damage.
+- **Spill (gameplay.4):** x0.49 arms, x0.7 legs, x1.05 stomach (EFT wiki, Health system).
+- **Death screen (gameplay.6):** distances at 0.32 m a stud, as INSPECT.
+- **Subsonic rounds (gameplay.7):** no crack as they pass.
+- **Grenades (gameplay.14):** real gravity (30.7 studs/s2, as bullets), throw speeds lowered to keep the reach.
+- **Factory time (gameplay.15):** Smelter raids last 20 minutes.
+- **AI (ai.1, .2, .5, .6, .7, .12, .13, .15):** bosses and crews ignore the AI cap (EFT's IgnoreMaxBots); EFT health
+  (cult warriors 850, THE CARETAKER 890, the Broker 752, his guards 630); the Caretaker carries Killa's five double
+  pockets; guards spread round their leader; an orphaned follower keeps its own group's loop; doors a player works
+  are heard by AI within about 19 m; a shot's origin is judged a few metres off, not exactly; Smelter rolls THE STOKER
+  (Tagilla) at 30 % and THE CULT at 8 % in night raids, as Factory does.
+
+Gaps: stationary guns still use the range fall-off; each round has no muzzle speed or ballistic coefficient of its own
+yet (speed is per gun, drag per gun class).

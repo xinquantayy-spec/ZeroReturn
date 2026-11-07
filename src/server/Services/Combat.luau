@@ -13,6 +13,17 @@ local Inv = require(script.Parent.Inv)
 local WP = require(Shared.WeaponParts)
 
 local Combat = {}
+
+-- Tarkov's velocity factor (audit gameplay.2): the share of muzzle speed a bullet still has scales its damage and
+-- penetration. A bullet that hits has kept at least a fifth of its speed here.
+function Combat.velocityFactor(speedFrac)
+	return math.clamp(type(speedFrac) == "number" and speedFrac or 1, 0.2, 1)
+end
+
+-- Tarkov's fragmentation (audit gameplay.3): only a round with 20 or more penetration can fragment, at its own chance
+function Combat.fragments(ballistic, roll)
+	return (ballistic.pen or 0) >= 20 and (ballistic.frag or 0) > 0 and roll < ballistic.frag
+end
 local ctx
 local W = {} -- [player] = weapon runtime
 Combat.stats = { accepted = 0, rejected = 0 }
@@ -343,7 +354,7 @@ function Combat.shoot(player, seq, origin, dir)
 		local pm = pres and pres.Instance:FindFirstAncestorOfClass("Model")
 		predHit = predHit or (pm ~= nil and pm:FindFirstChildOfClass("Humanoid") ~= nil)
 		-- the damage comes from the bullet in flight
-		Ballistics.fly(origin, d2, v0, k, wdef.range, params, function(res, hitPos, dist, _, keep)
+		Ballistics.fly(origin, d2, v0, k, wdef.range, params, function(res, hitPos, dist, speedFrac, keep)
 			if ctx.Hazards.hit(res.Instance, player) then
 				return
 			end
@@ -353,13 +364,13 @@ function Combat.shoot(player, seq, origin, dir)
 			if not (thum and thum.Health > 0) then
 				return
 			end
-			local fs = wdef.range * Weapons.FALLOFF_START
-			local fall = 1
-			if dist > fs then
-				fall = math.max(Weapons.FALLOFF_MIN, 1 - (dist - fs) / (wdef.range - fs) * (1 - Weapons.FALLOFF_MIN))
-			end
+			-- Tarkov's velocity factor: the bullet's speed now over its muzzle speed scales its damage and its penetration
+			-- (tarkov-ballistics.com; audit quick win gameplay.2). It replaced a straight fall-off by weapon range.
+			local vf = Combat.velocityFactor(speedFrac)
+			-- fragmentation (Tarkov): a round with 20 or more penetration may break up in the body, +50 % damage
+			local fragged = Combat.fragments(ballistic, math.random())
 			local r = Combat.hitModel(model, {
-				dmg = ballistic.dmg * fall * keep, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall) * keep, armorDmg = ballistic.armorDmg,
+				dmg = ballistic.dmg * vf * keep * (fragged and 1.5 or 1), pen = (ballistic.pen or 0) * vf * keep, armorDmg = ballistic.armorDmg,
 				bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = res.Instance, hitPos = hitPos, attacker = player,
 				from = origin, weapon = wd.name, ammo = ammoDef and ammoDef.name or "?",
 			})
@@ -376,7 +387,7 @@ function Combat.shoot(player, seq, origin, dir)
 	ctx.AI.hearShot(origin, player, nil, loud)
 	ctx.AI.bulletPassed(origin, hitPos, char)
 	local tracer = ammoDef and ammoDef.ammo and ammoDef.ammo.tracer or nil
-	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = predHit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat }, player)
+	ctx.Remotes.fx("shot", { o = origin, p = hitPos, n = firstNormal, h = predHit, w = wd.weapon, s = ms.suppressed or nil, t = tracer, m = firstMat, sub = (ammoDef and ammoDef.ammo.subsonic) or nil }, player)
 	if malf then
 		setMalf(player, wit, malf, malf == "jam" and (wit.wear or 100) <= 5)
 	end

@@ -732,6 +732,31 @@ return function(kit, root)
 	}
 	W.visitZones = { STACK = { pos = V(-30, 0, -72), r = 14 } }
 	W.boss = nil
+	-- Tarkov's Factory bosses (audit ai.15): Tagilla at 30 %, roaming the hall with his hammer (our STOKER), and the
+	-- cultists at 8 % in night raids, waiting in the dark corners (THE CULT, as on Border Yard)
+	local hall = W.patrols.SH
+	local stoker = {
+		name = "THE STOKER", label = "Stoker", home = hall[1], route = hall, look = "stoker", loadout = "stokerLoadout", crew = {},
+		chance = 0.3, hp = 1220 / 440, charge = true, zones = { { name = "FURNACE HALL", home = hall[1], route = hall } },
+	}
+	local cultZones = {}
+	-- three scav-zone floors, each at least 55 studs from a PMC spawn
+	for _, z in { { "SLAG STACK", -30, -72 }, { "SCRAP HALL", 60, -20 }, { "WEST SHEDS", -66, 40 } } do
+		local home = V(z[2], 0, z[3])
+		local crew = {}
+		for _, o in { { 7, 5 }, { -7, 5 }, { 6, -7, 0.5 } } do
+			table.insert(crew, {
+				pos = V(z[2] + o[1], 0, z[3] + o[2]), label = "Cultist", look = "cultist", loadout = "cultistLoadout",
+				hp = 850 / 440, skill = "boss", charge = "knife", ambush = true, post = true, chance = o[3],
+			})
+		end
+		table.insert(cultZones, { name = z[1], home = home, post = home, crew = crew })
+	end
+	local cult = {
+		name = "THE CULT", label = "Priest", home = cultZones[1].home, route = nil, look = "priest", loadout = "priestLoadout",
+		chance = 0.08, night = true, hp = 850 / 440, skill = "boss", charge = "knife", ambush = true, zones = cultZones,
+	}
+	W.bosses = { stoker, cult }
 	W.bounds = { x0 = O.X - 128, x1 = O.X + 128, z0 = O.Z - 98, z1 = O.Z + 98, yMin = -12, yMax = 16 }
 	return map
 end

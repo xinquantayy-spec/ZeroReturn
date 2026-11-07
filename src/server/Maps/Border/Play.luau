@@ -689,7 +689,8 @@ return function(B)
 		if bossHome then
 			table.insert(r, 1, bossHome) -- the loop returns to the lobby
 		end
-		W.boss = { name = "THE BROKER", label = "Broker", home = bossHome or r[1], route = r, crew = route(CREW) }
+		-- Reshala's 752 and his guards' 630 (EFT; audit ai.2)
+		W.boss = { name = "THE BROKER", label = "Broker", home = bossHome or r[1], route = r, crew = route(CREW), hp = 752 / 440, crewHp = 630 / 440 }
 	end)
 
 	-- ── THE HOUNDS (Tarkov's Goons: Knight, Big Pipe and Birdeye; docs/design/BOSS_HOUNDS.md) ────────────────────────
@@ -733,7 +734,7 @@ return function(B)
 			for _, o in CULT_POSTS do
 				table.insert(crew, {
 					pos = route({ { z[2] + o[1], z[3] + o[2] } })[1], label = "Cultist", look = "cultist", loadout = "cultistLoadout",
-					hp = 1, skill = "boss", charge = "knife", ambush = true, post = true, chance = o[3],
+					hp = 850 / 440, skill = "boss", charge = "knife", ambush = true, post = true, chance = o[3], -- EFT's 850 (audit ai.2)
 				})
 			end
 			table.insert(zones, { name = z[1], home = home, post = home, crew = crew })

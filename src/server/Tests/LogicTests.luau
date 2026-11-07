@@ -499,6 +499,50 @@ function T.run(ctx)
 	end
 	-- the INSPECT window's per-class penetration chances use the same formula as hits (Health.luau)
 	check("penetration chance formula shared", math.abs(Items.penChance(26, 2, 1) - 0.75) < 1e-6 and Items.penChance(26, 4, 1) == 0 and Items.penChance(72, 6, 1) == 1)
+	-- audit gameplay.2-4 and .14-15 (Tarkov's numbers): velocity factor, fragmentation, spill, grenade gravity, Factory time
+	if ctx and ctx.Combat and ctx.Combat.velocityFactor then
+		local C = ctx.Combat
+		check("velocity factor: full speed keeps everything, 60 % speed does 60 %, never under a fifth",
+			C.velocityFactor(1) == 1 and math.abs(C.velocityFactor(0.6) - 0.6) < 1e-9 and C.velocityFactor(0.05) == 0.2 and C.velocityFactor(nil) == 1)
+		check("fragmentation: only rounds with 20+ penetration, at the round's own chance",
+			C.fragments({ pen = 26, frag = 0.2 }, 0.1) and not C.fragments({ pen = 26, frag = 0.2 }, 0.3) and not C.fragments({ pen = 12, frag = 0.45 }, 0.01))
+	end
+	if ctx and ctx.Health and ctx.Health.SPILL then
+		local S = ctx.Health.SPILL
+		check("spill: EFT's x0.49 arms, x0.7 legs, x1.05 stomach", S.larm == 0.49 and S.rarm == 0.49 and S.lleg == 0.7 and S.rleg == 0.7 and S.stomach == 1.05)
+	end
+	do
+		local Gr = require(Shared.Grenades)
+		local MapsD = require(Shared.Maps)
+		check("grenades fall at the world's real gravity (30.7 studs/s2, as bullets)", Gr.GRAV == 30.7)
+		check("Smelter (our Factory) raids last 20 minutes", MapsD.defs.smelter.raidTime == 1200)
+	end
+	-- audit ai.15: Smelter (our Factory) rolls Tagilla (THE STOKER) at 30 % and the cultists at 8 % at night
+	do
+		local sb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.smelter and ctx.World.maps.smelter.bosses
+		local st, cu = nil, nil
+		for _, b in sb or {} do
+			if b.label == "Stoker" then
+				st = b
+			elseif b.label == "Priest" then
+				cu = b
+			end
+		end
+		checkOn("smelter", "Smelter rolls THE STOKER at 30 % (1,220 health, the hammer) and THE CULT at 8 % in night raids, three zones",
+			st ~= nil and st.chance == 0.3 and st.charge == true and math.abs(st.hp * 440 - 1220) < 1e-6 and #st.route >= 4
+				and cu ~= nil and cu.chance == 0.08 and cu.night == true and #cu.zones == 3)
+	end
+	-- audit ai.2: EFT's boss health (scales of the 440 a PMC has)
+	do
+		local bb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.border and ctx.World.maps.border.boss
+		checkOn("border", "the Broker has Reshala's 752 health and his guards 630", bb ~= nil and math.abs(bb.hp * 440 - 752) < 1e-6 and math.abs(bb.crewHp * 440 - 630) < 1e-6)
+		local mb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.meridian and ctx.World.maps.meridian.boss
+		checkOn("meridian", "the Caretaker has Killa's 890 health and five double pockets", mb ~= nil and math.abs(mb.hp * 440 - 890) < 1e-6
+			and (function()
+				local h = Loot.caretakerLoadout(Random.new(3))
+				return h.pocketsW == 5 and h.pocketsH == 2
+			end)())
+	end
 
 	-- ammo + magazines
 	local mg, mi = Inv.newItem("R17_MAG", 1, { a = 0 })

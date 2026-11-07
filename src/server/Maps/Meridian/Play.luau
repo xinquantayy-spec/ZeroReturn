@@ -1002,6 +1002,7 @@ return function(B)
 		W.boss = {
 			name = "THE CARETAKER", label = "Caretaker", home = zones[1].home, look = "bodyguard", loadout = "caretakerLoadout",
 			route = zones[1].route, crew = {}, chance = (cfg and cfg.chance) or 0.6, zones = zones,
+			hp = 890 / 440, -- Killa's 890 (EFT; audit ai.2)
 		}
 	end)
 

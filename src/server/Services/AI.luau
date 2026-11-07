@@ -860,7 +860,7 @@ local function shoot(u, t)
 		end
 		local pmod = pr and pr.Instance:FindFirstAncestorOfClass("Model")
 		hit = hit or (pmod ~= nil and pmod ~= u.model and pmod:FindFirstChildOfClass("Humanoid") ~= nil)
-		Ballistics.fly(muzzle, dir, v0, k, w.def.range, shotParams, function(r, hitPos, d, _, keep)
+		Ballistics.fly(muzzle, dir, v0, k, w.def.range, shotParams, function(r, hitPos, d, speedFrac, keep)
 			if ctx.Hazards.hit(r.Instance, u.model) then
 				return
 			end
@@ -868,13 +868,11 @@ local function shoot(u, t)
 			local model = r.Instance:FindFirstAncestorOfClass("Model")
 			local hum = model and model:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 and model ~= u.model then
-				local fs = w.def.range * Weapons.FALLOFF_START
-				local fall = 1
-				if d > fs then
-					fall = math.max(Weapons.FALLOFF_MIN, 1 - (d - fs) / (w.def.range - fs) * (1 - Weapons.FALLOFF_MIN))
-				end
+				-- the same rules as a player's bullet: velocity factor and fragmentation (Combat.luau)
+				local vf = ctx.Combat.velocityFactor(speedFrac)
+				local fragged = ctx.Combat.fragments(ballistic, math.random())
 				ctx.Combat.hitModel(model, {
-					dmg = ballistic.dmg * fall * keep, pen = (ballistic.pen or 0) * (0.85 + 0.15 * fall) * keep, armorDmg = ballistic.armorDmg,
+					dmg = ballistic.dmg * vf * keep * (fragged and 1.5 or 1), pen = (ballistic.pen or 0) * vf * keep, armorDmg = ballistic.armorDmg,
 					bleedL = ballistic.bleedL, bleedH = ballistic.bleedH, part = r.Instance, hitPos = hitPos, attacker = u.model,
 					from = muzzle, weapon = w.wd.name, ammo = ammoDef and ammoDef.name or "?",
 				})
@@ -886,7 +884,7 @@ local function shoot(u, t)
 		m.a = 0
 		m.at = nil
 	end
-	ctx.Remotes.fx("shot", { o = muzzle, p = firstPos, n = firstNormal, h = hit, w = w.def.id, s = ms.suppressed or nil, t = ballistic.tracer, m = firstMat, ai = true })
+	ctx.Remotes.fx("shot", { o = muzzle, p = firstPos, n = firstNormal, h = hit, w = w.def.id, s = ms.suppressed or nil, t = ballistic.tracer, m = firstMat, ai = true, sub = ballistic.subsonic or nil })
 	AI.hearShot(muzzle, u.model, u, (w.def.loudness or 1) * ms.loud)
 	AI.bulletPassed(muzzle, firstPos, u.model)
 	-- next shot: bursts for automatics (shorter at range), taps for semi, cycling for pump/bolt
@@ -943,11 +941,16 @@ local function idle(u, t)
 	if u.leader then
 		local L = u.leader
 		if not L.alive then
+			-- an orphaned follower keeps walking its own group's loop (the leader's), not the map's main boss route
+			-- (audit ai.7: a HOUNDS or CULT follower used to take the Broker's)
 			u.leader = nil
-			u.route = ctx.World.boss and ctx.World.boss.route
+			u.route = L.route or (ctx.World.boss and ctx.World.boss.route)
 			u.wp = 1
 		else
-			local off = (u.slot == 1) and Vector3.new(-5, 0, 4) or Vector3.new(5, 0, 4)
+			-- the guards spread round their leader: left and right behind him, then wider out to the sides and back
+			-- (audit ai.6: slots 2 to 4 all stood on one spot)
+			local SLOTS = { Vector3.new(-5, 0, 4), Vector3.new(5, 0, 4), Vector3.new(-8, 0, -1), Vector3.new(8, 0, -1), Vector3.new(0, 0, 8) }
+			local off = SLOTS[((u.slot or 1) - 1) % #SLOTS + 1]
 			local goal = L.root.CFrame:PointToWorldSpace(off)
 			local d = flat(goal - u.root.Position).Magnitude
 			if d > 4 then
@@ -1820,7 +1823,12 @@ AI.liveCount = liveCount
 function AI.spawn(kind, pos, opts)
 	opts = opts or {}
 	local skillOf = SKILL[opts.skill or kind] or SKILL[kind] -- a crew may fight with the boss's skill (THE HOUNDS)
-	if liveCount() >= Config.AI_MAX then
+	-- bosses and their crews ignore the cap (EFT's IgnoreMaxBots; audit ai.1): a full map never loses its boss
+	if liveCount() >= Config.AI_MAX and kind ~= "boss" and kind ~= "follower" then
+		AI.refused = (AI.refused or 0) + 1
+		if AI.refused % 10 == 1 then
+			warn(string.format("[ZR] AI cap %d reached: %d spawn(s) refused so far (latest a %s)", Config.AI_MAX, AI.refused, tostring(kind)))
+		end
 		return nil
 	end
 	local myGen = gen
@@ -2057,7 +2065,7 @@ function AI.bulletPassed(a, b, shooterModel)
 					local w = who(shooterModel)
 					if w and hostile(u, w) then
 						u.aware[shooterModel] = math.max(u.aware[shooterModel] or 0, 0.85)
-						u.lastPos[shooterModel] = a
+						u.lastPos[shooterModel] = AI.roughPos(a, u.head.Position)
 						if u.state ~= "ENGAGE" and u.state ~= "FLEE" then
 							u.state = "SEARCH"
 							u.goal = a
@@ -2068,6 +2076,14 @@ function AI.bulletPassed(a, b, shooterModel)
 			end
 		end
 	end
+end
+
+-- where a shot came from as a soldier judges it: a few metres off, more at range (audit ai.13; it used to be exact)
+function AI.roughPos(pos, from)
+	local r = math.clamp((pos - from).Magnitude * 0.06, 2, 12)
+	local a = math.random() * math.pi * 2
+	local m = math.sqrt(math.random()) * r
+	return pos + Vector3.new(math.cos(a) * m, 0, math.sin(a) * m)
 end
 
 -- Studio test bridge: make a unit throw its first grenade at `target` now (returns false if it cannot)
@@ -2164,7 +2180,7 @@ function AI.onDamaged(model, attacker)
 		u.grudge[w.player] = true -- whoever shoots THE FORESTER is his enemy for the raid
 	end
 	u.aware[amodel] = math.max(u.aware[amodel] or 0, 0.95)
-	u.lastPos[amodel] = amodel:GetPivot().Position
+	u.lastPos[amodel] = AI.roughPos(amodel:GetPivot().Position, u.root and u.root.Position or amodel:GetPivot().Position)
 	u.hurtBy = amodel
 	if u.state ~= "ENGAGE" then
 		u.state = "SEARCH"
@@ -2301,7 +2317,7 @@ function AI.reset()
 					-- a crew member is a spot, or { pos, look, loadout, hp, label, skill } (THE HOUNDS: each his own man); with
 					-- `post` it keeps its own spot instead of following (THE CULT's warriors lying in wait round their priest)
 					if typeof(p) == "Vector3" then
-						AI.spawn("follower", p, { leader = boss, slot = i })
+						AI.spawn("follower", p, { leader = boss, slot = i, hp = b.crewHp })
 					elseif type(p) == "table" and typeof(p.pos) == "Vector3" and (not p.chance or math.random() < p.chance) then
 						AI.spawn("follower", p.pos, {
 							leader = (not p.post) and boss or nil, slot = i, look = p.look, loadout = p.loadout, hp = p.hp, label = p.label,

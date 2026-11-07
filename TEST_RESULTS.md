@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3 quick wins, batch 1: ballistics, health and AI (2026-11-07)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests **404/404** (8 new: velocity factor, fragmentation, spill, grenade gravity, Factory time, Smelter's bosses, the Broker's and the Caretaker's health and pockets), CharTests 47/47, LookTests 33/33, MapTests 41/41. The grenade path tests passed unchanged under the new gravity. |
+| Smelter boss | With the Stoker forced (`ZR_Dev boss true Stoker`) and a Smelter raid, THE STOKER spawned with 1,220 health and the 12 gauge, patrolling the furnace hall. |
+| Not seen in play | The crack skipped for a subsonic round, a door heard by AI, the rough shot origin, fragmentation on a hit (all covered by code review and the unit tests only). |
+
 ## M2 phone menus, ui-3a (2026-11-07)
 
 Checked in Studio with the new `ZR_ClientDev preview` command, which lays the menus out as on a screen of a given size

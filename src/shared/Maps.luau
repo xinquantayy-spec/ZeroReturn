@@ -25,7 +25,7 @@ Maps.defs = {
 		id = "smelter",
 		name = "SMELTER",
 		kind = "FACTORY",
-		raidTime = 900,
+		raidTime = 1200, -- Tarkov's Factory: 20 minutes (audit gameplay.15)
 		desc = "Blast furnaces, catwalks, a casting shed, offices and service tunnels under the yard. Short raids, close fights.",
 	},
 	meridian = {

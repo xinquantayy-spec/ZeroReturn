@@ -24,7 +24,9 @@ local PART_OF = {
 	LeftUpperLeg = "lleg", LeftLowerLeg = "lleg", LeftFoot = "lleg", RightUpperLeg = "rleg", RightLowerLeg = "rleg", RightFoot = "rleg",
 }
 Health.PART_OF = PART_OF
-local SPILL = { larm = 0.7, rarm = 0.7, lleg = 1.0, rleg = 1.0, stomach = 1.5 }
+-- damage to a destroyed (blacked) part spreads to the rest at these rates (EFT wiki, Health system; audit gameplay.4)
+local SPILL = { larm = 0.49, rarm = 0.49, lleg = 0.7, rleg = 0.7, stomach = 1.05 }
+Health.SPILL = SPILL
 local LIMB = { larm = true, rarm = true, lleg = true, rleg = true }
 local BLEED_L, BLEED_H = 0.55, 1.5 -- hp/s
 -- the cult's poison (Tarkov's cultist knife: a toxin that keeps hurting after the fight until an antidote stops it):

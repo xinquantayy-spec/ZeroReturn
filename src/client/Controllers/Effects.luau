@@ -452,8 +452,8 @@ function Effects.remoteShot(d)
 	Effects.impactSound(d.p, d.h, d.m)
 	local cam = workspace.CurrentCamera
 	local dist = cam and (cam.CFrame.Position - d.o).Magnitude or 0
-	-- bullet passing close by: supersonic crack where it passed (Tarkov-style shot awareness)
-	if cam and dist > 18 then
+	-- bullet passing close by: supersonic crack where it passed (Tarkov-style shot awareness); a subsonic round has none
+	if cam and dist > 18 and not d.sub then
 		local cp = cam.CFrame.Position
 		local seg = d.p - d.o
 		local len = seg.Magnitude

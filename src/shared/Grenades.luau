@@ -5,7 +5,7 @@
 -- stop, stun charges blind and deafen, smoke screens block sight for everyone (AI included).
 local G = {}
 
-G.GRAV = 45 -- studs/s^2: a readable arc at the game's scale (1 m is about 3 studs)
+G.GRAV = 30.7 -- studs/s^2: real gravity at the game's scale (9.81 m/s^2, 3.125 studs a metre), as bullets fall (audit gameplay.14)
 G.RADIUS = 0.16 -- collision radius of the grenade body
 G.REST = 0.25 -- restitution of the normal velocity on a bounce
 G.MU = 0.6 -- Coulomb friction on a bounce: tangential impulse <= MU * normal impulse
@@ -19,8 +19,9 @@ G.PULL_MIN = 0.35
 G.PULL_MAX = 30 -- a pulled pin is forgotten after this long (lost client)
 G.COOLDOWN = 0.9
 G.THROW = {
-	over = { speed = 60, loft = math.rad(9), up = 0.25, side = 0.35, fwd = 0.55 },
-	under = { speed = 25, loft = math.rad(4), up = -1.6, side = 0.25, fwd = 0.7 },
+	-- the speeds keep the old reach under real gravity (x sqrt(30.7 / 45)): 60 -> 50, 25 -> 21
+	over = { speed = 50, loft = math.rad(9), up = 0.25, side = 0.35, fwd = 0.55 },
+	under = { speed = 21, loft = math.rad(4), up = -1.6, side = 0.25, fwd = 0.7 },
 }
 
 -- launch velocity for a look direction (unit), throw style and the thrower's velocity (half of it carries over)
