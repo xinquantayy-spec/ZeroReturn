@@ -228,7 +228,19 @@ function Match.status(player)
 		inRaid = liveSessions(), maxPlayers = Config.MAX_PLAYERS, scavReadyAt = prof and prof.scavReadyAt or 0, serverTime = os.time(),
 		env = (Match.state == "RUNNING") and Match.env or Match.nextEnv,
 		map = (Match.state == "RUNNING") and Match.map or nil, votes = Match.tally(), vote = q and q.vote or nil,
+		maps = Match.builtMaps(), -- the maps this server can run (tech-4b)
 	}
+end
+
+-- the raid maps built on this server, in the shared order
+function Match.builtMaps()
+	local list = {}
+	for _, id in Maps.order do
+		if ctx.World.maps[id] then
+			table.insert(list, id)
+		end
+	end
+	return list
 end
 
 -- ── map vote ─────────────────────────────────────────────────────────────────
@@ -251,6 +263,9 @@ function Match.vote(player, id)
 	if id ~= nil and not Maps.valid(id) then
 		return false, "BAD_INPUT"
 	end
+	if id ~= nil and not ctx.World.maps[id] then
+		return false, "NOT_AVAILABLE" -- not built on this server (tech-4b)
+	end
 	q.vote = id
 	Match.broadcast()
 	return true
@@ -258,12 +273,30 @@ end
 
 -- the map for the raid that is about to start
 function Match.pickMap()
-	if Match.forceMap and Maps.valid(Match.forceMap) then
+	local built = ctx.World.maps
+	if Match.forceMap and Maps.valid(Match.forceMap) and built[Match.forceMap] then
 		return Match.forceMap
 	end
-	return Maps.winner(Match.tally(), function(n)
+	-- only the maps this server built count (tech-4b: a lean server builds one)
+	local tally = {}
+	for id, n in Match.tally() do
+		if built[id] then
+			tally[id] = n
+		end
+	end
+	local pick = Maps.winner(tally, function(n)
 		return math.random(1, n)
 	end)
+	if built[pick] then
+		return pick
+	end
+	local list = {}
+	for _, id in Maps.order do
+		if built[id] then
+			table.insert(list, id)
+		end
+	end
+	return list[math.random(1, math.max(1, #list))] or pick
 end
 
 function Match.broadcast()
@@ -404,8 +437,13 @@ local function startRaid()
 	local t = now()
 	Match.map = Match.pickMap()
 	if not ctx.World.activate(Match.map) then
-		Match.map = "quay7" -- the chosen map did not build (World logs why)
-		ctx.World.activate(Match.map)
+		-- the chosen map did not build (World logs why): the first map that did
+		for _, id in Maps.order do
+			if ctx.World.activate(id) then
+				Match.map = id
+				break
+			end
+		end
 	end
 	Match.state = "RUNNING"
 	Match.id = Util.guid()

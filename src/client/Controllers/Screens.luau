@@ -251,7 +251,7 @@ function Screens.deploy()
 	local mapSig = nil
 	local function mapSignature()
 		local m = ctx.State.match or {}
-		local parts = { tostring(m.state), tostring(m.map), tostring(m.vote), tostring(deployVote), tostring(m.queued) }
+		local parts = { tostring(m.state), tostring(m.map), tostring(m.vote), tostring(deployVote), tostring(m.queued), table.concat(m.maps or {}, ",") }
 		for _, id in Maps.order do
 			table.insert(parts, tostring((m.votes or {})[id]))
 		end
@@ -294,10 +294,20 @@ function Screens.deploy()
 				mapSig = nil
 			end)
 		end
+		-- only the maps this server runs (a lean server builds one, tech-4b); an older server sends no list: every map
+		local here = nil
+		if type(m.maps) == "table" then
+			here = {}
+			for _, id in m.maps do
+				here[id] = true
+			end
+		end
 		for _, id in Maps.order do
 			local def = Maps.defs[id]
 			local n = votes[id] or 0
-			choice(id, string.format("  %s  ·  %s  ·  %d MIN%s", def.name, def.kind, math.floor(def.raidTime / 60), n > 0 and string.format("  ·  %d VOTE%s", n, n == 1 and "" or "S") or ""))
+			if here == nil or here[id] then
+				choice(id, string.format("  %s  ·  %s  ·  %d MIN%s", def.name, def.kind, math.floor(def.raidTime / 60), n > 0 and string.format("  ·  %d VOTE%s", n, n == 1 and "" or "S") or ""))
+			end
 		end
 		choice(nil, "  ANY MAP")
 		local def = mine and Maps.defs[mine]

@@ -1643,7 +1643,28 @@ function World.kit()
 	}
 end
 
+-- tech-4b: which raid maps this server builds. Every map by default (one server runs the bunker and the raids). A
+-- server for a single raid (gameplay-7a) sets World.plan to its map before World.build; in Studio the place attribute
+-- ZR_Maps ("meridian" or "meridian,border") does the same, to test a lean server. The bunker is always built.
+function World.planMaps()
+	local want = World.plan
+	if not want then
+		local attr = workspace:GetAttribute("ZR_Maps")
+		if type(attr) == "string" and attr ~= "" then
+			want = {}
+			for id in string.gmatch(string.lower(attr), "[%w_]+") do
+				want[id] = true
+			end
+		end
+	end
+	return want -- nil: every map
+end
+
 function World.build()
+	local want = World.planMaps()
+	local function wanted(id)
+		return want == nil or want[id] == true
+	end
 	for _, n in { "Baseplate", "SpawnLocation" } do
 		local inst = workspace:FindFirstChild(n)
 		if inst and inst:IsA("BasePart") then
@@ -1663,6 +1684,7 @@ function World.build()
 	trig.Parent = root
 	setupLighting()
 	buildSafehouse()
+	if wanted("quay7") then
 	beginMap("quay7")
 	local map = model("Quay7", root)
 	buildGround(map)
@@ -1727,6 +1749,7 @@ function World.build()
 	-- the area the AI samples for cover points, and the floor heights it keeps
 	World.bounds = { x0 = -192, x1 = 192, z0 = -192, z1 = 192, yMin = -2, yMax = 16 }
 	endMap("quay7", map)
+	end -- quay7
 	-- M13: the other maps, each built at its own origin by its own module (src/server/Maps). A module that fails is
 	-- left out (logged, its half-built parts removed) so the server still starts with the maps that did build.
 	-- the share of the map-building time each module map takes (measured 2026-11-07: Meridian 7.2 s, Border 3.6 s,
@@ -1734,6 +1757,9 @@ function World.build()
 	local BUILD_SHARE = { smelter = 0.02, meridian = 0.64, border = 0.34 }
 	local builtShare = 0
 	local function moduleMap(id, moduleName)
+		if not wanted(id) then
+			return
+		end
 		local trig = #root.Triggers:GetChildren()
 		local RS = game:GetService("ReplicatedStorage")
 		RS:SetAttribute("ZR_Boot", "BUILDING " .. string.upper(id)) -- the join card
@@ -1824,7 +1850,12 @@ function World.build()
 		d.part, d.handle, d.prompt = slab, handle, pp
 		d.parent = nil
 	end
-	World.activate("quay7")
+	-- the first built raid map is in play until the first vote
+	for _, id in require(Shared.Maps).order do
+		if World.maps[id] and World.activate(id) then
+			break
+		end
+	end
 	local worn, wornBy = World.applyWear(root)
 	root.Parent = workspace
 	-- props and trees that landed wrong: out of doorways, off water, out of walls and floors (Maps/Tidy.luau). It needs

@@ -963,3 +963,19 @@ Gaps:
   TeleportService does not work in an unpublished Studio place (KNOWN_ISSUES 1).
 - **Two doors open into a wall on one side** (Border Yard: `LV_A127` in BLOCK A, `LV61_D1` at the SQUAT KIOSK;
   KNOWN_ISSUES 80). The art-1a map re-base rebuilds these buildings.
+
+### Lean servers, M2 (tech-4b, 2026-11-07)
+
+Tarkov loads one map per raid: the raid's server and every client in it hold that location only. A Zero Return server
+now builds only the maps it plans (`World.planMaps`): every map by default, while one server runs the bunker and the
+raids; one map once a server runs a single raid (gameplay-7a, after the place is published). The map vote offers only
+the maps the server built, and a transit to a map that is not there is not offered.
+
+Measured in Studio: Meridian alone builds 21,895 parts and is ready in 12.4 s, Border Yard alone 26,897 parts in 9.2 s,
+against 49,988 parts and 17.7 s for every map.
+
+Gaps:
+- **Transits between maps** need both maps on one server today. With a server per raid they become Tarkov's transit:
+  the raider is moved to the other map's raid server (gameplay-7a, needs the published place).
+- **Merging plain wall and floor runs** was dropped after measuring: under 1 % of parts could merge (TEST_RESULTS, M2).
+  The phone frame budget needs a phone measurement first (tech-2b).

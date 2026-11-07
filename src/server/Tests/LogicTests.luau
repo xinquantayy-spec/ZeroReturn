@@ -42,6 +42,7 @@ end
 
 function T.run(ctx)
 	local passed, failed, notes = 0, 0, {}
+	local skipped = 0
 	local function check(name, cond)
 		if cond then
 			passed += 1
@@ -49,6 +50,17 @@ function T.run(ctx)
 			failed += 1
 			table.insert(notes, "FAIL " .. name)
 		end
+	end
+	-- a lean server (tech-4b) builds only some maps: a check about one map runs only where that map was built
+	local plan = ctx and ctx.World and ctx.World.planMaps and ctx.World.planMaps()
+	local function checkOn(maps, name, cond)
+		for id in string.gmatch(maps, "[%w_]+") do
+			if plan ~= nil and not plan[id] then
+				skipped += 1
+				return
+			end
+		end
+		check(name, cond)
 	end
 	local function inv(h)
 		local ok, msg = Inv.check(h)
@@ -1056,8 +1068,8 @@ function T.run(ctx)
 				okKeys = okKeys and Items.defs[d.key] ~= nil and Items.defs[d.key].kind == "key"
 			end
 		end
-		check("dormitory has 8 doors, locked ones need real keys", dorm == 8 and keyed == 4 and okKeys)
-		check("vault opens with the keycard", W.doors.VAULT and W.doors.VAULT.key == "RUSTED_KEYCARD" and W.doors.VAULT.card == true)
+		checkOn("quay7", "dormitory has 8 doors, locked ones need real keys", dorm == 8 and keyed == 4 and okKeys)
+		checkOn("quay7", "vault opens with the keycard", W.doors.VAULT and W.doors.VAULT.key == "RUSTED_KEYCARD" and W.doors.VAULT.card == true)
 		local rand = Random.new(3)
 		local sawKey = false
 		for _ = 1, 60 do
@@ -1241,10 +1253,10 @@ function T.run(ctx)
 		local mm = ctx.World.maps and ctx.World.maps.meridian
 		local bl = mm and mm.bosses
 		local care, stok = bl and bl[1], bl and bl[2]
-		check("stoker: Meridian has two bosses, each with its own chance (the Caretaker 60 %, the Stoker 35 %)",
+		checkOn("meridian", "stoker: Meridian has two bosses, each with its own chance (the Caretaker 60 %, the Stoker 35 %)",
 			bl ~= nil and #bl == 2 and care.label == "Caretaker" and care.chance == 0.6 and stok.label == "Stoker" and stok.chance == 0.35,
 			bl and #bl)
-		check("stoker: he charges with the hammer, has Tagilla's 1,220 health (x 2.77) and his garage route",
+		checkOn("meridian", "stoker: he charges with the hammer, has Tagilla's 1,220 health (x 2.77) and his garage route",
 			stok ~= nil and stok.charge == true and math.abs(stok.hp * 440 - 1220) < 0.5 and stok.route ~= nil and #stok.route >= 3)
 		local h = ctx.Loot.stokerLoadout(Random.new(7))
 		local function at(slot)
@@ -1263,14 +1275,14 @@ function T.run(ctx)
 		local bm = ctx.World.maps and ctx.World.maps.border
 		local bl = bm and bm.bosses
 		local hb = bl and bl[2]
-		check("hounds: Border Yard rolls the Broker and THE HOUNDS on their own (Tarkov's Goons: 20 % on Customs)",
+		checkOn("border", "hounds: Border Yard rolls the Broker and THE HOUNDS on their own (Tarkov's Goons: 20 % on Customs)",
 			bl ~= nil and #bl >= 2 and bl[1].label == "Broker" and hb.label == "Halberd" and hb.chance == 0.2, bl and #bl)
 		local crewOk = hb ~= nil and #hb.crew == 2 and hb.crew[1].label == "Mortar" and hb.crew[2].label == "Kestrel"
 			and typeof(hb.crew[1].pos) == "Vector3" and typeof(hb.crew[2].pos) == "Vector3"
-		check("hounds: HALBERD leads MORTAR and KESTREL, each with Tarkov's health (1,120, 910, 795) and the boss's skill",
+		checkOn("border", "hounds: HALBERD leads MORTAR and KESTREL, each with Tarkov's health (1,120, 910, 795) and the boss's skill",
 			crewOk and math.abs(hb.hp * 440 - 1120) < 0.5 and math.abs(hb.crew[1].hp * 440 - 910) < 0.5 and math.abs(hb.crew[2].hp * 440 - 795) < 0.5
 				and hb.skill == "boss" and hb.crew[1].skill == "boss" and hb.crew[2].skill == "boss")
-		check("hounds: they walk a loop of the map from the Bastion (10 points)", hb ~= nil and #hb.route == 10 and typeof(hb.home) == "Vector3")
+		checkOn("border", "hounds: they walk a loop of the map from the Bastion (10 points)", hb ~= nil and #hb.route == 10 and typeof(hb.home) == "Vector3")
 		local function at(h, slot)
 			local g = h.slots[slot]
 			return g and h.items[g] and h.items[g].id
@@ -1343,7 +1355,7 @@ function T.run(ctx)
 			end
 			zonesOk = zonesOk and #z.crew == 4 and optional == 2 and typeof(z.post) == "Vector3"
 		end
-		check("cult: Border rolls THE CULT at 20 % in night raids only, in three zones, two to four warriors lying in wait",
+		checkOn("border", "cult: Border rolls THE CULT at 20 % in night raids only, in three zones, two to four warriors lying in wait",
 			cult ~= nil and cult.chance == 0.2 and cult.night == true and math.abs(cult.hp * 440 - 850) < 0.5 and zonesOk)
 		local K, H = ctx.AI.MELEE and ctx.AI.MELEE.knife, ctx.AI.MELEE and ctx.AI.MELEE.hammer
 		check("cult: the knife charge is shorter and quicker than the hammer, poisons, and leaves the hammer as it was",
@@ -1397,7 +1409,7 @@ function T.run(ctx)
 				fo = b
 			end
 		end
-		check("forester: Border rolls THE FORESTER alone at 20 %, 950 health, roaming an 8-point loop, silent, with 5 wires",
+		checkOn("border", "forester: Border rolls THE FORESTER alone at 20 %, 950 health, roaming an 8-point loop, silent, with 5 wires",
 			fo ~= nil and fo.chance == 0.2 and math.abs(fo.hp * 440 - 950) < 0.5 and fo.roam == true and #fo.route == 8 and fo.crew == nil
 				and fo.karmaHunt == true and fo.silent == true and fo.traps == 5)
 		local A = ctx.AI
@@ -1583,7 +1595,7 @@ function T.run(ctx)
 		local bx = ctx.World.maps.border and ctx.World.maps.border.extracts
 		local mx = ctx.World.maps.meridian and ctx.World.maps.meridian.extracts
 		local nl, op, rp = bx and bx.NL, bx and bx.OP, mx and mx.RP
-		check("flare exits: NORTH LINE and RIVER PATH open by flare; OLD PUMPS, a chance exit, sends up green flares",
+		checkOn("border meridian", "flare exits: NORTH LINE and RIVER PATH open by flare; OLD PUMPS, a chance exit, sends up green flares",
 			nl ~= nil and nl.rule.kind == "flare" and nl.rule.radius == 94 and rp ~= nil and rp.rule.kind == "flare"
 				and op ~= nil and op.rule.kind == "chance" and op.rule.signal == "green")
 		if nl then
@@ -2389,7 +2401,7 @@ function T.run(ctx)
 					end
 				end
 			end
-			check("stationary: Border Yard carries an HMG-12 and an AGL-30 on the Bastion roof, inside the world folder", nHmg >= 1 and nAgl >= 1 and inWorld)
+			checkOn("border", "stationary: Border Yard carries an HMG-12 and an AGL-30 on the Bastion roof, inside the world folder", nHmg >= 1 and nAgl >= 1 and inWorld)
 		end
 	end
 
@@ -2984,7 +2996,7 @@ function T.run(ctx)
 		end
 	end
 
-	local summary = string.format("%d passed, %d failed", passed, failed)
+	local summary = string.format("%d passed, %d failed", passed, failed) .. (skipped > 0 and string.format(", %d skipped (maps not built on this server)", skipped) or "")
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")
 	end

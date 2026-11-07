@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M2 lean servers, tech-4b (2026-11-07)
+
+| Test | Result |
+|---|---|
+| Lean server, Meridian only (`ZR_Maps = "meridian"`) | 21,895 parts (49,988 with every map), ready at 12.4 s (17.7 s). A PMC deploy that voted for Border Yard went to Meridian, the only map offered. LogicTests 377 passed, 9 skipped (checks about maps not built), CharTests 47, LookTests 33, MapTests 13. |
+| Lean server, Border Yard only (`ZR_Maps = "border"`) | 26,897 parts, ready at 9.2 s; detail plan 21,438 entries (36,139); AI cover points 5,620 (14,013). LogicTests 377 passed, 5 skipped; MapTests 23/23, including the line-of-sight probes for Border's 538 containers and 347 doors. |
+| Every map (attribute cleared) | LogicTests 396/396, CharTests 47/47, LookTests 33/33, MapTests 41/41. |
+| Found on the way | MapTests' per-map checks had stopped running after the map-list change: the loop that builds the list iterated the empty list. Fixed; a new check fails if a planned map is missing. |
+| Wall and floor merging (tech-4b's second half) | Measured, not built: of 49,996 parts, 31,218 are childless anchored blocks, and only 353 pairs of them share a full face with the same look. Merging would save under 1 %. |
+
 ## M1 release blockers (2026-11-07)
 
 | Test | Result |

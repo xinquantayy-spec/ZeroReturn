@@ -34,7 +34,14 @@ Transit.inside = inside
 -- the transits of the map a raider is on
 local function listOn(mapId)
 	local m = mapId and ctx.World.maps[mapId]
-	return (m and m.transits) or {}
+	local out = {}
+	for _, tr in (m and m.transits) or {} do
+		-- a transit to a map this server did not build is not offered (tech-4b lean servers)
+		if ctx.World.maps[tr.to] then
+			table.insert(out, tr)
+		end
+	end
+	return out
 end
 
 local function mapName(id)

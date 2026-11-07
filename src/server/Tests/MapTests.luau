@@ -21,6 +21,14 @@ function T.run(ctx)
 		end
 	end
 	local W = ctx.World
+	-- a lean server (tech-4b) builds only some maps: every per-map check covers the maps this server planned
+	local plan = W.planMaps and W.planMaps()
+	local order = {}
+	for _, id in Maps.order do
+		if plan == nil or plan[id] then
+			table.insert(order, id)
+		end
+	end
 	local models = W.mapModels()
 	local rp = RaycastParams.new()
 	rp.FilterType = Enum.RaycastFilterType.Include
@@ -37,7 +45,7 @@ function T.run(ctx)
 	end
 
 	-- M01 registry: each map in the shared list is built with its tables
-	for _, id in Maps.order do
+	for _, id in order do
 		local m = W.maps[id]
 		check("M01 " .. id .. " is built", m ~= nil and m.model ~= nil and m.model.Parent ~= nil)
 		if not m then
@@ -115,7 +123,7 @@ function T.run(ctx)
 		end
 	end
 	local counts, fewC = {}, false
-	for _, id in Maps.order do
+	for _, id in order do
 		table.insert(counts, id .. "=" .. (perMap[id] or 0))
 		fewC = fewC or (perMap[id] or 0) < 10
 	end
@@ -150,26 +158,56 @@ function T.run(ctx)
 	end) == "smelter" and Maps.winner({}, function()
 		return 1
 	end) == "quay7")
-	do
+	local voteMap = order[1]
+	check("M01 this server built every map it planned", #order > 0 and (function()
+		for _, id in order do
+			if not W.maps[id] then
+				return false
+			end
+		end
+		return true
+	end)(), table.concat(order, ","))
+	if voteMap then
 		local fake = { Name = "MT_fake", UserId = -18 }
 		ctx.Match.testQueue(fake, "pmc")
-		local ok1 = ctx.Match.vote(fake, "smelter")
-		local t1 = ctx.Match.tally().smelter or 0
+		local ok1 = ctx.Match.vote(fake, voteMap)
+		local t1 = ctx.Match.tally()[voteMap] or 0
 		local ok2, err2 = ctx.Match.vote(fake, "atlantis")
 		local ok3 = ctx.Match.vote(fake, nil)
-		local t3 = ctx.Match.tally().smelter or 0
+		local t3 = ctx.Match.tally()[voteMap] or 0
 		ctx.Match.testQueue(fake, nil)
-		local ok4, err4 = ctx.Match.vote(fake, "quay7")
+		local ok4, err4 = ctx.Match.vote(fake, voteMap)
 		check("M06 a queued vote counts, can change to any map, an unknown map is refused", ok1 and t1 >= 1 and not ok2 and err2 == "BAD_INPUT" and ok3 and t3 == t1 - 1)
 		check("M06 only queued players vote", not ok4 and err4 == "NOT_QUEUED")
+		-- tech-4b: a map this server did not build cannot be voted for
+		local unbuilt = nil
+		for _, id in Maps.order do
+			if not W.maps[id] then
+				unbuilt = id
+				break
+			end
+		end
+		if unbuilt then
+			ctx.Match.testQueue(fake, "pmc")
+			local ok5, err5 = ctx.Match.vote(fake, unbuilt)
+			ctx.Match.testQueue(fake, nil)
+			check("M06 a map this server did not build is refused", not ok5 and err5 == "NOT_AVAILABLE", unbuilt)
+		end
 	end
 
 	-- M07 activation swaps every per-raid table (only between raids; restored at once)
-	if ctx.Match.state ~= "RUNNING" then
+	local other = nil
+	for _, id in order do
+		if id ~= W.activeMap and W.maps[id] then
+			other = id
+			break
+		end
+	end
+	if ctx.Match.state ~= "RUNNING" and other then
 		local before = W.activeMap
-		local okA = W.activate("smelter")
-		local sm = W.maps.smelter
-		local swapped = okA and W.spawns == sm.spawns and W.extracts == sm.extracts and W.looseSpots == sm.looseSpots and W.boss == nil
+		local okA = W.activate(other)
+		local sm = W.maps[other]
+		local swapped = okA and W.spawns == sm.spawns and W.extracts == sm.extracts and W.looseSpots == sm.looseSpots and W.boss == sm.boss
 		W.activate(before)
 		check("M07 activating a map swaps spawns, exfils, loot spots and the boss", swapped and W.activeMap == before)
 		check("M07 an unknown map is not activated", W.activate("atlantis") == false and W.activeMap == before)
@@ -193,7 +231,7 @@ function T.run(ctx)
 		end
 	end
 	local coverInfo, fewCover = {}, false
-	for _, id in Maps.order do
+	for _, id in order do
 		table.insert(coverInfo, id .. "=" .. (found[id] or 0))
 		fewCover = fewCover or (found[id] or 0) < ((id == "quay7") and 300 or 150)
 	end
@@ -210,7 +248,7 @@ function T.run(ctx)
 		end
 	end
 	local cellInfo, fewCells = {}, false
-	for _, id in Maps.order do
+	for _, id in order do
 		table.insert(cellInfo, id .. "=" .. (cellsOn[id] or 0))
 		fewCells = fewCells or (cellsOn[id] or 0) < ((id == "quay7") and 20 or 10)
 	end
