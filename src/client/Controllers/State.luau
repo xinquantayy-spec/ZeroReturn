@@ -5,6 +5,7 @@ local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Net = require(Shared.Net)
 
 local State = { data = nil, raid = nil, ready = false }
+State.fxRelay = Instance.new("BindableEvent") -- see State.fx below
 local listeners = {}
 local changed = Instance.new("BindableEvent")
 State.changed = changed.Event
@@ -105,10 +106,21 @@ function State.init(_ctx)
 			State.matchClock = os.clock()
 		elseif kind == "squad" then
 			State.squad = (type(data) == "table" and data.members and #data.members > 0) and data or nil
+		elseif kind == "fxr" then
+			-- an effect the server sent reliably (Remotes.fxReliable): to the same listeners as the fast ones
+			if type(data) == "table" and type(data.k) == "string" then
+				State.fxRelay:Fire(data.k, data.d)
+			end
+			return
 		end
 		State.emit(kind, data)
 	end)
-	State.fx = Net.get(Net.Fx)
+	-- State.fx.OnClientEvent: every effect message, from the fast (unreliable) channel and the reliable one alike
+	local fxRemote = Net.get(Net.Fx)
+	fxRemote.OnClientEvent:Connect(function(kind, d)
+		State.fxRelay:Fire(kind, d)
+	end)
+	State.fx = { OnClientEvent = State.fxRelay.Event }
 	task.spawn(function()
 		task.wait(2)
 		if not State.ready then

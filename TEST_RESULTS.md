@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3 quick wins, batch 2: HUD, inventory, loot and network (2026-11-07)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests **405/405** (new: deploying clears found-in-raid), CharTests 47/47, LookTests 33/33, MapTests 41/41. |
+| Bunker HUD | Screenshot in the bunker: no health, stamina or needs top left; the recorder column, money and the raid line stay. |
+| Not seen in play | The weapon corner timing, DISCARD's second press, ROTATE in the item bar, the reliable flare and van events, a ragdoll anchoring, an empty container. |
+
 ## M3 quick wins, batch 1: ballistics, health and AI (2026-11-07)
 
 | Test | Result |

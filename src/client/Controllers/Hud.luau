@@ -454,7 +454,6 @@ local function slowUpdate()
 		local how = Gr.state == "ready" and ("RELEASE " .. ctx.Input.label("Grenade") .. " TO THROW  ·  HOLD " .. ctx.Input.label("Aim") .. ": UNDERHAND") or "PULLING THE PIN"
 		O.weapon:set({ { t = (Gr.itemName and Gr.itemName() or "GRENADE") .. "  ·  " .. how, color = C.yellow, alpha = 0.1 } })
 	elseif inRaid and W.hasWeapon then
-		O.weapon:show(true)
 		local line = (W.weaponName or "WEAPON") .. "  ·  " .. (W.modeLabel and W.modeLabel() or W.modeName or "SINGLE")
 		if W.light then
 			-- what the tactical device runs (a combo switches with Ctrl+T)
@@ -464,6 +463,14 @@ local function slowUpdate()
 			end
 			line ..= "  ·  " .. ((lt and lz) and "LIGHT + LASER" or (lz and "LASER") or "LIGHT")
 		end
+		-- Tarkov shows the weapon corner for a few seconds after a switch, a fire-mode change or a check, not all the
+		-- time (audit ui.3); a malfunction keeps it up and flashing
+		local sig = line .. "|" .. tostring(W.modeCheckedAt) .. "|" .. tostring(W.lastCheck) .. "|" .. tostring(W.checking)
+		if sig ~= Hud.weaponSig then
+			Hud.weaponSig = sig
+			Hud.weaponUntil = os.clock() + 4
+		end
+		O.weapon:show(W.malf ~= nil and W.malf ~= false or os.clock() < (Hud.weaponUntil or 0))
 		if W.malf then
 			-- Tarkov flashes the weapon corner on a malfunction; inspecting names it
 			local blink = math.floor(os.clock() * 2.5) % 2 == 0
@@ -516,7 +523,9 @@ function Hud.exitStatus(e)
 	elseif e.rule == "chance" then
 		return "MAY BE UNAVAILABLE", C.yellow
 	elseif e.rule == "scav" then
-		return "SCAV ONLY", C.green
+		-- a scav's own list holds nothing else: no tag there (audit ui.15)
+		local raid = ctx.State.raid
+		return (raid and raid.scav) and "" or "SCAV ONLY", C.green
 	elseif e.rule == "power" then
 		return e.powered and "POWER ON" or "NEEDS POWER", e.powered and C.green or C.yellow
 	elseif e.rule == "nobag" then
@@ -582,15 +591,19 @@ local function fastUpdate(dt)
 		segs[#segs + 1] = { t = "   ARMS " .. math.floor(arms), size = SZ.st * 0.52, color = ac, top = true }
 	end
 	O.st:set(segs)
+	-- Tarkov has no vitals on screen out of a raid (audit ui.4): the bunker shows them only in the HEALTH tab
+	local raidNow = ctx.State.inRaid()
+	O.hp:show(raidNow)
+	O.st:show(raidNow)
 	-- needs + status effects (only when the health model provides them)
-	if v.energy then
+	if v.energy and raidNow then
 		O.needs:show(true)
 		O.needs:set({ { icon = I.ENERGY, color = v.energy < 20 and C.red or C.orange, size = SZ.needs * 0.75 }, { t = " " .. math.floor(v.energy) .. "    ", color = C.white }, { icon = I.WATER, color = v.water < 20 and C.red or C.blue, size = SZ.needs * 0.75 }, { t = " " .. math.floor(v.water), color = C.white } })
 	else
 		O.needs:show(false)
 	end
 	local fx = v.effects
-	if fx and #fx > 0 then
+	if fx and #fx > 0 and raidNow then
 		O.status:show(true)
 		local segs = {}
 		for _, e in fx do
@@ -712,7 +725,8 @@ local function fastUpdate(dt)
 	swayY += (ty - swayY) * math.min(1, dt * 7)
 	L.root.Position = UDim2.fromOffset(swayX, swayY)
 	L:step(dt)
-	gui.Enabled = not ctx.studio and not (ctx.Inventory and ctx.Inventory.open)
+	-- no HUD while any screen is open (audit ui.4): the inventory, a trader, the hideout, settings, a report
+	gui.Enabled = not ctx.studio and not (ctx.Inventory and ctx.Inventory.open) and not (ctx.Screens and ctx.Screens.modal)
 end
 
 -- generic timed progress (mag loading, examining, unlocking...)

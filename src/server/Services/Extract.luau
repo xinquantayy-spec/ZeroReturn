@@ -259,7 +259,7 @@ function Extract.signalTick(t)
 				nextSignal[id] = t + math.random(SIGNAL_EVERY[1], SIGNAL_EVERY[2])
 				local at = skySpot(e)
 				if at then
-					ctx.Remotes.fx("flare", { p = at, c = r.signal })
+					ctx.Remotes.fxReliable("flare", { p = at, c = r.signal })
 				end
 			end
 		end

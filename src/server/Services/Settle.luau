@@ -160,6 +160,8 @@ function Settle.deploy(p: any, raidId: string, now: number): (any?, string?)
 	local risked = {}
 	for _, g in guids do
 		local it = p.items[g]
+		-- an item taken into a raid is no longer found in raid, whatever happens to it there (Tarkov; audit economy.4)
+		it.fir = nil
 		raid.items[g] = it
 		p.items[g] = nil
 		if p.grids[g] then

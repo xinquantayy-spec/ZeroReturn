@@ -199,7 +199,7 @@ local function update()
 	end
 	if st.state == "MATCHING" and M.startsAt - t <= 1.9 and departed ~= M.startsAt then
 		departed = M.startsAt
-		ctx.Remotes.fx("van", { s = "go" })
+		ctx.Remotes.fxReliable("van", { s = "go" })
 	end
 	-- callsigns on the lockers
 	local owner = {}

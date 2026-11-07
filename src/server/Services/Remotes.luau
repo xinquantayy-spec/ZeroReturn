@@ -211,4 +211,14 @@ function Remotes.fx(kind: string, data: any, except: Player?)
 	end
 end
 
+-- an effect that must not be dropped (airdrops, signal flares, the van leaving; audit tech.14): sent on the reliable
+-- note channel; the client hands it to the same fx listeners (State.fx)
+function Remotes.fxReliable(kind: string, data: any, except: Player?)
+	for _, p in Players:GetPlayers() do
+		if p ~= except then
+			note:FireClient(p, "fxr", { k = kind, d = data })
+		end
+	end
+end
+
 return Remotes

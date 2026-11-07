@@ -35,6 +35,10 @@ local KINDS = {
 	cooler = { w = 3, h = 3, count = { 1, 3 }, pool = "drinks" },
 }
 Loot.KINDS = KINDS
+-- the chance a container holds anything at all this raid (audit economy.10): Tarkov's containers are often empty (SPT's
+-- mean is 0.28); ours sit at the top of the 0.3-0.5 range while the item list is small. Safes and weapon boxes, which
+-- stand behind keys, are always stocked, as EFT 1.2.0 keeps locked rooms.
+Loot.STOCK_CHANCE = { default = 0.5, safe = 1, weaponbox = 1, jacket = 0.6, register = 0.6 }
 
 -- weighted pools: n = stack range, a = rounds range (for mags: ammo type from `at`)
 local POOLS = {
@@ -560,7 +564,8 @@ function Loot.reset(seed)
 	for _, c in containers do
 		local k = KINDS[c.kind] or KINDS.crate
 		c.holder = Inv.newHolder("box", k.w, k.h)
-		c.order = Loot.fill(c.holder, rand, k.pool, rand:NextInteger(k.count[1], k.count[2]))
+		local stocked = rand:NextNumber() < (Loot.STOCK_CHANCE[c.kind] or Loot.STOCK_CHANCE.default)
+		c.order = Loot.fill(c.holder, rand, k.pool, stocked and rand:NextInteger(k.count[1], k.count[2]) or 0)
 		c.revealed, c.viewers, c.searching = {}, {}, {}
 		c.unlocked = nil
 	end

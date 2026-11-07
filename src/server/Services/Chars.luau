@@ -652,6 +652,18 @@ function Chars.ragdoll(char: Model)
 	if root then
 		root.CanCollide = false
 	end
+	-- once the body has settled it is anchored where it lies (audit tech.11): a field of bodies costs no physics, and
+	-- nothing can knock one around afterwards (looting reads the corpse's container, not its parts)
+	task.delay(Chars.SETTLE_TIME, function()
+		if char.Parent then
+			for _, p in char:GetDescendants() do
+				if p:IsA("BasePart") then
+					p.Anchored = true
+				end
+			end
+		end
+	end)
 end
+Chars.SETTLE_TIME = 5
 
 return Chars

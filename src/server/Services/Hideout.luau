@@ -125,7 +125,8 @@ local function collect(player, prof, m)
 		return fail("NOT_READY", "Not finished yet.")
 	end
 	local r = HD.byRecipe[c.r]
-	if not r or not ctx.Economy.giveStash(prof, r.get[1], r.get[2]) then
+	-- what the hideout makes counts as found in raid (Tarkov; audit economy.4)
+	if not r or not ctx.Economy.giveStash(prof, r.get[1], r.get[2], { fir = true }) then
 		return fail("NO_SPACE", "No room in your stash.")
 	end
 	prof.hideout.crafts[m] = nil

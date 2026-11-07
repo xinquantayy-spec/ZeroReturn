@@ -351,7 +351,7 @@ function Airdrop.drop(kind, at)
 	}
 	d.fall = (ALT - 6) / FALL
 	-- every client draws the plane and the falling crate (Effects -> AirdropFx); the crate is placed here on landing
-	ctx.Remotes.fx("airdrop", {
+	ctx.Remotes.fxReliable("airdrop", {
 		id = HttpService:GenerateGUID(false), kind = d.kind, pos = d.pos, from = d.from, to = d.to, t0 = d.t0, flight = d.flight,
 		release = d.release, fall = d.fall, yaw = d.yaw,
 	})
@@ -401,7 +401,7 @@ function Airdrop.flare(player, f)
 	end
 	local p = head.Position
 	local color = (f and f.color) or "red"
-	ctx.Remotes.fx("flare", { p = p + Vector3.new(0, 1.2, 0), c = color })
+	ctx.Remotes.fxReliable("flare", { p = p + Vector3.new(0, 1.2, 0), c = color })
 	if f and f.exit and ctx.Extract and ctx.Extract.flareFired then
 		return ctx.Extract.flareFired(player, p) -- a green flare: the flare exits round the shooter
 	end

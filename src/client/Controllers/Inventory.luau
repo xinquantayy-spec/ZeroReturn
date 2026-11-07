@@ -486,9 +486,25 @@ local function actionsFor(ref, g)
 				end, "warn")
 			end
 		end
-		add("DISCARD", function()
-			req({ op = "discard", g = g })
-			selected = nil
+		-- Tarkov asks before throwing an item away (audit ui.2): the first press arms it, a second within 3 s confirms
+		local armed = Inventory.discardArmed
+		local confirm = armed and armed.g == g and os.clock() - armed.t < 3
+		add(confirm and "CONFIRM DISCARD" or "DISCARD", function()
+			if confirm then
+				Inventory.discardArmed = nil
+				req({ op = "discard", g = g })
+				selected = nil
+			else
+				Inventory.discardArmed = { g = g, t = os.clock() }
+				ctx.State.toast("PRESS DISCARD AGAIN TO THROW IT AWAY", "warn")
+				Inventory.render()
+				task.delay(3.1, function()
+					if Inventory.open and Inventory.discardArmed and Inventory.discardArmed.g == g then
+						Inventory.discardArmed = nil
+						Inventory.render()
+					end
+				end)
+			end
 		end, "warn")
 	end
 	return list
@@ -878,6 +894,14 @@ function detail(parent, w, h, selOverride)
 				openInspect({ ref = sel.ref, g = sel.g })
 			end })
 		end
+		-- touch and gamepad turn an item before placing it (the mouse uses R while dragging; audit ui.1)
+		local dev = ctx.Input.device()
+		if dev == "Touch" or dev == "Gamepad" or compact then
+			table.insert(list, 1, { label = "ROTATE " .. (rot == 1 and "ON" or "OFF"), fn = function()
+				rot = 1 - rot
+				Inventory.render()
+			end })
+		end
 		for i, a in list do
 			local b = K.button(row, a.label, { TextSize = compact and 13 or 10, LayoutOrder = i, Size = UDim2.fromOffset(compact and math.max(84, #a.label * 9 + 20) or math.max(70, #a.label * 7 + 16), h - 10) })
 			if a.tone == "warn" then
@@ -1153,10 +1177,27 @@ function Inventory.renderCompact(d, W, H, inRaid)
 	end
 end
 
+-- snapshots can arrive many times a second (looting, a fight): redraw at most four times a second for them, as the
+-- trader screen does (audit tech.7); a player's own clicks still redraw at once
+local renderPending, lastRender = false, 0
+function Inventory.renderSoon()
+	if renderPending then
+		return
+	end
+	renderPending = true
+	task.delay(math.max(0, 0.25 - (os.clock() - lastRender)), function()
+		renderPending = false
+		if Inventory.open then
+			Inventory.render()
+		end
+	end)
+end
+
 function Inventory.render()
 	if not Inventory.open then
 		return
 	end
+	lastRender = os.clock()
 	local d = data()
 	if not d or not d.slots then
 		return
@@ -1462,7 +1503,7 @@ function Inventory.init(c)
 	end)
 	c.State.changed:Connect(function()
 		if Inventory.open then
-			Inventory.render()
+			Inventory.renderSoon()
 		end
 	end)
 	c.State.on("loot", function(v)

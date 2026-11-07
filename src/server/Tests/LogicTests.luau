@@ -601,8 +601,13 @@ function T.run(ctx)
 	for _ in prof.grids.stash do
 		stashCount += 1
 	end
+	local firG = prof.slots.primary
+	if firG and prof.items[firG] then
+		prof.items[firG].fir = true
+	end
 	local raidInv = Settle.deploy(prof, "raid1", 1)
 	check("deploy reserves loadout", raidInv ~= nil and prof.pendingRaid ~= nil and next(prof.slots) == nil and prof.pendingRaid.secure ~= nil)
+	check("an item taken into a raid is no longer found in raid (Tarkov; audit economy.4)", firG ~= nil and raidInv.items[firG] ~= nil and raidInv.items[firG].fir == nil)
 	check("deploy twice rejected", Settle.deploy(prof, "raid2", 2) == nil)
 	check("profile invariant during raid", inv(prof))
 	check("raid inventory invariant", inv(raidInv))

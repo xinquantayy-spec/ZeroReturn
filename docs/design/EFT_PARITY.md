@@ -1015,3 +1015,25 @@ Brought to Tarkov's numbers (sources in `docs/audit/2026-11-07/gameplay.md` and 
 
 Gaps: stationary guns still use the range fall-off; each round has no muzzle speed or ballistic coefficient of its own
 yet (speed is per gun, drag per gun class).
+
+### Audit quick wins, batch 2: HUD, inventory, loot and network (M3, 2026-11-07)
+
+Matches Tarkov now:
+- **Weapon corner (ui.3):** shown for 4 s after a weapon switch, a fire-mode change or a check; kept up while a
+  malfunction flashes.
+- **No vitals in the bunker, no HUD under a screen (ui.4):** health, stamina and needs show only in a raid (the HEALTH
+  tab has them in the bunker); the HUD hides while the inventory, a trader, the hideout or a report is open.
+- **DISCARD asks first (ui.2):** a second press within 3 s throws the item away.
+- **ROTATE in the item bar (ui.1)** for touch, gamepad and the phone layout.
+- **A scav's exits list (ui.15)** drops the SCAV ONLY tag, since every row is one.
+- **Found in raid (economy.4):** hideout crafts are found in raid; an item taken into a raid loses the status.
+- **Empty containers (economy.10):** each container rolls whether it holds anything (50 %; jackets and registers 60 %;
+  safes and weapon boxes, which stand behind keys, always). SPT's mean is 0.28; ours stays higher while the item list
+  is small.
+
+Ours (performance and network, exception 3):
+- **Bodies settle (tech.11):** ragdolls are anchored 5 s after death.
+- **Reliable effects (tech.14):** airdrops, signal flares and the van leaving go on the reliable channel.
+- **Inventory redraws (tech.7):** at most four a second for incoming snapshots.
+
+Gaps: EFT 1.2.0 keeps every container in a locked room stocked; ours knows safes and weapon boxes, not rooms.
