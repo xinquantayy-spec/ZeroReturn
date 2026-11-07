@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3 quick wins, batch 3: sound, sniper and AI cost (2026-11-07)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests **406/406** (new: the border sniper fires from the strip's outer side), CharTests 47/47, LookTests 33/33, MapTests 41/41. |
+| Border raid | 18 AI spawned with ModelStreamingMode Atomic and climbing disabled; no errors in the console. |
+| Not heard | The far-shot boom and the longer footsteps (the ambience atlas is still silent, KNOWN_ISSUES 73; footsteps need a second client). |
+
 ## M3 quick wins, batch 2: HUD, inventory, loot and network (2026-11-07)
 
 | Test | Result |

@@ -1037,3 +1037,19 @@ Ours (performance and network, exception 3):
 - **Inventory redraws (tech.7):** at most four a second for incoming snapshots.
 
 Gaps: EFT 1.2.0 keeps every container in a locked room stocked; ours knows safes and weapon boxes, not rooms.
+
+### Audit quick wins, batch 3: sound, sniper and AI cost (M3, 2026-11-07)
+
+Matches Tarkov now:
+- **Footsteps carry Tarkov's distances (gameplay.5):** about 134 studs (43 m) crouch-walking slowly to over 312 studs
+  (100 m) sprinting.
+- **No scripted distant gunfire (gameplay.13):** only real shots are heard; one too far for its own sound (560 to 2,400
+  studs) plays the distant boom from its direction. (Silent until ZR_SFX_Amb is re-uploaded, KNOWN_ISSUES 73.)
+- **The border sniper fires from outside the map (ai.14),** beyond whichever edge the strip is on.
+- **Far AI keep moving in a scope (ai.9):** the animator measures distance as it looks through the current zoom.
+
+Ours (performance, exception 3):
+- **Effects by distance (tech.6):** shots go to players within 2,400 studs, small sounds and glass within 400; a muzzle
+  light only within 150 studs of the camera. The bunker, 4,000 studs from every map, gets no raid effects.
+- **AI cost (ai.10, ai.11):** AI stream in and out whole (Atomic) and skip the climbing, swimming, seated and flying
+  states.

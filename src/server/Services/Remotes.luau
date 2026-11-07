@@ -203,9 +203,23 @@ function Remotes.noteAll(kind: string, data: any?)
 	note:FireAllClients(kind, data)
 end
 
+-- how far each kind of effect is sent (audit tech.6): a shot out to 2,400 studs (the far boom, Ambience.farShot), a
+-- small sound or breaking glass to 400. The bunker sits 4,000 studs from every map, so it never gets raid effects.
+local FX_RANGE = { shot = 2400, sfx = 400, glass = 400 }
+Remotes.FX_RANGE = FX_RANGE
+
 function Remotes.fx(kind: string, data: any, except: Player?)
+	local range = FX_RANGE[kind]
+	local at = range and type(data) == "table" and (data.o or data.p or data.h) or nil
 	for _, p in Players:GetPlayers() do
 		if p ~= except then
+			if typeof(at) == "Vector3" then
+				local char = p.Character
+				local root = char and char:FindFirstChild("HumanoidRootPart")
+				if root and (root.Position - at).Magnitude > range then
+					continue
+				end
+			end
 			fx:FireClient(p, kind, data)
 		end
 	end

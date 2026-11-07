@@ -517,6 +517,14 @@ function T.run(ctx)
 		check("grenades fall at the world's real gravity (30.7 studs/s2, as bullets)", Gr.GRAV == 30.7)
 		check("Smelter (our Factory) raids last 20 minutes", MapsD.defs.smelter.raidTime == 1200)
 	end
+	-- audit ai.14: the border sniper fires from beyond the strip's outer edge, whichever edge it is
+	if ctx and ctx.Hazards and ctx.Hazards.sniperOffset and ctx.World and ctx.World.bounds then
+		local b = ctx.World.bounds
+		local east = ctx.Hazards.sniperOffset({ lo = Vector3.new(b.x1 - 10, -100, b.z0), hi = Vector3.new(b.x1, 100, b.z1) })
+		local north = ctx.Hazards.sniperOffset({ lo = Vector3.new(b.x0, -100, b.z0), hi = Vector3.new(b.x1, 100, b.z0 + 10) })
+		check("border sniper: an east strip is shot from the east, a north strip from the north, 40 up",
+			east.X == 200 and math.abs(east.Z) <= 60 and north.Z == -200 and math.abs(north.X) <= 60 and east.Y == 40 and north.Y == 40)
+	end
 	-- audit ai.15: Smelter (our Factory) rolls Tagilla (THE STOKER) at 30 % and the cultists at 8 % at night
 	do
 		local sb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.smelter and ctx.World.maps.smelter.bosses

@@ -324,7 +324,9 @@ function Effects.footstep(pos, intensity, model, own)
 	else
 		-- an active headset lifts quiet sounds: other people's steps are louder and carry further
 		local hs = headset()
-		Effects.sfx(name, hit and hit.Position or pos, vol * (hs and 1.35 or 1), speed, (30 + intensity * 70) * (hs and 1.3 or 1))
+		-- how far steps carry (Tarkov after 0.14.5.5, audit gameplay.5): about 43 m (134 studs) crouch-walking slowly,
+		-- over 100 m (312 studs) sprinting; intensity runs 0.11 (slow crouch) to 1.25 (sprint)
+		Effects.sfx(name, hit and hit.Position or pos, vol * (hs and 1.35 or 1), speed, (120 + intensity * 160) * (hs and 1.3 or 1))
 	end
 	if intensity > 0.9 and math.random() < 0.35 then
 		Effects.sfx("gear_rattle", own and SoundService or pos, vol * 0.5, 1, 40)
@@ -381,11 +383,15 @@ function Effects.flash(pos, size)
 	size = size or 0.22
 	local part = tmpPart(Vector3.new(size, size, size), CFrame.new(pos), Color3.fromHex("FFD9A0"), Enum.Material.Neon, 0.3)
 	part.Shape = Enum.PartType.Ball
-	local l = Instance.new("PointLight")
-	l.Color = Color3.fromHex("FFC98A")
-	l.Range = 9
-	l.Brightness = 1.6
-	l.Parent = part
+	-- the light only near the camera (audit tech.6): a flash 150 studs off lights nothing anyone can see
+	local cam = workspace.CurrentCamera
+	if not cam or (cam.CFrame.Position - pos).Magnitude < 150 then
+		local l = Instance.new("PointLight")
+		l.Color = Color3.fromHex("FFC98A")
+		l.Range = 9
+		l.Brightness = 1.6
+		l.Parent = part
+	end
 	fade(part, 0.045)
 end
 
@@ -467,6 +473,10 @@ function Effects.remoteShot(d)
 		end
 	end
 	Effects.gunSound(type(d.w) == "string" and d.w or "R17", d.o, d.s == true, dist > 160, d.ai and 0.85 or 0.95)
+	-- beyond the shot's own sound: the distant boom from its direction (audit gameplay.13; suppressed shots stay unheard)
+	if dist > 560 and not d.s and ctx.Ambience and ctx.Ambience.farShot then
+		ctx.Ambience.farShot(d.o)
+	end
 end
 
 function Effects.init(c)

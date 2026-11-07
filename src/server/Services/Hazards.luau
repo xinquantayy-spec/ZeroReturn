@@ -188,6 +188,19 @@ end
 -- past, then the hits come (head or chest) until you leave. Spawns and extracts near the edge are left clear.
 Hazards.zones = {}
 Hazards.WARN, Hazards.FIRST, Hazards.EVERY = 3, 6, 2.5
+
+-- where the sniper fires from: 200 studs out past the strip's outer side, away from the map's middle, 40 up and
+-- spread along the strip (audit ai.14; the shots all came from -Z before, whichever edge the strip was on)
+function Hazards.sniperOffset(z)
+	local c = (z.lo + z.hi) / 2
+	local b = ctx.World and ctx.World.bounds
+	local mc = b and Vector3.new((b.x0 + b.x1) / 2, 0, (b.z0 + b.z1) / 2) or Vector3.zero
+	local along = math.random(-60, 60)
+	if (z.hi.X - z.lo.X) < (z.hi.Z - z.lo.Z) then
+		return Vector3.new(c.X > mc.X and 200 or -200, 40, along)
+	end
+	return Vector3.new(along, 40, c.Z > mc.Z and 200 or -200)
+end
 function Hazards.sniperZone(lo, hi, clear)
 	table.insert(Hazards.zones, { lo = lo, hi = hi, clear = clear or {} })
 end
@@ -215,13 +228,14 @@ function Hazards.sniperStep(dt)
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 		local w = watch[player]
-		if s.done or not root or not hum or hum.Health <= 0 or not inZone(root.Position) then
+		local zone = root and inZone(root.Position)
+		if s.done or not root or not hum or hum.Health <= 0 or not zone then
 			watch[player] = nil
 		else
 			w = w or { t = 0 }
 			watch[player] = w
 			w.t += dt
-			local from = root.Position + Vector3.new(math.random(-60, 60), 40, -200)
+			local from = root.Position + Hazards.sniperOffset(zone)
 			if w.t >= Hazards.WARN and not w.warned then
 				w.warned = true
 				ctx.Remotes.note(player, "toast", { text = "SNIPER ZONE  ·  GET BACK", tone = "warn" })

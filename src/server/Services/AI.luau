@@ -1851,6 +1851,12 @@ function AI.spawn(kind, pos, opts)
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	ctx.Chars.setupHumanoid(hum)
 	hum.WalkSpeed = WALK
+	-- states the AI never uses cost physics time on every step (audit ai.11)
+	for _, st in { Enum.HumanoidStateType.Climbing, Enum.HumanoidStateType.Swimming, Enum.HumanoidStateType.Seated, Enum.HumanoidStateType.Flying } do
+		hum:SetStateEnabled(st, false)
+	end
+	-- a far AI streams in and out whole, never as a headless body or a floating rifle (audit ai.10)
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:PivotTo(CFrame.new(pos + Vector3.new(0, 3.3, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 	local custom = opts.loadout and ctx.Loot[opts.loadout]
 	local inv = custom and custom(Random.new()) or LOADOUT[kind](Random.new())

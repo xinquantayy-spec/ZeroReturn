@@ -308,12 +308,15 @@ local function animate(r, dt)
 	end
 end
 
+local zoomK = 1 -- the camera's field of view over the default 70 degrees (set every frame)
 local function consider(model, camPos)
 	local r = rigs[model] or setup(model)
 	if not r or not r.root.Parent then
 		return
 	end
-	local dist = (r.root.Position - camPos).Magnitude
+	-- distance as it looks on screen: through a scope (a narrow field of view) a far AI is as close as it looks, and keeps
+	-- moving (audit ai.9)
+	local dist = (r.root.Position - camPos).Magnitude * zoomK
 	local every = (dist < 80 and 1) or (dist < 160 and 2) or (dist < 300 and 4) or 0
 	if every > 0 and (frame + r.slot) % every == 0 then
 		local ok, err = pcall(animate, r, (r.lastDt or 0.016) * every)
@@ -330,6 +333,7 @@ function Animator.init(c)
 		frame += 1
 		local cam = workspace.CurrentCamera
 		local camPos = cam and cam.CFrame.Position or Vector3.zero
+		zoomK = cam and math.clamp(cam.FieldOfView / 70, 0.05, 1.5) or 1
 		for _, p in Players:GetPlayers() do
 			local char = p.Character
 			if char and (p ~= player or (ctx.Camera and ctx.Camera.orbit)) then

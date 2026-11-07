@@ -453,21 +453,36 @@ local function oneShots(now, ambOn, raid, master)
 			end
 		end
 	end
-	if now >= nextGun then
-		nextGun = now + math.random(40, 120)
-		if raid then
-			local k = math.random(1, 3)
-			if k == lastGun then
-				k = k % 3 + 1
-			end
-			lastGun = k
-			local p = pooled(gunPool, "gun_far_" .. k, { volume = 1, linear = true, minDist = 140, maxDist = 520, group = ambGroup() })
-			if p then
-				local rain = (ctx.Atmos and ctx.Atmos.rain) or 0
-				local inside = (Ambience.enclosed == 1 and 0.4) or 1
-				playAt(p, gunSpot(cam.CFrame.Position), GUN_VOL * inside * (1 - 0.3 * rain) * master, 0.96 + math.random() * 0.08)
-			end
-		end
+	-- (the scripted distant gunfire every 40 to 120 s is gone: Tarkov plays only real shots; far ones come through
+	-- Ambience.farShot below, audit gameplay.13)
+	local _ = raid
+end
+
+-- a real shot too far away for its own sound (past about 560 studs): the distant-gunfire sample from its direction,
+-- quieter with range, heard out to about 2,400 studs (750 m)
+function Ambience.farShot(origin)
+	local cam = workspace.CurrentCamera
+	if not cam or Ambience.silent then
+		return
+	end
+	local camPos = cam.CFrame.Position
+	local d = origin - camPos
+	local dist = d.Magnitude
+	if dist < 560 or dist > 2400 then
+		return
+	end
+	local k = math.random(1, 3)
+	if k == lastGun then
+		k = k % 3 + 1
+	end
+	lastGun = k
+	local p = pooled(gunPool, "gun_far_" .. k, { volume = 1, linear = true, minDist = 140, maxDist = 520, group = ambGroup() })
+	if p then
+		local rain = (ctx.Atmos and ctx.Atmos.rain) or 0
+		local inside = (Ambience.enclosed == 1 and 0.4) or 1
+		local fall = 1 - math.clamp((dist - 560) / 1840, 0, 0.85)
+		local master = (ctx.Settings and ctx.Settings.data and (ctx.Settings.data.volMaster or 1) * (ctx.Settings.data.volAmb or 1)) or 1
+		playAt(p, camPos + d.Unit * 260 + Vector3.new(0, 10, 0), GUN_VOL * 1.6 * fall * inside * (1 - 0.3 * rain) * master, 0.96 + math.random() * 0.08)
 	end
 end
 
