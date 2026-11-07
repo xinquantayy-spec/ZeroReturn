@@ -1003,6 +1003,28 @@ local function kit(rand)
 end
 
 -- Harbor Watch (raider-type guards): service rifles or SMGs with decent ammo, armour, a few spare magazines
+-- a marksman (EFT's sniper scav, audit ai-1a): a scav's clothes and a scoped bolt rifle (EFT's sniper scavs mostly
+-- carry scoped Mosins), a little ammo and meds, scav junk; no armour
+function Loot.marksmanLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 55, 85 }
+	if rand:NextNumber() < 0.5 then
+		k.slot("rig", "RIG_BELT", { tint = "olive" })
+	end
+	if rand:NextNumber() < 0.4 then
+		k.slot("head", "CAP_FIELD", { tint = "olive" })
+	end
+	k.gun("primary", "TUNDRA_BOLT", nil, rand:NextNumber() < 0.2 and "A76L_SNB" or "A76L_LPS", nil, nil, rand:NextNumber() < 0.75 and "TUN_SCOUT" or "TUN_MARKSMAN")
+	k.put("A76L_LPS", rand:NextInteger(10, 20))
+	k.put("BANDAGE")
+	if rand:NextNumber() < 0.5 then
+		k.put("PAINKILLERS")
+	end
+	k.roll("junk", rand:NextInteger(1, 3))
+	return k.h
+end
+
 function Loot.guardLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)

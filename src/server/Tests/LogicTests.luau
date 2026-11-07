@@ -677,6 +677,28 @@ function T.run(ctx)
 		check("every barter ingredient can be found, bought or crafted" .. (#missing > 0 and (" (missing: " .. table.concat(missing, ", ") .. ")") or ""),
 			#missing == 0)
 	end
+	-- audit ai-1a: EFT's roster on the Tarkov-layout maps. Border Yard (Customs): scavs on the posts and the Bastion's guns,
+	-- marksmen on the reference's perches (the tower one always, the bridge and factory ones half the time); no Watch
+	do
+		local bm = ctx and ctx.World and ctx.World.maps and ctx.World.maps.border
+		local scavs, watch, marks, sure = 0, 0, 0, 0
+		for _, wp in (bm and bm.watchPosts) or {} do
+			if wp.kind == "scav" then
+				scavs += 1
+			else
+				watch += 1
+			end
+			if wp.role == "marksman" then
+				marks += 1
+				sure += (wp.chance == 1) and 1 or 0
+			end
+		end
+		checkOn("border", "Border Yard: scavs on every post and gun, no Watch; three marksman perches, the tower one always manned",
+			scavs >= 8 and watch == 0 and marks == 3 and sure == 1)
+		local mk = Loot.marksmanLoadout(Random.new(4))
+		local mg = mk.slots.primary and mk.items[mk.slots.primary]
+		check("a marksman carries a bolt rifle and no armour", mg ~= nil and mg.id == "TUNDRA_BOLT" and mk.slots.armor == nil)
+	end
 	-- audit ai-7a: EFT's player scav window. From 17 minutes in on Border Yard and Meridian Mall (Customs, Interchange),
 	-- from the start on Smelter and Quay 7, until SCAV_CUTOFF before the end
 	do
@@ -2728,7 +2750,7 @@ function T.run(ctx)
 				b == nil or (b.name == "THE CARETAKER" and b.chance == 0.6 and b.look == "bodyguard" and b.loadout == "caretakerLoadout" and #(b.zones or {}) >= 1 and b.zones[1].home ~= nil and #b.zones[1].route >= 3))
 			local posted = true
 			for _, wp in mm.watchPosts or {} do
-				posted = posted and mm.patrols[wp.route] ~= nil
+				posted = posted and mm.patrols[wp.route] ~= nil and wp.kind == "scav"
 			end
 			check("meridian guards: every watch post has its route, scav zones plentiful", posted and #(mm.scavZones or {}) >= 10)
 			check("meridian hazards: a minefield on the west band", #HZ.mines >= 1)

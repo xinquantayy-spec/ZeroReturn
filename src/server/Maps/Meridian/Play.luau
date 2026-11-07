@@ -963,15 +963,16 @@ return function(B)
 				end
 			end
 		end
-		-- the dock guard stands at the head of his apron, the others walk their route
+		-- the dock scav stands at the head of his apron, the others walk their route. Scavs: EFT's Interchange has no
+		-- raiders (audit ai-1a)
 		local posts = {}
 		for _, wp in {
-			{ "LOT", "Car Park Guard" }, { "DOCK", "Dock Guard", true }, { "SUB", "Substation Guard" },
-			{ "L0B", "Garage Guard" }, { "L1C", "Concourse Guard" }, { "L2C", "Gallery Guard" },
+			{ "LOT", "Car Park Scav" }, { "DOCK", "Dock Scav", true }, { "SUB", "Substation Scav" },
+			{ "L0B", "Garage Scav" }, { "L1C", "Concourse Scav" }, { "L2C", "Gallery Scav" },
 		} do
 			local r = W.patrols[wp[1]]
 			if r then
-				table.insert(posts, { route = wp[1], post = wp[3] and r[1] or nil, label = wp[2] })
+				table.insert(posts, { route = wp[1], post = wp[3] and r[1] or nil, label = wp[2], kind = "scav" })
 			end
 		end
 		W.watchPosts = posts

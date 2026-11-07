@@ -642,22 +642,42 @@ return function(B)
 			W.patrols[id] = route(list)
 			PATROL_SRC[id] = list
 		end
+		-- EFT's Customs has scavs, marksmen and bosses, no raiders (audit ai-1a): the posts and routes are scav posts
 		W.watchPosts = {
-			{ route = "OC", post = V(-1498, ground(-1498, 6) + 0.5, 6), label = "Checkpoint Guard" },
-			{ route = "AP", post = V(-1256, ground(-1256, 118) + 0.5, 118), label = "Army Post Guard" },
-			{ route = "BG", post = named("BASTION_YARD", 28, 0.5), label = "Bastion Guard" },
-			{ route = "FS", label = "Fuel Stop Watch" },
-			{ route = "S4", label = "Store Guard" },
-			{ route = "TL", label = "Trailer Watch" },
+			{ route = "OC", post = V(-1498, ground(-1498, 6) + 0.5, 6), label = "Checkpoint Scav", kind = "scav" },
+			{ route = "AP", post = V(-1256, ground(-1256, 118) + 0.5, 118), label = "Army Post Scav", kind = "scav" },
+			{ route = "BG", post = named("BASTION_YARD", 28, 0.5), label = "Bastion Scav", kind = "scav" },
+			{ route = "FS", label = "Fuel Stop Scav", kind = "scav" },
+			{ route = "S4", label = "Store Scav", kind = "scav" },
+			{ route = "TL", label = "Trailer Scav", kind = "scav" },
 		}
+		-- marksmen (EFT's sniper scavs, hard) on Customs' perches as the reference placed them (L.snipers): the tower one
+		-- always, the bridge and factory ones half the time (slots 0-1), the block post none (slots 0)
+		local PERCH = { ZoneSnipeTower = { 1, "DERRICK_TOP" }, ZoneSnipeBrige = { 0.5 }, ZoneSnipeFactory = { 0.5, "DEPOT_ROOF" } }
+		for _, sp in L.snipers or {} do
+			local how = PERCH[sp[1]]
+			if how then
+				local p = how[2] and points[how[2]]
+				if typeof(p) == "CFrame" then
+					p = p.Position
+				end
+				if typeof(p) ~= "Vector3" then
+					p = V(sp[3], ground(sp[3], sp[4]) + sp[5] + 1, sp[4]) -- on the roof at the building's height
+				end
+				table.insert(W.watchPosts, {
+					post = p, label = "Marksman", kind = "scav", role = "marksman", diff = "hard", chance = how[1], loadout = "marksmanLoadout",
+				})
+			end
+		end
 	end)
 
 	-- ── mounted guns: two nests on the roof of the Bastion (the scav base), a gunner posted behind each ─────────────────
 	-- Both stand against the yard-side parapet, the building's +v wall (the one facing the BASTION_YARD point), pointing straight out
 	-- from it. The pad lifts the gun and its operator so the barrel clears the 3.4 high parapet. The HMG-12 sits over the
 	-- BASTION_YARD point (75 studs along the wall) and covers the yard; the AGL-30 sits 95 studs further along the same wall
-	-- and lobs over the ground beyond (arcs 70 and 60 degrees either side of straight out). The gunners are Watch guards on
-	-- the posts behind the guns: the AI mans a gun when it engages a raider the gun can reach (Stationary.crew).
+	-- and lobs over the ground beyond (arcs 70 and 60 degrees either side of straight out). The gunners are scavs (EFT's
+	-- scav base; audit ai-1a) on the posts behind the guns: the AI mans a gun when it engages a raider the gun can reach
+	-- (Stationary.crew).
 	try("guns", function()
 		local b = byId[28]
 		if not (b and kit.stationary and W.watchPosts) then
@@ -674,7 +694,7 @@ return function(B)
 			kit.boxCF(nests, 6, 1.8, 7.4, cf * CFrame.new(0, -0.9, 1.1), kit.hex("5A5E58"), kit.M.Concrete)
 			local gun = kit.stationary(n[1], cf, {})
 			if gun then
-				table.insert(W.watchPosts, { route = "BG", post = gun.frame:PointToWorldSpace(gun.spec.op + Vector3.new(0, 0.5, 0)), label = n[3] })
+				table.insert(W.watchPosts, { route = "BG", post = gun.frame:PointToWorldSpace(gun.spec.op + Vector3.new(0, 0.5, 0)), label = n[3], kind = "scav" })
 			end
 		end
 	end)

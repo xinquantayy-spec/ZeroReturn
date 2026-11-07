@@ -75,9 +75,9 @@ function T.run(ctx)
 		check("M01 " .. id .. " has AI zones and cover bounds", #m.scavZones >= 10 and m.bounds ~= nil and next(m.watchPosts) ~= nil, #m.scavZones)
 		local postsOk = next(m.watchPosts) ~= nil
 		for _, wp in m.watchPosts do
-			postsOk = postsOk and m.patrols[wp.route] ~= nil
+			postsOk = postsOk and ((wp.route ~= nil and m.patrols[wp.route] ~= nil) or (wp.route == nil and typeof(wp.post) == "Vector3"))
 		end
-		check("M01 " .. id .. " every Watch post has a patrol route (AI.reset needs one)", postsOk)
+		check("M01 " .. id .. " every post has its patrol route or a spot of its own (AI.reset needs one)", postsOk)
 		check("M01 " .. id .. " raid length set", Maps.defs[id].raidTime >= 600)
 	end
 

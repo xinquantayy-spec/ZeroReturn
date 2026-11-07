@@ -2485,14 +2485,19 @@ function AI.reset()
 		AI.bossThisRaid = bossRaid
 		AI.bossZone = nil
 		AI.bossesThisRaid = {}
+		-- posts and routes: the Watch by default; a post can name its kind ("scav": EFT's roster on the Tarkov-layout maps,
+		-- audit ai-1a), a BotData role ("marksman"), a difficulty and a chance (EFT's sniper waves: 0 or 1 a perch)
 		for _, wp in W.watchPosts or {} do
 			if myGen ~= gen then
 				return
 			end
-			local route = W.patrols[wp.route]
-			if route then
-				local idx = math.random(1, #route)
-				AI.spawn("watch", wp.post or route[idx], { route = (not wp.post) and route or nil, wp = idx, post = wp.post, label = wp.label, name = wp.label })
+			local route = wp.route and W.patrols[wp.route]
+			if (route or wp.post) and (not wp.chance or math.random() < wp.chance) then
+				local idx = route and math.random(1, #route) or 1
+				AI.spawn(wp.kind or "watch", wp.post or route[idx], {
+					route = (not wp.post) and route or nil, wp = idx, post = wp.post, label = wp.label, name = wp.label,
+					role = wp.role, diff = wp.diff, loadout = wp.loadout,
+				})
 			end
 		end
 		for _, b in bosses do
