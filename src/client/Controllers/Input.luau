@@ -6,6 +6,7 @@
 -- rebind PC keys (Settings: binds), which rebuilds the bindings.
 local UIS = game:GetService("UserInputService")
 local CAS = game:GetService("ContextActionService")
+local GuiService = game:GetService("GuiService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local InputMap = require(Shared.InputMap)
 
@@ -416,7 +417,7 @@ local LABELS = {
 	Gamepad = {
 		Fire = "RT", Aim = "LT", Reload = "X", Sprint = "L3", Crouch = "B", Heal = "D-UP", FireMode = "D-RIGHT", Extracts = "D-DOWN", Inventory = "Y",
 		Settings = "VIEW", Back = "B", Interact = "X", CycleWeapon = "D-LEFT", MagCheck = "R3", LeanLeft = "LB", LeanRight = "RB",
-		Grenade = "HOLD D-DOWN", MountFire = "RT", MountZoom = "LT", MountLeave = "B",
+		Grenade = "HOLD D-DOWN", MountFire = "RT", MountZoom = "LT", MountLeave = "B", TabPrev = "LB", TabNext = "RB",
 		Prone = "HOLD B", ChamberCheck = "HOLD R3", FireModeCheck = "LT + R3", InspectWeapon = "HOLD Y", FreeLook = "HOLD D-UP",
 		Sidearm = "D-LEFT", Primary = "D-LEFT", Secondary = "D-LEFT", Knife = "D-LEFT",
 		Light = "HOLD D-RIGHT", DeviceMode = "LT + HOLD D-RIGHT", ToggleNVG = "HOLD D-LEFT", SightMode = "LT + D-LEFT",
@@ -458,6 +459,71 @@ function Input.label(action)
 	return Input.pcLabel(action)
 end
 
+-- ── menu focus for the gamepad (audit ui.5) ──────────────────────────────────────────────────────────────────────
+-- Roblox's menu selection (the ochre ring) is set only while a gamepad is the device in use: a mouse or a finger never
+-- gets it. A screen drawn again in place (a value changed, new server state) keeps the control the player was on:
+-- focusPath notes where the selection sits under the old screen as a path of names (the n-th child of that name, so
+-- rows of plain frames still count), refocus finds the same path under the new screen, else selects the default
+-- (the open tab).
+function Input.padFocus(obj)
+	if obj and obj.Parent and Input.device() == "Gamepad" then
+		pcall(function()
+			GuiService.SelectedObject = obj
+		end)
+	end
+end
+
+function Input.focusPath(root)
+	local sel = GuiService.SelectedObject
+	if not (root and sel and sel:IsDescendantOf(root)) then
+		return nil
+	end
+	local path = {}
+	local o = sel
+	while o and o ~= root do
+		local n = 0
+		for _, c in o.Parent:GetChildren() do
+			if c.Name == o.Name then
+				n += 1
+			end
+			if c == o then
+				break
+			end
+		end
+		table.insert(path, 1, { o.Name, n })
+		o = o.Parent
+	end
+	return path
+end
+
+function Input.refocus(root, path, default)
+	if Input.device() ~= "Gamepad" then
+		return
+	end
+	local o = root
+	for _, step in path or {} do
+		local found, n = nil, 0
+		for _, c in o:GetChildren() do
+			if c.Name == step[1] then
+				n += 1
+				if n == step[2] then
+					found = c
+					break
+				end
+			end
+		end
+		o = found
+		if not o then
+			break
+		end
+	end
+	if path and o and o ~= root and o:IsA("GuiObject") and o.Selectable and o.Visible then
+		Input.padFocus(o)
+	else
+		Input.padFocus(default)
+	end
+end
+
 function Input.init(_ctx)
 	ictx = _ctx
 	container = script
@@ -468,6 +534,12 @@ function Input.init(_ctx)
 		local d = Input.device()
 		if d ~= lastDevice then
 			lastDevice = d
+			if d ~= "Gamepad" then
+				-- the pad was put down: no selection ring left on a menu the mouse or a finger now works (audit ui.5)
+				pcall(function()
+					GuiService.SelectedObject = nil
+				end)
+			end
 			deviceEvent:Fire(d)
 		end
 	end

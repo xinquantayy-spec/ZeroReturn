@@ -30,7 +30,23 @@ end
 Screens.close = closeModal
 
 local function modal(w, h, title)
-	closeModal()
+	-- the same screen drawn again keeps the gamepad selection where it was; a tab change (Screens.tabSwitch) lands on
+	-- the new tab instead (audit ui.5)
+	local keep = nil
+	local same = Screens.modal ~= nil and Screens.title == title
+	if same and not Screens.tabSwitch then
+		keep = ctx.Input.focusPath(Screens.modal)
+	end
+	Screens.switched = Screens.tabSwitch == true -- the builder picks the open tab as its focus then
+	Screens.tabSwitch = false
+	if same then
+		-- drawn again in place (new server state, a setting changed): inspect windows opened over it stay open
+		Screens.modal:Destroy()
+		Screens.modal = nil
+	else
+		closeModal()
+	end
+	Screens.keep, Screens.title, Screens.kind, Screens.focusDefault = keep, title, nil, nil
 	if ctx.Inventory.open then
 		ctx.Inventory.close()
 	end
@@ -51,6 +67,16 @@ local function modal(w, h, title)
 	return f, w - 2 * pad, h - 2 * pad
 end
 Screens.openModal = modal
+
+-- the gamepad selection for the screen just drawn (audit ui.5): only while a pad is in use; the control the player was
+-- on when it was drawn again in place, else `default` (the open tab, or the screen's main button)
+function Screens.focus(default)
+	Screens.focusDefault = default
+	if Screens.modal then
+		ctx.Input.refocus(Screens.modal, Screens.keep, default)
+	end
+	Screens.keep = nil
+end
 
 local function line(parent, y, text, color, size)
 	return K.label(parent, text, size or 13, { Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, (size or 13) + 6), TextColor3 = color or K.C.text, TextWrapped = true })
@@ -130,12 +156,13 @@ function Screens.deploy()
 		return
 	end
 	local f, w, h = modal(820, 500, "OPS TABLE  ·  DEPLOYMENT")
+	Screens.kind = "deploy"
 	local me = Players.LocalPlayer
 	local mode = deployMode
 	-- mode tabs
 	local tabs = K.frame(f, { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 0, 34) })
 	K.list(tabs, Enum.FillDirection.Horizontal, 8)
-	local scavTabBtn
+	local scavTabBtn, openTab
 	for _, tb in { { "pmc", "PMC  ·  YOUR GEAR" }, { "scav", "SCAV  ·  FREE KIT" } } do
 		local sel = mode == tb[1]
 		local b = K.button(tabs, tb[2], {
@@ -151,6 +178,9 @@ function Screens.deploy()
 		end)
 		if tb[1] == "scav" then
 			scavTabBtn = b
+		end
+		if sel then
+			openTab = b
 		end
 	end
 	-- columns (two side by side when there is room, else stacked)
@@ -504,7 +534,7 @@ function Screens.deploy()
 			task.wait(0.25)
 		end
 	end)
-	K.focus(deploy)
+	Screens.focus(Screens.switched and openTab or deploy)
 end
 
 -- squad invite prompt (non-modal; expires)
@@ -598,7 +628,7 @@ function Screens.summary(s)
 	line(f, h - 78, string.format("NET VALUE  %s %s   ·   FOUND IN RAID %d%s", net, Config.CURRENCY, #(s.found or {}), sold), K.C.ochre, 14)
 	local b = K.button(f, "RETURN TO SAFEHOUSE", { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.fromOffset(280, 42), TextSize = 15, TextColor3 = K.C.ochre })
 	b.Activated:Connect(closeModal)
-	K.focus(b)
+	Screens.focus(b)
 end
 
 -- Tarkov's settings tabs (docs/design/EFT_PARITY.md section 5). Rows: label, key, kind (enum / num / bool), then
@@ -665,6 +695,7 @@ local BIND_ROWS = {
 	{ "Quick8", "QUICK SLOT 8" }, { "Quick9", "QUICK SLOT 9" }, { "Quick0", "QUICK SLOT 0" },
 }
 local settingsTab = "GAME"
+local settingsScroll = {} -- [tab] = where its list was scrolled to
 local capture -- the keybind being changed: { action, conns }
 
 local function endCapture()
@@ -753,12 +784,13 @@ function Screens.settings(tab, keepCapture)
 	end
 	settingsTab = tab or settingsTab
 	local f, w, h = modal(900, 560, "RECORDER SETTINGS")
+	Screens.kind = "settings"
 	local S = ctx.Settings
 	local d = S.data
 	-- Tarkov's tabs
 	local tabs = K.frame(f, { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 30) })
 	K.list(tabs, Enum.FillDirection.Horizontal, 6)
-	local rows, first
+	local rows, openTab
 	for _, t in SETTING_TABS do
 		local on = settingsTab == t[1]
 		if on then
@@ -771,7 +803,9 @@ function Screens.settings(tab, keepCapture)
 				Screens.settings(t[1])
 			end
 		end)
-		first = first or b
+		if on then
+			openTab = b -- the gamepad lands on the open tab, not the first one (audit ui.5)
+		end
 	end
 	rows = rows or SETTING_TABS[1][2]
 	local cols = w >= 600 and 2 or 1
@@ -783,6 +817,16 @@ function Screens.settings(tab, keepCapture)
 		Name = "Rows", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, 0, 1, -114),
 		ScrollBarThickness = 4, CanvasSize = UDim2.fromOffset(0, rowsH + bindsH), ScrollingDirection = Enum.ScrollingDirection.Y,
 	}, f)
+	-- the list keeps its place when a change draws the screen again (each tab its own; audit ui.5)
+	local tabNow = settingsTab
+	task.defer(function()
+		if scroll.Parent then
+			scroll.CanvasPosition = settingsScroll[tabNow] or Vector2.zero
+		end
+	end)
+	scroll:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+		settingsScroll[tabNow] = scroll.CanvasPosition
+	end)
 	for i, r in rows do
 		local label, key, kind = r[1], r[2], r[3]
 		local col = (i - 1) % cols
@@ -858,7 +902,7 @@ function Screens.settings(tab, keepCapture)
 		local y0 = rowsH + 8
 		local dev = ctx.Input.device()
 		local padView = dev == "Gamepad" or dev == "Touch"
-		local head = (dev == "Gamepad" and "GAMEPAD  ·  a short tap and a hold do different things; with LT held (aiming) D-UP, D-DOWN, D-LEFT and R3 do more")
+		local head = (dev == "Gamepad" and "GAMEPAD  ·  a tap and a hold do different things; with LT held (aiming) D-UP, D-DOWN, D-LEFT and R3 do more; in menus LB / RB switch tabs, the right stick turns an inspected item")
 			or (dev == "Touch" and "TOUCH  ·  a held button does its second action; MORE holds the rarely used; EDIT TOUCH LAYOUT moves and resizes them")
 			or "KEY BINDINGS  ·  CHANGE, then press a key (hold ALT, SHIFT or CTRL for a combination; BACKSPACE cancels)"
 		K.label(scroll, head, 12, {
@@ -912,7 +956,7 @@ function Screens.settings(tab, keepCapture)
 	end
 	local close = K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(closeModal)
-	K.focus(first)
+	Screens.focus(openTab)
 end
 
 -- Tarkov-style: the extract list is shown on the HUD (names + status), no distances or compass
@@ -984,7 +1028,44 @@ function Screens.init(c)
 	end)
 	c.Input.on("Back", function(down)
 		if down and Screens.modal then
+			-- B / Backspace closes the top inspect window over the screen first (audit ui.5)
+			if ctx.Inspect and ctx.Inspect.closeTop() then
+				return
+			end
 			closeModal()
+		end
+	end)
+	-- LB / RB: the open screen's previous / next tab (audit ui.5); the trader radio handles its own (Trade.luau)
+	local function stepTab(dir)
+		if Screens.kind == "settings" and not capture then
+			local i = 1
+			for k, t in SETTING_TABS do
+				if t[1] == settingsTab then
+					i = k
+				end
+			end
+			Screens.tabSwitch = true
+			Screens.settings(SETTING_TABS[(i - 1 + dir) % #SETTING_TABS + 1][1])
+		elseif Screens.kind == "deploy" then
+			deployMode = deployMode == "pmc" and "scav" or "pmc"
+			Screens.tabSwitch = true
+			Screens.deploy()
+		end
+	end
+	c.Input.on("TabPrev", function(down)
+		if down and Screens.modal then
+			stepTab(-1)
+		end
+	end)
+	c.Input.on("TabNext", function(down)
+		if down and Screens.modal then
+			stepTab(1)
+		end
+	end)
+	-- a pad picked up while a screen is open gets the selection there; put down, Input clears it (audit ui.5)
+	c.Input.deviceChanged:Connect(function(dev)
+		if dev == "Gamepad" and Screens.modal and Screens.focusDefault then
+			c.Input.padFocus(Screens.focusDefault)
 		end
 	end)
 end

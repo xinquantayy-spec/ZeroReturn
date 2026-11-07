@@ -5,7 +5,10 @@
 -- penetration and the chance to go through fresh armor of each class, armor damage, fragmentation and bleeding.
 -- Armor: class, durability, material, armored areas. Eyewear and masks: blindness protection, lens tint and the slots they
 -- block. Meds, food, grenades, keys, parts, magazines and containers get their own rows. Windows drag by the title bar and up to three stay open, as in Tarkov.
+-- Gamepad (audit ui.5): the right stick turns the top window's model, B closes the top window.
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local WP = require(Shared.WeaponParts)
@@ -328,10 +331,15 @@ local function closeWin(win)
 	for _, cn in win.conns do
 		cn:Disconnect()
 	end
+	local hadFocus = GuiService.SelectedObject ~= nil and GuiService.SelectedObject:IsDescendantOf(win.frame)
 	win.frame:Destroy()
 	local i = table.find(windows, win)
 	if i then
 		table.remove(windows, i)
+	end
+	-- the gamepad selection goes back where it was before the window opened (Roblox leaves none behind)
+	if hadFocus and win.prevSel and ctx then
+		ctx.Input.padFocus(win.prevSel)
 	end
 end
 
@@ -340,10 +348,31 @@ local function raise(win)
 	win.frame.ZIndex = zTop
 end
 
+-- the window in front (the last one raised)
+local function topWindow()
+	local best = nil
+	for _, win in windows do
+		if not best or win.frame.ZIndex > best.frame.ZIndex then
+			best = win
+		end
+	end
+	return best
+end
+
 function Inspect.closeAll()
 	for i = #windows, 1, -1 do
 		closeWin(windows[i])
 	end
+end
+
+-- B / Backspace: close the window in front; false when none is open (audit ui.5)
+function Inspect.closeTop()
+	local win = topWindow()
+	if win then
+		closeWin(win)
+		return true
+	end
+	return false
 end
 
 function Inspect.isOpen()
@@ -386,7 +415,7 @@ function Inspect.open(items, g, opts)
 		Position = UDim2.fromOffset(math.floor((vp.X - W) / 2) + n * 26, math.floor((vp.Y - H) / 2) + n * 26), Size = UDim2.fromOffset(W, H),
 	})
 	K.stroke(frame, K.C.ochre, 0.45)
-	local win = { frame = frame, key = key, conns = {} }
+	local win = { frame = frame, key = key, conns = {}, prevSel = GuiService.SelectedObject }
 	table.insert(windows, win)
 	-- title bar: the full name, found-in-raid / insured marks, close
 	local bar = K.frame(frame, { Name = "Title", Active = true, Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = K.C.panel2 })
@@ -443,6 +472,12 @@ function Inspect.open(items, g, opts)
 			cam.CFrame = CFrame.new(Vector3.new(0, 0, math.max(fit, 0.3) * zoom), Vector3.zero)
 		end
 		apply()
+		-- the right stick (the loop in Inspect.init) turns the model of the window in front: degrees left-right, up-down
+		win.turn = function(dYaw, dPitch)
+			yaw += dYaw
+			pitch = math.clamp(pitch + dPitch, -85, 85)
+			apply()
+		end
 		local turning, last = false, nil
 		view.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -549,7 +584,7 @@ function Inspect.open(items, g, opts)
 			moving = false
 		end
 	end))
-	K.focus(x)
+	ctx.Input.padFocus(x) -- a gamepad only (audit ui.5)
 	return frame
 end
 
@@ -557,6 +592,31 @@ function Inspect.init(c)
 	ctx = c
 	K = c.UiKit
 	gui = K.screen("ZR_Inspect", 40)
+	-- the right stick turns the model in the window in front (audit ui.5): the camera leaves the stick alone while a
+	-- screen is open (Camera.luau), the left stick and the D-pad keep moving the selection. Same dead zone and curve as
+	-- the camera; up to 180 degrees a second across, 120 up and down
+	local stick = Vector2.zero
+	UIS.InputChanged:Connect(function(input)
+		if input.KeyCode == Enum.KeyCode.Thumbstick2 then
+			stick = Vector2.new(input.Position.X, input.Position.Y)
+		end
+	end)
+	UIS.InputEnded:Connect(function(input)
+		if input.KeyCode == Enum.KeyCode.Thumbstick2 then
+			stick = Vector2.zero
+		end
+	end)
+	RunService.RenderStepped:Connect(function(dt)
+		if #windows == 0 or stick.Magnitude <= 0.14 then
+			return
+		end
+		local win = topWindow()
+		if win and win.turn then
+			local s = (math.min(stick.Magnitude, 1) - 0.14) / 0.86
+			local v = stick.Unit * s * s
+			win.turn(v.X * dt * 180, -v.Y * dt * 120)
+		end
+	end)
 end
 
 return Inspect

@@ -17,6 +17,8 @@ local P = require(Shared.Progress)
 local Trade = { open = nil }
 local ctx, K
 local ui = { tab = "vos", scroll = {}, cpanel = "GOODS" }
+-- the relay radio's tabs, left to right (LB / RB step through them on a gamepad; audit ui.5)
+local RADIO_TABS = { "vos", "hale", "tilda", "fence", "flea", "messenger", "handbook" }
 -- ui-3a: on a phone (under about 500 pt of height) the trade tab shows one panel at a time: GOODS, STASH or DEAL
 local compact = false
 local live = {} -- { label, at (server os.time), fmt }
@@ -135,6 +137,11 @@ end
 -- ── traders ──────────────────────────────────────────────────────────────────
 local function loyaltyText(econ, tid)
 	local st = econ.traders and econ.traders[tid] or { ll = 1, spent = 0, rep = 0 }
+	if tid == "fence" then
+		-- Fence's loyalty is karma alone (EFT: LL2 at standing 6.0, no level or money; audit economy.5)
+		return (st.ll or 1) >= 2 and string.format("LOYALTY 2 (MAX)  ·  KARMA %.2f", econ.karma or 0)
+			or string.format("LOYALTY 1  ·  NEXT: KARMA %.1f (%.2f)", TD.FENCE_LL2 or 6, econ.karma or 0)
+	end
 	local nextL = TD.LL[st.ll + 1]
 	if not nextL then
 		return string.format("LOYALTY %d (MAX)  ·  STANDING %.2f", st.ll, st.rep or 0)
@@ -320,6 +327,18 @@ local function inspect(items, g, key, unknown)
 	end
 end
 
+-- right-click, or Tarkov's middle mouse button, opens a tile's inspect window (audit ui.9); `middle` may do otherwise
+-- (examine an unknown stash item)
+local function onInspect(t, fn, middle)
+	t.MouseButton2Click:Connect(fn)
+	t.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton3 then
+			local f = middle or fn
+			f()
+		end
+	end)
+end
+
 local function tradeTab(f, x, y, w, h, d, tid)
 	local econ = d.econ or {}
 	local st = econ.traders and econ.traders[tid] or { ll = 1 }
@@ -415,7 +434,8 @@ local function tradeTab(f, x, y, w, h, d, tid)
 			local locked = o.ll > st.ll
 			local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 			local left = o.limit - used
-			local price = e.kind == "offer" and TD.price(tid, o, st.ll) or nil
+			-- karma moves Fence's prices (the server charges the same; other traders ignore it, audit economy.5)
+			local price = e.kind == "offer" and TD.price(tid, o, st.ll, econ.karma) or nil
 			local on = ui.sel and ui.sel.kind == e.kind and ui.sel.i == e.i
 			local t = itemTile(sf, e.items, e.g, (p[1] - 1) * cellW + 1, (p[2] - 1) * cellW + 1, p[3] * cellW - 2, p[4] * cellW - 2, {
 				name = (e.kind == "offer" and "Offer_" or "Barter_") .. o.id,
@@ -433,7 +453,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 				end
 				Trade.refresh()
 			end)
-			t.MouseButton2Click:Connect(function()
+			onInspect(t, function()
 				inspect(e.items, e.g, "offer:" .. tid .. ":" .. e.kind .. e.i)
 			end)
 		end
@@ -465,7 +485,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 				end
 				Trade.refresh()
 			end)
-			t.MouseButton2Click:Connect(function()
+			onInspect(t, function()
 				inspect(d.items, g, "stash:" .. g)
 			end)
 		end
@@ -516,9 +536,11 @@ local function tradeTab(f, x, y, w, h, d, tid)
 				ui.mode = "sell"
 				Trade.refresh()
 			end)
-			t.MouseButton2Click:Connect(function()
+			onInspect(t, function()
 				inspect(d.items, g, "stash:" .. g, not kn)
-			end)
+			end, not kn and function()
+				ctx.State.req("inv", { op = "examine", g = g, from = "me" }) -- Tarkov's middle mouse examines an unknown item
+			end or nil)
 		end
 	end
 	end -- showStash
@@ -574,7 +596,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 		end
 	end
 	if not e then
-		K.label(deal, "Select an item to buy it, or click items in your stash to sell them. Right-click any item to inspect it.", 12, {
+		K.label(deal, "Select an item to buy it, or click items in your stash to sell them. Right-click or middle-click any item to inspect it.", 12, {
 			Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -20, 1, 0), TextColor3 = K.C.dim, TextWrapped = true,
 		})
 		return
@@ -596,7 +618,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 	local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 	local left = math.max(0, o.limit - used)
 	if e.kind == "offer" then
-		local unit = TD.price(tid, o, st.ll)
+		local unit = TD.price(tid, o, st.ll, econ.karma)
 		ui.qty = math.clamp(ui.qty, 1, math.max(1, math.min(10, left)))
 		local total = unit * ui.qty
 		local afford = (d.money or 0) >= total
@@ -648,65 +670,101 @@ end
 local function tasksTab(f, x, y, w, h, d, tid)
 	local econ = d.econ or {}
 	local right = scroller(f, x, y, w, h, "Tasks_" .. tid)
-	local any = false
+	local mine = {}
 	for _, q in QD.list do
 		if q.trader == tid then
-			any = true
-			local qs = (d.quests and d.quests[q.id]) or { s = "locked", p = {} }
-			local statusText = ({ locked = "LOCKED", available = "AVAILABLE", active = "ACTIVE", claimed = "COMPLETED" })[qs.s] or qs.s
-			local color = ({ locked = K.C.dim, available = K.C.ochre, active = K.C.green, claimed = K.C.dim })[qs.s] or K.C.text
-			text(right, string.upper(q.name) .. "   ·   " .. statusText, color, 13, true)
-			if qs.s == "locked" then
-				local why = {}
-				if (econ.level or 1) < (q.level or 1) then
-					table.insert(why, "level " .. q.level)
+			table.insert(mine, q)
+		end
+	end
+	-- Tarkov 0.16.7: pinned tasks at the top of the list (audit ui.14)
+	if ctx.Character and ctx.Character.pinnedFirst then
+		mine = ctx.Character.pinnedFirst(mine, d)
+	end
+	for _, q in mine do
+		local qs = (d.quests and d.quests[q.id]) or { s = "locked", p = {} }
+		local statusText = ({ locked = "LOCKED", available = "AVAILABLE", active = "ACTIVE", claimed = "COMPLETED" })[qs.s] or qs.s
+		local color = ({ locked = K.C.dim, available = K.C.ochre, active = K.C.green, claimed = K.C.dim })[qs.s] or K.C.text
+		local title = string.upper(q.name) .. "   ·   " .. statusText
+		if qs.s == "active" and ctx.Character then
+			-- an active task takes a pin: it stays at the top here and in the character's TASKS tab
+			local pinned = ctx.Character.isPinned(q.id)
+			local r = K.frame(right, { Name = "Task_" .. q.id, BackgroundTransparency = 1, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, compact and 40 or 26) })
+			K.label(r, title, 13, { FontFace = K.bold, TextColor3 = color, Size = UDim2.new(1, -(compact and 110 or 92), 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
+			local pb = K.button(r, pinned and "PINNED" or "PIN", {
+				Name = "Pin", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -3, 0.5, 0), Size = UDim2.fromOffset(compact and 104 or 86, compact and 36 or 24),
+				TextSize = compact and 13 or 11, TextColor3 = pinned and K.C.ochre or K.C.dim,
+			})
+			pb.Activated:Connect(function()
+				ctx.Character.setPin(q.id, not pinned)
+				Trade.refresh()
+			end)
+		else
+			text(right, title, color, 13, true)
+		end
+		if qs.s == "locked" then
+			local why = {}
+			if (econ.level or 1) < (q.level or 1) then
+				table.insert(why, "level " .. q.level)
+			end
+			if q.after then
+				table.insert(why, "after " .. QD.byId[q.after].name)
+			end
+			-- EFT 1.1.0's collector rules (audit economy.7, the server checks them in Quests.status): more finished tasks,
+			-- a Fence standing, a loyalty level with every trader
+			for _, id in q.needs or {} do
+				local nq = d.quests and d.quests[id]
+				if not (nq and nq.s == "claimed") then
+					table.insert(why, "after " .. (QD.byId[id] and QD.byId[id].name or id))
 				end
-				if q.after then
-					table.insert(why, "after " .. QD.byId[q.after].name)
+			end
+			if q.karma and (econ.karma or 0) < q.karma then
+				table.insert(why, string.format("karma %.1f", q.karma))
+			end
+			if q.ll then
+				table.insert(why, "loyalty " .. q.ll .. " with every trader")
+			end
+			text(right, #why > 0 and ("Requires " .. table.concat(why, ", ") .. ".") or "Not offered yet.", K.C.dim, 11)
+		else
+			text(right, q.desc, K.C.dim, 11)
+			local complete = true
+			for i, o in q.obj do
+				local p = (qs.p and qs.p[i]) or 0
+				if qs.s == "claimed" then
+					p = o.n
 				end
-				text(right, "Requires " .. table.concat(why, ", ") .. ".", K.C.dim, 11)
-			else
-				text(right, q.desc, K.C.dim, 11)
-				local complete = true
-				for i, o in q.obj do
-					local p = (qs.p and qs.p[i]) or 0
-					if qs.s == "claimed" then
-						p = o.n
-					end
-					complete = complete and p >= o.n
-					local what = QD.describe(o)
-					if o.kind == "handin" then
-						what = what .. ": " .. Items.defs[o.item].name
-					end
-					text(right, string.format("  •  %s   %s", what, (qs.s == "available") and ("x" .. o.n) or have(p, o.n)), K.C.text, 11)
+				complete = complete and p >= o.n
+				local what = QD.describe(o)
+				if o.kind == "handin" then
+					what = what .. ": " .. Items.defs[o.item].name
 				end
-				local r = q.reward or {}
-				local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
-				if r.rep then
-					table.insert(rew, string.format("+%.2f standing", r.rep))
-				end
-				if r.karma then
-					table.insert(rew, string.format("+%.1f karma", r.karma))
-				end
-				for _, e in r.items or {} do
-					table.insert(rew, Items.defs[e[1]].name .. ((e[2] or 1) > 1 and (" x" .. e[2]) or ""))
-				end
-				text(right, "  REWARD  " .. table.concat(rew, "  ·  "), K.C.green, 11)
-				if qs.s == "available" then
-					local _, b = row(right, "", "", "ACCEPT", true, function()
-						req("quest", { op = "accept", id = q.id })
-					end)
-					b.Name = "Accept_" .. q.id
-				elseif qs.s == "active" then
-					local _, b = row(right, "", complete and "READY" or "IN PROGRESS", "TURN IN", complete, function()
-						req("quest", { op = "turnin", id = q.id })
-					end, complete and K.C.green or K.C.dim)
-					b.Name = "TurnIn_" .. q.id
-				end
+				text(right, string.format("  •  %s   %s", what, (qs.s == "available") and ("x" .. o.n) or have(p, o.n)), K.C.text, 11)
+			end
+			local r = q.reward or {}
+			local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
+			if r.rep then
+				table.insert(rew, string.format("+%.2f standing", r.rep))
+			end
+			if r.karma then
+				table.insert(rew, string.format("+%.1f karma", r.karma))
+			end
+			for _, e in r.items or {} do
+				table.insert(rew, Items.defs[e[1]].name .. ((e[2] or 1) > 1 and (" x" .. e[2]) or ""))
+			end
+			text(right, "  REWARD  " .. table.concat(rew, "  ·  "), K.C.green, 11)
+			if qs.s == "available" then
+				local _, b = row(right, "", "", "ACCEPT", true, function()
+					req("quest", { op = "accept", id = q.id })
+				end)
+				b.Name = "Accept_" .. q.id
+			elseif qs.s == "active" then
+				local _, b = row(right, "", complete and "READY" or "IN PROGRESS", "TURN IN", complete, function()
+					req("quest", { op = "turnin", id = q.id })
+				end, complete and K.C.green or K.C.dim)
+				b.Name = "TurnIn_" .. q.id
 			end
 		end
 	end
-	if not any then
+	if #mine == 0 then
 		text(right, "No tasks.", K.C.dim)
 	end
 end
@@ -880,8 +938,8 @@ function Trade.traders(tab, sub)
 		ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new(), ScrollBarThickness = 0, Selectable = false,
 	}, f)
 	K.list(tabs, Enum.FillDirection.Horizontal, 6)
-	local first
-	for _, id in { "vos", "hale", "tilda", "fence", "flea", "messenger", "handbook" } do
+	local first, firstX, tabW = nil, 0, 0
+	for i, id in RADIO_TABS do
 		local st = econ.traders and econ.traders[id]
 		local label = (id == "flea" and "FLEA MARKET") or (id == "messenger" or id == "handbook") and string.upper(id) or string.format("%s  ·  LL%d", TD.defs[id].name, st and st.ll or 1)
 		if id == "messenger" and ctx.Menus then
@@ -891,8 +949,9 @@ function Trade.traders(tab, sub)
 			end
 		end
 		local sel = ui.tab == id
+		tabW = compact and math.max(112, math.floor((w - 36) / 7)) or math.min(170, math.floor((w - 36) / 7))
 		local b = K.button(tabs, label, {
-			Size = UDim2.fromOffset(compact and math.max(112, math.floor((w - 36) / 7)) or math.min(170, math.floor((w - 36) / 7)), tabH), TextSize = 13,
+			Size = UDim2.fromOffset(tabW, tabH), TextSize = 13, LayoutOrder = i,
 			BackgroundColor3 = sel and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = sel and K.C.ochre or K.C.dim,
 		})
 		b.Name = "Tab_" .. string.upper(id)
@@ -902,8 +961,16 @@ function Trade.traders(tab, sub)
 			end
 		end)
 		if sel then
-			first = b
+			first, firstX = b, (i - 1) * (tabW + 6)
 		end
+	end
+	-- a phone's strip scrolls: the open tab is brought into view (LB / RB walk off its edge; audit ui.5)
+	if first then
+		task.defer(function()
+			if tabs.Parent then
+				tabs.CanvasPosition = Vector2.new(math.max(0, firstX - math.max(0, (w - tabW) / 2)), 0)
+			end
+		end)
 	end
 	local top = compact and 86 or 88
 	local bodyH = h - top - (compact and 0 or 42)
@@ -922,7 +989,8 @@ function Trade.traders(tab, sub)
 	local close = compact and K.button(f, "CLOSE", { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(84, 36), TextSize = 13 })
 		or K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(ctx.Screens.close)
-	K.focus(first)
+	-- the gamepad lands on the open tab, and keeps its place when new server state draws the screen again (audit ui.5)
+	ctx.Screens.focus(first)
 end
 
 -- ── hideout ──────────────────────────────────────────────────────────────────
@@ -1033,7 +1101,7 @@ function Trade.hideout()
 	end
 	local close = K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(ctx.Screens.close)
-	K.focus(close)
+	ctx.Screens.focus(close)
 end
 
 function Trade.refresh()
@@ -1049,6 +1117,25 @@ end
 function Trade.init(c)
 	ctx = c
 	K = c.UiKit
+	-- LB / RB: the previous / next radio tab (traders, flea market, messenger, handbook), wrapping round (audit ui.5)
+	local function stepTab(dir)
+		if not (Trade.open == "traders" and ctx.Screens.modal and ctx.Screens.modal == Trade.frame) then
+			return
+		end
+		local i = table.find(RADIO_TABS, ui.tab) or 0
+		ctx.Screens.tabSwitch = true
+		Trade.traders(RADIO_TABS[(i - 1 + dir) % #RADIO_TABS + 1])
+	end
+	c.Input.on("TabPrev", function(down)
+		if down then
+			stepTab(-1)
+		end
+	end)
+	c.Input.on("TabNext", function(down)
+		if down then
+			stepTab(1)
+		end
+	end)
 	-- redraw on new server state while a terminal screen is open (debounced), tick the timers every second
 	c.State.changed:Connect(function()
 		dirty = true
