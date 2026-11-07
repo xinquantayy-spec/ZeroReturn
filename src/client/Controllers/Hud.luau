@@ -579,12 +579,16 @@ function Hud.matchLine(m, now)
 		local head = m.queued and ("MATCHING" .. (m.queued == "scav" and " (SCAV)" or "")) or "RAID FORMING"
 		return { { t = head, color = C.yellow }, { t = "  ·  INSERTION IN " .. t(m.startsAt - now), color = C.white }, { t = string.format("  ·  %d QUEUED", m.inQueue or 0), color = C.dim } }
 	elseif m.state == "RUNNING" then
-		if m.queued then
+		if m.queued == "scav" and now < (m.scavFrom or 0) then
+			return { { t = "QUEUED AS SCAV", color = C.yellow }, { t = "  ·  SCAV ENTRY OPENS IN " .. t(m.scavFrom - now), color = C.white } }
+		elseif m.queued then
 			return { { t = "QUEUED FOR THE NEXT RAID", color = C.yellow }, { t = "  ·  CURRENT RAID ENDS IN " .. t(m.endsAt - now), color = C.white } }
 		end
 		local segs = { { t = "RAID IN PROGRESS", color = C.orange }, { t = "  ·  " .. t(m.endsAt - now) .. " LEFT", color = C.white }, { t = string.format("  ·  %d INSIDE", m.inRaid or 0), color = C.dim } }
 		if now < (m.lateUntil or 0) then
 			table.insert(segs, { t = "  ·  PMC ENTRY CLOSES " .. t(m.lateUntil - now), color = C.green })
+		elseif now < (m.scavFrom or 0) then
+			table.insert(segs, { t = "  ·  SCAV ENTRY OPENS IN " .. t(m.scavFrom - now), color = C.dim })
 		elseif now < (m.scavUntil or 0) then
 			table.insert(segs, { t = "  ·  SCAV ENTRY " .. t(m.scavUntil - now), color = C.green })
 		end

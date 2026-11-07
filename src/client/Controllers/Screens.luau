@@ -107,14 +107,18 @@ local function matchText(m)
 	if m.state == "MATCHING" then
 		return string.format("%s  ·  INSERTION IN %s  ·  %d QUEUED", m.queued and "YOU ARE QUEUED" or "RAID FORMING", t(m.startsAt - now), m.inQueue or 0) .. conditions(), K.C.ochre
 	elseif m.state == "RUNNING" then
-		if m.queued then
+		-- player scavs enter in EFT's window (audit ai-7a): from scavFrom (17 minutes in on the big maps) to scavUntil
+		local scavText = now < (m.scavFrom or 0) and ("SCAV ENTRY OPENS IN " .. t(m.scavFrom - now)) or ("SCAV ENTRY OPEN FOR " .. t((m.scavUntil or 0) - now))
+		if m.queued == "scav" and now < (m.scavFrom or 0) then
+			return "QUEUED AS SCAV  ·  " .. scavText, K.C.ochre
+		elseif m.queued then
 			return "QUEUED FOR THE NEXT RAID  ·  CURRENT RAID ENDS IN " .. t(m.endsAt - now), K.C.ochre
 		end
 		local s = string.format("RAID IN PROGRESS  ·  %s LEFT  ·  %d/%d INSIDE", t(m.endsAt - now), m.inRaid or 0, m.maxPlayers or Config.MAX_PLAYERS) .. conditions()
 		if now < (m.lateUntil or 0) then
-			s ..= "\nPMC ENTRY OPEN FOR " .. t(m.lateUntil - now) .. "  ·  SCAV ENTRY " .. t((m.scavUntil or 0) - now)
+			s ..= "\nPMC ENTRY OPEN FOR " .. t(m.lateUntil - now) .. "  ·  " .. scavText
 		elseif now < (m.scavUntil or 0) then
-			s ..= "\nPMC ENTRY CLOSED (NEXT RAID)  ·  SCAV ENTRY OPEN FOR " .. t(m.scavUntil - now)
+			s ..= "\nPMC ENTRY CLOSED (NEXT RAID)  ·  " .. scavText
 		else
 			s ..= "\nENTRY CLOSED  ·  DEPLOYING NOW QUEUES FOR THE NEXT RAID"
 		end
@@ -516,7 +520,8 @@ function Screens.deploy()
 				else
 					local m = ctx.State.match
 					local now = workspace:GetServerTimeNow()
-					local enter = m and m.state == "RUNNING" and ((mode == "pmc" and now < (m.lateUntil or 0)) or (mode == "scav" and now < (m.scavUntil or 0)))
+					local enter = m and m.state == "RUNNING"
+						and ((mode == "pmc" and now < (m.lateUntil or 0)) or (mode == "scav" and now >= (m.scavFrom or 0) and now < (m.scavUntil or 0)))
 					deploy.Text = (mode == "scav" and "DEPLOY AS SCAV" or "DEPLOY AS PMC") .. (enter and "  ·  JOIN NOW" or "  ·  QUEUE")
 					deploy.TextColor3 = K.C.ochre
 				end
