@@ -126,19 +126,24 @@ local function update(dt)
 	local aiming = ctx.Weapon.aiming
 	-- turn speed: heavy armour and helmets slow turning when not aiming (Tarkov's turn speed penalty)
 	local gear = ctx.Movement and ctx.Movement.gear
-	local sens = (S.sens or 1) * (aiming and (ctx.Weapon.aimSens and ctx.Weapon.aimSens() or 0.62) * (S.aimSens or 1) or (1 + (gear and gear.turn or 0) / 100))
+	-- one sensitivity per input (mouse, gamepad, touch; audit ui.7), times the aiming or turn-speed factor
+	local k = aiming and (ctx.Weapon.aimSens and ctx.Weapon.aimSens() or 0.62) * (S.aimSens or 1) or (1 + (gear and gear.turn or 0) / 100)
+	local sens = (S.sens or 1) * k
+	local padSens = (S.padSens or 1) * k
+	local touchSens = (S.touchSens or 1) * k
+	local invY = S.invertY and -1 or 1
 	local free = not menu and ctx.Input.down("FreeLook") and not aiming
 	if not menu then
 		-- the mouse, the right stick and touch drags; with free look held (Alt, hold D-up, drag LOOK) they turn the head
 		-- and not the body (up to 100 degrees either way and 60 up or down, our limits)
 		local md = UIS:GetMouseDelta()
-		local dYaw = -math.rad(md.X * 0.2 * sens) - math.rad(lookAcc.X * 0.28 * sens)
-		local dPitch = -math.rad(md.Y * 0.2 * sens) - math.rad(lookAcc.Y * 0.28 * sens)
+		local dYaw = -math.rad(md.X * 0.2 * sens) - math.rad(lookAcc.X * 0.28 * touchSens)
+		local dPitch = (-math.rad(md.Y * 0.2 * sens) - math.rad(lookAcc.Y * 0.28 * touchSens)) * invY
 		if stick.Magnitude > 0.14 then
 			local s = (stick.Magnitude - 0.14) / 0.86
 			local v = stick.Unit * s * s
-			dYaw -= v.X * dt * 3.4 * sens
-			dPitch += v.Y * dt * 2.5 * sens
+			dYaw -= v.X * dt * 3.4 * padSens
+			dPitch += v.Y * dt * 2.5 * padSens * invY
 		end
 		if free then
 			Camera.freeYaw = math.clamp(Camera.freeYaw + dYaw, math.rad(-100), math.rad(100))

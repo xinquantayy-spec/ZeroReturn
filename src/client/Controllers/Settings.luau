@@ -15,6 +15,9 @@ local Settings = {
 		binds = {}, quick = {}, -- rebound PC keys (Input.setBinds) and Tarkov quick slots 4 to 0 (item guids)
 		-- Tarkov's GAME / POSTFX / SOUND / CONTROLS rows (docs/design/EFT_PARITY.md section 5)
 		headBob = 1, quickBar = 1, aimSens = 1,
+		-- audit ui.7, ui.8, ui.6: a sensitivity per input, invert Y, Tarkov's malfunction notice and double-click use,
+		-- and the time the messenger was last read (its unread count)
+		padSens = 1, touchSens = 1, invertY = false, malfNotes = true, dblUse = true, msgSeen = 0,
 		pfxBright = 0, pfxSat = 0, pfxClarity = 0, pfxGrade = 0, pfxGradeK = 0.5,
 		volMaster = 1, volFx = 1, volUi = 1, volAmb = 1,
 	},

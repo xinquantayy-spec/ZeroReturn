@@ -497,8 +497,9 @@ local function slowUpdate()
 			Hud.weaponSig = sig
 			Hud.weaponUntil = os.clock() + 4
 		end
-		O.weapon:show(W.malf ~= nil and W.malf ~= false or os.clock() < (Hud.weaponUntil or 0))
-		if W.malf then
+		local notify = ctx.Settings.data.malfNotes ~= false -- MALFUNCTION NOTIFICATIONS (Tarkov's GAME tab)
+		O.weapon:show((notify and W.malf ~= nil and W.malf ~= false) or os.clock() < (Hud.weaponUntil or 0))
+		if W.malf and ctx.Settings.data.malfNotes ~= false then
 			-- Tarkov flashes the weapon corner on a malfunction; inspecting names it
 			local blink = math.floor(os.clock() * 2.5) % 2 == 0
 			local what = W.malfName and (W.malfName .. "  ·  " .. ctx.Input.label("ChamberCheck") .. " TO CLEAR")

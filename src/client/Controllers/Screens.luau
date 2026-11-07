@@ -617,6 +617,9 @@ local SETTING_TABS = {
 		{ "HIT FEEDBACK", "hitfx", "bool" },
 		{ "HUD SCALE", "hudScale", "num", 0.7, 1.4, 0.1, "pct" },
 		{ "CURVED HUD", "curve", "bool" },
+		-- Tarkov's GAME tab (audit ui.8)
+		{ "MALFUNCTION NOTIFICATIONS", "malfNotes", "bool" },
+		{ "DOUBLE-CLICK QUICK USE", "dblUse", "bool" },
 	} },
 	{ "GRAPHICS", {
 		{ "GRAPHICS", "quality", "enum", { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }, 0 },
@@ -626,6 +629,12 @@ local SETTING_TABS = {
 		{ "MOTION BLUR", "mblur", "bool" },
 		{ "RECORDER OVERLAY", "film", "bool" },
 	} },
+	{ "SOUND", {
+		{ "OVERALL VOLUME", "volMaster", "num", 0, 1, 0.1, "pct" },
+		{ "EFFECTS", "volFx", "num", 0, 1, 0.1, "pct" },
+		{ "INTERFACE", "volUi", "num", 0, 1, 0.1, "pct" },
+		{ "AMBIENCE", "volAmb", "num", 0, 1, 0.1, "pct" },
+	} },
 	{ "POSTFX", {
 		{ "BRIGHTNESS", "pfxBright", "num", -0.5, 0.5, 0.05, "spct" },
 		{ "SATURATION", "pfxSat", "num", -1, 1, 0.1, "spct" },
@@ -633,15 +642,12 @@ local SETTING_TABS = {
 		{ "COLOR GRADING", "pfxGrade", "enum", { [0] = "NONE", "STEEL", "EMBER", "MOSS", "DUSK" }, 0 },
 		{ "GRADING INTENSITY", "pfxGradeK", "num", 0, 1, 0.1, "pct" },
 	} },
-	{ "SOUND", {
-		{ "OVERALL VOLUME", "volMaster", "num", 0, 1, 0.1, "pct" },
-		{ "EFFECTS", "volFx", "num", 0, 1, 0.1, "pct" },
-		{ "INTERFACE", "volUi", "num", 0, 1, 0.1, "pct" },
-		{ "AMBIENCE", "volAmb", "num", 0, 1, 0.1, "pct" },
-	} },
 	{ "CONTROLS", {
-		{ "SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },
+		{ "MOUSE SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },
 		{ "AIM SENSITIVITY", "aimSens", "num", 0.2, 3, 0.1, "%.1f" },
+		{ "GAMEPAD SENSITIVITY", "padSens", "num", 0.2, 3, 0.1, "%.1f" },
+		{ "TOUCH SENSITIVITY", "touchSens", "num", 0.2, 3, 0.1, "%.1f" },
+		{ "INVERT Y AXIS", "invertY", "bool" },
 		-- touch (Touch.luau): FIRE brings the sights up while held (CoD Mobile's ADS fire); the stick comes to the thumb
 		{ "TOUCH: AIM WHEN FIRING", "aimOnFire", "bool" },
 		{ "TOUCH: FLOATING STICK", "joyFloat", "bool" },
@@ -784,8 +790,8 @@ function Screens.settings(tab, keepCapture)
 		local row = K.frame(scroll, { BackgroundTransparency = 1, Position = UDim2.fromOffset(col * (colW + 16), rowI * 40), Size = UDim2.fromOffset(colW, 34) })
 		K.label(row, label, 13, { Size = UDim2.new(0.5, 0, 1, 0) })
 		local v = d[key]
-		K.label(row, fmtValue(r, v), 13, { Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0.2, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
-		local function bump(dir)
+		local valueLabel = K.label(row, fmtValue(r, v), 13, { Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0.2, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Center, FontFace = K.bold })
+		local function bump(dir, quiet)
 			if kind == "enum" then
 				local lo = r[5] or 1 -- first index (0 when the list starts at [0])
 				S.set(key, math.clamp((v or lo) + dir, lo, #r[4]))
@@ -795,19 +801,55 @@ function Screens.settings(tab, keepCapture)
 			else
 				S.set(key, not v)
 			end
-			Screens.settings()
+			v = d[key]
+			if quiet then
+				valueLabel.Text = fmtValue(r, v) -- held down: the value runs without rebuilding the screen
+			else
+				Screens.settings()
+			end
+		end
+		-- held down, - and + repeat after a short pause (audit ui.7)
+		local function holdRepeat(btn, dir)
+			local repeated = false
+			btn.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					local token = {}
+					Screens.holding = token
+					repeated = false
+					task.delay(0.45, function()
+						while Screens.holding == token and btn.Parent do
+							repeated = true
+							bump(dir, true)
+							task.wait(0.08)
+						end
+					end)
+				end
+			end)
+			btn.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					Screens.holding = nil
+				end
+			end)
+			btn.Activated:Connect(function()
+				if repeated then
+					repeated = false
+					Screens.settings()
+				else
+					bump(dir)
+				end
+			end)
 		end
 		local b1 = K.button(row, kind == "bool" and "TOGGLE" or "-", { Position = UDim2.fromScale(0.72, 0), Size = UDim2.new(kind == "bool" and 0.28 or 0.13, 0, 1, -4) })
 		b1.Name = "Btn_" .. string.upper(key) .. (kind == "bool" and "" or "_DOWN")
-		b1.Activated:Connect(function()
-			bump(-1)
-		end)
-		if kind ~= "bool" then
+		if kind == "bool" then
+			b1.Activated:Connect(function()
+				bump(-1)
+			end)
+		else
+			holdRepeat(b1, -1)
 			local b2 = K.button(row, "+", { Position = UDim2.fromScale(0.87, 0), Size = UDim2.new(0.13, 0, 1, -4) })
 			b2.Name = "Btn_" .. string.upper(key) .. "_UP"
-			b2.Activated:Connect(function()
-				bump(1)
-			end)
+			holdRepeat(b2, 1)
 		end
 	end
 	if binds then

@@ -552,7 +552,21 @@ local function openMenu(ref, g, pos)
 end
 
 -- ── drawing ────────────────────────────────────────────────────────────────────
+local lastClick = nil -- { g, t }: a second click on the same item within 0.35 s uses it (DOUBLE-CLICK QUICK USE)
 local function onTileClick(ref, g)
+	local now = os.clock()
+	if lastClick and lastClick.g == g and now - lastClick.t < 0.35 and ref == "me" and ctx.Settings.data.dblUse ~= false then
+		lastClick = nil
+		local v = viewOf(ref)
+		local it = v and v.items[g]
+		local d = it and defs[it.id]
+		if d and (d.kind == "med" or d.kind == "food") and known(it.id) then
+			selected = nil
+			req({ op = "use", g = g })
+			return
+		end
+	end
+	lastClick = { g = g, t = now }
 	local cur = selected
 	if cur and cur.g ~= g and cur.ref then
 		-- second tap on another item: drop onto it (merge / insert magazine / into container)

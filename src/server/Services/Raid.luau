@@ -1097,7 +1097,8 @@ local function saveSettings(player, p)
 	end
 	if not (num("headBob", 0.2, 1) and num("quickBar", 1, 3) and num("aimSens", 0.2, 3) and num("pfxBright", -0.5, 0.5) and num("pfxSat", -1, 1)
 		and num("pfxClarity", -0.5, 0.5) and num("pfxGrade", 0, 4) and num("pfxGradeK", 0, 1) and num("volMaster", 0, 1) and num("volFx", 0, 1)
-		and num("volUi", 0, 1) and num("volAmb", 0, 1)) then
+		and num("volUi", 0, 1) and num("volAmb", 0, 1) and num("padSens", 0.2, 3) and num("touchSens", 0.2, 3)
+		and num("msgSeen", 0, 4e9) and bool("invertY") and bool("malfNotes") and bool("dblUse")) then
 		return fail("BAD_INPUT")
 	end
 	if not (num("fov", 50, 100) and num("sens", 0.2, 3) and num("quality", 0, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
