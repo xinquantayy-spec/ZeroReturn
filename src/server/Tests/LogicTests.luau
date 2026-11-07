@@ -544,6 +544,17 @@ function T.run(ctx)
 	do
 		local bb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.border and ctx.World.maps.border.boss
 		checkOn("border", "the Broker has Reshala's 752 health and his guards 630", bb ~= nil and math.abs(bb.hp * 440 - 752) < 1e-6 and math.abs(bb.crewHp * 440 - 630) < 1e-6)
+		-- audit ai.3: Reshala's three zones, his own chance, look and kit (no armour, no helmet, none of the Foreman's loot)
+		local bk = Loot.brokerLoadout(Random.new(5))
+		local foreman = false
+		for _, it in bk.items do
+			if it.id == "KEY_OFFICE" or it.id == "LEDGER" or it.id == "BRASS_LION" then
+				foreman = true
+			end
+		end
+		checkOn("border", "the Broker: three zones (dorms, fuel stop, Bastion), 45 %, his own look; no armour, helmet or Foreman loot",
+			bb ~= nil and bb.zones ~= nil and #bb.zones == 3 and bb.chance == 0.45 and bb.look == "broker" and bb.loadout == "brokerLoadout"
+				and bk.slots.armor == nil and bk.slots.head == nil and bk.slots.holster ~= nil and not foreman)
 		local mb = ctx and ctx.World and ctx.World.maps and ctx.World.maps.meridian and ctx.World.maps.meridian.boss
 		checkOn("meridian", "the Caretaker has Killa's 890 health and five double pockets", mb ~= nil and math.abs(mb.hp * 440 - 890) < 1e-6
 			and (function()

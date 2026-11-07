@@ -1055,6 +1055,29 @@ function Loot.guardLoadout(rand)
 	return k.h
 end
 
+-- THE BROKER (Reshala, audit ai.3): no armour and no helmet; a pistol (EFT's golden TT; ours is a stand-in) and
+-- now and then an SMG; dealer's cash and valuables and a key to the dorms he holds. Not the Foreman's harbour loot.
+function Loot.brokerLoadout(rand)
+	rand = rand or Random.new()
+	local k = kit(rand)
+	k.wear = { 85, 100 }
+	k.slot("rig", "RIG_CHEST", { tint = "charcoal" })
+	if rand:NextNumber() < 0.5 then
+		k.gun("primary", "SPARROW_SMG", "SPARROW_MAG", "A9_AP", 2)
+	end
+	k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 3)
+	k.put("MEDKIT_L")
+	k.put("PAINKILLERS")
+	k.put("GREN_F7")
+	k.put("GREN_SMOKE")
+	k.put(rand:NextNumber() < 0.5 and "KEY_BY_314" or "KEY_BY_RECORDS")
+	if rand:NextNumber() < 0.6 then
+		k.put("GOLD_CHAIN")
+	end
+	k.roll("safe", rand:NextInteger(2, 4))
+	return k.h
+end
+
 -- the Foreman: heavy armour, a 7.6 rifle with armour-piercing rounds, good meds, and the harbour's best loot
 function Loot.bossLoadout(rand)
 	rand = rand or Random.new()
