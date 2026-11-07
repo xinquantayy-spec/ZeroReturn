@@ -1,8 +1,9 @@
 --!nonstrict
 -- AI 2.0 (Tarkov-style). Factions: AI scavs (leave player scavs alone unless provoked), the Harbor Watch
 -- (raider-type guards, hostile to everyone else) and the Foreman with his crew (scav-aligned boss group).
--- Perception: vision builds awareness over time (distance, stance, movement, weapon light), hearing of
--- footsteps and gunshots, suppression from near misses, call-outs to nearby allies.
+-- Perception (EFT's numbers per role and difficulty, shared/BotData.luau, decision ai-3a): sight over a cone, noticed
+-- after a delay that grows with distance (quicker for a body that shows more of itself), lost again a moment after it
+-- leaves view; hearing of footsteps and gunshots; memory of an enemy; suppression from near misses; call-outs to allies.
 -- Tactics: cover points generated from the map, peek-and-hide, reload and heal in cover, strafe in the open,
 -- search the last known position; followers keep their slots round their leader (bosses' guards, scav groups).
 -- Grenades (M11): units with frags or stun charges flush targets that stay hidden behind cover, throw smoke to
@@ -25,6 +26,7 @@ local Env = require(Shared.Env)
 local GR = require(Shared.Grenades)
 local Ballistics = require(Shared.Ballistics)
 local Progress = require(Shared.Progress)
+local BotData = require(Shared.BotData)
 local KARMA_HOSTILE = Progress.KARMA.hostileBelow
 
 local AI = {}
@@ -39,24 +41,33 @@ local cover = { cells = {}, n = 0, ready = false }
 AI.cover = cover
 local director = { nextWave = math.huge, topUpUntil = 0, waves = 0, nextTopUp = 0 }
 AI.director = director
--- the raid's light and weather (M10): darkness and fog shorten sight, rain masks footsteps; refreshed each second
-local envView = { sight = 1, hear = 1, dark = 0 }
+-- the raid's light and weather (M10), refreshed each second: darkness shortens sight (ours, Env.sight's daylight part);
+-- rain and fog act through the map's EFT coefficients (BotLocationModifier, BotData.weather): on Customs and Interchange
+-- rain takes up to 35 % off sight and fog nothing, though no one sees past the fog's wall (Env fogEnd, ours); rain masks
+-- footsteps (Env.hearing, ours)
+local envView = { sight = 1, speed = 1, cap = math.huge, hear = 1, dark = 0 }
 AI.envView = envView
 local function refreshEnv()
 	local e = ctx.Match and ctx.Match.env
 	local t = workspace:GetServerTimeNow()
-	envView.sight = Env.sight(e, t)
+	local w = e and (Env.WEATHER[e.w] or Env.WEATHER.clear)
+	local mods = BotData.mapMods(ctx.World and ctx.World.activeMap)
+	local sight, speed = BotData.weather(mods, e and e.rain or 0, (w and w.id == "fog") and 1 or 0)
+	envView.sight = (w and Env.sight(e, t) / w.sight or 1) * sight * mods.sight
+	envView.speed = speed * mods.gain
+	envView.cap = (w and w.fogEnd) or math.huge
 	envView.hear = Env.hearing(e)
 	envView.dark = e and (1 - Env.daylight(Env.clock(e, t))) or 0
 end
 
--- skill per kind: sight range, awareness build-up, hearing, reaction (s), aim error (deg + deg/stud),
--- head-shot share, cover use, aggression, reload speed, health scale
+-- skill per kind (ours, tuned in Studio): settled aim error (deg + deg/stud), head-shot share, cover use, aggression,
+-- reload speed, health scale. Sight, notice, hearing, memory, reaction and the aim's settling and hit affection are
+-- EFT's, per role and difficulty (u.sense, BotData.stats)
 local SKILL = {
-	scav = { sight = 125, notice = 1.5, hearing = 0.85, react = { 0.8, 1.5 }, spread = 3.6, spreadDist = 0.032, head = 0.04, cover = 0.45, aggression = 0.35, reload = 1.25, hp = 1, burstPause = 1.25, suppress = false },
-	watch = { sight = 165, notice = 2.4, hearing = 1.0, react = { 0.55, 0.95 }, spread = 2.2, spreadDist = 0.016, head = 0.1, cover = 0.9, aggression = 0.6, reload = 1.0, hp = 1, burstPause = 1, suppress = true },
-	follower = { sight = 165, notice = 2.6, hearing = 1.1, react = { 0.5, 0.9 }, spread = 1.9, spreadDist = 0.014, head = 0.12, cover = 0.8, aggression = 0.75, reload = 0.95, hp = 1.2, burstPause = 0.95, suppress = true },
-	boss = { sight = 170, notice = 3.0, hearing = 1.2, react = { 0.45, 0.8 }, spread = 1.6, spreadDist = 0.012, head = 0.15, cover = 0.7, aggression = 0.85, reload = 0.9, hp = 1.6, burstPause = 0.9, suppress = true },
+	scav = { spread = 3.6, spreadDist = 0.032, head = 0.04, cover = 0.45, aggression = 0.35, reload = 1.25, hp = 1, burstPause = 1.25, suppress = false },
+	watch = { spread = 2.2, spreadDist = 0.016, head = 0.1, cover = 0.9, aggression = 0.6, reload = 1.0, hp = 1, burstPause = 1, suppress = true },
+	follower = { spread = 1.9, spreadDist = 0.014, head = 0.12, cover = 0.8, aggression = 0.75, reload = 0.95, hp = 1.2, burstPause = 0.95, suppress = true },
+	boss = { spread = 1.6, spreadDist = 0.012, head = 0.15, cover = 0.7, aggression = 0.85, reload = 0.9, hp = 1.6, burstPause = 0.9, suppress = true },
 }
 AI.SKILL = SKILL
 local LABEL = { scav = "Scav", watch = "Harbor Watch", follower = "Crew", boss = "Foreman" }
@@ -67,7 +78,7 @@ local LOOK = {}
 for _, k in { "scav", "watch", "follower", "boss" } do
 	LOOK[k] = Equipment.lookForAi(k)
 end
-local FOV_COS = math.cos(math.rad(62))
+-- right next to a bot (ours): it picks you out whichever way it faces
 local CLOSE = 9
 -- an ambusher lying in wait (THE CULT) listens all round: within this it picks out anyone who comes near, dark or not
 local AMBUSH_SENSE = 22
@@ -94,9 +105,6 @@ local function flat(v)
 end
 local function rnd(a, b)
 	return a + math.random() * (b - a)
-end
-local function rndr(r)
-	return r[1] + math.random() * (r[2] - r[1])
 end
 
 local function alive(model)
@@ -495,7 +503,7 @@ local function callout(u, target)
 					o.state = "INVESTIGATE"
 					o.goal = pos
 					o.searchUntil = t + 16
-					o.alert = t + 20
+					o.alert = math.max(o.alert or 0, t + 20)
 				end
 			end
 		end
@@ -539,8 +547,8 @@ end
 -- A calm unit that far from every raider stops thinking and stands anchored; it wakes when a raider comes within
 -- 265 m (the gap keeps it from flickering at the edge), when it is hurt or when it hears a shot. EFT's map data:
 -- DistToSleep 300 and DistToActivate 265 on Customs, 260 on Interchange (SPT's copy, BotLocationModifier).
--- 3.125 studs a metre (the real-scale maps)
-local SLEEP_FAR, WAKE_NEAR = 300 * 3.125, 265 * 3.125
+-- (BotData.STUDS: 3.125 studs a metre, the real-scale maps)
+local SLEEP_FAR, WAKE_NEAR = 300 * BotData.STUDS, 265 * BotData.STUDS
 AI.SLEEP_FAR, AI.WAKE_NEAR = SLEEP_FAR, WAKE_NEAR
 -- the next state: asleep (true) or awake, from the nearest raider's distance and whether the unit is calm
 function AI.sleepState(asleep: boolean, nearest: number, calm: boolean): boolean
@@ -891,14 +899,17 @@ local function shoot(u, t)
 			return
 		end
 	end
-	local sk = u.skill
+	local sk, se = u.skill, u.sense
 	local dist = (aimPos - muzzle).Magnitude
-	local err = sk.spread + dist * sk.spreadDist
+	local moving = flat(u.root.AssemblyLinearVelocity).Magnitude > 2
+	-- the kind's tuned error, scaled by the difficulty (BASE_SHIEF) and wide at the start of a contact, settling as EFT's
+	-- scatter does (BotData.aimMul)
+	local err = (sk.spread + dist * sk.spreadDist) * se.spreadMul * BotData.aimMul(t - (u.spottedAt or 0), se, moving)
 	local troot = tm and tm:FindFirstChild("HumanoidRootPart")
 	if troot and flat(troot.AssemblyLinearVelocity).Magnitude > 4 then
 		err += 1.1
 	end
-	if flat(u.root.AssemblyLinearVelocity).Magnitude > 2 then
+	if moving then
 		err += 1.5
 	end
 	if t < (u.suppressedUntil or 0) then
@@ -910,7 +921,6 @@ local function shoot(u, t)
 	if u.stance == "c" and not u.moving then
 		err *= 0.85
 	end
-	err += math.max(0, 3 - (t - (u.spottedAt or 0)) * 1.2) -- zeroing in over the first seconds of a fight
 	err += (u.burstN or 0) * w.def.recoilV * 0.28
 	if not u.visible then
 		err += 2
@@ -924,6 +934,16 @@ local function shoot(u, t)
 	local v0, k = Ballistics.muzzle(w.def, ms.vel), Ballistics.drag(w.def)
 	local aimAt = aimPos + Vector3.new(0, Ballistics.dropAt((aimPos - muzzle).Magnitude, v0, k), 0)
 	local base = CFrame.lookAt(muzzle, aimAt)
+	-- a hit has thrown the aim off (EFT's hit affection): it swings back on target over the next moment
+	local kick = u.hitKick
+	if kick then
+		local ang = BotData.hitAngle(kick.ang, kick.dur, t - kick.t0)
+		if ang > 0 then
+			base *= CFrame.Angles(math.rad(ang * kick.y), math.rad(ang * kick.x), 0)
+		else
+			u.hitKick = nil
+		end
+	end
 	local shotParams = Ballistics.copyParams(params)
 	for i = 1, pellets do
 		local e = err + ((pellets > 1) and (w.def.pelletSpread or 2.5) or 0)
@@ -970,7 +990,8 @@ local function shoot(u, t)
 			u.burstN = 0
 			u.burstLen = (dist < 20 and math.random(4, 8)) or (dist < 60 and math.random(2, 5)) or math.random(1, 2)
 			u.nextShot = t + rnd(0.3, 0.8) * sk.burstPause
-			u.aimPart = (math.random() < sk.head) and "Head" or ((math.random() < 0.08) and "LowerTorso" or "UpperTorso")
+			-- no head shots on a contact with someone unseen for 15 s or more (EFT 1.0; u.headOk, set per contact)
+			u.aimPart = (u.headOk and math.random() < sk.head) and "Head" or ((math.random() < 0.08) and "LowerTorso" or "UpperTorso")
 		else
 			u.nextShot = t + interval
 		end
@@ -1630,12 +1651,14 @@ local function combat(u, t)
 			tryNade(u, t, lp)
 		end
 	end
-	-- lost contact: push the last known position (aggressive) or hold a little longer
-	local lost = t - (u.seen[tm] or 0)
-	if lost > (sk.aggression > 0.5 and 3.5 or 7) then
+	-- lost contact: push the last known position (aggressive) or hold a little longer. EFT's memory: the bot searches for
+	-- TIME_TO_FIND_ENEMY after it last saw the target and stays on guard until it forgets it (TIME_TO_FORGOR_ABOUT_ENEMY_SEC)
+	local lastSeen = u.seen[tm]
+	if t - (lastSeen or 0) > (sk.aggression > 0.5 and 3.5 or 7) then
 		u.state = "SEARCH"
 		u.goal = u.lastPos[tm] or tpos
-		u.searchUntil = t + 18
+		u.searchUntil = math.max(t + 6, (lastSeen or t) + u.sense.find)
+		u.alert = math.max(u.alert or 0, (lastSeen or t) + u.sense.forget)
 		u.wantFire = false
 		if u.cover then
 			u.cover.c.owner = nil
@@ -1703,8 +1726,13 @@ end
 local function perceive(u, t, dt)
 	local eye = u.head.Position
 	local look = u.root.CFrame.LookVector
-	local sk = u.skill
-	local alert = (t < (u.alert or 0)) or (u.state ~= "PATROL" and u.state ~= "WANDER" and u.state ~= "RETURN")
+	local se = u.sense
+	local calm = t >= (u.alert or 0) and (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN")
+	-- how far it sees: its role's sight, less while calm (Patrol.VISION_DIST_COEF_PEACE), in the dark and in rain, never
+	-- past the fog's wall; in the dark a light on a body shows it from further (Look.ENEMY_LIGHT_ADD)
+	local range = math.min(se.sight * envView.sight * (calm and se.peace or 1), envView.cap)
+	local litRange = math.min(se.sight, range + se.lightAdd * envView.dark, envView.cap)
+	local blind = t < (u.blindUntil or 0)
 	local best, bestScore = nil, -math.huge
 	for _, model in candidates(u) do
 		local tor = model:FindFirstChild("UpperTorso") or model:FindFirstChild("HumanoidRootPart")
@@ -1712,41 +1740,47 @@ local function perceive(u, t, dt)
 			local d = tor.Position - eye
 			local dist = d.Magnitude
 			local a = u.aware[model] or 0
-			-- darkness and fog shorten sight; a lit weapon light gives you away from much further in the dark
-			local range = sk.sight * envView.sight
-			if model:GetAttribute("WeaponLight") then
-				range = math.max(range, sk.sight * ((envView.dark > 0.5) and 1.4 or 1.05))
-			end
 			local vis = nil
-			if dist < range and t >= (u.blindUntil or 0) then
-				local inFov = dist < CLOSE or look:Dot(d.Unit) >= FOV_COS or (a >= 1 and dist < 45) or (u.ambush and dist < AMBUSH_SENSE)
+			-- rays only at someone in range and inside the cone (or right next to the bot)
+			if not blind and dist < (model:GetAttribute("WeaponLight") and litRange or range) then
+				local inFov = dist < CLOSE or look:Dot(d.Unit) >= se.coneCos or (a >= 1 and dist < 45) or (u.ambush and dist < AMBUSH_SENSE)
 				if inFov then
 					vis = visiblePart(u, model, eye)
 				end
 			end
 			if vis then
-				local rate = sk.notice * exposure(model) * math.clamp(1.35 - dist / range, 0.15, 1.35)
-				if alert then
-					rate *= 2
-				end
-				if dist < CLOSE then
-					rate *= 3
-				end
+				-- EFT's notice time at this distance for this role, shorter for a body that shows more of itself (ours:
+				-- stance, movement, a light) and as the map's weather says
+				local need = BotData.noticeAt(dist, se) / math.max(0.05, envView.speed * exposure(model))
 				if u.ambush and dist < AMBUSH_SENSE then
-					rate = math.max(rate, 1.6)
+					need = math.min(need, 0.6) -- lying in wait (THE CULT), it picks out anyone who comes near
 				end
-				a = math.min(1.6, a + rate * dt)
-				u.seen[model] = t
+				local was = a
+				a = math.min(1.6, a + dt / need)
 				if a >= 1 then
+					if was < 1 then
+						-- noticed afresh: a new contact (think starts the aim over); gap: how long since it last saw this one
+						u.contact[model] = { at = t, gap = u.seen[model] and (t - u.seen[model]) or nil }
+					end
+					u.seen[model] = t
 					u.lastPos[model] = tor.Position
+				end
+			elseif a >= 1 then
+				-- noticed, now out of view: kept for Look.GOAL_TO_FULL_DISSAPEAR, then lost, so it has to be noticed again when
+				-- it shows (EFT 1.0: slower repeated detection)
+				if t - (u.seen[model] or 0) > se.lose then
+					a = 0
 				end
 			else
 				a = math.max(0, a - 0.3 * dt)
 			end
-			-- footsteps
-			local nz = noiseOf(model)
-			if nz > 0 and t >= (u.deafUntil or 0) and dist < 60 * nz * sk.hearing * envView.hear then
-				u.heard = { pos = tor.Position + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)), t = t }
+			-- footsteps (EFT's Hearing): a sprint carries to FAR_DIST, softer steps less far in proportion; inside CLOSE_DIST
+			-- always heard, beyond it CHANCE_TO_HEAR_SIMPLE_SOUND of the time; it turns to the sound after HEAR_DELAY_*
+			local nz = noiseOf(model) * envView.hear
+			if nz > 0 and t >= (u.deafUntil or 0) and dist < se.hearFar * nz and (dist < se.hearClose * nz or math.random() < se.hearChance) then
+				if not u.heard or t - u.heard.t >= 0.6 then
+					u.heard = { pos = tor.Position + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)), t = t + (calm and se.hearPeace or se.hearDelay) }
+				end
 				a = math.max(a, 0.4)
 			end
 			u.aware[model] = a
@@ -1763,6 +1797,7 @@ local function perceive(u, t, dt)
 			u.aware[model] = nil
 			u.lastPos[model] = nil
 			u.seen[model] = nil
+			u.contact[model] = nil
 		end
 	end
 	return best
@@ -1782,24 +1817,41 @@ local function think(u)
 	if not calm or u.tick % 2 == 0 then
 		seen = perceive(u, t, calm and dt * 2 or dt)
 	end
+	-- EFT's memory: back on its rounds, a bot forgets a target it has not seen for TIME_TO_FORGOR_ABOUT_ENEMY_SEC (and
+	-- may sleep again)
+	local old = u.target
+	if old and calm and not seen and t - (u.seen[old] or 0) > u.sense.forget then
+		u.target = nil
+		u.lastPos[old] = nil
+	end
 	if seen and u.state ~= "FLEE" then
-		if u.state ~= "ENGAGE" then
-			u.state = "ENGAGE"
-			u.reactUntil = t + rndr(u.skill.react)
-			u.spottedAt = t
-			u.peeking = false
-			u.burstN = 0
-			u.burstLen = math.random(2, 3)
+		local c = u.contact[seen]
+		if u.state ~= "ENGAGE" or u.target ~= seen or (c ~= nil and c.at > (u.spottedAt or 0)) then
+			-- a new contact (EFT): the first sight of someone it does not remember (TIME_TO_FORGOR_ABOUT_ENEMY_SEC) holds its
+			-- fire FIRST_CONTACT_ADD_SEC most of the time; the aim starts over (an aim a hit threw away stays thrown); no
+			-- head shots on someone it had not seen for 15 s (EFT 1.0)
+			local se = u.sense
+			local gap = c and c.gap
+			local first = gap == nil or gap > se.forget
+			u.reactUntil = t + ((first and math.random() < se.firstChance) and se.firstAdd or 0)
+			u.spottedAt = math.max(t, u.spottedAt or 0)
+			u.headOk = BotData.headAllowed(gap)
 			u.aimPart = "UpperTorso"
-			callout(u, seen)
+			if u.state ~= "ENGAGE" then
+				u.state = "ENGAGE"
+				u.peeking = false
+				u.burstN = 0
+				u.burstLen = math.random(2, 3)
+				callout(u, seen)
+			end
 		end
 		u.target = seen
 	end
-	if u.heard and u.state ~= "ENGAGE" and u.state ~= "FLEE" and t - u.heard.t < 0.6 then
+	if u.heard and u.state ~= "ENGAGE" and u.state ~= "FLEE" and t >= u.heard.t and t - u.heard.t < 0.6 then
 		u.state = "INVESTIGATE"
 		u.goal = u.heard.pos
 		u.searchUntil = t + 14
-		u.alert = t + 20
+		u.alert = math.max(u.alert or 0, t + 20)
 		u.heard = nil
 	end
 	reloadTick(u, t)
@@ -1903,6 +1955,11 @@ AI.liveCount = liveCount
 function AI.spawn(kind, pos, opts)
 	opts = opts or {}
 	local skillOf = SKILL[opts.skill or kind] or SKILL[kind] -- a crew may fight with the boss's skill (THE HOUNDS)
+	-- its EFT role (BotData.roleFor: a boss or named man by label, a crew by its boss, the rest by kind) and the difficulty
+	-- it fights at (scavs roll the map's mix, 10 / 50 / 40 easy, normal, hard on Customs and Interchange)
+	local label = opts.label or LABEL[kind]
+	local role = opts.role or BotData.roleFor(kind, label, opts.leader and opts.leader.label)
+	local diff = opts.diff or BotData.difficulty(role, math.random(), BotData.mapMods(ctx.World and ctx.World.activeMap).mix)
 	-- bosses and their crews ignore the cap (EFT's IgnoreMaxBots; audit ai.1): a full map never loses its boss
 	if liveCount() >= Config.AI_MAX and kind ~= "boss" and kind ~= "follower" then
 		AI.refused = (AI.refused or 0) + 1
@@ -1966,11 +2023,12 @@ function AI.spawn(kind, pos, opts)
 	turn.Enabled = false
 	turn.Parent = root
 	local u = {
-		id = seq, kind = kind, faction = FACTION[kind], label = opts.label or LABEL[kind], name = model.Name, skill = skillOf,
+		id = seq, kind = kind, faction = FACTION[kind], label = label, name = model.Name, skill = skillOf,
+		role = role, diff = diff, sense = BotData.stats(role, diff),
 		model = model, hum = hum, root = root, head = model:FindFirstChild("Head"), inv = inv, alive = true, gen = myGen,
 		state = (opts.route or opts.post or opts.leader) and "PATROL" or "WANDER", route = opts.route, wp = opts.wp or 1,
 		post = opts.post, leader = opts.leader, slot = opts.slot,
-		aware = {}, lastPos = {}, seen = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
+		aware = {}, lastPos = {}, seen = {}, contact = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
 		useCover = math.random() < skillOf.cover, turn = turn, charge = opts.charge, ambush = opts.ambush,
 		karmaHunt = opts.karmaHunt, grudge = {}, zones = opts.zones,
 	}
@@ -2151,7 +2209,8 @@ local function directorTick()
 end
 
 -- ── events from the rest of the game ─────────────────────────────────────────
--- a gunshot at pos: AI in earshot investigate (shooter: Player, Model or nil)
+-- a gunshot at pos: AI in earshot investigate (shooter: Player, Model or nil). 200 studs for a scav is ours (EFT gives
+-- no gunfire figure); each role hears it as much further as its FAR_DIST is (BotData shotHear)
 function AI.hearShot(pos, shooter, except, loudness)
 	local radius = 200 * (loudness or 1) * math.sqrt(envView.hear) -- heavy rain dulls distant shots a little
 	local t = now()
@@ -2160,10 +2219,11 @@ function AI.hearShot(pos, shooter, except, loudness)
 		if u ~= except and u.alive and u.root then
 			local d = (u.root.Position - pos).Magnitude
 			local deaf = (t < (u.deafUntil or 0)) and 0.2 or 1
-			if d < radius * u.skill.hearing * deaf then
+			local ear = radius * u.sense.shotHear
+			if d < ear * deaf then
 				wake(u)
-				u.alert = t + 25
-				if u.state ~= "ENGAGE" and u.state ~= "FLEE" and d < radius * 0.55 * u.skill.hearing then
+				u.alert = math.max(u.alert or 0, t + 25)
+				if u.state ~= "ENGAGE" and u.state ~= "FLEE" and d < ear * 0.55 then
 					u.state = "INVESTIGATE"
 					u.goal = pos + Vector3.new(rnd(-1, 1), 0, rnd(-1, 1)) * (4 + d * 0.06)
 					u.searchUntil = t + 16
@@ -2197,7 +2257,7 @@ function AI.bulletPassed(a, b, shooterModel)
 			local k = math.clamp((u.head.Position - a):Dot(dir), 0, len)
 			if (a + dir * k - u.head.Position).Magnitude < 4 then
 				u.suppressedUntil = t + 1.5
-				u.alert = t + 25
+				u.alert = math.max(u.alert or 0, t + 25)
 				if typeof(shooterModel) == "Instance" and shooterModel:IsA("Model") then
 					local w = who(shooterModel)
 					if w and hostile(u, w) then
@@ -2293,8 +2353,17 @@ function AI.onDamaged(model, attacker)
 	local t = now()
 	wake(u)
 	u.suppressedUntil = t + 1.2
-	u.alert = t + 30
+	u.alert = math.max(u.alert or 0, t + 30)
 	u.provoked = true -- an ambusher that is hit gives up hiding
+	-- EFT's hit affection: the hit throws its aim off by BASE_HIT_AFFECTION_MIN..MAX_ANG degrees, back on target after
+	-- BASE_HIT_AFFECTION_DELAY_SEC (shoot); and DAMAGE_TO_DISCARD_AIM_0_100 of the time it throws the aim away, starting it
+	-- over once MIN..MAX_TIME_DISCARD_AIM_SEC have passed
+	local se = u.sense
+	local dir = math.random() * math.pi * 2
+	u.hitKick = { ang = rnd(se.hitMin, se.hitMax), dur = se.hitDelay, t0 = t, x = math.cos(dir), y = math.sin(dir) }
+	if math.random() < se.discard then
+		u.spottedAt = math.max(u.spottedAt or 0, t + rnd(se.discardMin, se.discardMax))
+	end
 	local amodel = nil
 	if typeof(attacker) == "Instance" then
 		if attacker:IsA("Player") then
