@@ -136,7 +136,7 @@ add("BAG_RAID", { name = "Raid Pack", short = "RAID", kind = "backpack", w = 5, 
 add("SECURE_S", { name = "Pouch S", short = "POUCH S", kind = "secure", w = 2, h = 2, mass = 0.5, value = 0, grid = { w = 2, h = 2 }, desc = "Secure container. Contents survive death.", color = c("#3B3F3F") })
 -- the bigger pouches have EFT's paths (audit economy.7): M is TILDA's loyalty 2 barter (EFT's Beta from Peacekeeper at
 -- LL2), L is the reward of FENCE's collector task (EFT's Kappa from Fence's The Collector)
-add("SECURE_M", { name = "Pouch M", short = "POUCH M", kind = "secure", w = 3, h = 3, mass = 0.7, value = 0, rarity = "rare", grid = { w = 3, h = 3 }, desc = "Secure container. Contents survive death. TILDA trades one for military electronics at loyalty 2.", color = c("#3B3F3F") })
+add("SECURE_M", { name = "Pouch M", short = "POUCH M", kind = "secure", w = 3, h = 3, mass = 0.7, value = 0, rarity = "rare", grid = { w = 3, h = 3 }, desc = "Secure container. Contents survive death. DEKKER trades one for military electronics at loyalty 2.", color = c("#3B3F3F") })
 add("SECURE_L", { name = "Pouch L", short = "POUCH L", kind = "secure", w = 3, h = 4, mass = 0.9, value = 0, rarity = "epic", grid = { w = 4, h = 3 }, desc = "Secure container. Contents survive death. FENCE gives one to an operator who brings him a collection of rare valuables.", color = c("#3B3F3F") })
 
 -- ── medical, provisions ───────────────────────────────────────────────────────
