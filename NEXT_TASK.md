@@ -2,6 +2,16 @@
 
 **Standing rule (owner, 2026-10-31):** as close as possible to Escape from Tarkov in every aspect, less the exceptions in `docs/design/EFT_PARITY.md`. Research how Tarkov does it before each task; check the result against it before moving on; log the gaps in `EFT_PARITY.md`.
 
+**NOW (2026-11-07): waiting for the owner's choices. Do not implement anything from the audit until the owner marks it ready.**
+- The owner asked for deep research into every area, then a report to give input on before anything is implemented.
+- The research is in `docs/audit/2026-11-07/`: six area reports plus `SUMMARY.md`.
+- The report is the claude.ai artifact "Zero Return Audit" (https://claude.ai/artifact/WmgDqevdd2j53hAHfDzxGA). It has 50 decisions.
+- Read the owner's input with ArtifactData:
+  - `list` on `choices`: one document per decision id, with `opt` and `note`;
+  - `get` on `meta/general`: `note`, `useRecs` (open cards take the recommendation) and `ready`.
+- When `ready` is true, build in the order `start-1` sets. If `start-2` allows it, do the quick wins first.
+- Parked: the players' tripwire kit. The server side is merged on branch `wip/tripwire-kit`, the client is not built, and the branch is not on main.
+
 **Done 2026-11-01:** the bunker graphics pass (painted walls, grime only where it gathers, no flicker; `docs/maps/RELAY7_LOBBY.md`), and before it the z-fighting pass, real-size air-con and stairs, Quay 7 interiors, bullet drop and zeroing, seasons, propane cylinders and border snipers on Border Yard.
 
 **Done 2026-11-01 (later):** Border Yard rebuilt on Customs' layout at real scale (`docs/maps/BORDER_YARD.md`), Tarkov's EYEWEAR slot with glasses, ballistic glasses and a gas mask (meshes uploaded).
