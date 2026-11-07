@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3: the Broker and scav groups (audit ai.3, ai.8; 2026-11-08)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests 411/411, CharTests 47/47, LookTests 33/33, MapTests 41/41. |
+| The Broker, three zones | Forced on Border for four raids: he came up at the Bastion twice, the fuel stop once and the dorms once, at 752 health. His four guards had 630 each and stood 2 to 11 studs from him at the Bastion and the fuel stop (on the forecourt, under the canopy). At the dorms they were 15 to 32 studs away 5 s in, walking in from the courtyard. |
+| Bug found and fixed | The first version doubled the map offset, so the fuel-stop and Bastion guards spawned off the map and fell. The fuel stop had also fallen back to building 8, a storage block across the map. The test now checks every zone is on the map at its own building. |
+| Scav groups | Border raid start: one leader with two followers (1 to 6 studs apart) and one scav alone, 4 in all (SCAV_START). 40 s later the three had walked about 220 studs together, the followers 16 studs behind the leader. |
+| Not seen | A group's man going back to wandering after his leader dies; waves of groups later in a raid. |
+
 ## M3 quick wins, batch 5: settings, messenger and shot visuals (2026-11-08)
 
 | Test | Result |

@@ -596,6 +596,20 @@ function T.run(ctx)
 				return h.pocketsW == 5 and h.pocketsH == 2
 			end)())
 	end
+	-- audit ai.8: scavs spawn alone or in groups of two or three (45 / 45 / 10 %), never more than the room left
+	if ctx and ctx.AI and ctx.AI.groupSize then
+		local gs = ctx.AI.groupSize
+		local n, solo, three, over, capped = 3000, 0, 0, 0, true
+		for _ = 1, n do
+			local s = gs(3)
+			solo += (s == 1) and 1 or 0
+			three += (s == 3) and 1 or 0
+			over += (s > 3 or s < 1) and 1 or 0
+			capped = capped and gs(1) == 1 and gs(2) <= 2 and gs(0) == 1
+		end
+		check("scavs spawn alone (about 45 %), in pairs or in threes (about 10 %), never past the room left",
+			over == 0 and capped and math.abs(solo / n - 0.45) < 0.04 and math.abs(three / n - 0.097) < 0.025)
+	end
 
 	-- ammo + magazines
 	local mg, mi = Inv.newItem("R17_MAG", 1, { a = 0 })
