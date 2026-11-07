@@ -23,18 +23,18 @@
 9. **The PC folder is still called `EscapeFromBloxov`.** Renaming it means restarting `rojo serve` from the new path.
 
 10. **Prone keeps the upright collision box.** The humanoid root stays upright when prone (the body lies flat visually and as a hitbox), so you cannot crawl under objects lower than about 3 studs.
-11. **Weapons are part-built.** All weapons and attachments use the shared `WeaponModels` spec (consistent first and third person). The earlier R17 Blender viewmodel mesh is retired; M10 re-authors weapon meshes in Blender against the same anchors.
-12. **Inventory on short windows.** With a viewport shorter than about 600 px, the lower equipment slots (primary, holster, secondary) slide under the detail strip. Needs a scrollable gear column (M11).
+11. **Resolved in M14 (2026-10-29): weapons are Blender meshes.** Six guns and 91 parts are 187 Blender part meshes in seven batches, put together for first person, third person and loose guns (`docs/weapons/WEAPON_MODDING.md`). The old part-built `WeaponModels` spec only shows the bare gun while the meshes load. They are still vertex-coloured with no textures (art-4b plans PBR sets for the first-person guns).
+12. **Resolved: inventory on short windows.** The columns scroll, the cells shrink to fit (24 to 46 pt), and below 500 pt of height the phone layout shows one panel at a time (M2, 2026-11-07; seen in Studio through `ZR_ClientDev preview` at 844 x 390 and 932 x 430, TEST_RESULTS "M2 phone menus"). Not run on a real phone (see 3).
 13. **Movement extras not yet verified on devices.** Lean, prone and crouch-depth have touch buttons. On a gamepad, lean
     is on the shoulder buttons and prone is a held B. Since 2026-11-02 free look is a held D-up on a gamepad and the
     LOOK button on touch. Hold breath is L3 or RUN held while aiming. None of this has been tried on a real controller or
     phone.
 14. **Character materials are vertex colours only.** The M16 body and gear have no texture maps. Body segments and soft gear use Roblox's built-in Fabric, which looks coarse up close, and first-person sleeves use SmoothPlastic. A subtle custom fabric MaterialVariant is still to make.
 
-15. **AI limits.** No grenades, voice lines or doors yet; peeking steps sideways from full cover rather than leaning; AI do not loot. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map (1,018 points since the M12 cover props).
+15. **AI limits (refreshed 2026-11-08).** AI throw grenades, open doors and hear doors a player works. They still have no voice lines, never loot, and do not lean, go prone, vault or flank (peeking steps sideways from full cover). Their sight is about a third of EFT's and their hearing and memory are shorter (ai-3a); they never sleep or leave the raid (ai-2b). The full list is in `docs/design/EFT_PARITY.md`, section 8. Pathfinding occasionally lifts a unit onto a door frame for a moment (it recovers). Cover points come from a 3-stud sampling of the map: 14,013 with every map built, 5,620 on a Border Yard server (TEST_RESULTS, "M2 lean servers").
 20. **AI lethality is tuned by feel.** Reaction times, aim error and zeroing penalties are in `AI.luau` (`SKILL`); a guard can still kill a player standing in the open within a few seconds, which matches Tarkov but may need tuning after playtests.
 16. **Paid exfils use stash money.** There is no physical cash item yet, so PIER 3 BOAT charges the profile balance on exit, and the car exits (DORMS CAR, SUBSTATION CAR) charge it when you pay at the car.
-17. **Not yet in:** transits to maps we do not have (Border Yard and Meridian Mall are linked since 2026-11-02, `docs/design/TRANSITS.md`; co-op exfils too: BOILER CELLAR and WEST CAMP), a flea market (player-to-player trading across servers), the scav case and other hideout modules (lavatory, intelligence centre, shooting range).
+17. **Not yet in:** transits to maps we do not have (Border Yard and Meridian Mall are linked since 2026-11-02, `docs/design/TRANSITS.md`; co-op exfils too: BOILER CELLAR and WEST CAMP), a flea market of real players (the flea market built 2026-10-31 has simulated sellers and buyers; a market across servers is economy-3a), the scav case and other hideout modules (lavatory, intelligence centre, the shooting range as a module).
 21. **Dog tags need space.** The tag goes into the dead PMC's pockets, rig or backpack; if all of them are completely full, no tag is added.
 22. **Trader stock is per player.** Each player has their own purchase limits per 30-minute restock (Tarkov shares some stock between players).
 23. **Economy balance is first-pass.** Prices, XP values, task rewards, build times (5–40 min) and craft times (15–45 min) are tuned by feel and need playtests.
@@ -55,7 +55,7 @@
 38. **Belt rig pouches are at the back.** They sit there to stay clear of the thighs when crouching and of the hands hanging at the sides.
 39. **Worn materials can render black after a fresh upload (Studio).** If a material's textures fail to load once (for example while new images are still processing), Studio keeps rendering that exact set of textures black for the session. Restart Studio, or upload one of the maps again so the set gets a new ID (done for five materials on 2026-10-29).
 40. **Client-side clutter is not identical for everyone.** HIGH draws low clutter (trash bags, cardboard, tipped bins) that POTATO does not, so a player lying prone right beside clutter is slightly easier to see on POTATO. Clutter is kept low and mostly along walls, and fog, light and cover are identical at every level.
-41. **Performance on devices is unknown.** HIGH (the owner's default everywhere, phones included) adds depth of field (outdoors only since M13), sun rays, bloom and the full detail layer. On the T490 laptop in Studio it runs at about 34–37 fps on Quay 7 against 58 on POTATO, and 26–31 fps in the mall at Studio's maximum render quality (46–58 at quality 10). Phones and consoles have not been measured.
+41. **Performance on devices is unknown.** HIGH (the default on PCs; since 2026-11-07 phones start at LOW and consoles at MEDIUM, tech-3b) adds depth of field (outdoors only since M13), sun rays, bloom and the full detail layer. On the T490 laptop in Studio it runs at about 34–37 fps on Quay 7 against 58 on POTATO, and 26–31 fps in the mall at Studio's maximum render quality (46–58 at quality 10). Phones and consoles have not been measured.
 42. **Container decals float slightly.** Rust and grime on shipping containers sit on a flat plane just outside the corrugation, which shows at grazing angles.
 43. **Not built yet (M12 leftovers):**
     - chain-link fences: they need to block movement but not bullets or sight;
@@ -67,12 +67,12 @@
 48. **An unknown asset warning.** `rbxassetid://111777818918264` (and once `92890594649410`) fail to load in raids ("HTTP 502" or "Asset content representation is being generated"). No instance in the client or server references them; likely a freshly uploaded image or mesh still processing. Harmless so far; watch the console.
 49. **Studio frame rates depend on Studio's render quality.** Studio renders at quality 21 (the maximum) during Play; devices choose their own level. `settings().Rendering.QualityLevel` can be set from the client command bar for comparisons (it resets when Play stops).
 50. **Resolved in M14 (2026-10-29): a modded gun now shows its build.** Every grid tile, drag ghost, detail strip and trader preset row draws the gun from the sprites of the parts actually on it.
-51. **Item pictures are not checked on a phone.** At 64 px per grid cell they look sharp in Studio on the laptop; how readable the small ones (ammunition, keys) are on a phone screen is not verified.
+51. **Item pictures are not checked on a phone.** Grid cells are now 24 to 46 pt in the PC layout and 36 pt in the phone layout (48 in the trader grids when there is room; `Inventory.luau`, `Trade.luau`), down from 64. The pictures look sharp in Studio on the laptop; how readable the small ones (ammunition, keys) are on a phone screen is not verified.
 52. **Resolved 2026-11-02: tactical lasers draw a beam and a dot, and combos have modes.** T turns the device on and off, Ctrl+T switches an LC-4 between light, laser and both (Tarkov). Every client draws each laser that is on (LaserFx); AI run theirs with the light and in any fight. Gamepad: hold D-right (while aiming: the mode); touch: LGT (hold: the mode). Not seen with a second client or a real pad (TEST_RESULTS, Tactical lasers).
 53. **Folding stocks cannot be folded (M14 gap).** Tarkov lets you fold a stock to make the gun one or two cells shorter; the KS-7 folding stock is always unfolded here.
 54. **No saved weapon builds (M14 gap).** Tarkov's modding screen saves builds and buys the missing parts from traders; here you fit parts you own, one at a time.
 55. **Resolved: sight zeroing and variable zoom.** Page Up / Page Down set the zeroing in Tarkov's steps (the server keeps it per weapon, 2026-11-01), and Alt + right mouse switches a variable scope between its powers (the V6: 1x and 6x), as Tarkov does in steps. Neither has a gamepad or touch control yet (see 13).
-56. **3D inspect only for guns (M14 gap).** The modding screen shows a gun in 3D; other items have only their picture.
+56. **Resolved 2026-10-31: 3D inspect.** The INSPECT window turns a 3D model of every gun as built and of any item that has a loose-loot or worn model (`Inspect.luau`, `buildModel`); an item with neither shows its picture.
 57. **Part grid sizes are hand-set.** Only the pistol grips (1x1) were checked against Tarkov's wiki; barrels, handguards, stocks and sights keep sizes chosen to look like Tarkov's.
 58. **At the range others do not see the gun in your hands (lobby gap).** Practice mode raises your gun on your own screen; other players hear the shots and see the impacts and the targets react, but your character keeps its weapons slung.
 59. **No lobby sounds yet.** The design calls for the generator's hum once you have built it, radio chatter at the ops table, pipes knocking and the van idling through the countdown; there is no synthesized lobby audio yet (doors slam with a metal impact sound).
@@ -162,9 +162,10 @@
       against 14 hits round STORE 3 before.
     - **Not done:** the exact spot of the old picture was not found again for a picture of the floor after the fix.
 
-73. **The ambience sound atlas loads as 0.0 s long (seen 2026-11-02).** The client logs "the ambience atlas asset is 0.0 s
-    long ... silent until ZR_SFX_Amb is re-uploaded". Everything that plays from it is silent:
-    - the mall's room tone and hum, drips and distant gunfire;
+73. **The ambience sound atlas loads as 0.0 s long (seen 2026-11-02, and again in the audit's Studio run on 2026-11-07).**
+    The client logs "the ambience atlas asset is 0.0 s long ... silent until ZR_SFX_Amb is re-uploaded". Everything that
+    plays from it is silent:
+    - the mall's room tone and hum, drips, and the far-shot boom (real shots beyond hearing range, since 2026-11-07);
     - the IRONSIGHT siren and the substation generator;
     - breaking glass;
     - the airdrop plane's engine drone.

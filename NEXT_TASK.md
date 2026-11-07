@@ -2,14 +2,18 @@
 
 **Standing rule (owner, 2026-10-31):** as close as possible to Escape from Tarkov in every aspect, less the exceptions in `docs/design/EFT_PARITY.md`. Research how Tarkov does it before each task; check the result against it before moving on; log the gaps in `EFT_PARITY.md`.
 
-**NOW (2026-11-07): waiting for the owner's choices. Do not implement anything from the audit until the owner marks it ready.**
-- The owner asked for deep research into every area, then a report to give input on before anything is implemented.
-- The research is in `docs/audit/2026-11-07/`: six area reports plus `SUMMARY.md`.
-- The report is the claude.ai artifact "Zero Return Audit" (https://claude.ai/artifact/WmgDqevdd2j53hAHfDzxGA). It has 50 decisions.
-- Read the owner's input with ArtifactData:
-  - `list` on `choices`: one document per decision id, with `opt` and `note`;
-  - `get` on `meta/general`: `note`, `useRecs` (open cards take the recommendation) and `ready`.
-- When `ready` is true, build in the order `start-1` sets. If `start-2` allows it, do the quick wins first.
+**NOW (2026-11-08): the audit's follow-up.**
+- The research is in `docs/audit/2026-11-07/` (six area reports plus `SUMMARY.md`). The owner's picks are in the claude.ai
+  report "Zero Return Audit" (https://claude.ai/artifact/WmgDqevdd2j53hAHfDzxGA; ArtifactData `list` on `choices`, `get`
+  on `meta/general`): every quick win (start-2a), and the recommended option of every decision except art-3, where the
+  block body stays (art-3a). Work goes in start-1a's order: release blockers first.
+- Done (the section 7 entries of `docs/design/EFT_PARITY.md`, TEST_RESULTS): M1 release blockers; M2 lean servers
+  (tech-4b) and phone menus (ui-3a); M3 quick wins in five batches; the Broker on Reshala's zones (ai.3); scav groups
+  (ai.8); the mesh library split (tech.13).
+- In progress: the remaining quick wins, on the economy, ui, gameplay and docs helper branches; the coordinator merges
+  them and runs the Studio checks, among them the M11 part B malfunction check (gameplay.12).
+- The gaps by area: `docs/design/EFT_PARITY.md` sections 8 (AI), 9 (core gameplay), 10 (economy) and 11 (art); the look
+  rules for new art: `docs/look/ART_BIBLE.md`.
 - Parked: the players' tripwire kit. The server side is merged on branch `wip/tripwire-kit`, the client is not built, and the branch is not on main.
 
 **Done 2026-11-01:** the bunker graphics pass (painted walls, grime only where it gathers, no flicker; `docs/maps/RELAY7_LOBBY.md`), and before it the z-fighting pass, real-size air-con and stairs, Quay 7 interiors, bullet drop and zeroing, seasons, propane cylinders and border snipers on Border Yard.
@@ -82,20 +86,20 @@ Next round (`KNOWN_ISSUES` 69):
 5. **Mounted guns, the rest:** the grenade launcher by hand, gamepad and touch, AI gunners firing a mounted gun, Blender art.
 6. Then the remaining parity list in `EFT_PARITY.md`: hideout posters, collectibles and range targets (the walls, floor and ceiling styles are done, as are the transits and co-op exits), the players' tripwire kit (Jaeger's; THE FORESTER's wires are done), yellow flares for quests (the green flare and flare exits are done). Customs' boss list is complete: the Broker, the Hounds, the Cult and the Forester.
 
-**Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file). Decisions that can wait: publishing, a cross-server flea market (MemoryStore).
+**Waiting on the owner:** a two-client test (Test -> Clients and Servers, 2 players), a low-end phone in the device emulator, saving the place now and then (uploaded meshes live in the place file; art.10), re-uploading `ZR_SFX_Amb` (gameplay.17, KNOWN_ISSUES 73). Decided in the audit: a private test place (tech-1b), a budget Android phone to measure on (tech-2b) and a real flea market with an AI floor (economy-3a); publishing and any purchase still need the owner's go (rule 3).
 
-**M14 weapon modding is done (part A, 2026-10-29).** Follow-ups from the fidelity check (KNOWN_ISSUES 53, 54, 56, 57): folding stocks, saved builds with buying missing parts, 3D inspect for every item, part sizes against Tarkov's. Laser beams and device modes (52) and zeroing and variable zoom (55) are done.
+**M14 weapon modding is done (part A, 2026-10-29).** Follow-ups from the fidelity check (KNOWN_ISSUES 53, 54, 57): folding stocks, saved builds with buying missing parts, part sizes against Tarkov's. 3D inspect (56) came with the INSPECT window on 2026-10-31. Laser beams and device modes (52) and zeroing and variable zoom (55) are done.
 
 **M16 Characters (owner request, 2026-10-28) is done (part A).** Block body, Blender equipment set, server appearance system and role presets; see `docs/character/`. M16 part B is still to do:
 - the two-client checks (C06, C08), which need a Studio Clients-and-Servers run by the owner;
 - touch and controller emulation of the equipment screen (C11);
 - a subtle fabric MaterialVariant;
-- eyewear and goggles;
+- ~~eyewear and goggles~~: done 2026-11-01 (ZR_EyeGear);
 - the marksman/scout and safehouse-worker presets;
 - a stash character preview;
 - a showroom profile with the expected character count, on real hardware.
 
-**M12 Look 2.0 is done (2026-10-29).** Worn materials, cover props, the client detail layer, the GRAPHICS setting (HIGH by default everywhere, POTATO opt-in) and flickering or dead lamps. See `docs/look/LOOK_2_0.md`. Leftovers (KNOWN_ISSUES 43):
+**M12 Look 2.0 is done (2026-10-29).** Worn materials, cover props, the client detail layer, the GRAPHICS setting (since 2026-11-07 phones start at LOW, consoles at MEDIUM and PCs at HIGH; POTATO opt-in) and flickering or dead lamps. See `docs/look/LOOK_2_0.md`. Leftovers (KNOWN_ISSUES 43):
 - chain-link fences (block movement, not bullets or sight);
 - denser interiors;
 - wear on the older Blender props.
@@ -106,9 +110,9 @@ Next round (`KNOWN_ISSUES` 69):
 2. **Blender material pipeline.** **Done.** Kit props split by material (no UVs needed: Roblox materials tile by studs on meshes, measured), baked vertex AO and grime, five new MaterialVariants (`docs/PIPELINE.md`).
 3. **Meridian Mall.** **Done (2026-10-29), playable.** 86-prop Blender kit in three batches, 621 props placed, two levels, atrium, cinema, supermarket, about 20 stores, food court, service corridor, docks, roof car park, generator power, 6 exfils, 5 keys, 47 containers, the Caretaker; tests and frame rates in `docs/maps/MERIDIAN_MALL.md` and `TEST_RESULTS.md`. Possible polish later: a lower-poly product set for the shelving (KNOWN_ISSUES 46).
 4. **Items.** **Done (2026-10-29).** A Blender model and picture for all 124 items (two atlas sheets, `ItemIcons.luau`), shown in every grid, slot, drag ghost, detail strip and trader row; loose loot lies as the real models (three batches, `ItemMeta.luau`; worn gear as the character meshes). `docs/items/ITEM_ART.md`, evidence I01–I07.
-5. **Inventory, stash and trader screens** in Tarkov's layout (gear slots around a character view, grids with item pictures, names, counts and durability, context menus, examine). **Next.**
-6. **Border Yard** built with MapKit/TerrainKit and the Blender props.
-7. **Quay 7 and Smelter** furnishing and damage pass.
+5. **Inventory, stash and trader screens** in Tarkov's layout (gear slots around a character view, grids with item pictures, names, counts and durability, context menus, examine). **Done (2026-10-31).**
+6. **Border Yard** built with MapKit/TerrainKit and the Blender props. **Done (2026-11-01)**, on Customs' layout.
+7. **Quay 7 and Smelter** furnishing and damage pass. **Furnished (2026-11-01).** The owner's pick art-1a rebuilds Smelter on Factory's layout and keeps Quay 7 as the test map.
 
 Performance rules for all of it: instanced meshes, low poly with baked shading, shared textures, near-player clutter scaled by the GRAPHICS level, few real lights, an FPS check after each map.
 
@@ -117,21 +121,21 @@ Maps copy Tarkov's layouts (owner, 2026-11-01, now in the project instructions):
 ## M13 Maps
 
 1. **Map system:** `World` builds one map per raid (gameplay geometry, spawns, exfils, loot, containers, doors, AI posts and patrols, cover). Queued players vote for the next raid's map; ties are random. Map modules share `Maps/MapKit` (walls, slabs, stairs, roofs, furniture, trucks, fences) and `Maps/TerrainKit` (voxel terrain from a height function).
-2. **Smelter** (factory-type): furnace halls, catwalks, tunnels, offices; short raids, close fights. Playable.
-3. **Pinewatch** (woods-type): built, parked by the owner (2026-10-29).
-4. **Meridian Mall** (mall-type): playable (2026-10-29).
-5. **Border Yard** (customs-type): a checkpoint, two dorm blocks, a fuel depot, warehouses, a river. Designed.
+2. **Smelter** (factory-type): furnace halls, catwalks, tunnels, offices; 20-minute raids, close fights. Playable; an original layout until art-1a rebuilds it on Factory's.
+3. **Pinewatch** (woods-type): built, parked by the owner (2026-10-29); art-1a rebuilds it on Woods' layout.
+4. **Meridian Mall** (mall-type): playable (2026-10-29); rebuilt on Interchange's layout at real scale (2026-11-01).
+5. **Border Yard** (customs-type): playable, on Customs' layout at real scale (2026-11-01).
 
 ## After that
 
-- **M11 part B:** weapon durability, malfunctions (misfire, failure to feed, jam; cleared with R), trader repairs and the repair kit (hideout).
-- **M14 Weapon art:** Blender gun meshes on the WeaponModels anchors (R-17 and P-9 first).
-- **M15 QA:** two-client test, device emulation, performance, exploit regression (vault speed checks), scrollable inventory gear column, docs, git bundle backup.
+- **M11 part B: built.** Weapon wear and heat, Tarkov's four malfunctions (found with L, cleared with Shift+T), trader repairs and the repair kit (`Combat.luau`). Still to do: the Studio malfunction check (gameplay.12) and the wiki's missing rules (gameplay.11).
+- **M14 Weapon art: done (2026-10-29).** 187 Blender part meshes; textures for first-person guns are art-4b.
+- **M15 QA:** two-client test, device emulation, performance, exploit regression (vault speed checks), docs, git bundle backup. (The inventory columns scroll since 2026-10-31.)
 - Still to check from M10: rain streaks, lens droplets and environment sounds in a rainy raid.
 
 ## Resume steps
 
 1. Read `DEVELOPMENT_STATUS.md` and `KNOWN_ISSUES.md`.
 2. Start `rojo serve --port 34873` in `Documents\EscapeFromBloxov`; open `Zero Return.rbxl` and connect the Rojo plugin.
-3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines: LogicTests **241/241**, CharTests **46/46**, LookTests **19/19**, MapTests **38/38**.
+3. Play, then run `ZR_Dev:Invoke("tests")`. Baselines (TEST_RESULTS, 2026-11-08, every map built): LogicTests **412/412**, CharTests **47/47**, LookTests **33/33**, MapTests **41/41**.
 4. Without a shell on the laptop (a cloud session linked through the desktop app): rebuild the git repository in the cloud workspace from `backup/` (join the three parts of `ZeroReturn_2026-10-31.gitbundle`, clone, then pull the newest incremental bundle whose base is in it), work there, write changed files to the laptop with the file bridge while Studio is in edit mode (Rojo carries them in), and write a new incremental bundle to `backup/` at each milestone (KNOWN_ISSUES 44).

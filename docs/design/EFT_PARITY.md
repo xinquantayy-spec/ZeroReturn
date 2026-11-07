@@ -2,9 +2,11 @@
 
 **Standing rule (owner, 2026-10-31):** build Zero Return as close as possible to Escape from Tarkov in every aspect,
 less the exceptions below. Every task starts with research on how Tarkov does it and ends with a check that the
-result is as exact a copy as the exceptions allow. This file is the checklist for the parts that are not core
-gameplay: item information, inventory and menu quality of life, controls, settings and visuals. It was written after
-the owner pointed out that weapons show no fire rate or damage in our game (research 2026-10-31, sources at the end).
+result is as exact a copy as the exceptions allow. This file is the checklist and gap log for every part: item
+information, inventory and menu quality of life, controls, settings and visuals (sections 1 to 6), maps (7), AI (8),
+core gameplay (9), economy (10) and art (11). It was started after the owner pointed out that weapons show no fire rate
+or damage in our game (research 2026-10-31, sources at the end). Sections 8 to 11 come from the audit of 2026-11-07
+(`docs/audit/2026-11-07/`, where their sources are), brought up to date on 2026-11-08.
 
 ## Exceptions (assumed; the owner can add or remove)
 
@@ -13,7 +15,12 @@ the owner pointed out that weapons show no fire rate or damage in our game (rese
    layouts** (terrain, roads and where every building stands, at real scale) with our own buildings, interiors and
    names (owner, 2026-11-01; in the project instructions since then).
 2. **The owner's design choices.** The name Zero Return; the BODYCAM look (lens, grain, STBY/REC, the wide bodycam
-   view); the Relay 7 bunker as a walk-around lobby (every Tarkov screen still opens from its key); one bunker per server.
+   view); the Relay 7 bunker as a walk-around lobby (every Tarkov screen still opens from its key); one bunker per server;
+   the block body (art-3a, 2026-11-07). **Not yet true of the keys:** only the inventory (Tab), settings (P) and, in a raid,
+   the time and exits (O) have one (`InputMap.luau`). Traders, flea market, messenger and handbook open at a station as one
+   relay radio window whose tabs reach the others; the hideout, deploy and insurance, and the gunsmith bench open only at
+   their own stations (`Interact.luau`). Tarkov opens all of them from its main menu; Tarkov's menu bar (ui-6a, approved
+   2026-11-07) is not built yet.
 3. **What Roblox does not let a game control.** Resolution, screen mode, VSync, frame-rate caps, DLSS/FSR, Reflex,
    anti-aliasing, texture and shadow quality belong to Roblox's own graphics slider; keys Roblox reserves (Esc, `/`,
    F9 and others); Roblox content rules (blood within the experience's maturity rating, no real-money gambling,
@@ -26,6 +33,11 @@ the owner pointed out that weapons show no fire rate or damage in our game (rese
 Tarkov: any known item opens an inspect window with its name, a 3D model you turn with the mouse, the description,
 and an attribute list (icon, name, value; handling stats with a bar). Unknown items show a silhouette until examined
 (middle mouse in containers, stash and trader lists).
+
+**Status (checked against `Inspect.luau` on 2026-11-08):** the INSPECT window was built on 2026-10-31 from the plan below,
+with a turnable 3D model (the picture when an item has no model) and the attribute rows for every item kind. Still not
+shown: heat, cooling and durability burn on weapon parts; an ammo's effect against each armour class; plates (they come
+with gameplay-2a); a helmet's sound reduction. The middle column is the state before 2026-10-31.
 
 | Item | Tarkov shows | Zero Return before | To do |
 |---|---|---|---|
@@ -43,30 +55,34 @@ and an attribute list (icon, name, value; handling stats with a bar). Unknown it
 
 ## 2. Inventory and stash quality of life
 
+Updated 2026-11-08 from the code (`Inventory.luau`, `Inspect.luau`); the screens were built on 2026-10-31.
+
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Ctrl+click quick transfer, Alt+click equip, R rotates while dragging | Have | |
-| Ctrl+drag splits a stack, Del discards the hovered item, middle mouse examines, double-click use (setting) | Partly | Split drag, Del, middle mouse, double-click |
-| Hover an item in pockets or rig and press 4 to 0: quick slot; R + wheel picks the magazine to load | Missing | Quick slots and the bar |
-| Context menu: inspect, open, use, equip, load and unload ammo, check magazine, fold stock, modding, tag (name and colour a container), filter by item, linked search, required search, add to wish list, insure, repair, discard | Some | Tag, searches, wish list, check magazine, repair |
-| Stash search window by category or name (0.16.7), sort, priority window (0.16) | Missing | Search, sort, priority |
+| Ctrl+click quick transfer, Alt+click equip, R rotates while dragging | Have; ROTATE in the item bar for touch, gamepad and phones (ui.1) | |
+| Ctrl+drag splits a stack, Del discards the hovered item, middle mouse examines, double-click use (setting) | SPLIT IN HALF in the context menu; DOUBLE-CLICK QUICK USE for meds and food (setting, ui.8); DISCARD wants a second press within 3 s (ui.2) | An amount on Ctrl+drag; Del and middle mouse (ui.9, in progress) |
+| A green or red ghost while dragging shows whether the item fits (from memory, unverified: ui audit) | The ghost is always ochre | ui.9, in progress |
+| Hover an item in pockets or rig and press 4 to 0: quick slot; R + wheel picks the magazine to load | Done: 4 to 0 bind by hover, the bar (AUTO-HIDE, ALWAYS or NEVER), the key on the tile | R + wheel to pick the magazine |
+| Context menu: inspect, open, use, equip, load and unload ammo, check magazine, fold stock, modding, tag (name and colour a container), filter by item, linked search, required search, add to wish list, insure, repair, discard | Inspect, examine, equip, use, load and unload ammo, modding, split, insure, sell, repair with a kit, discard; + WISH in INSPECT | Tag, filter by item, linked and required search, check magazine, fold stock (KNOWN_ISSUES 53) |
+| Stash search window by category or name (0.16.7), sort, priority window (0.16) | SORT, and SEARCH by name | Search by category; the priority window |
 | Searching reveals container contents one by one; unknown items until examined | Have | |
-| Counters on tiles: stack size, med resource, key uses | Stack only | Med HP, key uses |
-| Weight against the overweight thresholds on the character screen | Partly | Weight bar |
+| Counters on tiles: stack size, med resource, key uses | Done: stack, med HP, key uses, armour durability, rounds in a magazine; FIR, INS, wish (W) and quick-slot marks | |
+| Weight against the overweight thresholds on the character screen | The total in kg, orange past 40 kg | The thresholds, as Tarkov shows them |
+| Drag and drop with the mouse (Tarkov is PC only) | Mouse drag; on touch and gamepad, pick up then tap to place, kept across the phone panels (M2) | Touch drag and drop (ui-4c, approved) |
 
 ## 3. Out-of-raid screens
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Character: gear, health, skills, mastering, overall statistics, achievements, prestige, dog tag style | Profile tab (level, skills, karma, record) | Tarkov's character tabs |
-| Traders: TRADE (assortment grid with prices; sell from stash), TASKS (pinnable since 0.16.7), SERVICES (insurance, repair, healing) | Buy, barter, sell, tasks as lists | Tarkov layout (task #56), services |
-| Flea market from level 15: offers, filters, filter by item, linked and required search, wish list | Missing | Flea market |
-| Messenger: one chat per trader, insurance returns, task rewards, receive all | Pigeonhole lamp only | Messenger |
-| Handbook: every item by category with its description | Missing | Handbook |
-| Wish list: items flagged for tasks, hideout or trading | Missing | Wish list |
-| Hideout: modules, crafts, shooting range, customisation (0.16: wall finishes "Blue paint", "Factory walls", "Modest wallpaper"; floors "Small tiles", "Factory floor"; a "Factory ceiling"; unlocked by level, tasks, achievements and prestige; posters as hideout upgrades and loot; range targets by leveling the range) | Have (in the bunker); the bunker is one shared, kept relay station (painted walls, grime only where it gathers, 2026-11-01) | Customisation: per-player finishes drawn on each client (the bunker is shared), unlocked by level and tasks; posters; range targets |
+| Character: gear, health, skills, mastering, overall statistics, achievements, prestige, dog tag style | Tabs in the inventory: GEAR, HEALTH, SKILLS, MASTERING, OVERALL; TASKS in a raid only | Achievements, prestige, dog tag style, a MAP tab; TASKS out of raid, with pinning (ui.14, in progress) |
+| Traders: TRADE (assortment grid with prices; sell from stash), TASKS (pinnable since 0.16.7), SERVICES (insurance, repair, healing) | Done 2026-10-31: TRADE, TASKS and SERVICES (repairs: weapons at VOS, armour at TILDA); insurance at the insurance window and from the context menu; one panel at a time on phones (M2) | Task pinning (ui.14, in progress); healing at HALE (gameplay-6b) |
+| Flea market from level 15: offers, filters, filter by item, linked and required search, wish list | Done 2026-10-31: level 15, categories, search, WISH LIST, MY OFFERS, ADD OFFER with Tarkov's fee; simulated sellers and buyers (section 10) | Price, currency and condition filters; filter by item, linked and required search; the level gates by category (economy.3, in progress) |
+| Messenger: one chat per trader, insurance returns, task rewards, receive all | Done 2026-10-31: trader dialogs, insurance returns with RECEIVE ALL, task, loyalty and flea messages; an unread count and a notice when mail comes (ui.6) | |
+| Handbook: every item by category with its description | Done 2026-10-31 (relay radio, HANDBOOK) | The flare kind in its categories (economy.11) |
+| Wish list: items flagged for tasks, hideout or trading | Done 2026-10-31: + WISH in INSPECT, a W on the tile, the flea market's WISH LIST | |
+| Hideout: modules, crafts, shooting range, customisation (0.16: wall finishes "Blue paint", "Factory walls", "Modest wallpaper"; floors "Small tiles", "Factory floor"; a "Factory ceiling"; unlocked by level, tasks, achievements and prestige; posters as hideout upgrades and loot; range targets by leveling the range) | Five modules in the shared, kept bunker (section 10); STYLE since 2026-11-02: walls (7), floor (5) and ceiling (4), drawn per player on each client, unlocked by level (`docs/design/HIDEOUT_STYLE.md`); a free practice range in the lobby | Unlocks by tasks, achievements and prestige; posters; range targets; the range as a module |
 
-**Skills (2026-11-01):** 24 skills in Tarkov's four groups, levels 0 to 51 (level n costs min(10n, 100) points), raid fatigue, Health and Charisma growing from their groups, each with a working effect. Missing: MASTERING, ACHIEVEMENTS, PRESTIGE, friends and chat.
+**Skills (2026-11-01):** 24 skills in Tarkov's four groups, levels 0 to 51 (level n costs min(10n, 100) points), raid fatigue, Health and Charisma growing from their groups, each with a working effect. MASTERING since 2026-11-02 (`docs/design/MASTERING.md`). Missing: ACHIEVEMENTS, PRESTIGE, friends and chat.
 
 ## 4. In-raid information and controls
 
@@ -85,33 +101,40 @@ Tarkov shows no crosshair, no ammo counter and no minimap; you check things. Def
 | Time and exits | Double O (raid timer on by default since 0.16.7) | Done: O shows the time, twice lists the exits | - |
 | Head device (NVG, face shield) | N | Done 2026-11-01: N flips goggles or raises the face shield | - |
 | Stationary guns (NSV, AGS-30): man the gun, aim, fire, leave | F is Interact; Tarkov documents no control for them, so how to leave and how to zoom were not found | Done 2026-11-01 with controls of our own: the prompt (F, pad X, tap) mounts; mouse / right stick / screen drag aims; fire and zoom follow the Fire and Aim keys, right trigger and left trigger, the FIRE and ZOOM buttons; F, B or LEAVE gets off (section below) | Sounds, animation, the real positions |
-| Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, zeroing, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Page Up/Down, Y and F1 to F12 | Hold breath (Shift while aiming), magnification (Alt+RMB, in steps) and zeroing (Page Up/Down) | Walk, walk speed, side step, blind fire, switch sights, voice lines, gestures |
-| Rebinding with press, double press, hold and release | Settings, Controls | Missing | Keybinding screen |
-| Gamepad and touch (exception 4: Tarkov is keys and mouse only) | none | Done 2026-11-02: every control above but the slot keys and quick slots has a gamepad and a touch way (the next weapon and MED stand in for those). Settings, CONTROLS lists them on that device. Touch layout v2: icon buttons, tap and hold pairs, a MORE tray, a med wheel, a walk-and-run stick, FIRE that aims and steers, and an editor for every control (`docs/design/TOUCH_CONTROLS.md`, sections below) | A real controller and phone |
+| Walk, walk speed, side step, blind fire, hold breath, switch sights, magnification, zeroing, voice lines and gestures | Caps Lock, wheel, Alt+Q/E, Alt+W/S, Shift while aiming, Ctrl+RMB, Alt+RMB or Ctrl+wheel, Page Up/Down, Y and F1 to F12 | Walking speed on the wheel (crouch depth on C + wheel), hold breath (Shift while aiming), magnification (Alt+RMB, in steps) and zeroing (Page Up/Down) | Walk toggle, switch sights, voice lines, gestures. Blind fire and side step are left out by the owner's pick gameplay-5b |
+| Rebinding with press, double press, hold and release | Settings, Controls | Done 2026-10-31: every PC key in Settings, CONTROLS, as a key plus one modifier (Ctrl, Alt or Shift) | Press, double press, hold and release modes |
+| Health and stamina on screen | Health condition and stamina-and-stance indicators, each always shown or auto-hidden; health in Polychrome or Monochrome (GGRecon) | Total health, stamina, energy and water as numbers, in a raid only, hidden under any screen (ui.4) | Tarkov's indicators and their settings (ui-1a, approved) |
+| Weapon and fire mode on screen | No ammo counter; the fire mode shows only when it changes | Done (ui.3): the weapon corner shows for 4 s after a switch, a fire-mode change or a check, and stays while a malfunction flashes; no ammo counter | - |
+| Interacting | A list of actions picked with the mouse wheel (unverified: ui audit) | One action per prompt | The action list |
+| Gamepad and touch (exception 4: Tarkov is keys and mouse only) | none | Done 2026-11-02: every control above but the slot keys and quick slots has a gamepad and a touch way (the next weapon and MED stand in for those). Settings, CONTROLS lists them on that device. Touch layout v2: icon buttons, tap and hold pairs, a MORE tray with captions (ui.10), a med wheel, a walk-and-run stick, FIRE that aims and steers, and an editor for every control (`docs/design/TOUCH_CONTROLS.md`, sections below). Phone menus show one panel at a time below 500 pt of height (M2); the HUD keeps inside the safe area (ui.11) | A real controller and phone |
 
 ## 5. Settings
 
+Updated 2026-11-08 from `Screens.luau` (`SETTING_TABS`). The tabs are in Tarkov's order: GAME, GRAPHICS, SOUND, POSTFX,
+CONTROLS (ui.8). Graphics level, FOV, sensitivity and grain are kept per kind of device; phones start at LOW, consoles at
+MEDIUM and PCs at HIGH (tech-3b, M1). Numbers move with - and +, which repeat while held (ui.7); there is no slider.
+
 | Tab | Tarkov | Zero Return | Plan |
 |---|---|---|---|
-| Game | FOV 50 to 75, head bobbing, show quick slots, stamina and health (always, auto-hide, never), health colour scheme, highlight available operations, double-click quick use, vaulting mode, malfunction notifications, priority window, continuous healing | FOV (bodycam 85), sensitivity, shake, reduce motion, ADS toggle, reticle | Add the Tarkov rows that apply |
-| Graphics | Texture and shadow quality, object LOD, overall visibility, AA, resampling, DLSS/FSR, HBAO, SSR, anisotropic, sharpness, Reflex, HQ colour, Z-blur, chromatic aberrations, noise, grass shadows, mip streaming, FPS limits | GRAPHICS preset (POTATO to HIGH), film grain | Same tab, our own rows for what we control (shadow lights, detail density, draw distance of props, grass, noise, chromatic aberration, blur); the rest goes to Roblox's slider (exception 3) |
-| PostFX | Brightness, saturation, clarity, colourfulness, luma and adaptive sharpen, colour grading with intensity, colour-blind mode with intensity | Missing | Brightness, saturation, clarity, colourfulness, grading presets with original names, colour-blind HUD palettes |
-| Sound | Volume sliders | Missing | Overall, effects, interface, music, voices |
-| Controls | Sensitivity, aim sensitivity, invert, every bind | Sensitivity | Aim sensitivity, invert, rebinding |
+| Game | FOV 50 to 75, head bobbing, show quick slots, stamina and health (always, auto-hide, never), health colour scheme, highlight available operations, double-click quick use, vaulting mode, malfunction notifications, priority window, continuous healing | FIELD OF VIEW (50 to 100, bodycam 85), HEAD BOBBING, SCREEN SHAKE, REDUCE MOTION, AIM MODE, QUICK SLOTS (AUTO-HIDE, ALWAYS, NEVER), CENTER DOT, HIT FEEDBACK, HUD SCALE, CURVED HUD, MALFUNCTION NOTIFICATIONS, DOUBLE-CLICK QUICK USE | Stamina and health display with the colour scheme (ui-1a); highlight available operations; vaulting mode; priority window; continuous healing |
+| Graphics | Texture and shadow quality, object LOD, overall visibility, AA, resampling, DLSS/FSR, HBAO, SSR, anisotropic, sharpness, Reflex, HQ colour, Z-blur, chromatic aberrations, noise, grass shadows, mip streaming, FPS limits | GRAPHICS (POTATO to HIGH), HOLD 30 FPS, FILM GRAIN, LENS EFFECTS, MOTION BLUR, RECORDER OVERLAY | Our own rows for what we control (shadow lights, detail density, draw distance of props, grass, chromatic aberration); the rest is Roblox's slider (exception 3) |
+| PostFX | Brightness, saturation, clarity, colourfulness, luma and adaptive sharpen, colour grading with intensity, colour-blind mode with intensity | BRIGHTNESS, SATURATION, CLARITY, COLOR GRADING (NONE, STEEL, EMBER, MOSS, DUSK) and GRADING INTENSITY | Colourfulness and the two sharpen sliders; colour-blind palettes for the HUD and menus (ui-8a: Roblox cannot filter each colour channel of the 3D image) |
+| Sound | Volume sliders: overall, interface, music, chat, VoIP | OVERALL VOLUME, EFFECTS, INTERFACE, AMBIENCE | Music, chat and voice once the game has them |
+| Controls | Sensitivity, aim sensitivity, invert, every bind | MOUSE, AIM, GAMEPAD and TOUCH SENSITIVITY, INVERT Y AXIS (ui.7), touch AIM WHEN FIRING and FLOATING STICK, and every PC key rebindable (section 4) | Bind modes (press, release, hold, double press) |
 
 ## 6. Visuals
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
 | Time of day that follows a raid clock; weather (clear, overcast, rain, fog, wind; winter snow) | Raid clock, weather and fog per raid; seasons from the real calendar (2026-11-01: winter snow and frost, autumn foliage and more rain, spring greener) | - |
-| Per-material impacts, bullet holes, muzzle flash and smoke, tracers, blood | Have | Check against Tarkov in M15 |
+| Per-material impacts, bullet holes, muzzle flash and smoke, tracers, blood | Since 2026-11-08 (art.3 to art.5): a muzzle flash of two or three frames sized by the muzzle device (a brake bigger, a flash hider smaller, a suppressor only smoke) with a wisp of smoke, in first person too; impacts by surface (sparks, splinters, dirt, grit and dust, a splash) and chipped-ring bullet holes; ejected cases from your gun and from shooters within 60 studs (at most 20, kept 20 s); tracers for tracer rounds only; a dark red puff on a body hit. Before that the audit found one grey puff for every surface and a 4 cm flash (art finding 5) | Blood marks on walls, floors and bodies (art-7a; the Moderate label is the owner's call when publishing). Seen in Studio: dust puffs, cases and holes; not yet seen: the flash, sparks, splinters, a splash (TEST_RESULTS, batch 5) |
 | Pain darkening, tremor, tunnel vision, contusion, stun and flash white-out | Have | Check durations |
 | Picture-in-picture optics, variable zoom, switch sights | Variable zoom done 2026-11-01 (Alt + right mouse steps the V6 between 1x, a red-dot view and 6x; kept per scope). PiP is not possible in Roblox (no rendering the world into a lens), so a scope zooms the whole view behind its mask (exception 3) | Switch sights (Ctrl + right mouse) once builds can carry a backup sight |
 | Ballistics: bullets fly with drop and travel time by muzzle velocity, zeroing (Page Up / Page Down) | Done 2026-11-01: drop and travel time by muzzle velocity, AI aim for it, zeroing with Page Up / Page Down in Tarkov's steps | Per-scope zeroing lists, if needed |
 | Night vision and thermals | Goggles done 2026-11-01: four night-vision tubes (monocular circle, two binoculars, panoramic quad; phosphor colour, gain, grain, light flare each) and thermal goggles, on mounted helmets or a head strap, drawn on characters up or down (ZR_EyeGear); the faceplate helmet's shield (raised = face open to hits, lowered = visor tint) | Night-vision and thermal scopes, the flip animation of the mount, AI wearing goggles at night |
 | Face shield, glasses and gas mask overlays (cracks when hit) | Face shield: a tinted visor round the view (N). Glasses and gas mask built 2026-11-01: a mild lens tint per item, blindness protection against stun charges, the mask's rubber frame with smoked lenses; both step aside while night-vision goggles are down | Cracks when hit, the mask's breathing loop, fogging and raindrops (notes below) |
 | Full-body awareness, weapon inertia and sway (0.13.5), visual recoil with bolt movement and camera shake (0.16) | Arms, sway, recoil | Legs in view, bolt movement |
-| Audio: Steam Audio reverb and occlusion from the geometry (0.12.6 on, occlusion reworked in 0.16.7.0); indoor and outdoor sound; Interchange's mall soundscape | Written 2026-11-01, silent until `ZR_SFX_Amb` is uploaded (`Sounds.AMB_ATLAS`): one reverb for the listener's space (7 classes plus marked floors), room tone, mains hum with the power, car park tone, drips, distant gunfire, the IRONSIGHT siren, the substation generator, dust in the skylights (MEDIUM and up) | Per-source occlusion and reverb cannot be done in Roblox (exception 3); levels still to be set by ear once the asset is in; see "Atmosphere and ambience" below |
+| Audio: Steam Audio reverb and occlusion from the geometry (0.12.6 on, occlusion reworked in 0.16.7.0); indoor and outdoor sound; Interchange's mall soundscape | Written 2026-11-01: one reverb for the listener's space (7 classes plus marked floors), room tone, mains hum with the power, car park tone, drips, the IRONSIGHT siren, the substation generator, dust in the skylights (MEDIUM and up); far shots only from real shots since 2026-11-07 (gameplay.13). Everything from the ambience atlas is silent: the asset in `Sounds.AMB_ATLAS` loads as 0.0 s long (KNOWN_ISSUES 73) | The owner re-uploads `ZR_SFX_Amb` (gameplay.17), then levels are set by ear. Occlusion through walls, floors and doors is now possible: Roblox's Acoustic Simulation left beta on 22 September 2026, for the Audio API only (gameplay-3a, approved; section 9) |
 
 ### Eyewear, gas mask and goggles on characters (2026-11-01)
 
@@ -203,8 +226,9 @@ Gaps (not copied or not found):
 Owner request: atmosphere and ambience that improve realism without costing performance (30 fps minimum). Researched first
 (sources below, notes and costs in `docs/look/ATMOSPHERE.md`), then built. Status: written and passed through `tools/luau_check.py`
 only. Nothing has been run in Studio, on a phone or on a console, no frame rate was measured, and no level was set by ear. The
-sound asset `assets/audio/out/ZR_SFX_Amb.ogg` (698 KB, 11 sounds) is **not uploaded**, so all of it is silent until the owner's
-session sets `Sounds.AMB_ATLAS`.
+sound asset `assets/audio/out/ZR_SFX_Amb.ogg` (698 KB, 11 sounds) was uploaded on 2026-11-01 and its id is in `Sounds.AMB_ATLAS`
+(136853086315408, the upload with the glass sounds). Studio read it as 77.8 s long once that day, but as 0.0 s on 2026-11-02 and
+again in the audit of 2026-11-07, so all of it is silent until the owner re-uploads `ZR_SFX_Amb` (KNOWN_ISSUES 73, gameplay.17).
 
 Matched (as far as Roblox allows):
 - **Indoor and outdoor sound:** Tarkov keeps an indoor / outdoor state for sound and runs Steam Audio reverb from the geometry. Here
@@ -217,12 +241,14 @@ Matched (as far as Roblox allows):
 
 Gaps (not copied or not found):
 - **No per-source reverb or occlusion** (Steam Audio's geometry raycasts per sound, the 0.16.7.0 floor and stairway transmission).
-  Roblox has one reverb for the listener and no occlusion: a shot in a hall heard from a washroom gets the washroom's reverb, and
-  sounds carry through walls within their radius.
+  The legacy `Sound` objects this game uses get one reverb for the listener and no occlusion: a shot in a hall heard from a
+  washroom gets the washroom's reverb, and sounds carry through walls within their radius. Since 22 September 2026 Roblox's
+  Acoustic Simulation gives occlusion, bending round corners and reverb from the geometry, but only to the Audio API
+  (`AudioPlayer`, `AudioEmitter`); moving the sounds to it is the owner's pick gameplay-3a (audit gameplay finding 3).
 - **Not in any source, so our design:** the mall's room tone, the fluorescent and mains hum, the car park tone, the drips, the dust
   in the skylights. Tarkov's Interchange soundscape (empty mall, wind, arcade, escalators) was not found documented anywhere.
-- **Distant gunfire is scripted** (a faint burst every 40 to 120 s in raids, 200 to 320 studs away, quieter indoors). In Tarkov a
-  far shot is a real fight; ours is harmless and tied to no one. The rate and level are ours.
+- **Distant gunfire was scripted** (a faint burst every 40 to 120 s, tied to no one). Removed on 2026-11-07 (gameplay.13): only
+  real shots are heard, and one too far for its own sound (560 to 2,400 studs) plays the distant boom from its direction.
 - **Siren length and sound:** how long the Kiba alarm rings is not documented; ours is the existing 60 s. The sound is a procedural
   warble, not a recording.
 - **Machines with power on** (escalators, arcade cabinets, announcements, lifts) are not built; only the hum.
@@ -233,16 +259,188 @@ Gaps (not copied or not found):
   are not described on the Roblox pages that could be read; the code uses them the way the existing atlases do.
 - **Not run:** nothing above has been run in Studio, on a phone or on a console, and no frame rate or memory was measured.
 
+## 8. AI
+
+From the audit's AI report (`docs/audit/2026-11-07/ai.md`: SPT bot data, the wiki), brought up to date on 2026-11-08 from
+`AI.luau`, `Config.luau`, the maps' `Play.luau` and the M3 entries in section 7.
+
+Matches Tarkov now:
+- **Bosses, each on its own roll:** THE BROKER (Reshala: the dorms, the fuel stop or the Bastion, 45 %, 752 health, four
+  guards of 630 spread round him, no armour), THE HOUNDS (the Goons), THE CULT (cultists, warriors at 850), THE FORESTER
+  (Partisan), THE CARETAKER (Killa: 890 health, five double pockets) and THE STOKER (Tagilla). Smelter rolls THE STOKER at
+  30 % and THE CULT at 8 % in night raids, as Factory does. Bosses and their crews ignore the AI cap (EFT's IgnoreMaxBots).
+- **Player scavs:** the Caretaker, the cultists, MORTAR and KESTREL shoot them on sight; the other bosses leave a scav alone
+  while its karma holds (EFT's data, ai.4).
+- **Scav groups:** alone, in pairs or in threes; the leader wanders and the others follow (ai.8). A follower whose leader
+  dies keeps his own group's route (ai.7).
+- **Senses:** sight builds awareness over time; rain and fog shorten it; no seeing through vegetation; weapon lights give
+  you away; doors a player works are heard within about 19 m (ai.12); a hit or near miss gives a rough position, not the
+  exact one (ai.13).
+- **Fighting:** cover, peeking, suppression, healing with real meds, grenades, doors, searching the last known position;
+  posted guards man the mounted guns; scavs come in waves through the raid.
+- **Ours (performance, exception 3):** AI stream in whole and skip unused humanoid states (ai.10, ai.11); far AI keep moving
+  in a scope (ai.9).
+
+Still a gap:
+
+| Tarkov | Zero Return | To do |
+|---|---|---|
+| Scavs see 120 m over 130°, marksmen 137 m, bosses 137 to 142 m (Birdeye 250 m); they notice you in 0.1 s close, 1 s at 90 m, 3 s at 160 m | Scavs 125 studs (40 m), guards 165 (53 m), bosses 170 (54 m) over 124°; 15 to 20 m at night | ai-3a: port EFT's numbers |
+| Hearing 10 to 30 m; memory 52 s (Knight 104 s) | Footsteps 8 to 16 m, gunfire about 64 m; memory about 20 to 25 s | ai-3a |
+| Aim that settles over 1.5 s, hit affection, a mix of difficulties; since 1.0 slower repeat detection and no head aim after 15 s unseen | A 3° penalty over 2.5 s, a small hit penalty, one skill per kind; instant re-acquire, a head share in every burst | ai-3a |
+| Scav caps per map (Customs 19, Interchange 30); bots sleep beyond 300 m and leave after 20 to 30 min | 10 scavs at most (`SCAV_CAP`) and 18 AI in all (`AI_MAX`); they never sleep or leave | ai-2b: EFT's caps with sleep |
+| Scav groups of up to four or five | Three at most (45 % alone, 45 % pairs, 10 % threes) | Bigger groups once ai-2b raises the cap |
+| Raiders only on Reserve and Labs; sniper scavs on Customs | The Watch: 8 guards on Border Yard (2 on the Bastion's guns) and 6 on Meridian, hostile to player scavs; no sniper scavs (the border sniper is a hazard beyond the map edge) | ai-1a: EFT's roster on both maps |
+| Voice lines, call-outs, boss voices, a warning to player scavs | Silent; call-outs share positions without a sound | ai-4a: recorded voice packs (the audio quota, KNOWN_ISSUES 6) |
+| Bots loot bodies and loose loot; what they take is lost to insurance | AI never loot | ai-8a |
+| Killa's LMG, Big Pipe's grenade launcher, Birdeye's marksman rifle, Tagilla's semi-auto 12 gauge, Reshala's golden pistol | Stand-ins: the Caretaker's shotgun, MORTAR throws grenades, the Stoker's pump gun, the Broker's plain pistol | ai-5b: the LMG and the launcher; stand-ins for the rest |
+| Player scavs from 17 min in (not on Factory, Reserve or Ground Zero), at scav spawn points | From the start until 6 min are left, at PMC spawns | ai-7a |
+| PvE mode with AI PMCs | None | ai-6b, after ai-2 and ai-3 |
+| Leaning, prone and vaulting bots; flanking and group pushes; shooting and looking at bodies | Not built; peeking steps sideways from full cover | Later |
+| Health per body part for bosses | Spread evenly over the parts | Logged per boss (`docs/design/BOSS_*.md`) |
+| Rogues, Glukhar, Sanitar, Shturman, Kaban, Kollontay, Zryachiy, Black Division | None | They need their maps (section 11) |
+
+## 9. Core gameplay
+
+From the audit's gameplay report (`docs/audit/2026-11-07/gameplay.md`), brought up to date on 2026-11-08 from `Combat.luau`,
+`Health.luau`, `Effects.luau`, `Maps.luau` and the M1 and M3 entries in section 7.
+
+Matches Tarkov now:
+- **Health:** 440 over seven parts, death at the head or thorax; spill x0.49 arms, x0.7 legs, x1.05 stomach (gameplay.4);
+  wounds kept after a survived raid, and bunker recovery saved between raids (M1, gameplay.1).
+- **Ballistics:** drop and travel time by muzzle velocity, zeroing; damage and penetration scale with the speed the bullet
+  keeps (gameplay.2); rounds with 20 or more penetration fragment for +50 % damage (gameplay.3).
+- **Malfunctions (M11 part B, built, not yet checked in Studio):** Tarkov's four types, none above 93 % condition, found
+  with L and cleared with Shift+T.
+- **Handling:** ergonomics sets aim speed, sway and how fast aiming tires the arms (gameplay.10).
+- **Raids:** Border Yard and Meridian Mall 40 minutes, Smelter 20 like Factory (gameplay.15); every extract type (open,
+  chance, paid, car, co-op, flare, scav-only, transit); the run-through rule (200 XP or 7 minutes).
+- **Sound:** footsteps carry Tarkov's distances, about 134 studs (43 m) crouch-walking slowly to over 312 (100 m) sprinting
+  (gameplay.5); subsonic rounds make no crack (gameplay.7); only real shots are heard far off (gameplay.13).
+- **Grenades** fall under the world's gravity (gameplay.14).
+
+Still a gap:
+
+| Tarkov | Zero Return | To do |
+|---|---|---|
+| Recoil with a climb angle, dispersion and convergence; full auto levels off | A kick, 60 % of it permanent climb | gameplay-1a: Tarkov's model |
+| Soft armour plus plates in front, back and side slots, protection by zone; helmet zones (top, nape, ears, eyes, jaws); ricochet by angle | One class per vest; helmets roll dice, with face and eye bands | gameplay-2a: the full plate system |
+| Each round has its own muzzle speed and ballistic coefficient | Speed per gun, drag per gun class; mounted guns still use a range fall-off | Per-round speed and drag |
+| Overheating in four stages with cook-offs, a fire-rate change and maximum durability loss; a flash on a malfunction; a chance per round; a 5 s quick draw of the sidearm after a jam | Heat stages 1, 2 and 4 only | gameplay.11 (in progress) |
+| A round in the chamber (30 + 1) | No chamber round | The chamber round |
+| Mounting on cover and bipods; quick reload (double R drops the magazine); slow lean; stance changes cost leg stamina; overweight is louder | None of these; a magazine drops only when there is no room for it | gameplay-5b (blind fire and side step are left out) |
+| Fractures (a leg -45 %; arms slow aiming, drawing and searching); stims with buffs and side effects; a destroyed stomach drains energy and water x5 | A leg -14 %, arms slow reloads; no stims; no stomach rule | gameplay-4b: the core set |
+| After death or MIA: 30 % health regaining 7.61 HP a minute, paid healing at the Therapist; insurance 12 to 36 h, held 4 to 6 days; scav cooldown about 25 min | Full health after death, no paid healing; one insurer, 15 min, kept until collected; 10 min | gameplay-6b: Tarkov's rules, scaled times |
+| PMCs only enter at the start of a raid | PMCs may join for 5 min (`Config.LATE_JOIN`) | gameplay-7a: a server per raid (needs the published place) |
+| Occlusion through walls, floors and stairways | Legacy sounds with one reverb for the listener | gameplay-3a: Acoustic Simulation (section 6) |
+| Each gun its own sound; footsteps on snow, water, tile and metal stairs; headsets with their own compression | One recording pitched for every gun; five surface families; one headset rule | Recorded or licensed sounds; gameplay.16 |
+| Perception lengthens how far you hear steps; Covert Movement quietens yours | Covert Movement quietens your steps for the AI only; neither changes what players hear | gameplay.9 (in progress) |
+| A tutorial raid (1.0) | A welcome message | ui-5a |
+| The players' tripwire kit (0.15) | The server side on `wip/tripwire-kit`, parked | Build the client, then merge |
+| Transits open 7 min in (0.15 notes); car fares in roubles you carry (unverified) | 60 s (SPT data); fares from the stash balance | The sources disagree; no cash item yet (KNOWN_ISSUES 16) |
+| Bullets through thin walls; ricochets off surfaces (unverified) | Only glass lets bullets through | Not known |
+
+## 10. Economy
+
+From the audit's economy report (`docs/audit/2026-11-07/economy.md`), brought up to date on 2026-11-08 from `Items.luau`,
+`TraderData.luau`, `QuestData.luau`, `FleaRules.luau`, `Loot.luau`, `Progress.luau` and `Config.luau`.
+
+Matches Tarkov now:
+- **Items** carry weight, grid size and value (values set by hand); 58 keys and keycards with uses, locked rooms and
+  electric locks.
+- **Found in raid:** crafts are found in raid, and an item taken into a raid loses the mark (economy.4).
+- **Containers** roll whether they hold anything: 50 %, jackets and registers 60 %, safes and weapon boxes always
+  (economy.10; SPT's mean is 0.28, ours stays higher while the item list is small).
+- **Airdrops:** 20 % with 6 or more alive, four crate kinds, the red flare (no bonus pack, no fixed zones).
+- **Flea market rules:** level 15, Tarkov's listing-fee formula, offer slots by rating, 12 h offers; simulated buyers stop
+  at 1.25x the market price, and epic and legendary items get fewer offers (economy.1, .2).
+- **Charisma:** 0.1 % off insurance, repairs and paid exits a level, and no trader discount (economy.6).
+- **Repairs** at VOS and TILDA lower the maximum durability; the repair kit lowers it less.
+- **The Sealed Drive** is wanted by a task: TILDA's "Sealed Records" (economy.8).
+- **Beginners:** a free recovery kit when broke, close to 1.1.0's beginner package.
+
+Still a gap:
+
+| Tarkov | Zero Return | To do |
+|---|---|---|
+| 2,169 items in 2021 (102 weapons, 1,421 parts); 184 rounds in 27 calibres in 2026 | 279 items: 6 guns, 96 parts, 13 rounds in 5 calibres, 58 keys | economy-1a: a core set of about 600 |
+| Eight traders (Prapor, Therapist, Skier, Peacekeeper, Mechanic, Ragman, Jaeger, Fence), plus Ref, Lightkeeper and the BTR driver; money as items in three currencies | VOS, HALE, TILDA and the FENCE; one balance in MK | economy-2a: EFT's eight, one currency |
+| LL2 to LL4 at levels about 13 to 42 (1.1.0 dropped the sales requirement); 892 barters | LL2 to LL4 at levels 3, 7 and 12 with 150k to 1.2M MK traded; 12 barters | economy-2a, economy-4b |
+| Fence sells what players sold him; his LL2 at reputation 6.0 | 11 fixed offers; held at LL1 | Player-sold stock; LL2 and prices from karma (economy.5, in progress) |
+| Flea level gates by category up to 40 (1.0); bans on secure containers, currency, some weapons, ammo, armour, packs, helmets; fee 5 % since 1.1.0 | No gates; bans on secure containers and task items; fee 3 % | economy.3 (in progress); the 5 % fee |
+| A market of real players, with barter offers | Simulated sellers and buyers, cash only | economy-3a: a real market with an AI floor |
+| Loot tables per map; 21 container templates (SPT, Interchange) | One pool per container kind for every map; 13 kinds | Tables per map |
+| Secure containers Alpha to Kappa with trader and task paths; item cases (documents, keytool, SICC, junk box, medicine, magazine, keycard holder) | Pouch S, M and L, only S obtainable; no cases, and full containers cannot nest | economy.7 (in progress); the cases |
+| Stash 10x30, up to 10x68 or 10x72 | 10x20, up to 10x30 | Stash levels (economy-7b) |
+| 531 tasks for 11 traders: conditional kills, found-in-raid hand-ins, plant and mark, visit, extract, skill and LL, gunsmith builds; side tasks per LL, dailies and weeklies, task-locked offers | 14 tasks for 4 traders: kill, hand in, extract, visit; straight chains | economy-6a: a map-first core of about 120; economy.9 (in progress) |
+| Hideout: 26 modules, 67 levels, 214 crafts; generator fuel; scav case; bitcoin farm; the shooting range as a module | 5 modules, 8 levels, 10 crafts; no fuel; one build at a time; a free range in the lobby | economy-7b: an economy core of about 14 |
+| Builds and crafts take hours to days; level 15 at 161,139 XP (the top level about 82.6 million, unverified) | 5 to 45 minutes; level 15 at 52,383 XP, cap 40 | economy-4b: EFT's curves, faster clocks |
+| Skills such as Hideout Management, Mag Drills, Weapon Maintenance, Aim Drills, DMR, LMG, HMG, revolvers, launchers | 24 skills | With the content they need |
+| Insurance: Prapor 24 to 36 h, Therapist 12 to 24 h, Jaeger quick (1.1.0) | One insurer at 7 %, 15 min | economy-2a, gameplay-6b |
+| No forced wipes since 1.0; seasonal characters every 4 to 6 months (1.1.0); prestige (0.16); the PvE Zone | A wipe when the save format changes; no prestige or PvE | economy-5b: permanent plus an opt-in season |
+| Weapon builds that buy the missing parts | None (KNOWN_ISSUES 54) | - |
+| Money sinks: fuel, filters, the scav case, costly builds, flea fees, insurance, repairs | Flea fees, insurance, repairs, a one-time 785k hideout | Come with economy-7b and economy-4b |
+| Paid editions; a free battle pass (1.1.0) | None | economy-8a: none for now (the owner approves any) |
+| The handbook and flea list every item kind | The flare kind is missing; seven items have no picture | economy.11 |
+
+## 11. Art
+
+From the audit's art report (`docs/audit/2026-11-07/art.md`), brought up to date on 2026-11-08. The rules for new art are in
+`docs/look/ART_BIBLE.md`.
+
+Matches Tarkov now:
+- **Layouts:** Customs and Interchange at real scale (Border Yard, Meridian Mall) with our own buildings, interiors and names.
+- **Time and weather:** the 7x clock; four weathers per raid; seasons from the real calendar.
+- **Effects:** explosions (flash, fireball, smoke, debris, scorch) and smoke grenades; since 2026-11-08 the muzzle flash by
+  device with smoke, impacts by surface and ejected cases (section 6).
+- **Devices:** four night-vision tubes and thermal goggles, drawn on characters.
+- **Glass:** 594 breakable panes with shards (their sound is in the silent ambience atlas, KNOWN_ISSUES 73).
+
+The owner's choices (exception 2): the block body stays (art-3a), so heads and bodies are bigger targets than Tarkov's and
+guns are drawn 1.35x in third person to fit the hands; the BODYCAM auto-gain lifts nights (art-8b halves it).
+
+Still a gap:
+
+| Tarkov | Zero Return | To do |
+|---|---|---|
+| 13 locations; End of the Line due in December 2026 | 2 Tarkov layouts; Quay 7 and Smelter, our own layouts, in the vote; Pinewatch parked | art-2d: no new map until Border Yard and Meridian Mall hold 30 fps on a measured low-end phone; then Factory, Woods, Reserve, Shoreline, Streets, Lighthouse, The Lab, Ground Zero, and the small-group maps last |
+| Factory (142 x 132 m) and Woods (1.4 x 1.36 km) | Smelter, an original 82 x 63 m compound; Pinewatch, an original 164 m forest | art-1a: rebuild both on Tarkov's layouts at real scale; Quay 7 leaves the vote and stays the test map |
+| Customs after 0.16; Interchange's ponds and outbuildings | Pre-0.16 outlines, no 0.16 interiors; dry ponds, one-room outbuildings | Section 7's lists |
+| Fully modelled buildings: frames, sills, cornices, gutters, balconies | Part walls with cut holes, flat slabs | art-5b: a modular Blender kit of merged meshes, which also cuts the part count |
+| Dense, lived-in interiors; map edges of fences, forest and terrain | About 10 props a shop, stretched furniture, plain box containers; tall terraced rock walls | art-5b; fenced and wooded edges |
+| Trees and grass that move in the wind | See-through cards, no sway | Sway |
+| Players choose the raid time; nights so dark that goggles and lights matter | One of 8 start times; the bodycam adds about 0.6 exposure at full dark | Choose the time; art-8b |
+| No exit markers in the world | A glowing lamp, a sign and a painted zone at every exit | art-8b: remove them; the landmarks stay |
+| Hazy skies | Roblox's default sky with a cloud layer; the lighting model is not set in code | art.2: an original sky set (clear, overcast, night); art.1: set LightingStyle and PrioritizeLightingQuality and record them |
+| Post effects: ambient occlusion, reflections, chromatic aberration, noise, grading | Grade, bloom, sun rays, depth of field, grain, vignette, edge haze; grading presets | Partial; part of it is a Roblox limit |
+| Detailed, textured guns, gear and items | Vertex colour, no UVs: gun parts 128 to 1,544 triangles, gear about 400, 95 item models | art-4b: PBR sets (512 to 1024) for first-person guns, attachments, worn gear and items seen up close |
+| Hand-made reloads, checks and inspects with the bolt and charging handle moving | Code-made poses | art-6a: the bolt release or charging handle, a quick reload, a magazine check that shows the magazine, a chamber pull |
+| Blood on hits | A dark red puff | art-7a: light blood marks (the Moderate label at publishing is the owner's call) |
+| Muted, dirty colours on goods and props | Saturated shop goods and props | art.6: pull them toward the palette with a grime gradient |
+
+Also open (our own polish, no Tarkov row): one wear strip per facade instead of a decal per wall part (art.7,
+KNOWN_ISSUES 67); a lighter set of shelf goods (art.8, 46); the 59 off-centre kit origins (art.9, 69); the owner saving the
+place to keep five Studio-only materials (art.10, 45); a rainy-raid check of streaks, splashes and lens drops (art.12, 25);
+Meridian's deep halls, very dark with the power on (66); coarse cloth on the characters (14).
+
 ## Order of work
 
-1. **Now (task #56):** the INSPECT window with the full attribute sheet for every item kind (a turnable 3D view in a
-   ViewportFrame), tile counters, stash search and sort, the trader screen in Tarkov's TRADE / TASKS / SERVICES layout.
-2. Controls parity (Tarkov's default keys, quick slots 4 to 0, the checks, the raid time, rebinding) and settings
-   parity (Game, Graphics, PostFX, Sound, Controls tabs).
-3. M11 part B (durability, malfunctions, check chamber) so the weapon side is complete.
-4. Character tabs, messenger, handbook, wish list.
-5. Border Yard, then flea market, then the Quay 7 and Smelter pass (the owner's map order stays).
-6. Visuals: NVG and thermals, face overlays, variable zoom and PiP, raid clock and seasons.
+Since 2026-11-07 the order is the audit's: release blockers first (start-1a), every quick win (start-2a), Tarkov's rules
+with optional aids (start-3b). `NEXT_TASK.md` holds the current list. The list of 2026-10-31, for the record:
+
+1. Done 2026-10-31: the INSPECT window with an attribute sheet for every item kind and a turnable 3D model (the picture
+   when an item has no model), tile counters, stash search and sort, the trader screen as TRADE / TASKS / SERVICES.
+2. Done 2026-10-31: controls parity (Tarkov's default keys, quick slots 4 to 0, the checks, the raid time, rebinding)
+   and settings parity (the five tabs).
+3. Built: M11 part B. Every shot wears the gun, more when hot; Tarkov's four malfunctions (misfire, failure to eject,
+   failure to feed, jammed bolt) only below 93 % condition, plus feed failures from big magazines; L finds the fault and
+   Shift+T clears it; trader repairs and the repair kit lower the maximum (`Combat.luau`, `Economy.luau`). Not yet checked
+   in Studio. The wiki's missing rules are gameplay.11 (section 9).
+4. Done 2026-10-31: character tabs, messenger, handbook, wish list.
+5. Done: Border Yard (2026-11-01), the flea market (2026-10-31), Quay 7 and Smelter furnished (2026-11-01). Next for the
+   maps: art-1a and art-2d (section 11).
+6. Done 2026-11-01: night vision and thermals, face overlays, variable zoom, the raid clock and seasons. PiP is not
+   possible in Roblox (section 6).
 
 ## Sources
 

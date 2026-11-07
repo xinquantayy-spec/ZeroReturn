@@ -82,5 +82,6 @@ These are built from parts and terrain in `Services/World.luau`:
 - the map layout: Harbor Stack, Pump Annex, Freight Depot, pier, relay tower, rail cut, water tower, ferry tunnel
 - lighting and grading
 - neutral gear stand-ins while an equipment mesh has not loaded (`Services/Appearance.luau`)
-- weapons: the shared part-built spec (`WeaponModels.luau`) for first and third person
+- weapons, only while their meshes load: the old part-built spec (`WeaponModels.luau`) shows the bare gun. Since M14
+  (2026-10-29) guns are the Blender part meshes, 187 pieces in seven batches (`docs/weapons/WEAPON_MODDING.md`)
 - grenades in hand and in flight, explosions, smoke (client `Grenade.luau`)
