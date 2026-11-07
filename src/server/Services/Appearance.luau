@@ -32,7 +32,7 @@ function Appearance.init(c)
 end
 
 local function lib()
-	return ReplicatedStorage:FindFirstChild("ZR_Assets")
+	return game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 end
 
 local function buildPiece(char, e)

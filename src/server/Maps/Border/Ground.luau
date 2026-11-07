@@ -1324,7 +1324,7 @@ return function(B)
 	-- ── forests, bushes and rocks (nature kit) ───────────────────────────────────────────────────────────
 	step("nature", function()
 		local fm = kit.model("Forest", map)
-		local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+		local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 		local function tint(amt)
 			local k = 1 - rng:NextNumber(0, amt)
 			return Color3.new(k, k, k)

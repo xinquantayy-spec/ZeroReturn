@@ -312,7 +312,7 @@ local MONO = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeig
 local MARKER = Font.fromEnum(Enum.Font.PermanentMarker)
 -- a wear-kit piece (litter, chips, puddles: ZR_WK_*) on the floor
 local function wk(parent, key, x, z, yaw, s)
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 	local src = lib and lib:FindFirstChild(key)
 	if not src then
 		return nil

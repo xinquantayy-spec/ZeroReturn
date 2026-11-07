@@ -432,7 +432,8 @@ local function noiseOf(model)
 	local n = rawNoise(model)
 	local pl = n > 0 and Players:GetPlayerFromCharacter(model)
 	local prof = pl and ctx.Profiles.get(pl)
-	return prof and n * (1 - Progress.bonus(prof.skills, "covert")) or n
+	-- EFT's elite Covert Movement takes 60 % off (1.2 % a level; the 51st level would pass it)
+	return prof and n * (1 - math.min(0.6, Progress.bonus(prof.skills, "covert"))) or n
 end
 
 local function visiblePart(u, model, eye)

@@ -596,6 +596,26 @@ function T.run(ctx)
 				return h.pocketsW == 5 and h.pocketsH == 2
 			end)())
 	end
+	-- audit tech.13: clients get only the meshes they clone; the server keeps the whole library in ServerStorage
+	do
+		local sl = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
+		local cl = game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+		if sl and cl and ctx and ctx.Assets and ctx.Assets.clientNeeds and #sl:GetChildren() > 0 then
+			local need, extra, missing = 0, 0, 0
+			for _, d in sl:GetChildren() do
+				if ctx.Assets.clientNeeds(d.Name) then
+					need += 1
+					missing += cl:FindFirstChild(d.Name) and 0 or 1
+				end
+			end
+			for _, d in cl:GetChildren() do
+				extra += ctx.Assets.clientNeeds(d.Name) and 0 or 1
+			end
+			check(string.format("clients get only the meshes they clone (%d of the library's %d)", #cl:GetChildren(), #sl:GetChildren()),
+				missing == 0 and extra == 0 and #cl:GetChildren() == need and need < #sl:GetChildren()
+					and cl:FindFirstChild("ZR_MK_Van__paint") == nil and cl:FindFirstChild("ZR_NAT_Grass") ~= nil)
+		end
+	end
 	-- audit ai.8: scavs spawn alone or in groups of two or three (45 / 45 / 10 %), never more than the room left
 	if ctx and ctx.AI and ctx.AI.groupSize then
 		local gs = ctx.AI.groupSize
@@ -1860,7 +1880,7 @@ function T.run(ctx)
 		end
 		check("lobby: under 300 kit props", kits > 200 and kits < 300)
 		check("lobby: at most 6 shadow-casting lights", shadows <= 6)
-		local lib = game:GetService("ReplicatedStorage"):FindFirstChild("ZR_Assets")
+		local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 		if lib and lib:FindFirstChild("ZR_MK_Van__paint") then
 			check("lobby: every kit prop built from its meshes", fallback == 0)
 		end

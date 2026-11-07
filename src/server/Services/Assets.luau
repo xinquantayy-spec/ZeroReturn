@@ -1,10 +1,17 @@
 --!nonstrict
--- Loads uploaded Blender meshes into ReplicatedStorage.ZR_Assets (MeshParts keyed by name).
+-- Loads uploaded Blender meshes into the mesh library (MeshParts keyed by name).
+-- The library is split (audit tech.13; Roblox: "clients load everything in ReplicatedStorage"):
+--   ServerStorage.ZR_Assets       every mesh, for the server's builders (maps, kits, characters)
+--   ReplicatedStorage.ZR_Assets   only what clients clone: the wear kit, ground cover, guns, items, character gear
+-- The mall and bunker kits (ZR_MK_*), trees, rocks and logs (ZR_NAT_*) and cover props (ZR_PROP_*) reach clients
+-- only as the placed copies that stream in. Server code reads ServerStorage.ZR_Assets; client code and the shared
+-- builders (GunBuild, ItemModel) read ReplicatedStorage.ZR_Assets.
 -- Meshes already present (inserted at edit time) are kept; missing ones are loaded via InsertService.
 -- A batch that fails (a fresh upload can still be processing) is retried in the background a few times; every
 -- late success fires the onLoaded callbacks (Appearance reconciles characters that show a fallback).
 local InsertService = game:GetService("InsertService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local AssetIds = require(ReplicatedStorage:WaitForChild("ZR"):WaitForChild("AssetIds"))
 
 local CollectionService = game:GetService("CollectionService")
@@ -24,14 +31,61 @@ end
 Assets.failed = {} -- key -> last error (batches still missing)
 local RETRY = { 15, 45, 120, 300 }
 
-local function lib()
-	local l = ReplicatedStorage:FindFirstChild("ZR_Assets")
+local function folder(parent)
+	local l = parent:FindFirstChild("ZR_Assets")
 	if not l then
 		l = Instance.new("Folder")
 		l.Name = "ZR_Assets"
-		l.Parent = ReplicatedStorage
+		l.Parent = parent
 	end
 	return l
+end
+local function lib() -- the whole library (server only)
+	return folder(ServerStorage)
+end
+local function clientLib() -- what clients clone
+	return folder(ReplicatedStorage)
+end
+
+-- does any client clone this mesh? The ground cover Detail.luau scatters is the only nature clients clone (keep this
+-- list in step with Detail's GROUND table)
+local CLIENT_NAT = { ZR_NAT_Grass = true, ZR_NAT_Fern = true, ZR_NAT_Branch = true, ZR_NAT_Reeds = true, ZR_NAT_RockPile = true }
+local function clientNeeds(name: string): boolean
+	if string.sub(name, 1, 6) == "ZR_MK_" or string.sub(name, 1, 8) == "ZR_PROP_" then
+		return false
+	end
+	if string.sub(name, 1, 7) == "ZR_NAT_" then
+		return CLIENT_NAT[name] == true
+	end
+	return true
+end
+Assets.clientNeeds = clientNeeds
+
+-- put a library mesh where it belongs: always in the server's library, and a copy for clients when they clone it
+local function file(d)
+	local l, c = lib(), clientLib()
+	if not l:FindFirstChild(d.Name) then
+		d.Parent = l
+	end
+	if clientNeeds(d.Name) and not c:FindFirstChild(d.Name) then
+		d:Clone().Parent = c
+	end
+end
+
+-- meshes inserted into ReplicatedStorage.ZR_Assets at edit time: copied into the server's library, and the ones no
+-- client clones taken out of ReplicatedStorage
+local function migrate()
+	local c, l = clientLib(), lib()
+	for _, d in c:GetChildren() do
+		if d:IsA("MeshPart") then
+			if not l:FindFirstChild(d.Name) then
+				d:Clone().Parent = l
+			end
+			if not clientNeeds(d.Name) then
+				d:Destroy()
+			end
+		end
+	end
 end
 
 -- load one batch into the library; returns ok, meshes added (pre: a model LoadAsset already fetched for it)
@@ -58,7 +112,7 @@ local function loadBatch(entry, pre)
 						ch:Destroy()
 					end
 				end
-				d.Parent = l
+				file(d)
 				n += 1
 			end
 		end
@@ -66,6 +120,7 @@ local function loadBatch(entry, pre)
 	model:Destroy()
 	if not pre then
 		tagFoliage(l)
+		tagFoliage(clientLib())
 	end
 	return true, n
 end
@@ -82,6 +137,8 @@ end
 
 function Assets.init(_ctx)
 	lib()
+	clientLib()
+	migrate()
 	local loaded, failedN = 0, 0
 	local retry = {}
 	-- fetch every batch at once, at most 8 at a time (one by one took about 13 s of the server's start-up on 2026-11-07),
@@ -124,7 +181,9 @@ function Assets.init(_ctx)
 		end
 	end
 	tagFoliage(lib())
-	print(string.format("[ZR] Assets: %d meshes loaded, %d batches failed, library has %d", loaded, failedN, #lib():GetChildren()))
+	tagFoliage(clientLib())
+	print(string.format("[ZR] Assets: %d meshes loaded, %d batches failed, library has %d (%d sent to clients)", loaded, failedN,
+		#lib():GetChildren(), #clientLib():GetChildren()))
 	if #retry > 0 then
 		task.spawn(function()
 			for _, wait in RETRY do
@@ -153,7 +212,7 @@ function Assets.announce(key)
 end
 
 function Assets.get(name: string): Instance?
-	local l = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local l = ServerStorage:FindFirstChild("ZR_Assets")
 	return l and l:FindFirstChild(name)
 end
 

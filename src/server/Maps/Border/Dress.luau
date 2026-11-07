@@ -30,7 +30,7 @@ return function(B)
 	local dm = kit.model("Dressing", map)
 	local left = 2450 -- parts we may still add (a kit prop counts its pieces and its colliders)
 	local n = { wreck = 0, pole = 0, fence = 0, cover = 0, container = 0, nature = 0, loose = 0 }
-	local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+	local lib = game:GetService("ServerStorage"):FindFirstChild("ZR_Assets")
 	local NOOPT = {}
 	local function try(name, f)
 		local ok, err = pcall(f)
