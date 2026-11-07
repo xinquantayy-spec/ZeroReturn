@@ -1,0 +1,150 @@
+{
+  "area": "art",
+  "summary": "The world and models are a capable first pass built by code and procedural Blender scripts: Border Yard and Meridian Mall copy Customs and Interchange at real scale, Relay 7 is a cohesive lobby, and the material, detail and bodycam layers are performance-aware. Against Tarkov the art falls well short: 11 of 13 locations are missing and two voted maps are original layouts, characters are block bodies about twice human width, buildings are part-built shells, props and guns are low-detail vertex-coloured meshes, and combat effects and animation are thin. Nothing has been measured on a phone, and the real-scale maps already exceed the project's draw-call target.",
+  "decisions": [
+    {
+      "id": "art-1",
+      "title": "Original-layout maps (Quay 7, Smelter, Pinewatch)",
+      "question": "What should happen to the three maps that are not Tarkov layouts?",
+      "context": "Quay 7 (about 123 m square) and Smelter (about 82 x 63 m) are in the vote and Pinewatch (about 164 m square) is parked, but none copies a Tarkov map. Factory (142 x 132 m) is the closest match for Smelter and Woods (1.4 x 1.36 km) for Pinewatch. Quay 7 has no match, and tests and the Foreman boss use it.",
+      "options": [
+        {"id": "a", "label": "Re-base on Tarkov", "detail": "Rebuild Smelter on Factory's layout and Pinewatch on Woods' layout at real scale, keeping their names and kits. Take Quay 7 out of the vote and keep it as the test map.", "effort": "L", "perf": "med", "parity": "exact"},
+        {"id": "b", "label": "Keep as originals", "detail": "Keep all three as extra maps beside the Tarkov copies.", "effort": "S", "perf": "none", "parity": "departure"},
+        {"id": "c", "label": "Retire now", "detail": "Take Quay 7 and Smelter out of the vote today, leaving Border Yard and Meridian Mall until replacements exist.", "effort": "S", "perf": "none", "parity": "partial"}
+      ],
+      "recommended": "a",
+      "why": "Smelter and Pinewatch become Factory and Woods without losing their work, and Quay 7 stays useful for tests."
+    },
+    {
+      "id": "art-2",
+      "title": "Order of the missing Tarkov maps",
+      "question": "Which missing Tarkov maps come next, and in what order?",
+      "context": "11 of 13 locations are missing, from 105 x 113 m (Labyrinth) to 1.06 x 1.72 km (Lighthouse). Border Yard and Meridian Mall each took about a day for a first pass, but each streams 16,800 to 18,600 parts near the player and no phone has been measured.",
+      "options": [
+        {"id": "a", "label": "Small maps first", "detail": "Factory, Ground Zero, The Lab, then Reserve.", "effort": "L", "perf": "low", "parity": "close"},
+        {"id": "b", "label": "Big outdoor maps first", "detail": "Woods, Shoreline, Lighthouse, Reserve, then Streets of Tarkov.", "effort": "L", "perf": "high", "parity": "close"},
+        {"id": "c", "label": "Mixed sizes", "detail": "Factory, Woods, Reserve, Shoreline, Streets, Lighthouse, The Lab, Ground Zero; the small-group locations (Labyrinth, Terminal, Icebreaker) last.", "effort": "L", "perf": "med", "parity": "close"},
+        {"id": "d", "label": "Performance base first", "detail": "No new map until Border Yard and Meridian Mall hold 30 fps on a measured low-end phone (merged wall meshes, fewer decals, a smaller streaming radius), then order c.", "effort": "M", "perf": "low", "parity": "close"}
+      ],
+      "recommended": "d",
+      "why": "Two real-scale maps already exceed the draw budget unmeasured; each new big map multiplies the risk."
+    },
+    {
+      "id": "art-3",
+      "title": "Character body proportions",
+      "question": "Should characters keep the block body or move to human proportions?",
+      "context": "The block body is 1.74 m tall but 1.37 m across the arms with a 0.40 m head, so hitboxes are far larger than Tarkov's and third-person guns are drawn 1.35 times real size. The owner chose it on 2026-10-28; the parity rule of 2026-10-31 does not list it as an exception. The gear (49 meshes), first-person arms and animation code are fitted to it.",
+      "options": [
+        {"id": "a", "label": "Keep the block body", "detail": "No change.", "effort": "S", "perf": "none", "parity": "departure"},
+        {"id": "b", "label": "Human-proportioned rigid body", "detail": "Keep the R15 parts, joints and procedural animation but resize them to real proportions, give the head a face or balaclava texture instead of dot eyes, refit the gear meshes and draw guns at real size. Needs the owner's upload session.", "effort": "M", "perf": "none", "parity": "close"},
+        {"id": "c", "label": "Realistic skinned character", "detail": "A textured skinned body with authored animations through Roblox's Animator, replacing the procedural third-person poses, with gear refitted to it.", "effort": "L", "perf": "med", "parity": "close"}
+      ],
+      "recommended": "b",
+      "why": "Real-size hitboxes and silhouettes at moderate cost, keeping the working rig, gear system and animation code."
+    },
+    {
+      "id": "art-4",
+      "title": "Texture pipeline for hero assets",
+      "question": "Should hero assets get real PBR textures, or stay vertex-coloured?",
+      "context": "Every mesh is vertex-coloured with no UVs, which keeps memory tiny but cannot show labels, print, scratches or fine bevels; the aimed first-person gun looks flat. Roblox supports PBR maps up to 1024 x 1024 per model, needs one set of UVs, and loads lower-quality textures first on weaker devices.",
+      "options": [
+        {"id": "a", "label": "Stay vertex-coloured", "detail": "Add shape detail only: bevels, screws, cut-outs and more triangles on guns and gear.", "effort": "M", "perf": "low", "parity": "partial"},
+        {"id": "b", "label": "Hybrid", "detail": "Unwrap and bake 512 to 1024 PBR sets in Blender for first-person guns and attachments, worn gear and items seen up close; keep vertex colours for bulk props and buildings.", "effort": "M", "perf": "low", "parity": "close"},
+        {"id": "c", "label": "PBR everywhere", "detail": "Shared texture sheets for every kit prop and building module as well.", "effort": "L", "perf": "med", "parity": "close"}
+      ],
+      "recommended": "b",
+      "why": "The player looks at the gun all raid; texturing hero assets gives most of the gain for a small memory cost."
+    },
+    {
+      "id": "art-5",
+      "title": "Building and interior fidelity",
+      "question": "How should buildings and interiors be raised toward Tarkov's level?",
+      "context": "Buildings are part-built shells with cut holes and few trims (no frames, sills, cornices or gutters), shops hold about ten props, and Border Yard streams about 18,600 parts near the player, the main phone risk.",
+      "options": [
+        {"id": "a", "label": "Trim pass", "detail": "Add frames, sills, door casings, skirting, cornices, gutters and balconies to the part-built shells through MapKit.", "effort": "M", "perf": "med", "parity": "partial"},
+        {"id": "b", "label": "Modular Blender kit", "detail": "Wall, window, door, stair and facade modules as merged meshes with baked shading, placed by the builders instead of loose parts.", "effort": "L", "perf": "low", "parity": "close"},
+        {"id": "c", "label": "Kit plus hand-dressed rooms", "detail": "Option b plus hand placement of the named loot rooms and landmarks (dorm Room 314, the dorm halls, IRONSIGHT, the Bastion) matched to Tarkov screenshots.", "effort": "L", "perf": "med", "parity": "close"}
+      ],
+      "recommended": "b",
+      "why": "It is the only option that improves the look and cuts the part count; key rooms can be dressed later."
+    },
+    {
+      "id": "art-6",
+      "title": "First-person weapon animation",
+      "question": "How should first-person weapon animations be made?",
+      "context": "Reloads, checks and the inspect are code-made poses with missing steps: no bolt release or charging handle on an empty reload, no quick reload, and a magazine check that does not show the magazine. Any arm animation will need redoing if the body changes (art-3).",
+      "options": [
+        {"id": "a", "label": "Extend the code-made poses", "detail": "Add the bolt release or charging handle on an empty reload, a quick reload that drops the magazine, a magazine check that brings it into view and a chamber-check pull.", "effort": "M", "perf": "none", "parity": "partial"},
+        {"id": "b", "label": "Keyframed per weapon class", "detail": "Author first-person animations in Blender for AR, AK, SMG, pump, bolt and pistol, played as Roblox animation tracks on the viewmodel.", "effort": "L", "perf": "low", "parity": "close"},
+        {"id": "c", "label": "Keep as is", "detail": "No change.", "effort": "S", "perf": "none", "parity": "partial"}
+      ],
+      "recommended": "a",
+      "why": "Visible gains now, without building keyframed arms before the body decision."
+    },
+    {
+      "id": "art-7",
+      "title": "Blood on hits",
+      "question": "Should hits show realistic blood?",
+      "context": "There is no blood: body hits make a dark grey puff. Roblox allows light realistic blood only under the Moderate maturity label and heavy realistic blood only under Restricted. Publishing and its labels are the owner's decision.",
+      "options": [
+        {"id": "a", "label": "Light realistic blood", "detail": "Red hit puffs and small blood marks on nearby walls, floors and bodies; set Moderate in the maturity questionnaire.", "effort": "S", "perf": "low", "parity": "close"},
+        {"id": "b", "label": "No realistic blood", "detail": "Keep the dark puff, so the game stays eligible for lower labels.", "effort": "S", "perf": "none", "parity": "departure"},
+        {"id": "c", "label": "Heavy realistic blood", "detail": "Larger sprays and pools under the Restricted label.", "effort": "S", "perf": "low", "parity": "close"}
+      ],
+      "recommended": "a",
+      "why": "It gives Tarkov's hit feedback without the most restrictive label."
+    },
+    {
+      "id": "art-8",
+      "title": "Readability aids Tarkov does not have",
+      "question": "Should the game keep glowing exit markers and bright bodycam nights?",
+      "context": "Every exit has a glowing lamp, a sign and a painted zone, and the bodycam auto-gain lifts nights so they read without goggles. Tarkov marks no exits and its nights are dark. Several exits already have landmarks of their own (tunnel portals, a roadblock, a boat, a car).",
+      "options": [
+        {"id": "a", "label": "Tarkov-hard", "detail": "Remove the exit lamps, signs and paint, give each exit a fitting landmark, and cut the night lift to a trace so goggles and lights are needed.", "effort": "S", "perf": "none", "parity": "exact"},
+        {"id": "b", "label": "Middle", "detail": "Remove the exit lamps, signs and paint; halve the night lift.", "effort": "S", "perf": "none", "parity": "close"},
+        {"id": "c", "label": "Keep both", "detail": "No change.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "b",
+      "why": "It matches Tarkov at the exits and keeps the bodycam's character at night without making goggles pointless."
+    }
+  ],
+  "findings": [
+    {"sev": "P1", "title": "Three of the five maps are not Tarkov layouts", "detail": "Quay 7 (about 123 m square), Smelter (about 82 x 63 m) and the parked Pinewatch (about 164 m square) are original designs, and Quay 7 and Smelter are in the vote. The rule says maps copy Tarkov's layouts; Smelter shares nothing with Factory (142 x 132 m).", "evidence": "src/shared/Maps.luau:14-45; src/server/Maps/Smelter.luau:2,735; src/server/Maps/Pinewatch.luau:2,16; src/server/Services/World.luau:1728; tarkov.dev maps.json"},
+    {"sev": "P1", "title": "11 of Tarkov's 13 locations are missing", "detail": "Factory, Woods, Shoreline, Reserve, Lighthouse, Streets of Tarkov, Ground Zero, The Lab, The Labyrinth, Terminal and Icebreaker are not built; End of the Line follows in December 2026.", "evidence": "src/shared/Maps.luau:14; https://tarkovforge.com/maps"},
+    {"sev": "P1", "title": "Characters are block bodies about twice as wide as a person", "detail": "The body is 1.74 m tall but 1.37 m across the arms with a 0.40 m head, and shots hit these parts, so targets are far bigger than in Tarkov and third-person guns are drawn 1.35 times real size. The block body predates the parity rule and is not in its exceptions.", "evidence": "src/shared/RigSpec.luau:10-27; src/server/Services/Health.luau:21-26; src/shared/WeaponModels.luau:228-230; docs/kit/STATE/DECISIONS.md:12; docs/character/evidence/C09_studio_roster_front_v1.jpg"},
+    {"sev": "P1", "title": "Real-scale maps are over the draw budget and unmeasured on phones", "detail": "Border Yard streams about 18,600 parts near the player and Meridian about 16,800; a wide Border view still needs 1,072 draw calls against the project's starting target of under 700 (wear decals made 55 % of the 1,575 before the rings were shortened). Meridian ran 28 to 33 fps on the laptop at top quality, and the 30 fps phone floor is a release condition.", "evidence": "KNOWN_ISSUES.md items 65, 66, 67; TEST_RESULTS.md:867-880; DEVELOPMENT_STATUS.md:56; docs/kit/SPECS/09_PERFORMANCE_BUDGET.md"},
+    {"sev": "P1", "title": "Combat effects are thin and the parity doc says they are done", "detail": "The muzzle flash is a 4 cm glowing ball for 0.045 s with no smoke, every impact is the same grey puff with a black plastic disc as the hole, and there is no blood and no ejected casings. EFT_PARITY lists per-material impacts, muzzle smoke and blood as 'Have'.", "evidence": "src/client/Controllers/Effects.luau:366-438; src/client/Controllers/Weapon.luau:785-791; docs/design/EFT_PARITY.md:107; docs/maps/evidence/W01_muzzle_flash_small.jpg"},
+    {"sev": "P1", "title": "Buildings are block-built shells", "detail": "Walls are thin Parts with rectangular holes, floors and roofs are slabs, windows have no frames or sills and facades no cornices or gutters, so buildings read as a blockout next to Tarkov's.", "evidence": "docs/maps/BORDER_YARD.md:208-209,568-570; src/server/Maps/MapKit.luau:42-58; docs/maps/evidence/M08_meridian_facade.jpg, MM_exit_shelter.jpg"},
+    {"sev": "P1", "title": "Props, guns and items are low in detail and flat in colour", "detail": "All meshes are vertex-coloured with no UVs, so they cannot show labels, print or wear; gun parts have 128 to 1,544 triangles and gear about 400. Shop goods are plain saturated boxes and the aimed first-person gun reads as dark blocks, while Roblox allows 20,000 triangles a mesh and 1024 PBR maps.", "evidence": "assets/exports/*.meta.json; docs/PIPELINE.md:31,60-69; docs/maps/evidence/M04_meridian_supermarket.jpg; docs/character/evidence/FP02_block_arms_ads.jpg"},
+    {"sev": "P2", "title": "First-person animations are code-made poses and miss Tarkov's steps", "detail": "An empty reload only adds a sound (no bolt release or charging handle), there is no quick reload, the magazine check only tugs the magazine and the inspect is two tilts. Third person uses stiff procedural poses on the block rig.", "evidence": "src/client/Controllers/Weapon.luau:880,1197-1207,1234-1290; src/client/Controllers/Animator.luau:1-6"},
+    {"sev": "P2", "title": "Exits glow and are labelled in the world", "detail": "Every extract has an orange glowing lamp, an 'EXFIL' sign and an orange painted zone; in Tarkov exits are not marked and players read cues such as flares.", "evidence": "src/server/Services/World.luau:741-768; src/server/Maps/Border/Play.luau:66; https://www.ggrecon.com/guides/escape-from-tarkov-how-to-extract/"},
+    {"sev": "P2", "title": "Nights are lifted by the bodycam auto-gain", "detail": "At full dark the exposure rises by about 0.6, so nights read without goggles, while Tarkov's nights are very hard to see in without night vision. This lowers the value of goggles and lights.", "evidence": "src/client/Controllers/Atmos.luau:100; src/client/Controllers/Post.luau:282; docs/look/evidence/L06_night_flicker_lamp.jpg"},
+    {"sev": "P2", "title": "The lighting model is unknown", "detail": "Roblox deprecated Lighting.Technology for LightingStyle and PrioritizeLightingQuality; the code sets neither and the tools could not read Technology, so nobody knows whether the shadow-casting lamps work on phones.", "evidence": "src/server/Services/World.luau:623-660; KNOWN_ISSUES.md:230; https://create.roblox.com/docs/reference/engine/classes/Lighting"},
+    {"sev": "P2", "title": "The sky is Roblox's default", "detail": "The server deletes any Sky object and makes none, so clear raids show the default saturated blue sky with cartoon clouds rather than a hazy Tarkov sky.", "evidence": "src/server/Services/World.luau:635-639; docs/look/evidence/L01_south_yard_high.jpg"},
+    {"sev": "P2", "title": "Raid time and weather work differently from Tarkov", "detail": "The server rolls one of eight start times while Tarkov players choose the time; weather is one of four states for the whole raid, foliage has no wind sway, and rain effects were never checked in a rainy raid.", "evidence": "src/shared/Env.luau:10-15,26-32; KNOWN_ISSUES.md items 25, 26; docs/design/EFT_PARITY.md:329"},
+    {"sev": "P2", "title": "Layouts are close at map scale but rough below it", "detail": "Border Yard uses outlines from before the 0.16 Customs rework with no interiors for the three buildings opened in 0.16, a smoothed relief and exits within 5 to 10 m; Meridian's ponds are dry and its outbuildings single rooms. Both maps end in tall terraced rock walls.", "evidence": "docs/maps/reference/CUSTOMS_REFERENCE.md:21-27,461-463; docs/design/EFT_PARITY.md:275-279; docs/maps/evidence/MM_road_interchange_after.jpg, BY_exit_army_roadblock.jpg"},
+    {"sev": "P2", "title": "Outdoor and indoor density is low", "detail": "Border's outdoor dressing budget is 2,450 parts for half a square kilometre with at most 700 trees, shops get about ten props, dorm furniture is stretched kit meshes and most industrial containers are plain boxes.", "evidence": "docs/maps/BORDER_YARD.md:73-74,317-319,516,573-574; docs/design/EFT_PARITY.md:283-284; src/server/Services/World.luau:707-725"},
+    {"sev": "P2", "title": "No current art bible", "detail": "The kit's brief asks for low-fidelity realism and no expensive PBR while the rule since 2026-10-31 asks for Tarkov parity, so assets aim at different targets: PBR-tiled walls, flat saturated props and block characters.", "evidence": "docs/kit/REFERENCES/VISUAL_ART_DIRECTION.md:1-10; docs/maps/evidence/M01_meridian_atrium.jpg"},
+    {"sev": "P2", "title": "Five floor and ceiling materials exist only in the open Studio session", "detail": "Terrazzo, floor tiles, ceiling tiles, vinyl and carpet were added to the place by hand because Rojo could not create them; if the place is not saved the mall falls back to plain materials.", "evidence": "KNOWN_ISSUES.md item 45"},
+    {"sev": "P3", "title": "59 kit props have off-centre origins", "detail": "Those props stand up to a stud from where the builders aimed them.", "evidence": "KNOWN_ISSUES.md item 69"},
+    {"sev": "P3", "title": "Stocked shelving is triangle-heavy", "detail": "A stocked gondola is 7,326 triangles and the supermarket view about 114,000.", "evidence": "KNOWN_ISSUES.md item 46; assets/exports/ZR_MallKitB.meta.json"},
+    {"sev": "P3", "title": "Character cloth looks coarse up close", "detail": "The body and soft gear use Roblox's stock Fabric over vertex colours.", "evidence": "KNOWN_ISSUES.md item 14"},
+    {"sev": "P3", "title": "Meridian's deep halls are very dark with the power on", "detail": "149 lamps at 0.8 brightness under 27-stud ceilings leave the deep halls dark.", "evidence": "KNOWN_ISSUES.md item 66"},
+    {"sev": "P3", "title": "Some docs no longer match the code", "detail": "DEVELOPMENT_STATUS still calls Border Yard 'designed', LOOK_2_0 says the wall-finish textures are empty although their image ids are set, ASSET_MANIFEST lists weapons as part-built, and EFT_PARITY says the ambience sounds are not uploaded while Sounds.luau points to an upload.", "evidence": "DEVELOPMENT_STATUS.md:5; docs/look/LOOK_2_0.md:17-20 vs src/materials/ZR_WallpaperA.model.json:5-7; ASSET_MANIFEST.md:86; docs/design/EFT_PARITY.md:205-207 vs src/shared/Sounds.luau:21"}
+  ],
+  "quickWins": [
+    "Set Lighting.LightingStyle and PrioritizeLightingQuality on purpose in Studio, record the choice in docs/look, and check the shadow-casting lamps in the device emulator.",
+    "Add an original hazy skybox set (clear, overcast, night) that Atmos switches with the weather, keeping the cloud layer.",
+    "Make a real muzzle flash: two or three frames of flash cards sized by the muzzle device (none behind a suppressor), a brief smoke wisp, and a visible first-person flash (Effects.luau:380-390, Weapon.luau:787).",
+    "Impacts by surface: use the existing surface lookup (Effects.luau:296) for sparks, splinters, dust, dirt and splashes, and use the bullet-hole decals in Wear.luau instead of the black disc.",
+    "Add ejected casings in first person and for nearby shooters, client-only, pooled and capped at about 20.",
+    "Colour pass on props: pull saturated shop goods and prop colours toward the palette with a grime gradient (build_mall_kit_b.py).",
+    "Cut wear-decal draw calls with one wear strip per facade instead of one decal per wall part (KNOWN_ISSUES item 67).",
+    "Make a lower-poly product set for the stocked shelves (KNOWN_ISSUES item 46).",
+    "Centre the 59 off-centre kit origins, one builder at a time (KNOWN_ISSUES item 69).",
+    "Owner: save the place so the five Studio-only floor and ceiling materials are kept (KNOWN_ISSUES item 45).",
+    "Fix the doc drift in finding 22 and the VFX row of EFT_PARITY.md section 6, and log this audit's art gaps in docs/design/EFT_PARITY.md (project rule 2).",
+    "Check rain streaks, splashes and lens drops in a rainy raid (KNOWN_ISSUES item 25).",
+    "After the decisions, write a one-page art bible: palette, texture density, triangle budgets per asset class and reference boards per map."
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "area": "ui",
+  "summary": "The HUD, the Tarkov screens (inventory, INSPECT, traders, flea market, messenger, handbook, settings) and the gamepad and touch controls are all built and copy Tarkov's structure closely on PC. They are weak on phones, gamepads and for new players. Computed from the layout code, the menus do not fit a 390-pt phone (the trader shows under one row of goods), and the HUD always shows exact health numbers that EFT keeps off screen. Most screens open only at bunker stations, not from a key, and there is no onboarding although EFT 1.0 added a tutorial raid. Nothing in this area has run on a phone, a tablet or a real controller.",
+  "decisions": [
+    {
+      "id": "ui-1",
+      "title": "In-raid health and stamina display",
+      "question": "Should the HUD copy EFT's health-condition and stamina indicators, auto-hide our numbers, or keep the always-on numbers?",
+      "context": "Our HUD always shows total health 440/440, stamina, energy and water as large numbers (Hud.luau:552-596). EFT has a Health condition indicator and a Stamina and stance indicator, each always shown or auto-hidden, and keeps exact numbers on the Health tab. On a phone our vitals take a third of the screen height.",
+      "options": [
+        {"id": "a", "label": "EFT's model", "detail": "Build a body outline at bottom left with parts coloured by condition and effect icons beside it. Stamina, arm and breath bars appear when they change, energy and water show only as warning icons, and numbers only on the HEALTH tab. Add EFT's settings: HEALTH CONDITION, STAMINA AND STANCE (always, auto-hide, never) and HEALTH COLOUR SCHEME.", "effort": "M", "perf": "none", "parity": "exact"},
+        {"id": "b", "label": "Numbers that auto-hide", "detail": "Keep the numbers but show them only for 4 s after a change or while below 50 %, and add the same settings.", "effort": "S", "perf": "none", "parity": "partial"},
+        {"id": "c", "label": "Keep as is", "detail": "Always-on numbers.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "It matches EFT's scarce information and frees a third of a phone screen."
+    },
+    {
+      "id": "ui-2",
+      "title": "Bodycam overlay strength on the HUD",
+      "question": "Should the full recorder overlay stay the default, or should a cleaner default keep only the core of the bodycam look?",
+      "context": "The REC stamp, device line, brackets, red/blue split and glow on every glyph, grain, vignette and haze are the owner's bodycam look. They cost legibility, about 300 pt of a phone's top edge and about 400 TextLabels (three per glyph, Lens.luau:291-319). Their phone frame cost is not measured. They add identity, the REC/STBY state and the raid clock.",
+      "options": [
+        {"id": "a", "label": "Keep the full overlay everywhere", "detail": "No change.", "effort": "S", "perf": "low", "parity": "departure"},
+        {"id": "b", "label": "A clean default", "detail": "Keep the REC dot and tag, the raid clock and the brackets, and drop the device line. Use the colour split only on the REC tag. RECORDER OVERLAY becomes FULL, CLEAN or OFF.", "effort": "S", "perf": "none", "parity": "partial"},
+        {"id": "c", "label": "By device", "detail": "Full overlay on PC and console, clean on phones.", "effort": "S", "perf": "none", "parity": "partial"}
+      ],
+      "recommended": "b",
+      "why": "It keeps the bodycam identity and makes the numbers readable on every screen size."
+    },
+    {
+      "id": "ui-3",
+      "title": "Menus on a 390-pt phone",
+      "question": "Should phones get compact one-panel layouts, or keep the desktop layouts with fixes for the worst problems?",
+      "context": "The menus are fixed-pixel laptop layouts with nothing that scales them (UiKit K.scale is never called). On an 844x390 phone the trader goods grid gets under one row, or less than nothing (computed from Trade.luau:330-397). Inventory cells are 24 pt and text is 9 to 13 pt. Phones are most of Roblox's audience.",
+      "options": [
+        {"id": "a", "label": "Compact phone layouts", "detail": "Below about 500 pt of height, show one panel at a time with a tab rail (inventory: GEAR / BAGS / STASH or LOOT; trader: GOODS / STASH / DEAL). Text at least 13 pt, buttons 44 pt, cells 36 pt; checked at 844x390, 667x375 and 932x430. PC keeps EFT's layout.", "effort": "L", "perf": "none", "parity": "partial"},
+        {"id": "b", "label": "Keep the layouts, fix the worst", "detail": "Full-screen windows on phones, a collapsible trader deal bar, minimum 12-pt text and 32-pt cells, with more scrolling.", "effort": "M", "perf": "none", "parity": "close"}
+      ],
+      "recommended": "a",
+      "why": "EFT's side-by-side columns cannot hold readable text and finger-sized cells at 390 pt."
+    },
+    {
+      "id": "ui-4",
+      "title": "Moving items on touch",
+      "question": "Should touch players get drag and drop, an improved tap-and-place, or both?",
+      "context": "Drag works only with a mouse (Inventory.luau:610-631). Touch players tap an item, then tap a cell, and they cannot turn the item because the ROTATE button is no longer drawn. The cells are small.",
+      "options": [
+        {"id": "a", "label": "Touch drag and drop", "detail": "A long press (0.25 s) picks up; drag and let go to place. A ROTATE button shows while dragging, a double tap quick-moves, and a long press without a drag opens the action menu.", "effort": "M", "perf": "none", "parity": "close"},
+        {"id": "b", "label": "Improve tap-and-place", "detail": "Add ROTATE, larger cells and a green/red fit cue.", "effort": "S", "perf": "none", "parity": "partial"},
+        {"id": "c", "label": "Both", "detail": "Drag first, with tap-and-place kept as a fallback.", "effort": "M", "perf": "none", "parity": "close"}
+      ],
+      "recommended": "c",
+      "why": "Drag is EFT's own model, and tap-and-place helps players with small screens or less precise fingers."
+    },
+    {
+      "id": "ui-5",
+      "title": "Onboarding for new players",
+      "question": "Should we build an EFT 1.0-style tutorial raid, a bunker boot camp, first-time hints only, or nothing?",
+      "context": "We have one welcome message (Raid.luau:1154). EFT 1.0 (15 Nov 2025) added a tutorial raid after character creation, with control signs and green glowing bars to the exit, followed by story missions (VidaExtra, Insider Gaming). The Roblox audience is younger and newer.",
+      "options": [
+        {"id": "a", "label": "EFT 1.0-style tutorial raid", "detail": "A short scripted raid on its own small area, offered on first join. It has control signs for the player's device, a guided first aid, loot and inventory lesson, and an exit marked by a lit path, then a three-task starter chain.", "effort": "L", "perf": "none", "parity": "exact"},
+        {"id": "b", "label": "Bunker boot camp", "detail": "A guided first walk through Relay 7 (locker, trader, a range drill, the van) with hint cards.", "effort": "M", "perf": "none", "parity": "partial"},
+        {"id": "c", "label": "Hints only", "detail": "First-time tips that players can dismiss, for each screen and the first raid, with a HINTS on/off setting.", "effort": "S", "perf": "none", "parity": "partial"},
+        {"id": "d", "label": "None", "detail": "Keep EFT's pre-1.0 approach.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "It is now parity with EFT and addresses the audience's biggest risk, quitting early; option c can ship first as a stopgap."
+    },
+    {
+      "id": "ui-6",
+      "title": "Opening screens outside the walk-around bunker",
+      "question": "Should Relay 7 get EFT's one-click menu bar, PC hotkeys only, or stay walk-only?",
+      "context": "The owner's rule is that every Tarkov screen still opens from its key. Only the inventory (Tab), settings (P) and exits (O) do (InputMap.luau:20-77). Traders, flea market, messenger, handbook, hideout, deploy and insurance open only from station prompts (Interact.luau:165-197).",
+      "options": [
+        {"id": "a", "label": "EFT's menu bar", "detail": "A bar of CHARACTER, TRADERS, FLEA MARKET, HIDEOUT, HANDBOOK, MESSENGER (with an unread count) and DEPLOY, usable anywhere in the bunker. It opens from a key, a pad button or a touch button, and PC gets a hotkey per screen. The stations still work.", "effort": "M", "perf": "none", "parity": "close"},
+        {"id": "b", "label": "PC hotkeys only", "detail": "Gamepad and touch players still walk to the stations.", "effort": "S", "perf": "none", "parity": "partial"},
+        {"id": "c", "label": "Walk-only", "detail": "Keep the current behaviour and correct the docs.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "It fulfils the owner's own rule and gives EFT's one-click access on every device."
+    },
+    {
+      "id": "ui-7",
+      "title": "Chat in raids",
+      "question": "In a raid, should text chat be squad-only, removed, joined by proximity voice, or left as it is?",
+      "context": "Roblox's server-wide text chat stays on in raids, because nothing configures TextChatService (Main.client.luau:27-31). The dead and the bunker can call out positions. EFT has proximity voice since 0.12.12; that it has no text chat in raid is unverified.",
+      "options": [
+        {"id": "a", "label": "Squad channel only", "detail": "In raid, hide public chat and keep a squad-only channel. Full chat in the bunker.", "effort": "S", "perf": "none", "parity": "close"},
+        {"id": "b", "label": "No text chat in raid", "detail": "Hide all text chat during raids.", "effort": "S", "perf": "none", "parity": "close"},
+        {"id": "c", "label": "a plus proximity voice", "detail": "Add Roblox's spatial voice for raiders who have voice enabled, like EFT's VoIP.", "effort": "M", "perf": "low", "parity": "close"},
+        {"id": "d", "label": "Leave as is", "detail": "No change.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "It stops position call-outs and keeps squads usable; voice is an owner policy choice because of moderation and Roblox's age checks for voice."
+    },
+    {
+      "id": "ui-8",
+      "title": "Accessibility settings",
+      "question": "Which accessibility settings should we add beyond HUD SCALE, REDUCE MOTION and SCREEN SHAKE?",
+      "context": "EFT's PostFX has a colour-blind mode (Protanopia, Deuteranopia, Tritanopia, with an intensity). Roblox cannot filter each colour channel of the 3D image, so a colour mode can only recolour the UI. Menu text is fixed at 9 to 17 px.",
+      "options": [
+        {"id": "a", "label": "Colour-blind palettes, menu text size and hints", "detail": "EFT's COLOUR-BLIND MODE row with its intensity, done as colour-safe HUD and menu palettes that keep words and shapes next to colours. Plus MENU TEXT SIZE from 100 to 150 % and the HINTS toggle.", "effort": "M", "perf": "none", "parity": "partial"},
+        {"id": "b", "label": "Palettes only", "detail": "The colour-blind palettes, nothing else.", "effort": "S", "perf": "none", "parity": "partial"},
+        {"id": "c", "label": "Nothing beyond HUD SCALE", "detail": "No change.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "Text size matters on phones, and the colour row exists in EFT."
+    }
+  ],
+  "findings": [
+    {"sev": "P0", "title": "The menus do not fit a phone", "detail": "The menus use fixed pixel sizes and nothing scales them. Computed for an 844x390 phone (not seen on a device): the trader goods grid gets 33 pt (under one 34-pt row), or a negative height when the top bar is excluded. Inventory cells are 24 pt and the labels 9 to 10 pt.", "evidence": "Trade.luau:791, 825-826, 330-334, 350-397; Screens.luau:32-40; Inventory.luau:972-974, 1019-1024, 586, 605, 874; UiKit.luau:146-150 (K.scale never called)"},
+    {"sev": "P1", "title": "The HUD always shows exact numbers that EFT hides", "detail": "Total health 440/440 (the largest HUD text), stamina, energy and water are always on. EFT has health-condition and stamina-and-stance indicators that can auto-hide. On a phone the vitals run from about 60 to 190 pt down a 390-pt screen.", "evidence": "Hud.luau:52-56, 94, 552-596; Lens.luau:107; GGRecon and esports.net settings guides"},
+    {"sev": "P1", "title": "Most screens cannot be opened from a key", "detail": "The owner's rule says every Tarkov screen opens from its key. Only Tab (inventory), P (settings) and O (exits) have keys; traders, flea market, messenger, handbook, hideout, deploy and insurance open only at bunker stations.", "evidence": "InputMap.luau:20-77; Interact.luau:165-197; RELAY7_LOBBY.md:3-4; EFT_PARITY.md:16"},
+    {"sev": "P1", "title": "Touch and gamepad cannot turn an item when placing it", "detail": "Placement uses a rotation flag that only the R key or a ROTATE button in the old tall detail strip can change. The info bar is now 40 pt, so that strip is never drawn.", "evidence": "Inventory.luau:1019 (detailH = 40), 857-882, 936-939, 1384-1391"},
+    {"sev": "P1", "title": "One tap or click can destroy, sell or pay", "detail": "DISCARD and SELL act with no confirmation, and on touch they sit in a row of 30-pt buttons. A tap on a hold prompt completes the hold, so one tap pays a car fare of up to 25,000 MK.", "evidence": "Inventory.luau:469-489, 873-881; Interact.luau:57-65"},
+    {"sev": "P1", "title": "New players get no onboarding", "detail": "There is one welcome message and an inventory help line written for mouse users. EFT 1.0 added a tutorial raid, so the brief's 'EFT has none' is out of date.", "evidence": "Raid.luau:1154; Inventory.luau:885; VidaExtra 2025-11-20; Insider Gaming"},
+    {"sev": "P2", "title": "The weapon line always shows the fire mode", "detail": "The weapon, fire mode and device state are always on screen. EFT shows the mode only when you change it, so our fire-mode check (Alt+B) is pointless.", "evidence": "Hud.luau:449-468; Gamepressure using-weapons guide"},
+    {"sev": "P2", "title": "The bodycam overlay costs legibility and draw work (unmeasured on phones)", "detail": "Each HUD glyph is three TextLabels (about 400 by my count), and the whole HUD root moves with camera sway. Two grain layers, a vignette and a haze cover the full screen. The REC line is about 300 pt wide on a phone.", "evidence": "Lens.luau:163, 291-319; Hud.luau:380-392, 699-706; Post.luau:74-118"},
+    {"sev": "P2", "title": "The default touch layout covers the middle of the view", "detail": "MORE sits just above the crosshair, and LOOK, MODE, SWAP and MED sit at x 0.59 to 0.61, so five buttons are in the central third. The MORE tray icons have no captions.", "evidence": "TouchLayout.luau:35-46; docs/maps/evidence/UI12_touch_v2_raid.jpg, UI14_touch_v2_tray.jpg"},
+    {"sev": "P2", "title": "Settings lack EFT's rows and per-device controls", "detail": "Missing EFT rows: health condition, stamina and stance, health colour scheme, malfunction notifications, double-click quick use, colour-blind mode, colourfulness, the sharpen sliders, music and VoIP. One sensitivity serves mouse, stick and touch, with no invert. Numbers change by -/+ steps only.", "evidence": "Screens.luau:589-630, 781-792; Camera.luau:129-142; GGRecon; GamersDecide"},
+    {"sev": "P2", "title": "Mail arrives silently", "detail": "Task, flea and loyalty messages are stored with no toast, unread flag or badge. The pigeonhole lamp lights only for insurance.", "evidence": "Economy.luau:28-33; Lobby.luau:223-228; Menus.luau:73-84"},
+    {"sev": "P2", "title": "Roblox's server-wide text chat stays on in raids", "detail": "Nothing configures TextChatService, so the dead and the bunker can call out positions to raiders. EFT has proximity voice since 0.12.12; its lack of text chat in raid is unverified.", "evidence": "Main.client.luau:27-31 (only backpack, health and player list hidden); no TextChatService in src"},
+    {"sev": "P2", "title": "Drag and drop lacks EFT's helpers", "detail": "There is no fit cue while dragging and split only halves a stack. Del, double-click and middle-click do nothing, and drag works only with a mouse.", "evidence": "Inventory.luau:1219-1258, 439-447, 610-631, 1375-1379; EFT_PARITY.md:49"},
+    {"sev": "P2", "title": "The UI docs are out of date", "detail": "EFT_PARITY sections 2 to 5 still call the 2026-10-31 features missing (messenger, handbook, flea, wish list, rebinding, PostFX, Sound, quick slots, stash search). KNOWN_ISSUES 12 and 51 and DEVELOPMENT_STATUS line 282 are stale. TEST_RESULTS records no Studio check of the 2026-10-31 screens.", "evidence": "EFT_PARITY.md:44-100; KNOWN_ISSUES.md items 12 and 51; DEVELOPMENT_STATUS.md:282; Inventory.luau:1021, 1026-1028"},
+    {"sev": "P2", "title": "Gamepad menus need work", "detail": "Focus goes to the first tab, not the open one, and is also set for mouse users. There is no shoulder-button tab switching, and the inspect model cannot be turned with a pad.", "evidence": "Screens.luau:749-754, 854; Trade.luau:840; Inspect.luau:447-472, 552; docs/maps/evidence/UI08_controls_gamepad.jpg"},
+    {"sev": "P3", "title": "The HUD ignores the notch", "detail": "The HUD uses no screen insets and a 4 % left margin (about 34 pt on an 844-pt phone), inside a notch inset of about 47 pt.", "evidence": "Hud.luau:64, 242"},
+    {"sev": "P3", "title": "The HUD stays on in the bunker", "detail": "It shows vitals that never change there, and stays drawn around every screen except the inventory.", "evidence": "Hud.luau:708; docs/maps/evidence/UI08_controls_gamepad.jpg, R7_style_screen.jpg"},
+    {"sev": "P3", "title": "Item tiles carry a rarity stripe EFT does not have", "detail": "A coloured stripe marks rarity. EFT tints item backgrounds by type instead (unverified).", "evidence": "Inventory.luau:592-595"},
+    {"sev": "P3", "title": "There is no loading screen of our own", "detail": "Joining shows Roblox's default screen, and deploying is a van fade while the map streams in for up to 4 s.", "evidence": "Lobby.luau:565-660; Raid.luau:386; no ReplicatedFirst script in src"},
+    {"sev": "P3", "title": "The post-raid flow is one report", "detail": "There is no healing step, kill list or XP breakdown, and the operator is fully healed outside a raid. EFT opens a healing screen after a raid.", "evidence": "Screens.luau:548-583; Character.luau:33-37; Alphr healing guide"},
+    {"sev": "P3", "title": "Tasks cannot be pinned", "detail": "EFT 0.16.7 added pinning active quests. Our task lists cannot be pinned, and TASKS shows only in a raid.", "evidence": "Trade.luau:621-686; Inventory.luau:993; AltChar 0.16.7.0 notes"},
+    {"sev": "P3", "title": "The game is English only, and the HUD cannot be translated", "detail": "All text is hard-coded, and the HUD's one-character labels cannot go through Roblox's automatic translation. EFT has a language setting (unverified).", "evidence": "Lens.luau:340-356"}
+  ],
+  "quickWins": [
+    "Put ROTATE back in the 40-pt inventory info bar for touch and gamepad, with a pad button while an item is selected (Inventory.luau:857-882).",
+    "Ask before DISCARD, before selling a stack, and before any paid prompt on touch; keep destructive buttons apart (Inventory.luau:486, Interact.luau:57-65).",
+    "Show the weapon line only for about 4 s after a weapon switch, a fire-mode change or a check, and keep the malfunction flash (Hud.luau:449-468).",
+    "Hide the vitals in the bunker, and hide the HUD while any screen is open (Hud.luau:708).",
+    "Gamepad: focus the open tab, and only when a pad is in use; let LB and RB switch tabs and the right stick turn the inspect model (Screens.luau:854, Trade.luau:840, Inspect.luau:552).",
+    "Give the messenger and the pigeonhole an unread count, and show a toast when mail arrives (Economy.luau:28-33).",
+    "Add invert Y, separate MOUSE, GAMEPAD and TOUCH sensitivities, and sliders or hold-to-repeat for number settings (Camera.luau:129-142, Screens.luau:781-792).",
+    "Reorder the settings tabs to EFT's GAME, GRAPHICS, SOUND, POSTFX, CONTROLS, and add MALFUNCTION NOTIFICATIONS and DOUBLE-CLICK QUICK USE.",
+    "Inventory: add a green/red fit cue while dragging, Del to discard (with the confirmation), middle-click to examine and double-click to use (Inventory.luau:1219-1258).",
+    "Touch: add captions to the MORE tray, and move MORE and LOOK off the centre line in the default layout (TouchLayout.luau:45-46).",
+    "Use the device's safe area for the HUD's left and right margins on notched phones (Hud.luau:242).",
+    "Add a bodycam-style loading card at join (a ReplicatedFirst script) and at insertion while the map streams in (Raid.luau:386).",
+    "Bring EFT_PARITY sections 2 to 5, KNOWN_ISSUES 12 and 51 and DEVELOPMENT_STATUS line 282 up to date, record Studio checks of the 2026-10-31 screens in TEST_RESULTS, and fix the 'opens from its key' claim or build ui-6.",
+    "Let players pin tasks and see the TASKS tab out of raid too (EFT 0.16.7).",
+    "Drop the 'SCAV ONLY' tag from a scav's own exits list, where every row is a scav exit."
+  ]
+}

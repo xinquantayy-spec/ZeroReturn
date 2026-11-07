@@ -1,0 +1,490 @@
+{
+  "area": "tech",
+  "summary": "The architecture is sound and server-first: the server decides shots, inventory, loot, money and extraction; saves use session locks, escrow and crash recovery; and there are real graphics levers (GRAPHICS levels, HOLD 30 FPS, measured detail rings). But nothing that decides release has been verified: no phone, real DataStore, second player or live server has ever run the game. The biggest risks are phone frame rate on the real-scale maps (all four built at runtime in every server, so Roblox's SLIM simplification cannot apply), a silent memory-save fallback, a movement guard that lets teleports and flying through, and kit loss on any disconnect or server shutdown.",
+  "decisions": [
+    {
+      "id": "tech-1",
+      "title": "Release staging",
+      "question": "When and how should Zero Return first go onto Roblox's servers?",
+      "context": "Real saves, two-player play, phone numbers, the on-phone Developer Console and Creator Analytics all need a published place; findings 1, 2, 4 and 7 cannot be closed without one. Publishing needs your approval.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Stay unpublished",
+          "detail": "Keep testing in Studio only.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        },
+        {
+          "id": "b",
+          "label": "Private test place now",
+          "detail": "Publish as a private place, turn on Studio API access, run the save probes on the DEV store, and invite 2 to 5 testers for two-player and phone runs. Nothing public.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "Private now, public soft launch later",
+          "detail": "Option b, then a public launch with no promotion once the P0 and P1 items pass and the content questionnaire is done.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "d",
+          "label": "Public now",
+          "detail": "Publish publicly as it is, with saves and phones untested.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        }
+      ],
+      "recommended": "b",
+      "why": "It unblocks every P0 test today and keeps the game out of public view; decide on c after."
+    },
+    {
+      "id": "tech-2",
+      "title": "Baseline phone and how to measure it",
+      "question": "Which phone sets the 30 FPS floor, and how do we measure it?",
+      "context": "No phone has run the game. Roblox advises one baseline device tested all through development. Studio's emulator is right for screen shape and controls, not for speed or memory. Creator Analytics shows frame rate, memory and crashes by device only above 100 daily players.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Your own phone",
+          "detail": "Measure on the phone you have with the on-device MicroProfiler and the Developer Console.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Buy one budget Android",
+          "detail": "A current low-cost model (3 to 4 GB of memory) as the fixed reference; every map passes or fails at 30 fps in its heaviest views. Spending needs your approval.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "Testers' phones",
+          "detail": "Collect MicroProfiler dumps and memory readings from 3 to 5 testers on the private place.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "d",
+          "label": "Wait for analytics",
+          "detail": "Rely on Creator Analytics after launch (needs 100+ daily players).",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        }
+      ],
+      "recommended": "b",
+      "why": "A fixed low-end reference makes '30 FPS on low-end phones' testable and repeatable; add c for breadth."
+    },
+    {
+      "id": "tech-3",
+      "title": "Default graphics level on phones",
+      "question": "Should phones keep starting at HIGH graphics?",
+      "context": "HIGH everywhere was your M12 decision, made before the 30 FPS floor (2026-11-01). HIGH adds depth of field, sun rays, bloom, two grain layers and the full detail rings. HOLD 30 FPS needs about 50 s of stutter to reach LOW, and the level is saved in the profile, so it is shared by the player's PC and phone.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Keep HIGH everywhere",
+          "detail": "As now.",
+          "effort": "S",
+          "perf": "high",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Phones start at LOW",
+          "detail": "The first default follows the device (touch-only means LOW, others HIGH). The level is saved per device type. HOLD 30 FPS stays, judging in 3 s windows.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "First-launch benchmark",
+          "detail": "A 10 s test in the bunker picks the highest level that holds 40 fps, saved per device.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "d",
+          "label": "Keep HIGH, two-way auto",
+          "detail": "Step down after 3 s under 30 fps; step back up after 60 s over 50 fps.",
+          "effort": "S",
+          "perf": "low",
+          "parity": "close"
+        }
+      ],
+      "recommended": "b",
+      "why": "The safest way to hold 30 FPS before any phone data exists; players can still raise it."
+    },
+    {
+      "id": "tech-4",
+      "title": "How maps are built and hosted",
+      "question": "Should every server keep building all four maps in code at start?",
+      "context": "World.build makes the lobby plus Quay 7, Smelter, Meridian and Border at every server start (49,988 parts, over a million terrain columns; Meridian takes 8 to 9 s). That costs start-up time and server memory, and it rules out SLIM, which Roblox makes only for models saved in the place.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Keep it",
+          "detail": "All maps built at every server start.",
+          "effort": "S",
+          "perf": "high",
+          "parity": "departure"
+        },
+        {
+          "id": "b",
+          "label": "Leaner runtime build",
+          "detail": "Build only the map in play (plus its transit partner) at raid start, and merge plain wall and floor runs into fewer, larger parts in MapKit.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "Bake maps, then turn on SLIM",
+          "detail": "Run the same builders in Studio once and save the static shells into the place, with SLIM on building models; doors, glass, containers and lamps stay dynamic.",
+          "effort": "L",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "d",
+          "label": "Lobby place plus one place per map",
+          "detail": "Teleport squads to a reserved server per raid, as Tarkov matches and loads one map per raid; each map place gets SLIM and its own streaming settings.",
+          "effort": "L",
+          "perf": "none",
+          "parity": "exact"
+        }
+      ],
+      "recommended": "b",
+      "why": "It cuts parts, start-up time and server load without restructuring; go to c or d only if phones still miss 30 fps."
+    },
+    {
+      "id": "tech-5",
+      "title": "How far the world streams",
+      "question": "How far should the world stream (view distance) on every device?",
+      "context": "The radius is the same for everyone, so it is fair; a smaller one means fewer parts and less memory, but distant buildings and players disappear. Border's centre streams about 18,600 parts at the default radius. 768 studs holds about 56% of the area of 1,024. Roblox already shortens render distance on weak devices.",
+      "options": [
+        {
+          "id": "a",
+          "label": "1,024 studs (default)",
+          "detail": "Keep the radius (about 320 m at our scale) and switch to Opportunistic stream-out.",
+          "effort": "S",
+          "perf": "med",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "768 studs",
+          "detail": "Every device streams to 768 studs (about 240 m), with Opportunistic stream-out.",
+          "effort": "S",
+          "perf": "low",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "512 studs",
+          "detail": "About 160 m; long sniper fights end.",
+          "effort": "S",
+          "perf": "low",
+          "parity": "partial"
+        },
+        {
+          "id": "d",
+          "label": "A radius per map",
+          "detail": "Quay 7 and Smelter at 1,024, the real-scale maps lower; needs one place per map (tech-4 d).",
+          "effort": "L",
+          "perf": "low",
+          "parity": "close"
+        }
+      ],
+      "recommended": "b",
+      "why": "It removes roughly 40% of streamed parts in open areas and keeps about 240 m of view; confirm on the baseline phone."
+    },
+    {
+      "id": "tech-6",
+      "title": "How to stop movement cheats",
+      "question": "Harden our own movement checks, or move to Roblox Server Authority?",
+      "context": "The client owns its movement and Guard.luau misses single teleports, downward moves, flying and noclip; loot checks distance only. Roblox Server Authority has been fully released since 9 July 2026, but custom movement must move to BindToSimulation and the new input system, and it raises server load.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Harden what we have",
+          "detail": "Pull back any single impossible move, check downward teleports and time in the air, cast a ray from the last good spot to catch noclip, require line of sight for loot, doors and exit entry, and ban repeat cheaters with Players:BanAsync.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Roblox Server Authority",
+          "detail": "Rewrite Movement, Camera and character control on BindToSimulation and the new input system, then retest everything on phones (phone and console clients get engine updates days later).",
+          "effort": "L",
+          "perf": "med",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "Leave it until after launch",
+          "detail": "No change.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        }
+      ],
+      "recommended": "a",
+      "why": "Closes the worst holes in days; revisit b once the 30 FPS work is done, since it touches every movement feature."
+    },
+    {
+      "id": "tech-7",
+      "title": "Disconnects and server shutdowns mid-raid",
+      "question": "What happens to a raider's kit when they drop out or the server closes?",
+      "context": "Leaving settles the raid as DISCONNECTED at once, and BindToClose does the same for every raider, so each Roblox update or server crash costs everyone their kit. Phones drop connections more often. Tarkov lets you reconnect while your character stays in the raid.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Keep the loss",
+          "detail": "As now.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        },
+        {
+          "id": "b",
+          "label": "Reconnect window",
+          "detail": "The body stays in the raid (killable and lootable) for up to 2 minutes; a player who rejoins within that time is sent back to the same server (TeleportToPlaceInstance) and resumes.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "exact"
+        },
+        {
+          "id": "c",
+          "label": "Refund on server shutdown",
+          "detail": "When a server closes (update or crash), escrowed kits return as they were and no loot is gained.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "departure"
+        },
+        {
+          "id": "d",
+          "label": "Both b and c",
+          "detail": "Reconnect for player disconnects, refund for server shutdowns.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        }
+      ],
+      "recommended": "d",
+      "why": "Phones drop connections often and updates restart servers; a lost kit per update would drive players away."
+    },
+    {
+      "id": "tech-8",
+      "title": "Code quality gate",
+      "question": "Should we add lint, type checks and automatic test runs?",
+      "context": "119 of 159 Luau files are non-strict and no type checker or lint tool runs; tools/luau_check.py only checks bracket balance, and an undeclared-global bug shipped. The four suites need a Studio session. New laptop tools and an Open Cloud key both need your approval.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Keep as is",
+          "detail": "luau_check.py plus the Studio suites.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Lint and type check on the laptop",
+          "detail": "Add selene, StyLua and luau-lsp through rokit, run them before each sync, and move Combat, Raid, Loot, Health and AI to strict.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "b plus automatic test runs",
+          "detail": "The four suites run headless on the private place through Open Cloud Luau Execution after each change.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        }
+      ],
+      "recommended": "c",
+      "why": "Catches bugs like the rain global before Studio and runs about 460 checks on every change unattended."
+    }
+  ],
+  "findings": [
+    {
+      "sev": "P0",
+      "title": "Saves never run on a real DataStore; a live server can silently run without saving",
+      "detail": "Every test used the in-memory store. Store.init switches the whole server to memory mode on any probe error, even on live servers, and no client code reads the 'persistence' field, so players would lose a session without warning.",
+      "evidence": "src/server/Services/Store.luau:20-33; Raid.luau:131; KNOWN_ISSUES 1, 33; TEST_RESULTS line 9"
+    },
+    {
+      "sev": "P0",
+      "title": "30 FPS on low-end phones is unmeasured, and phones start at HIGH",
+      "detail": "No phone has run the game. The laptop gets 28 to 33 fps in Meridian at Roblox's top render level (58 at level 10), and HIGH, the default everywhere, adds depth of field, sun rays, bloom, two grain layers and the full detail rings.",
+      "evidence": "src/client/Controllers/Settings.luau:10, 187-193; KNOWN_ISSUES 3, 41, 65; TEST_RESULTS 'Frame rate in a separate client window'"
+    },
+    {
+      "sev": "P1",
+      "title": "Movement guard lets teleports every 3 s, flying, noclip and looting through walls",
+      "detail": "A single big jump is only one strike and becomes the new baseline; downward moves are never checked; the per-sample slack allows about 45 studs/s sideways and 44 up; nothing checks walls. Loot checks distance only, and strikes never lead to a kick or ban.",
+      "evidence": "src/server/Services/Guard.luau:17-19, 49-67; Chars.luau:427; Loot.luau:401-419; Remotes.luau:55-61; LogicTests.luau:450-454"
+    },
+    {
+      "sev": "P1",
+      "title": "Never played by two people at once",
+      "detail": "Squads, player-vs-player hits and kill credit, contested loot, late joins, simultaneous extractions, the car countdown and gear replication are covered only by logic tests and one client.",
+      "evidence": "KNOWN_ISSUES 2, 32; TEST_RESULTS line 9"
+    },
+    {
+      "sev": "P1",
+      "title": "Client start-up race on fresh servers",
+      "detail": "The client waits at most 30 s for the remotes and never retries, while the server opens them only after loading 23 mesh batches one by one and building all four maps. Total start-up time has never been measured.",
+      "evidence": "src/shared/Net.luau:15-21; src/client/Controllers/State.luau:75-84; src/server/Main.server.luau:52-53, 104"
+    },
+    {
+      "sev": "P1",
+      "title": "All maps built in code in every server: no SLIM, 17k to 19k parts near the player",
+      "detail": "Roblox makes SLIM simplified models only for models saved in a published place. Border's centre streams about 18,600 parts and the mall about 16,800, and on weak devices Roblox shortens render distance hard when many objects are in view (community reports), so phones may see less.",
+      "evidence": "src/server/Services/World.luau:1646-1863; KNOWN_ISSUES 65, 66; create.roblox.com/docs/workspace/streaming/slim"
+    },
+    {
+      "sev": "P1",
+      "title": "Any disconnect or server shutdown loses the kit; no reconnect",
+      "detail": "PlayerRemoving settles the raid as DISCONNECTED, and BindToClose does the same for every raider, so each update or crash wipes all raids in progress. Tarkov lets players reconnect.",
+      "evidence": "src/server/Services/Raid.luau:1183-1206"
+    },
+    {
+      "sev": "P1",
+      "title": "Draw calls on HIGH above Roblox's own example budget",
+      "detail": "A wide Border view still makes 1,072 draw calls after the ring cut, with the client wear decals the largest part. Roblox's example budget is under 1,000 draw calls, and it is not a phone budget.",
+      "evidence": "KNOWN_ISSUES 67; TEST_RESULTS 'Fog and draw cost'; Detail.luau:29-33"
+    },
+    {
+      "sev": "P2",
+      "title": "Whole profile sent on every inventory move; inventory rebuilt from scratch",
+      "detail": "Each inv request (up to 12 a second) pushes Raid.state with the stash, settings, quests, traders, hideout, flea and messages, and the inventory panel is destroyed and rebuilt on every snapshot, with no debounce.",
+      "evidence": "src/server/Services/Raid.luau:112-147, 980, 1043, 1170; src/client/Controllers/Inventory.luau:952-966, 1334-1338"
+    },
+    {
+      "sev": "P2",
+      "title": "Effects go to every player wherever they are; each muzzle flash makes a light",
+      "detail": "Remotes.fx sends to all players, including those in the lobby or on the other transit map, and every remote shot builds a glow part and a PointLight on the client regardless of distance.",
+      "evidence": "src/server/Services/Remotes.luau:205-211; src/client/Controllers/Effects.luau:380-390, 441-452"
+    },
+    {
+      "sev": "P2",
+      "title": "Graphics settings follow the account, not the device",
+      "detail": "quality, fov, sens, grain and hudScale are saved in the profile, so a phone's automatic step-down also lowers the same player's PC, and a PC's HIGH lands on their phone.",
+      "evidence": "src/server/Services/Raid.luau:1075; src/client/Controllers/Settings.luau:153-164"
+    },
+    {
+      "sev": "P2",
+      "title": "HOLD 30 FPS is slow and one-way",
+      "detail": "It needs a 20 s calm, then 8 s under 30 fps per step and 15 s to settle: about 50 s from HIGH to LOW. It never steps back up, and the calm restarts on every spawn.",
+      "evidence": "src/client/Controllers/Detail.luau:787-877"
+    },
+    {
+      "sev": "P2",
+      "title": "Mesh library sent to every client",
+      "detail": "About 1,000 MeshParts sit in ReplicatedStorage, which every client loads. The mall and bunker kits, trees and cover props are only cloned by the server.",
+      "evidence": "src/server/Services/Assets.luau:27-35, 78-93; src/shared/AssetIds.luau; Roblox 'Design for performance'"
+    },
+    {
+      "sev": "P2",
+      "title": "Seasonal colours miss everything that streams in later",
+      "detail": "The season tint scans the workspace once at deploy, so trees and bushes that stream in afterwards stay summer-coloured, in every raid from September to May. The scan also causes a hitch.",
+      "evidence": "src/client/Controllers/Atmos.luau:313-343, 494; src/shared/Env.luau:44-52"
+    },
+    {
+      "sev": "P2",
+      "title": "Engine settings live only in the place file",
+      "detail": "Streaming radius, stream-out mode, pause mode and Lighting.Technology are not in default.project.json, and five MaterialVariants exist only in the Studio session. Roblox recommends Opportunistic stream-out; nobody can tell what the place uses.",
+      "evidence": "default.project.json; KNOWN_ISSUES 45, 65"
+    },
+    {
+      "sev": "P2",
+      "title": "Shots can be dropped on jittery connections; the rate limit is below Tarkov's fastest guns",
+      "detail": "The server rejects a shot arriving less than 0.8 of the gun's interval after the last one, so jitter can eat shots the client already showed (likely, needs a test). The 14 a second limit is fine at today's 800 RPM but too low for 900 to 1,100 RPM guns.",
+      "evidence": "src/server/Services/Combat.luau:244-246; Remotes.luau:171; src/shared/Weapons.luau:20"
+    },
+    {
+      "sev": "P2",
+      "title": "No type checker or lint tool; non-strict gameplay code",
+      "detail": "119 of 159 files are non-strict and only a bracket-balance checker runs. An undeclared-global bug shipped, some features are 'written, not run', and the NEXT_TASK test baselines are stale.",
+      "evidence": "rokit.toml; tools/luau_check.py:1-6; src/client/Controllers/Atmos.luau:232-233; DEVELOPMENT_STATUS line 54"
+    },
+    {
+      "sev": "P2",
+      "title": "Client script time unmeasured on phones",
+      "detail": "About two dozen per-frame callbacks cost about 3 ms a frame on the laptop; on a low-end phone that could be several times more out of a 33 ms budget (unverified).",
+      "evidence": "TEST_RESULTS 'Frame time in Studio: where it goes'; Animator.luau:327-365; Atmos.luau:581-587"
+    },
+    {
+      "sev": "P2",
+      "title": "Live server cost unmeasured; ragdolls stay in the physics simulation",
+      "detail": "Studio measured an 8.3 ms physics step with 761 moving parts on Border. Ragdolls are never anchored, and the AI thinks 5 times a second, finds a new path every 2.5 s while moving, and fires every frame.",
+      "evidence": "TEST_RESULTS 'Border Yard raid with AI'; src/server/Services/Chars.luau:614-655; AI.luau:543-556, 1898-1908, 2333-2344"
+    },
+    {
+      "sev": "P3",
+      "title": "About 20 lighting values rewritten every frame",
+      "detail": "Atmos.blend writes Lighting, Atmosphere, Clouds, grade and GlobalWind every frame even when nothing changes; the cost on phones is unmeasured.",
+      "evidence": "src/client/Controllers/Atmos.luau:110-169, 581-587"
+    },
+    {
+      "sev": "P3",
+      "title": "Every weapon light casts shadows",
+      "detail": "First-person and all third-person weapon lights, AI included, cast shadows: up to about 30 shadowed spotlights at night.",
+      "evidence": "src/server/Services/Chars.luau:224-233; src/client/Controllers/Weapon.luau:453-463"
+    },
+    {
+      "sev": "P3",
+      "title": "HUD letters drawn three times; overlays kept visible while see-through",
+      "detail": "Each HUD letter is up to three text labels (the letter and its red and blue copies), and nine full-screen overlays stay visible at full transparency instead of being hidden.",
+      "evidence": "src/client/Controllers/Lens.luau:291-320; Hud.luau:60; Post.luau:59-118"
+    },
+    {
+      "sev": "P3",
+      "title": "One-off events on the channel that may drop messages",
+      "detail": "The airdrop plane, flares and the van leaving go over the unreliable Fx event, so a phone on a poor connection can miss them.",
+      "evidence": "src/server/Services/Airdrop.luau:354-357; Extract.luau:262; Lobby.luau:202"
+    },
+    {
+      "sev": "P3",
+      "title": "Stale version file; no analytics events",
+      "detail": "Version.luau says 0.1.0-m1 against Config.BUILD 0.9.2-m13. No AnalyticsService events exist, so there will be no deploy, extract or death data after launch.",
+      "evidence": "src/shared/Version.luau:1; src/shared/Config.luau:5"
+    }
+  ],
+  "quickWins": [
+    "Record StreamingEnabled, Opportunistic stream-out, PauseOutsideLoadedArea and the Lighting technology in default.project.json; save the place so the five MaterialVariants persist.",
+    "Refuse memory saving on live servers: retry the DataStore probe, kick with a clear message if it stays down, and show 'SAVING OFF' whenever persistence is not DATASTORE.",
+    "Fix the start-up race: the client shows 'SERVER STARTING' and keeps waiting for the remotes; log each start-up phase up to 'server ready'.",
+    "Close the single-teleport hole in Guard.luau: pull back any one move over twice the limit, and check downward moves.",
+    "Add a line-of-sight check to Loot.reach and to door use.",
+    "Cull Fx by map and distance (shots about 1,500 studs, small sounds about 400, never to the lobby); skip remote muzzle lights beyond about 150 studs.",
+    "Wait a quarter second between inventory redraws, as Trade does, and send the hideout, flea, message and claim blocks only when they change.",
+    "Save graphics level, FOV, sensitivity and grain per device type (touch, PC, gamepad).",
+    "Tint nature parts as they stream in (a tag or DescendantAdded signal) instead of scanning the workspace at deploy.",
+    "Size the shot rate limit to the fastest gun and replace the strict per-shot gap with a small burst allowance.",
+    "Anchor ragdolls about 5 s after death.",
+    "Only the first-person weapon light and lights within about 60 studs cast shadows; hide fully see-through overlays; write lighting values only when they change.",
+    "Move the server-only meshes (mall and bunker kits, trees, cover props) to ServerStorage; keep only client-cloned meshes in ReplicatedStorage.",
+    "Send the airdrop, flare and van events on the reliable Note channel.",
+    "Update or delete Version.luau and the stale NEXT_TASK test baselines.",
+    "Add AnalyticsService events for join, deploy, extract, death and MIA, plus each raid's average fps and graphics level by device."
+  ]
+}

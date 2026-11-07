@@ -1,0 +1,24 @@
+{
+  "studio": {
+    "machine": "Your T490 laptop, Roblox Studio Play Solo (server and client in one process), Studio graphics quality level 2. Not a phone.",
+    "rows": [
+      ["Relay 7 hideout", "60 fps (Studio's cap)", "6 ms", "10 ms", "-"],
+      ["Border Yard, PMC spawn, four directions", "48-60 fps", "9-15 ms", "11-17 ms", "12,856"],
+      ["Meridian Mall, ground floor, four directions", "57-60 fps", "9-17 ms", "11-12 ms", "22,474"]
+    ],
+    "world": "50,760 parts (14,692 meshes), 477 lights switched on (27 casting shadows), 998 decals, 9.1 million terrain cells: Border Yard, Meridian Mall, Quay 7 and Smelter are all built into one server.",
+    "start": "Each big map took about 11 s to build (Meridian 10.95 s, Border 10.95 s), then the tidy pass, the glass and the AI cover points; the decal plan took 12.8 s more in the background. The server opens its doors to players only after every map is built (Main.server.luau lines 53 and 104).",
+    "memory": "Studio used 4.3-4.7 GB in all (server and client together); the Lua heap alone was about 870 MB.",
+    "streaming": "Streaming is on (minimum 64 studs, target 1,024 studs)."
+  },
+  "bugsFoundToday": [
+    "The client waits only 30 s for the server's remotes (Net.luau lines 16-20; State.luau lines 81-84). Today the server took longer to build the maps, so the client gave up: no state ever arrived, the HUD showed STBY and 0 MK in the raid, and the player had no loadout. A live server's first players would hit the same thing whenever start-up passes 30 s.",
+    "The ambience sound atlas is silent: the console says the ZR_SFX_Amb asset is 0.0 s long, so ambience and the glass-break sounds don't play until it is uploaded again.",
+    "Asset 203785492 fails to load at every start (asset type does not match)."
+  ],
+  "blender": {
+    "rifle": "KS-7 rifle as the KST_RIFLE preset: 13 meshes, 3,378 triangles.",
+    "batches": "Rifle batch (AK family): 9,358 triangles over 31 meshes. Pistol batch: 3,432 over 15. Block body: 4,868 over 17. All the worn gear together: 13,242 over 33. All 107 gun meshes: 57,776 triangles.",
+    "verdict": "The models are light for a phone, so there is room to spend on the things the player sees most: the gun in their hands and the people they shoot at."
+  }
+}

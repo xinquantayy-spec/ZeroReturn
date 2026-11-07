@@ -1,0 +1,156 @@
+{
+  "area": "ai",
+  "summary": "The AI is one solid service: NPCs share the players' rig, ballistics, armour, health and inventory, see and hear without wall-hacks, use generated cover, grenades, meds and doors, and every boss of the Customs and Interchange layouts exists. It was tuned for the small first maps, so on the real-scale Tarkov layouts their sight is a third of EFT's, one 18-AI cap starves scavs and can silently drop bosses, and raider-grade guards stand where EFT has none. Voice lines, looting, scav groups, sniper scavs, sleep for far AI and a PvE mode with AI PMCs are missing.",
+  "decisions": [
+    {
+      "id": "ai-1",
+      "title": "Who populates the two Tarkov-layout maps",
+      "question": "Should Border Yard and Meridian Mall keep the raider-grade Harbor Watch guards, or carry EFT's own roster?",
+      "context": "EFT's Customs and Interchange have scavs (and marksmen on Customs), bosses and their guards, and no raiders. Our 14 Watch there (8 on Border Yard, 2 of them on the Bastion's guns, 6 on Meridian) are raider-grade, shoot player scavs on sight and use the AI cap the scavs need. They came from the 2026-10-28 programme, before the copy-EFT rule.",
+      "options": [
+        {"id": "a", "label": "EFT roster", "detail": "Remove the Watch from Border Yard and Meridian; their posts and routes become scav posts (scav skill and faction), the Bastion gunners become scavs, and marksman scavs take Customs' four sniper perches. The Watch stays on Quay 7 and Smelter.", "effort": "M", "perf": "none", "parity": "exact"},
+        {"id": "b", "label": "Scav-aligned Watch", "detail": "Keep the Watch on every map but make them scav-faction with scav skill, so player scavs are safe near them.", "effort": "S", "perf": "none", "parity": "close"},
+        {"id": "c", "label": "Keep", "detail": "Leave the Watch as they are.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "It is EFT's roster, frees about a third of the AI budget for scavs, and stops player scavs being shot at the scav base."
+    },
+    {
+      "id": "ai-2",
+      "title": "AI count and how to pay for it on a Roblox server",
+      "question": "How many AI should a raid run, and how do we keep the server cost down?",
+      "context": "EFT caps scavs per map (Customs 19, Interchange 30 in the game data), keeps bosses outside the cap and puts bots more than 300 m from every player to sleep. Ours: one cap of 18 for everything and no sleep. In Studio about 18 AI cost 0.7 ms of scripts but 8.3 ms of physics a frame; nothing was measured on a live server or a phone.",
+      "options": [
+        {"id": "a", "label": "Bosses outside the cap", "detail": "Keep 18 for scavs and guards; bosses and their crews never count, and refused spawns are logged.", "effort": "S", "perf": "low", "parity": "partial"},
+        {"id": "b", "label": "EFT caps with sleep", "detail": "Per-map caps from EFT's data plus bosses outside them; AI more than about 940 studs (300 m) from every player sleep (root anchored, no thinking); unused humanoid states off; proven first by a live-server test at 20, 30 and 45 AI.", "effort": "M", "perf": "med", "parity": "exact"},
+        {"id": "c", "label": "Scale with players", "detail": "Cap of 8 plus 1.5 per raider, up to EFT's cap for the map, with the same sleep.", "effort": "M", "perf": "low", "parity": "close"}
+      ],
+      "recommended": "b",
+      "why": "It gives EFT's density on real-scale maps, and sleep is EFT's own way to keep the cost down."
+    },
+    {
+      "id": "ai-3",
+      "title": "EFT's numbers for AI senses and aim",
+      "question": "Should the AI's sight, hearing, memory and aim use EFT's own numbers for each kind of bot?",
+      "context": "Ours were tuned by feel for the small maps: sight 40-54 m over 124 degrees, footsteps 8-16 m, memory about 25 s, one skill per kind and almost no aim penalty when hit. EFT's data gives scavs 120 m over 130 degrees, bosses 137-250 m, notice times from 0.1 s close to 3 s at 160 m, hearing 10-30 m, memory 52 s, aim that tightens over 1.5 s, aim knocked off when hit and an easy/normal/hard mix; 1.0 slowed detection.",
+      "options": [
+        {"id": "a", "label": "Port EFT's numbers", "detail": "Per role (scav, marksman, each boss and guard, PMC bot) from the game data in studs, with notice time by distance, the 1.0 detection changes, rain and fog factors and a per-spawn difficulty roll.", "effort": "M", "perf": "low", "parity": "close"},
+        {"id": "b", "label": "Scale and patch", "detail": "Keep our model; triple sight and hearing on the real-scale maps; add aim knocked off when hit, a re-acquire delay and a difficulty roll.", "effort": "S", "perf": "low", "parity": "partial"},
+        {"id": "c", "label": "Keep ours", "detail": "Leave the current tuning.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "The maps are real scale now; only EFT's numbers start fights at EFT's ranges and feel EFT-fair."
+    },
+    {
+      "id": "ai-4",
+      "title": "AI voice lines and call-outs",
+      "question": "How should the AI get voice lines (chatter, call-outs, warnings, boss lines)?",
+      "context": "EFT bots chatter often, call out grenades and reloads, warn player scavs, and bosses have their own voices; ours are silent and no voice sound exists. This account can upload about 10 audio files a month (lines can be packed into atlases), audio is moderated, and EFT's voices cannot be used. Roblox has a built-in text-to-speech voice (AudioTextToSpeech: 11 languages, 300 characters, rate-limited).",
+      "options": [
+        {"id": "a", "label": "Recorded packs", "detail": "Original scripts recorded by voice actors or the owner: three scav voices and one per boss, about 40 lines each, packed into atlases. Costs money, so it needs the owner's approval.", "effort": "M", "perf": "low", "parity": "close"},
+        {"id": "b", "label": "Roblox text-to-speech", "detail": "Lines generated in game with Roblox's voices, pitch and speed; free within the rate limit; sounds synthetic.", "effort": "S", "perf": "low", "parity": "partial"},
+        {"id": "c", "label": "Wordless cues", "detail": "Radio clicks, whistles and grunts from our own sound synth; no words.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "Voice is how EFT players read and find AI; synthetic or wordless cues lose that. Use b as placeholders if there is no budget yet."
+    },
+    {
+      "id": "ai-5",
+      "title": "Boss-only weapons",
+      "question": "Should we build the weapons EFT's bosses fight with, or keep stand-ins?",
+      "context": "Killa's light machine gun, Big Pipe's grenade launcher, Birdeye's 7.62x51 marksman rifle, Tagilla's semi-auto 12-gauge and Reshala's golden pistol all have stand-ins today. Each new gun needs Blender parts, first- and third-person models, stats and an inventory picture (the M14 pipeline), uploaded from the owner's machine.",
+      "options": [
+        {"id": "a", "label": "All five", "detail": "Original designs of all five boss weapons.", "effort": "L", "perf": "low", "parity": "close"},
+        {"id": "b", "label": "The two that change the fight", "detail": "Build the LMG for THE CARETAKER and the launcher for MORTAR; keep stand-ins for the other three.", "effort": "M", "perf": "low", "parity": "partial"},
+        {"id": "c", "label": "Tuned stand-ins", "detail": "No new guns: an R-17 with a drum and long bursts for THE CARETAKER, rapid frag throws for MORTAR.", "effort": "S", "perf": "none", "parity": "partial"}
+      ],
+      "recommended": "b",
+      "why": "Those two weapons decide how those boss fights play; the other three are close to their stand-ins."
+    },
+    {
+      "id": "ai-6",
+      "title": "PvE mode with AI PMCs",
+      "question": "Should Zero Return get EFT's PvE mode with AI-controlled PMCs?",
+      "context": "EFT's PvE mode has AI PMC groups that roam, loot and fight scavs, bosses and each other; 1.2.0.0 (October 2026) made them team up more, sometimes stay neutral, head for points of interest and scale gear with level, and 1.3.0.0 added harder ones. We have no PvE mode and no AI PMCs. On Roblox a PvE raid could run on a reserved server per squad.",
+      "options": [
+        {"id": "a", "label": "Not now", "detail": "PvP raids only.", "effort": "S", "perf": "none", "parity": "departure"},
+        {"id": "b", "label": "EFT-style PvE servers", "detail": "Separate PvE raids (solo or squad) on reserved servers, with AI PMC groups of two factions that loot, fight and extract, and EFT's separate PvE progression.", "effort": "L", "perf": "med", "parity": "exact"},
+        {"id": "c", "label": "Bot backfill in PvP", "detail": "AI PMCs fill empty raider slots in PvP raids.", "effort": "M", "perf": "med", "parity": "departure"}
+      ],
+      "recommended": "b",
+      "why": "It is EFT's mode and suits solo Roblox players; build it after ai-2 and ai-3, which it reuses."
+    },
+    {
+      "id": "ai-7",
+      "title": "Player scav entry time and spawn points",
+      "question": "When and where should player scavs enter a raid?",
+      "context": "EFT lets player scavs in no earlier than 17 minutes into the raid on most maps (not Factory, Reserve or Ground Zero), at scav spawn points. Ours enter from the first second at PMC insertion points, until 6 minutes are left. With one shared raid per server, a later window means a scav who queues early has to wait.",
+      "options": [
+        {"id": "a", "label": "EFT window", "detail": "Scav entry opens 17 minutes in on Border Yard and Meridian (from the start on Smelter, a Factory-type map), at scav spawn points away from raiders; early queuers wait.", "effort": "S", "perf": "none", "parity": "exact"},
+        {"id": "b", "label": "EFT window, cross-server", "detail": "As a, but a queuing scav is sent to a server whose raid is inside its window (MemoryStore matchmaking and teleport).", "effort": "L", "perf": "none", "parity": "exact"},
+        {"id": "c", "label": "Spawn points only", "detail": "Keep entry from the start, but use scav spawn points instead of PMC insertion points.", "effort": "S", "perf": "none", "parity": "partial"}
+      ],
+      "recommended": "a",
+      "why": "EFT's rule stops scavs racing PMCs to the loot; on the 40-minute maps the window is still 17 minutes long."
+    },
+    {
+      "id": "ai-8",
+      "title": "AI looting",
+      "question": "Should AI loot bodies and loose items like EFT's bots do?",
+      "context": "EFT bots loot bodies and loose loot (since 0.12.7), what they take is lost to insurance (since 0.13.5), and 1.0.2 fixed bots re-equipping looted weapons. Ours never loot, so insured kit always comes back unless a raider extracted it.",
+      "options": [
+        {"id": "a", "label": "EFT rules", "detail": "Scavs (and later PMC bots) walk to bodies and loose loot, take better or valuable items and swap guns; items they take are lost to insurance unless their own body is looted.", "effort": "M", "perf": "low", "parity": "exact"},
+        {"id": "b", "label": "Loot, softened", "detail": "As a, but insurance still returns items an AI took.", "effort": "M", "perf": "low", "parity": "close"},
+        {"id": "c", "label": "No looting", "detail": "As now.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "It is EFT's risk model and makes bodies and dropped kit feel contested."
+    }
+  ],
+  "findings": [
+    {"sev": "P1", "title": "The AI cap starves the maps and can silently drop bosses", "detail": "Guards and bosses count against one cap of 18 and guards spawn first: on Border Yard a Broker raid leaves at most 5 scavs, with THE HOUNDS 2, and a night raid with THE CULT 0-2, while a rolled THE FORESTER can be refused without a log. EFT caps only scavs (Customs 19, Interchange 30) and bosses ignore the cap.", "evidence": "src/server/Services/AI.luau:1823-1825, 2263-2321; src/shared/Config.luau:20-23; src/server/Maps/Border/Play.luau:645-652, 677; TEST_RESULTS.md:1011; SPT locations/bigmap and interchange base.json"},
+    {"sev": "P1", "title": "Raider-grade guards on maps where EFT has none", "detail": "Border Yard has 8 Watch guards and Meridian 6; EFT's Customs and Interchange spawn no raiders. The Watch shoot player scavs on sight, including at our Bastion, which is EFT's scav base, and the departure is not logged.", "evidence": "src/server/Maps/Border/Play.luau:645-652, 670-678; src/server/Maps/Meridian/Play.luau:966-977; src/server/Services/AI.luau:137-145; SPT bigmap/interchange boss lists (no pmcBot)"},
+    {"sev": "P1", "title": "AI sight is a third of EFT's on real-scale maps", "detail": "Scavs see 40 m, guards 53 m and bosses 54 m over a 124-degree cone (15-20 m at night). EFT's data gives scavs 120 m over 130 degrees and bosses 137-250 m, so on the 1 km Border Yard players can shoot AI from well outside their vision.", "evidence": "src/server/Services/AI.luau:54-59, 69, 1633-1639; docs/maps/BORDER_CUSTOMS_BUILD.md:14 (3.125 studs per metre); SPT bot types (VisibleDistance, VisibleAngle)"},
+    {"sev": "P1", "title": "No voice lines or audible call-outs", "detail": "No voice sound exists and call-outs share positions silently. EFT scavs talk very often, bots call out grenades and reloads, and bosses warn player scavs; voice is how players find AI and tell them from players.", "evidence": "src/server/Services/AI.luau:472-494; src/shared/SoundAtlas.luau and CombatAtlas.luau (no voice entries); KNOWN_ISSUES.md:34 (item 15); EFT wiki Scavs page"},
+    {"sev": "P1", "title": "The Broker and THE CARETAKER do not match Reshala and Killa", "detail": "The Broker wears the Foreman's hard hat, class 5 armour and rifle, rolls at the global 50 % at the dorms only, and drops Quay 7's office key, ledger and brass lion; Reshala has no armour, a golden pistol, four guards in front and three zones. THE CARETAKER has a pump shotgun, the bodyguard look and 704 health; Killa has an LMG with a 95-round drum, class 5 armour, a face shield, 890 health and suppress-and-push tactics.", "evidence": "src/server/Maps/Border/Play.luau:692; src/server/Services/AI.luau:58, 1794-1796; src/server/Services/Loot.luau:1051-1083, 1087-1122; src/server/Maps/Meridian/Play.luau:1002-1005; tarkovforge Reshala; EFT wiki and timesaver Killa"},
+    {"sev": "P2", "title": "Hearing is short", "detail": "Scav footsteps carry 8 m walking and 16 m sprinting; gunfire alerts within 54-77 m and sends AI to look only within 30-42 m. EFT's data has bots hearing simple sounds at 10-30 m; their gunfire radius is longer (exact figure unverified).", "evidence": "src/server/Services/AI.luau:1665, 2012, 2021; SPT assault Hearing (CLOSE_DIST, FAR_DIST)"},
+    {"sev": "P2", "title": "Aim fairness has holes", "detail": "Being hit adds only 1.3 degrees for 1.2 s where EFT's data knocks a scav's aim off for 1.17 s by 19-32 degrees; a target that reappears within 3.5-7 s gets no new reaction delay or aim penalty, while EFT 1.0 slowed repeated detection and stopped head aim after 15 s unseen. Every scav has the same skill; EFT mixes easy, normal and hard 10/50/40.", "evidence": "src/server/Services/AI.luau:830-832, 839, 1655-1661, 1702-1713, 2141; SPT Aiming BASE_HIT_AFFECTION_*; PCGamesN 1.0 AI changes"},
+    {"sev": "P2", "title": "AI never loot", "detail": "There is no looting code. EFT scavs loot bodies since 0.12.7, what they take is lost to insurance since 0.13.5, and 1.0.2 fixed bots re-equipping looted guns.", "evidence": "src/server/Services/AI.luau (no loot code); KNOWN_ISSUES.md:34; Gfinity 0.12.7; NME 0.13.5; MP1st 1.0.2"},
+    {"sev": "P2", "title": "Scavs are loners and nobody flanks", "detail": "Each scav spawns alone at its own spot, waves included; EFT spawns half of its scavs in groups of 2-3. The AI.luau header says followers flank, but no flanking code exists.", "evidence": "src/server/Services/AI.luau:7, 1953-1960, 2000-2004; SPT NonWaveGroupScenario; EFT wiki Scavs"},
+    {"sev": "P2", "title": "Faction rules differ per boss and there is no Warn state", "detail": "Every boss and follower is scav-faction and ignores player scavs until provoked. EFT's data makes Killa, cultists, Big Pipe and Birdeye always hostile to player scavs, and has Reshala, Tagilla, Knight, Partisan and raiders warn first and shoot a quarter of the time.", "evidence": "src/server/Services/AI.luau:62, 137-145; SPT Mind DEFAULT_SAVAGE_BEHAVIOUR, CHANCE_SHOOT_WHEN_WARN_PLAYER_100"},
+    {"sev": "P2", "title": "Health numbers off EFT's", "detail": "Cult warriors have 440 against EFT's 850, THE CARETAKER 704 against 890, and the Broker's guards 528 against 630; all spread evenly over the body.", "evidence": "src/server/Maps/Border/Play.luau:736; src/server/Services/AI.luau:57-58; SPT health for sectantWarrior, bossKilla, followerBully"},
+    {"sev": "P2", "title": "Player scavs enter like PMCs", "detail": "Player scavs use PMC insertion points and can enter from the first second. EFT moved player scavs to no earlier than 17 minutes in on most maps (2025; not re-checked for 1.x).", "evidence": "src/server/Services/Match.luau:279-311, 341-349; src/server/Services/Raid.luau:383-387; src/shared/Config.luau:13; Insider Gaming scav changes"},
+    {"sev": "P2", "title": "No marksman (sniper) scavs", "detail": "Customs' four sniper perches have no AI kind to fill them. EFT's data has marksman waves on Customs, and 1.0.2 fixed sniper scavs there.", "evidence": "docs/maps/BORDER_YARD.md:543; SPT bigmap waves; MP1st 1.0.2"},
+    {"sev": "P2", "title": "No sleep for far AI", "detail": "Every unit thinks and runs physics wherever it is, and physics is the main server cost (8.3 ms a frame for about 18 AI in Studio). EFT's data puts bots to sleep beyond 300 m from every player and wakes them at 265 m.", "evidence": "src/server/Services/AI.luau:1695-1701, 1899-1908; TEST_RESULTS.md:1014; SPT BotLocationModifier DistToSleep, DistToActivate"},
+    {"sev": "P2", "title": "No PvE mode or AI PMCs", "detail": "EFT has a PvE mode with six AI PMC groups on Customs and on Interchange, each at 50 %, reworked in 1.2.0.0 and made harder in 1.3.0.0. Nothing like it exists here.", "evidence": "src/server/Services/AI.luau:61-62 (no PMC kind); SPT boss lists (pmcBEAR, pmcUSEC); patched.gg 1.2.0; GameLeap 1.3.0.0"},
+    {"sev": "P2", "title": "AI vision ignores local light", "detail": "Sight follows only the raid clock and weather, so AI see into the dark mall or a cellar as in daylight; an aware AI also sees all round within 14 m. EFT's data has light-specific vision values; whether it reads local light is unverified.", "evidence": "src/shared/Env.luau:119-126; src/server/Services/AI.luau:1639; SPT Look VISIBLE_DISNACE_WITH_LIGHT"},
+    {"sev": "P2", "title": "AI rigs stream in part by part", "detail": "AI models keep Roblox's default streaming mode, which streams a model part by part. At the streaming edge, and on low-memory phones where the radius shrinks, a client can see half a rig or none while it shoots; not tested.", "evidence": "src/server/Services/AI.luau:1856; Roblox streaming docs"},
+    {"sev": "P2", "title": "The AI's parity gaps are not logged", "detail": "EFT_PARITY.md has no AI section although project rule 2 asks for one. KNOWN_ISSUES item 15 is stale (grenades and doors exist) and AI.luau claims flanking.", "evidence": "docs/design/EFT_PARITY.md (sections 1-7); KNOWN_ISSUES.md:34; src/server/Services/AI.luau:7"},
+    {"sev": "P3", "title": "Broker guards stack on one spot", "detail": "Follower slots 2-4 share one offset beside the leader and spread only as they path.", "evidence": "src/server/Services/AI.luau:950; docs/maps/BORDER_YARD.md:544"},
+    {"sev": "P3", "title": "Orphaned followers walk the wrong loop", "detail": "When a leader dies, followers take W.boss's route, so THE HOUNDS' survivors walk the Broker's dorm loop.", "evidence": "src/server/Services/AI.luau:945-948"},
+    {"sev": "P3", "title": "Far rigs freeze even through a scope", "detail": "Client animation stops beyond 300 studs (96 m) whatever the zoom, which shows once AI fight at EFT ranges.", "evidence": "src/client/Controllers/Animator.luau:317"},
+    {"sev": "P3", "title": "AI learn the exact shooter position", "detail": "A near miss or a hit tells the AI exactly where the shooter is; EFT spreads heard positions.", "evidence": "src/server/Services/AI.luau:2060, 2167; SPT Hearing DISPERSION_COEF"},
+    {"sev": "P3", "title": "AI do not hear doors, reloads or looting", "detail": "Doors never call AI.hearShot; EFT bots hear simple sounds 65 % of the time.", "evidence": "src/server/Services/Doors.luau (no AI.hearShot); SPT Hearing CHANCE_TO_HEAR_SIMPLE_SOUND_0_1"},
+    {"sev": "P3", "title": "Border sniper shots come from one fixed side", "detail": "The sniper always fires from the -Z side of the player, whichever edge the band is on.", "evidence": "src/server/Services/Hazards.luau:224"},
+    {"sev": "P3", "title": "No boss on Smelter", "detail": "EFT's Factory has Tagilla (30 %) and night cultists (8 %); Smelter has neither. Matters once Smelter copies Factory.", "evidence": "src/server/Maps/Smelter.luau:734; SPT factory4_day base.json; docs/design/BOSS_CULT.md"},
+    {"sev": "P3", "title": "Movement and animation limits", "detail": "AI never lean, never go prone outside the cult ambush and cannot jump or vault; the hammer swing uses the knife gesture with the gun pose.", "evidence": "src/server/Services/AI.luau:532; KNOWN_ISSUES.md:34; docs/design/BOSS_STOKER.md (gaps)"}
+  ],
+  "quickWins": [
+    "Bosses and their crews ignore the AI cap (EFT's IgnoreMaxBots), refused spawns are logged, and a LogicTest checks that the full Border Yard roster spawns (AI.luau:1823-1825).",
+    "Set EFT's health: cult warriors 850, THE CARETAKER 890, the Broker 752, his guards 630 (Border/Play.luau:736, AI.luau:57-58).",
+    "Give the Broker his own chance, EFT's three zones (dorms, fuel stop, Bastion), his own loot without Quay 7's office key, ledger and brass lion, and a look without armour or the hard hat (Border/Play.luau:692, Loot.luau:1072-1080).",
+    "Hostility from EFT's data: THE CARETAKER, THE CULT, MORTAR and KESTREL shoot player scavs; the rest keep ignoring them until a Warn state comes with voice lines (AI.luau:62, 137-145).",
+    "Give THE CARETAKER Killa's five double pockets with the existing k.doublePockets() (Loot.luau:965-967).",
+    "Spread the Broker's four guards round him instead of stacking slots 2-4 (AI.luau:950).",
+    "Orphaned followers keep their own group's route instead of W.boss's (AI.luau:945-948).",
+    "Spawn half of the scavs as groups of 2-3 through the existing leader and follower code (AI.luau:1953-1960).",
+    "Scale the client animator's distance by the camera zoom so scoped AI keep moving (Animator.luau:317).",
+    "Set AI models to ModelStreamingMode.Atomic (AI.luau:1856), then check a far AI on a low-memory phone.",
+    "Turn off unused humanoid states on AI (climbing, swimming, seated, flying) and measure physics before and after (Chars.luau:424-432).",
+    "Make opening and closing doors a quiet noise the AI can hear (Doors.luau).",
+    "When hit or near-missed, the AI learns a rough position a few metres off, not the exact one (AI.luau:2060, 2167).",
+    "Fire the border sniper's shots from the band's outer side (Hazards.luau:224).",
+    "On Smelter, our Factory-type map, roll THE STOKER at 30 % and THE CULT at 8 % at night, as EFT's Factory does.",
+    "Docs: refresh KNOWN_ISSUES item 15, drop 'flank' from AI.luau:7 and the stale Tagilla comment at Meridian/Play.luau:981, and add an AI section to EFT_PARITY.md with this audit's gap table."
+  ]
+}

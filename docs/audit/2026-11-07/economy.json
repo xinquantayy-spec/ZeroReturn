@@ -1,0 +1,154 @@
+{
+  "area": "economy",
+  "summary": "The whole loop works end to end (traders with loyalty levels and barters, a flea market, 13 tasks, a 5-module hideout, 24 skills, insurance, airdrops, keys) and many copied rules are exact, but nothing has run on a real DataStore. Content is thin next to EFT (279 items vs thousands, 13 tasks vs 531, 5 hideout modules vs 26, 12 barters vs 892), pacing is far faster than EFT's, and money piles up: every container fills every raid, simulated flea buyers pay up to 3x the traders, and there are almost no money sinks.",
+  "decisions": [
+    {
+      "id": "economy-1",
+      "title": "Item catalogue size",
+      "question": "How big should the item catalogue be, compared with EFT's thousands of items?",
+      "context": "We have 279 items (6 guns, 96 parts, 13 rounds in 5 calibers, 58 keys); EFT had 2,169 in 2021 and has 184 rounds in 27 calibers today. Tasks, crafts and barters need a web of specific barter items, and each new item needs a Blender model, a slot in the icon sheets and balance numbers; long trader and flea lists load many icon sheets on phones.",
+      "options": [
+        {"id": "a", "label": "Core set, about 600", "detail": "Every EFT handbook category covered: about 20 guns across EFT's classes, 12 calibers with 4-6 rounds each, about 250 parts, about 120 barter items that tasks, crafts and barters use, keys for every map. Built to grow.", "effort": "L", "perf": "low", "parity": "partial"},
+        {"id": "b", "label": "Mid set, about 1,200", "detail": "Option a plus EFT's variants (about 40 guns, 600 parts, 25 calibers) and every EFT hideout and task barter item one for one.", "effort": "L", "perf": "med", "parity": "close"},
+        {"id": "c", "label": "Full mirror, 3,000+", "detail": "An original counterpart for every EFT item.", "effort": "L", "perf": "high", "parity": "exact"},
+        {"id": "d", "label": "Keep about 280", "detail": "Add items only when a feature needs them.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "Gives every system real items to use without the art and phone-memory cost of a full mirror; grow to b map by map."
+    },
+    {
+      "id": "economy-2",
+      "title": "Trader roster and currencies",
+      "question": "Keep the four merged traders, or copy EFT's set of traders?",
+      "context": "VOS, HALE, TILDA and FENCE cover EFT's ten-plus traders with one currency. Each trader is an NPC at a Relay 7 counter with its own task line; Ref, Lightkeeper and the BTR Driver depend on Arena, Lighthouse and the BTR, which we do not have.",
+      "options": [
+        {"id": "a", "label": "EFT's eight, one currency", "detail": "Split VOS into the Prapor, Mechanic and Jaeger roles and TILDA into the Ragman and Skier/Peacekeeper roles, with original names, EFT's assortments and loyalty rules, and Fence driven by karma; MK only.", "effort": "M", "perf": "low", "parity": "close"},
+        {"id": "b", "label": "EFT's eight plus three currencies", "detail": "Option a with MK, a dollar-like and a euro-like currency and an exchange at two traders; the other three traders when their maps exist.", "effort": "L", "perf": "low", "parity": "exact"},
+        {"id": "c", "label": "Keep four, deepen them", "detail": "More offers, task-locked goods, a Fence stocked by what players sell.", "effort": "M", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "a",
+      "why": "Restores EFT's trader roles and task lines; currencies can be added later without redoing the split."
+    },
+    {
+      "id": "economy-3",
+      "title": "Flea market model",
+      "question": "Should the flea market stay simulated or become a real market between players across servers?",
+      "context": "Today AI sellers refresh every 15 minutes and AI buyers take your offers, even overpriced ones. EFT's flea is a real player market. On Roblox that needs MemoryStore (free quota 64 KB + 1.2 KB per user, 1,000 + 120 requests per user a minute) and DataStore escrow; going past the quota needs paid Extended Services (owner approval), and small servers mean few sellers at quiet times.",
+      "options": [
+        {"id": "a", "label": "Real market with an AI floor", "detail": "Offers stored per item in MemoryStore, items held in DataStore escrow, buyers pick the cheapest offer, sales mailed to offline sellers; AI sellers only fill empty items at quiet times.", "effort": "L", "perf": "low", "parity": "exact"},
+        {"id": "b", "label": "Hybrid", "detail": "Keep AI sellers, but AI demand follows supply and the cheapest offer so overpriced offers stop selling, and item prices follow what players list.", "effort": "M", "perf": "none", "parity": "close"},
+        {"id": "c", "label": "Rules only", "detail": "Keep the simulation and add the level gates, bans and fixes listed in the quick wins.", "effort": "S", "perf": "none", "parity": "partial"}
+      ],
+      "recommended": "a",
+      "why": "The flea is EFT's economy; the AI floor covers the low-population times that make a pure player market risky on Roblox."
+    },
+    {
+      "id": "economy-4",
+      "title": "Progression pacing",
+      "question": "Should XP, loyalty, build, craft and insurance timers match EFT's real time or stay compressed?",
+      "context": "Ours: level 15 at 52k XP (EFT 161k), cap 40, every trader at LL4 by level 12, builds 5-40 min (EFT up to 7 days), crafts 15-45 min, insurance 15 min (EFT 12-36 h), scav cooldown 10 min. EFT's pace was built for long PC sessions.",
+      "options": [
+        {"id": "a", "label": "EFT exact", "detail": "EFT's XP table to its top level, loyalty thresholds, costs and every real-time timer (multi-day builds, 12-36 h insurance, bitcoin at 27-83 h a coin).", "effort": "M", "perf": "none", "parity": "exact"},
+        {"id": "b", "label": "EFT curves, faster clocks", "detail": "EFT's XP table, loyalty thresholds and costs exactly; every real-time timer divided by one owner-chosen factor (for example 4).", "effort": "M", "perf": "none", "parity": "close"},
+        {"id": "c", "label": "Current pace", "detail": "Keep today's numbers and tune them by playtest.", "effort": "S", "perf": "none", "parity": "departure"}
+      ],
+      "recommended": "b",
+      "why": "The numbers that shape the economy stay EFT's while days-long waits are cut for players who cannot leave a PC running (an assumption to check in playtests)."
+    },
+    {
+      "id": "economy-5",
+      "title": "Wipes, seasons and modes",
+      "question": "How should progress resets work: no wipes, opt-in seasons, scheduled wipes, or a separate PvE profile?",
+      "context": "Today a schema change wipes everyone; there are no seasons, prestige or PvE profile. EFT has not force-wiped its permanent PvP and PvE characters since 1.0, added opt-in seasonal characters that reset every 4-6 months in 1.1.0, has prestige, and runs a PvE Zone with AI operators and separate progress. Splitting players into modes is riskier on small Roblox servers.",
+      "options": [
+        {"id": "a", "label": "Permanent profile, no wipes", "detail": "One profile; schema changes migrate data instead of wiping.", "effort": "S", "perf": "none", "parity": "close"},
+        {"id": "b", "label": "Permanent plus an opt-in season", "detail": "A second profile slot that resets every 4-6 months with its own rewards, playing in the same raids so the player base is not split.", "effort": "M", "perf": "none", "parity": "close"},
+        {"id": "c", "label": "Scheduled full wipes", "detail": "Everyone resets about every 6 months, as EFT did before 1.0.", "effort": "S", "perf": "none", "parity": "partial"},
+        {"id": "d", "label": "Add a PvE profile", "detail": "A separate profile and queue with AI operators, on top of a or b.", "effort": "L", "perf": "med", "parity": "exact"}
+      ],
+      "recommended": "b",
+      "why": "Matches EFT today and keeps casual players' progress; add prestige later."
+    },
+    {
+      "id": "economy-6",
+      "title": "Task content",
+      "question": "How many tasks should we have, and in what structure?",
+      "context": "We have 13 tasks written for Quay 7 with four objective types; visit zones on Border Yard, Meridian and Smelter are unused. EFT has 531 tasks across 11 traders; since 1.1.0 side tasks unlock in groups of 2-4 per loyalty level, and there are daily and weekly operational tasks.",
+      "options": [
+        {"id": "a", "label": "Map-first core, about 120", "detail": "EFT's task patterns written for our four maps, grouped by trader loyalty level as in 1.1.0, every EFT objective type (plant, mark, conditional kills, quest items, gunsmith builds), task-locked offers, daily and weekly tasks.", "effort": "L", "perf": "low", "parity": "partial"},
+        {"id": "b", "label": "EFT's full tree, about 500", "detail": "Port EFT's tasks one by one with our names, swapping in our maps.", "effort": "L", "perf": "low", "parity": "close"},
+        {"id": "c", "label": "Small story and dailies", "detail": "About 40 hand-written tasks plus generated dailies.", "effort": "M", "perf": "low", "parity": "partial"}
+      ],
+      "recommended": "a",
+      "why": "Tasks need our maps' places and items; grow toward b as maps are added."
+    },
+    {
+      "id": "economy-7",
+      "title": "Hideout scope",
+      "question": "How much of EFT's hideout should Relay 7 get?",
+      "context": "We have 5 modules, 8 levels and 10 crafts with no fuel; EFT has 26 modules, 67 levels and 214 crafts, with fuel, the scav case and the bitcoin farm. Relay 7 is a shared walk-around bunker, so each module also needs a physical station and art.",
+      "options": [
+        {"id": "a", "label": "Full EFT set", "detail": "All 26 modules and their levels, about 200 crafts, fuel and filters.", "effort": "L", "perf": "med", "parity": "exact"},
+        {"id": "b", "label": "Economy core, about 14", "detail": "Generator with fuel, stash with 4 levels, medstation, workbench, nutrition unit, water collector, intelligence center, scav case, bitcoin farm, lavatory, security, illumination, rest space, shooting range; about 100 crafts.", "effort": "L", "perf": "low", "parity": "close"},
+        {"id": "c", "label": "Add two", "detail": "Keep the five and add the scav case and the bitcoin farm.", "effort": "M", "perf": "low", "parity": "partial"}
+      ],
+      "recommended": "b",
+      "why": "The core modules are the ones that drive money, loot use and pacing; finish the full set after."
+    },
+    {
+      "id": "economy-8",
+      "title": "Monetisation options (owner approval required)",
+      "question": "Which paid features, if any, should be planned?",
+      "context": "Roblox offers passes, developer products, subscriptions, paid private servers, paid access and immersive ads; chance-based paid rewards must be transparent and blocked with PolicyService where not allowed. EFT sells editions with a bigger stash, a better secure container, more XP and standing, and added a free battle pass in 1.1.0. Nothing paid is enabled without the owner (project rule 3).",
+      "options": [
+        {"id": "a", "label": "None for now", "detail": "Balance the economy first and plan monetisation later.", "effort": "S", "perf": "none", "parity": "departure"},
+        {"id": "b", "label": "Cosmetics only", "detail": "Hideout styles, dog tag styles, clothing and gun finishes as passes or developer products.", "effort": "M", "perf": "low", "parity": "departure"},
+        {"id": "c", "label": "EFT-style editions", "detail": "Passes for a larger stash, a bigger secure container, an XP bonus and trader standing, as EFT's editions.", "effort": "M", "perf": "none", "parity": "exact"},
+        {"id": "d", "label": "Private servers and a free pass", "detail": "Paid private servers for squads plus a free season pass.", "effort": "M", "perf": "low", "parity": "close"}
+      ],
+      "recommended": "a",
+      "why": "The economy is not balanced yet, and every paid feature needs the owner's approval."
+    }
+  ],
+  "findings": [
+    {"sev": "P0", "title": "Progression persistence never run on a real DataStore", "detail": "Trader levels, tasks, hideout, flea offers and the stash all live in the profile, and in the unpublished place profiles are in memory only, so locks, retries and saves are unproven. Testing needs a private publish, which is the owner's call.", "evidence": "KNOWN_ISSUES.md items 1 and 33; src/server/Services/Store.luau:20-31; TEST_RESULTS.md line 9"},
+    {"sev": "P1", "title": "Money has almost no sinks and the flea pays up to 3x the traders", "detail": "Simulated buyers take overpriced offers: at 1.84x value an offer sells in about 83 minutes on average, netting about 1.74x value against 0.55x at the best trader. The whole hideout costs 785,000 MK once, the 13 tasks pay 647,000 MK, and there is no fuel or other recurring cost.", "evidence": "src/shared/FleaRules.luau:84-98; src/server/Services/Flea.luau:76-80; src/shared/TraderData.luau:14-33; src/shared/HideoutData.luau:7-41; KNOWN_ISSUES.md 23"},
+    {"sev": "P1", "title": "Every container is filled every raid from pools shared by all maps", "detail": "EFT rolls containers (SPT Interchange: 269-325 of 823 grouped plus 130 always, probability 0.08-0.71 each) with per-map tables; ours fill all of them from one pool per container kind, so loot is two to three times denser and the same on every map.", "evidence": "src/server/Services/Loot.luau:21-36, 547-563; docs/design/EFT_PARITY.md line 409; docs/maps/reference/INTERCHANGE_REFERENCE.md section 8.4"},
+    {"sev": "P1", "title": "13 tasks, all from before the new maps, against EFT's 531", "detail": "Tasks name Quay 7's places and the Foreman; Border Yard, Meridian and Smelter visit zones are unused; only four objective types exist, with no plant/mark, conditions, quest items, dailies or task-locked offers.", "evidence": "src/shared/QuestData.luau:2-6, 23-75; src/server/Maps/Border/Play.luau:8, 843-851; src/server/Maps/Smelter.luau:733; KNOWN_ISSUES.md 24"},
+    {"sev": "P1", "title": "Progression far shorter and faster than EFT's; status doc claims EFT's curve", "detail": "Level 15 needs 52,383 XP (EFT 161,139), the cap is 40, LL4 comes at level 12 (EFT 33-42), builds take 5-40 min, crafts 15-45 min and insurance 15 min (EFT hours to days). DEVELOPMENT_STATUS.md line 93 says levels follow Tarkov's curve.", "evidence": "src/shared/Progress.luau:6-14; src/shared/TraderData.luau:37-42; src/shared/HideoutData.luau; src/shared/Config.luau:14-18; DEVELOPMENT_STATUS.md:93"},
+    {"sev": "P1", "title": "Hideout is 5 modules, 8 levels and 10 crafts (EFT 26, 67, 214)", "detail": "No scav case, bitcoin farm, intelligence center, stash levels or the other modules; the generator burns no fuel; one build at a time; no trader-level or skill requirements.", "evidence": "src/shared/HideoutData.luau:7-61; src/server/Services/Hideout.luau:62-93; KNOWN_ISSUES.md 17"},
+    {"sev": "P1", "title": "Item catalogue about a tenth of EFT's; loot has few uses but cash", "detail": "279 items, 6 guns and 13 rounds in 5 calibers against EFT's thousands of items and 184 rounds in 27 calibers; with 12 barters and 10 crafts (EFT 892 and 214) most barter items only sell.", "evidence": "src/shared/Items.luau; src/shared/TraderData.luau:112-132; src/shared/HideoutData.luau:50-61"},
+    {"sev": "P1", "title": "Flea lets any level 15 player buy end-game gear", "detail": "All gear counts as known, only secure containers and task items are banned, EFT 1.0's category gates (20-40) are missing, so class 6 armour, the faceplate helmet and thermals are always on sale; epic and legendary items get as many offers as common ones.", "evidence": "src/shared/FleaRules.luau:7-10, 45-48, 68; src/shared/Items.luau:387-393; src/server/Services/Flea.luau:34-47"},
+    {"sev": "P2", "title": "Two found-in-raid rules are reversed", "detail": "Hideout crafts are not FIR (EFT: they are) and items taken into a raid keep FIR (EFT: they lose it).", "evidence": "src/server/Services/Hideout.luau:128; src/server/Services/Settle.luau:151-179"},
+    {"sev": "P2", "title": "Four traders, one currency, and a Fence that cannot level", "detail": "VOS and TILDA cover six EFT traders; Fence's loyalty comes from task standing his only task never gives, so his LL2 offer (dorm 203 key) is unbuyable; his stock is a fixed 11 items and karma only changes what he pays.", "evidence": "src/shared/TraderData.luau:12-34, 101-105; src/server/Services/Economy.luau:51-64; src/shared/QuestData.luau:64-66"},
+    {"sev": "P2", "title": "Larger secure containers unobtainable; secure filter stricter than EFT's", "detail": "Pouch M and L have no source (EFT: trader, task chain, The Collector), and weapon parts, grenades and eyewear are refused in secure containers.", "evidence": "src/shared/Items.luau:136-138, 324"},
+    {"sev": "P2", "title": "No item cases", "detail": "EFT's SICC, keytool, documents case, junk box, medicine, magazine and keycard holder cases are missing, and a container with items cannot go into another.", "evidence": "src/server/Services/Inv.luau:303-305"},
+    {"sev": "P2", "title": "Money is a balance, not an item", "detail": "EFT money is a stackable item in three currencies that can be carried, lost, secured and looted; here paid exits charge the profile balance.", "evidence": "KNOWN_ISSUES.md 16; src/shared/Config.luau:8"},
+    {"sev": "P2", "title": "Stash 10x20 to 10x30 against EFT's 10x30 to 10x68/72", "detail": "Our stash starts smaller than EFT's standard edition and stops where EFT's starts.", "evidence": "src/shared/Config.luau:32-33; src/shared/HideoutData.luau:31-33, 45"},
+    {"sev": "P2", "title": "Charisma discounts trader prices by up to 15 %", "detail": "EFT's Charisma gives -0.1 % a level (-5 % at elite) on insurance, healing and paid exits and never touches trader prices.", "evidence": "src/shared/Progress.luau:50; src/shared/TraderData.luau:155-161; src/server/Services/Economy.luau:161"},
+    {"sev": "P2", "title": "EFT skills missing", "detail": "No Hideout Management, Mag Drills, Weapon Maintenance, Aim Drills, or DMR, LMG, HMG, revolver and launcher skills.", "evidence": "src/shared/Progress.luau:38-73"},
+    {"sev": "P2", "title": "Single insurer, flat 7 %, 15-minute returns", "detail": "EFT has Prapor (24-36 h), Therapist (12-24 h) and since 1.1.0 Jaeger (fast, expensive), and no insurance on seasonal characters.", "evidence": "src/shared/Config.luau:17-18; src/server/Services/Settle.luau:196-278"},
+    {"sev": "P2", "title": "Useless and trap loot", "detail": "The Sealed Drive is a task item in seven pools that no task uses and no trader buys; graphics cards, military circuits and cold wallets only sell.", "evidence": "src/shared/Items.luau:246; src/shared/TraderData.luau:167; src/server/Services/Loot.luau:61, 126, 130, 135, 164, 202, 225"},
+    {"sev": "P2", "title": "Resets are wipe-on-schema only; no seasons, prestige or PvE profile", "detail": "EFT has had no forced wipes on permanent characters since 1.0, opt-in 4-6 month seasons since 1.1.0, prestige, and a PvE Zone with AI operators.", "evidence": "src/server/Services/Settle.luau:14, 83-96"},
+    {"sev": "P2", "title": "No economy section in the parity file; stale status line", "detail": "Rule 2 wants gaps logged in EFT_PARITY.md, but traders, tasks, hideout, loot tables, XP and insurance are absent; DEVELOPMENT_STATUS.md line 282 still says there is no flea market.", "evidence": "docs/design/EFT_PARITY.md section list; DEVELOPMENT_STATUS.md:282"},
+    {"sev": "P3", "title": "Flea market never recorded as run in Studio", "detail": "Only logic tests cover it; its screens and a listing round trip are not in TEST_RESULTS.md.", "evidence": "src/server/Tests/LogicTests.luau:345-373"},
+    {"sev": "P3", "title": "Flares missing from handbook and flea categories", "detail": "The category map has no flare kind, so flares never list.", "evidence": "src/client/Controllers/Menus.luau:138-143"},
+    {"sev": "P3", "title": "Foreman tasks accept any boss", "detail": "Two tasks say the Foreman but any boss kill counts.", "evidence": "src/shared/QuestData.luau:60-62; src/server/Services/Quests.luau:110-113"},
+    {"sev": "P3", "title": "Seven items have no inventory picture", "detail": "Antidote, both flares, the Forester's pack, the welding mask, the ritual amulet and the ritual knife draw no icon.", "evidence": "src/shared/ItemIcons.luau; src/client/Controllers/UiKit.luau:173-176"},
+    {"sev": "P3", "title": "Simulated flea stock counted per server", "detail": "The same limited offer can be bought again on every server.", "evidence": "src/server/Services/Flea.luau:16, 26-31"}
+  ],
+  "quickWins": [
+    "Stop simulated buyers taking offers above about 1.25x the market price (FleaRules.luau:84-98).",
+    "Give epic and legendary items fewer flea offers than rare ones (FleaRules.luau:68).",
+    "Add EFT 1.0's flea category gates (levels 20-40) and EFT's ban list; keep top armour, helmets and thermals off the market (FleaRules.luau:7-10).",
+    "Make hideout crafts FIR (Hideout.luau:128) and clear FIR on items taken into a raid (Settle.deploy).",
+    "Drive Fence's loyalty from karma so his LL2 offer works, and let karma move his prices both ways (Economy.luau:51-64, TraderData.luau:164-180).",
+    "Change Charisma to EFT's effect (-0.1 % a level on insurance, repairs and paid exits) and remove the trader discount (Progress.luau:50, TraderData.luau:155-161).",
+    "Give Pouch M a trader path and Pouch L a task path, and allow weapon parts, grenades and eyewear in secure containers (Items.luau:137-138, 324).",
+    "Use the Sealed Drive in a task or let traders buy it (Items.luau:246).",
+    "Write a few tasks on the visit zones Border Yard, Meridian and Smelter already define; give the two boss tasks their own boss target (QuestData.luau:60-62, 75).",
+    "Roll a spawn chance per container (start at 0.3-0.5; SPT's mean is 0.28), keeping locked rooms always stocked as EFT 1.2.0 does (Loot.luau:557-563).",
+    "Add the flare kind to the handbook and flea categories (Menus.luau:138-143) and render the seven missing item pictures.",
+    "Fix DEVELOPMENT_STATUS.md lines 93 and 282 and add an economy section with the gap table to docs/design/EFT_PARITY.md."
+  ]
+}

@@ -1,0 +1,473 @@
+{
+  "area": "gameplay",
+  "summary": "The core loop (deploy, fight, loot, extract, settle) is built with most of Tarkov's rules in simplified form: seven-part health, real bullet flight, malfunctions close to the wiki, and a rich set of extract rules. The biggest parity gaps are recoil without convergence, pre-0.14 armour, sound without occlusion (now possible in Roblox) and short hearing ranges, and a bug that throws away hideout healing. Nothing has run with two players, on a phone or on a gamepad.",
+  "decisions": [
+    {
+      "id": "gameplay-1",
+      "title": "Recoil model",
+      "question": "Should recoil copy Tarkov's model (a climb that levels off and returns to the aim point), or keep today's kick that the player must pull down?",
+      "context": "Today 60 % of each kick moves the aim for good, so a long burst climbs without limit (about 11 degrees over an R-17 magazine). Tarkov's recoil has a set climb angle, a random spread around it and convergence that pulls the gun back; in full auto it levels off. This decides how shooting feels more than anything else.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Tarkov model",
+          "detail": "Convergence per gun, a climb angle with dispersion, camera recoil separate from gun recoil, all scaled by the build's recoil and ergonomics and the weapon skills; values set against each gun's Tarkov counterpart.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Plateau and partial return",
+          "detail": "Keep the kick; cap the climb after a few shots and return most of it after the burst.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        },
+        {
+          "id": "c",
+          "label": "Keep and tune",
+          "detail": "Only change the numbers.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "departure"
+        }
+      ],
+      "recommended": "a",
+      "why": "The biggest gain in feel and parity, at no frame cost."
+    },
+    {
+      "id": "gameplay-2",
+      "title": "Armour system",
+      "question": "Should armour move to Tarkov's current plates-and-zones system?",
+      "context": "Since 0.14 Tarkov armour is soft armour plus separate plates in front, back and side slots, each with its own class and durability, protecting only the zones it covers; helmets have five zones. Ours is one class per vest, a dice roll for helmet hits and a straight-line penetration stand-in. Armour drives what players loot, buy and fear.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Full plate system",
+          "detail": "Plate items and plate slots in carriers and rigs; soft-armour zones including throat, groin, sides and back; helmet zones from where the hit lands; Tarkov's penetration and damage-loss curves; INSPECT, traders, loot, AI kits and plate art updated.",
+          "effort": "L",
+          "perf": "low",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Zones and curves only",
+          "detail": "One item per vest but a class per zone, helmet zones from where the hit lands and Tarkov's curves; no separate plate items.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "partial"
+        },
+        {
+          "id": "c",
+          "label": "Keep, fix helmets",
+          "detail": "Keep today's model and only replace the helmet dice roll with zones.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "departure"
+        }
+      ],
+      "recommended": "a",
+      "why": "Plates are central to Tarkov 1.0's loot and economy, and doing b first would mean building armour twice."
+    },
+    {
+      "id": "gameplay-3",
+      "title": "Sound occlusion",
+      "question": "Should world sounds move to Roblox's Audio API so walls, floors and doors muffle them as in Tarkov?",
+      "context": "Roblox's Acoustic Simulation (occlusion, sound bending round corners, reverb from the geometry) left beta on 22 September 2026. It only works with AudioPlayer and AudioEmitter, not the legacy Sound objects this game uses, and it lowers its own accuracy to protect the frame rate. The parity doc wrongly says occlusion cannot be done in Roblox.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Acoustic Simulation",
+          "detail": "Move Effects and Ambience to the Audio API, turn on SoundService.AcousticSimulationEnabled, set density and absorption on map parts and kit colliders, keep it off on POTATO if phones need it.",
+          "effort": "L",
+          "perf": "med",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Scripted occlusion",
+          "detail": "Keep legacy sounds; a few times a second cast a ray from the listener to each loud source and muffle it with an equaliser and lower volume per wall, capped at the 8 loudest sources.",
+          "effort": "M",
+          "perf": "low",
+          "parity": "partial"
+        },
+        {
+          "id": "c",
+          "label": "Keep",
+          "detail": "Listener reverb only, no occlusion.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "departure"
+        }
+      ],
+      "recommended": "a",
+      "why": "The only route to Tarkov-like sound through walls and round corners; pilot it on one map with b as the low-end fallback."
+    },
+    {
+      "id": "gameplay-4",
+      "title": "Health and meds depth",
+      "question": "How much of Tarkov's wider health layer should be built: stims, stronger fractures, the destroyed-stomach rule?",
+      "context": "Tarkov has stim injectors with timed buffs and side effects, fractures that cut a leg's speed by 45 % and slow aiming and searching, and a destroyed stomach that drains energy and water five times faster. Ours has no stims and much milder fractures. New items also need Blender art and the owner's upload key.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Full layer",
+          "detail": "A buff and side-effect system, 6 to 10 original stims, Tarkov's fracture penalties, the stomach rule, per-kit bleed costs and two surgery kits.",
+          "effort": "L",
+          "perf": "low",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "Core set",
+          "detail": "The buff system with 3 or 4 stims (stamina, regeneration with painkiller, anti-bleed), Tarkov's fracture penalties and the stomach rule.",
+          "effort": "M",
+          "perf": "low",
+          "parity": "partial"
+        },
+        {
+          "id": "c",
+          "label": "Numbers only",
+          "detail": "No stims; set fracture penalties and the stomach rule to Tarkov's.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        }
+      ],
+      "recommended": "b",
+      "why": "Brings the main Tarkov effects quickly; more stims can follow the art pipeline."
+    },
+    {
+      "id": "gameplay-5",
+      "title": "Movement and handling extras",
+      "question": "Which missing Tarkov actions should be built, knowing each also needs a touch and a gamepad version?",
+      "context": "Missing: weapon mounting on cover and bipods, quick reload (double R drops the magazine), slow lean, side step, blind fire, stance changes that cost leg stamina, louder movement when overweight. Every new action takes a button or gesture on phones and gamepads.",
+      "options": [
+        {
+          "id": "a",
+          "label": "All of them",
+          "detail": "Every action above, with touch and gamepad versions.",
+          "effort": "L",
+          "perf": "low",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "High-value set",
+          "detail": "Quick reload, mounting on cover plus bipod parts, slow lean, stance stamina and overweight noise; no blind fire or side step.",
+          "effort": "M",
+          "perf": "low",
+          "parity": "partial"
+        },
+        {
+          "id": "c",
+          "label": "None now",
+          "detail": "Keep today's set.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "departure"
+        }
+      ],
+      "recommended": "b",
+      "why": "These change fights the most; blind fire and side step cost the most screen space for the least play."
+    },
+    {
+      "id": "gameplay-6",
+      "title": "Real-time waits",
+      "question": "Should insurance returns, the scav cooldown and out-of-raid recovery use Tarkov's real-world times or shorter times that fit Roblox sessions?",
+      "context": "Tarkov returns insurance after 12-36 hours and holds it 4-6 days; the scav cooldown is about 25 minutes; after death or MIA health is 30 % and regenerates 7.61 HP a minute, with paid Therapist healing. Ours: 15 minutes, 10 minutes, full health after death and fast bunker healing that is not even saved.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Tarkov's times",
+          "detail": "The real timers, two insurers and a post-raid healing screen at HALE.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "exact"
+        },
+        {
+          "id": "b",
+          "label": "Tarkov's rules, scaled times",
+          "detail": "The same rules with times divided by one constant (for example insurance 1-3 h held 1 day, scav 15 min, 30 % health after death regenerating 4 times faster) and paid healing at HALE.",
+          "effort": "M",
+          "perf": "none",
+          "parity": "close"
+        },
+        {
+          "id": "c",
+          "label": "Keep",
+          "detail": "Today's timers and a full heal after death.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "departure"
+        }
+      ],
+      "recommended": "b",
+      "why": "Every Tarkov rule stays, and one constant fits it to Roblox's shorter play sessions."
+    },
+    {
+      "id": "gameplay-7",
+      "title": "Raid instances",
+      "question": "Should each raid run on its own server, as Tarkov's matchmaking does, or stay one shared raid per server with late entry?",
+      "context": "One server runs one raid at a time for up to 12 players. PMCs may join for 5 minutes after the start, which Tarkov never allows, and anyone who misses that waits up to 40 minutes. Roblox reserved servers can start a fresh raid per match from the bunker; this needs a published place, which is the owner's call.",
+      "options": [
+        {
+          "id": "a",
+          "label": "A server per raid",
+          "detail": "The bunker queues and matches by map, teleports the group to a fresh raid server and brings them back; no PMC late entry; scavs join running raids.",
+          "effort": "L",
+          "perf": "none",
+          "parity": "exact"
+        },
+        {
+          "id": "b",
+          "label": "Shorter wait",
+          "detail": "Keep one raid per server; shorten late entry to 2 minutes and add an any-map queue.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        },
+        {
+          "id": "c",
+          "label": "Keep",
+          "detail": "Today's 5-minute late entry.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        }
+      ],
+      "recommended": "a",
+      "why": "Removes the late-entry compromise and lets several raids and maps run at once."
+    },
+    {
+      "id": "gameplay-8",
+      "title": "New-player onboarding",
+      "question": "Should Zero Return add a first-time tutorial like Tarkov 1.0's?",
+      "context": "Tarkov 1.0 (15 November 2025) added a tutorial covering healing, the inventory and weapon handling, plus progression guides. Ours drops a new player in the bunker with no explanation of magazine checks, wound order, the exits list or found-in-raid.",
+      "options": [
+        {
+          "id": "a",
+          "label": "Guided first raid",
+          "detail": "A short, skippable scripted run (a quiet part of Smelter or the range) teaching movement, the magazine check, treating a bleed, looting, the exits list and extracting, then the bunker stations, with touch and gamepad prompts.",
+          "effort": "M",
+          "perf": "low",
+          "parity": "close"
+        },
+        {
+          "id": "b",
+          "label": "First-time hints",
+          "detail": "One-time prompts at the van, the first bleed, the first malfunction and the first extract.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "partial"
+        },
+        {
+          "id": "c",
+          "label": "None",
+          "detail": "As now.",
+          "effort": "S",
+          "perf": "none",
+          "parity": "departure"
+        }
+      ],
+      "recommended": "a",
+      "why": "It is 1.0 parity, and lost Roblox players leave within minutes; add b's hints too."
+    }
+  ],
+  "findings": [
+    {
+      "sev": "P1",
+      "title": "Hideout recovery is thrown away: survivors start the next raid with their old wounds, energy and water",
+      "detail": "The profile's health is written only at raid end; bunker healing is never saved and the raid character is rebuilt from the post-raid values. The HEALTH tab claims full health out of raid.",
+      "evidence": "src/server/Services/Raid.luau:418-425; src/server/Services/Chars.luau:553,570-578; src/server/Services/Health.luau:794-805; src/client/Controllers/Character.luau:34"
+    },
+    {
+      "sev": "P1",
+      "title": "Sound goes through walls and floors unmuffled, and the docs call the fix impossible",
+      "detail": "Tarkov models occlusion through walls, floors and stairways. The game uses legacy Sound with distance fall-off only. Roblox released Acoustic Simulation on 22 Sep 2026 (Audio API only), so the parity doc's exception is out of date.",
+      "evidence": "docs/design/EFT_PARITY.md:114,219-221; src/client/Controllers/Effects.luau:73-105,129-183"
+    },
+    {
+      "sev": "P1",
+      "title": "Recoil never settles or returns to the aim point",
+      "detail": "60 % of each kick is permanent climb (about 0.45 degrees a shot on an aimed R-17, about 11 degrees a magazine). Tarkov uses a climb angle, dispersion and convergence that returns the gun, levelling off in full auto.",
+      "evidence": "src/client/Controllers/Camera.luau:34-39,158-160; src/client/Controllers/Weapon.luau:804-811"
+    },
+    {
+      "sev": "P1",
+      "title": "Armour is pre-0.14 Tarkov",
+      "detail": "One class per vest for thorax, stomach and sometimes arms; helmets protect by a dice roll; a straight-line penetration stand-in; 4-24 % damage loss through armour versus Tarkov's 0-40 %. Tarkov has plates, zones and five helmet zones.",
+      "evidence": "src/shared/Items.luau:78-91,381-384; src/server/Services/Health.luau:222-230,288-290"
+    },
+    {
+      "sev": "P1",
+      "title": "Key sound cues are silent",
+      "detail": "The ambience atlas loads as 0.0 s, so breaking glass, the airdrop plane and ambience never play. Breaking glass is a gameplay cue. Needs the owner's re-upload.",
+      "evidence": "KNOWN_ISSUES.md item 73; src/client/Controllers/Effects.luau:120-123"
+    },
+    {
+      "sev": "P1",
+      "title": "The player-versus-player core has never run with two players",
+      "detail": "Player hits, kill credit, co-op exits, the car's shared countdown and squads are covered only by logic tests with stand-ins.",
+      "evidence": "KNOWN_ISSUES.md item 2; TEST_RESULTS.md:9"
+    },
+    {
+      "sev": "P2",
+      "title": "Damage at range ignores the bullet's real speed",
+      "detail": "The flight code passes the remaining speed; the hit handler discards it and applies a fall-off by weapon range. Ammo has no velocity or drag of its own; Tarkov scales damage and penetration by a velocity factor.",
+      "evidence": "src/shared/Ballistics.luau:12,29-35,163; src/server/Services/Combat.luau:340,350-356"
+    },
+    {
+      "sev": "P2",
+      "title": "Fragmentation is shown but never applied",
+      "detail": "INSPECT lists FRAGMENTATION CHANCE but no damage code reads it. Tarkov: rounds with 20+ penetration can fragment for 50 % extra damage.",
+      "evidence": "src/shared/Items.luau:63-75; src/client/Controllers/Inspect.luau:101; src/server/Services/Combat.luau:355-359"
+    },
+    {
+      "sev": "P2",
+      "title": "Spill damage is about 43 % harsher than Tarkov's",
+      "detail": "Destroyed arm, leg and stomach spread damage at x0.7, x1.0 and x1.5; the wiki lists x0.49, x0.7 and x1.05.",
+      "evidence": "src/server/Services/Health.luau:27"
+    },
+    {
+      "sev": "P2",
+      "title": "Footsteps carry about a third of Tarkov's distance",
+      "detail": "Others' steps fade by about 35 studs crouch-walking and 118 sprinting (11 to 38 m). Tarkov 0.14.5.5: crouch-walk heard at 43 m, sprint over 100 m.",
+      "evidence": "src/client/Controllers/Effects.luau:327; src/client/Controllers/Animator.luau:132"
+    },
+    {
+      "sev": "P2",
+      "title": "Gunshots fade early and every gun shares one recording",
+      "detail": "Inverse fall-off from 12 studs: about 12 % volume at 32 m, 4 % at 96 m, silent past 192 m. One rifle recording pitched per gun, no indoor or outdoor tail.",
+      "evidence": "src/client/Controllers/Effects.luau:73-83,343-364; KNOWN_ISSUES.md item 7"
+    },
+    {
+      "sev": "P2",
+      "title": "Missing Tarkov handling and movement actions",
+      "detail": "No weapon mounting or bipods, no quick reload (double R), no side step, slow lean or blind fire.",
+      "evidence": "docs/design/EFT_PARITY.md:88; src/server/Services/Combat.luau:490-500"
+    },
+    {
+      "sev": "P2",
+      "title": "The health layer is thin",
+      "detail": "No stims; a broken leg slows 14 % (wiki: 45 %); broken arms only slow reloads; a destroyed stomach does not speed energy and water loss (Tarkov: x5).",
+      "evidence": "src/shared/Items.luau:142-153; src/server/Services/Health.luau:344-368,784-793"
+    },
+    {
+      "sev": "P2",
+      "title": "Out-of-raid health departs from Tarkov",
+      "detail": "Full health after death or MIA (Tarkov: 30 %, then 7.61 HP a minute and paid Therapist healing); the bunker heals about 33 times faster than Tarkov; no trader heals.",
+      "evidence": "src/server/Services/Raid.luau:421-424; src/server/Services/Health.luau:796-805; src/shared/TraderData.luau"
+    },
+    {
+      "sev": "P2",
+      "title": "Malfunctions are built, but the docs say they are not, and they were never checked in Studio",
+      "detail": "Status, next task, the modding doc and the parity file list M11 part B as to do. Missing wiki rules: max durability loss while hot, fire-rate change and cook-offs, malfunction flash, per-round chance, 5 s secondary swap.",
+      "evidence": "src/server/Services/Combat.luau:120-148,290-311; DEVELOPMENT_STATUS.md:34; NEXT_TASK.md:117; docs/weapons/WEAPON_MODDING.md:208; docs/design/EFT_PARITY.md:242"
+    },
+    {
+      "sev": "P2",
+      "title": "Core gameplay parity is not logged",
+      "detail": "EFT_PARITY.md says it covers the parts that are not core gameplay, so movement, handling, ballistics and health gaps have no home despite project rule 2.",
+      "evidence": "docs/design/EFT_PARITY.md:5-6"
+    },
+    {
+      "sev": "P2",
+      "title": "Stamina misses Tarkov's 0.12.4 rules",
+      "detail": "Stance changes cost no leg stamina, empty arms do not drain the legs, no fatigue, and overweight does not make you louder.",
+      "evidence": "src/client/Controllers/Movement.luau:62-78,273-295; src/client/Controllers/Effects.luau:306-331"
+    },
+    {
+      "sev": "P3",
+      "title": "The death screen shows kill distances 12 % short",
+      "detail": "Converts at 0.28 m per stud; the project's scale is 0.32 (INSPECT uses 0.32).",
+      "evidence": "src/server/Services/Raid.luau:566; src/client/Controllers/Inspect.luau:22"
+    },
+    {
+      "sev": "P3",
+      "title": "Perception and Covert Movement do not change what players hear",
+      "detail": "Perception promises longer hearing but nothing reads it; Covert only lowers what the AI hears.",
+      "evidence": "src/shared/Progress.luau:47,52; src/server/Services/AI.luau:428; src/client/Controllers/Effects.luau:306-331"
+    },
+    {
+      "sev": "P3",
+      "title": "The VOLT drink promises a stamina boost that does nothing",
+      "detail": "The food handler applies only energy and water.",
+      "evidence": "src/shared/Items.luau:157; src/server/Services/Health.luau:466-472"
+    },
+    {
+      "sev": "P3",
+      "title": "Subsonic rounds still crack past your head",
+      "detail": "The shot effect carries no subsonic flag, so every passing round plays a crack.",
+      "evidence": "src/client/Controllers/Effects.luau:455-467; src/server/Services/Combat.luau:373"
+    },
+    {
+      "sev": "P3",
+      "title": "Fake distant gunfire",
+      "detail": "A shot plays every 40 to 120 s, 200 to 320 studs away, tied to no one; in Tarkov a far shot means a real fight.",
+      "evidence": "src/client/Controllers/Ambience.luau:456-468"
+    },
+    {
+      "sev": "P3",
+      "title": "Grenades fall under a different gravity than bullets",
+      "detail": "45 studs/s squared against 30.7 (real gravity at this scale).",
+      "evidence": "src/shared/Grenades.luau:7; src/shared/Ballistics.luau:11"
+    },
+    {
+      "sev": "P3",
+      "title": "Smelter raids last 15 minutes",
+      "detail": "Tarkov's Factory lasts 20.",
+      "evidence": "src/shared/Maps.luau:28"
+    },
+    {
+      "sev": "P3",
+      "title": "Ergonomics does not affect aiming stamina",
+      "detail": "Only weapon weight does; the wiki says ergonomics also sets aiming stamina drain.",
+      "evidence": "src/client/Controllers/Movement.luau:283-286"
+    },
+    {
+      "sev": "P3",
+      "title": "Five footstep surfaces",
+      "detail": "Snow plays dirt steps; no water, tile, carpet or glass-shard steps.",
+      "evidence": "src/client/Controllers/Effects.luau:293-301"
+    },
+    {
+      "sev": "P3",
+      "title": "Prone keeps the upright collision box",
+      "detail": "You cannot crawl under low cover.",
+      "evidence": "KNOWN_ISSUES.md item 10"
+    },
+    {
+      "sev": "P3",
+      "title": "No separate chamber round",
+      "detail": "Tarkov holds 30 + 1; here the chamber check reads the magazine count.",
+      "evidence": "src/server/Services/Combat.luau:628-631"
+    },
+    {
+      "sev": "P3",
+      "title": "One table of med costs for every kit and one surgery kit",
+      "detail": "Tarkov kits have their own bleed and fracture costs and two surgery kits (CMS 25-45 %, Surv12 60-72 % of max).",
+      "evidence": "src/server/Services/Health.luau:34,515"
+    }
+  ],
+  "quickWins": [
+    "Save bunker recovery: write the safehouse health to the profile before deploy and when it changes, and correct the HEALTH tab text (Raid.luau 418-425, Chars.luau 574, Character.luau 34).",
+    "Scale damage and penetration by the bullet's remaining speed, which Ballistics.fly already passes (Combat.luau line 340).",
+    "Apply fragmentation: rounds with penetration 20 or more roll their chance for +50 % damage to the part hit.",
+    "Set spill to x0.49 arms, x0.7 legs and x1.05 stomach (Health.luau line 27).",
+    "Lengthen footstep range to Tarkov's measured figures: about 43 m (134 studs) for slow crouch-walking and over 100 m (312 studs) for sprinting (Effects.luau line 327).",
+    "Death screen: convert at 0.32 m per stud (Raid.luau line 566).",
+    "Send the round's subsonic flag with the shot effect and skip the crack for subsonic rounds.",
+    "Make the VOLT drink's stamina boost work, or remove it from the description.",
+    "Make Perception lengthen hearing of others' steps and Covert Movement quieten your steps for other players.",
+    "Add ergonomics to the aiming-stamina drain (Movement.luau lines 283-286).",
+    "Add the missing malfunction rules from the wiki: max durability loss while hot, fire-rate change and cook-offs at severe heat, a malfunction flash, malfunction chance per round, the 5 s secondary swap after a jam.",
+    "Docs: mark M11 part B as built (DEVELOPMENT_STATUS.md line 34, NEXT_TASK.md line 117, WEAPON_MODDING.md line 208, EFT_PARITY.md line 242), add a core-gameplay section to EFT_PARITY.md with this gap table, and run and log a Studio malfunction check.",
+    "Remove the scripted distant gunfire, or play it only for real shots beyond normal hearing range.",
+    "Put grenades under the world's gravity (30.7 studs/s squared) and re-tune throw speed to keep the same reach.",
+    "Set Smelter's raid to 20 minutes if it stands in for Factory (Maps.luau line 28).",
+    "Add footstep families for snow, water, tile and metal stairs.",
+    "Owner action: re-upload ZR_SFX_Amb and set Sounds.AMB_ATLAS (KNOWN_ISSUES.md item 73)."
+  ]
+}
