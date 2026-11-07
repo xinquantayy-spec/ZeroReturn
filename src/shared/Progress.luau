@@ -44,13 +44,17 @@ P.SKILLS = {
 	stress = { cat = "PHYSICAL", name = "STRESS RESISTANCE", desc = "Painkillers last longer; pain bothers you less.", per = 0.006 },
 	metabolism = { cat = "PHYSICAL", name = "METABOLISM", desc = "Energy and hydration drain slower.", per = 0.006 },
 	-- mental
-	perception = { cat = "MENTAL", name = "PERCEPTION", desc = "You hear footsteps from further away.", per = 0.008 },
+	-- Tarkov's Perception (audit gameplay.9): hearing distance +0.3 % a level, +15 % at elite (EFT wiki, quoted by
+	-- gamezo.gg/?p=72006); the coordinator's answer of 19:18 on the board
+	perception = { cat = "MENTAL", name = "PERCEPTION", desc = "You hear footsteps from further away.", per = 0.003 },
 	intellect = { cat = "MENTAL", name = "INTELLECT", desc = "Examining is faster; repair kits take less off the maximum.", per = 0.008 },
 	attention = { cat = "MENTAL", name = "ATTENTION", desc = "Searching containers and bodies is faster.", per = 0.005 },
 	-- Tarkov's Charisma (audit economy.6): 0.1 % off insurance, repairs and paid exits a level; no trader discount
 	charisma = { cat = "MENTAL", name = "CHARISMA", desc = "Insurance, repairs and paid exits cost 0.1 % less a level. Grows with the other mental skills.", per = 0.001 },
 	-- practical
-	covert = { cat = "PRACTICAL", name = "COVERT MOVEMENT", desc = "Your footsteps carry less far.", per = 0.008 },
+	-- Tarkov's Covert Movement (audit gameplay.9): footstep noise on common surfaces -1.2 % a level, -60 % at elite
+	-- (escapefromtarkov.fandom.com/wiki/Covert_Movement, tarkovforge.com/skills/covert-movement); users cap it at 0.6
+	covert = { cat = "PRACTICAL", name = "COVERT MOVEMENT", desc = "Your footsteps carry less far.", per = 0.012 },
 	search = { cat = "PRACTICAL", name = "SEARCH", desc = "Searching containers and bodies is faster.", per = 0.004 },
 	surgery = { cat = "PRACTICAL", name = "SURGERY", desc = "Surgery takes less time.", per = 0.008 },
 	troubleshooting = { cat = "PRACTICAL", name = "TROUBLESHOOTING", desc = "Malfunctions are cleared faster.", per = 0.008 },
