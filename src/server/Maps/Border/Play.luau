@@ -691,14 +691,20 @@ return function(B)
 		end
 		-- Reshala's 752 and his guards' 630 (EFT; audit ai.2). His own look and kit and EFT's three zones, the dorms, the
 		-- fuel stop and the Bastion (Customs: dorms, new gas station, Stronghold), at 45 % (EFT's 39-57 %; audit ai.3)
+		-- named() gives world points and route() takes local ones (x east, z south from O): back to local first
+		-- (the first version doubled the map offset and the guards spawned off the map and fell)
 		local function ring(c, rx, rz)
-			return route({ { c.X - rx, c.Z - rz }, { c.X + rx, c.Z - rz }, { c.X + rx, c.Z + rz }, { c.X - rx, c.Z + rz } })
+			local x, z = c.X - O.X, c.Z - O.Z
+			return route({ { x - rx, z - rz }, { x + rx, z - rz }, { x + rx, z + rz }, { x - rx, z + rz } })
 		end
 		local function guards(c)
-			return route({ { c.X - 8, c.Z - 6 }, { c.X + 8, c.Z - 6 }, { c.X - 8, c.Z + 6 }, { c.X + 8, c.Z + 6 } })
+			local x, z = c.X - O.X, c.Z - O.Z
+			return route({ { x - 8, z - 6 }, { x + 8, z - 6 }, { x - 8, z + 6 }, { x + 8, z + 6 } })
 		end
 		local zones = { { name = "DORMS", home = bossHome or r[1], route = r, crew = route(CREW) } }
-		local fuel = named("FUEL_STOP_FORECOURT", 8, 0.5)
+		-- (building 24 is the fuel stop; 8, the first version's fallback, is the forecourt's id among the yards and a storage
+		-- block among the buildings, across the map)
+		local fuel = named("FUEL_STOP_FORECOURT", 24, 0.5)
 		if fuel then
 			table.insert(zones, { name = "FUEL STOP", home = fuel, route = ring(fuel, 26, 18), crew = guards(fuel) })
 		end

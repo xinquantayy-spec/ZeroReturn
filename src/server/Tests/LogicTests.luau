@@ -552,6 +552,40 @@ function T.run(ctx)
 				foreman = true
 			end
 		end
+		-- every zone stands on the map at its own building, its guards and loop round its home (a first version doubled the
+		-- map offset, so the guards spawned off the map, and its fuel stop fell back to a storage block across the map).
+		-- The dorm guards wait in the courtyard, 75-95 studs from the lobby, and his dorm loop reaches 134 studs out.
+		local bw = ctx and ctx.World and ctx.World.maps and ctx.World.maps.border
+		local near = bb ~= nil and bb.zones ~= nil and bw ~= nil and bw.bounds ~= nil
+		local mapsF = script.Parent.Parent:FindFirstChild("Maps")
+		local layM = mapsF and mapsF:FindFirstChild("Border") and mapsF.Border:FindFirstChild("Layout")
+		local okL, Lay = false, nil
+		if layM then
+			okL, Lay = pcall(require, layM)
+		end
+		local at = {}
+		if near and okL and type(Lay) == "table" then
+			local ox, oz = bw.bounds.x0 - Lay.box[1], bw.bounds.z0 - Lay.box[2]
+			for _, e in Lay.blds do
+				at[e[2]] = Vector3.new(ox + e[4], 0, oz + e[5])
+			end
+		end
+		local function onMap(p)
+			local b = bw.bounds
+			return p.X > b.x0 and p.X < b.x1 and p.Z > b.z0 and p.Z < b.z1
+		end
+		local WANT = { DORMS = "BLOCK A", ["FUEL STOP"] = "FUEL STOP", BASTION = "THE BASTION" }
+		for _, z in (near and bb.zones) or {} do
+			local c = at[WANT[z.name] or ""]
+			near = near and c ~= nil and onMap(z.home) and (Vector3.new(z.home.X, 0, z.home.Z) - c).Magnitude < 110
+			for _, p in z.crew or {} do
+				near = near and onMap(p) and (p - z.home).Magnitude < 100
+			end
+			for _, p in z.route or {} do
+				near = near and onMap(p) and (p - z.home).Magnitude < 150
+			end
+		end
+		checkOn("border", "the Broker's zones stand on the map at the dorms, the fuel stop and the Bastion, guards and loop round each home", near)
 		checkOn("border", "the Broker: three zones (dorms, fuel stop, Bastion), 45 %, his own look; no armour, helmet or Foreman loot",
 			bb ~= nil and bb.zones ~= nil and #bb.zones == 3 and bb.chance == 0.45 and bb.look == "broker" and bb.loadout == "brokerLoadout"
 				and bk.slots.armor == nil and bk.slots.head == nil and bk.slots.holster ~= nil and not foreman)
