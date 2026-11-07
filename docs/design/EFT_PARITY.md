@@ -60,8 +60,8 @@ Updated 2026-11-08 from the code (`Inventory.luau`, `Inspect.luau`); the screens
 | Tarkov | Zero Return | To do |
 |---|---|---|
 | Ctrl+click quick transfer, Alt+click equip, R rotates while dragging | Have; ROTATE in the item bar for touch, gamepad and phones (ui.1) | |
-| Ctrl+drag splits a stack, Del discards the hovered item, middle mouse examines, double-click use (setting) | SPLIT IN HALF in the context menu; DOUBLE-CLICK QUICK USE for meds and food (setting, ui.8); DISCARD wants a second press within 3 s (ui.2) | An amount on Ctrl+drag; Del and middle mouse (ui.9, in progress) |
-| A green or red ghost while dragging shows whether the item fits (from memory, unverified: ui audit) | The ghost is always ochre | ui.9, in progress |
+| Ctrl+drag splits a stack, Del discards the hovered item, middle mouse examines, double-click use (setting) | SPLIT IN HALF in the context menu; DOUBLE-CLICK QUICK USE for meds and food (setting, ui.8); DISCARD wants a second press within 3 s (ui.2); Del discards the hovered item (in a raid it drops it) and the middle button examines or inspects (ui.9, 2026-11-08, Studio check pending) | An amount on Ctrl+drag |
+| A green or red ghost while dragging shows whether the item fits (from memory, unverified: ui audit) | The cells the item would take light green or red while dragging, and for an item picked up by tap or pad (ui.9, 2026-11-08, Studio check pending). The cue can disagree with the server where only the server knows the rule (a longer magazine on a gun in the grid, a vital part locked in a raid) | Touch drag and drop (ui-4a) |
 | Hover an item in pockets or rig and press 4 to 0: quick slot; R + wheel picks the magazine to load | Done: 4 to 0 bind by hover, the bar (AUTO-HIDE, ALWAYS or NEVER), the key on the tile | R + wheel to pick the magazine |
 | Context menu: inspect, open, use, equip, load and unload ammo, check magazine, fold stock, modding, tag (name and colour a container), filter by item, linked search, required search, add to wish list, insure, repair, discard | Inspect, examine, equip, use, load and unload ammo, modding, split, insure, sell, repair with a kit, discard; + WISH in INSPECT | Tag, filter by item, linked and required search, check magazine, fold stock (KNOWN_ISSUES 53) |
 | Stash search window by category or name (0.16.7), sort, priority window (0.16) | SORT, and SEARCH by name | Search by category; the priority window |
@@ -74,11 +74,11 @@ Updated 2026-11-08 from the code (`Inventory.luau`, `Inspect.luau`); the screens
 
 | Tarkov | Zero Return | To do |
 |---|---|---|
-| Character: gear, health, skills, mastering, overall statistics, achievements, prestige, dog tag style | Tabs in the inventory: GEAR, HEALTH, SKILLS, MASTERING, OVERALL; TASKS in a raid only | Achievements, prestige, dog tag style, a MAP tab; TASKS out of raid, with pinning (ui.14, in progress) |
-| Traders: TRADE (assortment grid with prices; sell from stash), TASKS (pinnable since 0.16.7), SERVICES (insurance, repair, healing) | Done 2026-10-31: TRADE, TASKS and SERVICES (repairs: weapons at VOS, armour at TILDA); insurance at the insurance window and from the context menu; one panel at a time on phones (M2) | Task pinning (ui.14, in progress); healing at HALE (gameplay-6b) |
-| Flea market from level 15: offers, filters, filter by item, linked and required search, wish list | Done 2026-10-31: level 15, categories, search, WISH LIST, MY OFFERS, ADD OFFER with Tarkov's fee; simulated sellers and buyers (section 10) | Price, currency and condition filters; filter by item, linked and required search; the level gates by category (economy.3, in progress) |
+| Character: gear, health, skills, mastering, overall statistics, achievements, prestige, dog tag style | Tabs in the inventory: GEAR, HEALTH, SKILLS, MASTERING, OVERALL; TASKS in and out of raid, active tasks pinnable to the top (ui.14, 2026-11-08, Studio check pending) | Achievements, prestige, dog tag style, a MAP tab |
+| Traders: TRADE (assortment grid with prices; sell from stash), TASKS (pinnable since 0.16.7), SERVICES (insurance, repair, healing) | Done 2026-10-31: TRADE, TASKS and SERVICES (repairs: weapons at VOS, armour at TILDA); insurance at the insurance window and from the context menu; one panel at a time on phones (M2) | Healing at HALE (gameplay-6b). Task pinning built (ui.14, 2026-11-08, Studio check pending) |
+| Flea market from level 15: offers, filters, filter by item, linked and required search, wish list | Done 2026-10-31: level 15, categories, search, WISH LIST, MY OFFERS, ADD OFFER with Tarkov's fee; simulated sellers and buyers (section 10) | Price, currency and condition filters; filter by item, linked and required search; the level gates by category are built (economy.3, 2026-11-08, Studio check pending) |
 | Messenger: one chat per trader, insurance returns, task rewards, receive all | Done 2026-10-31: trader dialogs, insurance returns with RECEIVE ALL, task, loyalty and flea messages; an unread count and a notice when mail comes (ui.6) | |
-| Handbook: every item by category with its description | Done 2026-10-31 (relay radio, HANDBOOK) | The flare kind in its categories (economy.11) |
+| Handbook: every item by category with its description | Done 2026-10-31 (relay radio, HANDBOOK); flares under SPECIAL EQUIPMENT (economy.11, 2026-11-08) | |
 | Wish list: items flagged for tasks, hideout or trading | Done 2026-10-31: + WISH in INSPECT, a W on the tile, the flea market's WISH LIST | |
 | Hideout: modules, crafts, shooting range, customisation (0.16: wall finishes "Blue paint", "Factory walls", "Modest wallpaper"; floors "Small tiles", "Factory floor"; a "Factory ceiling"; unlocked by level, tasks, achievements and prestige; posters as hideout upgrades and loot; range targets by leveling the range) | Five modules in the shared, kept bunker (section 10); STYLE since 2026-11-02: walls (7), floor (5) and ceiling (4), drawn per player on each client, unlocked by level (`docs/design/HIDEOUT_STYLE.md`); a free practice range in the lobby | Unlocks by tasks, achievements and prestige; posters; range targets; the range as a module |
 
@@ -310,7 +310,8 @@ Matches Tarkov now:
   wounds kept after a survived raid, and bunker recovery saved between raids (M1, gameplay.1).
 - **Ballistics:** drop and travel time by muzzle velocity, zeroing; damage and penetration scale with the speed the bullet
   keeps (gameplay.2); rounds with 20 or more penetration fragment for +50 % damage (gameplay.3).
-- **Malfunctions (M11 part B, built, not yet checked in Studio):** Tarkov's four types, none above 93 % condition, found
+- **Malfunctions (M11 part B; Tarkov's rules since gameplay.11, 2026-11-08; neither checked in Studio yet):** Tarkov's four
+  types and four sources (wear, the round, the magazine, heat); from 93 % condition nothing but heat causes one; found
   with L and cleared with Shift+T.
 - **Handling:** ergonomics sets aim speed, sway and how fast aiming tires the arms (gameplay.10).
 - **Raids:** Border Yard and Meridian Mall 40 minutes, Smelter 20 like Factory (gameplay.15); every extract type (open,
@@ -326,7 +327,7 @@ Still a gap:
 | Recoil with a climb angle, dispersion and convergence; full auto levels off | A kick, 60 % of it permanent climb | gameplay-1a: Tarkov's model |
 | Soft armour plus plates in front, back and side slots, protection by zone; helmet zones (top, nape, ears, eyes, jaws); ricochet by angle | One class per vest; helmets roll dice, with face and eye bands | gameplay-2a: the full plate system |
 | Each round has its own muzzle speed and ballistic coefficient | Speed per gun, drag per gun class; mounted guns still use a range fall-off | Per-round speed and drag |
-| Overheating in four stages with cook-offs, a fire-rate change and maximum durability loss; a flash on a malfunction; a chance per round; a 5 s quick draw of the sidearm after a jam | Heat stages 1, 2 and 4 only | gameplay.11 (in progress) |
+| Overheating in four stages with cook-offs, a fire-rate change and maximum durability loss; a flash on a malfunction; a chance per round; a 5 s quick draw of the sidearm after a jam | Built 2026-11-08 (gameplay.11, Studio check pending): heat on Tarkov's 0-200 scale with its cooling; from 100 wear rises up to x3 and spread up to x1.5; fire rate moves 0.85-1.15 above 140; cook-offs from 170; the bolt held at 200; hot shots cut the maximum durability (never below 55); a red, yellow or green glow on a malfunction, its check and its fix; a 5 s quick draw of the sidearm after a jam | Only the AKM's numbers are verified (every gun uses its base chance and cooling); every round uses the 7.62x39 chance; 40- and 50-round magazines keep our wear; base wear about twice the AKM's; no Troubleshooting elite or Weapon Maintenance; clearing by chamber check or reload; per-weapon malfunction kinds; barrel glow and heat haze |
 | A round in the chamber (30 + 1) | No chamber round | The chamber round |
 | Mounting on cover and bipods; quick reload (double R drops the magazine); slow lean; stance changes cost leg stamina; overweight is louder | None of these; a magazine drops only when there is no room for it | gameplay-5b (blind fire and side step are left out) |
 | Fractures (a leg -45 %; arms slow aiming, drawing and searching); stims with buffs and side effects; a destroyed stomach drains energy and water x5 | A leg -14 %, arms slow reloads; no stims; no stomach rule | gameplay-4b: the core set |
@@ -334,7 +335,7 @@ Still a gap:
 | PMCs only enter at the start of a raid | PMCs may join for 5 min (`Config.LATE_JOIN`) | gameplay-7a: a server per raid (needs the published place) |
 | Occlusion through walls, floors and stairways | Legacy sounds with one reverb for the listener | gameplay-3a: Acoustic Simulation (section 6) |
 | Each gun its own sound; footsteps on snow, water, tile and metal stairs; headsets with their own compression | One recording pitched for every gun; five surface families; one headset rule | Recorded or licensed sounds; gameplay.16 |
-| Perception lengthens how far you hear steps; Covert Movement quietens yours | Covert Movement quietens your steps for the AI only; neither changes what players hear | gameplay.9 (in progress) |
+| Perception lengthens how far you hear steps; Covert Movement quietens yours | Built 2026-11-08 (gameplay.9, Studio check pending): Perception +0.3 % hearing a level (+15 % elite), Covert Movement -1.2 % a level on common surfaces (-60 % elite), for players and the AI | Perception's loot radius and elite loot notice; Covert Movement's sneak speed; metal and gravel as Tarkov's uncommon surfaces is our reading |
 | A tutorial raid (1.0) | A welcome message | ui-5a |
 | The players' tripwire kit (0.15) | The server side on `wip/tripwire-kit`, parked | Build the client, then merge |
 | Transits open 7 min in (0.15 notes); car fares in roubles you carry (unverified) | 60 s (SPT data); fares from the stash balance | The sources disagree; no cash item yet (KNOWN_ISSUES 16) |
@@ -366,13 +367,13 @@ Still a gap:
 | 2,169 items in 2021 (102 weapons, 1,421 parts); 184 rounds in 27 calibres in 2026 | 279 items: 6 guns, 96 parts, 13 rounds in 5 calibres, 58 keys | economy-1a: a core set of about 600 |
 | Eight traders (Prapor, Therapist, Skier, Peacekeeper, Mechanic, Ragman, Jaeger, Fence), plus Ref, Lightkeeper and the BTR driver; money as items in three currencies | VOS, HALE, TILDA and the FENCE; one balance in MK | economy-2a: EFT's eight, one currency |
 | LL2 to LL4 at levels about 13 to 42 (1.1.0 dropped the sales requirement); 892 barters | LL2 to LL4 at levels 3, 7 and 12 with 150k to 1.2M MK traded; 12 barters | economy-2a, economy-4b |
-| Fence sells what players sold him; his LL2 at reputation 6.0 | 11 fixed offers; held at LL1 | Player-sold stock; LL2 and prices from karma (economy.5, in progress) |
-| Flea level gates by category up to 40 (1.0); bans on secure containers, currency, some weapons, ammo, armour, packs, helmets; fee 5 % since 1.1.0 | No gates; bans on secure containers and task items; fee 3 % | economy.3 (in progress); the 5 % fee |
+| Fence sells what players sold him; his LL2 at reputation 6.0 | 11 fixed offers; LL2 at karma 6.0 (his dorm key), prices x1.2 at -7 to x0.8 at +6, karma -7 to 6 (economy.5, 2026-11-08, Studio check pending) | Player-sold stock; his LL2 tab of better goods; what he pays still moves 4 % a karma point; scav cooldown and hostility keep our curve; our karma gains are 3-8 times EFT's |
+| Flea level gates by category up to 40 (1.0); bans on secure containers, currency, some weapons, ammo, armour, packs, helmets; fee 5 % since 1.1.0 | Built 2026-11-08 (economy.3, Studio check pending): EFT 1.0's gates (20: bolt-actions, foregrips, muzzle devices; 25: assault rifles, packs, lights and lasers; 30: barter goods, goggles, injectors, keycards; 35: the LPS-class round), greyed offers, and EFT's ban list; fee 3 % | The 5 % fee; BSG publishes no full gate table, and 1.0 may have turned some bans into gates |
 | A market of real players, with barter offers | Simulated sellers and buyers, cash only | economy-3a: a real market with an AI floor |
 | Loot tables per map; 21 container templates (SPT, Interchange) | One pool per container kind for every map; 13 kinds | Tables per map |
-| Secure containers Alpha to Kappa with trader and task paths; item cases (documents, keytool, SICC, junk box, medicine, magazine, keycard holder) | Pouch S, M and L, only S obtainable; no cases, and full containers cannot nest | economy.7 (in progress); the cases |
+| Secure containers Alpha to Kappa with trader and task paths; item cases (documents, keytool, SICC, junk box, medicine, magazine, keycard holder) | Pouch S, M and L: M is TILDA's LL2 barter (EFT's Beta), L the reward of FENCE's task Keepsakes (EFT 1.1's Kappa); weapon parts, grenades, goggles, glasses and headsets go in (economy.7, 2026-11-08, Studio check pending) | The cases; full containers cannot nest; Pouch L asks 10 of our valuables, Kappa 44 collectibles |
 | Stash 10x30, up to 10x68 or 10x72 | 10x20, up to 10x30 | Stash levels (economy-7b) |
-| 531 tasks for 11 traders: conditional kills, found-in-raid hand-ins, plant and mark, visit, extract, skill and LL, gunsmith builds; side tasks per LL, dailies and weeklies, task-locked offers | 14 tasks for 4 traders: kill, hand in, extract, visit; straight chains | economy-6a: a map-first core of about 120; economy.9 (in progress) |
+| 531 tasks for 11 traders: conditional kills, found-in-raid hand-ins, plant and mark, visit, extract, skill and LL, gunsmith builds; side tasks per LL, dailies and weeklies, task-locked offers | 23 tasks for 4 traders: kill (a named boss too), hand in, extract and visit on a named map, tasks that need other tasks, karma or loyalty (economy.7, economy.9, 2026-11-08, Studio check pending) | economy-6a: a map-first core of about 120 |
 | Hideout: 26 modules, 67 levels, 214 crafts; generator fuel; scav case; bitcoin farm; the shooting range as a module | 5 modules, 8 levels, 10 crafts; no fuel; one build at a time; a free range in the lobby | economy-7b: an economy core of about 14 |
 | Builds and crafts take hours to days; level 15 at 161,139 XP (the top level about 82.6 million, unverified) | 5 to 45 minutes; level 15 at 52,383 XP, cap 40 | economy-4b: EFT's curves, faster clocks |
 | Skills such as Hideout Management, Mag Drills, Weapon Maintenance, Aim Drills, DMR, LMG, HMG, revolvers, launchers | 24 skills | With the content they need |
@@ -381,7 +382,7 @@ Still a gap:
 | Weapon builds that buy the missing parts | None (KNOWN_ISSUES 54) | - |
 | Money sinks: fuel, filters, the scav case, costly builds, flea fees, insurance, repairs | Flea fees, insurance, repairs, a one-time 785k hideout | Come with economy-7b and economy-4b |
 | Paid editions; a free battle pass (1.1.0) | None | economy-8a: none for now (the owner approves any) |
-| The handbook and flea list every item kind | The flare kind is missing; seven items have no picture | economy.11 |
+| The handbook and flea list every item kind | Flares under SPECIAL EQUIPMENT (economy.11, 2026-11-08); seven items have no picture (ANTIDOTE, FLARE_RED, FLARE_GREEN, FORESTER_PACK, MASK_WELDER, RITUAL_AMULET, RITUAL_KNIFE) | Render the seven pictures |
 
 ## 11. Art
 
@@ -433,9 +434,10 @@ with optional aids (start-3b). `NEXT_TASK.md` holds the current list. The list o
 2. Done 2026-10-31: controls parity (Tarkov's default keys, quick slots 4 to 0, the checks, the raid time, rebinding)
    and settings parity (the five tabs).
 3. Built: M11 part B. Every shot wears the gun, more when hot; Tarkov's four malfunctions (misfire, failure to eject,
-   failure to feed, jammed bolt) only below 93 % condition, plus feed failures from big magazines; L finds the fault and
-   Shift+T clears it; trader repairs and the repair kit lower the maximum (`Combat.luau`, `Economy.luau`). Not yet checked
-   in Studio. The wiki's missing rules are gameplay.11 (section 9).
+   failure to feed, jammed bolt); since gameplay.11 (2026-11-08) on Tarkov's rules: from 93 % condition nothing but heat
+   causes one, and wear, the round, the magazine and heat each add a chance below it; L finds the fault and Shift+T
+   clears it; trader repairs and the repair kit lower the maximum (`Combat.luau`, `Economy.luau`, `Weapons.luau`). Not yet
+   checked in Studio.
 4. Done 2026-10-31: character tabs, messenger, handbook, wish list.
 5. Done: Border Yard (2026-11-01), the flea market (2026-10-31), Quay 7 and Smelter furnished (2026-11-01). Next for the
    maps: art-1a and art-2d (section 11).
@@ -1303,3 +1305,19 @@ Still a gap:
 - **Dorm guards:** they start in the courtyard, 75 to 95 studs from the Broker's lobby, and walk in to him. In EFT his
   guards spawn beside him.
 
+
+### Audit quick wins, batch 6: four helper threads merged (M3, 2026-11-08; none of it checked in Studio yet)
+
+Built by the economy, ui, gameplay and docs threads and merged into main. The rows they changed are in sections 2, 3, 9
+and 10; the gaps they found are in the same tables.
+- **Economy:** flea level gates and EFT's ban list (economy.3); Fence's loyalty and prices from karma (economy.5); Pouch M
+  and L with EFT's paths and a wider secure-container filter (economy.7); seven map tasks and boss targets (economy.9);
+  flares in the handbook (economy.11); Tarkov's Perception and Covert Movement rates.
+- **Interface:** gamepad focus and LB/RB tabs (ui.5, our own: exception 4); the green or red fit cue, Del and middle-click
+  (ui.9); pinned tasks and a TASKS tab out of raid (ui.14).
+- **Gameplay and tech:** what players hear follows Perception and Covert Movement (gameplay.9); Tarkov's heat, wear and
+  malfunction rules (gameplay.11); cheaper lights and overlays (tech.12); the season tint as nature streams in (tech.9);
+  AnalyticsService events (tech.16, recorded only once the game is published).
+- **Docs:** sections 8 to 11 (AI, core gameplay, economy, art), the art bible (`docs/look/ART_BIBLE.md`).
+- **Coordinator:** scav groups (ai.8), the Broker's zones fixed, the mesh library split (tech.13), the hazy sky textures
+  (art.2, not yet switched on), mall kit B halved in triangles and dulled (art.6, art.8), AI sleep beyond 300 m (ai-2).

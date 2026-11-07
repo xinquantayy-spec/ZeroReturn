@@ -205,7 +205,7 @@ Checked in Studio: the logic tests (184 of 184), the 2D build pictures of every 
 | Saved weapon builds; buy the missing parts from the modding screen | Not built | **Gap** |
 | Sight zeroing and variable zoom | Page Up / Page Down zero in Tarkov's steps; Alt + right mouse steps a variable scope's power | Same |
 | Inspect any item in 3D | Since 2026-10-31 the INSPECT window turns a 3D model of every gun as built and of any item with a loose-loot or worn model; the rest show their picture | Same where a model exists |
-| Durability and malfunctions | Built (M11 part B, `Combat.luau`): wear per shot, more when hot; Tarkov's four malfunctions below 93 % condition, found with L and cleared with Shift+T; trader repairs and the repair kit lower the maximum. Not yet checked in Studio; heat stages, cook-offs and the quick sidearm draw are audit gameplay.11 (`docs/design/EFT_PARITY.md`, section 9) | Same, less the gameplay.11 rules |
+| Durability and malfunctions | Built (M11 part B, `Combat.luau`): wear per shot, more when hot; Tarkov's four malfunctions on Tarkov's rules (gameplay.11, 2026-11-08: from 93 % condition nothing but heat causes one; heat 0-200 with cook-offs and maximum-durability loss), found with L and cleared with Shift+T; trader repairs and the repair kit lower the maximum. Not yet checked in Studio; heat stages, cook-offs and the quick sidearm draw are audit gameplay.11 (`docs/design/EFT_PARITY.md`, section 9) | Same, less the gameplay.11 rules |
 
 The gaps are listed in `KNOWN_ISSUES.md` and queued in `NEXT_TASK.md`.
 
