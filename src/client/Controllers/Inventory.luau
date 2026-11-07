@@ -16,7 +16,10 @@ local Util = require(Shared.Util)
 local Maps = require(Shared.Maps)
 local TD = require(Shared.TraderData)
 
-local Inventory = { open = false, tab = "GEAR" }
+local Inventory = { open = false, tab = "GEAR", cpanel = "GEAR" }
+-- ui-3a: on a phone (under about 500 pt of height) one panel at a time behind a rail: EQUIPMENT, BAGS, STASH (or LOOT)
+local compact = false
+local COMPACT_H = 500
 local ctx, K
 local gui, panel, menu, ghost
 local loot = nil
@@ -583,7 +586,7 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 		K.itemIcon(t, it.id, pw, ph, rotated, not isKnown, 4)
 	end
 	local small = math.min(pw, ph) < 40
-	K.label(t, isKnown and d.short or "?", small and 10 or 12, { Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -5, 0, 13), FontFace = K.bold, ZIndex = 5, TextTruncate = Enum.TextTruncate.AtEnd, TextXAlignment = Enum.TextXAlignment.Right })
+	K.label(t, isKnown and d.short or "?", (small and 10 or 12) + (compact and 1 or 0), { Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -5, 0, 13), FontFace = K.bold, ZIndex = 5, TextTruncate = Enum.TextTruncate.AtEnd, TextXAlignment = Enum.TextXAlignment.Right })
 	local corner = cornerText(view, it)
 	if corner ~= "" then
 		K.label(t, corner, small and 10 or 11, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, -1), Size = UDim2.new(1, -6, 0, 13), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 5 })
@@ -837,6 +840,7 @@ local function drawGear(parent, view, ref, cell, width)
 end
 
 local detail
+local drawOther
 -- Tarkov's INSPECT window (Inspect.luau): the item's 3D model and its full attribute sheet
 local function openInspect(sel)
 	local view = viewOf(sel.ref)
@@ -860,9 +864,13 @@ function detail(parent, w, h, selOverride)
 		local d0 = defs[it.id]
 		local kn = known(it.id)
 		local sw0, sh0 = sizeOf(it)
-		K.label(det, kn and string.upper(d0.name) or "UNKNOWN ITEM", 13, { FontFace = K.bold, Size = UDim2.new(0.34, 0, 0, 15) })
-		K.label(det, kn and string.format("%s %s  ·  %.2f kg  ·  %dx%d%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), sw0, sh0, it.fir and "  ·  FOUND IN RAID" or "") or "Examine it to identify it.", 11, { Position = UDim2.fromOffset(0, 15), Size = UDim2.new(0.34, 0, 0, 14), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd })
-		local row = K.frame(det, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.66, -6, 1, 0) })
+		local nameW = compact and 0.3 or 0.34
+		K.label(det, kn and string.upper(d0.name) or "UNKNOWN ITEM", compact and 14 or 13, { FontFace = K.bold, Size = UDim2.new(nameW, 0, 0, compact and 18 or 15), TextTruncate = Enum.TextTruncate.AtEnd })
+		K.label(det, kn and string.format("%s %s  ·  %.2f kg  ·  %dx%d%s", Util.commas(Items.valueOf(it)), Config.CURRENCY, massOf(view, sel.g), sw0, sh0, it.fir and "  ·  FOUND IN RAID" or "") or "Examine it to identify it.", compact and 13 or 11, { Position = UDim2.fromOffset(0, compact and 20 or 15), Size = UDim2.new(nameW, 0, 0, compact and 16 or 14), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd })
+		local row = K.new("ScrollingFrame", {
+			BackgroundTransparency = 1, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(1 - nameW, -6, 1, 0),
+			ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new(), ScrollBarThickness = 0, Selectable = false,
+		}, det)
 		K.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, row)
 		local list = actionsFor(sel.ref, sel.g)
 		if kn then
@@ -871,7 +879,7 @@ function detail(parent, w, h, selOverride)
 			end })
 		end
 		for i, a in list do
-			local b = K.button(row, a.label, { TextSize = 10, LayoutOrder = i, Size = UDim2.fromOffset(math.max(70, #a.label * 7 + 16), h - 10) })
+			local b = K.button(row, a.label, { TextSize = compact and 13 or 10, LayoutOrder = i, Size = UDim2.fromOffset(compact and math.max(84, #a.label * 9 + 20) or math.max(70, #a.label * 7 + 16), h - 10) })
 			if a.tone == "warn" then
 				b.TextColor3 = K.C.orange
 			elseif a.tone == "good" then
@@ -882,7 +890,11 @@ function detail(parent, w, h, selOverride)
 		return
 	end
 	if not it then
-		K.label(det, ctx.Input.device() == "Gamepad" and "Select an item (A), then a free cell or slot." or "Drag items between grids. Right-click for actions, Ctrl+click quick move, Alt+click equip, R rotates while dragging.", 12, { Size = UDim2.fromScale(1, 1), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Center })
+		local dev = ctx.Input.device()
+		local hint = dev == "Gamepad" and "Select an item (A), then a free cell or slot."
+			or (dev == "Touch" or compact) and "Tap an item, then a free cell or slot (switch panels on the left), or use its buttons here."
+			or "Drag items between grids. Right-click for actions, Ctrl+click quick move, Alt+click equip, R rotates while dragging."
+		K.label(det, hint, compact and 13 or 12, { Size = UDim2.fromScale(1, 1), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Center })
 		return
 	end
 	local d = defs[it.id]
@@ -949,6 +961,198 @@ function detail(parent, w, h, selOverride)
 	local _ = grid
 end
 
+-- the third column (Tarkov's right side): what you are looting in a raid, the stash out of one (PC and phone layouts)
+function drawOther(right, rightW, cell, d, inRaid)
+	if loot and inRaid then
+		local ref = "c:" .. loot.cid
+		local title = string.upper(loot.label) .. ((loot.searching and not loot.searched) and "   ·   SEARCHING..." or "")
+		K.label(right, title, 13, { Name = "LootTitle", Size = UDim2.new(1, 0, 0, 18), FontFace = K.bold, TextColor3 = K.C.ochre })
+		local h2
+		if loot.body then
+			h2 = drawGear(K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 2000) }), loot, ref, cell, rightW)
+		else
+			local _, gh2 = drawGrid(right, loot, ref, "main", "CONTENTS", loot.mainW or 5, loot.mainH or 4, cell, 0, 24, nil)
+			h2 = gh2
+		end
+		local takeAll = K.button(right, "TAKE ALL", { Name = "Btn_TAKEALL", Position = UDim2.fromOffset(0, h2 + 34), Size = UDim2.fromOffset(160, 30) })
+		takeAll.Activated:Connect(function()
+			local v = viewOf(ref)
+			if not v then
+				return
+			end
+			local list = {}
+			for cid, pl in v.grids or {} do
+				if cid == "main" or cid == "pockets" then
+					for g in pl do
+						table.insert(list, g)
+					end
+				end
+			end
+			for _, g in list do
+				local r = req({ op = "quick", g = g, from = ref, to = "me" })
+				if not r or not r.ok then
+					break
+				end
+			end
+		end)
+		right.CanvasSize = UDim2.fromOffset(0, h2 + 80)
+	elseif not inRaid then
+		local stashH = d.stashH or Config.STASH_H
+		-- on a phone the tools get a row of their own above the stash, at finger size
+		local toolH = compact and 34 or 17
+		local y0 = compact and toolH + 4 or 0
+		local _, sh = drawGrid(right, d, "me", "stash", "STASH  " .. Config.STASH_W .. "x" .. stashH, Config.STASH_W, stashH, cell, 0, y0, nil)
+		sh += y0
+		right.CanvasSize = UDim2.fromOffset(0, sh + 60)
+		-- Tarkov's stash tools: SORT and SEARCH (by name or category; press Enter)
+		local sx = Config.STASH_W * cell
+		local sortB = K.button(right, "SORT", { Name = "Sort", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(sx, -1), Size = UDim2.fromOffset(compact and 84 or 64, toolH), TextSize = compact and 13 or 10 })
+		sortB.Activated:Connect(function()
+			req({ op = "sort" })
+		end)
+		local box = K.new("TextBox", {
+			Name = "Search", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(sx - (compact and 90 or 70), -1), Size = UDim2.fromOffset(compact and 190 or 150, toolH), Text = searchText,
+			PlaceholderText = "SEARCH", ClearTextOnFocus = false, TextSize = compact and 13 or 10, FontFace = K.font, TextColor3 = K.C.text, PlaceholderColor3 = K.C.dim,
+			BackgroundColor3 = K.C.panel2, BorderSizePixel = 0, TextXAlignment = Enum.TextXAlignment.Left,
+		}, right)
+		K.new("UIPadding", { PaddingLeft = UDim.new(0, 5) }, box)
+		box.FocusLost:Connect(function()
+			if box.Text ~= searchText then
+				searchText = box.Text
+				Inventory.render()
+			end
+		end)
+		local row = K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, sh + 6), Size = UDim2.new(1, 0, 0, 32) })
+		K.list(row, Enum.FillDirection.Horizontal, 6)
+		local hasGun = false
+		for _, it in d.items do
+			local idf = defs[it.id]
+			if idf and (idf.kind == "weapon" or idf.kind == "pistol") then
+				hasGun = true
+			end
+		end
+		if not hasGun and (d.money or 0) < (Config.RECOVERY_MONEY or 0) then
+			K.button(row, "CLAIM RECOVERY KIT", { Size = UDim2.fromOffset(200, 30), TextSize = 13, TextColor3 = K.C.ochre }, function()
+				req({ op = "recovery" })
+			end)
+		end
+		local cl = d.claims
+		if cl and cl.ready > 0 then
+			K.button(row, string.format("COLLECT INSURANCE (%d)", cl.ready), { Size = UDim2.fromOffset(230, 30), TextSize = 13, TextColor3 = K.C.green }, function()
+				req({ op = "claim" })
+			end)
+		elseif cl and cl.waiting > 0 then
+			K.label(row, string.format("INSURANCE: %d ITEM(S) RETURNING IN %s", cl.waiting, Util.clock(math.max(0, cl.nextIn or 0))), 12, { Size = UDim2.fromOffset(330, 30), TextColor3 = K.C.green })
+		end
+	else
+		K.label(right, "Open a container or body to loot it.\nPress " .. ctx.Input.label("Inventory") .. " to close.", 13, { Size = UDim2.new(1, 0, 0, 40), TextColor3 = K.C.dim, TextWrapped = true })
+	end
+end
+
+-- ui-3a, the phone layout (under 500 pt of height; checked at 844x390, 667x375 and 932x430): one row of tabs, then a
+-- rail of three panels (EQUIPMENT, BAGS, STASH or LOOT) beside one panel at a time; 36-pt cells, 44-pt buttons, 13-pt text.
+-- Tarkov's PC columns hold the same three things side by side; a phone cannot fit them at a readable size.
+function Inventory.renderCompact(d, W, H, inRaid)
+	local weight = gearWeight(d)
+	local closeW, gap = 84, 6
+	local tabs = { "GEAR", "HEALTH", "SKILLS", "MASTERING", inRaid and "TASKS" or "OVERALL" }
+	if not table.find(tabs, Inventory.tab) then
+		Inventory.tab = "GEAR"
+	end
+	local tw = math.clamp(math.floor((W - closeW - 3 * gap - 150) / #tabs) - 4, 76, 104)
+	local tabBar = K.frame(panel, { Name = "Tabs", BackgroundTransparency = 1, Position = UDim2.fromOffset(gap, gap), Size = UDim2.fromOffset(#tabs * (tw + 4), 40) })
+	K.list(tabBar, Enum.FillDirection.Horizontal, 4)
+	for _, t in tabs do
+		local on = Inventory.tab == t
+		local b = K.button(tabBar, t, { Name = "Tab_" .. t, Size = UDim2.fromOffset(tw, 40), TextSize = 13, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.dim })
+		b.Activated:Connect(function()
+			if Inventory.tab ~= t then
+				Inventory.tab = t
+				Inventory.render()
+			end
+		end)
+	end
+	local infoX = gap + #tabs * (tw + 4) + gap
+	local info = string.format("%.1f KG", weight)
+	if not inRaid then
+		info ..= string.format("  ·  %s %s", Util.commas(d.money or 0), Config.CURRENCY)
+	end
+	if status and os.clock() - status.t0 < status.dur then
+		info = string.format("%s %.1fs", status.text, status.dur - (os.clock() - status.t0))
+	end
+	K.label(panel, info, 13, { Position = UDim2.fromOffset(infoX, gap), Size = UDim2.fromOffset(math.max(0, W - infoX - closeW - 2 * gap), 40), TextColor3 = weight > 40 and K.C.orange or K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Center })
+	local close = K.button(panel, "CLOSE", { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -gap, 0, gap), Size = UDim2.fromOffset(closeW, 40), TextSize = 13 })
+	close.Activated:Connect(Inventory.close)
+	local top = gap + 40 + gap
+	if Inventory.tab ~= "GEAR" and ctx.Character then
+		local body = K.new("ScrollingFrame", {
+			Name = "Character", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(gap, top), Size = UDim2.fromOffset(W - 2 * gap, H - top - gap),
+			ScrollBarThickness = 6, CanvasSize = UDim2.new(), Selectable = false,
+		}, panel)
+		body.CanvasSize = UDim2.fromOffset(0, ctx.Character.draw(Inventory.tab, body, W - 2 * gap - 12, H - top - gap) + 20)
+		return
+	end
+	-- the rail: three panels, the open one lit; the item picked up stays picked up across panels
+	local railW, detailH, cell = 96, 54, 36
+	Inventory.cell = cell
+	local bodyH = H - top - detailH - 2 * gap
+	local otherName = (inRaid or loot) and "LOOT" or "STASH"
+	local rail = K.frame(panel, { Name = "Rail", BackgroundTransparency = 1, Position = UDim2.fromOffset(gap, top), Size = UDim2.fromOffset(railW, bodyH) })
+	K.list(rail, nil, 6)
+	if not (Inventory.cpanel == "GEAR" or Inventory.cpanel == "BAGS" or Inventory.cpanel == "OTHER") then
+		Inventory.cpanel = "GEAR"
+	end
+	-- (the worn-gear panel says EQUIPMENT: the GEAR tab above is the whole screen, as in Tarkov)
+	for i, pnl in { { "GEAR", "EQUIPMENT" }, { "BAGS", "BAGS" }, { "OTHER", otherName } } do
+		local on = Inventory.cpanel == pnl[1]
+		local b = K.button(rail, pnl[2], {
+			Name = "Rail_" .. pnl[1], LayoutOrder = i, Size = UDim2.new(1, 0, 0, 44), TextSize = 13,
+			BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = on and K.C.ochre or K.C.text,
+		})
+		b.Activated:Connect(function()
+			if Inventory.cpanel ~= pnl[1] then
+				Inventory.cpanel = pnl[1]
+				Inventory.render()
+			end
+		end)
+	end
+	if selected then
+		local sv = viewOf(selected.ref)
+		local sit = sv and sv.items[selected.g]
+		local sd = sit and defs[sit.id]
+		if sd then
+			K.label(rail, "MOVING\n" .. (known(sit.id) and sd.short or "?"), 13, {
+				Name = "Moving", LayoutOrder = 9, Size = UDim2.new(1, 0, 0, 40), TextWrapped = true, TextColor3 = K.C.ochre, FontFace = K.bold,
+			})
+		end
+	end
+	local x0 = gap + railW + gap
+	local cw = W - x0 - gap
+	local view = K.new("ScrollingFrame", {
+		Name = "Panel_" .. Inventory.cpanel, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(x0, top), Size = UDim2.fromOffset(cw, bodyH),
+		ScrollBarThickness = 6, CanvasSize = UDim2.new(), Selectable = false,
+	}, panel)
+	local nG, nS = #gridTargets, #slotTargets
+	if Inventory.cpanel == "GEAR" then
+		view.CanvasSize = UDim2.fromOffset(0, drawSlots(view, d, "me", cell, cw - 10) + 10)
+	elseif Inventory.cpanel == "BAGS" then
+		view.CanvasSize = UDim2.fromOffset(0, drawContainers(view, d, "me", cell, cw - 10) + 10)
+	else
+		drawOther(view, cw - 10, cell, d, inRaid)
+	end
+	for i = nG + 1, #gridTargets do
+		gridTargets[i].clip = gridTargets[i].clip or view
+	end
+	for i = nS + 1, #slotTargets do
+		slotTargets[i].clip = slotTargets[i].clip or view
+	end
+	local det = K.frame(panel, { BackgroundTransparency = 1, Position = UDim2.new(0, gap, 1, -detailH - gap), Size = UDim2.new(1, -2 * gap, 0, detailH) })
+	detail(det, W - 2 * gap, detailH)
+	if ctx.Input.device() == "Gamepad" then
+		K.focus(firstFocus)
+	end
+end
+
 function Inventory.render()
 	if not Inventory.open then
 		return
@@ -970,10 +1174,14 @@ function Inventory.render()
 	firstFocus = nil
 	local inRaid = ctx.State.inRaid()
 	local vp = K.viewport(gui)
-	local W = math.floor(math.min(vp.X - 12, 1360))
-	local H = math.floor(math.min(vp.Y - 8, 800))
+	compact = vp.Y < COMPACT_H
+	local W = compact and math.floor(vp.X) or math.floor(math.min(vp.X - 12, 1360))
+	local H = compact and math.floor(vp.Y) or math.floor(math.min(vp.Y - 8, 800))
 	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(panel, K.C.line, 0.45)
+	if compact then
+		return Inventory.renderCompact(d, W, H, inRaid)
+	end
 	-- header
 	local weight = gearWeight(d)
 	local head = inRaid and ("FIELD KIT  //  " .. Maps.nameOf(ctx.State.raid and ctx.State.raid.map)) or "HIDEOUT  //  STASH & GEAR"
@@ -1040,86 +1248,7 @@ function Inventory.render()
 	-- right: stash / container / body
 	local right = column("Other", 12 + leftW + midW + 22, rightW)
 	local nG, nS = #gridTargets, #slotTargets
-	if loot and inRaid then
-		local ref = "c:" .. loot.cid
-		local title = string.upper(loot.label) .. ((loot.searching and not loot.searched) and "   ·   SEARCHING..." or "")
-		K.label(right, title, 13, { Name = "LootTitle", Size = UDim2.new(1, 0, 0, 18), FontFace = K.bold, TextColor3 = K.C.ochre })
-		local h2
-		if loot.body then
-			h2 = drawGear(K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 2000) }), loot, ref, cell, rightW)
-		else
-			local _, gh2 = drawGrid(right, loot, ref, "main", "CONTENTS", loot.mainW or 5, loot.mainH or 4, cell, 0, 24, nil)
-			h2 = gh2
-		end
-		local takeAll = K.button(right, "TAKE ALL", { Name = "Btn_TAKEALL", Position = UDim2.fromOffset(0, h2 + 34), Size = UDim2.fromOffset(160, 30) })
-		takeAll.Activated:Connect(function()
-			local v = viewOf(ref)
-			if not v then
-				return
-			end
-			local list = {}
-			for cid, pl in v.grids or {} do
-				if cid == "main" or cid == "pockets" then
-					for g in pl do
-						table.insert(list, g)
-					end
-				end
-			end
-			for _, g in list do
-				local r = req({ op = "quick", g = g, from = ref, to = "me" })
-				if not r or not r.ok then
-					break
-				end
-			end
-		end)
-		right.CanvasSize = UDim2.fromOffset(0, h2 + 80)
-	elseif not inRaid then
-		local stashH = d.stashH or Config.STASH_H
-		local _, sh = drawGrid(right, d, "me", "stash", "STASH  " .. Config.STASH_W .. "x" .. stashH, Config.STASH_W, stashH, cell, 0, 0, nil)
-		right.CanvasSize = UDim2.fromOffset(0, sh + 60)
-		-- Tarkov's stash tools: SORT and SEARCH (by name or category; press Enter)
-		local sx = Config.STASH_W * cell
-		local sortB = K.button(right, "SORT", { Name = "Sort", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(sx, -1), Size = UDim2.fromOffset(64, 17), TextSize = 10 })
-		sortB.Activated:Connect(function()
-			req({ op = "sort" })
-		end)
-		local box = K.new("TextBox", {
-			Name = "Search", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(sx - 70, -1), Size = UDim2.fromOffset(150, 17), Text = searchText,
-			PlaceholderText = "SEARCH", ClearTextOnFocus = false, TextSize = 10, FontFace = K.font, TextColor3 = K.C.text, PlaceholderColor3 = K.C.dim,
-			BackgroundColor3 = K.C.panel2, BorderSizePixel = 0, TextXAlignment = Enum.TextXAlignment.Left,
-		}, right)
-		K.new("UIPadding", { PaddingLeft = UDim.new(0, 5) }, box)
-		box.FocusLost:Connect(function()
-			if box.Text ~= searchText then
-				searchText = box.Text
-				Inventory.render()
-			end
-		end)
-		local row = K.frame(right, { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, sh + 6), Size = UDim2.new(1, 0, 0, 32) })
-		K.list(row, Enum.FillDirection.Horizontal, 6)
-		local hasGun = false
-		for _, it in d.items do
-			local idf = defs[it.id]
-			if idf and (idf.kind == "weapon" or idf.kind == "pistol") then
-				hasGun = true
-			end
-		end
-		if not hasGun and (d.money or 0) < (Config.RECOVERY_MONEY or 0) then
-			K.button(row, "CLAIM RECOVERY KIT", { Size = UDim2.fromOffset(200, 30), TextSize = 13, TextColor3 = K.C.ochre }, function()
-				req({ op = "recovery" })
-			end)
-		end
-		local cl = d.claims
-		if cl and cl.ready > 0 then
-			K.button(row, string.format("COLLECT INSURANCE (%d)", cl.ready), { Size = UDim2.fromOffset(230, 30), TextSize = 13, TextColor3 = K.C.green }, function()
-				req({ op = "claim" })
-			end)
-		elseif cl and cl.waiting > 0 then
-			K.label(row, string.format("INSURANCE: %d ITEM(S) RETURNING IN %s", cl.waiting, Util.clock(math.max(0, cl.nextIn or 0))), 12, { Size = UDim2.fromOffset(330, 30), TextColor3 = K.C.green })
-		end
-	else
-		K.label(right, "Open a container or body to loot it.\nPress " .. ctx.Input.label("Inventory") .. " to close.", 13, { Size = UDim2.new(1, 0, 0, 40), TextColor3 = K.C.dim, TextWrapped = true })
-	end
+	drawOther(right, rightW, cell, d, inRaid)
 	for i = nG + 1, #gridTargets do
 		gridTargets[i].clip = right
 	end
@@ -1337,6 +1466,9 @@ function Inventory.init(c)
 		end
 	end)
 	c.State.on("loot", function(v)
+		if v and not loot then
+			Inventory.cpanel = "OTHER" -- a container or body just opened: show it first on a phone
+		end
 		loot = v
 		if Inventory.open then
 			Inventory.render()

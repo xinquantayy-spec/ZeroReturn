@@ -35,17 +35,20 @@ local function modal(w, h, title)
 		ctx.Inventory.close()
 	end
 	local vp = K.viewport(gui)
-	w = math.min(w, vp.X - 16)
-	h = math.min(h, vp.Y - 12)
+	-- ui-3a: a phone (under 500 pt of height) gets the whole screen with a thin margin
+	local phone = vp.Y < 500
+	w = phone and vp.X or math.min(w, vp.X - 16)
+	h = phone and vp.Y or math.min(h, vp.Y - 12)
+	local pad = phone and 6 or 14
 	local f = K.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(f, K.C.line, 0.4)
-	K.pad(f, 14)
-	K.label(f, title, 17, { FontFace = K.bold, Size = UDim2.new(1, 0, 0, 24) })
+	K.pad(f, pad)
+	K.label(f, title, 17, { FontFace = K.bold, Size = UDim2.new(1, 0, 0, phone and 36 or 24), TextYAlignment = phone and Enum.TextYAlignment.Center or nil })
 	f.Name = "Modal"
 	Screens.modal = f
 	ctx.Input.setMenu(true)
 	ctx.Interact.setEnabled(false)
-	return f, w - 28, h - 28
+	return f, w - 2 * pad, h - 2 * pad
 end
 Screens.openModal = modal
 

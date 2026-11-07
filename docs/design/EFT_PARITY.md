@@ -979,3 +979,19 @@ Gaps:
   the raider is moved to the other map's raid server (gameplay-7a, needs the published place).
 - **Merging plain wall and floor runs** was dropped after measuring: under 1 % of parts could merge (TEST_RESULTS, M2).
   The phone frame budget needs a phone measurement first (tech-2b).
+
+### Phone menus, M2 (ui-3a, 2026-11-07)
+
+Tarkov's inventory and trader screens are PC layouts: gear, containers and stash side by side; the trader's goods beside
+the stash with the deal along the bottom. Below about 500 pt of height (phones, exception 4) Zero Return shows the same
+panels one at a time:
+- **Inventory:** a rail of EQUIPMENT, BAGS and STASH (LOOT in a raid, opened first when a container or body opens). An
+  item picked up stays picked up while you switch panels, then a tap on a cell or slot places it.
+- **Traders:** a rail of GOODS, STASH, DEAL, TASKS and SERVICES; picking an offer opens DEAL.
+- **Sizes:** 36-pt cells (48 in the trader grids when there is room), 44-pt rail buttons, 13-pt text.
+- **Every other window** takes the whole screen with a thin margin on a phone.
+
+A PC (500 pt or taller) keeps Tarkov's layouts unchanged.
+
+Gaps: no phone has run these (tech-2b); the Hideout, flea market, messenger and handbook use the full-screen window but
+no layout of their own yet.

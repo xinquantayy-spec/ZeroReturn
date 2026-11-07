@@ -8,6 +8,20 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M2 phone menus, ui-3a (2026-11-07)
+
+Checked in Studio with the new `ZR_ClientDev preview` command, which lays the menus out as on a screen of a given size
+(centred in the Studio window). No phone has run them.
+
+| Screen | Result |
+|---|---|
+| Inventory at 844x390 | One row of tabs (GEAR, HEALTH, SKILLS, MASTERING, OVERALL), the weight and money, CLOSE; a rail of EQUIPMENT, BAGS and STASH beside one panel; 36-pt cells; the info bar below at 13-pt text. EQUIPMENT showed the health strip and the slots, BAGS the rig, pockets and backpack grids, STASH the 10x20 stash. |
+| Inventory at 932x430 | STASH with SEARCH and SORT on their own row at finger size (34 pt). |
+| Traders at 844x390 | Title row with level, money, restock and CLOSE; the trader tabs; a rail of GOODS, STASH, DEAL, TASKS, SERVICES; GOODS showed BUY/SELL, the categories and the assortment in 48-pt cells (2.5 rows visible, was under one row). |
+| Traders at 667x375 | STASH panel: the stash with items Vos will not buy dimmed; the trader tabs scroll sideways. |
+| Studio's own window | 1156 x 407 pt here, so Studio on this laptop now shows the phone layout too (any screen under 500 pt tall does). Mouse clicks select and place, as taps do. |
+| Not checked | A real phone; the DEAL panel with an offer picked (needs a tap); 667x375 for the inventory. |
+
 ## M2 lean servers, tech-4b (2026-11-07)
 
 | Test | Result |

@@ -262,6 +262,21 @@ if RunService:IsStudio() then
 		elseif cmd == "light" then
 			ctx.Weapon.toggleLight()
 			return tostring(ctx.Weapon.light)
+		elseif cmd == "invPanel" then
+			-- the phone layout's panel: "GEAR" (equipment), "BAGS" or "OTHER" (stash or loot)
+			ctx.Inventory.cpanel = a
+			if ctx.Inventory.open then
+				ctx.Inventory.render()
+			end
+			return tostring(ctx.Inventory.cpanel)
+		elseif cmd == "preview" then
+			-- a, b = width and height in points: menus lay out as on a screen that size (the phone layouts, ui-3a);
+			-- nil clears it. The panels draw centred at that size inside the Studio window.
+			ctx.UiKit.previewSize = (type(a) == "number" and type(b) == "number") and Vector2.new(a, b) or nil
+			if ctx.Inventory.open then
+				ctx.Inventory.render()
+			end
+			return tostring(ctx.UiKit.previewSize)
 		elseif cmd == "device" then
 			-- a = "Gamepad" / "Touch" / nil: what Input.device() answers (the gamepad and touch paths without one)
 			ctx.Input.forceDevice = a

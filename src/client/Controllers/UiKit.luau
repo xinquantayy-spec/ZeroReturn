@@ -135,6 +135,9 @@ function K.focus(obj)
 end
 
 function K.viewport(gui)
+	if K.previewSize then
+		return K.previewSize -- Studio preview of another screen size (ZR_ClientDev "preview")
+	end
 	if gui and gui.AbsoluteSize.Y > 0 then
 		return gui.AbsoluteSize -- safe area (excludes Roblox top bar / notches)
 	end
