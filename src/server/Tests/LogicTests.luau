@@ -639,6 +639,42 @@ function T.run(ctx)
 					and cl:FindFirstChild("ZR_MK_Van__paint") == nil and cl:FindFirstChild("ZR_NAT_Grass") ~= nil)
 		end
 	end
+	-- every item a trader's barter asks for can be had: found in a loot pool, bought from a trader or crafted
+	-- (CRACKED_LENS was in no pool, so VOS's 4x scope barter could never be done; economy helper, 2026-11-08)
+	do
+		local TDb = require(Shared.TraderData)
+		local HDb = require(Shared.HideoutData)
+		local got = {}
+		for _, pool in Loot.POOLS do
+			for _, e in pool do
+				if type(e) == "table" and e.id then
+					got[e.id] = true
+				end
+			end
+		end
+		for _, list in TDb.offers do
+			for _, of in list do
+				got[of.id] = true
+			end
+		end
+		for _, r in HDb.recipes or {} do
+			if r.get then
+				got[r.get[1]] = true
+			end
+		end
+		local missing = {}
+		for _, list in TDb.barters do
+			for _, bt in list do
+				for _, g in bt.give do
+					if not got[g[1]] and not table.find(missing, g[1]) then
+						table.insert(missing, g[1])
+					end
+				end
+			end
+		end
+		check("every barter ingredient can be found, bought or crafted" .. (#missing > 0 and (" (missing: " .. table.concat(missing, ", ") .. ")") or ""),
+			#missing == 0)
+	end
 	-- audit ai-2: EFT's sleep. Calm units over 300 m (937.5 studs) from every raider sleep; they wake inside 280 m, and the
 	-- gap between keeps them from flickering; a unit that is not calm never falls asleep
 	if ctx and ctx.AI and ctx.AI.sleepState then

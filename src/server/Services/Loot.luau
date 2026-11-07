@@ -167,6 +167,8 @@ local POOLS = {
 		{ id = "RAM_STICK", w = 8 }, { id = "POWER_BANK", w = 8 }, { id = "PHONE", w = 6 }, { id = "SIGNAL_COIL", w = 6 },
 		{ id = "BATTERY", w = 4 }, { id = "FLASH_MODULE", w = 5 }, { id = "GPU_CARD", w = 3 }, { id = "SEALED_DRIVE", w = 2 },
 		{ id = "DECK_TRANSCEIVER", w = 2 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "NV_MONO", w = 0.4 }, { id = "NV_QUAD", w = 0.1 },
+		-- VOS's 4x scope barter needs one, and it was in no pool (economy helper, 2026-11-08)
+		{ id = "CRACKED_LENS", w = 3 },
 	},
 	pharmacy = {
 		{ id = "BANDAGE", w = 18 }, { id = "PAINKILLERS", w = 16 }, { id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 },
