@@ -3,3 +3,6 @@ build/
 *.rbxl.lock
 *.rbxlx.lock
 __pycache__/
+
+# helper threads' git worktrees (each is its own checkout of a branch)
+.claude/
