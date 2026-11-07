@@ -135,12 +135,16 @@ function Menus.messenger(f, x, y, w, h, d, refresh)
 end
 
 -- ── HANDBOOK ─────────────────────────────────────────────────────────────────
+-- signal flares are EFT's RSP-30 cartridges, filed under SPECIAL EQUIPMENT (tarkovforge.com/special-equipment, 2026);
+-- they had no category here, so the handbook and the flea market never listed them (audit economy.11)
 local CAT = {
 	weapon = "WEAPONS", pistol = "WEAPONS", melee = "WEAPONS", mod = "WEAPON PARTS", mag = "MAGAZINES", ammo = "AMMUNITION", grenade = "GRENADES",
 	armor = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", eyewear = "GEAR", secure = "CONTAINERS",
 	med = "MEDICATION", food = "PROVISIONS", key = "KEYS", loot = "BARTER ITEMS", repair = "BARTER ITEMS", quest = "INFO ITEMS", nvg = "GEAR",
+	flare = "SPECIAL EQUIPMENT",
 }
-local CATS = { "ALL", "WEAPONS", "WEAPON PARTS", "MAGAZINES", "AMMUNITION", "GRENADES", "GEAR", "CONTAINERS", "MEDICATION", "PROVISIONS", "KEYS", "BARTER ITEMS", "INFO ITEMS", "WISH LIST" }
+local CATS = { "ALL", "WEAPONS", "WEAPON PARTS", "MAGAZINES", "AMMUNITION", "GRENADES", "GEAR", "CONTAINERS", "MEDICATION", "PROVISIONS", "KEYS", "BARTER ITEMS", "SPECIAL EQUIPMENT", "INFO ITEMS", "WISH LIST" }
+Menus.CAT, Menus.CATS = CAT, CATS -- read by EconomyTests (every item kind has a category)
 local sorted
 local function allItems()
 	if not sorted then
