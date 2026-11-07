@@ -978,7 +978,7 @@ return function(B)
 		n.post = #posts
 	end)
 
-	-- ── THE CARETAKER (Interchange's Killa): 60 %, five zones; Tagilla (the garage hammer boss) is not built: the AI keeps one boss ──
+	-- ── THE CARETAKER (Interchange's Killa): 60 %, five zones (Tagilla is THE STOKER, below) ──
 	local BOSS_ZONES = {
 		{ "CENTRAL CONCOURSE", 1, { { 265.6, -143.8 }, { 330, -180 }, { 390, -150 }, { 330, -115 }, { 262, -115 }, { 200, -146 } } },
 		{ "CENTRAL MALL", 2, { { 134.4, -137.5 }, { 134, -176 }, { 60, -176 }, { 60, -116 }, { 134, -116 } } },

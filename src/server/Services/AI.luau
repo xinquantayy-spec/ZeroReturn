@@ -4,12 +4,13 @@
 -- Perception: vision builds awareness over time (distance, stance, movement, weapon light), hearing of
 -- footsteps and gunshots, suppression from near misses, call-outs to nearby allies.
 -- Tactics: cover points generated from the map, peek-and-hide, reload and heal in cover, strafe in the open,
--- search the last known position, followers stay with the boss and flank.
+-- search the last known position; followers keep their slots round their leader (bosses' guards, scav groups).
 -- Grenades (M11): units with frags or stun charges flush targets that stay hidden behind cover, throw smoke to
 -- cover a retreat, run from grenades that land near them; smoke blocks their sight, flashes blind and deafen.
 -- Weapons are real: the rounds come from the AI's own magazines, reloads use its rig, every hit goes through the
 -- same ballistics/armour model as players, and the body drops everything it carried.
--- A director spawns scavs at raid start, tops up as players join and sends waves through the raid.
+-- A director spawns scavs at raid start, alone or in groups of two or three, tops up as players join and sends
+-- waves through the raid.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local PathfindingService = game:GetService("PathfindingService")
