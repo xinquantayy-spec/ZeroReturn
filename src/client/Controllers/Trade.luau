@@ -670,65 +670,101 @@ end
 local function tasksTab(f, x, y, w, h, d, tid)
 	local econ = d.econ or {}
 	local right = scroller(f, x, y, w, h, "Tasks_" .. tid)
-	local any = false
+	local mine = {}
 	for _, q in QD.list do
 		if q.trader == tid then
-			any = true
-			local qs = (d.quests and d.quests[q.id]) or { s = "locked", p = {} }
-			local statusText = ({ locked = "LOCKED", available = "AVAILABLE", active = "ACTIVE", claimed = "COMPLETED" })[qs.s] or qs.s
-			local color = ({ locked = K.C.dim, available = K.C.ochre, active = K.C.green, claimed = K.C.dim })[qs.s] or K.C.text
-			text(right, string.upper(q.name) .. "   ·   " .. statusText, color, 13, true)
-			if qs.s == "locked" then
-				local why = {}
-				if (econ.level or 1) < (q.level or 1) then
-					table.insert(why, "level " .. q.level)
+			table.insert(mine, q)
+		end
+	end
+	-- Tarkov 0.16.7: pinned tasks at the top of the list (audit ui.14)
+	if ctx.Character and ctx.Character.pinnedFirst then
+		mine = ctx.Character.pinnedFirst(mine, d)
+	end
+	for _, q in mine do
+		local qs = (d.quests and d.quests[q.id]) or { s = "locked", p = {} }
+		local statusText = ({ locked = "LOCKED", available = "AVAILABLE", active = "ACTIVE", claimed = "COMPLETED" })[qs.s] or qs.s
+		local color = ({ locked = K.C.dim, available = K.C.ochre, active = K.C.green, claimed = K.C.dim })[qs.s] or K.C.text
+		local title = string.upper(q.name) .. "   ·   " .. statusText
+		if qs.s == "active" and ctx.Character then
+			-- an active task takes a pin: it stays at the top here and in the character's TASKS tab
+			local pinned = ctx.Character.isPinned(q.id)
+			local r = K.frame(right, { Name = "Task_" .. q.id, BackgroundTransparency = 1, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, compact and 40 or 26) })
+			K.label(r, title, 13, { FontFace = K.bold, TextColor3 = color, Size = UDim2.new(1, -(compact and 110 or 92), 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
+			local pb = K.button(r, pinned and "PINNED" or "PIN", {
+				Name = "Pin", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -3, 0.5, 0), Size = UDim2.fromOffset(compact and 104 or 86, compact and 36 or 24),
+				TextSize = compact and 13 or 11, TextColor3 = pinned and K.C.ochre or K.C.dim,
+			})
+			pb.Activated:Connect(function()
+				ctx.Character.setPin(q.id, not pinned)
+				Trade.refresh()
+			end)
+		else
+			text(right, title, color, 13, true)
+		end
+		if qs.s == "locked" then
+			local why = {}
+			if (econ.level or 1) < (q.level or 1) then
+				table.insert(why, "level " .. q.level)
+			end
+			if q.after then
+				table.insert(why, "after " .. QD.byId[q.after].name)
+			end
+			-- EFT 1.1.0's collector rules (audit economy.7, the server checks them in Quests.status): more finished tasks,
+			-- a Fence standing, a loyalty level with every trader
+			for _, id in q.needs or {} do
+				local nq = d.quests and d.quests[id]
+				if not (nq and nq.s == "claimed") then
+					table.insert(why, "after " .. (QD.byId[id] and QD.byId[id].name or id))
 				end
-				if q.after then
-					table.insert(why, "after " .. QD.byId[q.after].name)
+			end
+			if q.karma and (econ.karma or 0) < q.karma then
+				table.insert(why, string.format("karma %.1f", q.karma))
+			end
+			if q.ll then
+				table.insert(why, "loyalty " .. q.ll .. " with every trader")
+			end
+			text(right, #why > 0 and ("Requires " .. table.concat(why, ", ") .. ".") or "Not offered yet.", K.C.dim, 11)
+		else
+			text(right, q.desc, K.C.dim, 11)
+			local complete = true
+			for i, o in q.obj do
+				local p = (qs.p and qs.p[i]) or 0
+				if qs.s == "claimed" then
+					p = o.n
 				end
-				text(right, "Requires " .. table.concat(why, ", ") .. ".", K.C.dim, 11)
-			else
-				text(right, q.desc, K.C.dim, 11)
-				local complete = true
-				for i, o in q.obj do
-					local p = (qs.p and qs.p[i]) or 0
-					if qs.s == "claimed" then
-						p = o.n
-					end
-					complete = complete and p >= o.n
-					local what = QD.describe(o)
-					if o.kind == "handin" then
-						what = what .. ": " .. Items.defs[o.item].name
-					end
-					text(right, string.format("  •  %s   %s", what, (qs.s == "available") and ("x" .. o.n) or have(p, o.n)), K.C.text, 11)
+				complete = complete and p >= o.n
+				local what = QD.describe(o)
+				if o.kind == "handin" then
+					what = what .. ": " .. Items.defs[o.item].name
 				end
-				local r = q.reward or {}
-				local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
-				if r.rep then
-					table.insert(rew, string.format("+%.2f standing", r.rep))
-				end
-				if r.karma then
-					table.insert(rew, string.format("+%.1f karma", r.karma))
-				end
-				for _, e in r.items or {} do
-					table.insert(rew, Items.defs[e[1]].name .. ((e[2] or 1) > 1 and (" x" .. e[2]) or ""))
-				end
-				text(right, "  REWARD  " .. table.concat(rew, "  ·  "), K.C.green, 11)
-				if qs.s == "available" then
-					local _, b = row(right, "", "", "ACCEPT", true, function()
-						req("quest", { op = "accept", id = q.id })
-					end)
-					b.Name = "Accept_" .. q.id
-				elseif qs.s == "active" then
-					local _, b = row(right, "", complete and "READY" or "IN PROGRESS", "TURN IN", complete, function()
-						req("quest", { op = "turnin", id = q.id })
-					end, complete and K.C.green or K.C.dim)
-					b.Name = "TurnIn_" .. q.id
-				end
+				text(right, string.format("  •  %s   %s", what, (qs.s == "available") and ("x" .. o.n) or have(p, o.n)), K.C.text, 11)
+			end
+			local r = q.reward or {}
+			local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
+			if r.rep then
+				table.insert(rew, string.format("+%.2f standing", r.rep))
+			end
+			if r.karma then
+				table.insert(rew, string.format("+%.1f karma", r.karma))
+			end
+			for _, e in r.items or {} do
+				table.insert(rew, Items.defs[e[1]].name .. ((e[2] or 1) > 1 and (" x" .. e[2]) or ""))
+			end
+			text(right, "  REWARD  " .. table.concat(rew, "  ·  "), K.C.green, 11)
+			if qs.s == "available" then
+				local _, b = row(right, "", "", "ACCEPT", true, function()
+					req("quest", { op = "accept", id = q.id })
+				end)
+				b.Name = "Accept_" .. q.id
+			elseif qs.s == "active" then
+				local _, b = row(right, "", complete and "READY" or "IN PROGRESS", "TURN IN", complete, function()
+					req("quest", { op = "turnin", id = q.id })
+				end, complete and K.C.green or K.C.dim)
+				b.Name = "TurnIn_" .. q.id
 			end
 		end
 	end
-	if not any then
+	if #mine == 0 then
 		text(right, "No tasks.", K.C.dim)
 	end
 end

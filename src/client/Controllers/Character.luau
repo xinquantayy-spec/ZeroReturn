@@ -1,17 +1,53 @@
 --!nonstrict
 -- Tarkov's character tabs inside the inventory screen (docs/design/EFT_PARITY.md section 3): HEALTH (the body by part
 -- with bleeding and fractures, energy, hydration, weight and effects), SKILLS, MASTERING (weapon mastering by group,
--- docs/design/MASTERING.md), OVERALL (out of raid: level, raids, survival rate, kills, karma) and TASKS (in a raid:
--- active tasks and their progress). GEAR stays the inventory itself.
+-- docs/design/MASTERING.md), OVERALL (out of raid: level, raids, survival rate, kills, karma) and TASKS (in and out of a
+-- raid: active tasks and their progress, pinned ones first). GEAR stays the inventory itself.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local QD = require(Shared.QuestData)
 local P = require(Shared.Progress)
+local TD = require(Shared.TraderData)
 
 local Character = {}
 local ctx, K
+
+-- ── pinned tasks (audit ui.14) ──────────────────────────────────────────────────
+-- Tarkov 0.16.7 pins tasks "at the top of the list on the task tab" (patch notes); here the character's TASKS tab and each
+-- trader's TASKS tab. Only an active task takes a pin (AltChar: "pinning active quests"). The pins are kept in the
+-- profile's settings (pins = { [task id] = true }, the settings request's `pin`), so they last across sessions.
+function Character.isPinned(id)
+	local pins = ctx and ctx.Settings.data.pins
+	return type(pins) == "table" and pins[id] == true
+end
+
+function Character.setPin(id, on)
+	local S = ctx.Settings.data
+	if type(S.pins) ~= "table" then
+		S.pins = {}
+	end
+	S.pins[id] = on and true or nil
+	task.spawn(ctx.State.req, "settings", { pin = { id = id, on = on == true } })
+end
+
+-- the tasks of `list` with the pinned active ones first, each part in the list's own order
+function Character.pinnedFirst(list, d)
+	local top, rest = {}, {}
+	for _, q in list do
+		local qs = d and d.quests and d.quests[q.id]
+		if qs and qs.s == "active" and Character.isPinned(q.id) then
+			table.insert(top, q)
+		else
+			table.insert(rest, q)
+		end
+	end
+	for _, q in rest do
+		table.insert(top, q)
+	end
+	return top
+end
 
 local PARTS = {
 	-- body diagram: part, label, column (0..2), row (0..3)
@@ -242,31 +278,64 @@ local function overall(f, w)
 	end
 end
 
+-- the active tasks of every trader, pinned ones first (audit ui.14), each with its objectives and progress; PIN keeps
+-- one at the top here and in its trader's list. Turning in stays at the trader, as in Tarkov.
 local function tasks(f, w)
 	local d = ctx.State.data
+	local big = K.viewport().Y < 500 -- a phone: finger-sized PIN buttons (ui-3a)
+	local btnW, btnH = big and 104 or 86, big and 36 or 22
 	K.label(f, "TASKS", 15, { FontFace = K.bold, Position = UDim2.fromOffset(10, 0), Size = UDim2.fromOffset(300, 20) })
-	local y = 26
-	local any = false
+	K.label(f, "Pinned tasks stay at the top of this list and of the trader's. Tasks are taken and turned in at the traders.", 11, {
+		Position = UDim2.fromOffset(10, 20), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd,
+	})
+	local y = 42
+	local list = {}
 	for _, q in QD.list do
 		local qs = d and d.quests and d.quests[q.id]
 		if qs and qs.s == "active" then
-			any = true
-			K.label(f, string.upper(q.name) .. "   ·   " .. (ctx.State.data.econ and q.trader and string.upper(q.trader) or ""), 13, { FontFace = K.bold, Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 18) })
-			y += 20
-			for i, o in q.obj do
-				local p = (qs.p and qs.p[i]) or 0
-				local what = QD.describe(o)
-				if o.kind == "handin" then
-					what ..= ": " .. Items.defs[o.item].name
-				end
-				K.label(f, string.format("  •  %s   %d/%d", what, math.min(p, o.n), o.n), 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = p >= o.n and K.C.green or K.C.text })
-				y += 18
-			end
-			y += 8
+			table.insert(list, q)
 		end
 	end
-	if not any then
+	for _, q in Character.pinnedFirst(list, d) do
+		local qs = d.quests[q.id]
+		local pinned = Character.isPinned(q.id)
+		local done = true
+		for i, o in q.obj do
+			if ((qs.p and qs.p[i]) or 0) < o.n then
+				done = false
+			end
+		end
+		local tr = TD.defs[q.trader]
+		local head = string.upper(q.name) .. "   ·   " .. (tr and tr.name or string.upper(tostring(q.trader))) .. (done and "   ·   READY TO TURN IN" or "")
+		K.label(f, head, 13, {
+			FontFace = K.bold, Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 30 - btnW, btnH), TextTruncate = Enum.TextTruncate.AtEnd,
+			TextColor3 = done and K.C.green or (pinned and K.C.ochre or K.C.text),
+		})
+		local pb = K.button(f, pinned and "PINNED" or "PIN", {
+			Name = "Pin_" .. q.id, Position = UDim2.fromOffset(w - 10 - btnW, y), Size = UDim2.fromOffset(btnW, btnH), TextSize = big and 13 or 11,
+			TextColor3 = pinned and K.C.ochre or K.C.dim,
+		})
+		pb.Activated:Connect(function()
+			Character.setPin(q.id, not pinned)
+			if ctx.Inventory.open then
+				ctx.Inventory.render()
+			end
+		end)
+		y += btnH + 4
+		for i, o in q.obj do
+			local p = (qs.p and qs.p[i]) or 0
+			local what = QD.describe(o)
+			if o.kind == "handin" then
+				what ..= ": " .. Items.defs[o.item].name
+			end
+			K.label(f, string.format("  •  %s   %d/%d", what, math.min(p, o.n), o.n), 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = p >= o.n and K.C.green or K.C.text })
+			y += 18
+		end
+		y += 10
+	end
+	if #list == 0 then
 		K.label(f, "No active tasks. Take tasks from the traders in the bunker.", 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = K.C.dim })
+		y += 20
 	end
 	return y
 end
