@@ -2,9 +2,10 @@
 -- Tarkov's flea market (docs/design/EFT_PARITY.md section 3), adapted to Roblox's small servers: the market is
 -- other operators' offers (a deterministic set per 15-minute window, priced around each item's value) plus your own
 -- offers, which other operators buy over time (the closer to the market price, the sooner). Tarkov's rules: unlocked
--- at level 15; only found-in-raid items can be offered; secure containers, quest items and money cannot; Tarkov's
--- listing fee formula; offer slots by flea rating (+0.01 per 50,000 sold, a loss when an offer is pulled or
--- expires); bought items are not found in raid; sales are reported in the messenger.
+-- at level 15, with EFT 1.0's category gates up to level 35 for buying (FleaRules.levelFor, audit economy.3); only
+-- found-in-raid items can be offered; secure containers, quest items, money and EFT's banned gear cannot
+-- (FleaRules.BANNED_ITEMS); Tarkov's listing fee formula; offer slots by flea rating (+0.01 per 50,000 sold, a loss when
+-- an offer is pulled or expires); bought items are not found in raid; sales are reported in the messenger.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
@@ -117,6 +118,10 @@ local function req(player, p)
 	elseif p.op == "buy" then
 		if type(p.id) ~= "string" or not Flea.tradeable(p.id) or type(p.i) ~= "number" then
 			return fail("BAD_INPUT")
+		end
+		-- EFT 1.0's category gates (audit economy.3): the offer is there, greyed out, until the player's level
+		if not Flea.canBuy(p.id, lvl) then
+			return fail("LOCKED", "Buying that on the flea market needs level " .. Flea.levelFor(p.id) .. ".")
 		end
 		local n = (type(p.n) == "number" and p.n == p.n) and math.clamp(math.floor(p.n), 1, 200) or 1
 		local w = window(os.time())

@@ -41,6 +41,26 @@ T.LL = {
 	{ level = 12, spent = 1200000, rep = 0.6 },
 }
 
+-- Fence (audit economy.5): his loyalty comes from karma, the Fence standing, as in EFT: LL1 at any standing, LL2 at 6.0,
+-- with no player level or money needed (EFT's trader base: minStanding 0 and 6, minLevel 1, minSalesSum 0, as the SPT
+-- server copies it; tarkovforge.com/traders/fence). His prices move with karma both ways: EFT's FenceSettings
+-- PriceModifier for each whole point of standing from -7 to +6 (EFT's globals, as SPT copies them in
+-- project/assets/database/globals.json); the standing is rounded to 0.01 and then down to a whole point, as SPT does.
+T.FENCE_LL2 = 6
+T.FENCE_PRICE = {
+	[-7] = 1.2, [-6] = 1.17, [-5] = 1.15, [-4] = 1.12, [-3] = 1.1, [-2] = 1.08, [-1] = 1.05,
+	[0] = 1, [1] = 0.97, [2] = 0.95, [3] = 0.92, [4] = 0.9, [5] = 0.85, [6] = 0.8,
+}
+local function standingOf(karma: number?): number
+	return math.floor((karma or 0) * 100 + 0.5) / 100
+end
+function T.fencePriceMul(karma: number?): number
+	return T.FENCE_PRICE[math.clamp(math.floor(standingOf(karma)), -7, 6)] or 1
+end
+function T.fenceLoyalty(karma: number?): number
+	return standingOf(karma) >= T.FENCE_LL2 and 2 or 1
+end
+
 -- offers: id, loyalty level, limit per restock, n = stack per purchase (ammo), a = rounds in a sold magazine
 local function o(id: string, ll: number, limit: number, n: number?): any
 	return { id = id, ll = ll, limit = limit, n = n or 1 }
@@ -127,6 +147,11 @@ T.barters = {
 		b("ARMOR_C3", 1, 1, { { "DUCT_TAPE", 2 }, { "WIRES", 2 }, { "BOLTS", 1 } }),
 		b("ARMOR_C4", 2, 1, { { "GOLD_CHAIN", 1 }, { "WIRES", 2 }, { "DUCT_TAPE", 2 } }),
 		b("BAG_RAID", 3, 1, { { "DECK_TRANSCEIVER", 1 }, { "FUEL_CAN", 1 }, { "GOLD_CHAIN", 1 } }),
+		-- Pouch M (audit economy.7) as EFT's Beta container: Peacekeeper's LL2 barter, one a restock, for a 6-STEN-140-M
+		-- military battery, 3 Iridium thermal vision modules, 3 Virtex processors and 5 military cables (EFT's assort as
+		-- SPT copies it, traders/5935c25fb3acc3127c3d8cd9). Ours, all items that spawn: the deep-cycle battery, control
+		-- boards, flash modules and wires
+		b("SECURE_M", 2, 1, { { "BATTERY", 1 }, { "LOGIC_BOARD", 3 }, { "FLASH_MODULE", 3 }, { "WIRES", 5 } }),
 	},
 	fence = {},
 }
@@ -151,16 +176,22 @@ function T.buildValue(id: string, preset: string?): number
 	return v
 end
 
--- price of one purchase at a loyalty level (each level is 5% cheaper)
-function T.price(traderId: string, offer: any, ll: number, discount: number?): number
+-- price of one purchase at a loyalty level (each level is 5% cheaper). karma: the player's Fence standing, which moves
+-- Fence's prices both ways (EFT's PriceModifier, above; audit economy.5); EFT's Fence has the same coefficients at LL1
+-- and LL2, so his goods do not get the 5 % step. Charisma no longer touches trader prices (audit economy.6).
+function T.price(traderId: string, offer: any, ll: number, karma: number?): number
 	local d = Items.defs[offer.id]
 	local tr = T.defs[traderId]
 	local value = WP.isBase(offer.id) and T.buildValue(offer.id, offer.preset) or d.value
-	-- discount: Charisma (Tarkov: better trader prices with the skill)
-	return math.max(1, math.ceil(value * (offer.n or 1) * tr.markup * (1 - 0.05 * (math.max(1, ll) - 1)) * (1 - (discount or 0))))
+	local mul = (1 - 0.05 * (math.max(1, ll) - 1))
+	if traderId == "fence" then
+		mul = T.fencePriceMul(karma)
+	end
+	return math.max(1, math.ceil(value * (offer.n or 1) * tr.markup * mul))
 end
 
--- what a trader pays for an item instance (nil = not interested). Fence pays less with bad karma.
+-- what a trader pays for an item instance (nil = not interested). Fence pays less with bad karma: 4 % a point between -3
+-- and +3 (ours: EFT says only that he pays more as his standing grows; it publishes no figure)
 function T.sellPrice(traderId: string, it: any, karma: number?): number?
 	local d = Items.defs[it.id]
 	local tr = T.defs[traderId]

@@ -134,8 +134,10 @@ add("BAG_PATROL", { name = "Patrol Pack", short = "PATROL", kind = "backpack", w
 add("FORESTER_PACK", { name = "Forester's Pack", short = "FORESTER", kind = "backpack", w = 4, h = 3, mass = 0.7, value = 95000, rarity = "rare", grid = { w = 5, h = 4 }, pen = { speed = -5, turn = -2, ergo = -8 }, desc = "A patched canvas hunting pack that carries more than its size suggests. Taken from the man who lays wires in the woods.", color = c("#4C4A36") })
 add("BAG_RAID", { name = "Raid Pack", short = "RAID", kind = "backpack", w = 5, h = 5, mass = 2.1, value = 88000, rarity = "rare", grid = { w = 6, h = 6 }, pen = { speed = -3, turn = -2 }, desc = "Large expedition pack. Heavy when full.", color = c("#53523F") })
 add("SECURE_S", { name = "Pouch S", short = "POUCH S", kind = "secure", w = 2, h = 2, mass = 0.5, value = 0, grid = { w = 2, h = 2 }, desc = "Secure container. Contents survive death.", color = c("#3B3F3F") })
-add("SECURE_M", { name = "Pouch M", short = "POUCH M", kind = "secure", w = 3, h = 3, mass = 0.7, value = 0, rarity = "rare", grid = { w = 3, h = 3 }, desc = "Secure container. Contents survive death.", color = c("#3B3F3F") })
-add("SECURE_L", { name = "Pouch L", short = "POUCH L", kind = "secure", w = 3, h = 4, mass = 0.9, value = 0, rarity = "epic", grid = { w = 4, h = 3 }, desc = "Secure container. Contents survive death.", color = c("#3B3F3F") })
+-- the bigger pouches have EFT's paths (audit economy.7): M is TILDA's loyalty 2 barter (EFT's Beta from Peacekeeper at
+-- LL2), L is the reward of FENCE's collector task (EFT's Kappa from Fence's The Collector)
+add("SECURE_M", { name = "Pouch M", short = "POUCH M", kind = "secure", w = 3, h = 3, mass = 0.7, value = 0, rarity = "rare", grid = { w = 3, h = 3 }, desc = "Secure container. Contents survive death. TILDA trades one for military electronics at loyalty 2.", color = c("#3B3F3F") })
+add("SECURE_L", { name = "Pouch L", short = "POUCH L", kind = "secure", w = 3, h = 4, mass = 0.9, value = 0, rarity = "epic", grid = { w = 4, h = 3 }, desc = "Secure container. Contents survive death. FENCE gives one to an operator who brings him a collection of rare valuables.", color = c("#3B3F3F") })
 
 -- ── medical, provisions ───────────────────────────────────────────────────────
 local MED = c("#C9CDBE")
@@ -320,8 +322,14 @@ Items.SLOT_NAMES = {
 	primary = "ON SLING", secondary = "ON BACK", holster = "HOLSTER", melee = "SCABBARD",
 }
 Items.RARITY = { common = 0, uncommon = 1, rare = 2, epic = 3, legendary = 4 }
--- secure containers refuse bulky gear (Tarkov-like restriction)
-Items.SECURE_KINDS = { ammo = true, mag = true, med = true, food = true, key = true, loot = true, quest = true }
+-- secure containers refuse bulky gear (Tarkov-like restriction). EFT players keep weapon parts and scopes, grenades,
+-- glasses and headsets in theirs (audit economy.7; Prima Games on the 0.16.8 hardcore rules: "weapon mods and scopes",
+-- "expensive headsets"); goggles are weapon-part records here (EFT files night vision under its scopes). Guns, armour,
+-- rigs, packs, helmets and other secure containers stay out.
+Items.SECURE_KINDS = {
+	ammo = true, mag = true, med = true, food = true, key = true, loot = true, quest = true,
+	mod = true, nvg = true, grenade = true, eyewear = true, headset = true,
+}
 
 function Items.get(id: string): any
 	return defs[id]

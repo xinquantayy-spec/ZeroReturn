@@ -47,8 +47,13 @@ local function standing(prof, tid)
 end
 Economy.standing = standing
 
--- loyalty level: player level, money spent and earned with the trader, reputation
+-- loyalty level: player level, money spent and earned with the trader, reputation. Fence's comes from karma alone
+-- (EFT: LL2 at a Fence standing of 6.0; TraderData.fenceLoyalty, audit economy.5): his only task pays karma, so the
+-- standing rule left him at LL1 for good.
 function Economy.loyalty(prof, tid)
+	if tid == "fence" then
+		return TD.fenceLoyalty(prof.karma or P.KARMA.start)
+	end
 	local lvl = Economy.level(prof)
 	local tr = prof.traders[tid] or { spent = 0, rep = 0 }
 	local ll = 1
@@ -158,7 +163,8 @@ local function buy(player, prof, p)
 	if boughtCount(prof, key, w) + qty > offer.limit then
 		return fail("OUT_OF_STOCK", "Sold out until the restock.")
 	end
-	local price = TD.price(tid, offer, ll) * qty
+	-- karma moves Fence's prices both ways (audit economy.5); the other traders ignore it
+	local price = TD.price(tid, offer, ll, prof.karma) * qty
 	if prof.money < price then
 		return fail("NOT_ENOUGH_MONEY", "Not enough money.")
 	end
@@ -174,7 +180,7 @@ local function buy(player, prof, p)
 	if done == 0 then
 		return fail("NO_SPACE", "No room in your stash.")
 	end
-	local paid = TD.price(tid, offer, ll) * done
+	local paid = TD.price(tid, offer, ll, prof.karma) * done
 	prof.money -= paid
 	standing(prof, tid).spent += paid
 	addBought(prof, key, w, done)
@@ -444,7 +450,8 @@ function Economy.onKill(player, victimPlayer, victimModel, headshot)
 		s.karmaDelta = (s.karmaDelta or 0) + P.KARMA.killPlayerScav
 	end
 	if ctx.Quests then
-		ctx.Quests.onKill(player, kind)
+		-- the victim's Label names a boss for tasks that want one boss (audit economy.9)
+		ctx.Quests.onKill(player, kind, victimModel and victimModel:GetAttribute("Label") or nil)
 	end
 end
 
@@ -485,8 +492,10 @@ function Economy.stateFor(prof)
 		local tr = prof.traders[id] or { spent = 0, rep = 0 }
 		local ll = Economy.loyalty(prof, id)
 		traders[id] = { ll = ll, spent = tr.spent or 0, rep = tr.rep or 0 }
-		-- a new loyalty level arrives as a message from the trader (Tarkov's messenger)
-		if prof.traders[id] and ll > (tr.llSeen or 1) then
+		-- a new loyalty level arrives as a message from the trader (Tarkov's messenger); Fence's comes with karma, before
+		-- any trade with him
+		if (prof.traders[id] or ll > 1) and ll > (tr.llSeen or 1) then
+			tr = standing(prof, id)
 			tr.llSeen = ll
 			Economy.mail(prof, id, string.format("Loyalty level %d. New goods and better prices are yours.", ll))
 		end
