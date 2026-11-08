@@ -885,7 +885,8 @@ local function fireOnce()
 	-- the gear's ergonomics, the pose, the shot's place in its series. The kick goes into the gun's and the camera's
 	-- springs; convergence brings both back, so nothing climbs for good
 	local econ = ctx.State.data and ctx.State.data.econ
-	local prof = Recoil.profile(def, o.ms.recoil, Weapon.ergo, econ and econ.skills, recProf)
+	local vmods = ctx.State.vitals and ctx.State.vitals.mods
+	local prof = Recoil.profile(def, o.ms.recoil, Weapon.ergo, econ and econ.skills, recProf, vmods and vmods.sk)
 	local pv, ph, pb = Recoil.pose(M and M.stance, M and M.depth)
 	local jp, jy, jb = Recoil.kick(prof, burstN, pv, ph, pb, math.random(), math.random(), math.random())
 	ctx.Camera.recoilShot(prof, jp, jy, prof.thump * pb)
@@ -1259,7 +1260,9 @@ local function update(dt)
 	local gear = ctx.Movement and ctx.Movement.gear
 	local ergo = (o and (o.def.ergo + o.ms.ergo) or 50) * (1 + (gear and gear.ergo or 0) / 100)
 	Weapon.ergo = ergo -- the aiming stamina drain reads it (Movement.luau)
-	aimA += ((Weapon.aiming and 1 or 0) - aimA) * math.min(1, dt * (6 + ergo / 10))
+	-- a broken right arm makes aiming take 67 % longer (EFT wiki, Health system; gameplay-4b)
+	local amods = ctx.State.vitals and ctx.State.vitals.mods
+	aimA += ((Weapon.aiming and 1 or 0) - aimA) * math.min(1, dt * (6 + ergo / 10) / ((amods and amods.aim) or 1))
 	local M = ctx.Movement
 	sprintA += (((M and M.sprinting) and 1 or 0) - sprintA) * math.min(1, dt * 9)
 	reloadA += (((Weapon.reloading and not tubeT0) and 1 or 0) - reloadA) * math.min(1, dt * 10)

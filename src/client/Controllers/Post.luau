@@ -15,7 +15,7 @@ local Textures = require(Shared.Textures)
 -- envExposure / grainMul are driven by Atmos (night: brighter auto-gain and heavier sensor noise)
 -- smoke (0..1) is set by the Grenade controller while the camera is inside a cloud
 local Post = {
-	dmg = 0, pain = 0, burstAmt = 0, low = 0, envExposure = 0, grainMul = 1, flash = 0, smoke = 0,
+	dmg = 0, pain = 0, tunnelV = 0, burstAmt = 0, low = 0, envExposure = 0, grainMul = 1, flash = 0, smoke = 0,
 	nvExposure = 0, nvGrain = 1, nvBloom = 0, -- set by NightVision while goggles are down
 	lum = 1, hazeTint = Color3.fromRGB(64, 70, 68), -- set by Atmos from the light and fog
 }
@@ -417,18 +417,21 @@ local function step(dt)
 	end
 	-- damage / pain / low health (from the server health model)
 	local v = ctx.State.vitals
-	local tgtPain, tgtLow = 0, 0
+	local tgtPain, tgtLow, tgtTunnel = 0, 0, 0
 	if v and v.max and v.max > 0 then
 		tgtLow = math.clamp((0.42 - v.hp / v.max) / 0.42, 0, 1)
-		tgtPain = (v.mods and v.mods.tremor or 0) > 0 and 1 or 0
+		tgtPain = (v.mods and v.mods.pain) and 1 or 0
+		tgtTunnel = (v.mods and v.mods.tunnel) and 1 or 0
 	end
 	Post.pain += (tgtPain - Post.pain) * math.min(1, dt * 1.5)
+	-- a stimulant's tunnel vision (gameplay-4b): the edges close in
+	Post.tunnelV += (tgtTunnel - Post.tunnelV) * math.min(1, dt * 0.8)
 	Post.low += (tgtLow - Post.low) * math.min(1, dt * 2)
 	Post.dmg = math.max(0, Post.dmg - dt * 1.3)
 	-- the overlays below are hidden while fully see-through, and every value is written only on change (audit tech.12)
 	fade(red, "ImageTransparency", 1 - Post.dmg * 0.85)
 	local low = Post.low
-	fade(tunnel, "ImageTransparency", 1 - math.clamp(Post.pain * 0.55 + low * 0.45, 0, 0.8))
+	fade(tunnel, "ImageTransparency", 1 - math.clamp(Post.pain * 0.55 + low * 0.45 + Post.tunnelV * 0.8, 0, 0.92))
 	local cz = concussLevel()
 	local wl = Post.whiteLevel()
 	fade(white, "BackgroundTransparency", 1 - math.clamp(wl, 0, 1))

@@ -70,6 +70,8 @@ local POOLS = {
 		{ id = "BANDAGE", w = 20 }, { id = "TOURNIQUET", w = 12 }, { id = "SPLINT", w = 12 }, { id = "PAINKILLERS", w = 12 },
 		{ id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MEDKIT_L", w = 3 },
 		{ id = "MED_TOOLS", w = 4 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 }, { id = "GAS_MASK", w = 1 },
+		-- stimulants (gameplay-4b; rarer the stronger)
+		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
 	},
 	weaponbox = {
 		{ id = "A62_FMJ", w = 14, n = { 30, 60 } }, { id = "A62_AP", w = 4, n = { 15, 40 } }, { id = "A76_PS", w = 10, n = { 30, 60 } },
@@ -182,6 +184,7 @@ local POOLS = {
 		{ id = "BANDAGE", w = 18 }, { id = "PAINKILLERS", w = 16 }, { id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 },
 		{ id = "TOURNIQUET", w = 8 }, { id = "SPLINT", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MED_TOOLS", w = 4 },
 		{ id = "MEDKIT_L", w = 3 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 },
+		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
 	},
 	grocery = {
 		{ id = "WATER", w = 14 }, { id = "JUICE", w = 10 }, { id = "CHOC_BAR", w = 12 }, { id = "STEW", w = 10 },
@@ -232,6 +235,7 @@ local POOLS = {
 		{ id = "SPLINT", w = 8 }, { id = "TOURNIQUET", w = 8 }, { id = "PAINKILLERS", w = 8 }, { id = "BANDAGE", w = 8 }, { id = "MED_TOOLS", w = 4 },
 		{ id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "HARDTACK", w = 5 }, { id = "VOLT_DRINK", w = 3 }, { id = "JUICE", w = 3 },
 		{ id = "CHOC_BAR", w = 3 },
+		{ id = "STIM_ADREN", w = 4 }, { id = "STIM_REGEN", w = 3 }, { id = "STIM_HEMO", w = 3 }, { id = "STIM_STAMINA", w = 2 },
 	},
 	airdrop_supply = {
 		{ id = "BOLTS", w = 8 }, { id = "DUCT_TAPE", w = 8 }, { id = "WIRES", w = 8 }, { id = "SPARK_PLUG", w = 6 }, { id = "CAPACITOR", w = 6 },
@@ -483,6 +487,11 @@ local function searchLoop(player, c)
 		local sprof = ctx.Profiles and ctx.Profiles.get(player)
 		local sk = sprof and sprof.skills
 		local t = revealCost(c, nextUnit) * math.max(0.5, 1 - Progress.bonus(sk, "attention") - Progress.bonus(sk, "search"))
+		-- a broken arm slows searching as it slows using items (EFT wiki, Health system; gameplay-4b)
+		local hs = ctx.Health and ctx.Health.of(player)
+		if hs then
+			t *= ctx.Health.mods(hs).use
+		end
 		ctx.Remotes.note(player, "search", { cid = c.id, t = t, label = c.label })
 		task.wait(t)
 		if containers[c.id] ~= c or not c.viewers[player] or not reach(player, c, 2) then

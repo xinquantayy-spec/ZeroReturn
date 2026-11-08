@@ -106,13 +106,24 @@ function P.skillLevel(points: number?): number
 	return (P.skillProgress(points))
 end
 
+-- a skill's level with a stimulant's buff on top (Stims.luau, gameplay-4b: a buff adds levels for its course, between
+-- 0 and elite); buffs = { [skill id] = levels } or nil
+function P.levelWith(skills: any?, id: string, buffs: any?): number
+	local lvl = skills and P.skillLevel(skills[id]) or 0
+	local b = buffs and buffs[id]
+	if b then
+		lvl = math.clamp(lvl + b, 0, P.SKILL_MAX)
+	end
+	return lvl
+end
+
 -- a skill's effect (e.g. endurance drain multiplier = 1 - bonus)
-function P.bonus(skills: any?, id: string): number
+function P.bonus(skills: any?, id: string, buffs: any?): number
 	local def = P.SKILLS[id]
-	if not def or not skills then
+	if not def or not (skills or buffs) then
 		return 0
 	end
-	return def.per * P.skillLevel(skills[id])
+	return def.per * P.levelWith(skills, id, buffs)
 end
 
 -- weapon mastering (Tarkov; docs/design/MASTERING.md): progress per weapon group, one point for every hit on a living

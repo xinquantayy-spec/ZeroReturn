@@ -624,7 +624,9 @@ function Combat.drawDelay(player, slot)
 	w.reloadToken = nil
 	w.reloadUntil = 0
 	w.checking = nil
-	local t = Combat.drawTime(Weapons[d.weapon].draw or 0.6, slot, w.malfT, os.clock(), roundsIn(s, g))
+	local hs = ctx.Health.of(player)
+	-- a broken arm slows the draw (EFT wiki, Health system; gameplay-4b)
+	local t = Combat.drawTime(Weapons[d.weapon].draw or 0.6, slot, w.malfT, os.clock(), roundsIn(s, g)) * (hs and ctx.Health.mods(hs).draw or 1)
 	w.drawUntil = os.clock() + t
 	if player.Character then
 		player.Character:SetAttribute("WeaponLight", false)

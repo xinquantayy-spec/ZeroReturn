@@ -14,6 +14,7 @@ local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
+local Stims = require(Shared.Stims)
 local WP = require(Shared.WeaponParts)
 local Weapons = require(Shared.Weapons)
 local ItemModel = require(Shared.ItemModel)
@@ -302,8 +303,22 @@ local function sheet(items, g, it, d, opts)
 		if m.pain then
 			table.insert(cures, string.format("PAIN (%d s)", m.duration or 0))
 		end
+		-- a stimulant (gameplay-4b): what it stops, then each buff and side effect with its timing (EFT's list)
+		local sd = m.stim and Stims.DEFS[m.stim]
+		if sd and sd.stopBleeds then
+			table.insert(cures, "LIGHT BLEEDING")
+			table.insert(cures, "HEAVY BLEEDING")
+		end
+		if sd and sd.pain then
+			table.insert(cures, string.format("PAIN (%d S)", sd.pain))
+		end
 		if #cures > 0 then
 			add("TREATS", table.concat(cures, ", "), nil, "good")
+		end
+		for _, f in sd and sd.fx or {} do
+			for _, ln in Stims.lines(f) do
+				add(ln[1], ln[2], nil, ln[3])
+			end
 		end
 		if m.limbsOnly then
 			add("USE ON", "ARMS AND LEGS")

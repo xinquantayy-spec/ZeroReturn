@@ -8,6 +8,18 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Stimulants, fractures and the stomach (decision gameplay-4b; 2026-11-08, about 12:30 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 12 pass, 910 checks. GameplayTests 70/70, 22 of them new: the four injectors and their courses at the right moments (buffs from 1 s, each side effect at its delay, nothing after the course), skill buffs from 0 to elite, the adrenaline's Recoil Control in the recoil, regeneration split over the damaged parts and skipping a destroyed one, every fracture penalty, two arms and two legs multiplying, painkillers letting you sprint on a broken leg. UiTests: the four injectors have pictures. |
+| HM-2, Border Yard (god on) | With a heavy bleed on the left leg and a broken right arm, the injection took 3 s (2 s x 1.5 for the arm). The bleed stopped and BLEEDING BLOCKED showed. Near the end of its course HAND TREMOR and DEHYDRATING showed (screenshot), and hydration fell from 90 to 25: -1.4 a second for 40 s plus the normal drain. |
+| SV-3 and RG-5 | The client's stamina rose to 130 (maximum +30). RG-5's painkiller showed at once. Regeneration started a second later and healed the bled leg from 61 to 65. From 200 s, SV-3's TUNNEL VISION and HAND TREMOR, with the screen edges darker (screenshot). Each buff showed as a green icon and each side effect as an orange one beside the health figure (screenshots). |
+| Broken leg | A broken left leg dropped the walk speed from 3.773 to 2.075 (x0.55). RG-5's painkiller kept sprinting allowed. |
+| INSPECT | RG-5 lists PAIN (245 S), HEALTH REGENERATION +1/S · 300 S, Health, Metabolism and Vitality +20 · 300 S, and HAND TREMOR AFTER 270 S, 30 S in red (screenshot). |
+| Pictures | The four pens were rendered in Blender (build_items_g.py), packed on sheet 5 and uploaded (image 93201093719667). |
+| Not checked | Aiming with a broken right arm by eye, a slower search with a broken arm live, the adrenaline live, a destroyed stomach's drain live (the tests check the constant), trading the stims at HALE, phone and gamepad. |
+
 ## Map-first tasks merged and placed (decision economy-6a; 2026-11-08, about 12:05 SGT)
 
 | Test | Result |

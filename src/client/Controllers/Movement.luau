@@ -240,7 +240,9 @@ local function update(dt)
 	-- skills (M9): strength raises the weight limits, endurance lowers sprint drain
 	local econ = ctx.State.data and ctx.State.data.econ
 	local skills = econ and econ.skills
-	local strong = 1 + Progress.bonus(skills, "strength")
+	-- a stimulant's skill levels count on top (Stims.luau, gameplay-4b)
+	local sk = mods and mods.sk
+	local strong = 1 + Progress.bonus(skills, "strength", sk)
 	local wOver, wCrit, wMax = Config.WEIGHT_OVER * strong, Config.WEIGHT_CRIT * strong, Config.WEIGHT_MAX * strong
 	Movement.limits = { over = wOver, crit = wCrit, max = wMax }
 	local over = math.clamp((w - wOver) / (wCrit - wOver), 0, 1)
@@ -270,13 +272,18 @@ local function update(dt)
 			end
 		end
 	end
-	-- leg stamina
+	-- leg stamina; a stimulant raises the maximum and the recovery (EFT's SJ6: +30, +2 a second)
+	local stMax = Config.MAX_STAMINA + (mods and mods.maxStamina or 0)
+	Movement.stMax = stMax
+	if Movement.stamina > stMax then
+		Movement.stamina = stMax
+	end
 	local drainMul = 1 + over * 0.8 + crit * 1.2
 	local regenMul = (mods and mods.staminaRegen or 1) * (1 - crit * 0.6) * (moving and 0.6 or 1.2)
 	if Movement.sprinting then
-		Movement.stamina = math.max(0, Movement.stamina - Config.SPRINT_DRAIN * drainMul * (1 - Progress.bonus(skills, "endurance")) * dt)
+		Movement.stamina = math.max(0, Movement.stamina - Config.SPRINT_DRAIN * drainMul * (1 - Progress.bonus(skills, "endurance", sk)) * dt)
 	else
-		Movement.stamina = math.min(Config.MAX_STAMINA, Movement.stamina + Config.STAMINA_REGEN * regenMul * dt)
+		Movement.stamina = math.min(stMax, Movement.stamina + (Config.STAMINA_REGEN + (mods and mods.staminaAdd or 0)) * regenMul * dt)
 	end
 	-- arm stamina: aiming costs more with heavy weapons; holding breath costs a lot
 	Movement.breath = W.aiming and ctx.Input.down("Sprint") and Movement.arms > 2

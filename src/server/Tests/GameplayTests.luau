@@ -145,6 +145,75 @@ function T.run(ctx)
 		check("analytics: the event flow ran without an error (" .. tostring(errFlow) .. ")", okFlow)
 	end)
 
+	-- ── gameplay-4b: Tarkov's stimulants, fracture penalties and the destroyed stomach ─────────────────
+	guard("stims and fractures", function()
+		local Stims = require(Shared.Stims)
+		local Recoil = require(Shared.Recoil)
+		local Health = require(script.Parent.Parent:WaitForChild("Services").Health)
+		local ok = true
+		for _, id in { "STIM_REGEN", "STIM_STAMINA", "STIM_HEMO", "STIM_ADREN" } do
+			local d = Items.defs[id]
+			ok = ok and d ~= nil and d.kind == "med" and d.med.stim == id and Stims.DEFS[id] ~= nil and d.w == 1 and d.h == 1 and d.mass == 0.05 and d.med.time == 2 and d.med.uses == 1
+		end
+		check("stims: four injectors, 1x1, 0.05 kg, 2 s, one use, each with its course", ok)
+		check("stims: courses last EFT's times (Propital 300 s, SJ6 240 s, Zagustin's side effects to 210 s, adrenaline's to 80 s)",
+			Stims.length("STIM_REGEN") == 301 and Stims.length("STIM_STAMINA") == 241 and Stims.length("STIM_HEMO") == 210 and Stims.length("STIM_ADREN") == 80)
+		local a = Stims.active({ STIM_REGEN = 0 }, 10)
+		check("RG-5 (Propital): +1 health a second and +20 Metabolism, Health, Vitality; no side effect yet", a.regen == 1 and a.sk.metabolism == 20 and a.sk.health == 20 and a.sk.vitality == 20 and not a.tremor and not a.tunnel)
+		a = Stims.active({ STIM_REGEN = 0 }, 275)
+		check("RG-5: hand tremor and tunnel vision from 270 s", a.tremor and a.tunnel and a.regen == 1)
+		a = Stims.active({ STIM_REGEN = 0 }, 302)
+		check("RG-5: nothing left after its course", not a.any and a.regen == 0)
+		local hs = Health.new()
+		hs.stims.STIM_STAMINA = os.clock() - 10
+		local m = Health.mods(hs)
+		check("SV-3 (SJ6): maximum stamina +30 and recovery +2 a second in the mods", m.maxStamina == 30 and m.staminaAdd == 2 and m.tunnel == nil and m.pain == nil)
+		hs.stims.STIM_STAMINA = os.clock() - 205
+		m = Health.mods(hs)
+		check("SV-3: from 200 s hand tremor and tunnel vision, without the pain overlay", m.tremor == 0.7 and m.tunnel == true and m.pain == nil)
+		a = Stims.active({ STIM_HEMO = 0 }, 5)
+		check("HM-2 (Zagustin): no bleed takes, Vitality +20, Metabolism -5", a.noBleed and a.sk.vitality == 20 and a.sk.metabolism == -5 and a.water == 0)
+		a = Stims.active({ STIM_HEMO = 0 }, 175)
+		check("HM-2: from 170 s hand tremor and hydration -1.4 a second", a.tremor and near(a.water, -1.4) and a.noBleed)
+		a = Stims.active({ STIM_ADREN = 0 }, 5)
+		check("adrenaline: Endurance, Strength, Recoil Control +10, Stress Resistance -10, +4 health a second", a.sk.endurance == 10 and a.sk.strength == 10 and a.sk.recoil == 10 and a.sk.stress == -10 and a.regen == 4)
+		a = Stims.active({ STIM_ADREN = 0 }, 55)
+		check("adrenaline: from 50 s energy -0.8 and hydration -1 a second", near(a.energy, -0.8) and near(a.water, -1) and a.regen == 0)
+		check("skill buffs add levels, from 0 to elite", Progress.levelWith(nil, "vitality", { vitality = 20 }) == 20 and Progress.levelWith({ vitality = Progress.SKILL_CAP }, "vitality", { vitality = 20 }) == Progress.SKILL_MAX
+			and Progress.levelWith(nil, "stress", { stress = -10 }) == 0 and near(Progress.bonus(nil, "endurance", { endurance = 10 }), Progress.SKILLS.endurance.per * 10))
+		check("adrenaline's Recoil Control reaches the recoil", near(Recoil.skillMul(nil, "rifle", { recoil = 10 }), 1 - Recoil.CONTROL_PER * 10) and Recoil.skillMul(nil, "rifle") == 1)
+		-- regeneration: one pool a second over the damaged living parts
+		local hr = Health.new()
+		hr.parts.thorax.hp, hr.parts.stomach.hp, hr.parts.larm.hp = 50, 60, 0
+		Health.regen(hr, 2)
+		check("regeneration splits evenly over the damaged parts and skips a destroyed one", near(hr.parts.thorax.hp, 51) and near(hr.parts.stomach.hp, 61) and hr.parts.larm.hp == 0)
+		hr.parts.thorax.hp = 84.5
+		Health.regen(hr, 2)
+		check("regeneration a full part cannot take goes to the others", near(hr.parts.thorax.hp, 85) and near(hr.parts.stomach.hp, 62.5))
+		-- fractures (EFT wiki, Health system)
+		local F = Health.FRACTURE
+		local hf = Health.new()
+		hf.fract.rarm = true
+		m = Health.mods(hf)
+		check("broken right arm: reload, draw and aim x1.67, using and searching x1.5", near(m.reload, 1.67) and near(m.draw, 1.67) and near(m.aim, 1.67) and near(m.use, 1.5))
+		hf.fract.rarm, hf.fract.larm = nil, true
+		m = Health.mods(hf)
+		check("broken left arm: reload and draw x1.5, aiming as before, using and searching x1.67", near(m.reload, 1.5) and near(m.draw, 1.5) and m.aim == 1 and near(m.use, 1.67))
+		hf.parts.rarm.hp = 0
+		m = Health.mods(hf)
+		check("a destroyed right arm counts as broken; two arms multiply", near(m.reload, F.rHands * F.lHands) and near(m.use, F.rUse * F.lUse) and near(m.aim, 1.67))
+		local hl = Health.new()
+		hl.fract.lleg = true
+		m = Health.mods(hl)
+		check("broken leg: movement -45 %, no sprint, pain", near(m.speed, 0.55) and m.sprint == false and m.pain == true)
+		hl.painUntil = os.clock() + 60
+		m = Health.mods(hl)
+		check("painkillers let you sprint on it but the leg still slows you", m.sprint == true and near(m.speed, 0.55) and m.pain == nil)
+		hl.fract.rleg = true
+		check("two broken legs: x0.55 x0.55", near(Health.mods(hl).speed, 0.55 * 0.55))
+		check("a destroyed stomach drains energy and water five times as fast", Health.STOMACH_DRAIN == 5)
+	end)
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

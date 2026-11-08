@@ -48,7 +48,7 @@ with gameplay-2a); a helmet's sound reduction. The middle column is the state be
 | Helmets | Class, durability, material, areas (top, nape, ears, eyes, jaws), ricochet chance, sound reduction, what it blocks (earpiece, eyewear, face cover), penalties | Class and durability | The rest |
 | Glasses, ballistic glasses, gas masks | Blindness protection (the share of a flash charge it stops), weight, grid size; ballistic glasses also armor class, durability, material and the eyes area; what the item blocks | Missing (no eyewear slot) | Built 2026-11-01: BLINDNESS PROTECTION, LENS TINT, class, durability, material (GLASS), the EYES area and BLOCKS rows. Plain glasses show no durability, as in Tarkov. Not run in Studio yet |
 | Rigs, backpacks, cases | Grid layout, weight, penalties, what a case accepts | Capacity | Penalties, filters |
-| Meds | HP resource, max per use, use time, what it cures (light and heavy bleeding, fractures) and its cost, painkiller duration, side effects | Description only (the data exists in `Items.luau`) | All rows |
+| Meds | HP resource, max per use, use time, what it cures (light and heavy bleeding, fractures) and its cost, painkiller duration, side effects | HP resource, uses, what it treats, painkiller time, use time; a stim's buffs and side effects with their timing (gameplay-4b) | Max HP per use and each cure's HP cost |
 | Food and drink | Energy, hydration, use time, effects | Description only | All rows |
 | Headsets, keys, grenades | Hearing changes; uses left; fuse time and blast | Description only | Rows |
 | Everything | Weight, grid size, found-in-raid mark, insured mark, durability bar | Weight, size, FIR, insured as text | Icons and bars |
@@ -341,7 +341,7 @@ Still a gap:
 | Overheating in four stages with cook-offs, a fire-rate change and maximum durability loss; a flash on a malfunction; a chance per round; a 5 s quick draw of the sidearm after a jam | Built 2026-11-08 (gameplay.11, Studio check pending): heat on Tarkov's 0-200 scale with its cooling; from 100 wear rises up to x3 and spread up to x1.5; fire rate moves 0.85-1.15 above 140; cook-offs from 170; the bolt held at 200; hot shots cut the maximum durability (never below 55); a red, yellow or green glow on a malfunction, its check and its fix; a 5 s quick draw of the sidearm after a jam | Only the AKM's numbers are verified (every gun uses its base chance and cooling); every round uses the 7.62x39 chance; 40- and 50-round magazines keep our wear; base wear about twice the AKM's; no Troubleshooting elite or Weapon Maintenance; clearing by chamber check or reload; per-weapon malfunction kinds; barrel glow and heat haze |
 | A round in the chamber (30 + 1) | No chamber round | The chamber round |
 | Mounting on cover and bipods; quick reload (double R drops the magazine); slow lean; stance changes cost leg stamina; overweight is louder | None of these; a magazine drops only when there is no room for it | gameplay-5b (blind fire and side step are left out) |
-| Fractures (a leg -45 %; arms slow aiming, drawing and searching); stims with buffs and side effects; a destroyed stomach drains energy and water x5 | A leg -14 %, arms slow reloads; no stims; no stomach rule | gameplay-4b: the core set |
+| Fractures (a leg -45 %; arms slow aiming, drawing and searching); stims with buffs and side effects; a destroyed stomach drains energy and water x5 | EFT's fracture penalties and the stomach rule; four stims with EFT's figures, after Propital, SJ6, Zagustin and the Adrenaline injector (gameplay-4b, 2026-11-08) | About 34 more stims, per-kit costs and two surgery kits (option a); the gaps under "Stimulants" near the end of this file |
 | After death or MIA: 30 % health regaining 7.61 HP a minute, paid healing at the Therapist; insurance 12 to 36 h, held 4 to 6 days; scav cooldown about 25 min | Full health after death, no paid healing; one insurer, 15 min, kept until collected; 10 min | gameplay-6b: Tarkov's rules, scaled times |
 | PMCs only enter at the start of a raid | PMCs may join for 5 min (`Config.LATE_JOIN`) | gameplay-7a: a server per raid (needs the published place) |
 | Occlusion through walls, floors and stairways | Legacy sounds with one reverb for the listener | gameplay-3a: Acoustic Simulation (section 6) |
@@ -1375,6 +1375,47 @@ Still a gap:
 - Gunsmith specs check kinds of parts, not named parts, and have no size or effective-distance condition.
 - Pins work for tasks, not for operational tasks.
 - A place on a floor is found by SpotFinder near a point we chose; EFT's places are set by hand.
+
+### Stimulants, fractures and the stomach (decision gameplay-4b, 2026-11-08)
+
+Built by the coordinator and checked in Studio (TEST_RESULTS). Figures from the EFT wiki (Health system; Medical, the
+injector table with each effect's delay and duration) and TarkovForge's item pages.
+
+Matches Tarkov now:
+- **Four stims, 1x1, 0.05 kg, 2 s to inject, one use, with EFT's numbers:**
+  - **RG-5**, after Propital: health +1 a second for 300 s, Metabolism, Health and Vitality +20 levels, a painkiller for
+    245 s; hand tremor and tunnel vision from 270 s for 30 s.
+  - **SV-3**, after SJ6: maximum stamina +30 and stamina recovery +2 a second for 240 s; hand tremor and tunnel vision
+    from 200 s for 40 s. No trader sells it.
+  - **HM-2**, after Zagustin: stops every bleed, and no new bleed takes for 180 s; Vitality +20, Metabolism -5; hand
+    tremor and hydration -1.4 a second from 170 s for 40 s.
+  - **Adrenaline**, after EFT's Adrenaline injector: a painkiller for 65 s; Endurance, Strength and Recoil Control +10
+    and Stress Resistance -10 for 60 s; health +4 a second for 15 s; energy -0.8 and hydration -1 a second from 50 s
+    for 30 s.
+- **Where they come from:** HALE (our Therapist) sells RG-5 and HM-2 at LL4, as EFT's Therapist sells Propital and
+  Zagustin. All four turn up in medical bags, pharmacies and medical airdrops.
+- **Fractures:** each broken leg slows you by 45 %, and you cannot sprint unless on painkillers. A broken right arm
+  makes using items and searching 50 % slower, and reloading, drawing and aiming 67 % slower. A broken left arm makes
+  using and searching 67 % slower, and reloading and drawing 50 % slower. A destroyed limb counts as broken.
+- **Destroyed stomach:** energy and water drain five times as fast.
+- **On screen:** each buff shows as a green icon and each side effect as an orange one beside the health figure. The
+  INSPECT window lists every buff and side effect with its timing.
+
+Still a gap:
+- 4 of EFT's 38 or so stims. The rest (eTG-change, SJ1, SJ12, Meldonin, L1, M.U.L.E., Obdolbos, Perfotoran, PNB,
+  Trimadol, AHF1-M and the others) can follow with the art pipeline (option a).
+- EFT does not publish how health regeneration splits over the parts. Ours is one pool a second, spread evenly over the
+  damaged living parts.
+- Injecting the same stim again starts its course again (EFT's stacking rule was not found).
+- A skill buff adds skill levels (our reading of EFT's "+20").
+- The +2 stamina recovery is added to our base recovery of 6 a second (EFT's base figure was not found).
+- RG-5 and adrenaline do not cure the blast concussion, which Propital and Adrenaline cure in EFT.
+- Two broken legs multiply (x0.55 x0.55). The wiki only says 45 % a leg.
+- Sprinting on a broken leg under painkillers does not hurt it (EFT: it does; no figure found), and jump height is not
+  lowered.
+- A stim's painkiller lasts longer with Stress Resistance, as our pills do (ours).
+- Tunnel vision is our dark vignette closing in.
+- Ours: HALE sells the adrenaline at LL2, and the prices are near EFT's trader prices. The AI do not use stims.
 
 ### M4 batch 4, coordinator's part (2026-11-08)
 

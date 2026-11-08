@@ -2,7 +2,8 @@
 -- Tarkov-style health (server-authoritative): seven body-part pools (440 total), light/heavy bleeding,
 -- fractures, pain, energy/hydration, Tarkov 0.14's armour (hit zones, plates, soft armour and helmet parts, each with
 -- its own class and durability; penetration, blunt trauma and ricochets: Plates.luau), destroyed-limb damage spill,
--- timed medical treatment, fall damage.
+-- timed medical treatment, fall damage, Tarkov's stimulants (timed buffs and side effects: Stims.luau), fracture
+-- penalties and the destroyed stomach (gameplay-4b).
 -- Players and AI share the same model; clients receive a compact "vitals" snapshot.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
@@ -10,6 +11,7 @@ local Textures = require(Shared.Textures)
 local Inv = require(script.Parent.Inv)
 local Progress = require(Shared.Progress)
 local Plates = require(Shared.Plates)
+local Stims = require(Shared.Stims)
 
 local Health = {}
 local ctx
@@ -40,9 +42,10 @@ local MED_COST = { light = 40, heavy = 120, fracture = 100 }
 local function now()
 	return os.clock()
 end
+local regen -- a regeneration stimulant's second (below)
 
 function Health.new(scale)
-	local hs = { parts = {}, bleedL = {}, bleedH = {}, fract = {}, painUntil = 0, energy = 100, water = 100, dead = false, dirty = true }
+	local hs = { parts = {}, bleedL = {}, bleedH = {}, fract = {}, painUntil = 0, energy = 100, water = 100, dead = false, dirty = true, stims = {} }
 	for _, k in Health.PARTS do
 		local m = MAX[k] * (scale or 1)
 		hs.parts[k] = { hp = m, max = m }
@@ -137,7 +140,7 @@ function Health.attach(model, opts)
 				end)
 			elseif new == Enum.HumanoidStateType.Landed and peak > 62 and not hs.dead then
 				local fprof = hs.player and ctx.Profiles.get(hs.player)
-				local dmg = (peak - 62) * 1.1 * (1 - (fprof and Progress.bonus(fprof.skills, "health") or 0))
+				local dmg = (peak - 62) * 1.1 * (1 - Progress.bonus(fprof and fprof.skills, "health", Health.buffs(hs).sk))
 				Health.applyDamage(hs, "lleg", dmg * 0.5)
 				Health.applyDamage(hs, "rleg", dmg * 0.5)
 				if peak > 78 then
@@ -330,18 +333,22 @@ function Health.hit(model, info)
 	applyDamage(hs, key, dmg)
 	-- vitality skill (players): fewer bleeds; taking hits trains it
 	local prof = hs.player and ctx.Profiles.get(hs.player)
-	local bleedMul = 1 - (prof and Progress.bonus(prof.skills, "vitality") or 0)
+	local buff = Health.buffs(hs)
+	local bleedMul = 1 - Progress.bonus(prof and prof.skills, "vitality", buff.sk)
 	if prof and dmg > 0 and ctx.Economy then
 		ctx.Economy.skillUp(hs.player, prof, "vitality", dmg * 0.04)
 		ctx.Economy.skillUp(hs.player, prof, "stress", dmg * 0.02)
 	end
 	if wounds and dmg > 0 and not hs.dead then
-		if math.random() < (info.bleedH or 0.05) * bleedMul then
+		-- a hemostatic stimulant's course: no bleed takes (EFT's Zagustin, "remove all blood losses" for 180 s)
+		if buff.noBleed then
+			-- no bleed
+		elseif math.random() < (info.bleedH or 0.05) * bleedMul then
 			hs.bleedH[key] = true
 		elseif math.random() < (info.bleedL or 0.12) * bleedMul then
 			hs.bleedL[key] = true
 		end
-		if LIMB[key] and math.random() < (0.05 + dmg / 280) * (1 - (prof and Progress.bonus(prof.skills, "health") or 0)) then
+		if LIMB[key] and math.random() < (0.05 + dmg / 280) * (1 - Progress.bonus(prof and prof.skills, "health", buff.sk)) then
 			hs.fract[key] = true
 		end
 		-- a poisoned blade (THE CULT): the wound poisons until an antidote
@@ -372,29 +379,50 @@ function Health.inPain(hs)
 	return hs.parts.stomach.hp <= 0
 end
 
--- movement / handling modifiers derived from injuries (client applies; server uses for validation)
+-- the stimulants in effect now (Stims.active)
+function Health.buffs(hs)
+	return Stims.active(hs.stims, now())
+end
+
+-- Tarkov's fracture penalties (EFT wiki, Health system; gameplay-4b). A destroyed limb counts as a broken one.
+-- Each broken leg: movement -45 % (two: x0.55 x0.55, ours), no sprint unless on painkillers. Right arm: using items and
+-- searching 50 % slower, reloading, drawing and aiming 67 % slower. Left arm: using and searching 67 % slower,
+-- reloading and drawing 50 % slower. Two broken arms multiply.
+Health.FRACTURE = { leg = 0.55, rUse = 1.5, rHands = 1.67, lUse = 1.67, lHands = 1.5 }
+local FR = Health.FRACTURE
+
+-- movement / handling modifiers derived from injuries and stimulants (client applies; server uses for validation and
+-- for its own timings: reloads, draws, using items, searching)
 function Health.mods(hs)
-	local painkilled = now() < hs.painUntil
+	local t = now()
+	local painkilled = t < hs.painUntil
 	local legs = 0
 	for _, k in { "lleg", "rleg" } do
 		if hs.fract[k] or hs.parts[k].hp <= 0 then
 			legs += 1
 		end
 	end
-	local arms = 0
-	for _, k in { "larm", "rarm" } do
-		if hs.fract[k] or hs.parts[k].hp <= 0 then
-			arms += 1
-		end
-	end
+	local r = hs.fract.rarm or hs.parts.rarm.hp <= 0
+	local l = hs.fract.larm or hs.parts.larm.hp <= 0
+	local arms = (r and 1 or 0) + (l and 1 or 0)
 	local pain = Health.inPain(hs)
+	local b = Stims.active(hs.stims, t)
+	local hands = (r and FR.rHands or 1) * (l and FR.lHands or 1)
 	local m = {
-		speed = (1 - legs * (painkilled and 0.06 or 0.14)) * (hs.using and 0.55 or 1),
+		speed = FR.leg ^ legs * (hs.using and 0.55 or 1),
 		sprint = (legs == 0 or painkilled) and not hs.using,
 		sway = 1 + arms * 0.45 + (pain and 0.35 or 0),
-		tremor = pain and 0.7 or (hs.toxin and 0.4 or 0),
-		reload = 1 + arms * 0.25,
+		tremor = ((pain or b.tremor) and 0.7) or (hs.toxin and 0.4 or 0),
+		pain = (pain or hs.toxin ~= nil) or nil, -- the pain overlay (Post.luau)
+		tunnel = b.tunnel or nil,
+		reload = hands,
+		draw = hands,
+		aim = r and FR.rHands or 1,
+		use = (r and FR.rUse or 1) * (l and FR.lUse or 1),
 		staminaRegen = ((hs.energy <= 0 or hs.water <= 0) and 0.5 or 1) * (((hs.boostUntil or 0) > os.clock()) and 1.5 or 1),
+		staminaAdd = b.staminaRate > 0 and b.staminaRate or nil,
+		maxStamina = b.maxStamina > 0 and b.maxStamina or nil,
+		sk = next(b.sk) and b.sk or nil,
 	}
 	return m
 end
@@ -424,6 +452,26 @@ function Health.vitals(hs)
 	end
 	if hs.toxin then
 		table.insert(fx, { icon = I.SKULL, label = "POISONED", color = Color3.fromRGB(160, 230, 70) })
+	end
+	-- stimulants: buffs green, side effects orange (EFT shows each in the health panel)
+	local b = Health.buffs(hs)
+	if b.regen > 0 then
+		table.insert(fx, { icon = I.PLUS, label = "REGENERATION", color = green })
+	end
+	if b.maxStamina > 0 or b.staminaRate > 0 then
+		table.insert(fx, { icon = I.BOLT, label = "STAMINA BOOST", color = green })
+	end
+	if b.noBleed then
+		table.insert(fx, { icon = I.BLEED, label = "BLEEDING BLOCKED", color = green })
+	end
+	if b.tremor then
+		table.insert(fx, { icon = I.PAIN, label = "HAND TREMOR", color = orange })
+	end
+	if b.tunnel then
+		table.insert(fx, { icon = I.RING, label = "TUNNEL VISION", color = orange })
+	end
+	if b.water < 0 or b.energy < 0 then
+		table.insert(fx, { icon = b.water < 0 and I.WATER or I.ENERGY, label = b.water < 0 and "DEHYDRATING" or "LOSING ENERGY", color = orange })
 	end
 	if hs.water <= 0 then
 		table.insert(fx, { icon = I.WATER, label = "DEHYDRATED", color = red })
@@ -513,6 +561,27 @@ local function plan(hs, d, it, part)
 		return nil, "NOT_USABLE"
 	end
 	local label = "USING " .. string.upper(d.name)
+	if m.stim then
+		-- a stimulant (Stims.luau): the course starts now; the same injector again starts it again
+		local sd = Stims.DEFS[m.stim]
+		if not sd then
+			return nil, "NOT_USABLE"
+		end
+		return { time = m.time or 2, label = "INJECTING " .. string.upper(d.short or d.name), apply = function()
+			hs.stims[m.stim] = now()
+			if sd.stopBleeds then
+				table.clear(hs.bleedL)
+				table.clear(hs.bleedH)
+			end
+			if sd.pain then
+				local pprof = hs.player and ctx.Profiles.get(hs.player)
+				hs.painUntil = math.max(hs.painUntil, now() + sd.pain * (1 + (pprof and Progress.bonus(pprof.skills, "stress") or 0)))
+			end
+			hs.stimSig = nil
+			hs.dirty = true
+			return 1
+		end }
+	end
 	if m.antidote then
 		if not hs.toxin then
 			return nil, "NOTHING_TO_TREAT"
@@ -689,6 +758,7 @@ function Health.use(player, g, part)
 	if not pl then
 		return ctx.Remotes.fail(err or "NOTHING_TO_TREAT", msg)
 	end
+	pl.time *= Health.mods(hs).use -- a broken arm slows using items (gameplay-4b)
 	local token = { label = pl.label, t0 = os.clock(), dur = pl.time }
 	hs.using = token
 	hs.dirty = true
@@ -754,6 +824,7 @@ function Health.aiUse(model, h)
 	if not pl then
 		return nil
 	end
+	pl.time *= Health.mods(hs).use
 	local token = { label = pl.label, t0 = os.clock(), dur = pl.time }
 	hs.using = token
 	if ctx.Chars and ctx.Chars.gesture then
@@ -782,6 +853,35 @@ function Health.aiUse(model, h)
 	end)
 	return pl.time
 end
+
+-- a regeneration stimulant's health for one second: one pool spread evenly over the damaged living parts, what a full
+-- part cannot take going to the others (ours: EFT does not publish its split). Destroyed parts get nothing.
+Health.STOMACH_DRAIN = 5
+function regen(hs, amount)
+	local left = amount
+	for _ = 1, 4 do
+		local need, n = {}, 0
+		for _, k in Health.PARTS do
+			local p = hs.parts[k]
+			if p.hp > 0 and p.hp < p.max then
+				n += 1
+				table.insert(need, p)
+			end
+		end
+		if n == 0 or left <= 0.001 then
+			break
+		end
+		local share = left / n
+		left = 0
+		for _, p in need do
+			local add = math.min(share, p.max - p.hp)
+			p.hp += add
+			left += share - add
+		end
+	end
+	hs.dirty = true
+end
+Health.regen = regen
 
 -- ── loops ──────────────────────────────────────────────────────────────────────
 function Health.init(c)
@@ -818,11 +918,45 @@ function Health.start()
 						hs.water = math.max(0, hs.water - TOXIN.water)
 						hs.dirty = true
 					end
+					-- stimulants (Stims.luau): regeneration, the side effects' energy and water, the end of a course
+					local b = next(hs.stims) and Health.buffs(hs)
+					if b then
+						if b.regen > 0 then
+							regen(hs, b.regen)
+						end
+						if b.energy ~= 0 or b.water ~= 0 then
+							hs.energy = math.clamp(hs.energy + b.energy, 0, 100)
+							hs.water = math.clamp(hs.water + b.water, 0, 100)
+							hs.dirty = true
+						end
+						local t = now()
+						for id, t0 in hs.stims do
+							if t - t0 >= Stims.length(id) then
+								hs.stims[id] = nil
+							end
+						end
+						-- push when an effect starts or ends (the client shows them and applies the mods)
+						local sig = string.format("%d%d%d%d%d%d", b.regen > 0 and 1 or 0, b.maxStamina > 0 and 1 or 0, b.noBleed and 1 or 0, b.tremor and 1 or 0, b.tunnel and 1 or 0, (b.water < 0 or b.energy < 0) and 1 or 0)
+						for k, n in b.sk do
+							sig ..= k .. n
+						end
+						if sig ~= hs.stimSig then
+							hs.stimSig = sig
+							hs.dirty = true
+						end
+					elseif hs.stimSig then
+						hs.stimSig = nil
+						hs.dirty = true
+					end
 					if hs.player then
 						local prof = ctx.Profiles.get(hs.player)
 						if hs.inRaid then
-							-- metabolism skill slows energy / hydration drain
-							local m = 1 - (prof and Progress.bonus(prof.skills, "metabolism") or 0)
+							-- metabolism skill slows energy / hydration drain (a stimulant's buff counts); a destroyed
+							-- stomach drains five times as fast (EFT wiki, Health system; gameplay-4b)
+							local m = 1 - Progress.bonus(prof and prof.skills, "metabolism", b and b.sk or nil)
+							if hs.parts.stomach.hp <= 0 then
+								m *= Health.STOMACH_DRAIN
+							end
 							hs.energy = math.max(0, hs.energy - m / 26)
 							hs.water = math.max(0, hs.water - m / 18)
 							if hs.energy <= 0 or hs.water <= 0 then

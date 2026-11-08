@@ -5,7 +5,7 @@
 -- w x h = the item's grid size times the cell).
 return {
 	cell = 64,
-	sheets = { "rbxassetid://87867732430143", "rbxassetid://113186498772250", "rbxassetid://89528084000387", "rbxassetid://123998998634756", "rbxassetid://137888483554871" },
+	sheets = { "rbxassetid://87867732430143", "rbxassetid://113186498772250", "rbxassetid://89528084000387", "rbxassetid://123998998634756", "rbxassetid://93201093719667" },
 	items = {
 		A12_BUCK = { 3, 522, 332, 64, 64 },
 		A12_SLUG = { 3, 588, 332, 64, 64 },
@@ -296,6 +296,10 @@ return {
 		SPR_STK_FIXED = { 3, 2, 266, 128, 64 },
 		SPR_STK_SLIDE = { 3, 132, 266, 128, 64 },
 		STEW = { 3, 662, 728, 64, 64 },
+		STIM_ADREN = { 5, 926, 584, 64, 64 },
+		STIM_HEMO = { 5, 2, 650, 64, 64 },
+		STIM_REGEN = { 5, 68, 650, 64, 64 },
+		STIM_STAMINA = { 5, 134, 650, 64, 64 },
 		SUPP_62 = { 3, 262, 266, 128, 64 },
 		SUPP_62C = { 3, 392, 266, 128, 64 },
 		SUPP_76 = { 3, 522, 266, 128, 64 },

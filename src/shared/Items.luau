@@ -14,7 +14,7 @@
 --   eye = { flash, tint, shade, lens }   (eyewear and gas masks: flash = the share of a stun charge's white-out the lenses stop
 --           (Tarkov's blindness protection), tint = lens colour, shade = 0..1 how strongly it tints the view, lens = its name)
 --   grid = { w, h }   (rigs / backpacks / secure containers)
---   med = { light, heavy, fracture, pain, surgery, hp, uses, time, duration }
+--   med = { light, heavy, fracture, pain, surgery, hp, uses, time, duration, stim (a Stims.DEFS id) }
 --   food = { energy, water, time, stamina }
 --   pen = { speed, turn, ergo }   (worn gear: movement speed, turn speed and weapon ergonomics in %, Tarkov)
 --   key = { door, uses }
@@ -260,6 +260,12 @@ add("MEDKIT_M", { name = "Road Kit", short = "ROAD 220", kind = "med", w = 1, h 
 add("MEDKIT_L", { name = "Field Medkit", short = "FIELD 400", kind = "med", w = 1, h = 2, mass = 0.6, value = 21000, rarity = "uncommon", med = { hp = 400, light = true, heavy = true, time = 3 }, desc = "Restores health (400 points), stops all bleeding.", color = MED })
 add("MEDKIT_XL", { name = "Trauma Case", short = "TRAUMA", kind = "med", w = 2, h = 2, mass = 1.6, value = 75000, rarity = "rare", med = { hp = 1200, light = true, heavy = true, fracture = true, time = 4 }, desc = "Restores health (1200), stops bleeds, sets fractures.", color = MED })
 add("SURGKIT", { name = "Field Surgical Kit", short = "SURGERY", kind = "med", w = 2, h = 1, mass = 0.8, value = 52000, rarity = "rare", med = { surgery = true, uses = 2, time = 12 }, desc = "Restores a destroyed limb (reduced max health). 2 uses.", color = MED })
+-- Tarkov's stimulant injectors (gameplay-4b; their courses in Stims.luau): after Propital, SJ6, Zagustin and the
+-- Adrenaline injector. EFT: 1x1, 0.05 kg, 2 s to inject, one use
+add("STIM_REGEN", { name = "RG-5 Regenerative Injector", short = "RG-5", kind = "med", w = 1, h = 1, mass = 0.05, value = 36000, rarity = "rare", med = { stim = "STIM_REGEN", uses = 1, time = 2 }, desc = "A regenerative stimulant. Slowly restores health for 5 minutes and kills pain for about 4. Hand tremor and tunnel vision near the end.", color = MED })
+add("STIM_STAMINA", { name = "SV-3 Combat Stimulant", short = "SV-3", kind = "med", w = 1, h = 1, mass = 0.05, value = 85000, rarity = "rare", med = { stim = "STIM_STAMINA", uses = 1, time = 2 }, desc = "A combat stimulant. More stamina and faster recovery for 4 minutes. Hand tremor and tunnel vision near the end.", color = MED })
+add("STIM_HEMO", { name = "HM-2 Hemostatic Injector", short = "HM-2", kind = "med", w = 1, h = 1, mass = 0.05, value = 50000, rarity = "rare", med = { stim = "STIM_HEMO", uses = 1, time = 2 }, desc = "A hemostatic stimulant. Stops all bleeding, and no new bleed takes for 3 minutes. Hand tremor and heavy dehydration near the end.", color = MED })
+add("STIM_ADREN", { name = "Adrenaline Injector", short = "ADRENALINE", kind = "med", w = 1, h = 1, mass = 0.05, value = 16000, rarity = "uncommon", med = { stim = "STIM_ADREN", uses = 1, time = 2 }, desc = "Kills pain for about a minute, gives a short burst of health and a minute of endurance, strength and recoil control. Hunger and thirst follow.", color = MED })
 add("WATER", { name = "Water Bottle", short = "WATER", kind = "food", w = 1, h = 2, mass = 0.6, value = 8000, food = { water = 60, time = 4 }, desc = "Hydration +60.", color = c("#7FA8B8") })
 add("STEW", { name = "Canned Stew", short = "STEW", kind = "food", w = 1, h = 1, mass = 0.4, value = 6500, food = { energy = 55, water = -5, time = 5 }, desc = "Energy +55.", color = c("#8F6A4A") })
 add("HARDTACK", { name = "Hardtack", short = "HARDTACK", kind = "food", w = 1, h = 1, mass = 0.15, value = 3000, food = { energy = 30, water = -12, time = 3 }, desc = "Energy +30, dries you out.", color = c("#A48C64") })

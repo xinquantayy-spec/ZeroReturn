@@ -70,14 +70,16 @@ function R.pose(stance: string?, depth: number?): (number, number, number)
 	return 1, 1, 1
 end
 
--- the skills' multiplier: the weapon class's skill and Recoil Control (profile skill "recoil", read if present)
-function R.skillMul(skills: any?, class: string?): number
-	if type(skills) ~= "table" then
+-- the skills' multiplier: the weapon class's skill and Recoil Control (profile skill "recoil", read if present);
+-- buffs = a stimulant's skill levels (Stims.luau: the adrenaline's Recoil Control +10)
+function R.skillMul(skills: any?, class: string?, buffs: any?): number
+	if type(skills) ~= "table" and type(buffs) ~= "table" then
 		return 1
 	end
+	skills = type(skills) == "table" and skills or nil
 	local ws = Progress.WEAPON_SKILL[class or ""]
-	local lw = ws and Progress.skillLevel(skills[ws]) or 0
-	local lc = Progress.skillLevel(skills.recoil)
+	local lw = ws and Progress.levelWith(skills, ws, buffs) or 0
+	local lc = Progress.levelWith(skills, "recoil", buffs)
 	return (1 - R.WEAPON_SKILL_PER * lw) * (1 - R.CONTROL_PER * lc)
 end
 
@@ -113,10 +115,11 @@ function R.blank(): Profile
 end
 
 -- a gun's recoil now: def (Weapons entry), recoilMul (the build against its default build, WeaponParts.stats().recoil),
--- ergo (the build's ergonomics with the gear's), skills (the profile's). Fills `out` when given.
-function R.profile(def: any, recoilMul: number?, ergo: number?, skills: any?, out: Profile?): Profile
+-- ergo (the build's ergonomics with the gear's), skills (the profile's), buffs (a stimulant's skill levels). Fills `out`
+-- when given.
+function R.profile(def: any, recoilMul: number?, ergo: number?, skills: any?, out: Profile?, buffs: any?): Profile
 	local p = out or R.blank()
-	local k = (recoilMul or 1) * R.skillMul(skills, def.class) * R.SCALING
+	local k = (recoilMul or 1) * R.skillMul(skills, def.class, buffs) * R.SCALING
 	p.v = (def.recoilV or 0) * 100 * k
 	p.h = (def.recoilH or 0) * 100 * k
 	p.climb = p.v * R.DEG_PER_V * (R.CLASS_K[def.class or ""] or 1)

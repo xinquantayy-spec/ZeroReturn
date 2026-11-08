@@ -734,7 +734,7 @@ local function fastUpdate(dt)
 	-- stamina or the arms are spent, the breath is held or the stance changes, and 1.5 s after
 	local smode = S.hudStamina or 2
 	local M = ctx.Movement
-	local stMax = v.stMax or Config.MAX_STAMINA
+	local stMax = v.stMax or (M and M.stMax) or Config.MAX_STAMINA
 	local st = v.st or (M and M.stamina) or stMax
 	local arms = M and M.arms or Config.MAX_ARMS
 	local stance, depth = M and M.stance or "s", M and M.depth or 0

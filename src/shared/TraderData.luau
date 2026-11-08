@@ -217,6 +217,9 @@ T.offers = {
 		o("TOURNIQUET", 2, 5), o("MEDKIT_M", 2, 4), o("STEW", 2, 5), o("VOLT_DRINK", 2, 3),
 		o("HEMOSTAT", 3, 3), o("MEDKIT_L", 3, 2), o("ANTIDOTE", 3, 1),
 		o("SURGKIT", 4, 1), o("MEDKIT_XL", 4, 1),
+		-- stimulants (gameplay-4b): EFT's Therapist sells Propital and Zagustin at LL4 (TarkovForge); the adrenaline at LL2
+		-- is ours; nobody sells the SJ6's kind for cash (TarkovForge), so the SV-3 is loot only
+		o("STIM_ADREN", 2, 3), o("STIM_REGEN", 4, 2), o("STIM_HEMO", 4, 2),
 		-- task-locked (economy-6a): a level earlier than the open offer
 		ot("MEDKIT_L", 2, 1, 1, "H9"), ot("SURGKIT", 3, 1, 1, "H11"), ot("MEDKIT_XL", 3, 1, 1, "H14"),
 	},
