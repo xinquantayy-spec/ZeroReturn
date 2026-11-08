@@ -275,11 +275,11 @@
       - doors and doorways 2.3 m high (Roblox's pathfinding could not pass a 2.1 m doorway on the office's third floor).
       The pit, the sump drop and the high bridge are not walked by hand yet; the small second-floor rooms north of the
       office's north stair still take no loot.
-86. **Texture sheets: 48 for the guns and four for the worn gear, four 1024 px maps each (art-4b, 2026-11-09).**
+86. **Texture sheets: 48 for the guns, four for the worn gear and two for the body, four 1024 px maps each (art-4b, 2026-11-09).**
     - A gun build loads every sheet its parts sit on (two to four for most guns), and a character up to three gear sheets
-      (head, torso, packs and overlays). The memory this takes on a low-end phone has not been measured; Roblox serves
+      (head, torso, packs and overlays) and the body's two. The memory this takes on a low-end phone has not been measured; Roblox serves
       lower mips to weaker devices.
-    - The gear meshes no longer carry vertex colours (the colour map has them): while a fresh sheet image is still being
+    - The gear and body meshes no longer carry vertex colours (the colour map has them): while a fresh sheet image is still being
       processed after an upload, its pieces show their plain tint, and pieces with their own colours (tint white, such
       as the body camera) show white. Seen once in Studio for a few minutes on the pack sheet's colour map.
 

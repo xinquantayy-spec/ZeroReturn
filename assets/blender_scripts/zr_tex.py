@@ -454,6 +454,15 @@ def rebake(batch):
     return len(mats)
 
 
+def flat(img):
+    """True when a bake came out one value everywhere: the body's first colour bake did (0.502 grey on every texel)
+    without any error, and its arms showed black in game under the olive tint"""
+    import numpy as np
+    px = np.empty(img.size[0] * img.size[1] * 4, dtype=np.float32)
+    img.pixels.foreach_get(px)
+    return float(px.reshape(-1, 4)[:, :3].std(axis=0).max()) < 1e-3
+
+
 def export(batch):
     """save the sheets' PNGs, export the batch again with these UVs and no vertex colours, write <batch>.tex.json"""
     st = STATE[batch]
@@ -462,6 +471,8 @@ def export(batch):
     files = []
     for sh in st["sheets"]:
         assert len(sh["done"]) == len(PASSES), sh["name"] + " is not baked"
+        for ps in ("color", "normal"):   # metalness may be all zero (no metal on the sheet); these never are
+            assert not flat(bpy.data.images[sh["imgs"][ps]]), "%s: the %s bake came out flat, rebake the sheet" % (sh["name"], ps)
         for ps, suffix in (("color", "col"), ("normal", "nrm"), ("rough", "rgh"), ("metal", "mtl")):
             img = bpy.data.images[sh["imgs"][ps]]
             path = os.path.join(TEX, "%s_%s.png" % (sh["name"], suffix))

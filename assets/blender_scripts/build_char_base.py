@@ -168,9 +168,10 @@ def build(scene):
     return objs
 
 
-scene = batch_scene("ZR_CharBase")
-objs = build(scene)
-fbx, blend, meta = export_batch(objs, "ZR_CharBase", scene)
-print("ZR_CharBase exported", fbx, os.path.getsize(fbx), "bytes,", len(objs), "objects,", sum(m["tris"] for m in meta.values()), "tris")
-for k in sorted(meta):
-    print(k, meta[k]["tris"], "size", meta[k]["size"], "center", meta[k]["center"])
+if not globals().get("ZR_NO_EXPORT"):   # zr_gtex.py builds the pieces without exporting (art-4b texture sheets)
+    scene = batch_scene("ZR_CharBase")
+    objs = build(scene)
+    fbx, blend, meta = export_batch(objs, "ZR_CharBase", scene)
+    print("ZR_CharBase exported", fbx, os.path.getsize(fbx), "bytes,", len(objs), "objects,", sum(m["tris"] for m in meta.values()), "tris")
+    for k in sorted(meta):
+        print(k, meta[k]["tris"], "size", meta[k]["size"], "center", meta[k]["center"])

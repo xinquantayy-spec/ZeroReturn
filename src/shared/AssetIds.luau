@@ -8,7 +8,7 @@ return {
 	-- retired in M16 (superseded by ZR_CharBase / ZR_CharGear, no longer loaded): ZR_Operator 89318251225515,
 	-- ZR_Gear 75319988582613
 	{ key = "ZR_WearKit", id = 122101191158248 }, -- M12 wear kit: 29 cosmetic ZR_WK_* pieces, 9 ZR_PROP_* cover props (build_wear_kit.py)
-	{ key = "ZR_CharBase", id = 101424875475699 }, -- M16 block body ZR_BLOCK_R15_V1 (15 ZR_BLK_* segments), helmet A, calibration cube (build_char_base.py)
+	{ key = "ZR_CharBase", id = 91769130138991 }, -- (2026-11-09 art-4b: with UVs for its two texture sheets ZR_GR_Arms/Body, zr_gtex.py; was 101424875475699) M16 block body ZR_BLOCK_R15_V1 (15 ZR_BLK_* segments), helmet A, calibration cube (build_char_base.py)
 	{ key = "ZR_CharGear", id = 125447493326154 }, -- (2026-11-09 art-4b: with UVs for its four texture sheets ZR_GR_Head/Torso/Pack/FP, zr_gtex.py; was 111486052124640) M16 equipment: 33 ZR_EQ_* / ZR_OV_* / ZR_FP_* meshes (build_char_gear.py)
 	{ key = "ZR_EyeGear", id = 77373343248745 }, -- eyewear (2026-11-01): 4 glasses, the gas mask, the goggle head strap and 10 goggle poses (build_eyewear.py)
 	{ key = "ZR_Nature", id = 120650690065241 }, -- M13 nature kit: 24 ZR_NAT_* pines and birches (trunk + crown; crowns as needle and leaf cards with foliage-atlas UVs since 2026-11-01), rocks, logs, bushes, ground cover (build_nature.py)

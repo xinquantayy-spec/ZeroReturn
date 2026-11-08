@@ -8,7 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## Fence modules and chain-link that stops bodies only (art-5b phase 2; 2026-11-09, 05:00 SGT)
+## The body textured (art-4b; 2026-11-09, 03:30 SGT)
+
+| Test | Result |
+|---|---|
+| Blender | `GT.use(GT.BODY)` in zr_gtex.py put the 15 block-body segments of ZR_CharBase on two 1024 px sheets: ZR_GR_Arms (the six arm segments, which the first-person view shows all raid) and ZR_GR_Body (the other nine, helmet A and the calibration cube). The clothing is fabric, the head skin, the hands rubber gloves and the feet leather boots. The first bake left both colour maps one flat grey (0.502 on every texel) with no error, and the arms showed black in game under the olive tint. After a rebake every colour, normal and roughness map varies. zr_tex's export now refuses a flat colour or normal map: the check passes these sheets and catches a flat 0.502 test image. |
+| Upload | The batch (ZR_CharBase 91769130138991) and both sheets' colour, normal and roughness maps went up again. The metalness maps are all zero both times, so their first ids stay. GunTex: 382 pieces on 54 sheets. |
+| In Studio | The Smelter at noon, first person with a rifle: the arms read as olive cloth with shading, no longer black. The arm sheet's colour map loaded (fetch status Success). Appearance and Chars set each body segment's SurfaceAppearance colour to the outfit colour, as for the gear. |
+| Tests | 18 suites, 1,313 checks, all passed. |
+| Not checked | The third-person body up close in good light; a phone's memory with body, gear and gun sheets loaded. |
+
+## Fence modules and chain-link that stops bodies only (art-5b phase 2; 2026-11-09, 03:12 SGT)
 
 | Test | Result |
 |---|---|
@@ -19,7 +29,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Tests | 18 suites, 1,313 checks, all passed (KitTests 73). |
 | Not checked | Fence corners, slopes and building ends by eye; the merged kit pieces (off, not exported: the owner's A/B). |
 
-## EFT's remaining barter goods (economy-1a's fifteenth slice; 2026-11-09, 04:40 SGT)
+## EFT's remaining barter goods (economy-1a's fifteenth slice; 2026-11-09, 03:06 SGT)
 
 | Test | Result |
 |---|---|
@@ -28,7 +38,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Tests | 18 suites, 1,300 checks, all passed. HideoutTests is now 118 with the slice's updated pins; UiTests' picture check covers the new goods. |
 | Not checked | KOVAC's level 1 and 2 barters, the Pouch M and SV-1 barters through the trader screen; an old save with a 1x1 fabric roll now 2x1; the new goods in containers in a raid. |
 
-## Worn gear textured (art-4b; 2026-11-09, 04:00 SGT)
+## Worn gear textured (art-4b; 2026-11-09, 02:59 SGT)
 
 | Test | Result |
 |---|---|
@@ -39,7 +49,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Also | LookTests' L02 failed in one session: a cardboard 3.7 studs from a Smelter loot box, against 3.75. The detail plan now keeps clutter 0.4 studs further out than the check, because placements change between boots. After that: 18 suites, 1,295 checks, all passed. |
 | Not checked | The gear by eye up close in good light; the pack sheet once its colour map loads; a phone's memory with gear and gun sheets loaded. |
 
-## The Smelter made walkable (art-1a follow-up; 2026-11-09, 03:25 SGT)
+## The Smelter made walkable (art-1a follow-up; 2026-11-09, 02:49 SGT)
 
 | Test | Result |
 |---|---|
@@ -49,7 +59,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Tests | 18 suites, 1,295 checks, all passed. KitTests' Smelter pins were updated for the new layout: 1,109 stair and 837 railing parts without the kit; 72 flights and 219 rails (468 parts) with it. |
 | Not checked | The door leaves in their openings, the broken-out courtyard windows and TR_BORDER's sign by eye; the pit, the sump drop and the high bridge by hand. |
 
-## The modular stair and railing kit (art-5b phase 1; 2026-11-09, 02:40 SGT)
+## The modular stair and railing kit (art-5b phase 1; 2026-11-09, 02:09 SGT)
 
 | Test | Result |
 |---|---|

@@ -1,0 +1,28 @@
+{
+ "batch": "ZR_CharBase",
+ "px_per_mm": 0.22,
+ "sheets": {
+  "ZR_GR_Arms": [
+   "ZR_BLK_LeftUpperArm",
+   "ZR_BLK_LeftLowerArm",
+   "ZR_BLK_LeftHand",
+   "ZR_BLK_RightUpperArm",
+   "ZR_BLK_RightLowerArm",
+   "ZR_BLK_RightHand"
+  ],
+  "ZR_GR_Body": [
+   "ZR_BLK_Head",
+   "ZR_BLK_UpperTorso",
+   "ZR_BLK_LowerTorso",
+   "ZR_BLK_LeftUpperLeg",
+   "ZR_BLK_LeftLowerLeg",
+   "ZR_BLK_LeftFoot",
+   "ZR_BLK_RightUpperLeg",
+   "ZR_BLK_RightLowerLeg",
+   "ZR_BLK_RightFoot",
+   "ZR_EQ_HelmetA",
+   "ZR_CAL_Cube2"
+  ]
+ },
+ "size": 1024
+}

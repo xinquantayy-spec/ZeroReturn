@@ -44,6 +44,10 @@ GFIN = {
     "fabric": dict(r=0.9, m=0.0, wear=0.3, wc=None, wr=0.97, wm=0.0, bevel=4.0, weave=0.5, crease=0.6),
     "shell": dict(r=0.62, m=0.0, wear=0.35, wc=None, wr=0.5, wm=0.0, bevel=4.0, weave=0.0, crease=0.0),
     "plastic": dict(r=0.5, m=0.0, wear=0.25, wc=None, wr=0.4, wm=0.0, bevel=2.5, weave=0.0, crease=0.0),
+    # the body (ZR_CharBase): skin, gloves and boots apart from the clothing's fabric
+    "skin": dict(r=0.58, m=0.0, wear=0.0, wc=None, wr=0.58, wm=0.0, bevel=4.0, weave=0.0, crease=0.0),
+    "glove": dict(r=0.72, m=0.0, wear=0.2, wc=None, wr=0.6, wm=0.0, bevel=3.0, weave=0.3, crease=0.2),
+    "boot": dict(r=0.6, m=0.0, wear=0.35, wc=None, wr=0.45, wm=0.0, bevel=3.0, weave=0.0, crease=0.3),
 }
 MASK_KW = dict(wear_in=3.0 * MM, wear_out=10.0 * MM, grime_in=4.0 * MM, grime_out=20.0 * MM, sharp=math.radians(30))
 STATE = {}
@@ -54,7 +58,7 @@ def _gear_material(fin):
     """zr_tex's bake material for the nearest gun finish, with the gear's bevel and, on fabric, a woven grain and
     creases in the normal pass"""
     g = GFIN[fin]
-    base = {"fabric": "fabric", "shell": "polymer", "plastic": "plastic"}[fin]
+    base = {"fabric": "fabric", "shell": "polymer", "plastic": "plastic", "skin": "plastic", "glove": "rubber", "boot": "leather"}[fin]
     saved = dict(zr_tex.FIN[base])
     zr_tex.FIN[base] = dict(saved, r=g["r"], m=g["m"], wear=g["wear"], wc=g["wc"], wr=g["wr"], wm=g["wm"])
     try:
@@ -123,7 +127,7 @@ def _gear_material(fin):
 
 def _build_pieces(scn):
     g = {"ZR_NO_EXPORT": True, "__name__": "zr_gtex_build"}
-    path = os.path.join(ROOT, "assets", "blender_scripts", "build_char_gear.py")
+    path = os.path.join(ROOT, "assets", "blender_scripts", SCRIPT)
     exec(compile(open(path, encoding="utf-8").read(), path, "exec"), g)
     return g["build"](scn)
 
@@ -141,6 +145,28 @@ SHEETS = [
                           "ZR_OV_Armband", "ZR_OV_ShoulderMarker"]),
     ("ZR_GR_FP", 512, ["ZR_FP_Sleeve", "ZR_FP_Cuff"]),
 ]
+
+
+SCRIPT = "build_char_gear.py"
+GEAR = (BATCH, SCRIPT, SHEETS, FINISH)
+# the body: two sheets, the six arm segments (the first-person arms are the body's own) and the rest with helmet A and
+# the calibration cube
+BODY_PARTS = ["Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm",
+              "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"]
+ARMS = ["LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand"]
+BODY = ("ZR_CharBase", "build_char_base.py",
+        # the arms on a sheet of their own: the first-person view shows them up close all raid
+        [("ZR_GR_Arms", 1024, ["ZR_BLK_" + n for n in ARMS]),
+         ("ZR_GR_Body", 1024, ["ZR_BLK_" + n for n in BODY_PARTS if n not in ARMS] + ["ZR_EQ_HelmetA", "ZR_CAL_Cube2"])],
+        dict({"ZR_BLK_Head": "skin", "ZR_BLK_LeftHand": "glove", "ZR_BLK_RightHand": "glove", "ZR_BLK_LeftFoot": "boot",
+              "ZR_BLK_RightFoot": "boot", "ZR_EQ_HelmetA": "shell", "ZR_CAL_Cube2": "plastic"}))
+
+
+def use(which):
+    """switch the module to a batch: GT.use(GT.BODY) or GT.use(GT.GEAR) (the default), then prepare/bake/export"""
+    global BATCH, SCRIPT, SHEETS, FINISH
+    BATCH, SCRIPT, SHEETS, FINISH = which
+    return BATCH
 
 
 def _clear_sheets():
@@ -238,14 +264,17 @@ def export():
     saved = (zr_tex.TEX, zr_tex.PX_PER_STUD)
     zr_tex.TEX = TEX
     zr_tex.PX_PER_STUD = min(sh["px_per_stud"] for sh in zr_tex.STATE[BATCH]["sheets"])   # the record's px_per_mm: the lowest
+    import zr_items
     objs = [bpy.data.objects[n] for n in zr_tex.STATE[BATCH]["all"]]
-    for o in objs:   # the FBX's material slot only names the finish; the item render materials have no "shell"
-        if o["zr_mat"] == "shell":
-            o["zr_mat"] = "polymer"
+    fins = {o.name: o["zr_mat"] for o in objs}
+    for o in objs:   # the FBX's material slot only names the finish; the item render materials lack the gear's own
+        if o["zr_mat"] not in zr_items.ITEM_MATS:
+            o["zr_mat"] = {"shell": "polymer", "glove": "rubber", "boot": "leather"}.get(o["zr_mat"], "plastic")
+            if o["zr_mat"] not in zr_items.ITEM_MATS:
+                o["zr_mat"] = "plastic"
     try:
         return zr_tex.export(BATCH)
     finally:
         zr_tex.TEX, zr_tex.PX_PER_STUD = saved
         for o in objs:
-            if o.name in FINISH and FINISH[o.name] == "shell":
-                o["zr_mat"] = "shell"
+            o["zr_mat"] = fins[o.name]

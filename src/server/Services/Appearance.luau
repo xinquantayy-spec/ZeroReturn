@@ -189,6 +189,10 @@ function Appearance.apply(char, spec)
 			local p = char:FindFirstChild(name)
 			if p and p:IsA("BasePart") then
 				p.Color = Color3.fromHex(outfit[cloth] or "808080")
+				local sa = p:FindFirstChildOfClass("SurfaceAppearance")
+				if sa then
+					sa.Color = p.Color -- art-4b: the textured body takes the outfit colour through its SurfaceAppearance
+				end
 			end
 		end
 		rec.bodySig = bodySig

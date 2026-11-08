@@ -62,6 +62,10 @@ function Chars.buildRig(kind, variant)
 		p.CFrame = CFrame.new(spec.center)
 		local cloth = Equipment.CLOTH[name]
 		p.Color = Color3.fromHex(look[cloth] or "808080")
+		local sa = p:FindFirstChildOfClass("SurfaceAppearance")
+		if sa then
+			sa.Color = p.Color -- art-4b: a textured segment takes its outfit colour through its SurfaceAppearance
+		end
 		p.Material = (cloth == "skin" or cloth == "boot") and Enum.Material.SmoothPlastic or Enum.Material.Fabric
 		p.CanCollide = COLLIDE[name] == true
 		p.CanTouch = false
@@ -359,6 +363,10 @@ function Chars.recolor(char, kind)
 		local p = char:FindFirstChild(name)
 		if p and p:IsA("BasePart") then
 			p.Color = Color3.fromHex(look[cloth])
+			local sa = p:FindFirstChildOfClass("SurfaceAppearance")
+			if sa then
+				sa.Color = p.Color
+			end
 		end
 	end
 end

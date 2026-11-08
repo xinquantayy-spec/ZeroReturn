@@ -30,10 +30,10 @@
   "uploaded": "2026-10-29 15:23:16"
  },
  "ZR_CharBase": {
-  "assetId": "101424875475699",
+  "assetId": "91769130138991",
   "file": "assets\\exports\\ZR_CharBase.fbx",
-  "sha1": "d8b22a9bc6e3df8def0f604f291640e36535f9b5",
-  "uploaded": "2026-10-28 22:17:01"
+  "sha1": "698c1659626f1f2db1664b3a8993e56ee9a0906d",
+  "uploaded": "2026-11-09 03:17:16"
  },
  "ZR_CharGear": {
   "assetId": "125447493326154",
@@ -208,6 +208,54 @@
   "file": "assets\\textures\\out\\foliage\\ZR_Foliage_Color.png",
   "sha1": "180d1aaf7c478cf6887c6b54f543b2944e1105b6",
   "uploaded": "2026-11-01 19:38:57"
+ },
+ "ZR_GR_Arms_col": {
+  "assetId": "112004527275277",
+  "file": "assets\\textures\\gear\\ZR_GR_Arms_col.png",
+  "sha1": "3e177c3a5ce99b0c7b06b8ab5a88991a2863a4e7",
+  "uploaded": "2026-11-09 03:24:13"
+ },
+ "ZR_GR_Arms_mtl": {
+  "assetId": "87675229820386",
+  "file": "assets\\textures\\gear\\ZR_GR_Arms_mtl.png",
+  "sha1": "a703976c2d01fa9d83281a7af37ef0b812dbb630",
+  "uploaded": "2026-11-09 03:17:00"
+ },
+ "ZR_GR_Arms_nrm": {
+  "assetId": "120945368378343",
+  "file": "assets\\textures\\gear\\ZR_GR_Arms_nrm.png",
+  "sha1": "274b06e684cf0af020aeb85577aebb7838ce5f70",
+  "uploaded": "2026-11-09 03:24:19"
+ },
+ "ZR_GR_Arms_rgh": {
+  "assetId": "111234940159092",
+  "file": "assets\\textures\\gear\\ZR_GR_Arms_rgh.png",
+  "sha1": "f8585108104d326c70de1d99284b196a7ef91e70",
+  "uploaded": "2026-11-09 03:24:25"
+ },
+ "ZR_GR_Body_col": {
+  "assetId": "87885223645909",
+  "file": "assets\\textures\\gear\\ZR_GR_Body_col.png",
+  "sha1": "fb34c3ceb93968967a40e342096945a89a17a058",
+  "uploaded": "2026-11-09 03:24:33"
+ },
+ "ZR_GR_Body_mtl": {
+  "assetId": "121120713173736",
+  "file": "assets\\textures\\gear\\ZR_GR_Body_mtl.png",
+  "sha1": "a703976c2d01fa9d83281a7af37ef0b812dbb630",
+  "uploaded": "2026-11-09 03:17:10"
+ },
+ "ZR_GR_Body_nrm": {
+  "assetId": "106878650146873",
+  "file": "assets\\textures\\gear\\ZR_GR_Body_nrm.png",
+  "sha1": "e73c120770c327b0f2d46038a8899bc2c36a65bc",
+  "uploaded": "2026-11-09 03:24:39"
+ },
+ "ZR_GR_Body_rgh": {
+  "assetId": "99235274013760",
+  "file": "assets\\textures\\gear\\ZR_GR_Body_rgh.png",
+  "sha1": "d77b6939198b3d4b0f8e0970ea08b34e504c80d7",
+  "uploaded": "2026-11-09 03:24:45"
  },
  "ZR_GR_FP_col": {
   "assetId": "128216955954747",
