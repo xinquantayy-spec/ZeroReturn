@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## EFT's remaining barter goods (economy-1a's fifteenth slice; 2026-11-09, 04:40 SGT)
+
+| Test | Result |
+|---|---|
+| Pictures | build_items_u.py's 32 models rendered in Blender; the sheet was looked at: the disc drive, processors, LCDs, handheld console, gas analyser, the four fabric rolls, powders, tools, toiletries, coffee, sugar and books, none with a brand or text. Packed onto a new sheet 7, uploaded, image 100114153485804; ItemIcons 571 items on 8 sheets. |
+| Hideout | 92 crafts (workbench 43, lavatory 20, medstation 13, nutrition 10, intel 4, water 2), as the slice expects. |
+| Tests | 18 suites, 1,300 checks, all passed. HideoutTests is now 118 with the slice's updated pins; UiTests' picture check covers the new goods. |
+| Not checked | KOVAC's level 1 and 2 barters, the Pouch M and SV-1 barters through the trader screen; an old save with a 1x1 fabric roll now 2x1; the new goods in containers in a raid. |
+
 ## Worn gear textured (art-4b; 2026-11-09, 04:00 SGT)
 
 | Test | Result |

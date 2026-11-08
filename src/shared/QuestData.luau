@@ -907,10 +907,17 @@ Q.OPS_ITEMS = {
 		"POWER_BANK", "BANDAGE", "PAINKILLERS", "SPLINT", "MEDKIT_S", "WATER", "STEW", "HARDTACK",
 		-- economy-1a's second slice: EFT's dailies ask for its everyday hardware, household and medical goods too
 		"SCREWS", "NUTS", "NAILS", "SPARE_PARTS", "RELAY", "CPU_FAN", "TPLUG", "PEN_OIL", "LIGHTER", "TOILET_PAPER", "SALT",
-		"SYRINGE", "MEDS_PILE", "SALINE", "SCREWDRIVER", "PLIERS", "WRENCH", "TAPE_MEASURE" },
+		"SYRINGE", "MEDS_PILE", "SALINE", "SCREWDRIVER", "PLIERS", "WRENCH", "TAPE_MEASURE",
+		-- economy-1a's fifteenth slice: its goods EFT's dailies ask for from level 1 (SPT 3.10.1 repeatableQuests.json, the
+		-- completion whitelist)
+		"INSUL_TAPE", "PC_CPU", "DISC_DRIVE", "LIGHTER_WIND", "PEROXIDE", "BICARB", "COFFEE_BEANS", "FABRIC_RIPSTOP" },
 	uncommon = { "CAPACITOR", "BATTERY", "LOGIC_BOARD", "HDD", "RAM_STICK", "PHONE", "MED_TOOLS", "OLD_COIN", "HEMOSTAT", "MEDKIT_L",
 		"SIGNAL_COIL", "CERAMIC_FUSE", "SILICONE_TUBE", "CORR_HOSE", "SEAL_TAPE", "POWER_CORD", "ES_LAMP", "MOTOR", "LI_BATTERY",
-		"WEAPON_PARTS", "BLOODSET", "FUZE", "CHLORINE", "SECURE_FLASH", "TOOLSET" },
+		"WEAPON_PARTS", "BLOODSET", "FUZE", "CHLORINE", "SECURE_FLASH", "TOOLSET",
+		-- the fifteenth slice: the dearer of EFT's level 1 daily goods and its level 15 ones (the same whitelist; ours has no
+		-- level gate, so its level 25 and 40 goods, the diary, VPX, Virtex, the antique book and the Tetriz, stay out)
+		"GUNPOWDER", "POWDER_FLAKE", "FOAM_MOUNT", "LCD_BROKEN", "GAS_ANALYSER", "SHAMPOO", "FABRIC_FLEECE", "SUGAR", "POWDER_BALL",
+		"CABLE_CUTTER", "SLIM_DIARY" },
 }
 -- what a weekly may pay on top (ours)
 Q.OPS_REWARD_ITEMS = { "MEDKIT_L", "GREN_F7", "R17_MAG40", "KST_MAG40", "HELMET_C3", "SURGKIT", "WEAPON_KIT", "RIG_CHEST" }

@@ -304,7 +304,7 @@ function T.run(ctx)
 		end
 		check(string.format("EFT's current crafts with a product here: %d (medstation %d, workbench %d, lavatory %d, nutrition %d, water %d, intel %d), no ids clash",
 			#HD.recipes, perModule.medstation or 0, perModule.workbench or 0, perModule.lavatory or 0, perModule.nutrition or 0, perModule.water or 0, perModule.intel or 0),
-			#HD.recipes >= 83 and #dupe == 0)
+			#HD.recipes >= 92 and #dupe == 0)
 		check("every craft's module, level, product, inputs and tools are real items and levels" .. listed(badItem), #badItem == 0)
 		check("every craft takes positive counts and time, lists each input once and names EFT's product" .. listed(badNum), #badNum == 0)
 		check("no craft only turns an item into more of itself" .. listed(selfLoop), #selfLoop == 0)
@@ -319,20 +319,23 @@ function T.run(ctx)
 		-- (7.62x54R LPS left this list in the thirteenth catalogue slice: EFT's craft makes it from 7.62x54R FMJ, now ours)
 		check("no craft makes 7.62x39 PS (EFT's craft makes FMJ), 9x18 Pst or PSV (PstM, SP8), 7.62x54R SNB, 12/70 buckshot or lead slugs (Piranha, the .50 BMG slug), M995",
 			not makes.A76_PS and not makes.A918_PST and not makes.A918_PSV and not makes.A76L_SNB and not makes.A12_BUCK and not makes.A12_SLUG and not makes.A62_AP)
-		-- the header's value rule, made exact for the two crafts the thirteenth slice could not bring in: value out over value
-		-- used up at our values, against EFT's handbook prices (SPT's handbook.json: 7.62x39 FMJ 140, Eagle 32,000; SJ6 27,950,
-		-- SJ1 35,893, pile of meds 6,500, saline 8,508, OLOLO multivitamins 25,090). Left out while ours is over 1.5 and over
-		-- twice EFT's; if our powder tin or SV-3 is revalued, these checks fail and the crafts can come in
+		-- the header's value rule, made exact: value out over value used up at our values, against EFT's handbook prices (SPT's
+		-- handbook.json: 7.62x39 FMJ 140, Eagle 32,000; SJ6 27,950, SJ1 35,893, pile of meds 6,500, saline 8,508, OLOLO
+		-- multivitamins 25,090; PCB 12,749, DVD drive 8,295, gas analyzer 21,697; sugar 21,489, Alyonka 10,483). Left out
+		-- while ours is over 1.5 and over twice EFT's; 7.62x39 FMJ x200 came in with the fifteenth slice (Eagle at EFT's price)
 		local function rich(out, used, eftOut, eftUsed)
 			local ours, eft = out / used, eftOut / eftUsed
 			return ours > 1.5 and ours > 2 * eft
 		end
 		local A = Items.defs
-		check("7.62x39 FMJ x200 from one Eagle stays out: far richer at our values (a powder tin for 200 rounds) than at EFT's",
-			not makes.A76_FMJ and A.A76_FMJ ~= nil and rich(200 * A.A76_FMJ.value, A.GUNPOWDER.value, 200 * 140, 32000))
+		check("7.62x39 FMJ x200 from one Eagle (our ball powder) is in: no richer at our values than at EFT's (the fifteenth slice)",
+			makes.A76_FMJ == 1 and HD.byRecipe.AMMO_7639FMJ ~= nil and not rich(200 * A.A76_FMJ.value, A.POWDER_BALL.value, 200 * 140, 32000))
 		check("SJ6 (our SV-3) is made by no craft: EFT's 2 from an SJ1 would be far richer at our values (SV-3 against EFT's SJ6)",
-			not makes.STIM_STAMINA and A.STIM_COMBAT ~= nil and rich(2 * A.STIM_STAMINA.value, A.STIM_COMBAT.value + 3 * A.MEDS_PILE.value + A.SALINE.value,
+			not makes.STIM_STAMINA and A.STIM_COMBAT ~= nil and rich(2 * A.STIM_STAMINA.value, A.STIM_COMBAT.value + 2 * A.MEDS_PILE.value + A.SALINE.value + A.MULTIVITAMINS.value,
 				2 * 27950, 35893 + 2 * 6500 + 8508 + 25090))
+		check("no craft makes circuit boards (from a DVD drive or a gas analyzer) or sugar (from chocolate): far richer at our values",
+			not makes.LOGIC_BOARD and not makes.SUGAR and rich(2 * A.LOGIC_BOARD.value, A.DISC_DRIVE.value, 2 * 12749, 8295)
+				and rich(2 * A.LOGIC_BOARD.value, A.GAS_ANALYSER.value, 2 * 12749, 21697) and rich(A.SUGAR.value, 2 * A.CHOC_BAR.value, 21489, 2 * 10483))
 		check("no craft makes a near armour, helmet or magazine (Module-3M, Zhuk, MICH, the 6L31)", not makes.ARMOR_C2 and not makes.ARMOR_C3 and not makes.HELMET_C3 and not makes.KST_MAG40)
 		check("LogicTests' crafts are still there: RK-5 grenades and the repair kit", HD.byRecipe.NADE_RK5 ~= nil and HD.byRecipe.GUN_KIT ~= nil
 			and Items.defs[HD.byRecipe.GUN_KIT.get[1]].kind == "repair")
@@ -366,12 +369,12 @@ function T.run(ctx)
 		-- xgamingserver's fuel tank page: lavatory 2, 1 h 2 min, 2 Zibbo and 2 Crickent lighters, water used up, the tube
 		-- returned (economy-7b used the tube up)
 		r = HD.byRecipe.LAV_FUEL
-		check("lavatory 2: the fuel tank from 4 lighters and water, the silicone tube now a tool", is("LAV_FUEL", "lavatory", 2, 3720, "FUEL_CAN", 1)
-			and has(r.give, "LIGHTER", 4) and has(r.give, "WATER", 1) and has(r.tools, "SILICONE_TUBE", 1) and not has(r.give, "SILICONE_TUBE"))
+		check("lavatory 2: the fuel tank from 2 windproof and 2 disposable lighters (EFT's Zibbo and Crickent) and water, the silicone tube a tool", is("LAV_FUEL", "lavatory", 2, 3720, "FUEL_CAN", 1)
+			and has(r.give, "LIGHTER_WIND", 2) and has(r.give, "LIGHTER", 2) and has(r.give, "WATER", 1) and has(r.tools, "SILICONE_TUBE", 1) and not has(r.give, "SILICONE_TUBE"))
 		-- xgamingserver's radiator helix page: workbench 3, 2 h 18 min, 80 M80, 2 Hawk, a helix, the multitool returned, 40 M80A1
 		r = HD.byRecipe.AMMO_M80A1
-		check("workbench 3: 7.62x51 M80A1 x40 from M80 x80, 2 gunpowder and a helix (our signal coil), multitool returned",
-			is("AMMO_M80A1", "workbench", 3, 8280, "A76N_EP", 40) and has(r.give, "A76N_BALL", 80) and has(r.give, "GUNPOWDER", 2) and has(r.give, "SIGNAL_COIL", 1)
+		check("workbench 3: 7.62x51 M80A1 x40 from M80 x80, 2 flake powder (EFT's Hawk) and a helix (our signal coil), multitool returned",
+			is("AMMO_M80A1", "workbench", 3, 8280, "A76N_EP", 40) and has(r.give, "A76N_BALL", 80) and has(r.give, "POWDER_FLAKE", 2) and has(r.give, "SIGNAL_COIL", 1)
 				and has(r.tools, "MULTITOOL", 1))
 		-- xgamingserver's toolset page: the weapon repair kit is EFT's refill (a kit, a toolset not returned, gun lube, 3
 		-- weapon parts, 2 metal spare parts, 25 min)
@@ -412,13 +415,26 @@ function T.run(ctx)
 		check("workbench 1: a magnet from a damaged hard drive, the screwdriver returned, 2,600 s (SPT; tarkovforge 43 min)",
 			is("WB_MAGNET", "workbench", 1, 2600, "MAGNET", 1) and has(r.give, "HDD", 1) and #r.give == 1 and has(r.tools, "SCREWDRIVER", 1))
 		r = HD.byRecipe.AMMO_FLECH
-		check("workbench 1: 12/70 flechette x40 from 3 nails and 2 gunpowder, the sledgehammer returned, 50 min (EFT 1.x; 0.16.9: 60 at level 3)",
-			is("AMMO_FLECH", "workbench", 1, 3000, "A12_FLECH", 40) and has(r.give, "NAILS", 3) and has(r.give, "GUNPOWDER", 2) and #r.give == 2
+		check("workbench 1: 12/70 flechette x40 from 3 nails and 2 ball powder (EFT's Eagle), the sledgehammer returned, 50 min (EFT 1.x; 0.16.9: 60 at level 3)",
+			is("AMMO_FLECH", "workbench", 1, 3000, "A12_FLECH", 40) and has(r.give, "NAILS", 3) and has(r.give, "POWDER_BALL", 2) and #r.give == 2
 				and has(r.tools, "SLEDGEHAMMER", 1) and not has(r.give, "SLEDGEHAMMER"))
 		r = HD.byRecipe.AMMO_LPS
-		check("workbench 2: 7.62x54R LPS x50 from its FMJ x70 and a gunpowder, the multitool returned, 4 h (EFT 1.x; 0.16.9 made 70)",
-			is("AMMO_LPS", "workbench", 2, 14400, "A76L_LPS", 50) and has(r.give, "A76L_FMJ", 70) and has(r.give, "GUNPOWDER", 1) and #r.give == 2
+		check("workbench 2: 7.62x54R LPS x50 from its FMJ x70 and a flake powder (EFT's Hawk), the multitool returned, 4 h (EFT 1.x; 0.16.9 made 70)",
+			is("AMMO_LPS", "workbench", 2, 14400, "A76L_LPS", 50) and has(r.give, "A76L_FMJ", 70) and has(r.give, "POWDER_FLAKE", 1) and #r.give == 2
 				and has(r.tools, "MULTITOOL", 1))
+		-- economy-1a's fifteenth slice: the crafts its goods let in and the modules that take them (HideoutData's comments)
+		r = HD.byRecipe.WB_HAWK
+		check("workbench 1: Hawk (our flake powder) x3 from classic matches and an Eagle (ball powder), 36 min",
+			is("WB_HAWK", "workbench", 1, 2160, "POWDER_FLAKE", 3) and has(r.give, "MATCHES", 1) and has(r.give, "POWDER_BALL", 1) and #r.give == 2)
+		r = HD.byRecipe.WB_CUTTER
+		check("workbench 2: the cable cutter from a toolset, 2 WD-40, 5 metal spare parts and a screwdriver, nippers (our pliers) and Pliers Elite returned, 25,000 s",
+			is("WB_CUTTER", "workbench", 2, 25000, "CABLE_CUTTER", 1) and has(r.give, "SPARE_PARTS", 5) and has(r.tools, "PLIERS", 1) and has(r.tools, "PLIERS_HD", 1))
+		check("workbench: both LCD crafts, the gas analyzer and the Geiger counter; intel 2: Virtex (our programmable processor), 23 h; lavatory 2: fleece from beanies",
+			is("WB_LCD", "workbench", 2, 1887, "LCD_PANEL", 1) and is("WB_LCD_BROKEN", "workbench", 1, 1320, "LCD_BROKEN", 4) and is("WB_GAS", "workbench", 1, 6600, "GAS_ANALYSER", 1)
+				and is("WB_GEIGER", "workbench", 2, 5500, "GEIGER", 1) and is("INT_VIRTEX", "intel", 2, 82800, "FPGA_CHIP", 1) and is("LAV_FLEECE", "lavatory", 2, 2600, "FABRIC_FLEECE", 1))
+		check("modules take the real goods: security 3 two LCDs, generator 2 the cable cutter, range 3 the tech manual, intel 3 two VPX",
+			has(HD.modules.security.levels[3].items, "LCD_PANEL", 2) and has(HD.modules.generator.levels[2].items, "CABLE_CUTTER", 1)
+				and has(HD.modules.range.levels[3].items, "TECH_MANUAL", 1) and has(HD.modules.intel.levels[3].items, "STORAGE_MODULE", 2))
 		r = HD.byRecipe.MED_SJ1
 		check("medstation 2: SJ1 (our SV-1) x5 from 7 piles of meds, 2 saline, 3 Propital and a morphine (our analgesic tabs), 4,990 s, no tool",
 			is("MED_SJ1", "medstation", 2, 4990, "STIM_COMBAT", 5) and has(r.give, "MEDS_PILE", 7) and has(r.give, "SALINE", 2) and has(r.give, "STIM_REGEN", 3)
