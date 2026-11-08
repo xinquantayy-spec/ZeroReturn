@@ -1,0 +1,31 @@
+{
+ "batch": "ZR_GunsSMG",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_SMG_T1": [
+   "ZR_WP_SPARROW_MAG__metal",
+   "ZR_WP_SPARROW_MAG__brass",
+   "ZR_WP_SPARROW_SMG__gunmetal",
+   "ZR_WP_SPARROW_SMG__metal",
+   "ZR_WP_SPR_FH_3L__gunmetal",
+   "ZR_WP_SPR_GRIP_NAVY__polymer",
+   "ZR_WP_SPR_GRIP_NAVY__metal",
+   "ZR_WP_SPR_GRIP_STD__polymer",
+   "ZR_WP_SPR_GRIP_STD__metal",
+   "ZR_WP_SPR_HG_SLIM__polymer",
+   "ZR_WP_SPR_HG_TRI__gunmetal"
+  ],
+  "ZR_GT_SMG_T2": [
+   "ZR_WP_SPR_MAG50__metal",
+   "ZR_WP_SPR_MAG50__polymer",
+   "ZR_WP_SPR_MAG50__brass",
+   "ZR_WP_SPR_MNT_CLAW__gunmetal",
+   "ZR_WP_SPR_STK_CAP__gunmetal",
+   "ZR_WP_SPR_STK_FIXED__polymer",
+   "ZR_WP_SPR_STK_FIXED__rubber",
+   "ZR_WP_SPR_STK_SLIDE__gunmetal",
+   "ZR_WP_SPR_STK_SLIDE__rubber"
+  ]
+ },
+ "size": 1024
+}

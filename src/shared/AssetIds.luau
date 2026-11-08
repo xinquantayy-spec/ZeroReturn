@@ -22,23 +22,23 @@ return {
 	{ key = "ZR_ItemsC", id = 125911946207153 }, -- valuables and barter goods
 	-- M14 guns as parts (ZR_WP_<part>__<material> pieces, origin at the attach point; see GunMeta.luau, build_guns_all.py)
 	{ key = "ZR_GunsAR", id = 123034684749216 }, -- (2026-11-08 art-4b: with UVs for its four texture sheets, ZR_GT_AR_T1-4; was 130670418678516) R-17 receiver, uppers, barrels, gas blocks, handguards, stocks, grips, charging handles, sights, muzzle devices, magazines
-	{ key = "ZR_GunsAK", id = 104159336478565 }, -- Kestrel KS-7 and KS-74 receivers, dust covers, handguards, stocks, grips, muzzle devices (the 74 brake), side mount, magazines (economy-1a third slice, 2026-11-08)
-	{ key = "ZR_GunsSMG", id = 106931227232196 }, -- Sparrow SMG-9 receiver, handguards, stocks, grips, claw mount, magazines
-	{ key = "ZR_GunsSG", id = 70558979775509 }, -- Harrow-12 receiver, barrels, tubes, forends, stocks, chokes and brake
-	{ key = "ZR_GunsBolt", id = 80035562450165 }, -- Tundra receiver, stocks, mounts, muzzle devices
-	{ key = "ZR_GunsPistol", id = 76631608159948 }, -- P-9 frame, slides, barrels, compensator, magazines; Makar PM frame, slide, magazine (2026-11-08)
-	{ key = "ZR_GunsMods", id = 131071003311039 }, -- shared parts: sights and scopes, mounts, foregrips, lights and lasers, suppressors
-	{ key = "ZR_GunsLMG", id = 87298401147258 }, -- Kestrel KS-L light machine gun receiver and its 95-round drum (ai-5b, 2026-11-08)
-	{ key = "ZR_GunsGL", id = 125849516891348 }, -- Bittern GL-6 grenade launcher (ai-5b, 2026-11-08)
-	{ key = "ZR_GunsDMR", id = 110062670524120 }, -- Siskin SK-45 carbine; Merlin MR-10 marksman rifle, flash hider, magazine (economy-1a fourth slice, 2026-11-08)
-	{ key = "ZR_GunsNATO", id = 117198564439083 }, -- Shrike S-14 rifle, Osprey OB-7 bolt-action, their magazines, flash suppressor, mount and rail base (economy-1a fifth slice, 2026-11-08)
-	{ key = "ZR_GunsVSS", id = 85841185372239 }, -- Owl SV-9 and Nightjar AV-9 rifles, their integral barrel-suppressors and magazines (economy-1a sixth slice, 2026-11-08)
-	{ key = "ZR_GunsPDW", id = 98715920208334 }, -- Swift PW-46 and Petrel PD-57 personal defence weapons and their magazines (economy-1a seventh slice, 2026-11-08)
-	{ key = "ZR_Guns45", id = 99440020868996 }, -- Harrier HS-45, Lark L-11 and Finch F-57 and their magazines (economy-1a eighth slice, 2026-11-08)
-	{ key = "ZR_Guns19", id = 140028041034196 }, -- Dunlin D-17, Avocet AV-9, Bunting B-19 and magazines (economy-1a twelfth slice, 2026-11-08)
-	{ key = "ZR_GunsRev", id = 136885242607396 }, -- Crake C-357, Crake C-9 and Bustard B-12 (economy-1a eleventh slice, 2026-11-08)
-	{ key = "ZR_Guns21", id = 125081825640710 }, -- Wren W-21, Jay J-21, Tern T-215 and their magazines (economy-1a tenth slice, 2026-11-08)
-	{ key = "ZR_GunsTT", id = 138032227885924 }, -- Pipit P-33 and Grackle G-41 and their magazines (economy-1a ninth slice, 2026-11-08)
+	{ key = "ZR_GunsAK", id = 83385351744718 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 104159336478565) Kestrel KS-7 and KS-74 receivers, dust covers, handguards, stocks, grips, muzzle devices (the 74 brake), side mount, magazines (economy-1a third slice, 2026-11-08)
+	{ key = "ZR_GunsSMG", id = 80607177074365 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 106931227232196) Sparrow SMG-9 receiver, handguards, stocks, grips, claw mount, magazines
+	{ key = "ZR_GunsSG", id = 75419741874538 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 70558979775509) Harrow-12 receiver, barrels, tubes, forends, stocks, chokes and brake
+	{ key = "ZR_GunsBolt", id = 94171370721461 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 80035562450165) Tundra receiver, stocks, mounts, muzzle devices
+	{ key = "ZR_GunsPistol", id = 119179309155982 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 76631608159948) P-9 frame, slides, barrels, compensator, magazines; Makar PM frame, slide, magazine (2026-11-08)
+	{ key = "ZR_GunsMods", id = 137884253731573 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 131071003311039) shared parts: sights and scopes, mounts, foregrips, lights and lasers, suppressors
+	{ key = "ZR_GunsLMG", id = 94349432798403 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 87298401147258) Kestrel KS-L light machine gun receiver and its 95-round drum (ai-5b, 2026-11-08)
+	{ key = "ZR_GunsGL", id = 91406625083520 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 125849516891348) Bittern GL-6 grenade launcher (ai-5b, 2026-11-08)
+	{ key = "ZR_GunsDMR", id = 97354891517879 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 110062670524120) Siskin SK-45 carbine; Merlin MR-10 marksman rifle, flash hider, magazine (economy-1a fourth slice, 2026-11-08)
+	{ key = "ZR_GunsNATO", id = 101088333024214 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 117198564439083) Shrike S-14 rifle, Osprey OB-7 bolt-action, their magazines, flash suppressor, mount and rail base (economy-1a fifth slice, 2026-11-08)
+	{ key = "ZR_GunsVSS", id = 135607024346151 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 85841185372239) Owl SV-9 and Nightjar AV-9 rifles, their integral barrel-suppressors and magazines (economy-1a sixth slice, 2026-11-08)
+	{ key = "ZR_GunsPDW", id = 88339392317727 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 98715920208334) Swift PW-46 and Petrel PD-57 personal defence weapons and their magazines (economy-1a seventh slice, 2026-11-08)
+	{ key = "ZR_Guns45", id = 90181389110664 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 99440020868996) Harrier HS-45, Lark L-11 and Finch F-57 and their magazines (economy-1a eighth slice, 2026-11-08)
+	{ key = "ZR_Guns19", id = 93410554788095 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 140028041034196) Dunlin D-17, Avocet AV-9, Bunting B-19 and magazines (economy-1a twelfth slice, 2026-11-08)
+	{ key = "ZR_GunsRev", id = 94114734867311 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 136885242607396) Crake C-357, Crake C-9 and Bustard B-12 (economy-1a eleventh slice, 2026-11-08)
+	{ key = "ZR_Guns21", id = 138690334269254 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 125081825640710) Wren W-21, Jay J-21, Tern T-215 and their magazines (economy-1a tenth slice, 2026-11-08)
+	{ key = "ZR_GunsTT", id = 98975135525819 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 138032227885924) Pipit P-33 and Grackle G-41 and their magazines (economy-1a ninth slice, 2026-11-08)
 	-- Relay 7 lobby bunker kit (ZR_MK_<Prop>__<material> pieces like the mall kit; see KitMeta.luau, Maps/Relay7.luau)
 	{ key = "ZR_BunkerKitA", id = 126010320295919 }, -- shell and services: blast door, door frames, pipes and valves, cable trays, beams, ducts, lamps, boxes, safety kit, sandbags, rubble (build_bunker_kit_a.py)
 	{ key = "ZR_BunkerKitB", id = 100322751912819 }, -- rooms and stations: bunks, lockers, mirror sink, map table, boards, trader counters, gun racks, armour stands, hideout modules, range booth and targets (build_bunker_kit_b.py)

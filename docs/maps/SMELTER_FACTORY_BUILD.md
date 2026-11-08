@@ -80,7 +80,7 @@ roofs over the halls and annexes; spawns, containers and AI points are nudged of
 | Courtyard Gate | YARD GATE | GY | open, PMCs only |
 | Gate 2 | COKE GATE | G2 | open, PMCs only (EFT's conditions unpublished: ours) |
 | Camera Bunker Door | BUNKER HATCH | CB | scavs |
-| Office Window | SHIFT OFFICE WINDOW | OW | scavs |
+| Office Window | TIMEKEEPER'S WINDOW | OW | scavs |
 | Smugglers' Passage | SMUGGLERS' CRAWL | SC | key exit with the note NOTE_SMELT_CRAWL; built only once that item exists |
 | Transit to Customs | TRANSIT TO BORDER YARD | TR_BORDER | to "border" (Woods and Lab transits: no map) |
 

@@ -1802,11 +1802,21 @@ function T.run(ctx)
 	-- transits (Tarkov 0.15): Border Yard's to Meridian Mall and back, opening a minute in with a 20 s countdown (SPT)
 	if ctx and ctx.World and ctx.Transit and ctx.World.maps.border and ctx.World.maps.meridian then
 		local TR = ctx.Transit
-		local function only(mid)
-			local list = ctx.World.maps[mid].transits or {}
-			return #list == 1 and list[1] or nil
+		local function to(mid, dest)
+			for _, t in (ctx.World.maps[mid] and ctx.World.maps[mid].transits) or {} do
+				if t.to == dest then
+					return t
+				end
+			end
+			return nil
 		end
-		local b, m = only("border"), only("meridian")
+		local b, m = to("border", "meridian"), to("meridian", "border")
+		-- Customs' transit to Factory and Factory's back (art-1a: the Smelter is Factory now), when this server built it
+		if ctx.World.maps.smelter then
+			local bs, sb = to("border", "smelter"), to("smelter", "border")
+			check("transit: Border Yard has one to the Smelter and the Smelter one back, each with its sign",
+				bs ~= nil and sb ~= nil and bs.sign ~= nil and sb.sign ~= nil and #(ctx.World.maps.border.transits or {}) == 2)
+		end
 		check("transit: Border Yard has one to Meridian Mall and Meridian Mall one back, each a 16-stud zone with its sign",
 			b ~= nil and m ~= nil and b.to == "meridian" and m.to == "border" and b.size.X == 16 and m.size.Z == 16 and b.sign ~= nil and m.sign ~= nil
 				and TR.inside(b, b.pos + Vector3.new(0, 1, 0)) and not TR.inside(b, b.pos + Vector3.new(20, 1, 0)))

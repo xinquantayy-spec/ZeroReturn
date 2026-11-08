@@ -1,0 +1,12 @@
+{
+ "batch": "ZR_GunsGL",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_GL_T1": [
+   "ZR_WP_GL6_LAUNCHER__gunmetal",
+   "ZR_WP_GL6_LAUNCHER__metal",
+   "ZR_WP_GL6_LAUNCHER__polymer"
+  ]
+ },
+ "size": 1024
+}

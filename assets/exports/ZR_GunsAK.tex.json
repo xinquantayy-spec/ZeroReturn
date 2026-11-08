@@ -1,0 +1,57 @@
+{
+ "batch": "ZR_GunsAK",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_AK_T1": [
+   "ZR_WP_AK_PG_ERGO__polymer",
+   "ZR_WP_AK_PG_RUB__rubber",
+   "ZR_WP_AK_PG_STD__polymer",
+   "ZR_WP_BRAKE_74__gunmetal",
+   "ZR_WP_BRAKE_76__gunmetal",
+   "ZR_WP_KS74_MAG__polymer",
+   "ZR_WP_KS74_MAG__brass",
+   "ZR_WP_KS74_MAG45__polymer",
+   "ZR_WP_KS74_MAG45__brass"
+  ],
+  "ZR_GT_AK_T2": [
+   "ZR_WP_KS74_RIFLE__gunmetal",
+   "ZR_WP_KS74_RIFLE__metal",
+   "ZR_WP_KST_DC_RAIL__gunmetal",
+   "ZR_WP_KST_DC_STD__gunmetal",
+   "ZR_WP_KST_FH_SLANT__gunmetal",
+   "ZR_WP_KST_HG_POLY__gunmetal",
+   "ZR_WP_KST_HG_POLY__polymer"
+  ],
+  "ZR_GT_AK_T3": [
+   "ZR_WP_KST_HG_RAIL__gunmetal",
+   "ZR_WP_KST_HG_WOOD__gunmetal",
+   "ZR_WP_KST_HG_WOOD__wood",
+   "ZR_WP_KST_MAG__metal",
+   "ZR_WP_KST_MAG__brass"
+  ],
+  "ZR_GT_AK_T4": [
+   "ZR_WP_KST_MAG40__metal",
+   "ZR_WP_KST_MAG40__brass",
+   "ZR_WP_KST_MAG_POLY__polymer",
+   "ZR_WP_KST_MAG_POLY__brass",
+   "ZR_WP_KST_MNT_SIDE__gunmetal"
+  ],
+  "ZR_GT_AK_T5": [
+   "ZR_WP_KST_RIFLE__gunmetal",
+   "ZR_WP_KST_RIFLE__metal",
+   "ZR_WP_KST_RS_TAN__gunmetal",
+   "ZR_WP_KST_RS_TAN__metal",
+   "ZR_WP_KST_STK_FOLD__gunmetal",
+   "ZR_WP_KST_STK_FOLD__metal",
+   "ZR_WP_KST_STK_TUBE__gunmetal",
+   "ZR_WP_KST_STK_TUBE__polymer",
+   "ZR_WP_KST_STK_TUBE__rubber"
+  ],
+  "ZR_GT_AK_T6": [
+   "ZR_WP_KST_STK_WOOD__wood",
+   "ZR_WP_KST_STK_WOOD__metal",
+   "ZR_WP_SUPP_76__gunmetal"
+  ]
+ },
+ "size": 1024
+}

@@ -126,7 +126,7 @@ Hold times in EFT: 10 s for PMCs, 8 s for scavs (the hidden exit 15 s). Exits op
 | Courtyard Gate | YARD GATE | GY | PMC | -62.4, -15.0 | courtyard | B | always open (SPT "Gate_o") |
 | Gate 2 | COKE GATE | G2 | PMC | 47.0, -40.4 | ground | C | 1.x lists only; conditions unpublished; position = the painted GATE 2 |
 | Camera Bunker Door | BUNKER HATCH | CB | scav | -38.6, 20.0 | tunnels | B | always open; the icon sits on the tunnel wall, the zone 4.8 m east in the tunnel |
-| Office Window | SHIFT OFFICE WINDOW | OW | scav | -38.9, -11.3 | third | B | always open |
+| Office Window | TIMEKEEPER'S WINDOW | OW | scav | -38.9, -11.3 | third | B | always open |
 | Smugglers' Passage | SMUGGLERS' CRAWL | SC | PMC, scav | 37.0, -43.2 | tunnels | B | hidden exit (`factory_secret_ark`): needs the note with the code word Ark, 15 s |
 
 | EFT transit | Ours | To | x, z (m) | Level | Rule (SPT) |

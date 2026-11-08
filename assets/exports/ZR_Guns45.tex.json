@@ -1,0 +1,28 @@
+{
+ "batch": "ZR_Guns45",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_45_T1": [
+   "ZR_WP_FN57_MAG__polymer",
+   "ZR_WP_FN57_MAG__brass",
+   "ZR_WP_FN57_PISTOL__metal",
+   "ZR_WP_FN57_PISTOL__gunmetal",
+   "ZR_WP_FN57_PISTOL__polymer",
+   "ZR_WP_M1911_MAG__metal",
+   "ZR_WP_M1911_MAG__brass",
+   "ZR_WP_M1911_MAG11__metal",
+   "ZR_WP_M1911_MAG11__brass",
+   "ZR_WP_M1911_PISTOL__metal",
+   "ZR_WP_M1911_PISTOL__gunmetal",
+   "ZR_WP_M1911_PISTOL__wood",
+   "ZR_WP_UMP_MAG__polymer",
+   "ZR_WP_UMP_MAG__brass"
+  ],
+  "ZR_GT_45_T2": [
+   "ZR_WP_UMP_SMG__polymer",
+   "ZR_WP_UMP_SMG__gunmetal",
+   "ZR_WP_UMP_SMG__metal"
+  ]
+ },
+ "size": 1024
+}

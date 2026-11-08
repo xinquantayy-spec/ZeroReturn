@@ -8,6 +8,18 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The Smelter on Factory's layout and every gun textured (decisions art-1a and art-4b; 2026-11-09, 00:37 SGT)
+
+| Test | Result |
+|---|---|
+| Smelter build (Studio) | The factory thread's map built in 0.18 s with no failed part; 3,984 parts (340 of them meshes), 105 lights, none casting shadows; the two expected notes (the crawl waits for its note item, the sealed store for its card). |
+| Smelter tests | SmelterTests 23 of 23 after three fixes found in Studio: an exit named after EFT's (SHIFT OFFICE WINDOW, now TIMEKEEPER'S WINDOW), four third-floor loose spots inside the office partitions (the generator now keeps spots out of the walls at their level; 50 spots), and the slag heap task place under a parked van (moved 14 m east to clear floor, checked). |
+| Smelter in a raid | Deployed to the Smelter by day: the spawn faces a narrow concrete corridor; the main hall shows the catwalks and railings, ceiling lamps, forklifts, the van and machines, and two scavs walked in. Thin bright slits between the far wall's panels not yet explained (KNOWN_ISSUES 85). |
+| Transits | Border Yard now has the transit to the Smelter and the Smelter one back; LogicTests find transits by destination and check the new pair. |
+| Gun sheets | The 17 other gun batches baked and uploaded through zr_tex's driver (42 sheets, 168 images, 17 models; centres and sizes of every piece unchanged); all 1,156 library meshes loaded, 0 batches failed. |
+| Tests | 17 suites, 1,225 checks, all passed. |
+| Not checked | Walking the Smelter's stairs, bridge, pit and sump; each exit triggering; the guns other than the R-17 by eye; a phone. |
+
 ## Gun texture sheets, the pilot: the R-17 family (decision art-4b; 2026-11-08, 23:21 SGT)
 
 | Test | Result |

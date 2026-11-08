@@ -91,13 +91,13 @@ def _area(o):
     return sum(p.area for p in o.data.polygons)
 
 
-def _image(name, color, noncolor):
+def _image(name, color, noncolor, size=SIZE):
     img = bpy.data.images.get(name)
-    if img and (img.size[0] != SIZE or img.size[1] != SIZE):
+    if img and (img.size[0] != size or img.size[1] != size):
         bpy.data.images.remove(img)
         img = None
     if not img:
-        img = bpy.data.images.new(name, SIZE, SIZE, alpha=False, float_buffer=False)
+        img = bpy.data.images.new(name, size, size, alpha=False, float_buffer=False)
     img.colorspace_settings.name = "Non-Color" if noncolor else "sRGB"
     img.generated_color = color
     return img
@@ -236,7 +236,7 @@ def _geo_masks(sh, wear_in=0.5 * MM, wear_out=1.8 * MM, grime_in=1.0 * MM, grime
     """the sheet's masks from the meshes themselves (R: near a sharp convex edge, G: near a sharp concave one), per
     texel through the UVs: ray-traced AO saw the parts' overlapping inner boxes and wore whole faces"""
     import numpy as np
-    W = SIZE
+    W = sh.get("size", SIZE)
     R = np.zeros((W, W), np.float32)
     Gm = np.zeros((W, W), np.float32)
     for n in sh["objs"]:
@@ -336,6 +336,8 @@ def pack(batch):
     st = STATE[batch]
     scn = bpy.data.scenes[st["scene"]]
     cap = (SIZE / PX_PER_STUD) ** 2 * PACK
+    total = sum(_area(bpy.data.objects[n]) for _, names in st["parts"] for n in names)
+    size = 512 if total <= (512 / PX_PER_STUD) ** 2 * PACK else SIZE     # a small family: one 512 sheet
     sheets, cur, area = [], [], 0.0
     for pid, names in st["parts"]:
         po = [bpy.data.objects[n] for n in names]
@@ -371,14 +373,14 @@ def pack(batch):
             bpy.ops.uv.pack_islands(rotate=True, scale=True, margin_method="FRACTION", margin=0.006)
             bpy.ops.object.mode_set(mode="OBJECT")
             imgs = {
-                "mask": _image(name + "_mask", (0, 0, 0, 1), True),
-                "color": _image(name + "_col", (0.5, 0.5, 0.5, 1), False),
-                "rough": _image(name + "_rgh", (0.5, 0.5, 0.5, 1), True),
-                "metal": _image(name + "_mtl", (0, 0, 0, 1), True),
-                "normal": _image(name + "_nrm", (0.5, 0.5, 1.0, 1), True),
+                "mask": _image(name + "_mask", (0, 0, 0, 1), True, size),
+                "color": _image(name + "_col", (0.5, 0.5, 0.5, 1), False, size),
+                "rough": _image(name + "_rgh", (0.5, 0.5, 0.5, 1), True, size),
+                "metal": _image(name + "_mtl", (0, 0, 0, 1), True, size),
+                "normal": _image(name + "_nrm", (0.5, 0.5, 1.0, 1), True, size),
             }
             out.append({"name": name, "objs": [o.name for o in sobjs], "imgs": {k: v.name for k, v in imgs.items()},
-                        "done": [], "area": round(sum(_area(o) for o in sobjs), 3)})
+                        "done": [], "area": round(sum(_area(o) for o in sobjs), 3), "size": size})
     st["sheets"] = out
     return [(s["name"], len(s["objs"]), s["area"]) for s in out], round(cap, 3)
 
@@ -485,8 +487,109 @@ def export(batch):
     meta = {o.name: meta_for(o) for o in objs}
     with open(os.path.join(EXP, batch + ".meta.json"), "w") as f:
         json.dump(meta, f, indent=1)
-    rec = {"batch": batch, "size": SIZE, "px_per_mm": round(PX_PER_STUD / 320.0, 2),
+    rec = {"batch": batch, "size": max(sh.get("size", SIZE) for sh in st["sheets"]), "px_per_mm": round(PX_PER_STUD / 320.0, 2),
            "sheets": {sh["name"]: sh["objs"] for sh in st["sheets"]}}
     with open(os.path.join(EXP, batch + ".tex.json"), "w") as f:
         json.dump(rec, f, indent=1, sort_keys=True)
     return fbx, [os.path.basename(p) for p in files]
+
+
+# ── the driver: every batch from build to upload, a time budget per MCP call ──────────────────────────────────────
+UPLOADS = os.path.join(TEX, "uploads.json")
+RUN = {}
+
+
+def _build_some(batch, seconds, t0, wear=0.25):
+    """build the batch's parts a few at a time (the vertex AO is slow); True when all are built"""
+    r = RUN[batch]
+    if "pids" not in r:
+        scn = _scene(batch)
+        for o in list(scn.collection.objects):
+            bpy.data.objects.remove(o)
+        r["pids"], r["i"], r["parts"], r["all"] = _batch_pids(batch), 0, [], []
+    scn = bpy.data.scenes["ZR_TEX_" + batch]
+    while r["i"] < len(r["pids"]):
+        if time.time() - t0 > seconds:
+            return False
+        pid = r["pids"][r["i"]]
+        P = zr_guns.make_part(pid)
+        zr_guns.bake_part(P, wear=wear)
+        po = P.finish(scn.collection)
+        r["parts"].append((pid, [o.name for o in po if o["zr_mat"] not in SKIP]))
+        r["all"] += [o.name for o in po]
+        r["i"] += 1
+    STATE[batch] = {"scene": scn.name, "parts": r["parts"], "all": r["all"], "sheets": [], "times": {}}
+    return True
+
+
+def _uploads():
+    if os.path.exists(UPLOADS):
+        with open(UPLOADS) as f:
+            return json.load(f)
+    return {}
+
+
+def _upload_some(batch, seconds, t0):
+    g = RUN.setdefault("_g", {})
+    if "upload_model" not in g:
+        g["__name__"] = "zr_upload_run"
+        exec(open(os.path.join(ROOT, "assets", "blender_scripts", "zr_upload.py"), encoding="utf-8").read(), g)
+    up = _uploads()
+    keys = ["%s_%s" % (sh["name"], s) for sh in STATE[batch]["sheets"] for s in ("col", "nrm", "rgh", "mtl")]
+    for key in keys + [batch]:
+        if key in up:
+            continue
+        if time.time() - t0 > seconds:
+            return False
+        if key == batch:
+            r = g["upload_model"](os.path.join(EXP, batch + ".fbx"), batch, "Zero Return gun parts with UVs for their texture sheets (art-4b)", force=True, asset_type="Model")
+        else:
+            r = g["upload_model"](os.path.join(TEX, key + ".png"), key, "Zero Return gun texture sheet (original procedural bake)", asset_type="Decal")
+        if not r.get("ok"):
+            raise RuntimeError("upload %s: %s" % (key, str(r)[:200]))
+        up[key] = r["assetId"]
+        with open(UPLOADS, "w") as f:
+            json.dump(up, f, indent=1, sort_keys=True)
+    return True
+
+
+def run(batches, seconds=45.0):
+    """advance each batch (build, pack, bake, export, upload) within the budget; returns a line per batch"""
+    import io, contextlib
+    t0 = time.time()
+    with contextlib.redirect_stdout(io.StringIO()):
+        for b in batches:
+            r = RUN.setdefault(b, {"phase": "build"})
+            while r["phase"] != "done" and time.time() - t0 < seconds:
+                ph = r["phase"]
+                if ph == "build":
+                    if _build_some(b, seconds, t0):
+                        r["phase"] = "pack"
+                elif ph == "pack":
+                    if seconds - (time.time() - t0) < 22:
+                        break                      # pack (up to ~40 s for a big family) with enough budget left
+                    pack(b)
+                    r["phase"] = "bake"
+                elif ph == "bake":
+                    if bake(b, max(1.0, seconds - (time.time() - t0)))[1] == 0:
+                        r["phase"] = "export"
+                elif ph == "export":
+                    export(b)
+                    r["phase"] = "upload"
+                elif ph == "upload":
+                    if _upload_some(b, seconds, t0):
+                        r["phase"] = "done"
+            if time.time() - t0 >= seconds:
+                break
+    out = []
+    for b in batches:
+        r = RUN.get(b, {"phase": "build"})
+        st = STATE.get(b)
+        extra = ""
+        if r["phase"] == "build" and "pids" in r:
+            extra = " %d/%d" % (r["i"], len(r["pids"]))
+        elif st and st.get("sheets"):
+            extra = " %d sheets, %d passes left" % (len(st["sheets"]), sum(len(PASSES) - len(sh["done"]) for sh in st["sheets"]))
+        out.append(b.replace("ZR_Guns", "") + ":" + r["phase"] + extra)
+    return "; ".join(out) + " (%.0f s)" % (time.time() - t0)
+

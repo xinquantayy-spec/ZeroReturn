@@ -124,7 +124,7 @@ return function(B)
 			tent.CastShadow = true
 		end
 		-- the slag heap in the east yard (task STACK): broken slag and a skip
-		for k, h in { { 49, -24, 9, 3.2, 7, 15 }, { 52.5, -21, 6, 2.2, 5, -25 }, { 47.5, -20, 5, 1.6, 4, 40 } } do
+		for k, h in { { 63, -22, 9, 3.2, 7, 15 }, { 66.5, -19, 6, 2.2, 5, -25 }, { 61.5, -18, 5, 1.6, 4, 40 } } do
 			local p = H.B(tm, h[3], h[4], h[5], h[1] * 3.125, h[4] / 2, h[2] * 3.125, hex(k == 1 and "3A3631" or "45403A"), M.Basalt, h[6])
 			p.Name = "Slag"
 		end

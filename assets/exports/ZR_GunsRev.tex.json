@@ -1,0 +1,18 @@
+{
+ "batch": "ZR_GunsRev",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_Rev_T1": [
+   "ZR_WP_BZ12_REV__gunmetal",
+   "ZR_WP_BZ12_REV__metal",
+   "ZR_WP_BZ12_REV__rubber",
+   "ZR_WP_CRK357_REV__gunmetal",
+   "ZR_WP_CRK357_REV__metal",
+   "ZR_WP_CRK357_REV__rubber",
+   "ZR_WP_CRK9_REV__gunmetal",
+   "ZR_WP_CRK9_REV__metal",
+   "ZR_WP_CRK9_REV__rubber"
+  ]
+ },
+ "size": 1024
+}

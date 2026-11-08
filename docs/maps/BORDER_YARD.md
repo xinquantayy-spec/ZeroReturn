@@ -534,7 +534,7 @@ Budget 2,450 parts (counted as it goes); the run prints the real count.
   gunner's sight lines have not been seen in Studio.
 - Co-op extracts and transits: BOILER CELLAR is a co-op exit since 2026-11-02 (a PMC and a player scav in the zone together;
   the stairs door down still takes the boiler house key, our addition). The transit to Interchange links to Meridian Mall
-  since 2026-11-02 (`docs/design/TRANSITS.md`); those to Factory, Reserve and Shoreline do not exist.
+  since 2026-11-02 (`docs/design/TRANSITS.md`) and the one to Factory to the Smelter since 2026-11-09; those to Reserve and Shoreline do not exist.
 - THE HOUNDS (the knight with Big Pipe and Birdeye), THE CULT (the sect priest with his warriors) and THE FORESTER (the partisan,
   with his tripwires in the doorways near the dorms and the frame) were built 2026-11-02 (`docs/design/BOSS_HOUNDS.md`,
   `docs/design/BOSS_CULT.md`, `docs/design/BOSS_FORESTER.md`).

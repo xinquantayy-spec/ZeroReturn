@@ -1,0 +1,29 @@
+{
+ "batch": "ZR_GunsPistol",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_Pistol_T1": [
+   "ZR_WP_P9_BRL_STD__metal",
+   "ZR_WP_P9_BRL_THR__metal",
+   "ZR_WP_P9_COMP__gunmetal",
+   "ZR_WP_P9_MAG__metal",
+   "ZR_WP_P9_MAG__brass",
+   "ZR_WP_P9_MAG33__metal",
+   "ZR_WP_P9_MAG33__brass",
+   "ZR_WP_P9_PISTOL__polymer",
+   "ZR_WP_P9_PISTOL__metal",
+   "ZR_WP_P9_SLIDE_CUT__gunmetal",
+   "ZR_WP_P9_SLIDE_CUT__metal",
+   "ZR_WP_P9_SLIDE_STD__gunmetal",
+   "ZR_WP_P9_SLIDE_STD__metal",
+   "ZR_WP_PM_MAG__metal",
+   "ZR_WP_PM_MAG__brass",
+   "ZR_WP_PM_PISTOL__metal",
+   "ZR_WP_PM_PISTOL__gunmetal",
+   "ZR_WP_PM_PISTOL__polymer",
+   "ZR_WP_PM_SLIDE__gunmetal",
+   "ZR_WP_PM_SLIDE__metal"
+  ]
+ },
+ "size": 1024
+}

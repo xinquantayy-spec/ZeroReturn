@@ -1,0 +1,22 @@
+{
+ "batch": "ZR_GunsTT",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_TT_T1": [
+   "ZR_WP_PPSH_DRUM__metal",
+   "ZR_WP_PPSH_MAG35__metal",
+   "ZR_WP_PPSH_MAG35__brass"
+  ],
+  "ZR_GT_TT_T2": [
+   "ZR_WP_PPSH_SMG__gunmetal",
+   "ZR_WP_PPSH_SMG__metal",
+   "ZR_WP_PPSH_SMG__wood",
+   "ZR_WP_TT_MAG__metal",
+   "ZR_WP_TT_MAG__brass",
+   "ZR_WP_TT_PISTOL__metal",
+   "ZR_WP_TT_PISTOL__gunmetal",
+   "ZR_WP_TT_PISTOL__polymer"
+  ]
+ },
+ "size": 1024
+}

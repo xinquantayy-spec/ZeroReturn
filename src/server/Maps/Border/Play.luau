@@ -801,10 +801,14 @@ return function(B)
 	-- Customs' transit to Interchange stands among parked vehicles next to the Trailer Park (SPT: 465, -190 m, our
 	-- 1453, -594). That point is inside the trailer lot's wood, so ours stands 46 studs north-west at its edge, where the
 	-- ground is clear (checked in Studio); Dress parks two wrecks beside it.
+	-- Customs' transit to Factory (art-1a: the Smelter is Factory now) stands near the Factory far gate in the north-west
+	-- (the factory thread's reference: -150, -158 m, grade C; ours at -468.75, -493.75 studs).
 	try("transits", function()
 		local p = route({ { 1420, -560 } })[1]
+		local q = route({ { -468.75, -493.75 } })[1]
 		W.transits = {
 			{ id = "TR_MERIDIAN", name = "TRANSIT TO MERIDIAN MALL", to = "meridian", pos = p, size = Vector3.new(16, 10, 16), cf = CFrame.new(p + Vector3.new(0, 4.5, 0)) },
+			{ id = "TR_SMELTER", name = "TRANSIT TO SMELTER", to = "smelter", pos = q, size = Vector3.new(14, 10, 14), cf = CFrame.new(q + Vector3.new(0, 4.5, 0)) },
 		}
 	end)
 

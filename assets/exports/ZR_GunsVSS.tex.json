@@ -1,0 +1,23 @@
+{
+ "batch": "ZR_GunsVSS",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_VSS_T1": [
+   "ZR_WP_VAL_RIFLE__gunmetal",
+   "ZR_WP_VAL_RIFLE__metal",
+   "ZR_WP_VAL_RIFLE__polymer",
+   "ZR_WP_VAL_SUPP__gunmetal",
+   "ZR_WP_VSS_MAG10__metal",
+   "ZR_WP_VSS_MAG10__brass",
+   "ZR_WP_VSS_MAG20__polymer",
+   "ZR_WP_VSS_MAG20__brass"
+  ],
+  "ZR_GT_VSS_T2": [
+   "ZR_WP_VSS_RIFLE__gunmetal",
+   "ZR_WP_VSS_RIFLE__metal",
+   "ZR_WP_VSS_RIFLE__wood",
+   "ZR_WP_VSS_SUPP__gunmetal"
+  ]
+ },
+ "size": 1024
+}

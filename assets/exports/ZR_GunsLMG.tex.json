@@ -1,0 +1,16 @@
+{
+ "batch": "ZR_GunsLMG",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_LMG_T1": [
+   "ZR_WP_KSL_DRUM95__metal",
+   "ZR_WP_KSL_DRUM95__polymer",
+   "ZR_WP_KSL_DRUM95__brass"
+  ],
+  "ZR_GT_LMG_T2": [
+   "ZR_WP_KSL_LMG__gunmetal",
+   "ZR_WP_KSL_LMG__metal"
+  ]
+ },
+ "size": 1024
+}

@@ -1080,10 +1080,44 @@ for c in containers:
     avoid_c |= rect_mask(c[3] / S - 1.6, c[3] / S + 1.6, c[5] / S - 1.6, c[5] / S + 1.6)
 
 
+def clear_of_walls(xs, ys, zs, gap=0.5):
+    """a loose spot keeps half a stud off every wall standing at its level (seen in Studio 2026-11-09: four
+    third-floor spots drawn inside the office partitions)"""
+    for w in walls:
+        if not (w[4] - 0.5 <= ys + 1.0 <= w[5] + 0.5):
+            continue
+        dx = max(w[0] - xs, 0.0, xs - w[1])
+        dz = max(w[2] - zs, 0.0, zs - w[3])
+        if dx * dx + dz * dz < gap * gap:
+            return False
+    return True
+
+
+def walls_at(y):
+    """the footprints (grown by 0.3 m) of the walls standing at height y, as a mask the spots keep out of"""
+    m = np.zeros((NZ, NX), bool)
+    for w in walls:
+        if w[4] - 0.5 <= y + 1.0 <= w[5] + 0.5:
+            m |= rect_mask(w[0] / S - 0.3, w[1] / S + 0.3, w[2] / S - 0.3, w[3] / S + 0.3)
+    return m
+
+
 def loose_in(floor, area, ylevel, n, tbl, chance, spacing):
-    for x, z, _ in spots_in(floor, area, n, band=(0.45, 0.75), spacing=spacing, avoid=avoid_c):
-        y = ylevel(x, z) if callable(ylevel) else ylevel
-        loose.append([r2(x * S), r2(y + 0.05), r2(z * S), tbl, chance])
+    """n spots near the walls of `area`; where the floor runs under its walls (the office block), further in"""
+    k = 0
+    yl = ylevel if not callable(ylevel) else None
+    avoid = (avoid_c | walls_at(yl)) if yl is not None else avoid_c
+    taken = []
+    for band in ((0.45, 0.75), (0.9, 1.3), (1.3, 1.8)):
+        if k >= n:
+            break
+        for x, z, _ in spots_in(floor, area, (n - k) * 4, band=band, spacing=spacing, avoid=avoid):
+            y = ylevel(x, z) if callable(ylevel) else ylevel
+            if k >= n or not clear_of_walls(x * S, y, z * S) or any(math.hypot(x - a, z - b) < spacing for a, b in taken):
+                continue
+            loose.append([r2(x * S), r2(y + 0.05), r2(z * S), tbl, chance])
+            taken.append((x, z))
+            k += 1
 
 
 loose_in(G_floor & west_m, rect_mask(-45, -32.4, -31.2, -1.6), LV["west"], 4, "office", 0.45, 3.0)

@@ -1,0 +1,34 @@
+{
+ "batch": "ZR_GunsMods",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_Mods_T1": [
+   "ZR_WP_GRIP_ANG__polymer",
+   "ZR_WP_GRIP_STOP__polymer",
+   "ZR_WP_GRIP_STUB__gunmetal",
+   "ZR_WP_GRIP_STUB__polymer",
+   "ZR_WP_GRIP_V__gunmetal",
+   "ZR_WP_GRIP_V__polymer",
+   "ZR_WP_HOLO_EX__gunmetal",
+   "ZR_WP_LASER_COMBO__gunmetal",
+   "ZR_WP_LASER_DOT__gunmetal",
+   "ZR_WP_LIGHT_T__gunmetal",
+   "ZR_WP_LIGHT_T__rubber",
+   "ZR_WP_MNT_RINGS__gunmetal",
+   "ZR_WP_MNT_RISER__gunmetal",
+   "ZR_WP_RED_DOT__gunmetal",
+   "ZR_WP_RED_DOT__metal",
+   "ZR_WP_SCOPE_16__gunmetal",
+   "ZR_WP_SCOPE_16__rubber",
+   "ZR_WP_SCOPE_4X__gunmetal",
+   "ZR_WP_SCOPE_4X__rubber"
+  ],
+  "ZR_GT_Mods_T2": [
+   "ZR_WP_SCOPE_8X__gunmetal",
+   "ZR_WP_SCOPE_8X__rubber",
+   "ZR_WP_SIGHT_MICRO__gunmetal",
+   "ZR_WP_SUPP_9__gunmetal"
+  ]
+ },
+ "size": 1024
+}

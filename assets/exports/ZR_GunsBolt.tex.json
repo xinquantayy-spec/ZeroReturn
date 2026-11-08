@@ -1,0 +1,29 @@
+{
+ "batch": "ZR_GunsBolt",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_Bolt_T1": [
+   "ZR_WP_SUPP_76L__gunmetal",
+   "ZR_WP_TUNDRA_BOLT__gunmetal",
+   "ZR_WP_TUNDRA_BOLT__metal",
+   "ZR_WP_TUNDRA_BOLT__Sbolt__metal",
+   "ZR_WP_TUN_BRK__gunmetal",
+   "ZR_WP_TUN_MNT_SCOUT__gunmetal",
+   "ZR_WP_TUN_MNT_SIDE__gunmetal"
+  ],
+  "ZR_GT_Bolt_T2": [
+   "ZR_WP_TUN_STK_CHAS__gunmetal",
+   "ZR_WP_TUN_STK_CHAS__polymer",
+   "ZR_WP_TUN_STK_CHAS__rubber"
+  ],
+  "ZR_GT_Bolt_T3": [
+   "ZR_WP_TUN_STK_SPORT__wood",
+   "ZR_WP_TUN_STK_SPORT__rubber"
+  ],
+  "ZR_GT_Bolt_T4": [
+   "ZR_WP_TUN_STK_WOOD__wood",
+   "ZR_WP_TUN_STK_WOOD__metal"
+  ]
+ },
+ "size": 1024
+}

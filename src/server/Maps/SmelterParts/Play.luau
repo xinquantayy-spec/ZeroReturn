@@ -3,7 +3,7 @@
 --   extracts   EFT Factory's nine (docs/maps/reference/FACTORY_REFERENCE.md section 6) with our names: ORE GATE (Gate 3,
 --              PMCs and scavs), SLAG GATE (Gate 0), AID POST GATE (Med Tent Gate, behind the emergency key's door), CABLE
 --              CELLAR (Cellars, behind the same key's door), YARD GATE (Courtyard Gate), COKE GATE (Gate 2), BUNKER
---              HATCH and SHIFT OFFICE WINDOW (scavs: Camera Bunker Door, Office Window), SMUGGLERS' CRAWL (the hidden
+--              HATCH and TIMEKEEPER'S WINDOW (scavs: Camera Bunker Door, Office Window), SMUGGLERS' CRAWL (the hidden
 --              exit; built once its note item exists). One entry point: every PMC exit serves every spawn (SPT).
 --   transit    TRANSIT TO BORDER YARD at the east yard's gate (EFT: Factory's transit to Customs, east exterior)
 --   spawns     one per SPT player group (16; the re3mr plan's PMC rings), facing as SPT has them
@@ -211,7 +211,7 @@ return function(B)
 		local T3, S2 = LV.third, LV.second
 		W.visitZones = W.visitZones or {}
 		-- V6 Slag Run: the slag heap in the east yard (Dress heaps it there)
-		W.visitZones.STACK = { pos = P(50.0, -22.0, 0), r = 14 }
+		W.visitZones.STACK = { pos = P(64.0, -20.0, 0), r = 14 } -- (moved 14 m east off the parked van, checked in Studio)
 		-- D7 Relay Watch: a beacon on the catwalks over the main hall (the rafters, south of the beam)
 		W.visitZones.SM_CATWALK = { pos = P(-6.0, -13.8, T3 + 0.3), r = 5, free = true, reach = 4 }
 		-- K12 Furnace Readings: the furnace log on the manager's desk (third floor, behind SM_MGR and the emergency key)

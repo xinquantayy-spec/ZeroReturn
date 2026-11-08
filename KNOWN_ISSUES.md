@@ -256,6 +256,17 @@
       and computer: about 30) do not fit the bunker's budget of under 300 kit props (owner; 298 placed). The client
       already hides and shows props by level (ModuleId / ModuleMin / ModuleBare in Lobby.luau). Raising the budget to
       about 330 is the owner's call.
+85. **The Smelter's hidden exit and sealed store wait for two items (art-1a, 2026-11-09).**
+    - EFT's Factory has a smugglers' passage opened with a note bearing the code word "Ark" (found in filing cabinets and
+      on bodies; it cannot leave the raid) and a storage room opened with the TerraGroup storage room keycard (10 uses).
+      Our SMUGGLERS' CRAWL is not built and the sealed store stays unlocked until NOTE_SMELT_CRAWL and KEY_SMELT_STORE
+      exist (the next items slice: their models, icons, where they spawn and the keycard's value).
+    - Seen in Studio from the main hall: thin bright slits between the far wall's panels; not yet checked whether they
+      are openings Factory has or gaps between our wall segments. The stairs, the high bridge, the pit, the sump drop and
+      every exit have not been walked yet.
+86. **Gun texture sheets: 46 sheets of four 1024 px maps (art-4b, 2026-11-09).**
+    - A gun build loads every sheet its parts sit on (two to four for most guns). The memory this takes on a low-end phone
+      has not been measured; Roblox serves lower mips to weaker devices.
 
 ## Tool limitations (not game bugs)
 

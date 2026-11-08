@@ -1,0 +1,39 @@
+{
+ "batch": "ZR_GunsSG",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_SG_T1": [
+   "ZR_WP_HARROW12__gunmetal",
+   "ZR_WP_HARROW12__metal",
+   "ZR_WP_HAR_BRK__gunmetal",
+   "ZR_WP_HAR_BRL_14__gunmetal",
+   "ZR_WP_HAR_BRL_14__metal",
+   "ZR_WP_HAR_BRL_18__gunmetal",
+   "ZR_WP_HAR_BRL_18__metal",
+   "ZR_WP_HAR_BRL_20__gunmetal",
+   "ZR_WP_HAR_BRL_20__metal",
+   "ZR_WP_HAR_CHOKE__gunmetal",
+   "ZR_WP_HAR_FE_POLY__polymer"
+  ],
+  "ZR_GT_SG_T2": [
+   "ZR_WP_HAR_FE_RAIL__polymer",
+   "ZR_WP_HAR_FE_RAIL__gunmetal",
+   "ZR_WP_HAR_FE_WOOD__wood",
+   "ZR_WP_HAR_FE_WOOD__gunmetal",
+   "ZR_WP_HAR_STK_PG__polymer",
+   "ZR_WP_HAR_STK_PG__rubber",
+   "ZR_WP_HAR_STK_TACT__gunmetal",
+   "ZR_WP_HAR_STK_TACT__polymer",
+   "ZR_WP_HAR_STK_TACT__rubber"
+  ],
+  "ZR_GT_SG_T3": [
+   "ZR_WP_HAR_STK_WOOD__wood",
+   "ZR_WP_HAR_STK_WOOD__rubber",
+   "ZR_WP_HAR_STK_WOOD__metal",
+   "ZR_WP_HAR_TUBE_4__gunmetal",
+   "ZR_WP_HAR_TUBE_6__gunmetal",
+   "ZR_WP_HAR_TUBE_8__gunmetal"
+  ]
+ },
+ "size": 1024
+}

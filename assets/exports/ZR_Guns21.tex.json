@@ -1,0 +1,31 @@
+{
+ "batch": "ZR_Guns21",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_21_T1": [
+   "ZR_WP_J21_MAG20__metal",
+   "ZR_WP_J21_MAG20__brass",
+   "ZR_WP_J21_MAG30__metal",
+   "ZR_WP_J21_MAG30__brass",
+   "ZR_WP_J21_SMG__gunmetal",
+   "ZR_WP_J21_SMG__metal",
+   "ZR_WP_J21_SMG__polymer"
+  ],
+  "ZR_GT_21_T2": [
+   "ZR_WP_T215_BOLT__gunmetal",
+   "ZR_WP_T215_BOLT__metal",
+   "ZR_WP_T215_BOLT__wood",
+   "ZR_WP_T215_BOLT__Sbolt__metal",
+   "ZR_WP_T215_MAG__metal",
+   "ZR_WP_T215_MAG__brass"
+  ],
+  "ZR_GT_21_T3": [
+   "ZR_WP_W21_MAG__metal",
+   "ZR_WP_W21_MAG__brass",
+   "ZR_WP_W21_PISTOL__metal",
+   "ZR_WP_W21_PISTOL__gunmetal",
+   "ZR_WP_W21_PISTOL__polymer"
+  ]
+ },
+ "size": 1024
+}

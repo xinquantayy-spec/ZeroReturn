@@ -68,8 +68,9 @@ Status 2026-11-02: **built and checked in Studio with one player** (TEST_RESULTS
 - **The new map is quieter:** only six scavs, no bosses, no other players' spawns. Its car is not there, because the car
   stands only on the map in play.
 - **No item transfer:** you cannot send found items to the stash for a fee.
-- **Only Border Yard and Meridian Mall.** No transits to Factory, Reserve, Shoreline or Streets (no such maps), nor to
-  or from Quay 7 or the Smelter.
+- **Border Yard, Meridian Mall and the Smelter.** Since 2026-11-09 Border Yard and the Smelter (Factory's layout) link both
+  ways (Customs' Factory transit by the far gate in the north-west, grade C; Factory's at the east yard gate). No transits
+  to Reserve, Shoreline or Streets (no such maps), nor to or from Quay 7.
 - **No bus or vehicle cluster** at the Border transit beyond two wrecks, and no vehicle at Meridian's.
 - **No detail layer on the new map:** the client's wall grime is published only for the map in play.
 - **Not tested with two players** (the squad rule and strangers arriving together).

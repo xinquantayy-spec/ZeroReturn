@@ -1,0 +1,25 @@
+{
+ "batch": "ZR_GunsPDW",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_PDW_T1": [
+   "ZR_WP_MP7_MAG20__polymer",
+   "ZR_WP_MP7_MAG20__brass",
+   "ZR_WP_MP7_MAG30__polymer",
+   "ZR_WP_MP7_MAG30__brass",
+   "ZR_WP_MP7_MAG40__polymer",
+   "ZR_WP_MP7_MAG40__brass",
+   "ZR_WP_MP7_SMG__polymer",
+   "ZR_WP_MP7_SMG__gunmetal",
+   "ZR_WP_MP7_SMG__metal",
+   "ZR_WP_P90_MAG__polymer",
+   "ZR_WP_P90_MAG__brass"
+  ],
+  "ZR_GT_PDW_T2": [
+   "ZR_WP_P90_SMG__polymer",
+   "ZR_WP_P90_SMG__gunmetal",
+   "ZR_WP_P90_SMG__metal"
+  ]
+ },
+ "size": 1024
+}
