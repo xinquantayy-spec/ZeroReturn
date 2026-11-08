@@ -331,6 +331,15 @@ local function mapKit(kit, O)
 	H.k5Flight = k5Flight
 	H.k5Rail = k5Rail
 	H.k5Fence = k5Fence
+	-- a chain-link panel stops bodies (and ordinary rays) but not bullets, sight or grenades (KNOWN_ISSUES 43; EFT gives
+	-- chain-link its own ballistic material and shoots through it): the movement-only group the railings' colliders use
+	-- (CanQuery = false alone does nothing on a part that collides)
+	function H.moveOnly(part)
+		if moveGroup() then
+			part.CollisionGroup = K5.MOVE_GROUP
+		end
+		return part
+	end
 	H.k5Ready = k5Ready
 
 	function H.V(x, y, z)
@@ -641,6 +650,7 @@ local function mapKit(kit, O)
 		mesh.CastShadow = false
 		mesh:SetAttribute("NoDetail", true)
 		mesh.Name = "ChainLink"
+		H.moveOnly(mesh)
 		for _, face in { Enum.NormalId.Left, Enum.NormalId.Right } do
 			local tx = Instance.new("Texture")
 			tx.Texture = Wear.DEC.ChainLink

@@ -58,7 +58,10 @@
 41. **Performance on devices is unknown.** HIGH (the default on PCs; since 2026-11-07 phones start at LOW and consoles at MEDIUM, tech-3b) adds depth of field (outdoors only since M13), sun rays, bloom and the full detail layer. On the T490 laptop in Studio it runs at about 34–37 fps on Quay 7 against 58 on POTATO, and 26–31 fps in the mall at Studio's maximum render quality (46–58 at quality 10). Phones and consoles have not been measured.
 42. **Container decals float slightly.** Rust and grime on shipping containers sit on a flat plane just outside the corrugation, which shows at grazing angles.
 43. **Not built yet (M12 leftovers):**
-    - chain-link fences: they need to block movement but not bullets or sight;
+    - chain-link fences: done 2026-11-09. The panels are in the movement-only group ZR_Move, so bodies stop and bullets,
+      sight and grenades pass. Before, `CanQuery = false` did nothing on a part that collides, so the panels stopped every
+      shot. EFT gives chain-link its own ballistic material, which lets a strand stop a round now and then; ours lets every
+      round through.
     - denser interiors: desks with drawers out, filing cabinets, lockers;
     - wear on the older Blender props (containers, pallets, barrels have only their baked colours plus the decals).
 45. **Five new MaterialVariants live only in the open Studio session.** Rojo could not create `ZR_Terrazzo`, `ZR_FloorTiles`, `ZR_CeilingTiles`, `ZR_VinylFloor` and `ZR_CarpetWorn` in MaterialService ("parent doesn't exist"), so they were added to the place directly with the same properties as `src/materials/*.model.json`. Save the place in Studio (owner) to keep them; reconnecting the Rojo plugin should also create them.

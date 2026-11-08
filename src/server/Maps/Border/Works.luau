@@ -437,6 +437,7 @@ return function(B)
 		mesh.CastShadow = false
 		mesh:SetAttribute("NoDetail", true)
 		mesh.Name = "ChainLink"
+		H.moveOnly(mesh) -- bodies stop, bullets and sight pass (KNOWN_ISSUES 43)
 		for _, face in { Enum.NormalId.Left, Enum.NormalId.Right } do
 			local tx = Instance.new("Texture")
 			tx.Texture = Wear.DEC.ChainLink

@@ -8,6 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Fence modules and chain-link that stops bodies only (art-5b phase 2; 2026-11-09, 05:00 SGT)
+
+| Test | Result |
+|---|---|
+| Blender and upload | The 27 fence modules built (one looked at: two posts, top rail, bottom wire), exported as ZR_Kit5C, uploaded (76632906085308); KitMeta 352 props. |
+| Build log | The world 48,593 to 46,868 parts; Border 26,523 to 25,709; fences from the kit: Border 349 runs, Meridian 106. |
+| Chain-link | All 501 panels in ZR_Move: a ray in the Default group meets a panel, one in ZR_Shot (bullets) or ZR_Sight (the AI's sight, grenades) passes it. Before the change a shot ray met it: `CanQuery = false` does nothing on a part that collides. Walking into a Border fence stopped the character 1.2 studs from the panel. |
+| KitTests K07 | A kit mesh's own collision through its doorway: WallBreach and DoorFrame shut with Box and Hull fidelity, open with Default and PreciseConvexDecomposition. Phase 3's wall panels can collide by their own mesh. |
+| Tests | 18 suites, 1,313 checks, all passed (KitTests 73). |
+| Not checked | Fence corners, slopes and building ends by eye; the merged kit pieces (off, not exported: the owner's A/B). |
+
 ## EFT's remaining barter goods (economy-1a's fifteenth slice; 2026-11-09, 04:40 SGT)
 
 | Test | Result |

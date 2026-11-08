@@ -1661,6 +1661,12 @@
   "sha1": "9e986a726b2735df49c8e74214db20bd61da236f",
   "uploaded": "2026-11-09 01:59:37"
  },
+ "ZR_Kit5C": {
+  "assetId": "76632906085308",
+  "file": "assets\\exports\\ZR_Kit5C.fbx",
+  "sha1": "3b169e4e537ddd2e9b7e970fdc7cbf2b034f2799",
+  "uploaded": "2026-11-09 03:07:29"
+ },
  "ZR_MAT_AsphaltCracked_Color": {
   "assetId": "84880060906023",
   "file": "assets\\textures\\out\\materials\\ZR_MAT_AsphaltCracked_Color.png",

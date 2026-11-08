@@ -47,4 +47,5 @@ return {
 	-- art-5b modular kit (ZR_MK_K5<Prop>__<material>; placed by MapKit's k5Flight / k5Rail, see docs/look/MODULAR_KIT.md)
 	{ key = "ZR_Kit5A", id = 123416596562671 }, -- (2026-11-09) stair flights: solid and open concrete, steel, a stopped escalator's step block (89 variants, build_kit5.py)
 	{ key = "ZR_Kit5B", id = 103422237552076 }, -- (2026-11-09) handrails for two riser heights and level railing modules (81 variants, build_kit5.py)
+	{ key = "ZR_Kit5C", id = 76632906085308 }, -- (2026-11-09) chain-link fence posts and top rail per stretch (27 modules; the panel stays a part, build_kit5.py)
 }
