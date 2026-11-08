@@ -255,7 +255,7 @@ function T.run(ctx)
 		end
 		check("every gun has its recoil fields in range (full-auto guns settle, the rest do not)", ok)
 		local want = { R17 = { 79, 228 }, KST = { 90, 221 }, KS74 = { 70, 178 }, KSL = { 106, 316 }, GL6 = { 238, 560 }, SPARROW = { 43, 212 }, HARROW = { 290, 381 }, TUNDRA = { 178, 541 },
-			P9 = { 425, 310 }, PM = { 380, 265 }, SKS = { 155, 360 }, SVD = { 220, 647 }, M1A = { 214, 405 }, M700 = { 199, 670 }, VSS = { 80, 270 }, VAL = { 80, 270 }, MP7 = { 50, 178 }, P90 = { 54, 243 }, UMP = { 72, 240 }, M1911 = { 451, 355 }, FN57 = { 281, 240 } }
+			P9 = { 425, 310 }, PM = { 380, 265 }, SKS = { 155, 360 }, SVD = { 220, 647 }, M1A = { 214, 405 }, M700 = { 199, 670 }, VSS = { 80, 270 }, VAL = { 80, 270 }, MP7 = { 50, 178 }, P90 = { 54, 243 }, UMP = { 72, 240 }, M1911 = { 451, 355 }, FN57 = { 281, 240 }, TT = { 553, 325 }, PPSH = { 89, 294 } }
 		local okF = true
 		for id, f in want do
 			local def = Weapons[id]
@@ -264,7 +264,7 @@ function T.run(ctx)
 				table.insert(notes, string.format("%s shows %d / %d", id, math.floor(def.recoilV * 100 + 0.5), math.floor(def.recoilH * 100 + 0.5)))
 			end
 		end
-		check("the gunsmith figures are Tarkov's for each gun's counterpart (M4A1 79/228, AKM 90/221, AK-74N 70/178, RPK-16 106/316, M32A1 238/560, MP5 43/212, MP-133 290/381, Mosin 178/541, MP-443 425/310, PM 380/265, SKS 155/360, SVDS 220/647, M1A 214/405, M700 199/670, VSS and AS VAL 80/270, MP7A1 50/178, P90 54/243, UMP 45 72/240, M1911A1 451/355, Five-seveN MK2 281/240)", okF)
+		check("the gunsmith figures are Tarkov's for each gun's counterpart (M4A1 79/228, AKM 90/221, AK-74N 70/178, RPK-16 106/316, M32A1 238/560, MP5 43/212, MP-133 290/381, Mosin 178/541, MP-443 425/310, PM 380/265, SKS 155/360, SVDS 220/647, M1A 214/405, M700 199/670, VSS and AS VAL 80/270, MP7A1 50/178, P90 54/243, UMP 45 72/240, M1911A1 451/355, Five-seveN MK2 281/240, TT-33 553/325, PPSh-41 89/294)", okF)
 	end)
 
 	-- ── the parts: Tarkov 1.0.4.5 and the default builds ───────────────────────────────────────────────────────────
@@ -285,7 +285,7 @@ function T.run(ctx)
 		check("Tarkov 1.0.4.5: a suppressor costs far more ergonomics than the muzzle device it replaces and takes only a little more recoil off",
 			P.SUPP_62.recoil < P.R17_FH_A2.recoil and P.SUPP_62.ergo <= P.R17_FH_A2.ergo - 10 and P.SUPP_76.recoil < P.KST_FH_SLANT.recoil
 				and P.SUPP_76.ergo <= (P.KST_FH_SLANT.ergo or 0) - 10)
-		local sums = { R17_RIFLE = -33.4, KST_RIFLE = -26, KS74_RIFLE = -27, SPARROW_SMG = -23, HARROW12 = -27, TUNDRA_BOLT = -20, P9_PISTOL = 0, PM_PISTOL = 0, SKS_RIFLE = 0, SVD_RIFLE = 0, M1A_RIFLE = 0, M700_BOLT = 0, VSS_RIFLE = 0, VAL_RIFLE = 0, MP7_SMG = 0, P90_SMG = 0, UMP_SMG = 0, M1911_PISTOL = 0, FN57_PISTOL = 0 }
+		local sums = { R17_RIFLE = -33.4, KST_RIFLE = -26, KS74_RIFLE = -27, SPARROW_SMG = -23, HARROW12 = -27, TUNDRA_BOLT = -20, P9_PISTOL = 0, PM_PISTOL = 0, SKS_RIFLE = 0, SVD_RIFLE = 0, M1A_RIFLE = 0, M700_BOLT = 0, VSS_RIFLE = 0, VAL_RIFLE = 0, MP7_SMG = 0, P90_SMG = 0, UMP_SMG = 0, M1911_PISTOL = 0, FN57_PISTOL = 0, TT_PISTOL = 0, PPSH_SMG = 0 }
 		local okS = true
 		for base, sum in sums do
 			local got = WP.defaultSum(base).recoilPct

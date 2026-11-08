@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The 7.6x25 guns: the P-33 pistol and the G-41 submachine gun (decision economy-1a, ninth slice; 2026-11-08, about 20:32 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_tt.py added a new batch, ZR_GunsTT (5 parts, 2,872 triangles), uploaded as 138032227885924. build_items_p.py drew the ten rounds. Sprites needed a second run for their last 3 before packing (176; image 74326535325595). The sixth icon sheet was packed again (image 106349696738878). |
+| In a raid (Quay 7 at night, Studio) | The G-41 loaded a 35-round magazine of PST and fired 8 (35 to 27). The P-33 in the holster loaded 8 FMJ and fired 3 (8 to 5). The night made the first-person picture too dark to judge the model. |
+| Tests | 15 suites, 1,156 checks, all passed. RecoilTests check the TT-33 at 553 / 325 and the PPSh-41 at 89 / 294; LogicTests count 21 mastering groups. |
+| Not checked | The 71-round drum in a raid, the G-41 in daylight, aiming, AI with the new guns, a phone. |
+
 ## The 11.4x23 guns and the F-57 pistol (decision economy-1a, eighth slice; 2026-11-08, about 20:22 SGT)
 
 | Test | Result |

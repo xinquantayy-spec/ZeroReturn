@@ -49,6 +49,7 @@ Flea.BANNED_ITEMS = {
 	-- 9x39 (economy-1a's sixth slice): EFT keeps PAB-9 and BP off its flea market, and the VSS ("Not on flea") though not
 	-- the AS VAL (tarkovforge.com, read 2026-11-08)
 	A939_PAB = true, A939_BP = true, VSS_RIFLE = true,
+	A76T_SBAP = true, -- 7.6x25 TT M995 (economy-1a's ninth slice): "Flea market: Not sold" (tarkovforge.com)
 	A46_AP = true, -- 4.6x30 AP SX (economy-1a's seventh slice): "Sold on flea market: No" (tarkovforge.com)
 	FLARE_RED = true, DOGTAG = true, RITUAL_AMULET = true, COLD_WALLET = true, -- the airdrop flare, tags, amulet, the "bitcoin"
 }

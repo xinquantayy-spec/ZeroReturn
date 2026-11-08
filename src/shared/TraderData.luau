@@ -212,6 +212,8 @@ T.offers = {
 		o("A76L_PS", 4, 3, 40),
 		-- the sixth slice: EFT's Prapor sells 9x39 SP-5 at LL2 and SPP and SP-6 at LL4 (tarkovforge.com's round pages)
 		o("A939_SP5", 2, 6, 50), o("A939_SPP", 4, 4, 50), o("A939_SP6", 4, 3, 50),
+		-- the ninth slice: EFT's Prapor sells 7.62x25 FMJ43 and AKBS (LL1) and P gl, PT gzh and Pst gzh (LL2) (tarkovforge.com)
+		o("A76T_FMJ", 1, 8, 50), o("A76T_MATCH", 1, 8, 50), o("A76T_P", 2, 8, 50), o("A76T_PT", 2, 6, 50), o("A76T_PST", 2, 6, 50),
 		-- the third slice (tarkovforge.com round pages, 2026-11-08): Prapor sells 5.45 US gs at LL1, T gs and PS gs at LL2 and
 		-- BT gs at LL4 (BP gs and BS gs come from loot and crafts), and the 9x18 P, PPT, Pst, RG028 and PBM loads at LL1;
 		-- the 6L20 magazine at LL1 and the 6L26 at LL3
@@ -298,6 +300,7 @@ T.offers = {
 		-- 5.7x28 R37.X (LL2) and R37.F (LL3) (tarkovforge.com's round pages)
 		o("A46_HP", 1, 6, 60), o("A46_SUB", 2, 6, 60), o("A46_JSP", 3, 6, 60), o("A46_FMJ", 4, 4, 60), o("A57_EX", 2, 6, 60), o("A57_FX", 3, 6, 60),
 		o("A114_FX", 4, 4, 50), -- the eighth slice: EFT's Mechanic sells .45 ACP RIP at LL4 (tarkovforge.com)
+		o("A76T_SBT", 1, 6, 50), o("A76T_SB", 2, 6, 50), -- the ninth slice: EFT's Mechanic sells 7.62x25 TT M856A1 (LL1) and M855A1 (LL2)
 		-- rounds (economy-1a; EFT's Mechanic): the green tracer at LL1, Pst gzh at LL2, RIP at LL4
 		o("A9_TR", 1, 10, 50), o("A9_PST", 2, 10, 50), o("A9_RIP", 4, 3, 50),
 		pre("R17_CQB", 3, 1), pre("SPR_TAC", 3, 1),
@@ -334,6 +337,7 @@ T.offers = {
 		-- magazines and rail base (ours; the rifle itself is a barter, below)
 		o("A76N_HP", 1, 6, 40), o("A76N_FMJ", 3, 6, 40), o("M700_MAG", 2, 4), o("M700_MAG10", 3, 2), o("M700_RAIL", 2, 2),
 		o("A939_FMJ", 1, 6, 50), -- the sixth slice: EFT's Jaeger sells 9x39 FMJ at LL1 (tarkovforge.com)
+		o("A76T_LRN", 1, 8, 50), o("A76T_LRNPC", 1, 8, 50), -- the ninth slice: EFT's Jaeger sells 7.62x25 LRN and LRNPC at LL1
 		o("A12_FLECH", 3, 3, 20),
 		o("HAR_FE_POLY", 1, 2), o("HAR_STK_PG", 1, 1),
 		o("TUNDRA_BOLT", 2, 1), o("TUN_MNT_SCOUT", 2, 1), o("TUN_STK_SPORT", 2, 1), o("HAR_FE_RAIL", 2, 1),
@@ -366,6 +370,14 @@ T.barters = {
 		b("VSS_MAG20", 3, 3, { { "SPARE_PARTS", 1 }, { "BOLTS", 1 } }),
 		b("A939_PAB", 4, 2, { { "GUNPOWDER", 2 }, { "BOLTS", 2 } }, 50),
 		b("A939_BP", 4, 1, { { "GUNPOWDER", 3 }, { "CAPACITOR", 2 } }, 50),
+		-- the ninth slice: EFT sells neither the TT-33 nor the PPSh-41 for money, nor TT M995 (tarkovforge.com); here by barter,
+		-- with their magazines (levels and goods ours)
+		b("TT_PISTOL", 1, 1, { { "SCREWS", 1 }, { "BOLTS", 1 } }),
+		b("PPSH_SMG", 2, 1, { { "WEAPON_PARTS", 1 }, { "SCREWS", 2 } }),
+		b("TT_MAG", 1, 5, { { "SCREWS", 1 } }),
+		b("PPSH_MAG35", 2, 4, { { "SPARE_PARTS", 1 } }),
+		b("PPSH_DRUM", 3, 2, { { "SPARE_PARTS", 2 }, { "BOLTS", 2 } }),
+		b("A76T_SBAP", 3, 2, { { "GUNPOWDER", 1 }, { "CAPACITOR", 1 } }, 50),
 		-- EFT's PM is barter-only (tarkovforge.com: no trader sells it for money); ours at Prapor for small household goods
 		b("PM_PISTOL", 1, 2, { { "TOILET_PAPER", 1 }, { "SOAP", 1 } }),
 		-- EFT's RPK-16 comes by Prapor's barters at LL2 and LL3 (wiki): the KS-L and its drum at LL3 here

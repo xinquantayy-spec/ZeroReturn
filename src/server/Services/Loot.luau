@@ -141,6 +141,13 @@ local POOLS = {
 		{ id = "M1911_MAG", w = 2, a = { 0, 7 }, at = "A114_FMJ" }, { id = "M1911_MAG11", w = 0.6, a = { 0, 11 }, at = "A114_HP" },
 		{ id = "FN57_MAG", w = 1, a = { 0, 20 }, at = "A57_SR" }, { id = "A114_FX", w = 0.8, n = { 10, 25 } }, { id = "A114_HP", w = 1.5, n = { 10, 30 } },
 		{ id = "A114_TR", w = 2, n = { 10, 30 } }, { id = "A114_FMJ", w = 3, n = { 10, 30 } }, { id = "A114_AP", w = 0.4, n = { 5, 15 } },
+		-- the ninth slice: the P-33 and G-41, their magazines and the 7.6x25 rounds
+		{ id = "TT_PISTOL", w = 2 }, { id = "PPSH_SMG", w = 0.8 }, { id = "TT_MAG", w = 3, a = { 0, 8 }, at = "A76T_FMJ" },
+		{ id = "PPSH_MAG35", w = 1.5, a = { 0, 35 }, at = "A76T_P" }, { id = "PPSH_DRUM", w = 0.4, a = { 0, 71 }, at = "A76T_P" },
+		{ id = "A76T_FMJ", w = 4, n = { 10, 40 } }, { id = "A76T_P", w = 3, n = { 10, 40 } }, { id = "A76T_PT", w = 2, n = { 10, 30 } },
+		{ id = "A76T_PST", w = 2, n = { 10, 30 } }, { id = "A76T_LRN", w = 2, n = { 10, 30 } }, { id = "A76T_LRNPC", w = 1.5, n = { 10, 30 } },
+		{ id = "A76T_MATCH", w = 1.5, n = { 10, 30 } }, { id = "A76T_SBT", w = 1, n = { 10, 25 } }, { id = "A76T_SB", w = 0.6, n = { 10, 20 } },
+		{ id = "A76T_SBAP", w = 0.3, n = { 5, 15 } },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -219,6 +226,7 @@ local POOLS = {
 		{ id = "BATTERY", w = 2 }, { id = "P9_PISTOL", w = 1 }, { id = "GREN_RK5", w = 2 }, { id = "GREN_STUN", w = 1 },
 		{ id = "PM_PISTOL", w = 1.5 }, { id = "PM_MAG", w = 2, a = { 0, 8 }, at = "A918_P" }, { id = "A918_P", w = 4, n = { 8, 24 } },
 		{ id = "M1911_PISTOL", w = 0.6 }, { id = "M1911_MAG", w = 1, a = { 0, 7 }, at = "A114_FMJ" }, { id = "A114_FMJ", w = 2, n = { 7, 21 } },
+		{ id = "TT_PISTOL", w = 1.2 }, { id = "TT_MAG", w = 1.5, a = { 0, 8 }, at = "A76T_P" }, { id = "A76T_P", w = 3, n = { 8, 24 } },
 	},
 	dorm_good = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)

@@ -5314,6 +5314,183 @@
    "tris": 400,
    "w": 2
   },
+  "PPSH_DRUM": {
+   "anchors": {},
+   "batch": "ZR_GunsTT",
+   "cls": "long",
+   "ext": [
+    -0.10625,
+    0.125,
+    -0.47812,
+    0.0
+   ],
+   "family": "tt",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_PPSH_DRUM__metal": {
+     "center": [
+      -0.0,
+      -0.2391,
+      0.0094
+     ],
+     "mat": "metal",
+     "size": [
+      0.425,
+      0.4781,
+      0.2313
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 304,
+   "w": 2
+  },
+  "PPSH_MAG35": {
+   "anchors": {},
+   "batch": "ZR_GunsTT",
+   "cls": "long",
+   "ext": [
+    -0.1366,
+    0.05304,
+    -0.62155,
+    0.0225
+   ],
+   "family": "tt",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_PPSH_MAG35__brass": {
+     "center": [
+      -0.0,
+      0.0094,
+      -0.0002
+     ],
+     "mat": "brass",
+     "size": [
+      0.025,
+      0.0263,
+      0.0447
+     ],
+     "sub": null
+    },
+    "ZR_WP_PPSH_MAG35__metal": {
+     "center": [
+      -0.0,
+      -0.3045,
+      -0.0418
+     ],
+     "mat": "metal",
+     "size": [
+      0.0875,
+      0.6341,
+      0.1896
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 452,
+   "w": 1
+  },
+  "PPSH_SMG": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.10625,
+     -0.07813
+    ],
+    "grip": [
+     -0.0,
+     -0.1875,
+     0.1875
+    ],
+    "hand": [
+     -0.0,
+     -0.09375,
+     -0.65625
+    ],
+    "muzzle": [
+     -0.0,
+     0.0125,
+     -1.4125
+    ],
+    "port": [
+     0.05,
+     0.0375,
+     -0.28125
+    ]
+   },
+   "batch": "ZR_GunsTT",
+   "cls": "long",
+   "ext": [
+    -1.40916,
+    1.27188,
+    -0.41982,
+    0.10625
+   ],
+   "family": "tt",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_PPSH_SMG__gunmetal": {
+     "center": [
+      -0.0,
+      -0.0444,
+      -0.6682
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.1,
+      0.3012,
+      1.4819
+     ],
+     "sub": null
+    },
+    "ZR_WP_PPSH_SMG__metal": {
+     "center": [
+      0.0109,
+      -0.1859,
+      0.5344
+     ],
+     "mat": "metal",
+     "size": [
+      0.1344,
+      0.4469,
+      1.475
+     ],
+     "sub": null
+    },
+    "ZR_WP_PPSH_SMG__wood": {
+     "center": [
+      -0.0,
+      -0.2226,
+      0.3594
+     ],
+     "mat": "wood",
+     "size": [
+      0.1125,
+      0.3945,
+      1.7812
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.10625,
+      -0.40625
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 876,
+   "w": 5
+  },
   "R17_BRK": {
    "anchors": {
     "muzzle": [
@@ -7910,6 +8087,146 @@
    "tris": 1236,
    "w": 6
   },
+  "TT_MAG": {
+   "anchors": {},
+   "batch": "ZR_GunsTT",
+   "cls": "pistol",
+   "ext": [
+    -0.05937,
+    0.05937,
+    -0.29531,
+    0.0225
+   ],
+   "family": "tt",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_TT_MAG__brass": {
+     "center": [
+      -0.0,
+      0.0094,
+      -0.0002
+     ],
+     "mat": "brass",
+     "size": [
+      0.025,
+      0.0263,
+      0.0447
+     ],
+     "sub": null
+    },
+    "ZR_WP_TT_MAG__metal": {
+     "center": [
+      -0.0,
+      -0.1414,
+      0.0
+     ],
+     "mat": "metal",
+     "size": [
+      0.0672,
+      0.3078,
+      0.1187
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 364,
+   "w": 1
+  },
+  "TT_PISTOL": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.07813,
+     -0.01875
+    ],
+    "grip": [
+     -0.0,
+     -0.18125,
+     -0.0625
+    ],
+    "hand": [
+     0.0375,
+     -0.20625,
+     -0.04375
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.6125
+    ]
+   },
+   "batch": "ZR_GunsTT",
+   "cls": "pistol",
+   "ext": [
+    -0.6125,
+    0.05212,
+    -0.33692,
+    0.08125
+   ],
+   "family": "tt",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_TT_PISTOL__gunmetal": {
+     "center": [
+      -0.0,
+      -0.1404,
+      -0.2802
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0775,
+      0.3931,
+      0.6646
+     ],
+     "sub": null
+    },
+    "ZR_WP_TT_PISTOL__metal": {
+     "center": [
+      -0.0,
+      -0.0241,
+      -0.2781
+     ],
+     "mat": "metal",
+     "size": [
+      0.0375,
+      0.2107,
+      0.6375
+     ],
+     "sub": null
+    },
+    "ZR_WP_TT_PISTOL__polymer": {
+     "center": [
+      -0.0,
+      -0.1812,
+      -0.1017
+     ],
+     "mat": "polymer",
+     "size": [
+      0.0919,
+      0.225,
+      0.1458
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.05625,
+      -0.1
+     ],
+     "rot": [
+      14,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 876,
+   "w": 2
+  },
   "TUNDRA_BOLT": {
    "anchors": {
     "bolt": [
@@ -9438,6 +9755,18 @@
     }
    }
   },
+  "PPSH_SMG": {
+   "base": "PPSH_SMG",
+   "tree": {
+    "id": "PPSH_SMG",
+    "mods": {
+     "mag": {
+      "id": "PPSH_DRUM",
+      "mods": {}
+     }
+    }
+   }
+  },
   "R17_CQB": {
    "base": "R17_RIFLE",
    "tree": {
@@ -9799,6 +10128,18 @@
      },
      "muzzle": {
       "id": "SVD_FH",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "TT_PISTOL": {
+   "base": "TT_PISTOL",
+   "tree": {
+    "id": "TT_PISTOL",
+    "mods": {
+     "mag": {
+      "id": "TT_MAG",
       "mods": {}
      }
     }

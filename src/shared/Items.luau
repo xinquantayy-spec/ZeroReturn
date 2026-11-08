@@ -83,6 +83,10 @@ add("P90_SMG", { name = "Petrel PD-57", short = "PD-57", kind = "weapon", w = 3,
 add("UMP_SMG", { name = "Harrier HS-45", short = "HS-45", kind = "weapon", w = 3, h = 2, mass = 2.3, value = 26500, caliber = "11.4", weapon = "UMP", family = "UMP", rarity = "uncommon", desc = "Boxy polymer submachine gun in 11.4x23 with a folding stock. Slow-firing, hard-hitting, easy to hold.", color = c("#1E1F20") })
 add("M1911_PISTOL", { name = "Lark L-11", short = "L-11", kind = "pistol", w = 2, h = 1, mass = 1.1, value = 5408, caliber = "11.4", weapon = "M1911", family = "M1911", desc = "Single-action steel pistol in 11.4x23. Seven heavy rounds, a crisp trigger, a sharp kick.", color = c("#2C2E30") })
 add("FN57_PISTOL", { name = "Finch F-57", short = "F-57", kind = "pistol", w = 2, h = 1, mass = 0.74, value = 14238, caliber = "5.7", weapon = "FN57", family = "FN57", rarity = "uncommon", desc = "Light polymer pistol in 5.7x28 with a 20-round magazine. Fires the PD-57's rounds.", color = c("#1C1D1E") })
+-- economy-1a, ninth slice (2026-11-08): EFT's 7.62x25 TT guns (our 7.6x25). The Pipit P-33 copies the TT-33 and the
+-- Grackle G-41 the PPSh-41. Values are EFT's handbook prices (TT-33 4,189, PPSh-41 10,251); the weights are ours
+add("TT_PISTOL", { name = "Pipit P-33", short = "P-33", kind = "pistol", w = 2, h = 1, mass = 0.85, value = 4189, caliber = "7.6T", weapon = "TT", family = "TT", desc = "Flat steel pistol in 7.6x25. Eight fast rounds, a heavy kick, found everywhere.", color = c("#2D3032") })
+add("PPSH_SMG", { name = "Grackle G-41", short = "G-41", kind = "weapon", w = 5, h = 2, mass = 3.6, value = 10251, caliber = "7.6T", weapon = "PPSH", family = "PPSH", desc = "Wooden-stocked submachine gun in 7.6x25 with a perforated jacket and a 71-round drum. A thousand rounds a minute.", color = c("#6A4228") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -130,6 +134,11 @@ add("UMP_MAG", { name = "HS-45 25-rd Magazine", short = "MAG 25", kind = "mag", 
 add("M1911_MAG", { name = "L-11 7-rd Magazine", short = "MAG 7", kind = "mag", w = 1, h = 1, mass = 0.07, value = 1100, capacity = 7, caliber = "11.4", family = "M1911", desc = "Single-stack steel 7-round 11.4x23 magazine for the L-11.", color = c("#2E3032") })
 add("M1911_MAG11", { name = "L-11 11-rd Magazine", short = "MAG 11", kind = "mag", w = 1, h = 1, mass = 0.1, value = 2100, capacity = 11, caliber = "11.4", family = "M1911", rarity = "uncommon", desc = "Extended 11-round 11.4x23 magazine for the L-11.", color = c("#2E3032") })
 add("FN57_MAG", { name = "F-57 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 1, mass = 0.06, value = 3660, capacity = 20, caliber = "5.7", family = "FN57", desc = "Polymer 20-round 5.7x28 magazine for the F-57.", color = c("#1C1D1E") })
+-- economy-1a, ninth slice: EFT's TT 8-round (1,157), PPSh-41 35-round (2,631) and 71-round drum (16,000) magazines;
+-- handbook prices, weights ours
+add("TT_MAG", { name = "P-33 8-rd Magazine", short = "MAG 8", kind = "mag", w = 1, h = 1, mass = 0.07, value = 1157, capacity = 8, caliber = "7.6T", family = "TT", desc = "Single-stack 8-round 7.6x25 magazine for the P-33.", color = c("#2E3133") })
+add("PPSH_MAG35", { name = "G-41 35-rd Magazine", short = "MAG 35", kind = "mag", w = 1, h = 2, mass = 0.23, value = 2631, capacity = 35, caliber = "7.6T", family = "PPSH", desc = "Curved 35-round 7.6x25 magazine for the G-41.", color = c("#2B2E30") })
+add("PPSH_DRUM", { name = "G-41 71-rd Drum", short = "DRUM 71", kind = "mag", w = 2, h = 2, mass = 1.8, value = 16000, capacity = 71, caliber = "7.6T", family = "PPSH", rarity = "rare", desc = "71-round 7.6x25 drum for the G-41. Heavy and slow to load.", color = c("#2D3032") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -245,6 +254,19 @@ ammo("A114_HP", "11.4x23 HP", "11.4 HP", "11.4", 50, 150, { dmg = 100, pen = 13,
 ammo("A114_TR", "11.4x23 TR", "11.4 TR", "11.4", 50, 76, { dmg = 76, pen = 19, armorDmg = 0.37, bleedL = 0.12, bleedH = 0.06, frag = 0.01, speed = 290, acc = 0.1, tracer = "red", subsonic = true }, nil, "Full metal jacket with an orange-tipped tracer.") -- Lasermatch FMJ
 ammo("A114_FMJ", "11.4x23 FMJ", "11.4 FMJ", "11.4", 50, 94, { dmg = 72, pen = 25, armorDmg = 0.36, bleedL = 0.12, bleedH = 0.06, frag = 0.01, speed = 340, subsonic = true }, nil, "Match full metal jacket.") -- Match FMJ
 ammo("A114_AP", "11.4x23 AP", "11.4 AP", "11.4", 50, 670, { dmg = 66, pen = 38, armorDmg = 0.48, bleedL = 0.12, bleedH = 0.06, frag = 0.01, speed = 299, recoil = 0.07, acc = -0.05, subsonic = true }, "rare", "Steel-core piercer. Goes through class 4.") -- AP
+-- 7.6x25 (EFT's 7.62x25 TT; economy-1a, ninth slice): LRNPC, LRN, FMJ43, AKBS, P gl, PT gzh, Pst gzh and the sabot loads
+-- TT M856A1, M855A1 and M995. Figures from tarkovforge.com/ammo/762x25mm-tt-<round> (read 2026-11-08); values EFT's handbook
+-- prices, the three sabot loads' ours (not in SPT's handbook); bleeding as for the 6.2 with EFT's changes
+ammo("A76T_LRNPC", "7.6x25 LRNPC", "7.6T LRNPC", "7.6T", 50, 68, { dmg = 66, pen = 7, armorDmg = 0.27, bleedL = 0.27, bleedH = 0.16, frag = 0.35, speed = 385, recoil = -0.1, acc = 0.1 }, nil, "Coated lead round nose. Soft and gentle to shoot.") -- LRNPC
+ammo("A76T_LRN", "7.6x25 LRN", "7.6T LRN", "7.6T", 50, 48, { dmg = 64, pen = 8, armorDmg = 0.28, bleedL = 0.27, bleedH = 0.16, frag = 0.35, speed = 375, recoil = -0.05, acc = 0.05 }, nil, "Lead round nose.") -- LRN
+ammo("A76T_FMJ", "7.6x25 FMJ", "7.6T FMJ", "7.6T", 50, 50, { dmg = 60, pen = 11, armorDmg = 0.29, bleedL = 0.12, bleedH = 0.06, frag = 0.25, speed = 427 }, nil, "Full metal jacket.") -- FMJ43
+ammo("A76T_MATCH", "7.6x25 Match", "7.6T MATCH", "7.6T", 50, 49, { dmg = 58, pen = 12, armorDmg = 0.32, bleedL = 0.12, bleedH = 0.06, frag = 0.25, speed = 425, recoil = -0.15, acc = 0.15 }, nil, "Mild, accurate target load.") -- AKBS
+ammo("A76T_P", "7.6x25 P", "7.6T P", "7.6T", 50, 52, { dmg = 58, pen = 14, armorDmg = 0.32, bleedL = 0.12, bleedH = 0.06, frag = 0.25, speed = 430 }, nil, "Service ball with a lead core.") -- P gl
+ammo("A76T_PT", "7.6x25 PT", "7.6T PT", "7.6T", 50, 63, { dmg = 55, pen = 18, armorDmg = 0.34, bleedL = 0.12, bleedH = 0.06, frag = 0.17, speed = 415, acc = -0.1, tracer = "green" }, nil, "Green-tipped tracer.") -- PT gzh
+ammo("A76T_PST", "7.6x25 PST", "7.6T PST", "7.6T", 50, 70, { dmg = 50, pen = 25, armorDmg = 0.36, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 430 }, nil, "Steel core. Gets through light vests.") -- Pst gzh
+ammo("A76T_SBT", "7.6x25 SBT", "7.6T SBT", "7.6T", 50, 130, { dmg = 36, pen = 27, armorDmg = 0.31, bleedL = 0.38, bleedH = 0.13, frag = 0.08, speed = 900, tracer = "red" }, "uncommon", "Light sabot tracer. Very fast, little punch.") -- TT M856A1
+ammo("A76T_SB", "7.6x25 SB", "7.6T SB", "7.6T", 50, 280, { dmg = 34, pen = 31, armorDmg = 0.33, bleedL = 0.29, bleedH = 0.12, frag = 0.02, speed = 900 }, "uncommon", "Light sabot penetrator. Very fast.") -- TT M855A1
+ammo("A76T_SBAP", "7.6x25 SBAP", "7.6T SBAP", "7.6T", 50, 420, { dmg = 32, pen = 37, armorDmg = 0.36, bleedL = 0.26, bleedH = 0.1, frag = 0.25, speed = 940 }, "rare", "Sabot armour piercer. Goes through class 4.") -- TT M995
 
 -- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
 -- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and

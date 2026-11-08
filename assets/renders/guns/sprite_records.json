@@ -741,6 +741,27 @@
   "oy": 13.89,
   "w": 76
  },
+ "PPSH_DRUM@long": {
+  "file": "PPSH_DRUM@long",
+  "h": 58,
+  "ox": 13.97,
+  "oy": 2.0,
+  "w": 31
+ },
+ "PPSH_MAG35@long": {
+  "file": "PPSH_MAG35@long",
+  "h": 77,
+  "ox": 17.39,
+  "oy": 4.53,
+  "w": 26
+ },
+ "PPSH_SMG@long": {
+  "file": "PPSH_SMG@long",
+  "h": 64,
+  "ox": 160.73,
+  "oy": 13.97,
+  "w": 306
+ },
  "R17_BRK@long": {
   "file": "R17_BRK@long",
   "h": 14,
@@ -1090,6 +1111,20 @@
   "ox": 276.56,
   "oy": 16.02,
   "w": 422
+ },
+ "TT_MAG@pistol": {
+  "file": "TT_MAG@pistol",
+  "h": 50,
+  "ox": 10.51,
+  "oy": 5.23,
+  "w": 22
+ },
+ "TT_PISTOL@pistol": {
+  "file": "TT_PISTOL@pistol",
+  "h": 64,
+  "ox": 89.81,
+  "oy": 13.65,
+  "w": 100
  },
  "TUNDRA_BOLT@long": {
   "file": "TUNDRA_BOLT@long",

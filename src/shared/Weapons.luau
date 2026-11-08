@@ -141,6 +141,15 @@ local W = {
 		moveSpread = 1.2, modes = { "AUTO", "SEMI" }, loudness = 0.85, viewmodel = "SPARROW", draw = 0.55,
 		slots = { rail = true },
 	},
+	-- the G-41 (economy-1a, ninth slice) in the place of EFT's PPSh-41: single shots or bursts at 1,000 a minute, ergonomics
+	-- 16, recoil 89 / 294, 200 m (tarkovforge.com); 480 m/s with FMJ from its long barrel (ours)
+	PPSH = {
+		id = "PPSH", item = "PPSH_SMG", name = "G-41", class = "smg", rpm = 1000, range = 200, velocity = 480,
+		ergo = 16, recoilV = 0.89, recoilH = 2.94, reload = 2.8, reloadEmpty = 3.4, hipSpread = 2.4, aimSpread = 0.11,
+		recoilAngle = 90, recoilDisp = 20, recoilConv = 6, recoilCam = 0.4, recoilStable = 4,
+		moveSpread = 1.5, modes = { "AUTO", "SEMI" }, loudness = 0.95, viewmodel = "KST", draw = 0.7,
+		slots = {},
+	},
 	-- MORTAR's grenade launcher (ai-5b) in the place of EFT's M32A1: 76 m/s, single shots from a six-round cylinder
 	-- loaded one round at a time; the round flies as a grenade (Grenades.launchFrom). Rate 30, ergonomics 30, recoil
 	-- 238 / 560 and an effective distance of 70 m (219 studs) as tarkovforge's M32A1 page gives them
@@ -205,6 +214,14 @@ local W = {
 		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.85, viewmodel = "P9", draw = 0.42,
 		slots = { side = true },
 	},
+	-- the P-33 (economy-1a, ninth slice) in the place of EFT's TT-33: ergonomics 70, recoil 553 / 325, 50 m (tarkovforge.com)
+	TT = {
+		id = "TT", item = "TT_PISTOL", name = "P-33", class = "pistol", rpm = 400, range = 50, velocity = 427,
+		ergo = 70, recoilV = 5.53, recoilH = 3.25, reload = 1.6, reloadEmpty = 2.0, hipSpread = 1.9, aimSpread = 0.25,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
+		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.9, viewmodel = "P9", draw = 0.45,
+		slots = { side = true },
+	},
 	KNIFE = {
 		id = "KNIFE", item = "FIELD_KNIFE", name = "Knife", class = "melee", rpm = 90, range = 6, velocity = 0,
 		ergo = 90, recoilV = 0, recoilH = 0, reload = 0, reloadEmpty = 0, hipSpread = 0, aimSpread = 0, moveSpread = 0,
@@ -263,7 +280,7 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}
