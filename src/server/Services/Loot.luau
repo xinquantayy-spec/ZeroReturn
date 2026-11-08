@@ -83,6 +83,7 @@ local POOLS = {
 		{ id = "KEY_MM_BOLT_OFFICE", w = 1 }, { id = "KEY_MM_BOLT_GOODS", w = 1 }, { id = "KEY_MM_IRON_GRATE", w = 0.4 },
 		-- economy-1a's thirteenth slice: printer paper in desk drawers, now and then a cookbook
 		{ id = "PRINTER_PAPER", w = 3 }, { id = "COOK_BOOK", w = 0.3 },
+		{ id = "NOTE_SMELT_CRAWL", w = 4 }, -- the Smelter only (Items.mapOnly; EFT: Factory's filing cabinets and bodies)
 	},
 	medbag = {
 		-- economy-1a's second slice: EFT's medical supplies (the transilluminator very rarely)
@@ -218,6 +219,7 @@ local POOLS = {
 		{ id = "KEY_MALL_SECURITY", w = 1 }, { id = "KEY_MM_RESCUE", w = 1 }, { id = "KEY_MM_IRON_FRONT", w = 0.5 },
 		{ id = "FLARE_RED", w = 0.6 },
 		{ id = "FLARE_GREEN", w = 0.9 },
+		{ id = "NOTE_SMELT_CRAWL", w = 1.5 }, -- the Smelter only (EFT: on bodies)
 	},
 	safe = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -287,7 +289,7 @@ local POOLS = {
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
-		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_MALL_STAFF", w = 3 }, { id = "KEY_MEDIQ", w = 2 }, { id = "KEY_MALL_SECURITY", w = 1 },
+		{ id = "KEY_SMELT_OFFICE", w = 5 }, { id = "KEY_SMELT_STORE", w = 0.3 }, { id = "KEY_MALL_STAFF", w = 3 }, { id = "KEY_MEDIQ", w = 2 }, { id = "KEY_MALL_SECURITY", w = 1 },
 		{ id = "KEY_BY_314", w = 3 }, { id = "KEY_BY_RECORDS", w = 4 }, { id = "KEY_BY_BOILER", w = 2 },
 		{ id = "KEY_BY_K11", w = 1.5 }, { id = "KEY_BY_STORE", w = 4 }, { id = "KEY_BY_RED", w = 3 }, { id = "KEY_BY_BASTION", w = 1.5 }, { id = "KEY_BY_MOTOR", w = 4 },
 		{ id = "KEY_BY_A103", w = 1.5 }, { id = "KEY_BY_A125", w = 1.5 }, { id = "KEY_BY_A128", w = 1.5 }, { id = "KEY_BY_A201", w = 1.5 },
@@ -449,14 +451,27 @@ local function fail(code, msg)
 	return ctx.Remotes.fail(code, msg)
 end
 
+-- an item tied to one map (Items' `mapOnly`, e.g. the Smelter's code-word note) is rolled only in that map's raid
+local function onMap(e)
+	local d = Items.defs[e.id]
+	local only = d and d.mapOnly
+	return only == nil or (ctx and ctx.Match and ctx.Match.map == only)
+end
+Loot.onMap = onMap
+
 function Loot.rollEntry(rand, poolName)
 	local pool = POOLS[poolName] or POOLS.crate
 	local total = 0
 	for _, e in pool do
-		total += e.w
+		if onMap(e) then
+			total += e.w
+		end
 	end
 	local r = rand:NextNumber() * total
 	for _, e in pool do
+		if not onMap(e) then
+			continue
+		end
 		r -= e.w
 		if r <= 0 then
 			local n = e.n and rand:NextInteger(e.n[1], e.n[2]) or 1

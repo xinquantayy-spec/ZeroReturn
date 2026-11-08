@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The Smelter's code-word note and stores keycard (art-1a follow-up; 2026-11-09, 00:46 SGT)
+
+| Test | Result |
+|---|---|
+| Items and pictures | NOTE_SMELT_CRAWL (raid-only, rolled only on the Smelter, in drawers and jackets) and KEY_SMELT_STORE (10 uses, rare key loot); icons rendered in Blender (the note looked at), sheet 6 uploaded again (image 120187579539356); ItemIcons 533 items. |
+| Build | The Smelter's build log no longer says the crawl and the store wait for their items: the crawl exit and the store's card lock are built. |
+| Raid-only | In a Smelter raid the note was given, the raider extracted at ORE GATE, and afterwards the note was in neither the raid nor the stash. |
+| Tests | 17 suites, 1,225 checks, all passed. |
+| Not checked | The crawl exit used with the note in hand; the store opened with the card; the note found in a drawer by loot. |
+
 ## The Smelter on Factory's layout and every gun textured (decisions art-1a and art-4b; 2026-11-09, 00:37 SGT)
 
 | Test | Result |

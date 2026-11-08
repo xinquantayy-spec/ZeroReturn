@@ -559,6 +559,20 @@ function Raid.finalize(player, outcome)
 	local runThrough = closed or (outcome == "SUCCESS" and not s.scav and not s.tutorial and (now() - s.started) < Progress.XP.runThrough.time and (s.xp or 0) < Progress.XP.runThrough.xp)
 	-- the report's found-in-raid list is read before the settlement: a scav's (and the first raid's) settlement takes
 	-- the items out of the raid holder, which left the list empty (seen in the ui-5a Studio run, 2026-11-08)
+	-- items that cannot leave the raid (EFT's note with the code word "Ark" for Factory's smugglers' passage): gone
+	-- before the settlement, whatever the outcome
+	local raidOnly = {}
+	for g, it in s.inv.items do
+		local d = Items.defs[it.id]
+		if d and d.raidOnly then
+			table.insert(raidOnly, g)
+		end
+	end
+	for _, g in raidOnly do
+		if s.inv.items[g] then
+			Inv.take(s.inv, g)
+		end
+	end
 	local foundList = (not runThrough) and itemsList(s.inv, function(g)
 		return not s.risked[g]
 	end) or {}
