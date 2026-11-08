@@ -1182,58 +1182,333 @@ function Trade.traders(tab, sub)
 	ctx.Screens.focus(first)
 end
 
--- ── hideout ──────────────────────────────────────────────────────────────────
-function Trade.hideout()
-	local d = data()
-	if not d or ctx.State.inRaid() then
-		return
-	end
-	order = 0
-	table.clear(live)
-	local f, w, h = ctx.Screens.openModal(980, 600, "HIDEOUT  //  RELAY 7")
-	Trade.open = "hideout"
-	Trade.frame = f
-	local hd = d.hideout or { levels = {}, crafts = {} }
-	local levels = hd.levels or {}
-	K.label(f, string.format("%s %s  ·  STASH 10x%d", Util.commas(d.money or 0), Config.CURRENCY, d.stashH or Config.STASH_H), 12, { Position = UDim2.fromOffset(0, 26), Size = UDim2.new(1, 0, 0, 18), TextColor3 = K.C.dim })
-	local top, bodyH = 50, h - 50 - 42
-	local lw = math.floor(w * 0.52)
-	local left = scroller(f, 0, top, lw, bodyH, "Modules")
-	local right = scroller(f, lw + 12, top, w - lw - 12, bodyH, "Crafts")
-	section(left, "MODULES")
-	local building = hd.build
-	for _, m in HD.ORDER do
-		local mod = HD.modules[m]
-		local cur = levels[m] or 0
-		local nextDef = mod.levels[cur + 1]
-		text(left, string.format("%s  ·  LEVEL %d/%d", mod.name, cur, #mod.levels), cur > 0 and K.C.green or K.C.text, 13, true)
-		text(left, mod.desc .. (cur > 0 and ("  Now: " .. mod.levels[cur].effect .. ".") or ""), K.C.dim, 11)
-		if building and building.m == m then
-			local l = text(left, "", K.C.ochre, 12, true)
-			table.insert(live, { label = l, at = building.at, fmt = "BUILDING LEVEL " .. building.l .. "  ·  %s" })
-		elseif nextDef then
-			local parts, ok = {}, true
-			table.insert(parts, Util.commas(nextDef.cost) .. " " .. Config.CURRENCY)
-			ok = ok and (d.money or 0) >= nextDef.cost
-			for _, e in nextDef.items or {} do
-				local n = stashCount(d, e[1])
-				ok = ok and n >= e[2]
-				table.insert(parts, Items.defs[e[1]].short .. " " .. have(n, e[2]))
-			end
-			for _, nd in nextDef.needs or {} do
-				local okN = (levels[nd[1]] or 0) >= nd[2]
-				ok = ok and okN
-				table.insert(parts, string.format('<font color="#%s">%s %d</font>', okN and "93A57C" or "C24A35", HD.modules[nd[1]].name, nd[2]))
-			end
-			text(left, "  NEXT: " .. nextDef.effect .. "  ·  " .. Util.clock(nextDef.time), K.C.text, 11)
-			local _, b = row(left, "", table.concat(parts, "  "), building and "BUSY" or "BUILD", ok and not building, function()
-				req("hideout", { op = "build", m = m })
-			end)
-			b.Name = "Build_" .. m
+-- ── hideout (decision economy-7b: EFT's economy core of fourteen modules; HideoutData.luau) ─────────────────────────
+-- One module open at a time, as in EFT: its level, bonuses, controls (generator fuel and switch, the bitcoin farm's
+-- cards and wallets, the scav case's runs), the next level with every requirement as have / need in colour and words,
+-- and its crafts. Mouse, touch and gamepad (the tabs and buttons are selectable; LB / RB step through the modules).
+local HIDEOUT_ALIAS = { storage = "stash" } -- Relay 7's old bay id for the stash
+local hBound = false
+
+local function hex(c)
+	return c:ToHex()
+end
+
+-- a countdown label: its text now, then every quarter second (Trade.init's loop)
+local function hLive(label, at, fmt, done)
+	local left = (at or 0) - serverNow()
+	label.Text = (left <= 0 and done) or string.format(fmt, Util.clock(math.max(0, left)))
+	table.insert(live, { label = label, at = at, fmt = fmt, done = done })
+	return label
+end
+
+local function hRecipes(m)
+	local list = {}
+	for _, r in HD.recipes do
+		if r.module == m then
+			table.insert(list, r)
 		end
 	end
-	-- hideout style (Tarkov 0.16 customisation): walls, floor and ceiling of the bunker as you see it, by level
-	section(left, "STYLE")
+	return list
+end
+
+-- requirement checks on the snapshot, the same function the server runs (HideoutData.requirements)
+local function hOpts(d)
+	local econ = d.econ or {}
+	return {
+		money = d.money or 0,
+		count = function(id)
+			return stashCount(d, id)
+		end,
+		skills = econ.skills or {},
+		loyalty = function(tid)
+			local st = econ.traders and econ.traders[tid]
+			return st and st.ll or 1
+		end,
+	}
+end
+
+-- a tab's two lines: the name and its state
+local function hTabText(hd, id)
+	if id == "style" then
+		return "STYLE", "WALLS, FLOOR, CEILING", K.C.dim
+	end
+	local mod = HD.modules[id]
+	local lv = (hd.levels and hd.levels[id]) or 0
+	local base = lv > 0 and string.format("LV %d/%d", lv, #mod.levels) or "NOT BUILT"
+	local c = hd.crafts and hd.crafts[id]
+	if hd.builds and hd.builds[id] then
+		return mod.name, "BUILDING LV " .. hd.builds[id].l, K.C.ochre
+	elseif c and c.ready then
+		return mod.name, base .. "  ·  READY", K.C.green
+	elseif c then
+		return mod.name, base .. ((c.rate or 1) < 1 and "  ·  NO POWER" or "  ·  CRAFTING"), (c.rate or 1) < 1 and K.C.red or K.C.ochre
+	elseif id == "generator" and lv > 0 then
+		return mod.name, base .. (hd.power and "  ·  ON" or "  ·  OFF"), hd.power and K.C.green or K.C.red
+	elseif id == "scavcase" and hd.scav then
+		return mod.name, base .. (hd.scav.ready and "  ·  BACK" or "  ·  OUT"), hd.scav.ready and K.C.green or K.C.ochre
+	elseif id == "bitcoin" and hd.btc and (hd.btc.coins or 0) > 0 then
+		return mod.name, string.format("%s  ·  %d WALLET%s", base, hd.btc.coins, hd.btc.coins == 1 and "" or "S"), K.C.green
+	end
+	return mod.name, base, lv > 0 and K.C.dim or K.C.rust
+end
+
+-- one line: text on the left, a coloured note on the right (have / need and a word)
+local function hLine(parent, left, right, col)
+	local r = K.frame(parent, { BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.35, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24) })
+	K.label(r, "  " .. left, 12, { Size = UDim2.new(0.62, 0, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
+	K.label(r, right .. "  ", 12, { Position = UDim2.fromScale(0.62, 0), Size = UDim2.new(0.38, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = col or K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd })
+	return r
+end
+
+-- a full-width button row (phone-sized on a phone)
+local function hButton(parent, label, enabled, onClick, name, phone)
+	local b = K.button(parent, label, {
+		LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, phone and 40 or 30), TextSize = phone and 14 or 13,
+		TextColor3 = enabled and K.C.green or K.C.dim, AutoButtonColor = enabled,
+	})
+	b.Name = name
+	if enabled then
+		b.Activated:Connect(onClick)
+	end
+	return b
+end
+
+local REQ_WORD = { module = "NOT BUILT", skill = "TOO LOW", ll = "TOO LOW", money = "SHORT", item = "MISSING", tool = "MISSING" }
+local function hReqLines(parent, lines)
+	for _, l in lines do
+		local left, right
+		if l.k == "module" then
+			left = string.format("%s level %d", HD.modules[l.id].name, l.need)
+			right = l.ok and "BUILT  ·  OK" or string.format("LEVEL %d  ·  %s", l.have, l.have > 0 and "TOO LOW" or "NOT BUILT")
+		elseif l.k == "skill" then
+			local s = P.SKILLS[l.id]
+			left = string.format("%s skill level %d", s and s.name or l.id, l.need)
+			right = string.format("YOU %d  ·  %s", l.have, l.ok and "OK" or "TOO LOW")
+		elseif l.k == "ll" then
+			left = string.format("%s loyalty level %d", TD.defs[l.id] and TD.defs[l.id].name or l.id, l.need)
+			right = string.format("LL%d  ·  %s", l.have, l.ok and "OK" or "TOO LOW")
+		elseif l.k == "money" then
+			left = "Money (" .. Config.CURRENCY .. ")"
+			right = string.format("%s / %s  ·  %s", Util.commas(math.min(l.have, 1e12)), Util.commas(l.need), l.ok and "OK" or "SHORT")
+		else
+			local d = Items.defs[l.id]
+			left = (l.k == "tool" and "Tool: " or "") .. (d and d.name or l.id)
+			right = string.format("%d/%d  ·  %s", math.min(l.have, 999), l.need, l.ok and "OK" or REQ_WORD[l.k])
+		end
+		hLine(parent, left, right, l.ok and K.C.green or K.C.red)
+	end
+end
+
+local function hBonusLines(parent, bonus, prefix)
+	local kinds = {}
+	for k in bonus do
+		table.insert(kinds, k)
+	end
+	table.sort(kinds)
+	for _, k in kinds do
+		local b = HD.BONUS[k]
+		text(parent, prefix .. HD.bonusText(k, bonus[k]) .. ((b and b.nope) and "  (no effect in Zero Return yet)" or ""), (b and b.nope) and K.C.dim or K.C.text, 12)
+	end
+end
+
+-- the module's card
+local function hCard(parent, d, hd, m, opts, phone)
+	local mod = HD.modules[m]
+	local lv = (hd.levels and hd.levels[m]) or 0
+	text(parent, string.format("%s  ·  LEVEL %d/%d", mod.name, lv, #mod.levels), lv > 0 and K.C.green or K.C.text, 15, true)
+	text(parent, mod.desc .. (mod.power and "  Needs power." or ""), K.C.dim, 12)
+	-- what it gives now (each built level adds its bonuses, as in EFT)
+	if lv > 0 then
+		local sum = {}
+		for i = 1, lv do
+			for k, v in mod.levels[i].bonus or {} do
+				sum[k] = (sum[k] or 0) + v
+			end
+		end
+		if m == "stash" then
+			text(parent, string.format("NOW: STASH %dx%d", Config.STASH_W, mod.levels[lv].rows), K.C.text, 12, true)
+		elseif next(sum) then
+			section(parent, (mod.power and not hd.power) and "NOW (OFF: NO POWER)" or "NOW")
+			hBonusLines(parent, sum, "")
+		end
+	end
+	-- the generator: fuel slots and the switch
+	if m == "generator" and lv > 0 then
+		section(parent, "FUEL")
+		local slots = {}
+		for i = 1, hd.cap or 0 do
+			local u = hd.fuel and hd.fuel[i]
+			table.insert(slots, u and string.format("[%.1f]", u) or "[EMPTY]")
+		end
+		text(parent, table.concat(slots, "  ") .. string.format("  ·  %d UNITS A CANISTER  ·  1 UNIT EVERY %s", HD.FUEL.units, Util.clock(HD.FUEL.sec / HD.div())), K.C.text, 12)
+		if hd.power and hd.fuelOut then
+			hLive(text(parent, "", K.C.green, 12, true), hd.fuelOut, "POWER ON  ·  RUNS OUT IN %s", "OUT OF FUEL")
+		else
+			text(parent, hd.on and "OUT OF FUEL" or "POWER OFF  ·  CRAFTS CRAWL, THE FARM STOPS", K.C.red, 12, true)
+		end
+		local cans = stashCount(d, HD.FUEL.item)
+		local free = #(hd.fuel or {}) < (hd.cap or 0)
+		hButton(parent, string.format("LOAD FUEL CANISTER (%d IN STASH)", cans), cans > 0 and free, function()
+			req("hideout", { op = "fuel" })
+		end, "Fuel_load", phone)
+		local hasFuel = #(hd.fuel or {}) > 0
+		hButton(parent, hd.on and "TURN THE GENERATOR OFF" or "TURN THE GENERATOR ON", hd.on or hasFuel, function()
+			req("hideout", { op = "power", on = not hd.on })
+		end, "Fuel_switch", phone)
+	end
+	-- the bitcoin farm: cards, wallets and the next one
+	if m == "bitcoin" and lv > 0 and hd.btc then
+		local b = hd.btc
+		section(parent, "FARM")
+		text(parent, string.format("GRAPHICS CARDS %d/%d  ·  WALLETS %d/%d", b.gpus, b.slots, b.coins, b.cap), K.C.text, 12, true)
+		if b.gpus > 0 then
+			text(parent, "ONE WALLET EVERY " .. Util.clock(1 / b.rate) .. " WITH POWER", K.C.dim, 12)
+		end
+		if b.at then
+			hLive(text(parent, "", K.C.ochre, 12), b.at, "NEXT WALLET IN %s" .. (b.short and "  ·  THE FUEL RUNS OUT FIRST" or ""), "A WALLET IS DUE")
+		else
+			text(parent, b.coins >= b.cap and "FULL: COLLECT TO KEEP MINING" or (b.gpus == 0 and "NO CARDS" or "NEEDS POWER"), K.C.red, 12)
+		end
+		local gpus = stashCount(d, HD.BTC.gpu)
+		hButton(parent, string.format("ADD GRAPHICS CARD (%d IN STASH)", gpus), gpus > 0 and b.gpus < b.slots, function()
+			req("hideout", { op = "gpu", add = true })
+		end, "Gpu_add", phone)
+		hButton(parent, "TAKE A CARD OUT", b.gpus > 0, function()
+			req("hideout", { op = "gpu", add = false })
+		end, "Gpu_remove", phone)
+		hButton(parent, string.format("COLLECT %d WALLET%s", b.coins, b.coins == 1 and "" or "S"), b.coins > 0, function()
+			req("hideout", { op = "coins" })
+		end, "Coins", phone)
+	end
+	-- the scav case: the five runs, or the one out now
+	if m == "scavcase" and lv > 0 then
+		section(parent, "SCAVS")
+		local s = hd.scav
+		if s then
+			if s.ready then
+				text(parent, string.format("THE SCAVS ARE BACK WITH %d ITEM%s", s.n or 0, (s.n or 0) == 1 and "" or "S"), K.C.green, 12, true)
+				hButton(parent, "COLLECT", true, function()
+					req("hideout", { op = "scavGet" })
+				end, "Scav_get", phone)
+			else
+				hLive(text(parent, "", K.C.ochre, 12, true), s.at, "THE SCAVS ARE OUT  ·  BACK IN %s", "THE SCAVS ARE BACK")
+			end
+		end
+		local karma = (d.econ and d.econ.karma) or 0
+		for _, run in HD.SCAV do
+			local lo, hi = 0, 0
+			for _, tier in { "common", "rare", "superrare" } do
+				lo += run.n[tier][1]
+				hi += run.n[tier][2]
+			end
+			local cost, ok
+			if run.money then
+				cost, ok = Util.commas(run.money) .. " " .. Config.CURRENCY, (d.money or 0) >= run.money
+			else
+				local n = stashCount(d, run.item)
+				cost, ok = string.format("%s %d/1", Items.defs[run.item].name, n), n >= 1
+			end
+			text(parent, string.format("%s  ·  %s  ·  %d-%d ITEMS: %s", cost, Util.clock(HD.scavNeed(run, karma)), lo, hi, run.what), ok and K.C.text or K.C.red, 12)
+			hButton(parent, ok and "SEND THE SCAVS" or (run.money and "NOT ENOUGH MONEY" or "MISSING"), ok and not s, function()
+				req("hideout", { op = "scav", r = run.id })
+			end, "Scav_" .. run.id, phone)
+		end
+	end
+	-- the next level
+	local build = hd.builds and hd.builds[m]
+	local nextDef = mod.levels[lv + 1]
+	if build then
+		section(parent, "LEVEL " .. build.l)
+		hLive(text(parent, "", K.C.ochre, 13, true), build.at, "UNDER CONSTRUCTION  ·  %s", "FINISHING")
+	elseif nextDef then
+		section(parent, lv == 0 and "BUILD: LEVEL 1" or ("UPGRADE: LEVEL " .. (lv + 1)))
+		if nextDef.rows then
+			text(parent, string.format("Stash %dx%d", Config.STASH_W, nextDef.rows), K.C.text, 12)
+		end
+		hBonusLines(parent, nextDef.bonus or {}, "")
+		local t = HD.buildNeed(nextDef)
+		text(parent, t > 0 and ("CONSTRUCTION " .. Util.clock(t)) or "CONSTRUCTION INSTANT", K.C.dim, 12)
+		local lines, ok = HD.requirements(hd, nextDef, opts)
+		hReqLines(parent, lines)
+		if nextDef.gone then
+			text(parent, "EFT also asks for " .. nextDef.gone .. " (not in Relay 7)", K.C.dim, 11)
+		end
+		local busy = hd.crafts and hd.crafts[m]
+		local b = hButton(parent, busy and "COLLECT ITS CRAFT FIRST" or (ok and (lv == 0 and "BUILD" or "UPGRADE") or "REQUIREMENTS NOT MET"), ok and not busy, function()
+			req("hideout", { op = "build", m = m })
+		end, "Build_" .. m, phone)
+		b.TextColor3 = (ok and not busy) and K.C.green or K.C.red
+	else
+		text(parent, "TOP LEVEL", K.C.green, 12, true)
+	end
+end
+
+-- the module's crafts: what runs now, then every recipe with its inputs as have / need
+local function hCrafts(parent, d, hd, m, opts, phone)
+	local recipes = hRecipes(m)
+	if #recipes == 0 then
+		return
+	end
+	local mod = HD.modules[m]
+	local lv = (hd.levels and hd.levels[m]) or 0
+	section(parent, "PRODUCTION")
+	local running = hd.crafts and hd.crafts[m]
+	if running and running.get then
+		local out = string.upper(Items.defs[running.get[1]] and Items.defs[running.get[1]].name or running.get[1]) .. " x" .. running.get[2]
+		if running.ready then
+			text(parent, "READY: " .. out, K.C.green, 13, true)
+			hButton(parent, "COLLECT", true, function()
+				req("hideout", { op = "collect", m = m })
+			end, "Collect_" .. m, phone)
+		else
+			hLive(text(parent, "", (running.rate or 1) < 1 and K.C.red or K.C.ochre, 13, true), running.at,
+				"CRAFTING " .. out .. "  ·  %s" .. ((running.rate or 1) < 1 and "  ·  NO POWER: SLOWED" or ""), "READY: " .. out)
+		end
+	end
+	local powerOk = not mod.power or hd.power
+	for _, r in recipes do
+		local locked = lv < r.level
+		local lines, ok = HD.requirements(hd, { give = r.give, tools = r.tools }, opts)
+		local parts = {}
+		for _, l in lines do
+			local idd = Items.defs[l.id]
+			table.insert(parts, string.format('%s%s <font color="#%s">%d/%d</font>', l.k == "tool" and "tool: " or "", idd and idd.name or l.id, hex(l.ok and K.C.green or K.C.red), math.min(l.have, 999), l.need))
+		end
+		local gd = Items.defs[r.get[1]]
+		local rh = phone and 74 or 58
+		local row = K.frame(parent, { BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.2, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, rh) })
+		row.Name = "Recipe_" .. r.id
+		local px = 4
+		if K.hasIcon(r.get[1]) then
+			local ph = 44
+			local pw = math.floor(math.min(66, ph * gd.w / gd.h))
+			local box = K.frame(row, { Name = "Picture", Position = UDim2.fromOffset(4, 6), Size = UDim2.fromOffset(pw, ph), BackgroundColor3 = K.C.panel2 })
+			K.itemIcon(box, r.get[1], pw, ph, false, false, 3)
+			px = pw + 10
+		end
+		local bw = phone and 104 or 92
+		K.label(row, string.format("%s x%d", gd.name, r.get[2]), 13, { Position = UDim2.fromOffset(px, 2), Size = UDim2.new(1, -px - bw - 8, 0, 18), FontFace = K.bold, TextTruncate = Enum.TextTruncate.AtEnd })
+		K.label(row, table.concat(parts, "  ") .. "  ·  " .. Util.clock(HD.craftNeed(r, opts.skills)), 11, {
+			Position = UDim2.fromOffset(px, 20), Size = UDim2.new(1, -px - bw - 8, 1, -22), TextColor3 = K.C.dim, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
+		})
+		local word = locked and ("LEVEL " .. r.level) or (running and "BUSY" or (not powerOk and "NO POWER" or (ok and "START" or "MISSING")))
+		local can = not locked and not running and powerOk and ok and not (hd.builds and hd.builds[m])
+		local b = K.button(row, word, {
+			AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -4, 0.5, 0), Size = UDim2.fromOffset(bw, phone and 40 or 28), TextSize = 12,
+			TextColor3 = can and K.C.green or (locked and K.C.dim or K.C.red), AutoButtonColor = can,
+		})
+		b.Name = "Craft_" .. r.id
+		if can then
+			b.Activated:Connect(function()
+				req("hideout", { op = "craft", r = r.id })
+			end)
+		end
+	end
+end
+
+-- hideout style (Tarkov 0.16 customisation): walls, floor and ceiling of the bunker as you see it, by level
+local function hStyle(parent, d, hd, phone)
+	section(parent, "STYLE")
 	local lvl = (d.econ and d.econ.level) or 1
 	local mine = hd.style or {}
 	for _, cat in HS.CATS do
@@ -1241,56 +1516,163 @@ function Trade.hideout()
 		for _, o in (HS :: any)[cat] do
 			local open = HS.unlocked(o, lvl)
 			local using = o.id == cur
-			local _, b = row(left, HS.NAMES[cat] .. "  ·  " .. string.upper(o.name), (using or open) and "" or ("LEVEL " .. o.level),
+			local _, b = row(parent, HS.NAMES[cat] .. "  ·  " .. string.upper(o.name), (using or open) and "" or ("LEVEL " .. o.level),
 				using and "IN USE" or (open and "USE" or "LOCKED"), open and not using, function()
 					req("hideout", { op = "style", cat = cat, id = o.id })
 				end, using and K.C.green or nil)
 			b.Name = "Style_" .. cat .. "_" .. o.id
-		end
-	end
-	section(right, "CRAFTING")
-	for _, m in HD.ORDER do
-		local recipes = {}
-		for _, r in HD.recipes do
-			if r.module == m then
-				table.insert(recipes, r)
-			end
-		end
-		if #recipes > 0 then
-			text(right, HD.modules[m].name, K.C.text, 12, true)
-			local running = hd.crafts and hd.crafts[m]
-			if running then
-				local r = HD.byRecipe[running.r]
-				local l = text(right, "", K.C.ochre, 12)
-				local out = string.upper(Items.defs[r.get[1]].name) .. " x" .. r.get[2]
-				table.insert(live, { label = l, at = running.at, fmt = "  CRAFTING " .. out .. "  ·  %s", done = "  READY: " .. out })
-				local _, b = row(right, "", "", "COLLECT", true, function()
-					req("hideout", { op = "collect", m = m })
-				end)
-				b.Name = "Collect_" .. m
-			end
-			for _, r in recipes do
-				local locked = (levels[m] or 0) < r.level
-				local parts, ok = {}, true
-				for _, e in r.give do
-					local n = stashCount(d, e[1])
-					ok = ok and n >= e[2]
-					table.insert(parts, Items.defs[e[1]].short .. " " .. have(n, e[2]))
-				end
-				if #parts == 0 then
-					table.insert(parts, "no materials")
-				end
-				local name = Items.defs[r.get[1]].name .. " x" .. r.get[2]
-				local _, b = row(right, name, locked and ("LEVEL " .. r.level) or (table.concat(parts, "  ") .. "  ·  " .. Util.clock(r.time)), locked and "LOCKED" or "START", ok and not locked and not running, function()
-					req("hideout", { op = "craft", r = r.id })
-				end)
-				b.Name = "Craft_" .. r.id
+			if phone then
+				b.Size = UDim2.fromOffset(96, 28)
 			end
 		end
 	end
-	local close = K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
+end
+
+-- LB / RB: the previous / next module while the hideout is open (bound once, the first time it opens)
+local function hStep(dir)
+	if not (Trade.open == "hideout" and ctx.Screens.modal and ctx.Screens.modal == Trade.frame) then
+		return
+	end
+	local tabs = table.clone(HD.ORDER)
+	table.insert(tabs, "style")
+	local i = table.find(tabs, ui.hmod) or 1
+	ui.hmod = tabs[(i - 1 + dir) % #tabs + 1]
+	ctx.Screens.tabSwitch = true
+	Trade.hideout()
+end
+
+function Trade.hideout(arg)
+	local d = data()
+	if not d or ctx.State.inRaid() then
+		return
+	end
+	if not hBound then
+		hBound = true
+		ctx.Input.on("TabPrev", function(down)
+			if down then
+				hStep(-1)
+			end
+		end)
+		ctx.Input.on("TabNext", function(down)
+			if down then
+				hStep(1)
+			end
+		end)
+	end
+	-- a Relay 7 bay opens the hideout on its module ("hideout:<id>")
+	if type(arg) == "string" then
+		local id = HIDEOUT_ALIAS[arg] or arg
+		if HD.modules[id] or id == "style" then
+			ui.hmod = id
+		end
+	end
+	order = 0
+	table.clear(live)
+	local f, w, h = ctx.Screens.openModal(1180, 700, "HIDEOUT  //  RELAY 7")
+	Trade.open = "hideout"
+	Trade.frame = f
+	local gui = f:FindFirstAncestorWhichIsA("ScreenGui")
+	local phone = K.viewport(gui).Y < 500
+	local hd = d.hideout or { levels = {}, crafts = {}, builds = {} }
+	local m = ui.hmod
+	if not (HD.modules[m] or m == "style") then
+		m = "generator"
+		ui.hmod = m
+	end
+	-- the info row: money, stash, power and fuel (EFT shows the generator's state on the hideout screen)
+	-- on a phone it shares the title row with CLOSE (every point of height counts)
+	local info = K.label(f, "", 12, {
+		Position = phone and UDim2.fromOffset(196, 0) or UDim2.fromOffset(0, 26), Size = phone and UDim2.new(1, -196 - 92, 0, 36) or UDim2.new(1, -150, 0, 18),
+		TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd, TextXAlignment = phone and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
+	})
+	local head = phone and string.format("%s %s  ·  ", Util.commas(d.money or 0), Config.CURRENCY)
+		or string.format("%s %s  ·  STASH %dx%d  ·  ", Util.commas(d.money or 0), Config.CURRENCY, Config.STASH_W, d.stashH or Config.STASH_H)
+	if ((hd.levels and hd.levels.generator) or 0) < 1 then
+		info.Text = head .. "NO GENERATOR"
+	elseif hd.power and hd.fuelOut then
+		hLive(info, hd.fuelOut, head .. "POWER ON  ·  FUEL %s", head .. "OUT OF FUEL")
+	else
+		info.Text = head .. (hd.on and "OUT OF FUEL" or "POWER OFF")
+	end
+	-- module tabs: a rail on the left of a PC screen, a scrolling strip on a phone (EFT: the modules along the bottom)
+	local tabs = table.clone(HD.ORDER)
+	table.insert(tabs, "style")
+	local railW = phone and w or 224
+	local top = phone and 40 or 50
+	local strip = K.new("ScrollingFrame", {
+		Name = "Modules", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, top),
+		Size = phone and UDim2.new(1, 0, 0, 44) or UDim2.fromOffset(railW, h - top - 42), CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = phone and Enum.AutomaticSize.X or Enum.AutomaticSize.Y, ScrollBarThickness = phone and 0 or 4, Selectable = false,
+		ScrollingDirection = phone and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y,
+	}, f)
+	K.list(strip, phone and Enum.FillDirection.Horizontal or nil, 4)
+	if not phone then
+		K.new("UIPadding", { PaddingRight = UDim.new(0, 8) }, strip)
+	end
+	local first, firstPos = nil, 0
+	for i, id in tabs do
+		local label, sub, col = hTabText(hd, id)
+		local sel = id == m
+		local b = K.button(strip, "", {
+			Size = phone and UDim2.fromOffset(124, 40) or UDim2.new(1, 0, 0, 40), LayoutOrder = i, RichText = true, TextSize = 12,
+			Text = string.format('%s\n<font size="11" color="#%s">%s</font>', label, col:ToHex(), sub),
+			BackgroundColor3 = sel and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = sel and K.C.ochre or K.C.text,
+			TextXAlignment = phone and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left,
+		})
+		if not phone then
+			K.new("UIPadding", { PaddingLeft = UDim.new(0, 8) }, b)
+		end
+		b.Name = "Module_" .. id
+		b.Activated:Connect(function()
+			if ui.hmod ~= id then
+				ui.hmod = id
+				ctx.Screens.tabSwitch = true
+				Trade.hideout()
+			end
+		end)
+		if sel then
+			first, firstPos = b, (i - 1) * (phone and 128 or 44)
+		end
+	end
+	if first then
+		task.defer(function()
+			if strip.Parent then
+				strip.CanvasPosition = phone and Vector2.new(math.max(0, firstPos - (w - 124) / 2), 0) or Vector2.new(0, math.max(0, firstPos - (h - top - 42) / 2))
+			end
+		end)
+	end
+	-- the open module: its card (level, bonuses, the generator / farm / scav case controls, the next level and what it
+	-- needs) and its crafts; side by side on a PC, one after the other on a phone
+	local bodyY = phone and (top + 48) or top
+	local bodyH = h - bodyY - (phone and 0 or 42)
+	local opts = hOpts(d)
+	if phone then
+		local one = scroller(f, 0, bodyY, w, bodyH, "HideoutPhone")
+		if m == "style" then
+			hStyle(one, d, hd, true)
+		else
+			hCard(one, d, hd, m, opts, true)
+			hCrafts(one, d, hd, m, opts, true)
+		end
+	else
+		local x0 = railW + 12
+		local cw = w - x0
+		if m == "style" then
+			hStyle(scroller(f, x0, bodyY, cw, bodyH, "HideoutStyle"), d, hd, false)
+		else
+			local hasCrafts = hRecipes(m)[1] ~= nil
+			local leftW = hasCrafts and math.floor(cw * 0.5) or cw
+			hCard(scroller(f, x0, bodyY, leftW, bodyH, "HideoutCard"), d, hd, m, opts, false)
+			if hasCrafts then
+				hCrafts(scroller(f, x0 + leftW + 12, bodyY, cw - leftW - 12, bodyH, "HideoutCrafts"), d, hd, m, opts, false)
+			end
+		end
+	end
+	local close = phone and K.button(f, "CLOSE", { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(84, 36), TextSize = 13 })
+		or K.button(f, "CLOSE", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(140, 34) })
 	close.Activated:Connect(ctx.Screens.close)
-	ctx.Screens.focus(close)
+	-- the gamepad lands on the open module's tab (LB / RB step through them)
+	ctx.Screens.focus(first or close)
 end
 
 function Trade.refresh()
