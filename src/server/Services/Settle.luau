@@ -208,6 +208,17 @@ function Settle.deployScav(p: any, raidId: string, now: number, kit: any): (any?
 	return kit, nil
 end
 
+-- Decision ui-5a, the first raid (TutorialData.luau): a loaned kit goes in, settled like a player scav's (nothing of the
+-- PMC's is at stake and what comes out goes to the stash), but no scav cooldown starts and no scav raid is counted.
+function Settle.deployTutorial(p: any, raidId: string, now: number, kit: any): (any?, string?)
+	if p.pendingRaid then
+		return nil, "ALREADY_IN_RAID"
+	end
+	p.pendingRaid = { id = raidId, t = now, risked = {}, value = 0, scav = true, tutorial = true }
+	p.rev += 1
+	return kit, nil
+end
+
 -- Tarkov's insurance rules (EFT wiki, Insurance): weapons, gear, magazines, attachments, containers and loot can be
 -- insured; "Secure containers, the Compass, Melee weapons (Except the Cultist knife), and Armbands can not be insured",
 -- nor "Consumable items (Food, Meds or Ammo)", nor keys. Quest items and free recovery-kit items cannot either, and
@@ -518,7 +529,9 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 			p.money += sold
 			receipt.sold = sold
 			if not closed then
-				p.stats.scavSurvived += 1
+				if not pr.tutorial then
+					p.stats.scavSurvived += 1
+				end
 				p.stats.extractedValue += receipt.value
 			end
 		end

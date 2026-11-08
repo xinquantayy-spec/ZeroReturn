@@ -619,6 +619,15 @@ local function newPath()
 end
 
 local function moveTo(u, goal, run, keepFacing)
+	-- a leashed unit (the first raid's scavs, decision ui-5a: Tarkov's tutorial scavs hold their ground) never walks
+	-- further from its post than its leash; a goal beyond is pulled back onto the leash's edge
+	if u.leash and u.post then
+		local off = flat(goal - u.post)
+		if off.Magnitude > u.leash then
+			local o = off.Unit * u.leash
+			goal = Vector3.new(u.post.X + o.X, goal.Y, u.post.Z + o.Z)
+		end
+	end
 	local t = now()
 	u.moving = true
 	if not keepFacing then
@@ -2220,7 +2229,7 @@ function AI.spawn(kind, pos, opts)
 		post = opts.post, leader = opts.leader, slot = opts.slot,
 		aware = {}, lastPos = {}, seen = {}, contact = {}, nextShot = 0, burstN = 0, burstLen = 3, stance = "s", depth = 0.8,
 		useCover = math.random() < skillOf.cover, turn = turn, charge = opts.charge, ambush = opts.ambush,
-		karmaHunt = opts.karmaHunt, grudge = {}, zones = opts.zones,
+		karmaHunt = opts.karmaHunt, grudge = {}, zones = opts.zones, tutorial = opts.tutorial, leash = opts.leash,
 	}
 	if opts.silent then
 		model:SetAttribute("SilentSteps", true) -- every client plays no footsteps for him (Effects.footstep), only rustling grass
@@ -2612,13 +2621,22 @@ end
 
 function AI.clear()
 	gen += 1
+	-- the first raid's scavs (decision ui-5a) belong to no match: they stay when a match ends
+	local keep = {}
 	for _, u in units do
+		if u.tutorial and u.alive then
+			table.insert(keep, u)
+			continue
+		end
 		u.alive = false
 		if u.model and u.model.Parent then
 			u.model:Destroy()
 		end
 	end
 	table.clear(units)
+	for _, u in keep do
+		table.insert(units, u)
+	end
 	table.clear(lootClaims)
 	for _, list in cover.cells do
 		for _, c in list do

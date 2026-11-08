@@ -28,10 +28,12 @@
   ui-4c (touch drag), the gamepad and touch slow lean, art-6a (first-person reload and check poses). 15 suites, 1,156
   checks.
 - The owner's to try: the flea market between two servers needs a published place (publishing is the owner's call).
-- In a helper thread since 20:30 SGT: economy-1a's crafts (EFT's hideout crafts the new catalogue makes possible; it owns
-  HideoutData and HideoutTests). When its DONE is on the board: merge, apply its REQUESTs, run HideoutTests in Studio.
-- Next, in order: economy-1a's next slices (.366, a revolver, more 9x19 guns, more parts, the other barter goods, keys;
-  more hideout crafts with them), ui-5a (tutorial raid), art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
+- Done 2026-11-08 evening (TEST_RESULTS): the crafts thread (76 of EFT's crafts, merged, HideoutTests 103/0 in Studio)
+  and ui-5a, the FIRST RAID (checked in Studio with the dev bridges). 16 suites, 1,190 checks.
+- Next, in order: the crafts thread's two small REQUESTs (the refill uses the most worn repair kit; crafted guns come with
+  their default magazine); economy-1a's next slices (.366, a revolver, more 9x19 guns, more parts, the other barter goods,
+  keys; the items that bring in the most left-out crafts: printer paper, a cook book, a Geiger counter, a textbook, SJ1,
+  a magnet, a sledgehammer, 7.62x54R FMJ, 7.62x39 FMJ); art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
   hideout modules without one; bipods; ai-4a voices.
 - Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
   seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator

@@ -18,7 +18,7 @@ RS:SetAttribute("ZR_BootT0", workspace:GetServerTimeNow()) -- the join card's es
 boot("STARTING")
 
 local ctx = {}
-for _, name in { "Remotes", "Store", "Profiles", "Inv", "Settle", "Assets", "World", "DetailPlan", "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Dev" } do
+for _, name in { "Remotes", "Store", "Profiles", "Inv", "Settle", "Assets", "World", "DetailPlan", "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Tutorial", "Dev" } do
 	ctx[name] = require(Services:WaitForChild(name))
 end
 -- breakable glass (docs/design/GLASS.md) is optional: a fault in it is logged and the game boots without it (every use of ctx.Glass
@@ -100,7 +100,7 @@ task.spawn(function()
 	ctx.World.onActivate = publish
 	publish(ctx.World.activeMap, ctx.World.maps[ctx.World.activeMap])
 end)
-for _, name in { "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Dev" } do
+for _, name in { "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", "Extract", "AI", "Raid", "Match", "Economy", "Quests", "Hideout", "Flea", "Guard", "Hazards", "Stationary", "Doors", "Lobby", "Range", "Tutorial", "Dev" } do
 	ctx[name].init(ctx)
 end
 if ctx.Airdrop then
@@ -149,6 +149,7 @@ ctx.Hazards.start()
 ctx.Stationary.start()
 ctx.Lobby.start()
 ctx.Range.start()
+ctx.Tutorial.boot()
 if ctx.Airdrop then
 	ctx.Airdrop.start()
 end

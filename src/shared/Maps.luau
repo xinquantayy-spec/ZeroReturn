@@ -15,6 +15,14 @@ local Maps = {}
 Maps.order = { "quay7", "smelter", "meridian", "border" }
 
 Maps.defs = {
+	-- the first raid (decision ui-5a, TutorialData.luau): a course of its own, never in the vote
+	tutorial = {
+		id = "tutorial",
+		name = "FIRST RAID",
+		kind = "TRAINING COURSE",
+		raidTime = 1200,
+		desc = "An office lobby, a parking garage, a street and a yard: the basics, step by step, with a marked exit.",
+	},
 	quay7 = {
 		id = "quay7",
 		name = "QUAY 7",

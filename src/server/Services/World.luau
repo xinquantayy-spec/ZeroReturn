@@ -1684,7 +1684,8 @@ end
 function World.build()
 	local want = World.planMaps()
 	local function wanted(id)
-		return want == nil or want[id] == true
+		-- the first raid's course (ui-5a) is started from the bunker, so it is built wherever the bunker is
+		return want == nil or want[id] == true or id == "tutorial"
 	end
 	for _, n in { "Baseplate", "SpawnLocation" } do
 		local inst = workspace:FindFirstChild(n)
@@ -1789,7 +1790,7 @@ function World.build()
 		end
 		local trig = #root.Triggers:GetChildren()
 		local RS = game:GetService("ReplicatedStorage")
-		RS:SetAttribute("ZR_Boot", "BUILDING " .. string.upper(id)) -- the join card
+		RS:SetAttribute("ZR_Boot", "BUILDING " .. (id == "tutorial" and "FIRST RAID" or string.upper(id))) -- the join card
 		RS:SetAttribute("ZR_BootP", 0.25 + 0.7 * builtShare)
 		builtShare += BUILD_SHARE[id] or 0
 		beginMap(id)
@@ -1831,6 +1832,7 @@ function World.build()
 	moduleMap("smelter", "Smelter")
 	moduleMap("meridian", "Meridian")
 	moduleMap("border", "Border")
+	moduleMap("tutorial", "Tutorial") -- the first raid (decision ui-5a): never in the vote (Maps.order)
 	-- parked for now (owner's call, M13): moduleMap("pinewatch", "Pinewatch")
 	-- doors: a hinged slab with an interaction prompt (state and keys: Doors.luau)
 	for _, d in World.doors do

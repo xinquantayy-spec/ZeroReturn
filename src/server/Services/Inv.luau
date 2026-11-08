@@ -572,11 +572,13 @@ function Inv.autoPlace(h: any, g: string, order: { string }): (boolean, string?)
 	local d = defs[it.id]
 	ensureGrid(h, g)
 	local lastErr = "NO_SPACE"
+	local entered = false -- a grid took the item but had no room: the answer is NO_SPACE, not a pocket's TOO_BIG
 	for _, cid in order do
 		local pl = h.grids[cid]
 		if pl then
 			local okC, errC = Inv.canEnter(h, g, cid)
 			if okC then
+				entered = true
 				if d.stack > 1 then
 					for og in pl do
 						local o = h.items[og]
@@ -611,7 +613,7 @@ function Inv.autoPlace(h: any, g: string, order: { string }): (boolean, string?)
 			end
 		end
 	end
-	return false, lastErr
+	return false, entered and "NO_SPACE" or lastErr
 end
 
 -- M14: a new weapon base comes as a whole gun: its default build, or it.preset (a trader's or a kit's build).

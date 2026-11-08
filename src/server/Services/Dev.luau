@@ -372,6 +372,78 @@ function C.find(name, id)
 	return HttpService:JSONEncode(out)
 end
 
+-- the raid inventory's grids: { [grid] = "ITEM@x,y(r) ..." } (grid: pockets, or the id of the rig/bag that holds it)
+function C.layout(name)
+	local h = ctx.Raid.holder(plr(name))
+	local out = {}
+	for cid, pl in h and h.grids or {} do
+		local key = cid
+		if h.items[cid] then
+			key = h.items[cid].id
+		end
+		local list = {}
+		for g, pos in pl do
+			local it = h.items[g]
+			table.insert(list, string.format("%s@%d,%d(%d)", it and it.id or "?", pos.x, pos.y, pos.r or 0))
+		end
+		table.sort(list)
+		out[key] = table.concat(list, " ")
+	end
+	return HttpService:JSONEncode(out)
+end
+
+-- (debug) where would the first visible item of container cid go if quick-moved into the player's raid inventory? Per
+-- grid of the load order: the entry rule's answer, the sizes and a free spot, worked out on a copy (nothing moves)
+function C.probe(name, cid)
+	local p = plr(name)
+	local me = ctx.Raid.holder(p)
+	local c = ctx.Loot.containers[cid]
+	local g = c and firstVisible(p, c)
+	if not me or not g then
+		return "nothing"
+	end
+	local Grid = require(Shared.Grid)
+	local function deep(t)
+		if type(t) ~= "table" then
+			return t
+		end
+		local o = {}
+		for k, v in t do
+			o[k] = deep(v)
+		end
+		return o
+	end
+	local h = deep(me)
+	h.items[g] = deep(c.holder.items[g])
+	local out = { h.items[g].id }
+	for _, gid in Inv.loadOrder(h) do
+		local ok, err = Inv.canEnter(h, g, gid)
+		local cw, ch = Inv.dims(h, gid)
+		local iw, ih = Inv.sizeOf(h.items[g])
+		local x, y, r = nil, nil, nil
+		if ok then
+			x, y, r = Grid.findFree(cw, ch, h.grids[gid], function(q)
+				return Inv.sizeOf(h.items[q])
+			end, iw, ih)
+		end
+		table.insert(out, string.format("%s: %s %s, grid %dx%d, item %dx%d, free %s,%s r%s", h.items[gid] and h.items[gid].id or gid,
+			tostring(ok), tostring(err), cw, ch, iw, ih, tostring(x), tostring(y), tostring(r)))
+	end
+	return table.concat(out, "; ")
+end
+
+-- Alt+click on an item of a container: equip the first `id` found there (it must be searched and visible)
+function C.equipFrom(name, cid, id)
+	local p = plr(name)
+	local c = ctx.Loot.containers[cid]
+	for g, it in c and c.holder.items or {} do
+		if it.id == id and ctx.Loot.visible(c, p, g) then
+			return HttpService:JSONEncode(ctx.Remotes.dispatch(p, "inv", { op = "equip", g = g, from = "c:" .. cid, to = "me", rid = "eqf" .. g }))
+		end
+	end
+	return "none"
+end
+
 function C.takeTwice(name, cid)
 	local p = plr(name)
 	local c = ctx.Loot.containers[cid]
@@ -888,6 +960,22 @@ function C.recovery(name)
 end
 
 -- route a crafted payload through the real request dispatcher (validation, rate limit, de-dupe)
+-- (ui-5a) a player's first raid: its step, the ids of its piles (desk, body, tent A, tent B) and its scavs (group, alive,
+-- where), to walk it through in Studio
+function C.tut(name)
+	local run = ctx.Tutorial.runOf(plr(name))
+	if not run then
+		return "none"
+	end
+	local bots = {}
+	for _, b in run.bots do
+		local root = b.u.model and b.u.model:FindFirstChild("HumanoidRootPart")
+		table.insert(bots, { group = b.group, alive = b.u.alive == true and b.u.hum ~= nil and b.u.hum.Health > 0,
+			pos = root and { math.floor(root.Position.X), math.floor(root.Position.Y), math.floor(root.Position.Z) } or nil })
+	end
+	return HttpService:JSONEncode({ step = run.step, piles = run.piles, bots = bots })
+end
+
 function C.dispatch(name, action, payload)
 	return HttpService:JSONEncode(ctx.Remotes.dispatch(plr(name), action, payload))
 end

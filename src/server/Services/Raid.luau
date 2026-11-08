@@ -449,6 +449,63 @@ function Raid.enter(player, kind, spawn, idx)
 	return true
 end
 
+-- Decision ui-5a: the first raid (Tutorial.luau starts it, TutorialData.luau has the rules). A session of its own on the
+-- tutorial map, outside the match: the loaned kit (Settle.deployTutorial), its single exit, its own clock. It plays as a
+-- PMC (scavs are hostile) and settles like a player scav's run.
+function Raid.enterTutorial(player, kit, spawnCF, extracts, seconds)
+	local prof = ctx.Profiles.get(player)
+	if not prof or not player.Parent then
+		return false, "NOT_READY"
+	end
+	if sessions[player] or prof.pendingRaid or deploying[player] or ctx.Match.isQueued(player) then
+		return false, "ALREADY_IN_RAID"
+	end
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 then
+		return false, "NOT_AUTHORIZED"
+	end
+	deploying[player] = true
+	local backup = Util.copy(prof)
+	local raidId = Util.guid()
+	local raidInv, err = Settle.deployTutorial(prof, raidId, os.time(), kit)
+	if not raidInv then
+		deploying[player] = nil
+		return false, err
+	end
+	if not ctx.Profiles.save(player, true) then
+		ctx.Profiles.set(player, backup)
+		deploying[player] = nil
+		return false, "STORE_UNAVAILABLE"
+	end
+	local t = now()
+	local s = {
+		id = raidId, inv = raidInv, state = "ACTIVE", started = t, raidStart = t, endsAt = t + seconds,
+		match = nil, spawn = "T0", extracts = extracts, kills = 0, risked = {}, found = {},
+		scav = false, tutorial = true, xp = 0, karma = prof.karma or 0, karmaDelta = 0, map = "tutorial",
+		active = (raidInv.slots.primary and "primary") or (raidInv.slots.holster and "holster") or (raidInv.slots.melee and "melee") or nil,
+	}
+	for g in raidInv.items do
+		s.risked[g] = true
+	end
+	sessions[player] = s
+	deploying[player] = nil
+	if not player.Parent then
+		Raid.finalize(player, "DISCONNECTED")
+		return false, "LEFT"
+	end
+	ctx.Combat.reset(player)
+	pcall(player.RequestStreamAroundAsync, player, spawnCF.Position, 4)
+	Raid.keepHideoutHealth(player)
+	ctx.Chars.spawn(player, spawnCF, s.inv, s.active, { scav = false })
+	s.nvDown = nil
+	s.gearKey = gearKey(s.inv, s.active, s.nvDown)
+	Raid.push(player)
+	ctx.Remotes.note(player, "raid", Raid.raidInfo(s))
+	track("tutorial", player, s)
+	return true
+end
+
 -- bunker recovery is kept (audit quick win gameplay.1): the hideout character's health goes into the profile before
 -- a PMC raid and when the player leaves, so the next raid starts from it instead of from the last raid's end
 function Raid.keepHideoutHealth(player)
@@ -497,8 +554,14 @@ function Raid.finalize(player, outcome)
 			prof.health = { energy = math.max(40, math.floor(hs0.energy)), water = math.max(40, math.floor(hs0.water)) }
 		end
 	end
-	-- run-through (Tarkov): extracted very quickly having done almost nothing -> loot is not found-in-raid
-	local runThrough = closed or (outcome == "SUCCESS" and not s.scav and (now() - s.started) < Progress.XP.runThrough.time and (s.xp or 0) < Progress.XP.runThrough.xp)
+	-- run-through (Tarkov): extracted very quickly having done almost nothing -> loot is not found-in-raid. A PMC's
+	-- rule only: the first raid settles like a scav run (Settle.deployTutorial), which has none
+	local runThrough = closed or (outcome == "SUCCESS" and not s.scav and not s.tutorial and (now() - s.started) < Progress.XP.runThrough.time and (s.xp or 0) < Progress.XP.runThrough.xp)
+	-- the report's found-in-raid list is read before the settlement: a scav's (and the first raid's) settlement takes
+	-- the items out of the raid holder, which left the list empty (seen in the ui-5a Studio run, 2026-11-08)
+	local foundList = (not runThrough) and itemsList(s.inv, function(g)
+		return not s.risked[g]
+	end) or {}
 	local receipt, err = nil, nil
 	local xpGained, levelUp = 0, false
 	if prof then
@@ -545,11 +608,12 @@ function Raid.finalize(player, outcome)
 		kept = receipt and receipt.kept or {},
 		value = receipt and receipt.value or 0,
 		-- a run-through keeps the loot but nothing counts as found-in-raid
-		found = (not runThrough) and itemsList(s.inv, function(g)
-			return not s.risked[g]
-		end) or {},
+		found = foundList,
 	}
 	ctx.Combat.reset(player)
+	if s.tutorial and ctx.Tutorial then
+		task.spawn(ctx.Tutorial.finished, player, outcome, s)
+	end
 	local char = player.Character
 	if (outcome == "KIA" or outcome == "DISCONNECTED") and char and char.Parent then
 		-- the body stays in the raid with everything that was lost, for whoever finds it

@@ -1008,6 +1008,35 @@ function Screens.settings(tab, keepCapture)
 end
 
 -- Tarkov-style: the extract list is shown on the HUD (names + status), no distances or compass
+-- a short question in the modal window (ui-5a's first-raid offer): a title, a paragraph and a row of buttons
+-- ({ text, colour name or nil, action }), the first one focused for a gamepad. A button closes the window, then acts.
+function Screens.ask(title, body, buttons)
+	local f, w = modal(480, 196, title)
+	f.Size = UDim2.fromOffset(f.Size.X.Offset, math.min(f.Size.Y.Offset, 210)) -- a phone's window is the whole screen; a question needs less
+	local p = para(f, 1, body, K.C.dim, 14)
+	p.Position = UDim2.fromOffset(0, 34)
+	local row = K.frame(f, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 36) })
+	K.list(row, Enum.FillDirection.Horizontal, 10)
+	local bw = math.floor((w - 10 * (#buttons - 1)) / #buttons)
+	local first
+	for i, b in buttons do
+		local props = { LayoutOrder = i, Size = UDim2.fromOffset(bw, 34) }
+		if b[2] then
+			props.BackgroundColor3 = K.C[b[2]]
+			props.TextColor3 = K.C.bg
+		end
+		local btn = K.button(row, b[1], props, function()
+			closeModal()
+			if b[3] then
+				b[3]()
+			end
+		end)
+		first = first or btn
+	end
+	Screens.focus(first)
+	return f
+end
+
 function Screens.exits()
 	if ctx.State.inRaid() then
 		ctx.Hud.showExits()

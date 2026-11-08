@@ -783,6 +783,18 @@ function Loot.register(c)
 	return c
 end
 
+-- remove a container now (the first raid's piles when its run ends, decision ui-5a)
+function Loot.remove(cid)
+	local c = containers[cid]
+	if not c then
+		return
+	end
+	if c.part and c.part.Parent then
+		c.part:Destroy()
+	end
+	containers[cid] = nil
+end
+
 -- ground pile at pos (merges into a nearby pile); bundles = Inv.take results
 function Loot.spawnPile(pos, bundles)
 	for _, c in containers do

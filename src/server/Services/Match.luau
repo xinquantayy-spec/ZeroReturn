@@ -49,7 +49,7 @@ end
 local function liveSessions()
 	local n = 0
 	for _, s in ctx.Raid.sessions() do
-		if not s.done then
+		if not s.done and not s.tutorial then -- a first raid (ui-5a) is no part of the match
 			n += 1
 		end
 	end
@@ -625,7 +625,7 @@ end
 
 local function endRaid(reason)
 	for player, s in ctx.Raid.sessions() do
-		if not s.done then
+		if not s.done and not s.tutorial then -- a first raid (ui-5a) runs on its own clock
 			ctx.Raid.finalize(player, "MIA")
 		end
 	end

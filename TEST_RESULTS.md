@@ -8,6 +8,18 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The first raid (decision ui-5a) and the hideout crafts merge (2026-11-08, about 21:20 SGT)
+
+| Test | Result |
+|---|---|
+| Course | The map "tutorial" builds with the others (0.02 s, 40 coplanar faces pulled back) and is never in the vote. Nine control signs, green bars from the lobby to the gate, kit props in the lobby, garage, office and yard. |
+| Offer | Shown to a new profile 6 s after joining, in the shared modal window (mouse freed, prompts off). START clicked with the mouse began the run: insertion card, the objective line FIRST RAID 1/8, a 20:00 timer. |
+| Steps | Desk: F opened the pile, the three meds taken (1 → 2). Body: the pile searched; Alt+click on the SMG in the loot equipped it (2 → 3). Load: switched to the SMG and reloaded (3 → 4). Garage: both scavs shot with 4-round bursts (4 → 6; the heal step passed at once with no wound). The street and office scavs shot; the office and the yard reached (6 → 8). Extract: TG after 9 s. |
+| Report and stash | EXTRACTED, 4 kills, +620 XP; the SMG, its magazines and the meds reached the stash found in raid; the offer is gone after the finish. In a second run (16 s, no kills) the report listed 11 found-in-raid items and no run-through. |
+| Fixed during the run | Unleashed scavs left their posts and killed the idle player in the corridor (KIA): they now keep a leash (18, 22 and 10 studs). The kit's dressing went into the rig, not the pockets. A quick move into full gear said TOO_BIG (from the pockets) instead of NO_SPACE. The raid report of a scav run (and of the first raid) listed no found-in-raid items, because the list was read after the settlement had emptied the raid inventory. The run-through rule applied to the first raid while its settlement ignored it. The offer sat under the interaction prompt and kept the mouse locked. The lobby's marble floor read as water; the first sign stood behind the player. |
+| Tests | 16 suites, 1,190 checks, all passed: TutorialTests 17 (new); HideoutTests 103 with the crafts thread's 76 crafts. |
+| Not checked | A new player's play-through with the real controls from start to end (this run used the dev bridges and teleports); the heal step with a real wound; two players at once (the second gets IN_USE); phone, touch and gamepad; the join card's new text. |
+
 ## The 7.6x25 guns: the P-33 pistol and the G-41 submachine gun (decision economy-1a, ninth slice; 2026-11-08, about 20:32 SGT)
 
 | Test | Result |

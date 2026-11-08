@@ -243,6 +243,11 @@
       servers and API access; FleaTests covers them with stand-in stores only. Publishing is the owner's call.
     - The FLEA MARKET screens keep their fixed PC-width columns on phones (740x360 squeezes them).
 
+83. **The first raid runs one player at a time per server (ui-5a, 2026-11-08).**
+    - Tarkov gives each new player a tutorial instance of their own; ours is one course on the bunker's server, so a
+      second player who presses START while someone is on it is told to try again in a few minutes (IN_USE).
+    - Kills and the extracted value of the first raid count in the lifetime statistics.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.
@@ -253,6 +258,10 @@
 - Downloading tools from outside (for example the Luau analyzer from GitHub releases) is refused in the cloud workspace; `tools/luau_check.py` is the structural check.
 
 ## Fixed this session
+
+- The raid report of a player-scav run listed no found-in-raid items: the list was read after the settlement had moved
+  the items out of the raid inventory (found in the first raid's Studio run, 2026-11-08). A quick move into full gear now
+  says NO_SPACE instead of the pockets' TOO_BIG.
 
 - Bunker graphics (owner, 2026-11-01: "glitching textures", "too dirty for the whole bunker"):
   - The olive paint band was a thin slab 0.06 studs in front of every wall, and the detail decals sat at the same depth (one layer exactly level with it), so they flickered as the camera moved. The paint is now part of the wall blocks (olive plaster, a dark line, light plaster above).
