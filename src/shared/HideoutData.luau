@@ -202,7 +202,8 @@ H.ORDER = { "security", "lavatory", "stash", "generator", "water", "medstation",
 
 -- ── bonuses ──────────────────────────────────────────────────────────────────────────────────────────────────────
 -- Each built level adds its bonuses (SPT HideoutHelper.applyPlayerUpgradesBonuses: a level's bonuses are pushed onto the
--- profile, none removed; tarkovforge's bitcoin slots 10 + 15 + 25 = 50 confirm it). Kinds that work without power
+-- profile, none removed; tarkovforge's bitcoin slots 10 + 15 + 25 = 50 and west-games.com's scav cooldown calculator,
+-- "Level 3 - 35% total cooldown reduction" from the wiki's 15 % and +20 %, confirm it). Kinds that work without power
 -- (slots and repair-kit unlocks) are passive; the rest of a powered module's bonuses work only while the generator runs.
 H.PASSIVE = { fuelSlots = true, gpuSlots = true, filterSlots = true, weaponKit = true, weaponKitCost = true, armorKit = true, armorKitCost = true }
 -- what each kind does here; nope = Zero Return has no such system yet (the bonus is shown, it changes nothing)

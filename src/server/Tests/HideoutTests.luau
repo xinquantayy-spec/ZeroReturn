@@ -155,7 +155,7 @@ function T.run(ctx)
 			and HD.bonus(hd, "questMoney") == 15 and HD.bonus(hd, "insuranceTime") == 20 and HD.bonus(hd, "fleaFee") == 30)
 		check("health regeneration from the medstation, nutrition unit 2 and rest space 3 together: 38 + 7 + 15", HD.bonus(hd, "hpRegen", true) == 60)
 		check("without power: the powered modules' bonuses stop (rest space's +15 % stays), slots stay", HD.bonus(hd, "hpRegen", false) == 15
-			and HD.bonus(hd, "fleaFee", false) == 0 and HD.gpuSlots(hd) == 50)
+			and HD.bonus(hd, "fleaFee", false) == 0 and HD.bonus(hd, "gpuSlots", false) == 50)
 		check("bonus texts for the screen", HD.bonusText("hpRegen", 6) == "Health regeneration +6 %" and HD.bonusText("weaponKit", 1) == "Weapon repair with repair kits")
 		if ctx and ctx.Hideout then
 			local p = { hideout = hideout({ medstation = 2, generator = 1 }) }
@@ -164,6 +164,12 @@ function T.run(ctx)
 			local powered = ctx.Hideout.healRate(p)
 			p.hideout.on = false
 			check("Hideout.healRate: 1.18 with the medstation 2 powered, 1 without power", near(powered, 1.18) and near(ctx.Hideout.healRate(p), 1))
+			local q = { hideout = hideout({ generator = 1, nutrition = 3, water = 3, intel = 3 }) }
+			q.hideout.fuel = { 60 }
+			q.hideout.on = true
+			local e, wr = ctx.Hideout.vitalsRate(q)
+			check("Hideout.vitalsRate: energy x1.6 (nutrition 3), hydration x1.8 (water collector 3 and nutrition 3)", near(e, 1.6) and near(wr, 1.8))
+			check("Hideout.cut: the flea fee x0.7 and scav cooldown x0.65 at intelligence 3", near(ctx.Hideout.cut(q, "fleaFee"), 0.7) and near(ctx.Hideout.cut(q, "scavCooldown"), 0.65))
 		end
 	end)
 
@@ -171,6 +177,7 @@ function T.run(ctx)
 	guard("fuel", function()
 		check("EFT's burn: a unit every 12 min 38 s, divided by 4; a 60-unit canister lasts 3 h 9 min 30 s", near(HD.burnRate(), 4 / 758) and HD.FUEL.units == 60
 			and HD.FUEL.item == "FUEL_CAN" and near(HD.FUEL.units / HD.burnRate(), 11370))
+		check("without power a powered module's craft runs at 0.07 (EFT wiki: \"more than 14 times\" longer)", HD.NO_POWER == 0.07 and 1 / HD.NO_POWER > 14)
 		local hd = hideout({ generator = 1, workbench = 1, lavatory = 1 })
 		check("no fuel, no power", not HD.powered(hd))
 		hd.fuel = { 60 }

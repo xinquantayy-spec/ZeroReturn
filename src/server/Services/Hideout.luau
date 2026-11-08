@@ -63,6 +63,18 @@ function Hideout.healRate(prof)
 	return 1 + Hideout.bonus(prof, "hpRegen") / 100
 end
 
+-- out-of-raid energy and hydration regeneration multipliers (EFT: the nutrition unit +10 / +20 / +30 % energy and its
+-- level 3 +20 % hydration, the water collector +10 / +20 / +30 % hydration, the rest space's level 2 +5 % energy)
+function Hideout.vitalsRate(prof)
+	return 1 + Hideout.bonus(prof, "energyRegen") / 100, 1 + Hideout.bonus(prof, "waterRegen") / 100
+end
+
+-- a multiplier from a percentage bonus that shortens or cheapens something (scav cooldown, insurance time, flea fee,
+-- repair kit points): 1 - bonus / 100, never below 0
+function Hideout.cut(prof, kind)
+	return math.max(0, 1 - Hideout.bonus(prof, kind) / 100)
+end
+
 local function applyEffects(prof)
 	prof.stashH = HD.stashRows(prof.hideout)
 end
@@ -93,8 +105,13 @@ function Hideout.settle(prof, player)
 	local events = HD.tick(hd, now)
 	applyEffects(prof)
 	if player then
+		local said = {}
 		for _, ev in events do
-			tell(player, ev, hd)
+			local key = ev.k .. (ev.m or "")
+			if not said[key] then
+				said[key] = true
+				tell(player, ev, hd)
+			end
 		end
 	end
 	return migrated or #events > 0
@@ -554,8 +571,10 @@ function Hideout.start()
 			task.wait(5)
 			for player in ctx.Profiles.all() do
 				local prof = ctx.Profiles.get(player)
-				if prof and prof.hideout and Hideout.settle(prof, player) then
-					ctx.Raid.afterChange(player, ctx.Raid.session(player) ~= nil)
+				-- the hideout runs on during a raid (EFT) but says nothing until you are back
+				local inRaid = ctx.Raid.session(player) ~= nil
+				if prof and prof.hideout and Hideout.settle(prof, (not inRaid) and player or nil) then
+					ctx.Raid.afterChange(player, inRaid)
 				end
 			end
 		end
