@@ -202,7 +202,7 @@ Q.list = {
 	{ id = "H7", trader = "hale", tl = 1, name = "Shortfall", level = 2,
 		desc = "Painkillers and splints walk out of here faster than I can stock them. Bring me some you found yourself.",
 		obj = { handin("PAINKILLERS", 3), handin("SPLINT", 2) }, reward = { money = 15000, xp = 800, rep = 0.15 } },
-	-- after the Therapist's hygiene hand-ins ("Sanitary Standards")
+	-- after the Therapist's hand-ins of household goods (ours: which EFT task asks for these was not checked)
 	{ id = "H8", trader = "hale", tl = 1, name = "Clean Hands", level = 3,
 		desc = "An aid station without soap is a morgue. Soap, bleach and toothpaste from the mall's shelves.",
 		obj = { handin("SOAP", 2), handin("BLEACH", 1), handin("TOOTHPASTE", 1) }, reward = { money = 15000, xp = 800, rep = 0.15 } },
