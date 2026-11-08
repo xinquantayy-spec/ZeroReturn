@@ -57,6 +57,9 @@ Flea.BANNED_ITEMS = {
 	A76T_SBAP = true, -- 7.6x25 TT M995 (economy-1a's ninth slice): "Flea market: Not sold" (tarkovforge.com)
 	A46_AP = true, -- 4.6x30 AP SX (economy-1a's seventh slice): "Sold on flea market: No" (tarkovforge.com)
 	FLARE_RED = true, DOGTAG = true, RITUAL_AMULET = true, COLD_WALLET = true, -- the airdrop flare, tags, amulet, the "bitcoin"
+	-- the two university textbooks (economy-1a's fifteenth slice): EFT's AEM and SOIC textbooks cannot be sold on its flea
+	-- market (SPT 3.10.1 items.json: CanSellOnRagfair false); every other barter good of the slice can, gated at 30
+	SEMI_TEXTBOOK = true, OPTO_TEXTBOOK = true,
 }
 
 -- EFT 1.0's category gates (audit economy.3): the market opens at level 15, but buying some categories needs a higher

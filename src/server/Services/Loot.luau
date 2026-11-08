@@ -48,7 +48,7 @@ local POOLS = {
 		{ id = "SPARE_PARTS", w = 5 }, { id = "SEAL_TAPE", w = 2 }, { id = "FOAM", w = 1.5 }, { id = "PEN_OIL", w = 4 }, { id = "TNT", w = 1 },
 		{ id = "FUZE", w = 2 }, { id = "WATER_FILTER", w = 0.8 }, { id = "MOTOR", w = 1 }, { id = "RELAY", w = 3 }, { id = "PRESSURE_GAUGE", w = 0.6 },
 		{ id = "CHLORINE", w = 1 }, { id = "ALKALI", w = 2 },
-		{ id = "GUNPOWDER", w = 2 }, -- economy-7b's barter goods (EFT: gunpowder in weapon and ammo boxes, toolboxes)
+		{ id = "GUNPOWDER", w = 1.2 }, -- economy-7b's barter goods; EFT's "Kite" since the fifteenth slice (the other two powders below)
 		{ id = "BOLTS", w = 14 }, { id = "DUCT_TAPE", w = 12 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 10 },
 		{ id = "SIGNAL_COIL", w = 10 }, { id = "CERAMIC_FUSE", w = 10 }, { id = "A62_FMJ", w = 10, n = { 20, 45 } },
 		{ id = "A76_PS", w = 6, n = { 15, 40 } }, { id = "CAPACITOR", w = 6 }, { id = "BATTERY", w = 4 },
@@ -58,12 +58,16 @@ local POOLS = {
 		{ id = "FLARE_GREEN", w = 1.6 },
 		-- economy-1a's thirteenth slice: EFT's magnet among its electronics, the sledgehammer rarely, the two FMJ loads
 		{ id = "MAGNET", w = 2 }, { id = "SLEDGEHAMMER", w = 0.3 }, { id = "A76_FMJ", w = 4, n = { 15, 40 } }, { id = "A76L_FMJ", w = 1.5, n = { 10, 25 } },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "POWDER_FLAKE", w = 0.8 }, { id = "POWDER_BALL", w = 0.7 }, { id = "LCD_BROKEN", w = 1 },
+		{ id = "FOAM_MOUNT", w = 1.5 }, { id = "COLD_WELD", w = 2 }, { id = "INSUL_TAPE", w = 3 }, { id = "CABLE_CUTTER", w = 0.2 },
+		{ id = "MATCHES_HUNT", w = 1 }, { id = "TECH_MANUAL", w = 0.2 },
 	},
 	locker = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
 		{ id = "LIGHTER", w = 6 }, { id = "TOILET_PAPER", w = 4 }, { id = "SEWING_KIT", w = 1 }, { id = "SALT", w = 2 }, { id = "MEDS_PILE", w = 3 },
 		{ id = "PLIERS", w = 2 }, { id = "WRENCH", w = 2 }, { id = "AWL", w = 0.5 },
-		{ id = "FABRIC", w = 3 }, -- EFT: fabrics in bags, lockers and toolboxes
+		{ id = "FABRIC", w = 1.5 }, -- EFT: fabrics in bags, lockers and toolboxes (aramid since the fifteenth slice; the other three below)
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
 		{ id = "HARDTACK", w = 8 }, { id = "A9_PST", w = 10, n = { 10, 35 } }, { id = "P9_MAG", w = 5, a = { 0, 17 }, at = "A9_PST" },
 		{ id = "OLD_COIN", w = 5 }, { id = "KEY_OFFICE", w = 3 }, { id = "HELMET_C2", w = 3 }, { id = "RIG_BELT", w = 3 },
@@ -71,6 +75,11 @@ local POOLS = {
 		{ id = "CAP_FIELD", w = 3 }, { id = "BEANIE", w = 3 }, { id = "GAITER", w = 3 }, { id = "HEADSET_GS1", w = 1 },
 		{ id = "GLASSES_SUN", w = 2 }, { id = "GLASSES_RANGE", w = 1 }, { id = "GAS_MASK", w = 1 },
 		{ id = "GREN_RK5", w = 2 }, { id = "GREN_SMOKE", w = 2 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "FABRIC_POLY", w = 1 }, { id = "FABRIC_RIPSTOP", w = 1.5 }, { id = "FABRIC_FLEECE", w = 1.5 },
+		{ id = "PLIERS_HD", w = 0.3 }, { id = "INSUL_TAPE", w = 2 }, { id = "LIGHTER_WIND", w = 1.5 }, { id = "MATCHES_HUNT", w = 2 },
+		{ id = "SHAMPOO", w = 1 }, { id = "MULTIVITAMINS", w = 0.5 }, { id = "COFFEE_BEANS", w = 0.5 }, { id = "SUGAR", w = 0.8 },
+		{ id = "DIARY", w = 0.5 }, { id = "ANTIQUE_BOOK", w = 0.2 },
 	},
 	drawer = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -84,6 +93,11 @@ local POOLS = {
 		-- economy-1a's thirteenth slice: printer paper in desk drawers, now and then a cookbook
 		{ id = "PRINTER_PAPER", w = 3 }, { id = "COOK_BOOK", w = 0.3 },
 		{ id = "NOTE_SMELT_CRAWL", w = 4 }, -- the Smelter only (Items.mapOnly; EFT: Factory's filing cabinets and bodies)
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "LCD_PANEL", w = 0.8 }, { id = "LCD_BROKEN", w = 1.2 }, { id = "GAME_CONSOLE", w = 0.1 },
+		{ id = "GAS_ANALYSER", w = 0.8 }, { id = "COLD_WELD", w = 2 }, { id = "INSUL_TAPE", w = 2.5 },
+		{ id = "LIGHTER_WIND", w = 1.7 }, { id = "MATCHES_HUNT", w = 2.2 }, { id = "DIARY", w = 0.9 }, { id = "SLIM_DIARY", w = 0.8 },
+		{ id = "TECH_MANUAL", w = 0.5 }, { id = "ANTIQUE_BOOK", w = 0.3 },
 	},
 	medbag = {
 		-- economy-1a's second slice: EFT's medical supplies (the transilluminator very rarely)
@@ -95,11 +109,13 @@ local POOLS = {
 		-- stimulants (gameplay-4b; rarer the stronger; the SV-1, EFT's SJ1, since economy-1a's thirteenth slice)
 		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
 		{ id = "STIM_COMBAT", w = 1 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "GAS_ANALYSER", w = 2 }, { id = "BICARB", w = 2 }, { id = "MULTIVITAMINS", w = 4 }, { id = "PEROXIDE", w = 3.5 },
 	},
 	weaponbox = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
 		{ id = "WEAPON_PARTS", w = 4 }, { id = "GUN_LUBE", w = 2 }, { id = "FUZE", w = 3 }, { id = "TNT", w = 1 }, { id = "THERMITE", w = 0.4 },
-		{ id = "GUNPOWDER", w = 4 },
+		{ id = "GUNPOWDER", w = 1.5 }, { id = "POWDER_FLAKE", w = 1.2 }, { id = "POWDER_BALL", w = 1 }, -- the three powders since the fifteenth slice
 		-- economy-1a's rounds: the plain loads often, the armour piercers rarely (EFT: ammo boxes hold mostly common rounds)
 		{ id = "A62_HP", w = 5, n = { 30, 60 } }, { id = "A62_SS", w = 6, n = { 30, 60 } }, { id = "A62_TR", w = 2, n = { 20, 40 } },
 		{ id = "A62_EP", w = 1, n = { 15, 30 } }, { id = "A76_HP", w = 5, n = { 30, 60 } }, { id = "A76_US", w = 3, n = { 20, 40 } },
@@ -202,7 +218,7 @@ local POOLS = {
 		{ id = "HAND_DRILL", w = 0.6 }, { id = "TOOLSET", w = 1.5 }, { id = "FILE_SET", w = 1.5 }, { id = "TAPE_MEASURE", w = 6 }, { id = "AWL", w = 1 },
 		{ id = "SEWING_KIT", w = 1 }, { id = "PEN_OIL", w = 6 }, { id = "THERMITE", w = 0.6 }, { id = "GUN_LUBE", w = 1 }, { id = "WEAPON_PARTS", w = 2 },
 		{ id = "POWER_DRILL", w = 1 }, { id = "POWER_CORD", w = 3 }, { id = "TPLUG", w = 4 }, { id = "ES_LAMP", w = 2 },
-		{ id = "GUNPOWDER", w = 2 }, { id = "FABRIC", w = 4 },
+		{ id = "GUNPOWDER", w = 5 }, { id = "FABRIC", w = 1.5 }, -- EFT's toolboxes hold its "Kite" (3.9 % of their draws), aramid the fifteenth slice
 		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
 		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "WEAPON_KIT", w = 2 },
 		{ id = "MULTITOOL", w = 3 }, { id = "AR_CH_EXT", w = 1 }, { id = "R17_GAS_LOW", w = 1 }, { id = "GAS_MASK", w = 1 },
@@ -212,6 +228,10 @@ local POOLS = {
 		{ id = "MARKER", w = 2 },
 		-- economy-1a's thirteenth slice: EFT's magnet and Geiger counter with the other electronics
 		{ id = "MAGNET", w = 3 }, { id = "GEIGER", w = 0.8 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "FABRIC_POLY", w = 1 }, { id = "FABRIC_RIPSTOP", w = 1.5 }, { id = "FABRIC_FLEECE", w = 1 },
+		{ id = "GAS_ANALYSER", w = 2 }, { id = "PLIERS_HD", w = 1 }, { id = "CABLE_CUTTER", w = 0.8 }, { id = "FOAM_MOUNT", w = 3 },
+		{ id = "COLD_WELD", w = 5 }, { id = "INSUL_TAPE", w = 6.5 },
 	},
 	jacket = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -225,6 +245,10 @@ local POOLS = {
 		{ id = "FLARE_RED", w = 0.6 },
 		{ id = "FLARE_GREEN", w = 0.9 },
 		{ id = "NOTE_SMELT_CRAWL", w = 1.5 }, -- the Smelter only (EFT: on bodies)
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "GAS_ANALYSER", w = 0.6 }, { id = "INSUL_TAPE", w = 2 }, { id = "LIGHTER_WIND", w = 1.4 },
+		{ id = "MATCHES_HUNT", w = 1.7 }, { id = "GAME_CONSOLE", w = 0.05 }, { id = "DIARY", w = 0.7 }, { id = "SLIM_DIARY", w = 0.6 },
+		{ id = "TECH_MANUAL", w = 0.35 },
 	},
 	safe = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -233,6 +257,9 @@ local POOLS = {
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
 		{ id = "COLD_WALLET", w = 2 }, { id = "OLD_COIN", w = 10 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "SEMI_TEXTBOOK", w = 0.15 }, -- economy-1a's thirteenth slice: the rare textbook (EFT's info items)
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "GAME_CONSOLE", w = 0.2 }, { id = "OPTO_TEXTBOOK", w = 0.1 }, { id = "DIARY", w = 2 }, { id = "SLIM_DIARY", w = 1.8 },
+		{ id = "TECH_MANUAL", w = 1 }, { id = "ANTIQUE_BOOK", w = 0.7 },
 	},
 	-- loose loot (M10): what lies around in the open, in the dorm rooms, the office and the vault
 	junk = {
@@ -240,7 +267,7 @@ local POOLS = {
 		{ id = "SCREWS", w = 6 }, { id = "NUTS", w = 6 }, { id = "NAILS", w = 6 }, { id = "SPARE_PARTS", w = 4 }, { id = "CORR_HOSE", w = 2 },
 		{ id = "TPLUG", w = 3 }, { id = "LIGHTER", w = 5 }, { id = "TOILET_PAPER", w = 3 }, { id = "MEDS_PILE", w = 2 }, { id = "PEN_OIL", w = 2 },
 		{ id = "CPU_FAN", w = 2 }, { id = "RELAY", w = 2 },
-		{ id = "FABRIC", w = 4 },
+		{ id = "FABRIC", w = 1.5 },
 		{ id = "BOLTS", w = 12 }, { id = "WIRES", w = 10 }, { id = "DUCT_TAPE", w = 10 }, { id = "SPARK_PLUG", w = 8 },
 		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 9 }, { id = "WATER", w = 5 }, { id = "HARDTACK", w = 6 },
 		{ id = "BANDAGE", w = 6 }, { id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "A9_PST", w = 6, n = { 5, 20 } },
@@ -249,6 +276,11 @@ local POOLS = {
 		{ id = "SIGNAL_COIL", w = 4 }, { id = "CERAMIC_FUSE", w = 4 },
 		-- economy-1a's thirteenth slice: paper and magnets lie about; EFT's sledgehammer turns up loose, rarely
 		{ id = "PRINTER_PAPER", w = 1.5 }, { id = "MAGNET", w = 1.5 }, { id = "SLEDGEHAMMER", w = 0.3 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "FABRIC_POLY", w = 1 }, { id = "FABRIC_RIPSTOP", w = 1.5 }, { id = "FABRIC_FLEECE", w = 1.5 },
+		{ id = "DISC_DRIVE", w = 1 }, { id = "PC_CPU", w = 0.5 }, { id = "LCD_BROKEN", w = 1 }, { id = "PLIERS_HD", w = 0.3 },
+		{ id = "COLD_WELD", w = 1.5 }, { id = "INSUL_TAPE", w = 4 }, { id = "LIGHTER_WIND", w = 1 }, { id = "MATCHES_HUNT", w = 1.5 },
+		{ id = "SHAMPOO", w = 1 }, { id = "SUGAR", w = 0.5 },
 	},
 	dorm = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -265,6 +297,11 @@ local POOLS = {
 		{ id = "TT_PISTOL", w = 1.2 }, { id = "TT_MAG", w = 1.5, a = { 0, 8 }, at = "A76T_P" }, { id = "A76T_P", w = 3, n = { 8, 24 } },
 		-- economy-1a's thirteenth slice: a cookbook in the kitchens, printer paper
 		{ id = "COOK_BOOK", w = 0.6 }, { id = "PRINTER_PAPER", w = 1 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "DISC_DRIVE", w = 1 }, { id = "LCD_BROKEN", w = 1 }, { id = "INSUL_TAPE", w = 1.5 }, { id = "LIGHTER_WIND", w = 1.5 },
+		{ id = "MATCHES_HUNT", w = 1.5 }, { id = "FABRIC_FLEECE", w = 1 }, { id = "FABRIC_RIPSTOP", w = 0.5 },
+		{ id = "BICARB", w = 0.5 }, { id = "SHAMPOO", w = 2 }, { id = "MULTIVITAMINS", w = 1 }, { id = "PEROXIDE", w = 0.5 },
+		{ id = "COFFEE_BEANS", w = 1 }, { id = "SUGAR", w = 1 }, { id = "TECH_MANUAL", w = 0.4 },
 	},
 	dorm_good = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -274,6 +311,10 @@ local POOLS = {
 		{ id = "SEALED_DRIVE", w = 2 }, { id = "LOGIC_BOARD", w = 5 }, { id = "MIL_CIRCUIT", w = 2 }, { id = "COLD_WALLET", w = 1 },
 		{ id = "OLD_COIN", w = 6 }, { id = "MEDKIT_M", w = 4 }, { id = "HEMOSTAT", w = 2 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "SEMI_TEXTBOOK", w = 0.15 }, -- economy-1a's thirteenth slice
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "PC_CPU", w = 1 }, { id = "LCD_PANEL", w = 1 }, { id = "GAME_CONSOLE", w = 0.4 }, { id = "FPGA_CHIP", w = 0.2 },
+		{ id = "STORAGE_MODULE", w = 0.2 }, { id = "POWDER_FLAKE", w = 0.3 }, { id = "OPTO_TEXTBOOK", w = 0.1 },
+		{ id = "DIARY", w = 1 }, { id = "SLIM_DIARY", w = 0.8 }, { id = "ANTIQUE_BOOK", w = 0.4 },
 	},
 	office = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -283,6 +324,9 @@ local POOLS = {
 		{ id = "PRINTER_PAPER", w = 5 }, { id = "SEMI_TEXTBOOK", w = 0.2 },
 		{ id = "INTEL_FOLDER", w = 6 }, { id = "FLASH_MODULE", w = 5 }, { id = "SEALED_DRIVE", w = 2 }, { id = "CIGARETTES", w = 6 },
 		{ id = "OLD_COIN", w = 5 }, { id = "BATTERY", w = 3 }, { id = "CAPT_WATCH", w = 2 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "DISC_DRIVE", w = 1.5 }, { id = "PC_CPU", w = 1.5 }, { id = "LCD_PANEL", w = 1 }, { id = "OPTO_TEXTBOOK", w = 0.15 },
+		{ id = "DIARY", w = 1 }, { id = "SLIM_DIARY", w = 0.8 }, { id = "TECH_MANUAL", w = 1 },
 	},
 	vault = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -291,6 +335,10 @@ local POOLS = {
 		{ id = "SEALED_DRIVE", w = 5 }, { id = "INTEL_FOLDER", w = 6 }, { id = "CAPT_WATCH", w = 6 }, { id = "LEDGER", w = 2 },
 		{ id = "FLASH_MODULE", w = 5 }, { id = "GREN_F7", w = 2 }, { id = "TH_T7", w = 0.3 }, { id = "NV_QUAD", w = 0.6 },
 		{ id = "SEMI_TEXTBOOK", w = 0.3 }, -- economy-1a's thirteenth slice
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "FPGA_CHIP", w = 0.4 }, { id = "STORAGE_MODULE", w = 0.4 }, { id = "POWDER_FLAKE", w = 0.8 },
+		{ id = "POWDER_BALL", w = 0.6 }, { id = "OPTO_TEXTBOOK", w = 0.25 }, { id = "DIARY", w = 1 }, { id = "SLIM_DIARY", w = 0.8 },
+		{ id = "ANTIQUE_BOOK", w = 0.6 },
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
@@ -330,6 +378,11 @@ local POOLS = {
 		{ id = "MARKER", w = 2 }, { id = "CAMERA", w = 1 }, { id = "BEACON", w = 1 },
 		-- economy-1a's thirteenth slice: EFT's tech crates hold its magnets and Geiger counters
 		{ id = "MAGNET", w = 5 }, { id = "GEIGER", w = 2 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "DISC_DRIVE", w = 6 }, { id = "PC_CPU", w = 4 }, { id = "LCD_PANEL", w = 1.5 }, { id = "LCD_BROKEN", w = 2 },
+		{ id = "FPGA_CHIP", w = 0.4 }, { id = "STORAGE_MODULE", w = 0.3 }, { id = "GAS_ANALYSER", w = 1 },
+		{ id = "PLIERS_HD", w = 0.4 }, { id = "CABLE_CUTTER", w = 0.4 }, { id = "COLD_WELD", w = 2 }, { id = "INSUL_TAPE", w = 3.4 },
+		{ id = "LIGHTER_WIND", w = 1 }, { id = "MATCHES_HUNT", w = 1 }, { id = "TECH_MANUAL", w = 0.6 },
 	},
 	pharmacy = {
 		-- economy-1a's second slice: EFT's medical supplies (the transilluminator very rarely)
@@ -340,6 +393,8 @@ local POOLS = {
 		{ id = "MEDKIT_L", w = 3 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 },
 		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
 		{ id = "STIM_COMBAT", w = 1 }, -- economy-1a's thirteenth slice
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "GAS_ANALYSER", w = 1.5 }, { id = "BICARB", w = 4 }, { id = "MULTIVITAMINS", w = 4 }, { id = "PEROXIDE", w = 3.5 },
 	},
 	grocery = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -347,19 +402,26 @@ local POOLS = {
 		{ id = "WATER", w = 14 }, { id = "JUICE", w = 10 }, { id = "CHOC_BAR", w = 12 }, { id = "STEW", w = 10 },
 		{ id = "HARDTACK", w = 8 }, { id = "VOLT_DRINK", w = 5 }, { id = "TOOTHPASTE", w = 6 }, { id = "SOAP", w = 6 },
 		{ id = "BLEACH", w = 4 }, { id = "CIGARETTES", w = 6 }, { id = "MATCHES", w = 6 }, { id = "LIGHTBULB", w = 4 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "LIGHTER_WIND", w = 1 }, { id = "MATCHES_HUNT", w = 1.5 }, { id = "BICARB", w = 2 }, { id = "SHAMPOO", w = 3 },
+		{ id = "COFFEE_BEANS", w = 3 }, { id = "SUGAR", w = 3.5 },
 	},
 	drinks = { { id = "WATER", w = 14 }, { id = "JUICE", w = 12 }, { id = "VOLT_DRINK", w = 8 }, { id = "MOONSHINE", w = 1 } },
 	mall = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
 		{ id = "TOILET_PAPER", w = 4 }, { id = "SALT", w = 2 }, { id = "LIGHTER", w = 5 }, { id = "TPLUG", w = 3 }, { id = "ES_LAMP", w = 4 },
 		{ id = "CPU_FAN", w = 2 }, { id = "SCREWDRIVER", w = 2 }, { id = "TAPE_MEASURE", w = 2 }, { id = "PEN_OIL", w = 2 },
-		{ id = "FABRIC", w = 3 },
+		{ id = "FABRIC", w = 1 },
 		{ id = "CHOC_BAR", w = 10 }, { id = "JUICE", w = 8 }, { id = "WATER", w = 6 }, { id = "CIGARETTES", w = 8 },
 		{ id = "MATCHES", w = 6 }, { id = "POWER_BANK", w = 6 }, { id = "LIGHTBULB", w = 6 }, { id = "TOOTHPASTE", w = 5 },
 		{ id = "SOAP", w = 5 }, { id = "PHONE", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "BATTERY", w = 2 },
 		{ id = "WIRES", w = 4 }, { id = "DUCT_TAPE", w = 4 }, { id = "A9_PST", w = 3, n = { 5, 15 } }, { id = "BANDAGE", w = 4 },
 		{ id = "GLASSES_SUN", w = 2 },
 		{ id = "PRINTER_PAPER", w = 2 }, { id = "COOK_BOOK", w = 0.3 }, -- economy-1a's thirteenth slice: the shops' shelves
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "FABRIC_POLY", w = 1.5 }, { id = "FABRIC_RIPSTOP", w = 1 }, { id = "FABRIC_FLEECE", w = 1.5 },
+		{ id = "DISC_DRIVE", w = 1.5 }, { id = "LCD_BROKEN", w = 1 }, { id = "INSUL_TAPE", w = 2 }, { id = "LIGHTER_WIND", w = 1 },
+		{ id = "SHAMPOO", w = 2 }, { id = "COFFEE_BEANS", w = 1 }, { id = "SUGAR", w = 1.5 },
 	},
 	mallkeys = {
 		{ id = "KEY_MALL_STAFF", w = 8 }, { id = "KEY_MEDIQ", w = 6 }, { id = "KEY_MALL_SECURITY", w = 3 },
@@ -381,6 +443,9 @@ local POOLS = {
 		{ id = "GPU_CARD", w = 2 }, { id = "FLASH_MODULE", w = 6 }, { id = "GOLD_CHAIN", w = 6 }, { id = "CAPT_WATCH", w = 4 },
 		{ id = "PHONE", w = 8 }, { id = "HDD", w = 6 }, { id = "RAM_STICK", w = 6 }, { id = "INTEL_FOLDER", w = 3 },
 		{ id = "SEALED_DRIVE", w = 2 }, { id = "MEDKIT_M", w = 4 }, { id = "KEY_MALL_SECURITY", w = 1 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "PC_CPU", w = 2 }, { id = "LCD_PANEL", w = 2 }, { id = "GAME_CONSOLE", w = 0.6 }, { id = "FPGA_CHIP", w = 0.5 },
+		{ id = "STORAGE_MODULE", w = 0.3 },
 	},
 	-- airdrops (Tarkov's four crates, 10 x 12 grids; Services/Airdrop.luau): the common crate a bit of everything, the
 	-- medical one meds and provisions, the supply one barter goods, the weapon one guns, mods and ammunition
@@ -397,6 +462,8 @@ local POOLS = {
 		{ id = "R17_RIFLE", w = 1 }, { id = "KST_RIFLE", w = 1 }, { id = "SPARROW_SMG", w = 1 }, { id = "GREN_RK5", w = 3 }, { id = "GREN_F7", w = 1 },
 		{ id = "PLATE_PE4", w = 1 }, { id = "PLATE_CE4", w = 1 }, { id = "PLATE_CE5", w = 0.5 }, { id = "PLATE_HP5B", w = 0.4 },
 		{ id = "MAGNET", w = 1 }, -- economy-1a's thirteenth slice
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "INSUL_TAPE", w = 1 }, { id = "MULTIVITAMINS", w = 1 }, { id = "SUGAR", w = 1 },
 	},
 	airdrop_medical = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -408,6 +475,9 @@ local POOLS = {
 		{ id = "CHOC_BAR", w = 3 },
 		{ id = "STIM_ADREN", w = 4 }, { id = "STIM_REGEN", w = 3 }, { id = "STIM_HEMO", w = 3 }, { id = "STIM_STAMINA", w = 2 },
 		{ id = "STIM_COMBAT", w = 3 }, -- economy-1a's thirteenth slice
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "BICARB", w = 2 }, { id = "MULTIVITAMINS", w = 3 }, { id = "PEROXIDE", w = 3 }, { id = "GAS_ANALYSER", w = 1 },
+		{ id = "COFFEE_BEANS", w = 1.5 }, { id = "SUGAR", w = 2 },
 	},
 	airdrop_supply = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -424,6 +494,12 @@ local POOLS = {
 		{ id = "WEAPON_KIT", w = 2 }, { id = "MULTITOOL", w = 3 },
 		-- economy-1a's thirteenth slice: the magnet, the Geiger counter and the sledgehammer with the supply drop's goods
 		{ id = "MAGNET", w = 3 }, { id = "GEIGER", w = 1 }, { id = "SLEDGEHAMMER", w = 0.5 },
+		-- economy-1a's fifteenth slice: EFT's goods where its containers hold them (SPT 3.11 staticLoot shares; loose spots ours)
+		{ id = "DISC_DRIVE", w = 1 }, { id = "PC_CPU", w = 1 }, { id = "LCD_PANEL", w = 0.8 }, { id = "FPGA_CHIP", w = 0.3 },
+		{ id = "STORAGE_MODULE", w = 0.3 }, { id = "GAS_ANALYSER", w = 0.5 }, { id = "PLIERS_HD", w = 0.5 },
+		{ id = "CABLE_CUTTER", w = 0.5 }, { id = "FOAM_MOUNT", w = 1.5 }, { id = "COLD_WELD", w = 1.5 }, { id = "INSUL_TAPE", w = 3 },
+		{ id = "LIGHTER_WIND", w = 0.8 }, { id = "MATCHES_HUNT", w = 1 }, { id = "DIARY", w = 0.4 }, { id = "SLIM_DIARY", w = 0.4 },
+		{ id = "TECH_MANUAL", w = 0.4 },
 	},
 	airdrop_weapon = {
 		{ id = "A62_EP", w = 2, n = { 30, 60 } }, { id = "A76_PP", w = 2, n = { 30, 60 } }, { id = "A9_PBP", w = 1, n = { 25, 50 } },

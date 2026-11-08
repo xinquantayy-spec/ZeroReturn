@@ -394,8 +394,9 @@ T.barters = {
 		b("SVD_RIFLE", 3, 1, { { "GOLD_CHAIN", 2 }, { "SKULL_RING", 1 } }),
 		b("SVD_MAG", 3, 4, { { "SPARE_PARTS", 1 } }),
 		-- EFT sells neither the VSS nor the AS VAL for money (tarkovforge.com), nor PAB-9 and BP: here by barter at Prapor, the
-		-- levels and goods ours
-		b("VSS_RIFLE", 3, 1, { { "GOLD_CHAIN", 1 }, { "MIL_CIRCUIT", 1 } }),
+		-- levels and goods ours, except the VSS's: since economy-1a's fifteenth slice EFT's own, Prapor LL3 for a ratchet
+		-- wrench and a gunpowder "Kite", one a restock (SPT 3.10.1 traders/54cb50c76803fa8b248b4571/assort.json)
+		b("VSS_RIFLE", 3, 1, { { "RATCHET", 1 }, { "GUNPOWDER", 1 } }),
 		b("VAL_RIFLE", 4, 1, { { "GOLD_CHAIN", 2 }, { "MIL_CIRCUIT", 1 } }),
 		b("VSS_MAG10", 3, 4, { { "SPARE_PARTS", 1 } }),
 		b("VSS_MAG20", 3, 3, { { "SPARE_PARTS", 1 }, { "BOLTS", 1 } }),
@@ -409,20 +410,29 @@ T.barters = {
 		b("PPSH_MAG35", 2, 4, { { "SPARE_PARTS", 1 } }),
 		b("PPSH_DRUM", 3, 2, { { "SPARE_PARTS", 2 }, { "BOLTS", 2 } }),
 		b("A76T_SBAP", 3, 2, { { "GUNPOWDER", 1 }, { "CAPACITOR", 1 } }, 50),
-		-- the tenth slice: the W-21 and J-21 by barter (levels and goods ours), and .366 TKM AP-M, which no trader sells
-		b("W21_PISTOL", 2, 1, { { "WEAPON_PARTS", 1 }, { "SCREWS", 2 } }),
-		b("J21_SMG", 3, 1, { { "WEAPON_PARTS", 2 }, { "SPARE_PARTS", 2 }, { "BOLTS", 2 } }),
+		-- the tenth slice: the W-21 and J-21 by barter, and .366 TKM AP-M, which no trader sells; since the fifteenth slice
+		-- EFT's own two barters (SPT 3.10.1 Prapor assort): the SR-1MP at LL2 for a gunpowder "Kite" (two a restock), the
+		-- SR-2M at LL4 for a Bulbex cable cutter and a pipe grip wrench (four)
+		b("W21_PISTOL", 2, 2, { { "GUNPOWDER", 1 } }),
+		b("J21_SMG", 4, 4, { { "CABLE_CUTTER", 1 }, { "PIPE_WRENCH", 1 } }),
 		b("A96_AP", 3, 2, { { "GUNPOWDER", 1 }, { "CAPACITOR", 1 } }, 40),
 		b("BZ12_REV", 4, 1, { { "WEAPON_PARTS", 3 }, { "SPARE_PARTS", 2 }, { "GUNPOWDER", 1 } }), -- the eleventh slice (ours)
 		-- EFT's PM is barter-only (tarkovforge.com: no trader sells it for money); ours at Prapor for small household goods
 		b("PM_PISTOL", 1, 2, { { "TOILET_PAPER", 1 }, { "SOAP", 1 } }),
-		-- EFT's RPK-16 comes by Prapor's barters at LL2 and LL3 (wiki): the KS-L and its drum at LL3 here
-		b("KSL_LMG", 3, 1, { { "LOGIC_BOARD", 2 }, { "CAPACITOR", 2 }, { "BOLTS", 4 } }),
+		-- EFT's RPK-16 comes by Prapor's barters at LL2 and LL3 (wiki): the KS-L and its drum at LL3 here; since the fifteenth
+		-- slice the KS-L's goods are EFT's LL3 RPK-16 barter's, two gunpowder "Kite" and three weapon parts, two a restock
+		-- (SPT 3.10.1 Prapor assort)
+		b("KSL_LMG", 3, 2, { { "GUNPOWDER", 2 }, { "WEAPON_PARTS", 3 } }),
 		b("KSL_DRUM95", 3, 1, { { "BOLTS", 3 }, { "DUCT_TAPE", 2 } }),
 		b("GREN_F7", 1, 2, { { "BOLTS", 1 }, { "MATCHES", 2 } }),
 		b("SCOPE_4X", 2, 1, { { "CRACKED_LENS", 1 }, { "WIRES", 2 } }),
 		-- EFT sells SNB for no money (raids, barters and crafts, tarkovforge): a stack by barter at LL4, the goods ours (economy-1a)
 		b("A76L_SNB", 4, 2, { { "GUNPOWDER", 2 }, { "BOLTS", 4 } }, 40),
+		-- economy-1a's fifteenth slice (appended, so older barters keep their index): EFT's Prapor barters that use its goods,
+		-- where the output is ours (SPT 3.10.1 traders/54cb50c76803fa8b248b4571/assort.json): the MP-443 Grach (our P-9) at
+		-- LL1 for a PC CPU, two a restock; a pack of eight 9x39 SPP at LL3 for two insulating tapes (EFT allows 50; ours 10)
+		b("P9_PISTOL", 1, 2, { { "PC_CPU", 1 } }),
+		b("A939_SPP", 3, 10, { { "INSUL_TAPE", 2 } }, 8),
 	},
 	hale = {
 		b("MEDKIT_M", 1, 3, { { "CIGARETTES", 2 }, { "MATCHES", 1 } }),
@@ -433,9 +443,20 @@ T.barters = {
 		b("FUEL_CAN", 2, 2, { { "STEW", 4 } }),
 		-- the thirteenth slice: EFT's Therapist trades the SJ1 (our SV-1) at LL3 for a disposable syringe, a bottle of hydrogen
 		-- peroxide and a pack of sodium bicarbonate, one each (xgamingserver's SJ1 and hydrogen peroxide pages, snapshot
-		-- 2026-11-04); saline stands in for the peroxide and the alkaline cleaner for the soda, as in the crafts; no trader
-		-- sells it for money (xgamingserver); the limit is ours
-		b("STIM_COMBAT", 3, 2, { { "SYRINGE", 1 }, { "SALINE", 1 }, { "ALKALI", 1 } }),
+		-- 2026-11-04); since the fifteenth slice the peroxide and the soda are EFT's own (they were saline and the alkaline
+		-- cleaner); no trader sells it for money (xgamingserver); the limit is ours
+		b("STIM_COMBAT", 3, 2, { { "SYRINGE", 1 }, { "PEROXIDE", 1 }, { "BICARB", 1 } }),
+		-- economy-1a's fifteenth slice (appended): EFT's Therapist barters that use its goods, where the output is ours (SPT
+		-- 3.10.1 traders/54cb57776803fa99248b456e/assort.json; EFT's limits a restock): a bottle of water for a hydrogen
+		-- peroxide (LL1, 2); OLOLO multivitamins for five Apollo cigarettes (LL1, 5; our cigarettes); an IFAK (our field
+		-- medkit, which stands for it) for a sodium bicarbonate (LL2, 3); Propital (our RG-5) for two multivitamins (LL3,
+		-- 3); a pack of sugar for six piles of meds (LL4, 2). Her Grizzly for a gas analyzer and an ultraviolet lamp is left
+		-- out: our trauma case is worth 75,000 against EFT's Grizzly, a money printer at our values
+		b("WATER", 1, 2, { { "PEROXIDE", 1 } }),
+		b("MULTIVITAMINS", 1, 5, { { "CIGARETTES", 5 } }),
+		b("MEDKIT_L", 2, 3, { { "BICARB", 1 } }),
+		b("STIM_REGEN", 3, 3, { { "MULTIVITAMINS", 2 } }),
+		b("SUGAR", 4, 2, { { "MEDS_PILE", 6 } }),
 	},
 	fence = {},
 	-- Skier trades sights and night vision for household and electrical goods
@@ -447,9 +468,10 @@ T.barters = {
 		b("R17_MAG40", 1, 2, { { "BOLTS", 2 }, { "SPARK_PLUG", 1 } }),
 		-- Pouch M (audit economy.7) as EFT's Beta container: Peacekeeper's LL2 barter, one a restock, for a 6-STEN-140-M
 		-- military battery, 3 Iridium thermal vision modules, 3 Virtex processors and 5 military cables (EFT's assort as
-		-- SPT copies it, traders/5935c25fb3acc3127c3d8cd9). Ours, all items that spawn: the deep-cycle battery, control
-		-- boards, flash modules and wires
-		b("SECURE_M", 2, 1, { { "BATTERY", 1 }, { "LOGIC_BOARD", 3 }, { "FLASH_MODULE", 3 }, { "WIRES", 5 } }),
+		-- SPT copies it, traders/5935c25fb3acc3127c3d8cd9). Ours, all items that spawn: the deep-cycle battery and control
+		-- boards stand in for the tank battery and the Iridium modules; since economy-1a's fifteenth slice the Virtex
+		-- processors and military cables are EFT's own (they were flash modules and wires)
+		b("SECURE_M", 2, 1, { { "BATTERY", 1 }, { "LOGIC_BOARD", 3 }, { "FPGA_CHIP", 3 }, { "MIL_CABLE", 5 } }),
 		b("PLATE_CE5", 4, 1, { { "MIL_CIRCUIT", 2 }, { "BATTERY", 1 } }), -- a class 5 plate for military electronics (ours, gameplay-2a)
 		-- EFT sells M995 for no money (raids, barters and crafts, tarkovforge): a stack by barter at LL4, the goods ours (economy-1a)
 		b("A62_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 2 } }, 60),
@@ -460,8 +482,8 @@ T.barters = {
 		b("A76N_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 2 } }, 40),
 		b("A76N_TC", 4, 1, { { "GUNPOWDER", 3 }, { "MIL_CIRCUIT", 1 } }, 40),
 		-- the seventh slice: EFT sells neither the MP7A1 nor the P90 for money, nor 4.6x30 AP SX (tarkovforge.com); here by barter,
-		-- with their magazines (levels and goods ours)
-		b("MP7_SMG", 3, 1, { { "GOLD_CHAIN", 1 }, { "CAPACITOR", 2 } }),
+		-- with their magazines (levels and goods ours); the MP7A1 itself is EFT's Mechanic's LL1 barter since the fifteenth
+		-- slice (KOVAC's list)
 		b("P90_SMG", 3, 1, { { "GOLD_CHAIN", 1 }, { "MIL_CIRCUIT", 1 } }),
 		b("MP7_MAG20", 2, 4, { { "SPARE_PARTS", 1 } }),
 		b("MP7_MAG30", 3, 3, { { "SPARE_PARTS", 1 }, { "BOLTS", 1 } }),
@@ -469,18 +491,45 @@ T.barters = {
 		b("P90_MAG", 3, 3, { { "SPARE_PARTS", 1 }, { "BOLTS", 2 } }),
 		b("A46_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 1 } }, 60),
 		-- the eighth slice: EFT sells none of the UMP 45, M1911A1 and Five-seveN for money (tarkovforge.com); here by barter, with
-		-- their magazines (levels and goods ours)
-		b("UMP_SMG", 2, 1, { { "WEAPON_PARTS", 1 }, { "BOLTS", 3 } }),
+		-- their magazines (levels and goods ours); the UMP 45 itself is EFT's Mechanic's LL1 barter since the fifteenth slice
+		-- (KOVAC's list)
 		b("M1911_PISTOL", 1, 1, { { "SCREWS", 2 }, { "BOLTS", 1 } }),
 		b("FN57_PISTOL", 2, 1, { { "WEAPON_PARTS", 1 }, { "CAPACITOR", 1 } }),
 		b("UMP_MAG", 2, 4, { { "SPARE_PARTS", 1 } }),
 		b("M1911_MAG", 1, 5, { { "SCREWS", 1 } }),
 		b("M1911_MAG11", 2, 3, { { "SPARE_PARTS", 1 } }),
 		b("FN57_MAG", 2, 4, { { "SPARE_PARTS", 1 } }),
+		-- economy-1a's fifteenth slice (appended): EFT's Peacekeeper barters that use its goods, where the output is ours (SPT
+		-- 3.10.1 traders/5935c25fb3acc3127c3d8cd9/assort.json; EFT's limits): the M4A1 (our R-17) at LL1 for three PC CPUs
+		-- and a CPU fan (1); the AR-15 10.3" barrel (our R-17 10.5") at LL2 for two broken LCDs (1); an intelligence folder at
+		-- LL3 for four diaries, four slim diaries and a set of survey maps (1). His M67 for a Zibbo is left out (our RK-5 is
+		-- EFT's RGD-5)
+		b("R17_RIFLE", 1, 1, { { "PC_CPU", 3 }, { "CPU_FAN", 1 } }),
+		b("R17_BRL_105", 2, 1, { { "LCD_BROKEN", 2 } }),
+		b("INTEL_FOLDER", 3, 1, { { "DIARY", 4 }, { "SLIM_DIARY", 4 }, { "SURVEY_MAPS", 1 } }),
 	},
 	kovac = {
 		b("WEAPON_KIT", 1, 1, { { "DUCT_TAPE", 2 }, { "SPARK_PLUG", 1 }, { "WIRES", 1 } }),
 		b("SUPP_62", 2, 1, { { "SIGNAL_COIL", 2 }, { "CERAMIC_FUSE", 2 }, { "DUCT_TAPE", 1 } }),
+		-- economy-1a's fifteenth slice: EFT's Mechanic barters that use its goods, where the output is ours (SPT 3.10.1
+		-- traders/5a7c2eca46aef81a7ca2145d/assort.json; EFT's limits a restock, capped at 5): at LL1 the UMP 45 (our HS-45)
+		-- for a DVD drive, a damaged hard drive and two capacitors (1), the MP7A1 (our PW-46) for five working LCDs and a
+		-- NIXXOR lens (our cracked lens) (1), the MPX (our AV-9) for five DVD drives, five ultraviolet lamps (our
+		-- energy-saving lamp) and two weapon parts (2), a toolset for pliers, a screwdriver, a wrench, insulating tape and a
+		-- measuring tape (2), the MP-133 (our Harrow-12) for two Pliers Elite and a screwdriver (2), a gas analyzer for a CPU
+		-- fan (1); at LL2 a working LCD for two broken ones (EFT 10, ours 5), the M1A (our S-14) for eight insulating tapes
+		-- (3), a physical bitcoin (our cold wallet) for two Tetriz and two GreenBat batteries (1). His Pliers Elite for pliers,
+		-- nippers and round pliers and the PVS-14 for phones and broken LCDs are left out (no nippers or round pliers here;
+		-- our NV-1 monocular is Skier's, a task-locked offer)
+		b("UMP_SMG", 1, 1, { { "DISC_DRIVE", 1 }, { "HDD", 1 }, { "CAPACITOR", 2 } }),
+		b("MP7_SMG", 1, 1, { { "LCD_PANEL", 5 }, { "CRACKED_LENS", 1 } }),
+		b("AV9_SMG", 1, 2, { { "DISC_DRIVE", 5 }, { "ES_LAMP", 5 }, { "WEAPON_PARTS", 2 } }),
+		b("TOOLSET", 1, 2, { { "PLIERS", 1 }, { "SCREWDRIVER", 1 }, { "WRENCH", 1 }, { "INSUL_TAPE", 1 }, { "TAPE_MEASURE", 1 } }),
+		b("HARROW12", 1, 2, { { "PLIERS_HD", 2 }, { "SCREWDRIVER", 1 } }),
+		b("GAS_ANALYSER", 1, 1, { { "CPU_FAN", 1 } }),
+		b("LCD_PANEL", 2, 5, { { "LCD_BROKEN", 2 } }),
+		b("M1A_RIFLE", 2, 3, { { "INSUL_TAPE", 8 } }),
+		b("COLD_WALLET", 2, 1, { { "GAME_CONSOLE", 2 }, { "LI_BATTERY", 2 } }),
 	},
 	tilda = {
 		b("ARMOR_C3", 1, 1, { { "DUCT_TAPE", 2 }, { "WIRES", 2 }, { "BOLTS", 1 } }),
@@ -493,6 +542,11 @@ T.barters = {
 		-- EFT's Remington Model 700 is barter-only (tarkovforge.com: no trader sells it for money); the trader, level and goods ours
 		b("M700_BOLT", 2, 1, { { "GUN_LUBE", 1 }, { "WEAPON_PARTS", 2 } }),
 		b("TH_T7", 4, 1, { { "MIL_CIRCUIT", 2 }, { "COLD_WALLET", 2 }, { "BATTERY", 2 } }),
+		-- economy-1a's fifteenth slice (appended): EFT's Jaeger trades OLOLO multivitamins for two Vita juices (LL2, 2; our
+		-- juice carton) and a pack of sugar for five Emelya croutons (LL2, 1; our hardtack) (SPT 3.10.1
+		-- traders/5c0647fdd443bc2504c2d371/assort.json)
+		b("MULTIVITAMINS", 2, 2, { { "JUICE", 2 } }),
+		b("SUGAR", 2, 1, { { "HARDTACK", 5 } }),
 	},
 }
 

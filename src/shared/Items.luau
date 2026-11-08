@@ -692,18 +692,21 @@ loot("TOOTHPASTE", "Toothpaste", "PASTE", 1, 1, 0.15, 4000, "common", "Unopened 
 loot("SOAP", "Soap Bar", "SOAP", 1, 1, 0.1, 3000, "common", "Wrapped bar of soap.", "#C8B8D8")
 loot("BLEACH", "Bleach", "BLEACH", 1, 2, 1.0, 8000, "common", "A bottle of household bleach.", "#D8DCE0")
 -- decision economy-7b (the hideout's economy core): three barter goods EFT's hideout leans on that had no counterpart here.
--- GUNPOWDER stands for EFT's gunpowder "Kite", "Hawk" and "Eagle" (the workbench's ammunition and grenade crafts),
--- FABRIC for its aramid, Cordura, ripstop and fleece (the lavatory's gear crafts), MOONSHINE for its bottle of moonshine
--- (the scav case's dearest run and its construction). Sizes after EFT's (gunpowder and moonshine 1x2); values ours.
-loot("GUNPOWDER", "Powder Tin", "POWDER", 1, 2, 0.6, 15000, "uncommon", "A sealed tin of smokeless rifle powder. Reloaders and grenade makers pay well for it.", "#5E6650")
-loot("FABRIC", "Fabric Roll", "FABRIC", 1, 1, 0.3, 9000, "common", "A tight roll of heavy-duty technical fabric: aramid weave and ripstop offcuts. Good for mending vests and packs.", "#5C6B4E")
+-- GUNPOWDER stood for EFT's gunpowder "Kite", "Hawk" and "Eagle" and FABRIC for its aramid, Cordura, ripstop and fleece;
+-- since economy-1a's fifteenth slice (2026-11-09) each is its own item: GUNPOWDER is EFT's "Kite" and FABRIC its aramid
+-- fiber fabric, with EFT's grid, weight and handbook price (SPT 3.10.1 items.json and handbook.json), the other two
+-- powders and three fabrics follow the thirteenth slice's goods below. MOONSHINE is EFT's bottle of moonshine (the scav
+-- case's dearest run and its construction; size after EFT's, value ours).
+loot("GUNPOWDER", "Fine Powder Tin", "FINE PWD", 1, 2, 0.6, 14000, "uncommon", "A sealed tin of fine-grained smokeless powder, the quick-burning kind for pistol and light rifle loads. Reloaders and grenade makers pay well for it.", "#5E6650") -- gunpowder "Kite"
+loot("FABRIC", "Aramid Fabric", "ARAMID", 2, 1, 0.14, 8800, "common", "A folded length of tough yellow aramid weave, the cloth soft armour is made of. Tailors cut it to make and mend armour.", "#B89A3E") -- aramid fiber fabric
 loot("MOONSHINE", "Moonshine", "MOONSHINE", 1, 2, 1.1, 140000, "rare", "A corked bottle of home-distilled spirit, strong enough to strip paint. Scavs will do a lot for one.", "#B9A97A")
 add("DOGTAG", { name = "Dog Tag", short = "TAG", kind = "loot", w = 1, h = 1, mass = 0.02, value = 12000, rarity = "uncommon", desc = "An operator's identification tag. Worth more the more experienced its owner was.", color = c("#A7A9A0") })
 -- decision economy-1a, second slice (2026-11-08): the goods EFT's hideout is built from and its crafts use, which the
 -- hideout had covered with stand-ins. One of ours for each EFT item named beside it, with EFT's grid size (tarkovforge.com
 -- item pages) and EFT's handbook price as the value (SPT's handbook.json; 1 rouble = 1 MK, TraderData's rule). Weights
--- are ours (no page read gave them). Pliers stand for EFT's Pliers Elite and cable cutter too, the sealing foam for its
--- Shustrilo foam, the lighter for its Zibbo and Survl, the penetrating oil for both WD-40 sizes.
+-- are ours (no page read gave them). The lighter stands for EFT's SurvL too, the penetrating oil for both WD-40 sizes;
+-- EFT's Pliers Elite, cable cutter, Shustrilo foam, Zibbo, multivitamins and hydrogen peroxide, which pliers, the sealing
+-- foam, the lighter, the pile of meds and saline stood for, are their own items since the fifteenth slice (below).
 -- building materials
 loot("SCREWS", "Screw Pack", "SCREWS", 1, 1, 0.15, 3140, "common", "A paper pack of wood and machine screws, mixed sizes.", "#8A8C86") -- pack of screws
 loot("NUTS", "Hex Nuts", "NUTS", 1, 1, 0.2, 8700, "common", "A bag of zinc-plated hex nuts.", "#9A9C96") -- screw nuts
@@ -744,8 +747,8 @@ loot("CHLORINE", "Chlorine Pack", "CHLOR", 2, 1, 0.5, 11000, "uncommon", "A seal
 loot("ALKALI", "Alkaline Cleaner", "ALKALI", 1, 2, 1.1, 8457, "common", "A jug of alkaline descaler for heat exchangers.", "#4A7AA8") -- alkaline cleaner for heat exchangers
 -- medical supplies
 loot("SYRINGE", "Syringe", "SYRINGE", 1, 1, 0.02, 3000, "common", "A sterile disposable syringe in its blister.", "#E0E8EC") -- disposable syringe
-loot("MEDS_PILE", "Pile of Meds", "MEDS", 1, 1, 0.2, 6500, "common", "Loose blister packs of assorted tablets.", "#C8B8A8") -- pile of meds (multivitamins too)
-loot("SALINE", "Saline Bottle", "NACL", 1, 1, 0.5, 8508, "common", "A plastic bottle of sterile saline solution.", "#D8E4EC") -- bottle of saline solution (hydrogen peroxide too)
+loot("MEDS_PILE", "Pile of Meds", "MEDS", 1, 1, 0.2, 6500, "common", "Loose blister packs of assorted tablets.", "#C8B8A8") -- pile of meds
+loot("SALINE", "Saline Bottle", "NACL", 1, 1, 0.5, 8508, "common", "A plastic bottle of sterile saline solution.", "#D8E4EC") -- bottle of saline solution
 loot("BLOODSET", "Blood Set", "BLOODSET", 1, 1, 0.1, 9765, "common", "A sealed transfusion set: bag, line and needle.", "#B83A3A") -- medical bloodset
 loot("LEDX", "Vein Transilluminator", "TRANSIL", 1, 1, 0.3, 970000, "epic", "A handheld transilluminator that shows veins under the skin. Hospitals would pay anything for one.", "#3A6E8A") -- LEDX skin transilluminator
 loot("OPHTHALMOSCOPE", "Ophthalmoscope", "OSCOPE", 1, 1, 0.4, 84912, "rare", "A doctor's eye-examination light in a hard case.", "#2E3238") -- ophthalmoscope
@@ -758,7 +761,7 @@ loot("GOLD_ROOSTER", "Golden Rooster", "ROOSTER", 2, 2, 2.0, 90566, "rare", "A g
 loot("SKULL_RING", "Gold Skull Ring", "SKULL", 1, 1, 0.03, 55000, "rare", "A heavy gold ring cast as a grinning skull.", "#C9A13C") -- gold skull ring
 -- tools (EFT keeps them as barter goods and as the tools its crafts hold while they run)
 loot("SCREWDRIVER", "Screwdriver", "SCDR.", 1, 1, 0.15, 3500, "common", "A flat screwdriver with a worn handle.", "#C83A2A") -- screwdriver
-loot("PLIERS", "Pliers", "PLIERS", 1, 1, 0.3, 8000, "common", "Combination pliers with insulated grips.", "#3A5A9A") -- pliers (and Pliers Elite, cable cutter)
+loot("PLIERS", "Pliers", "PLIERS", 1, 1, 0.3, 8000, "common", "Combination pliers with insulated grips.", "#3A5A9A") -- pliers (and EFT's nippers, round pliers and metal cutting scissors in crafts)
 loot("WRENCH", "Wrench", "WRENCH", 1, 1, 0.4, 3544, "common", "A double-ended open spanner.", "#8C8F8A") -- wrench
 loot("RATCHET", "Ratchet Wrench", "RATCHET", 1, 2, 0.6, 124000, "rare", "A long ratchet handle with a socket still on it.", "#9A9C96") -- ratchet wrench
 loot("PIPE_WRENCH", "Pipe Wrench", "PGW", 1, 2, 1.4, 132000, "rare", "A heavy adjustable pipe wrench in red enamel.", "#A83A2A") -- pipe grip wrench
@@ -771,27 +774,73 @@ loot("SEWING_KIT", "Sewing Kit", "SEWING", 1, 1, 0.2, 38000, "uncommon", "Heavy 
 -- decision economy-1a, thirteenth slice (2026-11-08): the goods that let more of EFT's crafts in (the crafts thread's list).
 -- One of ours for each EFT item beside it, with EFT's grid size (tarkovforge.com/loot/<item>, read 2026-11-08) and weight
 -- (xgamingserver.com item pages, snapshot 2026-11-04), its handbook price as the value and its handbook folder (SPT's
--- handbook.json). The textbook's grid size and weight are ours: no page that gave them could be read.
+-- handbook.json). The textbook's grid size and weight were ours then; SPT 3.10.1's items.json gives EFT's own, 1x2 and
+-- 0.5 kg (the fifteenth slice took the weight).
 loot("PRINTER_PAPER", "Printer Paper", "PAPER", 2, 1, 0.7, 2337, "common", "A ream of plain office paper in its wrapper. Printers, copiers and anyone with something to write down want it.", "#E8E8E2") -- printer paper
 loot("COOK_BOOK", "Home Baking Cookbook", "COOKBOOK", 1, 2, 0.25, 58000, "rare", "A hardback of breads, pies and party dishes, its margins full of somebody's notes. A field kitchen runs better with one on the shelf.", "#B8442E") -- BakeEzy cook book
 loot("GEIGER", "Geiger Counter", "GEIGER", 1, 2, 0.4, 16684, "uncommon", "A handheld radiation counter with a probe on a coiled lead. Still clicks when it should.", "#C8A43A") -- Geiger-Muller counter
-loot("SEMI_TEXTBOOK", "Semiconductor Materials Textbook", "SEMI BOOK", 1, 2, 0.6, 490000, "epic", "A thick university textbook on semiconductor and display materials. Rare, and the one guide anyone has for making circuit boards from scratch.", "#2E4A7A") -- Advanced Electronic Materials textbook
+loot("SEMI_TEXTBOOK", "Semiconductor Materials Textbook", "SEMI BOOK", 1, 2, 0.5, 490000, "epic", "A thick university textbook on semiconductor and display materials. Rare, and the one guide anyone has for making circuit boards from scratch.", "#2E4A7A") -- Advanced Electronic Materials textbook
 loot("MAGNET", "Magnet", "MAGNET", 1, 1, 0.4, 12713, "uncommon", "A heavy ring magnet salvaged from a speaker or a drive. Motors and instruments cannot be built without one.", "#3A3C3E") -- magnet
 loot("SLEDGEHAMMER", "Sledgehammer", "SLEDGE", 2, 5, 5.5, 132000, "rare", "A long-handled sledgehammer with a heavy steel head, for knocking down walls and beating stuck metal into shape.", "#4A4E52") -- Fierce Blow sledgehammer
+-- decision economy-1a, fifteenth slice (2026-11-09): EFT's remaining barter goods that its hideout, crafts, barters and
+-- dailies use. One of ours for each EFT item beside it, with EFT's grid size and weight (SPT 3.10.1's items.json,
+-- github.com/sp-tarkov/server tag 3.10.1), its handbook price as the value and its handbook folder (SPT 3.10.1's
+-- handbook.json). Names, looks and words are ours (no maker's names). Where EFT finds them: Loot.luau's pools.
+-- electronics
+loot("DISC_DRIVE", "Disc Drive", "DISC", 2, 1, 0.6, 8295, "uncommon", "A desktop optical drive in a scuffed beige case, its tray stuck half open. The laser sled and motors inside are worth salvaging.", "#C8C2B0") -- DVD drive
+loot("PC_CPU", "Desktop Processor", "CPU", 1, 1, 0.08, 13914, "uncommon", "A square desktop processor, heat spreader on top and a field of gold pins underneath. Small, light and wanted by anyone building electronics.", "#8A8E8C") -- PC CPU
+loot("LCD_PANEL", "LCD Panel", "LCD", 1, 2, 0.05, 38000, "uncommon", "A working liquid-crystal panel pulled from a monitor, its ribbon cable intact. Camera posts and terminals need one.", "#2A2E34") -- working LCD
+loot("LCD_BROKEN", "Cracked LCD Panel", "BRK LCD", 1, 2, 0.05, 21500, "uncommon", "A liquid-crystal panel with a spider-web crack across one corner. A good workbench can bring it back.", "#30343A") -- broken LCD
+loot("GAME_CONSOLE", "Handheld Game Console", "HANDHELD", 1, 2, 0.13, 120000, "rare", "A pocket game console from before the collapse with a cartridge still in the slot. Collectors and bored traders pay absurd money for one.", "#7A8A3A") -- Tetriz portable game console
+loot("FPGA_CHIP", "Programmable Processor", "FPGA", 1, 1, 0.3, 120000, "rare", "A military-grade programmable logic processor on a small carrier board. Rare outside research labs; advanced electronics are built round it.", "#2E5A3A") -- Virtex programmable processor
+loot("STORAGE_MODULE", "Rugged Storage Module", "STORAGE", 1, 1, 0.8, 152400, "rare", "A sealed, ruggedised flash storage module from a military computer rack, heavy for its size. Server racks and command posts run on them.", "#4A5258") -- VPX flash storage module
+loot("GAS_ANALYSER", "Gas Analyser", "GAS AN.", 1, 2, 0.4, 21697, "uncommon", "A handheld gas detector with a sensor grille and a small display. Its sensors and board go into other instruments.", "#D8A82E") -- gas analyzer
+-- the three other fabrics (aramid is FABRIC, above) and the two other powders (Kite is GUNPOWDER)
+loot("FABRIC_POLY", "Polyamide Fabric", "POLYAMIDE", 2, 1, 0.11, 13200, "uncommon", "A folded length of heavy coated polyamide canvas that shrugs off abrasion. Packs and rigs are sewn from it.", "#5A6448") -- Cordura polyamide fabric
+loot("FABRIC_RIPSTOP", "Ripstop Fabric", "RIPSTOP", 2, 1, 0.09, 5800, "common", "A folded length of light ripstop cloth with its reinforcing grid: a tear stops at the next thread. Rigs and tool rolls use it.", "#6E7A5A") -- ripstop fabric
+loot("FABRIC_FLEECE", "Fleece Fabric", "FLEECE", 2, 1, 0.05, 4000, "common", "A folded length of soft synthetic fleece. Warm and light; bandages and padding are cut from it.", "#8A8478") -- fleece fabric
+loot("POWDER_FLAKE", "Flake Powder Tin", "FLAKE PWD", 1, 2, 0.6, 35000, "uncommon", "A sealed tin of flake smokeless powder for full-power rifle loads. The workbench turns it into armour-piercing rounds.", "#7A3A30") -- gunpowder "Hawk"
+loot("POWDER_BALL", "Ball Powder Tin", "BALL PWD", 1, 2, 0.6, 32000, "uncommon", "A sealed tin of dense, slow-burning ball powder for heavy bullets and slugs.", "#3E5A3A") -- gunpowder "Eagle"
+-- tools, building materials and flammables
+loot("PLIERS_HD", "Heavy-Duty Pliers", "HD PLIERS", 1, 1, 0.25, 29000, "uncommon", "Forged combination pliers with sprung, insulated grips and a hardened cutting edge. Gunsmiths and electricians keep a pair on the bench.", "#B83A2E") -- Pliers Elite
+loot("CABLE_CUTTER", "Cable Cutter", "CUTTER", 1, 2, 0.55, 105000, "rare", "Long-handled ratchet cable cutters that bite through armoured cable in one squeeze. Generators are wired with their help.", "#C8442E") -- Bulbex cable cutter
+loot("FOAM_MOUNT", "Mounting Foam", "M.FOAM", 1, 3, 1.0, 35502, "uncommon", "A tall can of expanding polyurethane mounting foam with a straw nozzle. Seals tanks and walls airtight.", "#3A6E9A") -- Shustrilo sealing foam
+loot("COLD_WELD", "Cold Weld Epoxy", "EPOXY", 1, 1, 0.02, 19400, "uncommon", "A twin tube of two-part steel-filled epoxy. Mixed, it sets as hard as a weld without heat.", "#7A7E80") -- tube of Poxeram cold welding
+loot("INSUL_TAPE", "Insulating Tape", "INS TAPE", 1, 1, 0.05, 2019, "common", "A roll of blue electrical tape. Every wire splice and grip wrap starts with it.", "#2E4E9A") -- insulating tape
+loot("LIGHTER_WIND", "Windproof Lighter", "WINDPROOF", 1, 1, 0.1, 9617, "uncommon", "A brushed steel petrol lighter with a hinged lid and a chimney round the wick. Lights in a gale.", "#A8AAA6") -- Zibbo lighter
+loot("MATCHES_HUNT", "Hunting Matches", "H.MATCH", 1, 1, 0.005, 3800, "common", "A tin of long stormproof matches that burn through wind and rain. Smoke grenades and campfires start with them.", "#C86A2E") -- hunting matches
+-- household, medical supplies and others
+loot("BICARB", "Sodium Bicarbonate", "BICARB", 1, 1, 0.5, 10200, "uncommon", "A paper pack of baking soda. It cleans, neutralises acid and goes into bleach, and medics trade for it.", "#E8E4D8") -- pack of sodium bicarbonate
+loot("SHAMPOO", "Herbal Shampoo", "SHAMPOO", 1, 2, 0.45, 7000, "uncommon", "A tall bottle of herbal shampoo, nearly full. Soap makers and medics both have uses for it.", "#4A8A5A") -- Schaman shampoo
+loot("MULTIVITAMINS", "Multivitamins", "VITAMINS", 1, 1, 0.2, 25090, "uncommon", "A plastic tub of multivitamin tablets, seal unbroken. Medics trade stimulants for them.", "#E8A030") -- bottle of OLOLO multivitamins
+loot("PEROXIDE", "Hydrogen Peroxide", "H2O2", 1, 1, 0.1, 12168, "uncommon", "A small brown bottle of hydrogen peroxide for cleaning wounds and instruments.", "#5A3A2A") -- bottle of hydrogen peroxide
+loot("COFFEE_BEANS", "Tin of Coffee Beans", "COFFEE", 1, 1, 0.5, 14977, "uncommon", "A vacuum tin of roasted coffee beans. Not food on its own, but a field kitchen brews energy drinks from it.", "#6A3E22") -- can of Majaica coffee beans
+-- info and valuables: the other books
+loot("OPTO_TEXTBOOK", "Optoelectronics Textbook", "OPTO BOOK", 1, 2, 0.5, 500000, "epic", "A thick university textbook on silicon optoelectronic circuits, rarer still than the semiconductor volume: the one guide to building imaging electronics from scratch.", "#5A2E6A") -- Silicon Optoelectronic Integrated Circuits textbook
+loot("DIARY", "Diary", "DIARY", 1, 2, 0.2, 58000, "rare", "A hardback diary full of careful notes: names, places, dates. Intelligence people read every page.", "#6A4A2E") -- diary
+loot("SLIM_DIARY", "Slim Diary", "S.DIARY", 1, 1, 0.1, 71000, "rare", "A thin pocket diary in a worn leather cover, written in a tight hand. Small, and worth more than it looks.", "#3A2A22") -- slim diary
+loot("TECH_MANUAL", "Technical Manual", "MANUAL", 1, 2, 0.2, 3900, "common", "A ring-bound service manual for electrical equipment, its diagrams smudged with oil. A workshop wants one on the shelf.", "#D8C878") -- tech manual
+loot("ANTIQUE_BOOK", "Battered Antique Book", "OLD BOOK", 1, 2, 0.4, 63029, "rare", "A leather-bound book two centuries old, spine cracked and corners worn through. Collectors still pay well for it.", "#5A2A1E") -- battered antique book
+-- provisions: EFT's pack of sugar is food (energy +70, hydration -45, 9 s to eat; SPT 3.10.1 items.json); its Intellect
+-- skill buff (+1 for 300 s, globals Buffs_food_sugar) and partial eating are not modelled
+add("SUGAR", { name = "Pack of Sugar", short = "SUGAR", kind = "food", w = 1, h = 1, mass = 0.5, value = 21489, rarity = "uncommon", food = { energy = 70, water = -45, time = 9 }, desc = "Energy +70, hydration -45. A paper pack of white sugar; the field kitchen bakes and brews with it.", color = c("#E8E6E0") }) -- pack of sugar
 -- EFT's handbook folders for every barter good (the HANDBOOK and flea market can group by it)
 local BARTER_CAT = {
-	building = { "BOLTS", "DUCT_TAPE", "SCREWS", "NUTS", "NAILS", "SILICONE_TUBE", "CORR_HOSE", "PRESSURE_GAUGE", "SEAL_TAPE", "FOAM", "SPARE_PARTS" },
+	building = { "BOLTS", "DUCT_TAPE", "SCREWS", "NUTS", "NAILS", "SILICONE_TUBE", "CORR_HOSE", "PRESSURE_GAUGE", "SEAL_TAPE", "FOAM", "SPARE_PARTS",
+		"FOAM_MOUNT", "COLD_WELD", "INSUL_TAPE" },
 	electronics = { "WIRES", "SPARK_PLUG", "SIGNAL_COIL", "CERAMIC_FUSE", "CAPACITOR", "CRACKED_LENS", "LOGIC_BOARD", "DECK_TRANSCEIVER", "FLASH_MODULE",
 		"MIL_CIRCUIT", "GPU_CARD", "HDD", "RAM_STICK", "PHONE", "LIGHTBULB", "RELAY", "MOTOR", "PSU", "CPU_FAN", "POWER_CORD", "TPLUG", "POWER_FILTER",
-		"MIL_CABLE", "ES_LAMP", "POWER_DRILL", "GEIGER", "MAGNET" },
+		"MIL_CABLE", "ES_LAMP", "POWER_DRILL", "GEIGER", "MAGNET",
+		"DISC_DRIVE", "PC_CPU", "LCD_PANEL", "LCD_BROKEN", "GAME_CONSOLE", "FPGA_CHIP", "STORAGE_MODULE", "GAS_ANALYSER" },
 	energy = { "BATTERY", "POWER_BANK", "LI_BATTERY" },
-	flammable = { "MATCHES", "FUEL_CAN", "GUNPOWDER", "PEN_OIL", "TNT", "THERMITE", "LIGHTER", "GUN_LUBE" },
-	household = { "TOOTHPASTE", "SOAP", "BLEACH", "TOILET_PAPER", "SALT", "CHLORINE", "ALKALI", "PRINTER_PAPER" },
-	medical = { "MED_TOOLS", "SYRINGE", "MEDS_PILE", "SALINE", "BLOODSET", "LEDX", "OPHTHALMOSCOPE" },
-	info = { "INTEL_FOLDER", "SSD", "SURVEY_MAPS", "SECURE_FLASH", "COOK_BOOK", "SEMI_TEXTBOOK" },
-	valuables = { "OLD_COIN", "GOLD_CHAIN", "RITUAL_AMULET", "CAPT_WATCH", "COLD_WALLET", "BRASS_LION", "GOLD_ROOSTER", "SKULL_RING" },
-	tools = { "SCREWDRIVER", "PLIERS", "WRENCH", "RATCHET", "PIPE_WRENCH", "HAND_DRILL", "TOOLSET", "FILE_SET", "TAPE_MEASURE", "AWL", "SEWING_KIT", "SLEDGEHAMMER" },
-	others = { "CIGARETTES", "FABRIC", "MOONSHINE", "DOGTAG", "WEAPON_PARTS", "WATER_FILTER", "FUZE" },
+	flammable = { "MATCHES", "FUEL_CAN", "GUNPOWDER", "PEN_OIL", "TNT", "THERMITE", "LIGHTER", "GUN_LUBE", "POWDER_FLAKE", "POWDER_BALL", "LIGHTER_WIND", "MATCHES_HUNT" },
+	household = { "TOOTHPASTE", "SOAP", "BLEACH", "TOILET_PAPER", "SALT", "CHLORINE", "ALKALI", "PRINTER_PAPER", "BICARB", "SHAMPOO" },
+	medical = { "MED_TOOLS", "SYRINGE", "MEDS_PILE", "SALINE", "BLOODSET", "LEDX", "OPHTHALMOSCOPE", "MULTIVITAMINS", "PEROXIDE" },
+	info = { "INTEL_FOLDER", "SSD", "SURVEY_MAPS", "SECURE_FLASH", "COOK_BOOK", "SEMI_TEXTBOOK", "OPTO_TEXTBOOK", "DIARY", "SLIM_DIARY", "TECH_MANUAL" },
+	valuables = { "OLD_COIN", "GOLD_CHAIN", "RITUAL_AMULET", "CAPT_WATCH", "COLD_WALLET", "BRASS_LION", "GOLD_ROOSTER", "SKULL_RING", "ANTIQUE_BOOK" },
+	tools = { "SCREWDRIVER", "PLIERS", "WRENCH", "RATCHET", "PIPE_WRENCH", "HAND_DRILL", "TOOLSET", "FILE_SET", "TAPE_MEASURE", "AWL", "SEWING_KIT", "SLEDGEHAMMER",
+		"PLIERS_HD", "CABLE_CUTTER" },
+	others = { "CIGARETTES", "FABRIC", "MOONSHINE", "DOGTAG", "WEAPON_PARTS", "WATER_FILTER", "FUZE", "FABRIC_POLY", "FABRIC_RIPSTOP", "FABRIC_FLEECE", "COFFEE_BEANS" },
 }
 for cat, ids in BARTER_CAT do
 	for _, id in ids do
