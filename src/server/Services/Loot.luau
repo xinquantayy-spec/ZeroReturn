@@ -161,6 +161,10 @@ local POOLS = {
 		{ id = "A933_FMJ", w = 1.5, n = { 6, 24 } }, { id = "A933_JHP", w = 2, n = { 6, 24 } }, { id = "A933_HP", w = 2.5, n = { 6, 24 } },
 		{ id = "A933_SP", w = 2.5, n = { 6, 24 } }, { id = "A127_PS12", w = 1, n = { 5, 15 } }, { id = "A127_PS12A", w = 1, n = { 5, 15 } },
 		{ id = "A127_PS12B", w = 0.3, n = { 5, 10 } },
+		-- the twelfth slice: the D-17, AV-9 and B-19 and their magazines
+		{ id = "D17_PISTOL", w = 2 }, { id = "AV9_SMG", w = 0.6 }, { id = "B19_SMG", w = 0.8 },
+		{ id = "D17_MAG", w = 2.5, a = { 0, 17 }, at = "A9_PST" }, { id = "AV9_MAG20", w = 1, a = { 0, 20 }, at = "A9_PST" },
+		{ id = "AV9_MAG30", w = 1, a = { 0, 30 }, at = "A9_PST" }, { id = "B19_MAG", w = 1.2, a = { 0, 30 }, at = "A9_PST" },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },

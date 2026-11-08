@@ -220,6 +220,8 @@ T.offers = {
 		o("A921_AP", 4, 3, 50), o("W21_MAG", 2, 4), o("J21_MAG20", 3, 3), o("J21_MAG30", 3, 3),
 		-- the eleventh slice: EFT's Prapor sells the three 12.7x55 loads (tarkovforge.com; the levels ours)
 		o("A127_PS12A", 2, 4, 20), o("A127_PS12", 3, 4, 20), o("A127_PS12B", 4, 2, 20),
+		-- the twelfth slice: the B-19 and its magazine (the trader and levels ours: EFT's sellers not checked)
+		o("B19_SMG", 2, 1), o("B19_MAG", 2, 4),
 		-- the third slice (tarkovforge.com round pages, 2026-11-08): Prapor sells 5.45 US gs at LL1, T gs and PS gs at LL2 and
 		-- BT gs at LL4 (BP gs and BS gs come from loot and crafts), and the 9x18 P, PPT, Pst, RG028 and PBM loads at LL1;
 		-- the 6L20 magazine at LL1 and the 6L26 at LL3
@@ -267,6 +269,8 @@ T.offers = {
 	-- ammunition" (tarkovforge); the UN vest from LL1 (EFT's MF-UNTAR, which his Fishing Gear task asks for); the N-15 at LL3
 	-- and the GPNVG-18 at LL4 (ggrecon): our G-15 and NV-4
 	dekker = {
+		-- the twelfth slice: the D-17 and AV-9 with their magazines (the trader and levels ours: EFT's sellers not checked)
+		o("D17_PISTOL", 1, 2), o("D17_MAG", 1, 6), o("AV9_SMG", 2, 1), o("AV9_MAG20", 2, 4), o("AV9_MAG30", 2, 4),
 		o("R17_RIFLE", 1, 2), o("R17_MAG", 1, 10), o("SPARROW_MAG", 1, 6), o("ARMOR_C3", 1, 1), o("GREN_RK5", 1, 2),
 		o("SPARROW_SMG", 2, 1), o("R17_MAG40", 2, 3), o("HOLO_EX", 2, 1), o("SUPP_9", 2, 1),
 		o("NV_GREEN", 3, 1), o("SCOPE_16", 3, 1), o("SUPP_62", 3, 1),

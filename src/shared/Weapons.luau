@@ -276,6 +276,33 @@ local W = {
 		moveSpread = 1.2, modes = { "SEMI" }, loudness = 1.35, internal = true, viewmodel = "P9", draw = 0.55,
 		slots = {},
 	},
+	-- the D-17 (economy-1a, twelfth slice) in the place of EFT's Glock 17: ergonomics 90, recoil 311 / 260, 50 m
+	-- (tarkovforge.com)
+	D17 = {
+		id = "D17", item = "D17_PISTOL", name = "D-17", class = "pistol", rpm = 420, range = 50, velocity = 360,
+		ergo = 90, recoilV = 3.11, recoilH = 2.6, reload = 1.6, reloadEmpty = 2.0, hipSpread = 1.8, aimSpread = 0.2,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
+		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.85, viewmodel = "P9", draw = 0.42,
+		slots = { side = true },
+	},
+	-- the AV-9 (economy-1a, twelfth slice) in the place of EFT's SIG MPX: single shots or bursts at 850 a minute,
+	-- ergonomics 40, recoil 51 / 269, 500 m (tarkovforge.com)
+	AV9 = {
+		id = "AV9", item = "AV9_SMG", name = "AV-9", class = "smg", rpm = 850, range = 500, velocity = 400,
+		ergo = 40, recoilV = 0.51, recoilH = 2.69, reload = 2.4, reloadEmpty = 3.0, hipSpread = 2.1, aimSpread = 0.1,
+		recoilAngle = 90, recoilDisp = 18, recoilConv = 6, recoilCam = 0.4, recoilStable = 4,
+		moveSpread = 1.2, modes = { "AUTO", "SEMI" }, loudness = 0.85, viewmodel = "SPARROW", draw = 0.55,
+		slots = { rail = true },
+	},
+	-- the B-19 (economy-1a, twelfth slice) in the place of EFT's PP-19-01 Vityaz: single shots or bursts at 700 a minute,
+	-- ergonomics 35, recoil 58 / 270, 200 m (tarkovforge.com)
+	B19 = {
+		id = "B19", item = "B19_SMG", name = "B-19", class = "smg", rpm = 700, range = 200, velocity = 400,
+		ergo = 35, recoilV = 0.58, recoilH = 2.7, reload = 2.6, reloadEmpty = 3.2, hipSpread = 2.2, aimSpread = 0.1,
+		recoilAngle = 90, recoilDisp = 18, recoilConv = 6, recoilCam = 0.4, recoilStable = 4,
+		moveSpread = 1.2, modes = { "AUTO", "SEMI" }, loudness = 0.85, viewmodel = "KST", draw = 0.6,
+		slots = {},
+	},
 	KNIFE = {
 		id = "KNIFE", item = "FIELD_KNIFE", name = "Knife", class = "melee", rpm = 90, range = 6, velocity = 0,
 		ergo = 90, recoilV = 0, recoilH = 0, reload = 0, reloadEmpty = 0, hipSpread = 0, aimSpread = 0, moveSpread = 0,
@@ -334,7 +361,7 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771, W21 = 0.1771, J21 = 0.1771, T215 = 0.1771, CRK357 = 0.1771, CRK9 = 0.1771, BZ12 = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771, W21 = 0.1771, J21 = 0.1771, T215 = 0.1771, CRK357 = 0.1771, CRK9 = 0.1771, BZ12 = 0.1771, D17 = 0.1771, AV9 = 0.1771, B19 = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

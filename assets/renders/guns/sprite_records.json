@@ -76,6 +76,41 @@
   "oy": 9.74,
   "w": 61
  },
+ "AV9_MAG20@long": {
+  "file": "AV9_MAG20@long",
+  "h": 45,
+  "ox": 10.04,
+  "oy": 4.64,
+  "w": 19
+ },
+ "AV9_MAG30@long": {
+  "file": "AV9_MAG30@long",
+  "h": 66,
+  "ox": 11.62,
+  "oy": 4.64,
+  "w": 20
+ },
+ "AV9_SMG@long": {
+  "file": "AV9_SMG@long",
+  "h": 66,
+  "ox": 109.36,
+  "oy": 21.01,
+  "w": 170
+ },
+ "B19_MAG@long": {
+  "file": "B19_MAG@long",
+  "h": 74,
+  "ox": 13.98,
+  "oy": 4.64,
+  "w": 23
+ },
+ "B19_SMG@long": {
+  "file": "B19_SMG@long",
+  "h": 57,
+  "ox": 167.44,
+  "oy": 13.97,
+  "w": 251
+ },
  "BRAKE_74@long": {
   "file": "BRAKE_74@long",
   "h": 13,
@@ -110,6 +145,20 @@
   "ox": 58.0,
   "oy": 18.13,
   "w": 89
+ },
+ "D17_MAG@pistol": {
+  "file": "D17_MAG@pistol",
+  "h": 56,
+  "ox": 10.51,
+  "oy": 5.36,
+  "w": 22
+ },
+ "D17_PISTOL@pistol": {
+  "file": "D17_PISTOL@pistol",
+  "h": 68,
+  "ox": 85.33,
+  "oy": 13.2,
+  "w": 101
  },
  "FN57_MAG@pistol": {
   "file": "FN57_MAG@pistol",

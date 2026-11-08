@@ -106,6 +106,9 @@ W.SLOTS = {
 	-- the J-21's top rail and the T-215's (economy-1a, tenth slice; EFT's VPO-215 takes a separate scope mount)
 	J21_SMG = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	T215_BOLT = { scope = { fit = "pica", cats = RAIL_SIGHT } },
+	-- the AV-9's top rail and the B-19's side dovetail, which takes the KS-7's side mount (economy-1a, twelfth slice)
+	AV9_SMG = { scope = { fit = "pica", cats = RAIL_SIGHT } },
+	B19_SMG = { mount = { fit = "dovetail" } },
 	-- Makar PM (economy-1a, third slice): EFT's PM has a slide, a magazine and grip panels; ours are on the frame
 	PM_PISTOL = { slide = { fit = "pm_slide", req = true } },
 	-- mounts

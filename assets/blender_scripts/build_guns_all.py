@@ -11,11 +11,11 @@ budget and can be repeated until it reports nothing left).
 import sys, importlib, os, json, time
 import zr_items, zr_item_reg
 
-GUN_MODULES = ("guns_mods", "guns_r17", "guns_kst", "guns_ksl", "guns_spr", "guns_har", "guns_tun", "guns_p9", "guns_gl6", "guns_dmr", "guns_nato", "guns_vss", "guns_pdw", "guns_45", "guns_tt", "guns_21", "guns_rev")
+GUN_MODULES = ("guns_mods", "guns_r17", "guns_kst", "guns_ksl", "guns_spr", "guns_har", "guns_tun", "guns_p9", "guns_gl6", "guns_dmr", "guns_nato", "guns_vss", "guns_pdw", "guns_45", "guns_tt", "guns_21", "guns_rev", "guns_19")
 ITEM_MODULES = ("build_items_a", "build_items_b", "build_items_c")
 BATCHES = {
     "ZR_GunsAR": "r17", "ZR_GunsAK": "kst", "ZR_GunsSMG": "spr", "ZR_GunsSG": "har", "ZR_GunsBolt": "tun",
-    "ZR_GunsPistol": "p9", "ZR_GunsMods": None, "ZR_GunsLMG": "ksl", "ZR_GunsGL": "gl6", "ZR_GunsDMR": "dmr", "ZR_GunsNATO": "nato", "ZR_GunsVSS": "vss", "ZR_GunsPDW": "pdw", "ZR_Guns45": "p45", "ZR_GunsTT": "tt", "ZR_Guns21": "g21", "ZR_GunsRev": "rev",
+    "ZR_GunsPistol": "p9", "ZR_GunsMods": None, "ZR_GunsLMG": "ksl", "ZR_GunsGL": "gl6", "ZR_GunsDMR": "dmr", "ZR_GunsNATO": "nato", "ZR_GunsVSS": "vss", "ZR_GunsPDW": "pdw", "ZR_Guns45": "p45", "ZR_GunsTT": "tt", "ZR_Guns21": "g21", "ZR_GunsRev": "rev", "ZR_Guns19": "g19",
 }
 STATE = {"icons": set(), "sprites": {}, "exported": {}}
 REC = os.path.join(os.path.expanduser("~"), "Documents", "EscapeFromBloxov", "assets", "renders", "guns", "sprite_records.json")

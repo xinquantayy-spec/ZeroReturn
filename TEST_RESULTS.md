@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## More 9x19 guns: Dunlin D-17, Avocet AV-9 and Bunting B-19 (decision economy-1a, twelfth slice; 2026-11-08, about 22:30 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_19.py added a new batch, ZR_Guns19 (7 parts, 4,332 triangles), uploaded as 140028041034196. Sprites needed a second run for their last 5 (193; image 110556655902440); icon sheet 6 packed again (image 110680538116578). |
+| In a raid (Quay 7 by day, Studio) | With PST magazines put into each gun: the B-19 fired 6 (30 to 24), the AV-9 6 (20 to 14) and the D-17 3 (17 to 14); the HUD named the D-17 and its fire mode. |
+| Tests | 16 suites, 1,192 checks, all passed; RecoilTests check the three guns, LogicTests count 29 mastering groups. |
+| Not checked | Reloads from the rig with these magazines, sights on the AV-9's rail and the B-19's dovetail, AI with them, a phone. |
+
 ## The revolvers: Crake C-357, Crake C-9 and Bustard B-12 (decision economy-1a, eleventh slice; 2026-11-08, about 22:10 SGT)
 
 | Test | Result |
