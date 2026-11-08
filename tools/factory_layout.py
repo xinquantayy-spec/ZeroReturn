@@ -864,6 +864,71 @@ mask_edges(s2_bridge, LV["gallery"], keep=lambda x, z: not inmask(arrive, x, z))
 mask_edges(s2_dock, LV["gallery"], keep=lambda x, z: not inmask(arrive, x, z) and not inmask(dilate(s2_office, 0.3), x, z))
 mask_edges(pit_m & G_out, 0.0, keep=lambda x, z: not inmask(arrive, x, z))
 
+
+# the switchback towers (walk test 2026-11-09: holding W up a hall tower's first flight carried the player across its
+# half landing and off the far edge): each flight's outer side gets a steel side panel from its foot to a rail's height
+# over its top step, each landing a rail on its open edges (a storey landing's end stays open where a floor lies
+# beyond it); a side against a wall gets nothing
+def walled(x, z, y):
+    """a wall stands at (x, z) metres between 1 and 3 studs over height y"""
+    xs, zs = x * S, z * S
+    return any(w[0] <= xs <= w[1] and w[2] <= zs <= w[3] and w[4] < y + 3 and w[5] > y + 1 for w in walls)
+
+
+def level_name(y):
+    return min((("basement", LV["basement"]), ("ground", 0.0), ("ground", LV["west"]), ("second", LV["gallery"]), ("second", LV["second"]),
+                ("third", LV["third"])), key=lambda t: abs(t[1] - y))[0]
+
+
+n_panels, n_lrails = 0, 0
+for tid, (bx0, bx1, bz0, bz1), ys in tower_boxes:
+    tfl = [f for f in flights if f[8] == tid]
+    if not tfl:
+        continue
+    ax = tfl[0][6][1]
+    for f in tfl:
+        fx0, fx1, fz0, fz1 = f[0] / S, f[1] / S, f[2] / S, f[3] / S
+        y0, y1 = f[4] - 0.2, f[4] + f[5] + 3.5
+        if ax == "x":
+            lo = abs(fz0 - bz0) < abs(fz1 - bz1)
+            zc, oz = (fz0, -1) if lo else (fz1, 1)
+            if not walled((fx0 + fx1) / 2, zc + oz * 0.3, f[4] + f[5] / 2):
+                za, zb = (zc - 0.25, zc) if lo else (zc, zc + 0.25)
+                walls.append([r2(fx0 * S), r2(fx1 * S), r2(za * S), r2(zb * S), r2(y0), r2(y1), "beam"])
+                n_panels += 1
+        else:
+            lo = abs(fx0 - bx0) < abs(fx1 - bx1)
+            xc, ox = (fx0, -1) if lo else (fx1, 1)
+            if not walled(xc + ox * 0.3, (fz0 + fz1) / 2, f[4] + f[5] / 2):
+                xa, xb = (xc - 0.25, xc) if lo else (xc, xc + 0.25)
+                walls.append([r2(xa * S), r2(xb * S), r2(fz0 * S), r2(fz1 * S), r2(y0), r2(y1), "beam"])
+                n_panels += 1
+    for l in landings:
+        lx0, lx1, lz0, lz1, ly_ = l[0] / S, l[1] / S, l[2] / S, l[3] / S, l[4]
+        if lx0 < bx0 - 0.05 or lx1 > bx1 + 0.05 or lz0 < bz0 - 0.05 or lz1 > bz1 + 0.05:
+            continue
+        storey = any(abs(ly_ - yy) < 0.1 for yy in ys)
+        if ax == "x":
+            end = bx0 if abs(lx0 - bx0) < 0.05 else bx1
+            sgn = -1 if end == bx0 else 1
+            edges = [((lx0, bz0), (lx1, bz0), (0, -1)), ((lx0, bz1), (lx1, bz1), (0, 1))]
+            beyond = level_at(level_name(ly_), end + sgn * 0.8, (bz0 + bz1) / 2)
+            if not storey or beyond is None or abs(beyond - ly_) > 1.0:
+                edges.append(((end, bz0), (end, bz1), (sgn, 0)))
+        else:
+            end = bz0 if abs(lz0 - bz0) < 0.05 else bz1
+            sgn = -1 if end == bz0 else 1
+            edges = [((bx0, lz0), (bx0, lz1), (-1, 0)), ((bx1, lz0), (bx1, lz1), (1, 0))]
+            beyond = level_at(level_name(ly_), (bx0 + bx1) / 2, end + sgn * 0.8)
+            if not storey or beyond is None or abs(beyond - ly_) > 1.0:
+                edges.append(((bx0, end), (bx1, end), (0, sgn)))
+        for (xa, za), (xb, zb), (ox, oz) in edges:
+            if walled((xa + xb) / 2 + ox * 0.3, (za + zb) / 2 + oz * 0.3, ly_):
+                continue
+            rails.append([r2(xa * S), r2(za * S), r2(xb * S), r2(zb * S), r2(ly_)])
+            n_lrails += 1
+print(f"  switchback towers: {n_panels} side panels, {n_lrails} landing rails")
+
 # ── steps where the floor changes level (the raised west part, the sump) ────────────────────────────────────
 steps = []  # x0, x1, z0, z1, yLow, rise, dir
 
@@ -1375,8 +1440,10 @@ def place(tag, floor, area, ylevel, kinds, spacing=4.0):
     area = area & reach_floor(LEVEL_FLOOR[level], yr_)
     # passages are measured between everything standing on this storey: its walls and wall lines too (a box stood
     # in the doorway of the room north of the office's north stair, on the second floor)
-    stands_ = STANDS[level] | dilate(_OPEN_CACHE[round(yr_, 1)][0], 0.2)
-    pts = spots_in(floor, area, len(want), spacing=spacing, avoid=placed_near(yref) | pass_keep(level), stands=stands_,
+    wallm_ = _OPEN_CACHE[round(yr_, 1)][0]
+    stands_ = STANDS[level] | dilate(wallm_, 0.2)
+    # and a box keeps clear of every wall standing on its storey (two stood into the second floor's wall lines)
+    pts = spots_in(floor, area, len(want), spacing=spacing, avoid=placed_near(yref) | pass_keep(level) | dilate(wallm_, 0.7), stands=stands_,
                    keep={"third": KEEP_THIRD, "second": KEEP_SECOND}.get(level))
     for (x, z, ang), k in zip(pts, want):
         y = ylevel(x, z) if callable(ylevel) else ylevel

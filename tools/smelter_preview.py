@@ -6,14 +6,18 @@
   draw <record.json> [out]    draw the record per floor over the reference outlines and run MapTests-like checks with
                               axis-aligned boxes (default out: docs/maps/reference/smelter_build_preview.png); exits 1
                               when a check fails
-  all  [out]                  run + draw (needs lupa, numpy and matplotlib in the same Python)
+  paths <record.json> [out]   walk the build offline (voxels at 0.5 studs, two agents): every spawn reaches every exit it
+                              lists, the scav exits and the transit, every floor of the office and every AI point (strict
+                              agent, radius 1.5), every task place, loot box and loose spot (soft agent, radius 1); exits 1
+                              when anything is cut off; out: a picture of the pieces per storey
+  all  [out]                  run + draw + paths (needs lupa, numpy, scipy and matplotlib in the same Python)
   ref  [out]                  the reference alone, from factory_layout.json (default
                               docs/maps/reference/factory_layout_preview.png)
 
 NOT Roblox and NOT Studio: no physics, no raycasts, no lighting, no streaming, no frame rate. The Luau -> Lua
 conversion only handles what the Smelter modules use (type annotations, casts, compound assignment, generalized
 for-in on one line). Run from anywhere with `python3 -I tools/smelter_preview.py ...`; `run` needs a Python with
-lupa (pip install lupa in a venv), `draw` and `ref` need numpy and matplotlib.
+lupa (pip install lupa in a venv), `draw` and `ref` need numpy and matplotlib, `paths` numpy and scipy.
 """
 import json, math, os, re, sys, tempfile
 
@@ -447,7 +451,10 @@ def run(root, outp):
         'Kit': 'return KitStub',
         'AssetMeta': 'return {}',
         'Wear': 'return { DEC = {} }',
-        'Items': 'return { defs = {} }',
+        # the two Smelter items main has (the crawl exit and the store's card lock get built)
+        'Items': 'return { defs = { NOTE_SMELT_CRAWL = { kind = "key" }, KEY_SMELT_STORE = { kind = "key" } } }',
+        # no Kit5 batch offline: MapKit's H.k5Flight / H.k5Rail fall back to the part-built steps and rails
+        'KitMeta': 'return { props = {} }',
     }
     cache = {}
 
@@ -751,6 +758,249 @@ def draw(recp, refp, out):
     return problems
 
 
+# ---- paths: an offline walk of the build (Studio's exitcheck agent, a little stricter) ----
+# Every colliding part is voxelised at 0.5 studs; a cell is standable where its column has a floor under it, the head
+# room of the agent over it, and nothing taller than `body` studs over that floor within the agent's radius; standable
+# cells join their eight neighbours a stud up or down (steps and stairs), so the storeys join wherever a flight, a ramp
+# or a landing really meets them. Two agents walk: STRICT (radius 1.5, 6.5 tall; Roblox's pathfinding agent in
+# exitcheck is radius 1, 5.6 tall, and failed on gaps this one also fails on) for the spawns, exits, office floors and
+# AI points, SOFT (radius 1, 6 tall) for loot and task places (a player is narrower than the agent).
+WALK_RES = 0.5
+WALK_BOX = (-224.0, 224.0, -242.0, 242.0, -16.0, 50.0)  # map-local studs: x, z, y ranges
+WALK_STEP = 1.0  # studs up or down between neighbouring cells
+AGENTS = {"strict": (1.5, 6.5, 1.6), "soft": (1.0, 6.0, 1.0)}  # radius, head room, body from (studs)
+
+
+def _walk_dims():
+    x0, x1, z0, z1, y0, y1 = WALK_BOX
+    return int((x1 - x0) / WALK_RES), int((z1 - z0) / WALK_RES), int((y1 - y0) / WALK_RES)
+
+
+def _span(lo, hi, o, n):
+    return max(0, int(math.ceil((lo - o) / WALK_RES - 0.5))), min(n - 1, int(math.floor((hi - o) / WALK_RES - 0.5)))
+
+
+def voxelise(parts, ox, oz):
+    """The colliding parts (thin ones at least a cell thick) as a voxel grid [y, z, x]."""
+    import numpy as np
+    X0, X1, Z0, Z1, Y0, Y1 = WALK_BOX
+    NX, NZ, NY = _walk_dims()
+    O = np.zeros((NY, NZ, NX), bool)
+    for p in parts:
+        if not p['collide']:
+            continue
+        cx, cy, cz = p['cf']['p']
+        cx -= ox
+        cz -= oz
+        R = p['cf']['r']
+        sx, sy, sz = p['size']
+        h = [max(sx / 2, 0.26), max(sy / 2, 0.26), max(sz / 2, 0.26)]
+        if 'Cylinder' in p['shape'] and abs(R[1][0]) > 0.99:  # an upright cylinder (its axis is the part's x)
+            rad = max(sy, sz) / 2
+            k0, k1 = _span(cy - h[0], cy + h[0], Y0, NY)
+            i0, i1 = _span(cx - rad, cx + rad, X0, NX)
+            j0, j1 = _span(cz - rad, cz + rad, Z0, NZ)
+            if k0 > k1 or i0 > i1 or j0 > j1:
+                continue
+            xs = X0 + (np.arange(i0, i1 + 1) + 0.5) * WALK_RES
+            zs = Z0 + (np.arange(j0, j1 + 1) + 0.5) * WALK_RES
+            O[k0:k1 + 1, j0:j1 + 1, i0:i1 + 1] |= ((xs[None, :] - cx) ** 2 + (zs[:, None] - cz) ** 2 <= rad * rad)[None]
+        elif abs(R[1][1]) > 0.999999:  # turned about y only
+            rx, rz, bx, bz = R[0][0], R[2][0], R[0][2], R[2][2]
+            ex, ez = abs(rx) * h[0] + abs(bx) * h[2], abs(rz) * h[0] + abs(bz) * h[2]
+            k0, k1 = _span(cy - h[1], cy + h[1], Y0, NY)
+            i0, i1 = _span(cx - ex, cx + ex, X0, NX)
+            j0, j1 = _span(cz - ez, cz + ez, Z0, NZ)
+            if k0 > k1 or i0 > i1 or j0 > j1:
+                continue
+            if abs(abs(rx) - 1) < 1e-6 or abs(abs(rz) - 1) < 1e-6:
+                O[k0:k1 + 1, j0:j1 + 1, i0:i1 + 1] = True
+            else:
+                xs = X0 + (np.arange(i0, i1 + 1) + 0.5) * WALK_RES - cx
+                zs = Z0 + (np.arange(j0, j1 + 1) + 0.5) * WALK_RES - cz
+                u = xs[None, :] * rx + zs[:, None] * rz
+                w = xs[None, :] * bx + zs[:, None] * bz
+                O[k0:k1 + 1, j0:j1 + 1, i0:i1 + 1] |= ((np.abs(u) <= h[0]) & (np.abs(w) <= h[2]))[None]
+        else:  # any other frame: every voxel centre in the bounds tested against the box
+            e = [sum(abs(R[i][j]) * h[j] for j in range(3)) for i in range(3)]
+            i0, i1 = _span(cx - e[0], cx + e[0], X0, NX)
+            k0, k1 = _span(cy - e[1], cy + e[1], Y0, NY)
+            j0, j1 = _span(cz - e[2], cz + e[2], Z0, NZ)
+            if k0 > k1 or i0 > i1 or j0 > j1:
+                continue
+            Yg, Zg, Xg = np.meshgrid(Y0 + (np.arange(k0, k1 + 1) + 0.5) * WALK_RES - cy, Z0 + (np.arange(j0, j1 + 1) + 0.5) * WALK_RES - cz,
+                                     X0 + (np.arange(i0, i1 + 1) + 0.5) * WALK_RES - cx, indexing='ij')
+            m = np.ones(Xg.shape, bool)
+            for j in range(3):
+                m &= np.abs(Xg * R[0][j] + Yg * R[1][j] + Zg * R[2][j]) <= h[j]
+            O[k0:k1 + 1, j0:j1 + 1, i0:i1 + 1] |= m
+    return O
+
+
+def standable(O, radius, clear, body_from):
+    """The cells (layer, z, x) an agent stands on: a floor under, `clear` studs of room over, nothing from `body_from`
+    studs up within `radius`."""
+    import numpy as np
+    from scipy import ndimage
+    NX, NZ, NY = _walk_dims()
+    nc, nb = int(round(clear / WALK_RES)), int(round(body_from / WALK_RES))
+    rr = radius / WALK_RES
+    d = int(math.floor(rr))
+    yy, xx = np.mgrid[-d:d + 1, -d:d + 1]
+    disk = xx * xx + yy * yy <= rr * rr + 1e-9
+    Ls, Zs, Xs = [], [], []
+    for L in range(1, NY - nc):
+        cand = O[L - 1] & ~O[L]
+        if not cand.any():
+            continue
+        cand &= ~O[L:L + nc].any(axis=0)
+        if not cand.any():
+            continue
+        cand &= ~ndimage.binary_dilation(O[L + nb:L + nc].any(axis=0), structure=disk)
+        z, x = np.nonzero(cand)
+        Ls.append(np.full(z.shape, L, np.int32))
+        Zs.append(z.astype(np.int32))
+        Xs.append(x.astype(np.int32))
+    return np.concatenate(Ls), np.concatenate(Zs), np.concatenate(Xs)
+
+
+def walk_pieces(L, Z, X):
+    """The connected pieces of the standable cells (eight neighbours, a stud up or down)."""
+    import numpy as np
+    from scipy import sparse
+    from scipy.sparse.csgraph import connected_components
+    NX, NZ, NY = _walk_dims()
+    ns = int(round(WALK_STEP / WALK_RES))
+    ids = (L.astype(np.int64) * NZ + Z) * NX + X
+    order = np.argsort(ids)
+    sid = ids[order]
+    src, dst = [], []
+    for dz, dx in ((0, 1), (1, -1), (1, 0), (1, 1)):
+        okx = (X + dx >= 0) & (X + dx < NX) & (Z + dz < NZ)
+        for dl in range(-ns, ns + 1):
+            nbr = ((L + dl).astype(np.int64) * NZ + (Z + dz)) * NX + (X + dx)
+            idx = np.searchsorted(sid, nbr)
+            idx[idx >= len(sid)] = 0
+            hit = okx & (L + dl >= 0) & (L + dl < NY) & (sid[idx] == nbr)
+            src.append(np.nonzero(hit)[0])
+            dst.append(order[idx[hit]])
+    src, dst = np.concatenate(src), np.concatenate(dst)
+    g = sparse.coo_matrix((np.ones(len(src), np.int8), (src, dst)), shape=(len(sid), len(sid)))
+    return connected_components(g, directed=False)[1]
+
+
+# office floor points (map-local studs: x, floor y, z): the ground floor, the second, the third floor's corridor and
+# its three rooms
+OFFICE_POINTS = {"office ground floor": (-120, 3.06, -40), "office second floor": (-120, 13.97, -40), "office third floor": (-115, 25.41, -45),
+                 "shift office": (-118, 25.41, -35), "manager's office": (-118, 25.41, -78), "records room": (-118, 25.41, -60)}
+
+
+def paths(recp, out=None):
+    """Walk the build; returns the problems (an empty list when every check passes)."""
+    import numpy as np
+    rec = json.load(open(recp))
+    b = rec['bounds']
+    ox, oz = (b['x0'] + b['x1']) / 2, (b['z0'] + b['z1']) / 2
+    X0, X1, Z0, Z1, Y0, Y1 = WALK_BOX
+    O = voxelise(rec['parts'], ox, oz)
+    problems, keep = [], {}
+    for agent, (radius, clear, body) in AGENTS.items():
+        L, Z, X = standable(O, radius, clear, body)
+        lab = walk_pieces(L, Z, X)
+        nx, nz, ny = X0 + (X + 0.5) * WALK_RES, Z0 + (Z + 0.5) * WALK_RES, Y0 + L * WALK_RES
+
+        def near(x, y, z, rxy, ylo, yhi):
+            m = (np.abs(nx - x) <= rxy) & (np.abs(nz - z) <= rxy) & (ny >= y + ylo) & (ny <= y + yhi)
+            return np.nonzero(m)[0]
+
+        def piece_at(x, y, z, rxy, ylo, yhi):
+            idx = near(x, y, z, rxy, ylo, yhi)
+            if not len(idx):
+                return -1
+            return int(lab[idx[np.argmin((nx[idx] - x) ** 2 + (nz[idx] - z) ** 2)]])
+
+        sp = [piece_at(s['cf']['p'][0] - ox, s['cf']['p'][1], s['cf']['p'][2] - oz, 1.5, -6, 1) for s in rec['spawns']]
+        main_ = max(set(sp), key=sp.count) if sp else -1
+        bad = []
+        exits = {e['id']: e for e in rec['extracts'] + rec.get('transits', [])}
+        epiece = {k: piece_at(e['pos'][0] - ox, e['pos'][1], e['pos'][2] - oz, 3.0, -3, 4) for k, e in exits.items()}
+        if agent == "strict":
+            for s, p in zip(rec['spawns'], sp):
+                miss = sorted(k for k in set(s['extracts']) | {k for k in exits if k.startswith('TR_')} | {k for k, e in exits.items()
+                              if e.get('rule', {}).get('kind') in ('scav', 'key')} if k in epiece and epiece[k] != p)
+                if p < 0:
+                    bad.append('spawn %s %s has no room to stand' % (s['id'], s['name']))
+                elif miss:
+                    bad.append('spawn %s %s reaches none of %s' % (s['id'], s['name'], ', '.join(miss)))
+            for k, p in epiece.items():
+                if p != main_:
+                    bad.append('exit %s %s: its centre is %s' % (k, exits[k]['name'], 'not standable' if p < 0 else 'cut off'))
+            for nm, (x, y, z) in OFFICE_POINTS.items():
+                if piece_at(x, y, z, 4.0, -1, 2) != main_:
+                    bad.append(nm + ' cut off')
+            pts = [('scav zone %d' % i, p) for i, p in enumerate(rec['scavZones'])]
+            pts += [('route %s point %d' % (rid, i), p) for rid, r in rec['patrols'].items() for i, p in enumerate(r)]
+            for bo in rec['bosses']:
+                for zn in bo['zones']:
+                    pts.append(('%s at %s' % (bo['label'], zn['name']), zn['home']))
+                    pts += [('%s crew at %s' % (bo['label'], zn['name']), c) for c in zn['crew']]
+            for nm, p in pts:
+                if piece_at(p[0] - ox, p[1], p[2] - oz, 2.5, -3, 2) != main_:
+                    bad.append(nm + ' cut off')
+        else:
+            for k, z_ in rec['visitZones'].items():
+                x, y, z = z_['pos']
+                if main_ not in set(lab[near(x - ox, y, z - oz, z_['r'] * 0.8, -4, 1.5)].tolist()):
+                    bad.append('task place %s out of reach' % k)
+            for c in rec['containers']:
+                x, y, z = c['cf']['p']
+                if main_ not in set(lab[near(x - ox, y, z - oz, 4.5, -2, 2)].tolist()):
+                    bad.append('loot box %s (%s) out of reach' % (c['id'], c['label']))
+            for l in rec['loose']:
+                x, y, z = l['pos']
+                if main_ not in set(lab[near(x - ox, y, z - oz, 3.5, -3, 1.5)].tolist()):
+                    bad.append('loose spot at (%.0f, %.0f, %.0f) out of reach' % (x - ox, y, z - oz))
+        print('%s agent (radius %.1f, %.1f tall): %d cells standable, %d problems' % (agent, radius, clear, len(L), len(bad)))
+        for q in bad:
+            print('  ', q)
+        problems += ['%s: %s' % (agent, q) for q in bad]
+        keep[agent] = (nx, ny, nz, lab, main_)
+    if out:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        nx, ny, nz, lab, main_ = keep['strict']
+        NX, NZ, NY = _walk_dims()
+        bands = [('tunnels and the sump', -99, -4), ('halls, annexes, yards (-4..6)', -4, 6), ('gallery, dock, second floor (6..20)', 6, 20),
+                 ('third floor and catwalks (20..32)', 20, 32)]
+        fig, axs = plt.subplots(2, 2, figsize=(22, 24), dpi=70)
+        cols = np.array([plt.get_cmap('tab20')(c % 20)[:3] for c in range(20)])
+        for ax, (title, ylo, yhi) in zip(axs.flat, bands):
+            m = (ny >= ylo) & (ny < yhi)
+            img = np.full((NZ, NX, 3), 0.1)
+            rgb = np.where((lab[m] == main_)[:, None], np.array([0.72, 0.75, 0.72]), cols[lab[m] % 20])
+            img[((nz[m] - Z0) / WALK_RES).astype(int), ((nx[m] - X0) / WALK_RES).astype(int)] = rgb
+            ax.imshow(img, extent=(X0, X1, Z1, Z0), interpolation='nearest')
+            for s in rec['spawns']:
+                x, y, z = s['cf']['p']
+                if ylo <= y - 3 < yhi:
+                    ax.plot(x - ox, z - oz, 'o', color='white', ms=8, mec='black')
+                    ax.text(x - ox + 3, z - oz, s['name'], color='white', fontsize=7)
+            for k, e in {e['id']: e for e in rec['extracts'] + rec.get('transits', [])}.items():
+                x, y, z = e['pos']
+                if ylo <= y < yhi:
+                    ax.plot(x - ox, z - oz, 's', color='lime', ms=9, mec='black')
+                    ax.text(x - ox + 3, z - oz + 6, k, color='lime', fontsize=8)
+            ax.set_title(title)
+            ax.set_xlim(-215, 215)
+            ax.set_ylim(235, -235)
+        fig.suptitle('SMELTER offline walk (strict agent): grey = the piece the spawns stand in, colours = cut-off pieces '
+                     '(roof tops, machine tops and the ground outside are expected to be apart)', fontsize=11)
+        fig.savefig(out, bbox_inches='tight')
+        print('wrote', out)
+    return problems
+
+
 # ---- ref: the reference alone ----
 def ref_draw(refp, out):
     """The reference JSON alone (no SVG or infographic pixels), four levels, north up, metres."""
@@ -855,12 +1105,15 @@ def main(argv):
         return 0
     if cmd == 'draw' and len(argv) in (2, 3):
         return 1 if draw(argv[1], refp, argv[2] if len(argv) == 3 else build_png) else 0
+    if cmd == 'paths' and len(argv) in (2, 3):
+        return 1 if paths(argv[1], argv[2] if len(argv) == 3 else None) else 0
     if cmd == 'all' and len(argv) in (1, 2):
         fd, tmp = tempfile.mkstemp(suffix='.json')
         os.close(fd)
         try:
             run(root, tmp)
-            return 1 if draw(tmp, refp, argv[1] if len(argv) == 2 else build_png) else 0
+            bad = draw(tmp, refp, argv[1] if len(argv) == 2 else build_png)
+            return 1 if paths(tmp) or bad else 0
         finally:
             os.remove(tmp)
     if cmd == 'ref' and len(argv) in (1, 2):
