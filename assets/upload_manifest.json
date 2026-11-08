@@ -36,10 +36,10 @@
   "uploaded": "2026-10-28 22:17:01"
  },
  "ZR_CharGear": {
-  "assetId": "111486052124640",
+  "assetId": "125447493326154",
   "file": "assets\\exports\\ZR_CharGear.fbx",
-  "sha1": "8d40be25040a9d1ef87b7beffd7184a7e2e96b0d",
-  "uploaded": "2026-10-28 23:00:46"
+  "sha1": "df1a0e7c11769d6cdef6adec716a3cae65960ae1",
+  "uploaded": "2026-11-09 02:48:35"
  },
  "ZR_DEC_BaseDamp": {
   "assetId": "126035505407997",
@@ -208,6 +208,102 @@
   "file": "assets\\textures\\out\\foliage\\ZR_Foliage_Color.png",
   "sha1": "180d1aaf7c478cf6887c6b54f543b2944e1105b6",
   "uploaded": "2026-11-01 19:38:57"
+ },
+ "ZR_GR_FP_col": {
+  "assetId": "128216955954747",
+  "file": "assets\\textures\\gear\\ZR_GR_FP_col.png",
+  "sha1": "204ba35ae0a15d7040a4bc12e17e7e2416556dec",
+  "uploaded": "2026-11-09 02:48:16"
+ },
+ "ZR_GR_FP_mtl": {
+  "assetId": "123044916478457",
+  "file": "assets\\textures\\gear\\ZR_GR_FP_mtl.png",
+  "sha1": "97526671c5da6b3d92802d45b69008120c3f643e",
+  "uploaded": "2026-11-09 02:48:27"
+ },
+ "ZR_GR_FP_nrm": {
+  "assetId": "78417074688910",
+  "file": "assets\\textures\\gear\\ZR_GR_FP_nrm.png",
+  "sha1": "664a9e4a19e3789f05c4c441dd8f562df03dafd5",
+  "uploaded": "2026-11-09 02:48:20"
+ },
+ "ZR_GR_FP_rgh": {
+  "assetId": "120233563659890",
+  "file": "assets\\textures\\gear\\ZR_GR_FP_rgh.png",
+  "sha1": "466f496cf8ca23419191b4449be43f1c5512e455",
+  "uploaded": "2026-11-09 02:48:23"
+ },
+ "ZR_GR_Head_col": {
+  "assetId": "90543929924542",
+  "file": "assets\\textures\\gear\\ZR_GR_Head_col.png",
+  "sha1": "a7bb18979d24289ae2576ceb4dc474cd45d3867a",
+  "uploaded": "2026-11-09 02:47:29"
+ },
+ "ZR_GR_Head_mtl": {
+  "assetId": "70980737015241",
+  "file": "assets\\textures\\gear\\ZR_GR_Head_mtl.png",
+  "sha1": "a703976c2d01fa9d83281a7af37ef0b812dbb630",
+  "uploaded": "2026-11-09 02:47:38"
+ },
+ "ZR_GR_Head_nrm": {
+  "assetId": "116159115165909",
+  "file": "assets\\textures\\gear\\ZR_GR_Head_nrm.png",
+  "sha1": "785c904e05e2310da2c8ac14c71553f71dcbf991",
+  "uploaded": "2026-11-09 02:47:33"
+ },
+ "ZR_GR_Head_rgh": {
+  "assetId": "105338875863864",
+  "file": "assets\\textures\\gear\\ZR_GR_Head_rgh.png",
+  "sha1": "a0b481a5e2630396b95a3c975022463e83ec427e",
+  "uploaded": "2026-11-09 02:47:37"
+ },
+ "ZR_GR_Pack_col": {
+  "assetId": "125750215351671",
+  "file": "assets\\textures\\gear\\ZR_GR_Pack_col.png",
+  "sha1": "67b6435882e7fd608c9feac6d132fc47d8457e0f",
+  "uploaded": "2026-11-09 02:48:02"
+ },
+ "ZR_GR_Pack_mtl": {
+  "assetId": "96895865975982",
+  "file": "assets\\textures\\gear\\ZR_GR_Pack_mtl.png",
+  "sha1": "a703976c2d01fa9d83281a7af37ef0b812dbb630",
+  "uploaded": "2026-11-09 02:48:13"
+ },
+ "ZR_GR_Pack_nrm": {
+  "assetId": "86767482894449",
+  "file": "assets\\textures\\gear\\ZR_GR_Pack_nrm.png",
+  "sha1": "2afdb28e1a7f1bd0fe34509e5f219f0bac22ceb8",
+  "uploaded": "2026-11-09 02:48:06"
+ },
+ "ZR_GR_Pack_rgh": {
+  "assetId": "103568634072151",
+  "file": "assets\\textures\\gear\\ZR_GR_Pack_rgh.png",
+  "sha1": "da75c48468c5c90209e5abd25a72cf10385cb08f",
+  "uploaded": "2026-11-09 02:48:09"
+ },
+ "ZR_GR_Torso_col": {
+  "assetId": "129559249943524",
+  "file": "assets\\textures\\gear\\ZR_GR_Torso_col.png",
+  "sha1": "a0b5d6969709b120d4aa45a413fdafb1012a6dd8",
+  "uploaded": "2026-11-09 02:47:44"
+ },
+ "ZR_GR_Torso_mtl": {
+  "assetId": "134245651974896",
+  "file": "assets\\textures\\gear\\ZR_GR_Torso_mtl.png",
+  "sha1": "a703976c2d01fa9d83281a7af37ef0b812dbb630",
+  "uploaded": "2026-11-09 02:47:56"
+ },
+ "ZR_GR_Torso_nrm": {
+  "assetId": "103937858995995",
+  "file": "assets\\textures\\gear\\ZR_GR_Torso_nrm.png",
+  "sha1": "db05531b148c96d9b85ed657085ed90de9f22787",
+  "uploaded": "2026-11-09 02:47:50"
+ },
+ "ZR_GR_Torso_rgh": {
+  "assetId": "108864030406259",
+  "file": "assets\\textures\\gear\\ZR_GR_Torso_rgh.png",
+  "sha1": "8815d8cf6b56c0813880e2830c8820614f6cc63a",
+  "uploaded": "2026-11-09 02:47:54"
  },
  "ZR_GT_19_T1_col": {
   "assetId": "75593857395801",

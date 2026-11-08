@@ -63,6 +63,12 @@ local function buildPiece(char, e)
 	end
 	p.Name = "Gear"
 	p.Color = Color3.fromHex((fallback and e.fb) or e.tint) -- pieces with their own colours show their fb colour as a box
+	-- art-4b: a textured piece (its sheet's SurfaceAppearance, cloned in by Assets.dress) takes the item's tint through
+	-- the SurfaceAppearance, whose colour map stays neutral as the vertex colours did
+	local sa = p:FindFirstChildOfClass("SurfaceAppearance")
+	if sa then
+		sa.Color = p.Color
+	end
 	p.Material = Enum.Material[e.mat] or Enum.Material.SmoothPlastic
 	p.Anchored = false
 	p.CanCollide = false

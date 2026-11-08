@@ -8,6 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Worn gear textured (art-4b; 2026-11-09, 04:00 SGT)
+
+| Test | Result |
+|---|---|
+| Blender | zr_gtex.py built the 33 gear pieces and packed them into four sheets (head 9 pieces, torso 10, packs and overlays 12 at 1024 px; the first-person sleeve and cuff at 512). The first packing by area made 18 sheets and was dropped. Three bakes were looked at in a render of a carrier, a pack, a helmet and a rig under an olive tint: plain and smooth, then a bark-like pattern, then soft creases and grain (kept). The export's meta equals the old one: every piece's size and centre are unchanged. |
+| Upload | 16 maps and the batch uploaded; ZR_CharGear 125447493326154; GunTex 365 pieces on 52 sheets. |
+| In Studio | Showroom with an operator, a guard and a bodyguard: 9 of 10, 6 of 7 and 10 of 12 gear pieces wear a sheet (the rest come from other batches), each SurfaceAppearance's Color is the piece's tint, and the head and torso maps loaded. The pack sheet's colour map still failed on the first fetch a few minutes after upload. With the sheets removed on one dummy (client only), its gear looked as dark as the textured ones: the dark look comes from the gear's own tints in that light. |
+| Not changed | The first-person arms are the body's own segments, not the sleeve meshes, so the 512 px sleeve sheet is unused for now. |
+| Also | LookTests' L02 failed in one session: a cardboard 3.7 studs from a Smelter loot box, against 3.75. The detail plan now keeps clutter 0.4 studs further out than the check, because placements change between boots. After that: 18 suites, 1,295 checks, all passed. |
+| Not checked | The gear by eye up close in good light; the pack sheet once its colour map loads; a phone's memory with gear and gun sheets loaded. |
+
 ## The Smelter made walkable (art-1a follow-up; 2026-11-09, 03:25 SGT)
 
 | Test | Result |

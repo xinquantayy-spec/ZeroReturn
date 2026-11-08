@@ -174,7 +174,10 @@ local function ground(key, p, yaw, lod, col, fy0)
 	end
 	for _, a in avoid do
 		local d = a.pos - Vector3.new(p.X, fy, p.Z)
-		if math.abs(d.Y) < 4 and d.X * d.X + d.Z * d.Z < a.r * a.r then
+		-- 0.4 studs more than LookTests' L02 asks: the plan's order (and so a spot's jitter) changes between boots, and
+		-- a piece placed right at the edge failed the check once (a cardboard 3.7 studs from a Smelter box, 2026-11-09)
+		local r = a.r + 0.4
+		if math.abs(d.Y) < 4 and d.X * d.X + d.Z * d.Z < r * r then
 			return false
 		end
 	end

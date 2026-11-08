@@ -353,6 +353,10 @@ local function buildVm(it, d, g)
 		local p = mesh:Clone()
 		p.Size = size
 		p.Color = color
+		local sa = p:FindFirstChildOfClass("SurfaceAppearance")
+		if sa then
+			sa.Color = color -- art-4b: a textured sleeve takes its colour through its SurfaceAppearance
+		end
 		p.Material = CLOTH
 		p.Anchored = true
 		p.CanCollide = false

@@ -1,0 +1,48 @@
+{
+ "batch": "ZR_CharGear",
+ "px_per_mm": 0.21,
+ "sheets": {
+  "ZR_GR_FP": [
+   "ZR_FP_Sleeve",
+   "ZR_FP_Cuff"
+  ],
+  "ZR_GR_Head": [
+   "ZR_EQ_HelmetB",
+   "ZR_EQ_FacePlate",
+   "ZR_EQ_Headset",
+   "ZR_EQ_HeadsetNeck",
+   "ZR_EQ_BoomMic",
+   "ZR_EQ_Mask",
+   "ZR_EQ_Cap",
+   "ZR_EQ_Beanie",
+   "ZR_EQ_HardHat"
+  ],
+  "ZR_GR_Pack": [
+   "ZR_EQ_PackA",
+   "ZR_EQ_PackRaid",
+   "ZR_EQ_PackCanvas",
+   "ZR_EQ_PackSmall",
+   "ZR_EQ_PackStraps",
+   "ZR_OV_PaddedJacket",
+   "ZR_OV_FleeceCollar",
+   "ZR_OV_Hood",
+   "ZR_OV_KneePads",
+   "ZR_OV_BootCuffs",
+   "ZR_OV_Armband",
+   "ZR_OV_ShoulderMarker"
+  ],
+  "ZR_GR_Torso": [
+   "ZR_EQ_CarrierA",
+   "ZR_EQ_CarrierPouches",
+   "ZR_EQ_ArmorCollar",
+   "ZR_EQ_SoftVest",
+   "ZR_EQ_ChestRig",
+   "ZR_EQ_ChestRigBack",
+   "ZR_EQ_BodyCam",
+   "ZR_EQ_BeltRig",
+   "ZR_EQ_Holster",
+   "ZR_EQ_ArmGuard"
+  ]
+ },
+ "size": 1024
+}

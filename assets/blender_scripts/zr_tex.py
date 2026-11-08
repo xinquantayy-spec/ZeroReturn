@@ -407,7 +407,7 @@ def bake(batch, seconds=60.0, only=None):
                     break
                 if ps == "mask":
                     t1 = time.time()
-                    sh["mask_means"] = _geo_masks(sh)
+                    sh["mask_means"] = _geo_masks(sh, **sh.get("mask_kw", {}))   # a sheet may carry its own edge widths (gear)
                     st["times"]["%s/%s" % (sh["name"], ps)] = round(time.time() - t1, 1)
                     sh["done"].append(ps)
                     done.append("%s/%s" % (sh["name"], ps))
