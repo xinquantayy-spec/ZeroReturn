@@ -10,6 +10,7 @@ local Grid = require(Shared.Grid)
 local Config = require(Shared.Config)
 local WP = require(Shared.WeaponParts)
 local Equipment = require(Shared.Equipment)
+local Plates = require(Shared.Plates)
 
 local Drop = {}
 local defs = Items.defs
@@ -150,8 +151,9 @@ local function canEnter(src, g, it, dst, cid)
 end
 
 -- is there room for item g in container cid of dst: a stack tops up stacks of its kind first, then a free spot either
--- way round (Inv.autoPlace; double pockets take an item one cell wide)
-local function roomIn(src, g, it, dst, cid)
+-- way round (Inv.autoPlace; double pockets take an item one cell wide). `free`: an item whose cells count as empty (it
+-- will have moved away first)
+local function roomIn(src, g, it, dst, cid, free)
 	if not canEnter(src, g, it, dst, cid) then
 		return false
 	end
@@ -170,9 +172,12 @@ local function roomIn(src, g, it, dst, cid)
 		end
 	end
 	local others = pl
-	if src == dst and pl[g] then
+	if (src == dst and pl[g]) or (free and pl[free]) then
 		others = table.clone(pl)
 		others[g] = nil -- its own place does not count: it moves
+		if free then
+			others[free] = nil
+		end
 	end
 	local cw, ch = Drop.dims(dst, cid)
 	local iw, ih = sizeOf(it)
@@ -196,9 +201,62 @@ local function roomIn(src, g, it, dst, cid)
 	return Grid.findFree(cw, ch, others, sz, iw, ih) ~= nil
 end
 
--- dropped onto item tg of dst: merge into its stack, load a gun's magazine well, fit a part on a build, or go inside a
--- container, in the order Inv.move tries them; anything else is refused there (the cell is taken)
-local function combineOk(src, g, it, dst, tg)
+-- the grids a part or plate taken out goes to (Inv.move): the stash out of a raid, else the worn rig's grid, the
+-- pockets, the worn pack's grid and a body's main grid (Inv.loadOrder)
+local function outOrder(view, inRaid)
+	local gr, sl = view.grids or {}, view.slots or {}
+	if not inRaid and gr.stash then
+		return { "stash" }
+	end
+	local out = {}
+	if sl.rig and gr[sl.rig] then
+		table.insert(out, sl.rig)
+	end
+	if gr.pockets then
+		table.insert(out, "pockets")
+	end
+	if sl.back and gr[sl.back] then
+		table.insert(out, sl.back)
+	end
+	if gr.main then
+		table.insert(out, "main")
+	end
+	return out
+end
+
+-- a plate dropped on a vest or armoured rig lying in a grid (Inv.attachPlateAny): into the plate slot `slot`; a plate
+-- taken out of a worn vest is refused (take it off first), and a plate it replaces must find room where taken-out
+-- things go
+local function plateOk(src, g, dst, tg, slot, inRaid)
+	local k, a = locateIn(src, g)
+	if k == "slot" or k == "mag" then
+		return false
+	end
+	if k == "mod" then
+		for _, sg in src.slots or {} do
+			if sg == a then
+				return false -- TAKE_OFF_FIRST
+			end
+		end
+	end
+	local t = dst.items[tg]
+	local old = t and t.mods and t.mods[slot]
+	local o = old and old ~= g and dst.items[old]
+	if not o then
+		return true
+	end
+	for _, cid in outOrder(dst, inRaid) do
+		if roomIn(dst, old, o, dst, cid, src == dst and g or nil) then
+			return true
+		end
+	end
+	return false -- NO_SPACE
+end
+
+-- dropped onto item tg of dst: merge into its stack, load a gun's magazine well, fit a part on a build, put a plate in
+-- a vest, or go inside a container, in the order Inv.move tries them; anything else is refused there (the cell is
+-- taken)
+local function combineOk(src, g, it, dst, tg, inRaid)
 	local d = defs[it.id]
 	local t = dst.items[tg]
 	local td = t and defs[t.id]
@@ -213,6 +271,12 @@ local function combineOk(src, g, it, dst, tg)
 	end
 	if d.kind == "mod" and WP.SLOTS[t.id] then
 		return partFits(dst, tg, it.id)
+	end
+	if d.kind == "plate" and Plates.slotsOf(td) then
+		local slot = Plates.freeSlot(td, t.mods, d) or Plates.swapSlot(td, t.mods, d)
+		if slot then
+			return plateOk(src, g, dst, tg, slot, inRaid)
+		end
 	end
 	if td.grid then
 		return roomIn(src, g, it, dst, tg)
@@ -234,6 +298,9 @@ local function slotOk(g, it, dst, slot)
 		elseif d.kind == "mod" then
 			return partFits(dst, occ, it.id)
 		end
+	end
+	if od and d.kind == "plate" and Plates.slotsOf(od) then
+		return false, "TAKE_OFF_FIRST" -- a plate onto a worn vest: Tarkov 0.14 wants the vest taken off first
 	end
 	local accepts = Items.SLOTS[slot]
 	if not (accepts and accepts[d.kind]) or (occ and occ ~= g) then
@@ -272,8 +339,8 @@ end
 
 -- the plan for dropping item g of `src` at `tgt` in `dst`. tgt: { kind = "slot", slot } or { kind = "cell", cid, x, y,
 -- occupied? } (a tile under the cursor names its item); dd: the drag, { r, r0, grabX, grabY } (r0: its turn when the
--- drag began). Returns nil (no target) or { dest (the move request's), ok (expected to be taken), noop?, and the
--- cells it takes: slot | cid, x, y, w, h }
+-- drag began). Returns nil (no target) or { dest (the move request's), ok (expected to be taken), why? (the server's
+-- refusal, where the cue knows it), noop?, and the cells it takes: slot | cid, x, y, w, h }
 function Drop.plan(src, g, dst, tgt, dd, inRaid)
 	local it = src and src.items and src.items[g]
 	local d = it and defs[it.id]
@@ -282,7 +349,8 @@ function Drop.plan(src, g, dst, tgt, dd, inRaid)
 	end
 	local locked = inRaid == true and src.slots ~= nil and src.slots.secure == g -- the secure container stays on in a raid
 	if tgt.kind == "slot" then
-		return { slot = tgt.slot, dest = { slot = tgt.slot }, ok = not locked and slotOk(g, it, dst, tgt.slot) }
+		local okS, why = slotOk(g, it, dst, tgt.slot)
+		return { slot = tgt.slot, dest = { slot = tgt.slot }, ok = not locked and okS == true, why = why }
 	end
 	local cid = tgt.cid
 	local pl = dst.grids and dst.grids[cid]
@@ -312,7 +380,7 @@ function Drop.plan(src, g, dst, tgt, dd, inRaid)
 	if occ then
 		local w, h = footprint(occ, op)
 		return { cid = cid, x = op.x, y = op.y, w = w, h = h, dest = { c = cid, x = op.x, y = op.y, r = 0 },
-			ok = not locked and combineOk(src, g, it, dst, occ) }
+			ok = not locked and combineOk(src, g, it, dst, occ, inRaid) }
 	end
 	-- over free cells: the item lies with the cell it was grabbed by under the cursor, turned as it is now (R)
 	local gx, gy = dd.grabX or 0, dd.grabY or 0
@@ -326,7 +394,7 @@ function Drop.plan(src, g, dst, tgt, dd, inRaid)
 	local at, ap = itemAt(dst, pl, g, x, y)
 	if at then
 		local w, h = footprint(at, ap)
-		return { cid = cid, x = ap.x, y = ap.y, w = w, h = h, dest = dest, ok = not locked and combineOk(src, g, it, dst, at) }
+		return { cid = cid, x = ap.x, y = ap.y, w = w, h = h, dest = dest, ok = not locked and combineOk(src, g, it, dst, at, inRaid) }
 	end
 	local iw, ih = sizeOf(it)
 	local w, h = Grid.dims(iw, ih, r)

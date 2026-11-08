@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Plates in the drag cue (2026-11-08, 11:15 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | UiTests 32/32 (new: six plate drops checked against the server's own move on the same holder: a front plate onto an empty PC-4's tile, a western plate into its back slot, a side plate refused, a plate onto the worn vest red with TAKE_OFF_FIRST, a swap in the bunker that sends the old plate to the stash, the same swap in a raid with nowhere for the old plate refused); every other suite passing: 838 checks. |
+| Server change | A part or plate a drop replaces now goes to the stash out of a raid (as the modding menu already did), not only to the pockets, rig and pack. |
+| Not checked | The cue watched live while dragging (the logic is the one the tests check). |
+
 ## Relay 7: counters for all eight traders (2026-11-08, 11:00 SGT)
 
 | Test | Result |

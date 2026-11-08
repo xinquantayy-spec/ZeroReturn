@@ -470,7 +470,7 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 			if d.kind == "mag" and od.family and od.family == d.family then
 				return Inv.insertMag(h, g, occ)
 			elseif d.kind == "mod" then
-				return Inv.attachMod(h, occ, g, Inv.loadOrder(h), opts)
+				return Inv.attachMod(h, occ, g, (not (opts and opts.inRaid) and h.grids.stash) and { "stash" } or Inv.loadOrder(h), opts)
 			end
 		end
 		-- a plate onto a worn vest: Tarkov 0.14 wants the vest taken off first
@@ -506,13 +506,15 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 		if d.kind == "mag" and td.family and td.family == d.family and td.kind ~= "mag" then
 			return Inv.insertMag(h, g, target)
 		end
+		-- what a swap takes out goes where the modding menu sends it: the stash out of a raid, the carried grids in one
+		local outOrder = (not (opts and opts.inRaid) and h.grids.stash) and { "stash" } or Inv.loadOrder(h)
 		if d.kind == "mod" and WP.SLOTS[t.id] then
 			-- a part dropped on a gun or a part goes into a free slot that takes it (Tarkov)
-			return Inv.attachMod(h, target, g, Inv.loadOrder(h), opts)
+			return Inv.attachMod(h, target, g, outOrder, opts)
 		end
 		-- a plate dropped on a vest or armoured rig goes into a plate slot that takes it (a rig's grid otherwise)
 		if d.kind == "plate" and Plates.slotsOf(td) and (Plates.freeSlot(td, t.mods, d) or Plates.swapSlot(td, t.mods, d)) then
-			return Inv.attachPlateAny(h, target, g, Inv.loadOrder(h), opts)
+			return Inv.attachPlateAny(h, target, g, outOrder, opts)
 		end
 		if td.grid and target ~= g then
 			return Inv.autoPlace(h, g, { target })

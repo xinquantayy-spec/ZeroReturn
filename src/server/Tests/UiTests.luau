@@ -134,6 +134,26 @@ function T.run(_ctx)
 		local sec2, sec2It = Inv.newItem("SECURE_S", 1)
 		Inv.placeSlot(h2, sec2, sec2It, "secure")
 		agree("the worn secure container does not move in a raid", h2, sec2, h2, cell(1, 1, "pockets"), nil, false, true)
+		-- plates (gameplay-2a): a plate onto a vest's tile goes into a slot that takes it; onto the worn vest it is refused
+		-- (Tarkov 0.14: take it off first); a plate it replaces goes to the stash out of a raid, to the carried grids in one
+		local hp = Inv.newHolder("profile")
+		local vest = put(hp, "ARMOR_C4", 1, 1, 1) -- 3 x 3: a front and a back slot, both empty
+		local frontP = put(hp, "PLATE_PC4F", 1, 5, 1)
+		local westP = put(hp, "PLATE_CE4", 1, 8, 1) -- west: fits only the back slot
+		local sideP = put(hp, "PLATE_HP5S", 1, 1, 5)
+		local vest2 = put(hp, "ARMOR_C4", 1, 1, 8)
+		local inFront = put(hp, "PLATE_PC4F", 1, 5, 8)
+		Inv.attachPlate(hp, vest2, "front", inFront, { "stash" })
+		local wornVest, wornVestIt = Inv.newItem("ARMOR_C4", 1)
+		Inv.placeSlot(hp, wornVest, wornVestIt, "armor")
+		agree("a front plate onto a vest's tile goes into its front slot", hp, frontP, hp, cell(1, 1, "stash", vest), nil, true)
+		agree("a west plate onto the same vest goes into its back slot", hp, westP, hp, cell(2, 2, "stash", vest), nil, true)
+		agree("a side plate onto a vest with no side slots is refused", hp, sideP, hp, cell(1, 1, "stash", vest), nil, false)
+		local wornPlan = Drop.plan(hp, westP, hp, { kind = "slot", slot = "armor" }, flat)
+		check("fit cue: a plate onto the worn vest is red, take it off first", wornPlan ~= nil and wornPlan.ok == false and wornPlan.why == "TAKE_OFF_FIRST"
+			and select(2, Inv.move(copy(hp), westP, { slot = "armor" })) == "TAKE_OFF_FIRST")
+		agree("a plate replacing one in the bunker sends the old one to the stash", hp, frontP, hp, cell(1, 8, "stash", vest2), nil, true)
+		agree("a plate replacing one in a raid with nowhere for the old one is refused", hp, frontP, hp, cell(1, 8, "stash", vest2), nil, false, true)
 	end)
 	if not okDrop then
 		check("fit cue: the checks ran without an error (" .. tostring(errDrop) .. ")", false)
