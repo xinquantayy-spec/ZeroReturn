@@ -519,6 +519,74 @@ function C.lootPile(name, dist, scavDist)
 	return string.format("pile %s at %s, scav %s", c and c.id or "?", tostring(at), u and u.name or "none")
 end
 
+-- the map-first tasks' places (economy-6a): where each one stands, how far World moved it to free floor, and whether
+-- it is on a surface, clear of walls and furniture now (SpotFinder's rules). taskSpots("border") or every built map.
+function C.taskSpots(mapId)
+	local SF = require(script.Parent.SpotFinder)
+	local QD = require(game:GetService("ReplicatedStorage").ZR.QuestData)
+	local out = {}
+	for id, m in ctx.World.maps or {} do
+		if (mapId == nil or mapId == id) and m.visitZones and m.model then
+			local index = SF.kitIndex(m.model)
+			local names = {}
+			for name in m.visitZones do
+				if QD.NEW_ZONES and QD.NEW_ZONES[name] then
+					table.insert(names, name)
+				end
+			end
+			table.sort(names)
+			for _, name in names do
+				local z = m.visitZones[name]
+				local note = ""
+				if z.r <= 10 then
+					local rp = RaycastParams.new()
+					rp.FilterType = Enum.RaycastFilterType.Include
+					rp.FilterDescendantsInstances = { m.model, workspace.Terrain }
+					local hit = workspace:Raycast(z.pos + Vector3.new(0, 0.6, 0), Vector3.new(0, -2, 0), rp)
+					note = string.format(" floor %s clear %s", hit and string.format("%.2f", z.pos.Y - hit.Position.Y) or "NONE", tostring(hit and SF.clear(m.model, index, hit.Position)))
+				end
+				table.insert(out, string.format("%s %s (%.1f, %.1f, %.1f) r%d%s%s%s", id, name, z.pos.X, z.pos.Y, z.pos.Z, z.r, z.h and (" h" .. z.h) or "", z.moved and string.format(" moved %.1f", z.moved) or "", note))
+			end
+			local missing = {}
+			for name, nz in QD.NEW_ZONES or {} do
+				if nz.map == id and not m.visitZones[name] then
+					table.insert(missing, name)
+				end
+			end
+			if #missing > 0 then
+				table.insert(out, id .. " MISSING " .. table.concat(missing, ", "))
+			end
+		end
+	end
+	return table.concat(out, "\n")
+end
+
+-- take a task for a player whatever its requirements (Studio checks of the map-first tasks): taskSet("wurdo0", "V12")
+function C.taskSet(name, id)
+	local p = plr(name)
+	local prof = p and ctx.Profiles.get(p)
+	if not prof then
+		return "no profile"
+	end
+	prof.quests = prof.quests or {}
+	prof.quests[id] = { s = "active", p = {} }
+	ctx.Profiles.markDirty(p)
+	return "active " .. id
+end
+
+-- the task prompts (ZR_TaskSpots) standing now: owner, text and position
+function C.taskPrompts()
+	local out = {}
+	local f = workspace:FindFirstChild("ZR_TaskSpots")
+	for _, d in f and f:GetDescendants() or {} do
+		if d:IsA("ProximityPrompt") then
+			local at = d.Parent and d.Parent:IsA("BasePart") and d.Parent.Position or (d.Parent and d.Parent:IsA("Attachment") and d.Parent.WorldPosition)
+			table.insert(out, string.format("%s %s · %s at %s", tostring(d:GetAttribute("TaskFor")), d.ActionText, d.ObjectText, tostring(at)))
+		end
+	end
+	return table.concat(out, "\n")
+end
+
 function C.lootLog()
 	local out = {}
 	for _, e in ctx.AI.lootLog do

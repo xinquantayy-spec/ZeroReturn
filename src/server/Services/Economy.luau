@@ -519,11 +519,11 @@ function Economy.afterRaid(player, prof, s, outcome, runThrough)
 		prof.karma = math.clamp((prof.karma or P.KARMA.start) + k, P.KARMA.min, P.KARMA.max)
 	end
 	local up = Economy.addXp(prof, gained)
-	if ctx.Quests and ctx.Quests.onRaidEnd then
+	if player and ctx.Quests and ctx.Quests.onRaidEnd then
 		-- every settled outcome (economy-6a): run-throughs do not count for extraction tasks, quest items are kept only
 		-- on a survived raid, a death resets the in-one-raid objectives
 		ctx.Quests.onRaidEnd(player, prof, s, outcome, runThrough)
-	elseif outcome == "SUCCESS" and ctx.Quests then
+	elseif player and outcome == "SUCCESS" and ctx.Quests then
 		ctx.Quests.onExtract(player, prof, s)
 	end
 	return gained, up

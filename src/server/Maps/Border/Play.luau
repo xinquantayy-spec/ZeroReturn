@@ -911,8 +911,15 @@ return function(B)
 		local function kz(name, x, z, r, h, up)
 			vz[name] = { pos = V(x, ground(x, z) + (up or h * 0.6), z), r = r, h = h }
 		end
-		zone("BY_TANK1", rest(points.BW_TK1_STAIR, 2.95), 5)
-		zone("BY_TANK3", rest(points.BW_TK3_STAIR, 2.95), 5)
+		-- `free`: World moves the place to the nearest free spot on its floor once the map is furnished (SpotFinder)
+		local function freeZone(name, p, r)
+			zone(name, p, r)
+			if vz[name] then
+				vz[name].free = true
+			end
+		end
+		freeZone("BY_TANK1", rest(points.BW_TK1_STAIR, 2.95), 5)
+		freeZone("BY_TANK3", rest(points.BW_TK3_STAIR, 2.95), 5)
 		kz("BY_DORMS", -137.5, 604, 110, 30, 18)
 		kz("BY_BASTION", -125, -295, 70, 25)
 		local mb = L.bridges and L.bridges.main
@@ -921,12 +928,12 @@ return function(B)
 			local hit = workspace:Raycast(V(bx, 400, bz), Vector3.new(0, -800, 0))
 			vz.BY_BRIDGE = { pos = V(bx, (hit and hit.Position.Y or ground(bx, bz)) + 4, bz), r = 60, h = 20 }
 		end
-		zone("BY_WATCHROOM", rest(points.BY_WATCHROOM), 4)
-		zone("BY_SQUAT", rest(points.BY_SQUAT), 4)
-		zone("BY_STORE17", rest(points.BY_STORE17, 2.95), 4)
-		zone("BY_BOAT", rest(points.SMUGGLERS_BOAT_DECK), 5)
-		zone("BY_RED_CAGE", rest(points.BY_RED_CAGE, 2.95), 4)
-		zone("BY_ARMYHUT", rest(points.BY_ARMYHUT), 4)
+		freeZone("BY_WATCHROOM", rest(points.BY_WATCHROOM), 4)
+		zone("BY_SQUAT", rest(points.BY_SQUAT), 4) -- on the table: exact
+		freeZone("BY_STORE17", rest(points.BY_STORE17, 2.95), 4)
+		zone("BY_BOAT", rest(points.SMUGGLERS_BOAT_DECK), 5) -- on the deck: exact
+		zone("BY_RED_CAGE", rest(points.BY_RED_CAGE, 2.95), 4) -- inside the narrow cage: exact (a free-floor search would leave it)
+		freeZone("BY_ARMYHUT", rest(points.BY_ARMYHUT), 4)
 		zone("BY_DEPOT_ROOF", rest(points.DEPOT_ROOF, 2.95), 10)
 		W.visitZones = vz
 	end)

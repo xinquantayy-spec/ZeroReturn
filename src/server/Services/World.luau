@@ -8,6 +8,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
 local Config = require(Shared.Config)
+local SpotFinder = require(script.Parent.SpotFinder)
 local AssetMeta = require(Shared.AssetMeta)
 
 local World = {}
@@ -1150,6 +1151,9 @@ local function buildDormitory(map)
 			if num == 101 or num == 202 then
 				loose(rx0 + 9.6, fy + 3.15, Z0 + 7.6, "keys", 0.35, "dorm", true)
 			end
+			if num == 203 then
+				World.q7Room203 = Vector3.new(rx0 + 8.7, fy + 3.15, Z0 + 8.4) -- a task's quest item: on the table (economy-6a)
+			end
 			-- door
 			World.doors["DORM" .. num] = {
 				id = "DORM" .. num, cf = CFrame.new(rcx, fy + 3.57, Z1), size = Vector3.new(3.7, 7.1, 0.3),
@@ -1276,6 +1280,24 @@ local function buildLandmarksAndRoutes(map)
 	end
 	box(pier, 18, 3, 7, 244, -1.8, 162, C.pale, M.SmoothPlastic)
 	box(pier, 8, 2.4, 5, 240, 0.9, 162, C.metal, M.Metal)
+	-- the cold store by the COLD STORE spawn: a refrigerated container, its doors open at the west end, a task's quest
+	-- item at the back (economy-6a)
+	do
+		local cs = model("ColdStore", misc)
+		local RF, RFD = hex("D6D9D4"), hex("9EA6A3")
+		local x0, x1, z0, z1, hh = 60, 80, 168, 176, 8.6
+		box(cs, x1 - x0, 0.4, z1 - z0, (x0 + x1) / 2, 0.2, (z0 + z1) / 2, RFD, M.Metal) -- floor
+		box(cs, x1 - x0, 0.3, z1 - z0, (x0 + x1) / 2, hh - 0.15, (z0 + z1) / 2, RF, M.Metal) -- roof
+		box(cs, x1 - x0, hh, 0.3, (x0 + x1) / 2, hh / 2, z0 + 0.15, RF, M.Metal) -- north side
+		box(cs, x1 - x0, hh, 0.3, (x0 + x1) / 2, hh / 2, z1 - 0.15, RF, M.Metal) -- south side
+		box(cs, 0.3, hh, z1 - z0, x1 - 0.15, hh / 2, (z0 + z1) / 2, RFD, M.Metal) -- the cooling unit's end
+		box(cs, 1.2, 4, 5, x1 + 0.6, 4.4, (z0 + z1) / 2, hex("5E6662"), M.Metal) -- the unit
+		for _, sz in { -1, 1 } do -- the doors, swung open against the sides
+			local d = box(cs, 0.25, hh - 0.6, 3.9, x0 - 1.95, hh / 2, (z0 + z1) / 2 + sz * 6, RF, M.Metal)
+			d.CFrame = CFrame.new(x0 - 0.2, hh / 2, (sz > 0) and (z1 + 1.95) or (z0 - 1.95)) * CFrame.Angles(0, math.rad(90), 0)
+		end
+		World.q7ColdStore = Vector3.new(x1 - 2.2, 0.45, (z0 + z1) / 2)
+	end
 	-- relay gate (exfil A) tower
 	local relay = model("RelayTower", misc)
 	for _, sx in { -2, 2 } do
@@ -1748,6 +1770,12 @@ function World.build()
 		{ route = "HS" },
 	}
 	World.visitZones = { PIER3 = { pos = v(236, 0, 150), r = 18 }, RELAY = { pos = v(190, 0, -190), r = 14 } }
+	-- the map-first tasks (economy-6a): quest items on room 203's table and at the back of the cold store, plants on
+	-- the pier 3 boat's deck and by the crane yard lift (`free`: moved to free ground once the map is furnished)
+	World.visitZones.Q7_DORM203 = World.q7Room203 and { pos = World.q7Room203, r = 4 } or nil
+	World.visitZones.Q7_COLDSTORE = World.q7ColdStore and { pos = World.q7ColdStore, r = 4, free = true, reach = 3 } or nil
+	World.visitZones.Q7_BOAT = { pos = v(249.5, -0.25, 162), r = 5 }
+	World.visitZones.Q7_CRANE = { pos = v(-122, 0.05, 174), r = 5, free = true, reach = 6 }
 	World.boss = {
 		name = "THE FOREMAN", home = v(116, 4, -128),
 		route = { v(116, 4, -128), v(84, 4, -126), v(62, 4, -110), v(100, 4, -112), v(140, 4, -112), v(142, 4, -128) },
@@ -1879,6 +1907,33 @@ function World.build()
 			else
 				warn("[ZR] " .. id .. " tidy failed: " .. tostring(tidy))
 			end
+		end
+	end
+	-- task places that rest on a floor (economy-6a): moved to the nearest free spot once the maps are furnished, tidied
+	-- and in the workspace (the rays and box queries need them there)
+	for id, mm in World.maps do
+		local free = {}
+		for name, z in mm.visitZones or {} do
+			if z.free and not z.placed then
+				table.insert(free, name)
+			end
+		end
+		if #free > 0 and mm.model and mm.model:IsDescendantOf(workspace) then
+			local index = SpotFinder.kitIndex(mm.model)
+			local moved, missed = 0, {}
+			for _, name in free do
+				local z = mm.visitZones[name]
+				local q = SpotFinder.floor(mm.model, index, z.pos, z.reach or 6, z.dy)
+				z.placed = true
+				if q then
+					z.moved = (q - z.pos).Magnitude
+					z.pos = q
+					moved += 1
+				else
+					table.insert(missed, name)
+				end
+			end
+			print(string.format("[ZR] %s: %d task places set on a free floor%s", id, moved, #missed > 0 and (", none free near " .. table.concat(missed, ", ")) or ""))
 		end
 	end
 	snapLooseSpots()

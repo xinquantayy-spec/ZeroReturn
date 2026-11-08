@@ -551,6 +551,7 @@ return function(ctx)
 		local cx = (ix0 + ix1) / 2
 		B.points.SECURITY_TERMINAL = Vector3.new(O.X + cx, y0 + 3.3, O.Z + iz0 + 1.4)
 		ab(par, ix0 + 1, y0, iz1 - 9, ix0 + 11, y0 + 3.0, iz1 - 3, hex("5B5F5A"), M.Metal) -- desk
+		B.points.SECURITY_DESK = Vector3.new(O.X + ix0 + 9.5, y0 + 3.05, O.Z + iz1 - 5.5) -- a task's quest item: on the desk, right of the monitor
 		ab(par, ix0 + 3, y0 + 3.0, iz1 - 8.6, ix0 + 8, y0 + 5.2, iz1 - 8.3, hex("1E2423"), M.SmoothPlastic) -- monitor
 		ab(par, ix0 + 1, y0, iz0 + 4, ix0 + 4, y0 + 6.5, iz0 + 12, hex("4C5250"), M.Metal) -- filing cabinets
 		u.terminalAt = { x = cx, z = iz0 + 1.4 }

@@ -212,6 +212,11 @@ return function(B, T)
 			cands = { { hw - 40, D - 36, "L" }, { -hw + 6, D - 36, "R" }, { hw - 40, 20, "L" }, { -hw + 6, 20, "R" } },
 		})
 		local desks = f:rows("OfficeDesk", -hw + 12, 40, 26, 2, 26, 0, { gap = 10, limit = 3 })
+		-- a task's quest item (economy-6a): by the first desk of the open-plan office (World moves it to free floor)
+		local d1 = desks and desks[1]
+		if d1 and d1.cr then
+			B.points.MM_BOLT_DESK = f:pos((d1.cr[1] + d1.cr[3]) / 2, 0.05, (d1.cr[2] + d1.cr[4]) / 2)
+		end
 		chairs(f, desks)
 		adoptSome(f, desks, "techbox", "Office PC", 3)
 		f:run("Pigeonholes", "B", -hw + 12, 40, nil, { gap = 4, limit = 3, over = true })

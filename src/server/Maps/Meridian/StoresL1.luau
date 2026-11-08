@@ -415,7 +415,11 @@ return function(B)
 		f:run("WallShelfMeds", "B", -f.hw + 0.5, f.hw - 0.5, nil, {})
 		f:run("WallShelfMeds", "L", 8, f.D - 3, nil, { limit = 3 })
 		f:run("WallShelfMeds", "R", 8, f.D - 3, nil, { limit = 3 })
-		desk(f, { cap = 99, reg = true }, { desk = "Counter" })
+		local counter = desk(f, { cap = 99, reg = true }, { desk = "Counter" })
+		-- a task's plant (economy-6a): at the counter (World moves it to free floor beside it)
+		if counter and counter.cr then
+			B.points.MM_RESCUE_COUNTER = f:pos((counter.cr[1] + counter.cr[3]) / 2, 0.05, (counter.cr[2] + counter.cr[4]) / 2)
+		end
 		f:wall("MedCot", "R", 14, { quiet = true })
 		f:run("FirstAid", "L", 14, f.D - 4, nil, { h = 4.2, gap = 14, limit = 2, free = true })
 		f:surfaces("pharmacy", 2, 0.5)

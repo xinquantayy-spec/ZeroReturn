@@ -731,6 +731,14 @@ return function(kit, root)
 		V(80, 0, -66), V(100, 0, 40), V(30, 0, 70), V(-40, 0, 80), V(-100, 0, 60), V(-110, 0, -80), V(60, 0, -20), V(90, 0, 20),
 	}
 	W.visitZones = { STACK = { pos = V(-30, 0, -72), r = 14 } }
+	-- the map-first tasks (economy-6a): a plant on the furnace hall's north catwalk, quest items on the manager's desk
+	-- and on a casting bench between the moulds (exact), plants in the pump house and beside the hopper wagons (`free`:
+	-- World moves them to the nearest free floor once the map is furnished)
+	W.visitZones.SM_CATWALK = { pos = V(0, DY + 0.05, -55.5), r = 5, free = true, reach = 4 }
+	W.visitZones.SM_MANAGER = { pos = V(-102.2, FH1 + 0.3 + 2.76, -47.6), r = 4 }
+	W.visitZones.SM_CASTING = { pos = V(-40.6, 1.65, 28), r = 4 }
+	W.visitZones.SM_PUMPHOUSE = { pos = V(94, 0.05, 52), r = 5, free = true, reach = 5 }
+	W.visitZones.SM_SIDING = { pos = V(104.5, 0.05, -8), r = 6, free = true, reach = 6 }
 	W.boss = nil
 	-- Tarkov's Factory bosses (audit ai.15): Tagilla at 30 %, roaming the hall with his hammer (our STOKER), and the
 	-- cultists at 8 % in night raids, waiting in the dark corners (THE CULT, as on Border Yard)

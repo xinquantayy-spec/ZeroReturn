@@ -2014,7 +2014,7 @@ return function(B)
 		end
 		cont("weaponbox", "Seized weapons", -68, -12.1, 0, DECK)
 		cont("weaponbox", "Seized weapons", -58, -9.7, 180, DECK)
-		point("BY_RED_CAGE", -54, DECK, -12) -- a task's quest item: inside the seized goods cage
+		point("BY_RED_CAGE", -46.6, DECK, -10.9) -- a task's quest item: inside the seized goods cage, between the cardboard and the roll cage
 		cont("crate", "Seized goods", -72, -10.9, 0, DECK)
 		cont("crate", "Seized goods", -62, -10.9, 0, DECK)
 		cont("safe", "Evidence safe", -76, -10.9, 90, DECK)

@@ -1125,6 +1125,28 @@ return function(B)
 		zone("WEST_CAMP", pointOf(points.WEST_CAMP) or V(-1180, 3.3, 400), 24)
 		zone("RESCUE_CAMP", pointOf(points.RESCUE_CAMP) or V(640, 3.3, 740), 24)
 		zone("KART_TRACK", V(-226.6, 3.3, -765.6), 24)
+		-- the map-first tasks (economy-6a): kill areas (cylinders, h the half height), quest items and a plant on a floor
+		-- or a desk, marks at the two sign pylons. `free` places are moved to the nearest free floor once the map is
+		-- furnished (World.endMap, SpotFinder); the security desk's is exact.
+		local function at(p, down)
+			p = pointOf(p)
+			return p and (p - Vector3.new(0, down or 0, 0)) or nil
+		end
+		local function free(name, p, r, reach)
+			if p then
+				vz[name] = { pos = p, r = r, free = true, reach = reach }
+			end
+		end
+		vz.MM_KASSA = { pos = V(653.1, LV[1] + 8, -143.8), r = 140, h = 16 }
+		vz.MM_FOOD_COURT = { pos = V(100, LV[2] + 6, -250), r = 60, h = 12 }
+		vz.MM_CARPARK = { pos = V(120, LV[0] + 8, -170), r = 300, h = 8 }
+		free("MM_MEDIQ", V(32.2, LV[2] + 0.05, 58.8), 4, 12)
+		zone("MM_SECURITY", pointOf(points.SECURITY_DESK), 4)
+		free("MM_UNIT14", V(46.9, LV[0] + 0.05, -835.9), 4, 14)
+		free("MM_BOLT_OFFICE", pointOf(points.MM_BOLT_DESK), 4, 8)
+		free("MM_RESCUE_POINT", pointOf(points.MM_RESCUE_COUNTER) or V(189.1, LV[1] + 0.05, -307.8), 4, 12) -- the counter, else the shop's floor
+		free("MM_NESTA_TOWER", at(points.NESTA_TOWER, 3.25), 6, 6)
+		free("MM_BOLT_TOWER", at(points.BOLTWORKS_TOWER, 3.25), 6, 6)
 		W.visitZones = vz
 	end)
 

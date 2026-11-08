@@ -100,6 +100,8 @@ local POOLS = {
 		{ id = "MULTITOOL", w = 3 }, { id = "AR_CH_EXT", w = 1 }, { id = "R17_GAS_LOW", w = 1 }, { id = "GAS_MASK", w = 1 },
 		{ id = "FLARE_RED", w = 0.6 },
 		{ id = "FLARE_GREEN", w = 0.9 },
+		-- the tasks' Spot Marker turns up as loot too (economy-6a; EFT's MS2000 markers lie in toolboxes and tech)
+		{ id = "MARKER", w = 2 },
 	},
 	jacket = {
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
@@ -173,6 +175,8 @@ local POOLS = {
 		{ id = "DECK_TRANSCEIVER", w = 2 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "NV_MONO", w = 0.4 }, { id = "NV_QUAD", w = 0.1 },
 		-- VOS's 4x scope barter needs one, and it was in no pool (economy helper, 2026-11-08)
 		{ id = "CRACKED_LENS", w = 3 },
+		-- the tasks' marker, trail camera and signal beacon (economy-6a)
+		{ id = "MARKER", w = 2 }, { id = "CAMERA", w = 1 }, { id = "BEACON", w = 1 },
 	},
 	pharmacy = {
 		{ id = "BANDAGE", w = 18 }, { id = "PAINKILLERS", w = 16 }, { id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 },

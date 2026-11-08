@@ -1859,7 +1859,7 @@ function T.run(ctx)
 				and holdGone == "COOP")
 		local P = require(Shared.Progress)
 		local prof = { karma = 0.2, xp = 0, level = 1, skills = {} }
-		-- (settled the same whatever the outcome; "KIA" keeps the task hooks out of the stand-in)
+		-- (settled the same whatever the outcome; no player keeps the task hooks out of the stand-in)
 		local okA = pcall(ctx.Economy.afterRaid, nil, prof, { scav = false, karmaDelta = P.KARMA.coop, xp = 0 }, "KIA", true)
 		check("co-op exit: leaving together adds Fence standing to the PMC too (a scav's raid also adds its extract bonus)",
 			okA and P.KARMA.coop > 0 and math.abs(prof.karma - (0.2 + P.KARMA.coop)) < 1e-9)
