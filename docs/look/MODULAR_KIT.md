@@ -4,10 +4,12 @@ Owner's decision art-5b (audit 2026-11-07, `docs/audit/2026-11-07/art.md`, art-5
 door, stair and facade modules as merged meshes with baked shading, placed by the builders instead of loose parts". It is
 the only option that improves the look and cuts the part count, which is the main phone risk.
 
-**Status (2026-11-09, phase 1, branch `art5b-kit`):** the census, this design and the pilot (stair flights, handrails,
-railings) are written and checked offline. **Nothing here has run in Studio, on a phone or in Blender.** The Kit5 batches
-are not built or uploaded, so every map still builds today's parts (the fallback path is checked identical, part by part).
-All part counts below are offline (`tools/kit_census.py`, a Lua 5.4 stand-in for Roblox), not Studio.
+**Status (2026-11-09):** phase 1 (stair flights, handrails, railings) is live: ZR_Kit5A and ZR_Kit5B are uploaded and
+the coordinator ran KitTests in Studio. Phase 2 (branch `art5b-kit`) adds fence modules (section 6, batch ZR_Kit5C, not
+built or uploaded yet) and merged pieces for the mall and bunker kits (section 7, switched off; the merged exports are
+not made yet). **Nothing of phase 2 has run in Studio, in Blender or on a phone.** Without the new batches every map builds
+today's parts, checked identical part by part. All part counts below are offline (`tools/kit_census.py`, a Lua 5.4
+stand-in for Roblox), not Studio.
 
 ## 1. How Escape from Tarkov builds it
 
@@ -33,6 +35,13 @@ on one structure, and none contradicts it:
 - **Railings and fittings are repeated instances of one source asset** ("twelve copies of one railing are one" source
   object; atlas `viewer/src/assets.rs`), and EFT's navmesh agents have no drop or jump links (atlas build doc).
 - **Footsteps** come from the `BallisticCollider` material under one downward ray (ArenaMapPort `AGENTS.md`).
+- **Chain-link fences are cutout meshes on posts with thin colliders.** `metall_fence_2` is a mesh with an alpha-cutout
+  texture (`chain_fence`, `chain_fence_nrm`) and its own small LOD group (ArenaMapPort `docs/progress/wp1.md`); thin
+  fences carry box colliders scaled to about 1 cm (`docs/progress/stage1-combat.md`). The ballistic side has its own
+  material, `Chainfence` (EFT's `MaterialType` 4, TushonkaMappingSDK `GameStubs/EFT.Ballistics/MaterialType.cs`, with its
+  own sound in `Editor/TarkovAcoustics.cs`); Arena's tower fences carry the preset `Chainfence` over the collider material
+  `MetalThin` (ArenaMapPort `docs/progress/bowl-release.md`, `tools/extract/extract_ballistics.py`). No source read gives
+  BSG's post spacing or fence heights.
 - Battlestate wrote its own culling and streamed 35 sub-terrains to hold the frame rate on its big maps
   ([Made with Unity: Escape from Tarkov](https://unity.com/ru/made-with-unity/escape-from-tarkov)). No source read here
   describes BSG's trim sheets or wall modules, so the wall and facade phases below are our design, not a copy.
@@ -92,8 +101,8 @@ them where the builder put them, as it leaves today's steps.
 | Phase | Family | What it replaces | Saving (offline estimate) |
 |---|---|---|---|
 | 1 (done) | Stair flights, handrails, railings | steps, stringers, posts and bars | Border 2,903, Smelter 1,254, Meridian 464 (measured, section 5) |
-| 2 | One opaque piece per kit prop (glass and glow stay apart) | today's one piece per material | Meridian 4,132, Border 1,992, Relay 7 356, Smelter 160; costs per-material Roblox textures on those props unless a SurfaceAppearance atlas is made in the owner's upload session (art-4) |
-| 2 | Fence modules (posts and top rail per stretch; the chain-link panel stays, it is the collider and carries the texture) | 6.8 parts a run | Border about 1,870 (386 runs), Meridian about 230 |
+| 2 (built, section 6) | Fence modules (posts and top rail per stretch; the chain-link panel stays, it is the collider and carries the texture) | posts and rail parts | Border 1,630, Meridian 120 (measured) |
+| 2 (built, off, section 7) | One opaque piece per kit prop (glass and glow stay apart) | today's one piece per material | one piece: Meridian 2,886, Border 1,738, Smelter 151, Relay 7 74 at a look cost of 27 to 36 % of the placed kit surface; the 10 % rule: 726, 549, 55, 39 at 1 to 6 % (measured) |
 | 3 | Wall panels with openings: door, window and solid panels per length class with frames, sills and lintels in the mesh | `World.wallHoles` and `MallShell.wallRun` boxes | about a third of the wall parts if the panels collide by their own mesh (Studio check: an inserted MeshPart's `CollisionFidelity` keeps door and window holes open); otherwise the same count with a far better look |
 | 3 | Power pylons, facades, cornices, gutters, balconies | pylon boxes; nothing today (look) | pylons about 70 % of 629 parts |
 
@@ -153,7 +162,84 @@ along its length (249 ramps); `KitTests` under the stand-in, with rays against b
 **Meridian's glass balustrades** (a pane and a handrail per run, 2 parts) and its flights' side panels stay parts: they
 are already two parts a run, and glass and metal are two materials.
 
-## 6. Plays the same?
+## 6. Phase 2: fence modules
+
+**Variants** (`build_kit5.py`, batch ZR_Kit5C, 27 props, one metal piece each): `K5Fence1..27`, a chain-link fence's
+frame `RAIL_LENGTHS` long (0.56 to 64 studs, the railing lengths): round posts with caps every 8 studs or less, sunk 0.6
+into the ground, a top rail 0.12 under the 7.8-stud top, a tension wire near the ground. The end posts stand on the
+module's ends (unlike the railing's inset posts), so where two modules or two runs meet, in a line or at a polyline
+corner, their posts coincide and read as one post. The see-through panel is not in the mesh: each builder keeps its
+`ChainLink` part, the collider and the carrier of the chain-link texture, exactly as today.
+
+**Placement** (`MapKit.luau`): `H.k5Fence(parent, a, b, h, color, mat, opts)` builds a run between two ground points as
+a `FenceKit` model of `FenceModule`s (attribute `Kit5 = "fence"`, structure, not a tidy-pass prop), cut into equal
+modules of 64 studs or less, each scaled to its length within 11 % and to the height within 0.7..1.2 of 7.8. It returns
+nil, and the builder builds its posts and rail, for runs steeper than 1.2 studs end to end (a level module there would
+float at one end; 37 of Border's 385 runs, 10 of Meridian's 116) or the batch not loaded. `opts.bayStart` / `bayEnd`
+mark the ends where a fence line ends (where it may meet a building): those ends are 8-stud modules of their own, so
+the tidy pass, which removes fence parts that run into a building, trims a bay, as it trimmed posts, not the whole run.
+Builders: `H.fence` (Border's ground fences, which mark the line ends, and dressing fences), `Works.fenceRun` (deck
+guards), Meridian's ground fences (marking the line ends). The parked Pinewatch map keeps its own fence code.
+
+**Measured** (offline, with ZR_Kit5A/B loaded in both runs):
+
+| Map | Total | Fences | Runs |
+|---|---|---|---|
+| Border Yard | 22,318 -> 20,688 (-7.3 %) | 2,643 -> 1,029 (Fences group 2,427 -> 968, Dressing 1,078 -> 939) | 348 kit (453 modules), 37 steep runs on parts |
+| Meridian Mall | 20,056 -> 19,936 (-0.6 %) | 451 -> 331 (its fences had posts every 28 studs; the modules have them every 8 or less) | 106 kit (191 modules), 10 steep runs on parts |
+
+The build without ZR_Kit5C is today's, part by part, on both maps. The tidy pass's fence rule replayed offline on the
+census (its overlap and wall-depth tests against the buildings' structural parts): with parts it would remove 13 posts and
+2 rails (43 studs) on Border, with the kit 3 modules (42 studs); none on Meridian.
+
+## 7. Phase 2: merged pieces
+
+A kit prop is one MeshPart per material today, so a prop of five materials is five parts. The merged export joins a
+prop's opaque pieces into one mesh `ZR_MK_<Prop>__<mat>_M` (batches `ZR_MallKitAM` .. `ZR_BunkerKitCM`), and
+`Kit.place` uses it where `Kit.MERGE[batch]` is on and the mesh is loaded.
+
+**The rule** (`zr_kit.merge_plan`, one function for the Blender export and the offline estimate): the opaque pieces join
+under the material with the most surface area (a tie goes to the first in the material list); a material joins when it
+renders like that one or its share of the opaque area is at most `absorb` (default 1.0: every opaque piece, one piece
+per prop, as asked). Glass stays apart (it is see-through) and so does glow (the lobby switches it on and off). The joined
+surfaces keep their colours (baked vertex colours) and take the main material's Roblox material, variant and reflectance:
+that is the look cost.
+
+**Play stays the same.** Bullets, the AI's sight and footsteps read the material of the part they hit or stand on. Kit
+pieces take no collisions, queries or touches, merged or not, so they are never hit; the prop's box colliders keep the
+material of its first piece either way (`Kit.place` reads it from `pieces`, which the merge does not change). Where the
+merge could change what is built, it is kept out:
+- a placement that tints, re-materials or re-variants a joined piece keeps its pieces (the joined mesh has one look);
+- `Kit.NOMERGE`: the steel plate (the lobby drops its "paint" piece when shot) and the first aid box (no collider, so
+  Border's `cont` makes its biggest piece the loot container);
+- a merged piece carries `KitJoins` (the pieces it stands for) and Meridian's `StoresFill` counts it against its part
+  budget, so the budget fills the same and the same props are placed.
+Checked offline on all four maps and both rules: every part but the cosmetic pieces (every collider, wall, floor and
+container) is identical with the merge on; KitTests K06 builds every mall and bunker prop with the merge off and on and
+compares the colliders (count, size, place, material, CanQuery, CanCollide).
+
+**Look cost, measured.** The areas come from the six build scripts run under an offline stand-in for Blender's
+`bmesh`/`mathutils` (`kit_census.py merge`; checked against the exported pieces' bounding boxes: 416 of 449 within 0.02
+studs, the rest rubble chunks and cylinders turned a few degrees, whose area is the same; bevels count as plain boxes).
+The look cost is the share of surface whose Roblox material, variant or reflectance changes.
+
+| | One piece per prop (absorb 1.0) | absorb 0.1 |
+|---|---|---|
+| Library (one of each prop) | 449 pieces -> 194; look cost 14 to 42 % of each batch's surface | 449 -> 352; 1.5 to 6 % |
+| Meridian Mall | 19,936 -> 17,050 (-2,886, -14.5 %); 1,657 placements merged, 461 kept their pieces (tinted, re-materialled or NOMERGE); look cost 26.7 % | -726; 0.8 % |
+| Border Yard | 20,688 -> 18,950 (-1,738, -8.4 %); 1,129 merged, 243 kept; 31.9 % | -549; 1.1 % |
+| Smelter | 2,897 -> 2,746 (-151, -5.2 %); 76 merged; 36.3 % | -55; 5.6 % |
+| Relay 7 | 1,228 -> 1,154 (-74, -6 %); 58 merged, 162 kept (most of the lobby's props are tinted); 1.8 %; 298 kit props either way (rule: under 300) | -39; 0.7 % |
+
+The worst props under one piece are those with near-equal areas of three materials: a sparse gondola (metal, paint and
+plastic, 65 % changes), the ceiling holes (concrete over plaster and metal, 62 %), the trader counter (61 %), shelves and
+fridges (50 to 57 %). Under absorb 0.1 the worst is the van (13 %: its plastic, fabric and rubber take the paint).
+
+**A/B in Studio:** `Kit.MERGE` is read when a prop is placed, so switch a batch on (command bar:
+`require(game.ServerScriptService.ZRServer.Maps.Kit).MERGE.ZR_MallKitB = true`) and rebuild the map. Merged pieces carry
+`KitMerged = true`.
+
+## 8. Plays the same?
 
 | | Today | With the kit |
 |---|---|---|
@@ -164,8 +250,10 @@ are already two parts a run, and glass and metal are two materials.
 | Grenades at railings | bounce off a bar or pass a gap | bounce off the collider (a Studio check: a grenade lobbed through a railing gap now stops) |
 | AI paths | navmesh over 0.5 steps | navmesh over ramps (Studio check) |
 | Loot, props, tidy pass | | loose loot snaps to the ramp; kit meshes take no queries; Kit5 models are structure (no `Kit` attribute) |
+| Fences | posts and a rail as parts, the `ChainLink` panel collides | modules take no collisions; the same `ChainLink` panel collides; the tidy pass trims an 8-stud bay where a fence line runs into a building |
+| Merged pieces (when switched on) | one piece per material | the same colliders and colliders' materials, the same layout (offline: every non-cosmetic part identical); only the look of the joined surfaces changes |
 
-## 7. To run and check (coordinator)
+## 9. To run and check (coordinator)
 
 1. Blender: `g = {}; exec(open(r"<project>/assets/blender_scripts/build_kit5.py").read(), g)`, then `g["build"]()` until
    it reports `remaining 0` (45 s a call), `g["sheet"]("A")` and `g["sheet"]("B")` to look at the batches, `g["export"]()`.
@@ -177,15 +265,34 @@ are already two parts a run, and glass and metal are two materials.
    dorm), with first-person camera smoothness and footstep sounds; an AI following a player upstairs in each; shooting
    through a railing (passes) and at a stair (stops); a grenade thrown at a railing; nothing tidied off a doorway; the
    part counts per group against section 5; a low-end phone's frame rate (never measured).
+4. Fences (phase 2): run step 1 again (`g["build"]()` builds only what is missing: the 27 fence modules) and
+   `g["export"]("C")` -> `assets/exports/ZR_Kit5C.fbx`; upload it, add `ZR_Kit5C` to `AssetIds.luau`, run `kit_meta.py`
+   with ZR_Kit5C added to the list. Studio: KitTests (K01 sizes, K02 fence, K05 fence runs); Border's and Meridian's fence
+   lines at corners, on slopes and where they meet buildings; walking into a fence (the panel still stops you).
+5. Merged pieces (phase 2): in Blender, for each of the six kit scripts:
+   `g = {}; exec(open(r"<project>/assets/blender_scripts/build_mall_kit_a.py").read(), g)`, `g["build"]()` until it no
+   longer reports `_stopped_after`, then `import zr_kit; zr_kit.kit_export_merged(g["objects"](), "ZR_MallKitA",
+   g["scene"]())` (add `absorb=0.1` for the cheaper rule). Upload the six `ZR_*KitAM..CM.fbx`, add their keys to
+   `AssetIds.luau`, run `kit_meta.py` with the usual list (it finds the merged exports itself). Studio: KitTests K06; the
+   A/B of section 7 on Meridian (gondolas, wall shelves, fridges, ceiling holes), Border, the Smelter and Relay 7.
+6. K07 (a note in the KitTests line): whether the WallBreach and DoorFrame meshes, remade with each `CollisionFidelity`,
+   keep their openings open; this decides whether wall panels (phase 3) could collide by their own mesh.
 
-## 8. Against Tarkov
+## 10. Against Tarkov
 
 Matches: buildings' stairs as single meshes walked on ramps, with the steps' look kept; railings as repeated modules;
 separate movement and ballistic collision (`ZR_Move` against `ZR_Shot` / `ZR_Sight`); footsteps from the walked
 collider's material; steel stairs with plate treads and stringers, concrete flights with nosing angles, handrails on
 posts, toe boards on industrial railings.
 
+Phase 2 matches: chain-link fences as a frame mesh with a separate see-through panel and a thin collider, as EFT's
+cutout meshes on posts with thin box colliders; a prop drawn as one mesh with its colliders apart, as EFT draws a
+building piece as one render mesh with separate colliders (section 1).
+
 Gaps: railings let every bullet through (EFT's `BallisticCollider` lets a bar stop or slow a round by its material);
 stairs stop bullets on the ramp, not on the step faces; no LODs or shadow meshes per module (Roblox picks its own mesh
 detail); handrails follow two riser families and are stretched up to 14 %; walls, windows, doors and facades are still
-part-built (phases 2 and 3); the variant dimensions and the stair and railing styles are ours (no BSG dimensions read).
+part-built (phase 3); the variant dimensions and the stair, railing and fence styles are ours (no BSG dimensions read).
+Fences: the chain-link panel stops bullets and sight (KNOWN_ISSUES 43; EFT gives chain-link its own ballistic material,
+`Chainfence`); steep runs keep their parts. Merged pieces: a Unity mesh can carry several materials, a Roblox MeshPart
+only one, so the joined surfaces lose their own grain (the look cost in section 7).

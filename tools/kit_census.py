@@ -1,15 +1,24 @@
 """Offline part census of the map builders, by builder call (art-5b phase 1, docs/look/MODULAR_KIT.md).
 
-  run <map> <out.json> [--kit5]   build one map (border, meridian, smelter, relay7) under Lua 5.4 (lupa) with a Roblox
+  run <map> <out.json> [--kit5] [--merge[=A]]
+                                  build one map (border, meridian, smelter, relay7) under Lua 5.4 (lupa) with a Roblox
                                   stand-in and record every part left in the map: class, size, frame, flags and the
-                                  builder call stack that made it. --kit5: the ZR_Kit5 meshes (stair flights and
-                                  railings, assets/blender_scripts/build_kit5.py) count as loaded, with metadata from
-                                  tools/kit5_meta.py; without it the builders take their part fallbacks (today's look)
+                                  builder call stack that made it. --kit5: the ZR_Kit5 meshes (stair flights, railings,
+                                  fence modules, assets/blender_scripts/build_kit5.py) count as loaded, with metadata
+                                  from build_kit5.expected_meta(); without it the builders take their part fallbacks
+                                  (today's look). --merge[=A]: the mall and bunker kits' merged pieces (art-5b phase 2)
+                                  count as exported and loaded with zr_kit.merge_plan(absorb A, default 1.0: one opaque
+                                  piece per prop), and Kit.MERGE is on for every batch
   report <out.json> [...]         parts by group (the map model's children), by category (stairs, rails, walls ...) and
                                   by builder function (module:function)
   compare <before.json> <after.json>  the change by category and group, and the kit calls (kit or fallback)
-  tests [--kit5]                  src/server/Tests/KitTests.luau under the stand-in (rays against boxes and wedges, the
+  tests [--kit5] [--merge[=A]]    src/server/Tests/KitTests.luau under the stand-in (rays against boxes and wedges, the
                                   collision groups), with the Smelter built; exit 1 on a failure
+  merge [A]                       the merge plan per kit batch: pieces before and after, the look cost (the share of the
+                                  surface whose Roblox material changes); the areas come from the build scripts run
+                                  under an offline stand-in for Blender's bmesh (no Blender)
+  mergecost <split.json> <merged.json>  a map's look cost from two runs, by the props placed: the share of the placed kit
+                                  surface that changes material, and the parts saved
   all [outdir]                    run + report every map, before and after (default outdir: a temp folder)
 
 NOT Roblox and NOT Studio: no physics, no streaming, no Tidy pass, no wear pass, no frame rate. The terrain is not
@@ -18,7 +27,7 @@ written (voxel calls do nothing; terrain rays miss, so TerrainKit falls back to 
 Luau -> Lua: type annotations, casts, compound assignment and generalized for-in (the subset the map modules use;
 adapted from tools/smelter_preview.py). Run with a Python that has lupa: `python3 -I tools/kit_census.py all`.
 """
-import json, os, re, sys, tempfile
+import json, math, os, re, sys, tempfile, types
 from collections import Counter, defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -935,8 +944,9 @@ MAPS = {
 }
 
 
-def runtime(kit5):
-    """the stand-in with the World kit; with kit5, the Kit5 props in KitMeta and their meshes in the library"""
+def runtime(kit5, merge=None):
+    """the stand-in with the World kit; with kit5, the Kit5 props in KitMeta and their meshes in the library; with merge
+    (an absorb share), the merged pieces in KitMeta and the library and Kit.MERGE on for the mall and bunker batches"""
     lua, G = lua_runtime(kit5)
     if kit5:
         # the Kit5 props as tools/kit_meta.py will list them after the export, and their meshes in the library
@@ -950,12 +960,39 @@ def runtime(kit5):
                 pieces[i] = lua.table_from({"mat": pc["mat"], "center": v3(*pc["center"]), "tris": pc["tris"]})
                 ls["ZR_MK_%s__%s" % (pname, pc["mat"])] = v3(*pc["size"])
             props[pname] = lua.table_from({"batch": m["batch"], "size": v3(*m["size"]), "center": v3(*m["center"]), "pieces": pieces})
+    if merge is not None:
+        v3 = lua.eval("Vector3.new")
+        props = lua.eval('require(REF("ZR/KitMeta"))').props
+        for nm, e in merge_entries(merge).items():
+            if props[nm] is not None:
+                props[nm].merged = lua.table_from({"mat": e["mat"], "center": v3(*e["center"]), "tris": e["tris"], "of": lua.table_from(e["of"])})
+                G.LIBSIZE["ZR_MK_%s__%s_M" % (nm, e["mat"])] = v3(*e["size"])
+        K = lua.eval('require(REF("Maps/Kit"))')
+        for b in KIT_SCRIPTS:
+            K.MERGE[b] = True
+    # every Kit.place call: the prop and whether it took its merged piece (mergecost)
+    lua.execute("""
+      KITPLACES = {}
+      local K = require(REF("Maps/Kit"))
+      local place = K.place
+      K.place = function(parent, name, cf, opts)
+        local m = place(parent, name, cf, opts)
+        local merged = false
+        if m then
+          for _, c in ipairs(m:GetChildren()) do
+            if c:GetAttribute("KitMerged") then merged = true end
+          end
+        end
+        KITPLACES[#KITPLACES + 1] = { name = name, merged = merged }
+        return m
+      end
+    """)
     kit = world_kit(lua, G)
     return lua, G, kit
 
 
-def run(name, outp, kit5=False, quiet=False):
-    lua, G, kit = runtime(kit5)
+def run(name, outp, kit5=False, quiet=False, merge=None):
+    lua, G, kit = runtime(kit5, merge)
     G.ZR_KIT5_LOG = lua.table()
     path, model = MAPS[name]
     runner = lua.eval("""function(kit, path, name)
@@ -1006,27 +1043,29 @@ def run(name, outp, kit5=False, quiet=False):
     for i in range(1, len(G.ZR_KIT5_LOG) + 1):
         e = G.ZR_KIT5_LOG[i]
         log.append({str(k): (v if isinstance(v, (int, float, str, bool)) else str(v)) for k, v in e.items()})
-    rec = {"map": name, "kit5": kit5, "seconds": secs, "parts": parts, "kitlog": log, "warns": [str(w) for w in G.WARNS.values()],
-           "prints": [str(p) for p in G.PRINTS.values()]}
+    places = [[str(e.name), bool(e.merged)] for e in G.KITPLACES.values()]
+    rec = {"map": name, "kit5": kit5, "merge": merge, "seconds": secs, "parts": parts, "kitlog": log, "places": places,
+           "warns": [str(w) for w in G.WARNS.values()], "prints": [str(p) for p in G.PRINTS.values()]}
     with open(outp, "w") as f:
         json.dump(rec, f)
     if not quiet:
-        print("%s%s: %d parts in %.1f s, %d warnings" % (name, " (kit5)" if kit5 else "", len(parts), secs, len(rec["warns"])))
+        print("%s%s%s: %d parts in %.1f s, %d warnings" % (name, " (kit5)" if kit5 else "", (" (merge %.2f)" % merge) if merge is not None else "",
+                                                         len(parts), secs, len(rec["warns"])))
         for w in rec["warns"][:12]:
             print("   warn:", w[:220])
     return rec
 
 
-def tests(kit5):
+def tests(kit5, merge=None):
     """src/server/Tests/KitTests.luau under the stand-in, with the Smelter built (its K05 map): NOT Studio"""
-    lua, G, kit = runtime(kit5)
+    lua, G, kit = runtime(kit5, merge)
     res = lua.eval("""function(kit)
       local m = require(REF("Maps/Smelter"))(kit, kit.root)
       kit.root.Parent = workspace
       local W = { kit = function() return kit end, maps = { smelter = { model = m } } }
       return require(REF("Tests/KitTests")).run({ World = W })
     end""")(kit)
-    print("KitTests%s (offline, Lua 5.4 stand-in): %s" % (" with ZR_Kit5" if kit5 else "", res))
+    print("KitTests%s%s (offline, Lua 5.4 stand-in): %s" % (" with ZR_Kit5" if kit5 else "", " and merged pieces" if merge is not None else "", res))
     for w in list(G.WARNS.values())[:10]:
         print("   warn:", str(w)[:200])
     return res
@@ -1038,6 +1077,606 @@ def kit5_meta():
     sys.path.insert(0, os.path.join(ROOT, "assets", "blender_scripts"))
     import build_kit5  # noqa: E402
     return build_kit5.expected_meta()
+
+
+# ── an offline stand-in for Blender (mathutils, bmesh, bpy) ───────────────────────────────────────────────────
+# Enough to run the kit build scripts' geometry outside Blender and measure each piece's surface area for the merge
+# plan (art-5b phase 2). Bevels are skipped (a bevelled box counts as its box), n-gons stay n-gons (area is the same),
+# vertex colours are kept per corner and never baked. NOT Blender: no export, no render.
+
+
+class Vector:
+    __slots__ = ("_v",)
+
+    def __init__(self, v=(0.0, 0.0, 0.0)):
+        self._v = [float(a) for a in v]
+
+    def _g(i):
+        return property(lambda s: s._v[i], lambda s, a: s._v.__setitem__(i, float(a)))
+    x, y, z, w = _g(0), _g(1), _g(2), _g(3)
+    del _g
+
+    def __len__(self):
+        return len(self._v)
+
+    def __iter__(self):
+        return iter(self._v)
+
+    def __getitem__(self, i):
+        return self._v[i]
+
+    def __setitem__(self, i, a):
+        self._v[i] = float(a)
+
+    def __add__(self, o):
+        return Vector([a + b for a, b in zip(self._v, o)])
+    __radd__ = __add__
+
+    def __sub__(self, o):
+        return Vector([a - b for a, b in zip(self._v, o)])
+
+    def __rsub__(self, o):
+        return Vector([b - a for a, b in zip(self._v, o)])
+
+    def __mul__(self, k):
+        if isinstance(k, (int, float)):
+            return Vector([a * k for a in self._v])
+        return Vector([a * b for a, b in zip(self._v, k)])
+    __rmul__ = __mul__
+
+    def __truediv__(self, k):
+        return Vector([a / k for a in self._v])
+
+    def __neg__(self):
+        return Vector([-a for a in self._v])
+
+    def __matmul__(self, o):
+        return sum(a * b for a, b in zip(self._v, o))
+
+    def dot(self, o):
+        return sum(a * b for a, b in zip(self._v, o))
+
+    def cross(self, o):
+        a, b = self._v, list(o)
+        return Vector((a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]))
+
+    @property
+    def length(self):
+        return math.sqrt(sum(a * a for a in self._v))
+
+    @property
+    def length_squared(self):
+        return sum(a * a for a in self._v)
+
+    def normalized(self):
+        n = self.length
+        return Vector([a / n for a in self._v]) if n > 0 else Vector(self._v)
+
+    def normalize(self):
+        n = self.length
+        if n > 0:
+            self._v = [a / n for a in self._v]
+
+    def copy(self):
+        return Vector(self._v)
+
+    def orthogonal(self):
+        x, y, z = self._v[:3]
+        return Vector((-y, x, 0.0)) if abs(z) < 0.9 * max(abs(x), abs(y), abs(z), 1e-12) else Vector((0.0, -z, y))
+
+    def lerp(self, o, t):
+        return Vector([a + (b - a) * t for a, b in zip(self._v, o)])
+
+    def rotation_difference(self, o):
+        a, b = self.normalized(), Vector(o).normalized()
+        d = max(-1.0, min(1.0, a.dot(b)))
+        if d > 1 - 1e-12:
+            return Quaternion()
+        if d < -1 + 1e-12:
+            ax = a.orthogonal().normalized()
+            return Quaternion((0.0, ax.x, ax.y, ax.z))
+        c = a.cross(b)
+        q = Quaternion((1 + d, c.x, c.y, c.z))
+        return q.normalized()
+
+    def to_tuple(self, p=None):
+        return tuple(self._v)
+
+    def __repr__(self):
+        return "Vector(%s)" % ", ".join("%.4f" % a for a in self._v)
+
+
+class Quaternion:
+    def __init__(self, wxyz=(1.0, 0.0, 0.0, 0.0)):
+        self.w, self.x, self.y, self.z = [float(a) for a in wxyz]
+
+    def normalized(self):
+        n = math.sqrt(self.w ** 2 + self.x ** 2 + self.y ** 2 + self.z ** 2) or 1.0
+        return Quaternion((self.w / n, self.x / n, self.y / n, self.z / n))
+
+    def __matmul__(self, o):
+        if isinstance(o, Quaternion):
+            a, b = self, o
+            return Quaternion((a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z, a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+                               a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x, a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w))
+        return self.to_matrix() @ Vector(o)
+
+    def to_matrix(self):
+        w, x, y, z = self.w, self.x, self.y, self.z
+        return Matrix([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                       [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                       [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+
+    def to_euler(self, order="XYZ"):
+        return self.to_matrix().to_euler()
+
+
+class Euler:
+    def __init__(self, v=(0.0, 0.0, 0.0), order="XYZ"):
+        self.x, self.y, self.z = [float(a) for a in v]
+        self.order = order
+
+    def __iter__(self):
+        return iter((self.x, self.y, self.z))
+
+    def __getitem__(self, i):
+        return (self.x, self.y, self.z)[i]
+
+    def to_matrix(self):
+        return Matrix.Rotation(self.z, 3, "Z") @ Matrix.Rotation(self.y, 3, "Y") @ Matrix.Rotation(self.x, 3, "X")
+
+    def to_quaternion(self):
+        def axis(a, i):
+            v = [0.0, 0.0, 0.0]
+            v[i] = math.sin(a / 2)
+            return Quaternion((math.cos(a / 2), v[0], v[1], v[2]))
+        return axis(self.z, 2) @ axis(self.y, 1) @ axis(self.x, 0)
+
+
+class Matrix:
+    def __init__(self, rows=None):
+        self.m = [[float(a) for a in r] for r in rows] if rows is not None else [[float(i == j) for j in range(4)] for i in range(4)]
+
+    @staticmethod
+    def Identity(n):
+        return Matrix([[float(i == j) for j in range(n)] for i in range(n)])
+
+    @staticmethod
+    def Translation(v):
+        m = Matrix.Identity(4)
+        v = list(v)
+        for i in range(3):
+            m.m[i][3] = float(v[i])
+        return m
+
+    @staticmethod
+    def Rotation(angle, size, axis):
+        c, s = math.cos(angle), math.sin(angle)
+        if isinstance(axis, str):
+            r = {"X": [[1, 0, 0], [0, c, -s], [0, s, c]], "Y": [[c, 0, s], [0, 1, 0], [-s, 0, c]], "Z": [[c, -s, 0], [s, c, 0], [0, 0, 1]]}[axis]
+        else:
+            x, y, z = Vector(axis).normalized()
+            t = 1 - c
+            r = [[t * x * x + c, t * x * y - s * z, t * x * z + s * y], [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+                 [t * x * z - s * y, t * y * z + s * x, t * z * z + c]]
+        if size == 3:
+            return Matrix(r)
+        m = Matrix.Identity(4)
+        for i in range(3):
+            m.m[i][:3] = [float(a) for a in r[i]]
+        return m
+
+    @staticmethod
+    def LocRotScale(loc, rot, scale):
+        r = Matrix.Identity(3)
+        if isinstance(rot, Quaternion):
+            r = rot.to_matrix()
+        elif isinstance(rot, Euler):
+            r = rot.to_matrix()
+        elif isinstance(rot, Matrix):
+            r = Matrix([row[:3] for row in rot.m[:3]])
+        s = list(scale) if scale is not None else [1.0, 1.0, 1.0]
+        m = Matrix.Identity(4)
+        for i in range(3):
+            for j in range(3):
+                m.m[i][j] = r.m[i][j] * s[j]
+        if loc is not None:
+            loc = list(loc)
+            for i in range(3):
+                m.m[i][3] = float(loc[i])
+        return m
+
+    def __matmul__(self, o):
+        if isinstance(o, Matrix):
+            n = len(self.m)
+            return Matrix([[sum(self.m[i][k] * o.m[k][j] for k in range(n)) for j in range(n)] for i in range(n)])
+        v = list(o)
+        n = len(self.m)
+        if n == 4 and len(v) == 3:
+            return Vector([sum(self.m[i][k] * v[k] for k in range(3)) + self.m[i][3] for i in range(3)])
+        return Vector([sum(self.m[i][k] * v[k] for k in range(len(v))) for i in range(len(v))])
+
+    def decompose(self):
+        cols = [Vector([self.m[i][j] for i in range(3)]) for j in range(3)]
+        s = Vector([c.length for c in cols])
+        r = Matrix([[self.m[i][j] / (s[j] or 1.0) for j in range(3)] for i in range(3)])
+        return Vector([self.m[i][3] for i in range(3)]), r.to_quaternion(), s
+
+    def to_quaternion(self):
+        m = self.m
+        t = m[0][0] + m[1][1] + m[2][2]
+        if t > 0:
+            s = math.sqrt(t + 1.0) * 2
+            return Quaternion((0.25 * s, (m[2][1] - m[1][2]) / s, (m[0][2] - m[2][0]) / s, (m[1][0] - m[0][1]) / s))
+        if m[0][0] > m[1][1] and m[0][0] > m[2][2]:
+            s = math.sqrt(1.0 + m[0][0] - m[1][1] - m[2][2]) * 2
+            return Quaternion(((m[2][1] - m[1][2]) / s, 0.25 * s, (m[0][1] + m[1][0]) / s, (m[0][2] + m[2][0]) / s))
+        if m[1][1] > m[2][2]:
+            s = math.sqrt(1.0 + m[1][1] - m[0][0] - m[2][2]) * 2
+            return Quaternion(((m[0][2] - m[2][0]) / s, (m[0][1] + m[1][0]) / s, 0.25 * s, (m[1][2] + m[2][1]) / s))
+        s = math.sqrt(1.0 + m[2][2] - m[0][0] - m[1][1]) * 2
+        return Quaternion(((m[1][0] - m[0][1]) / s, (m[0][2] + m[2][0]) / s, (m[1][2] + m[2][1]) / s, 0.25 * s))
+
+    def to_euler(self, order="XYZ"):
+        m = self.m
+        y = math.asin(max(-1.0, min(1.0, -m[2][0])))
+        if abs(m[2][0]) < 0.999999:
+            x, z = math.atan2(m[2][1], m[2][2]), math.atan2(m[1][0], m[0][0])
+        else:
+            x, z = math.atan2(-m[1][2], m[1][1]), 0.0
+        return Euler((x, y, z))
+
+
+# bmesh
+class _UV:
+    __slots__ = ("uv",)
+
+    def __init__(self):
+        self.uv = (0.0, 0.0)
+
+
+class BMLoop:
+    __slots__ = ("vert", "face", "_d")
+
+    def __init__(self, vert, face):
+        self.vert, self.face, self._d = vert, face, {}
+
+    def __getitem__(self, layer):
+        if layer not in self._d:
+            self._d[layer] = _UV() if layer[0] == "uv" else (1.0, 1.0, 1.0, 1.0)
+        return self._d[layer]
+
+    def __setitem__(self, layer, v):
+        self._d[layer] = v
+
+
+class BMVert:
+    __slots__ = ("co", "__weakref__")
+
+    def __init__(self, co):
+        self.co = Vector(co)
+
+
+class BMFace:
+    __slots__ = ("verts", "loops", "smooth", "material_index", "__weakref__")
+
+    def __init__(self, verts):
+        self.verts = list(verts)
+        self.loops = [BMLoop(v, self) for v in self.verts]
+        self.smooth = False
+        self.material_index = 0
+
+    def _newell(self):
+        n = [0.0, 0.0, 0.0]
+        vs = [v.co for v in self.verts]
+        for i in range(len(vs)):
+            a, b = vs[i], vs[(i + 1) % len(vs)]
+            n[0] += (a.y - b.y) * (a.z + b.z)
+            n[1] += (a.z - b.z) * (a.x + b.x)
+            n[2] += (a.x - b.x) * (a.y + b.y)
+        return Vector(n)
+
+    @property
+    def normal(self):
+        return self._newell().normalized()
+
+    def normal_update(self):
+        pass
+
+    def calc_center_median(self):
+        k = len(self.verts)
+        return Vector((sum(v.co.x for v in self.verts) / k, sum(v.co.y for v in self.verts) / k, sum(v.co.z for v in self.verts) / k))
+
+    def calc_area(self):
+        vs = [v.co for v in self.verts]
+        if len(vs) == 4:  # a quad may be bent (displaced sheets): two triangles
+            return 0.5 * ((vs[1] - vs[0]).cross(vs[2] - vs[0]).length + (vs[2] - vs[0]).cross(vs[3] - vs[0]).length)
+        return 0.5 * self._newell().length
+
+    @property
+    def edges(self):
+        return [(self.verts[i], self.verts[(i + 1) % len(self.verts)]) for i in range(len(self.verts))]
+
+    def flip(self):
+        self.verts.reverse()
+        self.loops.reverse()
+
+
+class _Seq(list):
+    def ensure_lookup_table(self):
+        pass
+
+    def index_update(self):
+        pass
+
+
+class _Verts(_Seq):
+    def new(self, co=(0.0, 0.0, 0.0), example=None):
+        v = BMVert(co)
+        self.append(v)
+        return v
+
+
+class _Faces(_Seq):
+    def new(self, verts, example=None):
+        f = BMFace(verts)
+        self.append(f)
+        return f
+
+
+class _LayerColl:
+    def __init__(self, kind):
+        self.kind, self.names = kind, set()
+
+    def new(self, name="Col"):
+        self.names.add(name)
+        return (self.kind, name)
+
+    def get(self, name):
+        return (self.kind, name) if name in self.names else None
+
+
+class BMesh:
+    def __init__(self):
+        self.verts, self.faces = _Verts(), _Faces()
+        self.loops = types.SimpleNamespace(layers=types.SimpleNamespace(color=_LayerColl("color"), uv=_LayerColl("uv")))
+
+    def normal_update(self):
+        pass
+
+    def free(self):
+        self.verts, self.faces = _Verts(), _Faces()
+
+    def to_mesh(self, me):
+        idx = {v: i for i, v in enumerate(self.verts)}
+        me._geo = ([tuple(v.co) for v in self.verts], [([idx[v] for v in f.verts], [dict(l._d) for l in f.loops], f.smooth) for f in self.faces])
+
+    def from_mesh(self, me, **kw):
+        vs, fs = me._geo or ([], [])
+        nv = [self.verts.new(c) for c in vs]
+        for ids, loops, smooth in fs:
+            f = self.faces.new([nv[i] for i in ids])
+            f.smooth = smooth
+            for l, d in zip(f.loops, loops):
+                l._d.update(d)
+
+    def area(self):
+        return sum(f.calc_area() for f in self.faces)
+
+
+def _cube(bm, size=1.0, matrix=None, calc_uvs=False):
+    m = matrix or Matrix.Identity(4)
+    h = size / 2
+    c = [bm.verts.new(m @ Vector((x * h, y * h, z * h))) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
+    # corner index: (x>0)*4 + (y>0)*2 + (z>0); faces wound outward
+    for q in ((0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)):
+        bm.faces.new([c[i] for i in q])
+    return {"verts": c}
+
+
+def _cone(bm, cap_ends=True, cap_tris=False, segments=8, radius1=1.0, radius2=1.0, depth=1.0, matrix=None, calc_uvs=False, **kw):
+    m = matrix or Matrix.Identity(4)
+    lo = [bm.verts.new(m @ Vector((radius1 * math.cos(2 * math.pi * k / segments), radius1 * math.sin(2 * math.pi * k / segments), -depth / 2))) for k in range(segments)]
+    hi = [bm.verts.new(m @ Vector((radius2 * math.cos(2 * math.pi * k / segments), radius2 * math.sin(2 * math.pi * k / segments), depth / 2))) for k in range(segments)]
+    for k in range(segments):
+        k2 = (k + 1) % segments
+        bm.faces.new((lo[k], lo[k2], hi[k2], hi[k]))
+    if cap_ends:
+        if radius1 > 0:
+            bm.faces.new(list(reversed(lo)))
+        if radius2 > 0:
+            bm.faces.new(hi)
+    return {"verts": lo + hi}
+
+
+def _icosphere(bm, subdivisions=1, radius=1.0, matrix=None, calc_uvs=False, **kw):
+    t = (1 + 5 ** 0.5) / 2
+    pts = [(-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0), (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t), (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1)]
+    tris = [(0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8),
+            (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1)]
+    P = [Vector(p).normalized() for p in pts]
+    for _ in range(max(0, subdivisions - 1)):
+        cache, nt = {}, []
+
+        def mid(a, b):
+            k = (min(a, b), max(a, b))
+            if k not in cache:
+                P.append(((P[a] + P[b]) / 2).normalized())
+                cache[k] = len(P) - 1
+            return cache[k]
+        for a, b, c in tris:
+            ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
+            nt += [(a, ab, ca), (b, bc, ab), (c, ca, bc), (ab, bc, ca)]
+        tris = nt
+    m = matrix or Matrix.Identity(4)
+    vs = [bm.verts.new(m @ (p * radius)) for p in P]
+    for a, b, c in tris:
+        bm.faces.new((vs[a], vs[b], vs[c]))
+    return {"verts": vs}
+
+
+def _recalc(bm, faces=(), **kw):
+    faces = list(faces)
+    pts = {v for f in faces for v in f.verts}
+    if not pts:
+        return
+    c = Vector((sum(v.co.x for v in pts) / len(pts), sum(v.co.y for v in pts) / len(pts), sum(v.co.z for v in pts) / len(pts)))
+    for f in faces:
+        if f._newell().dot(f.calc_center_median() - c) < 0:
+            f.flip()
+
+
+def _delete(bm, geom=(), context="FACES"):
+    kill = set(id(g) for g in geom if isinstance(g, BMFace))
+    bm.faces[:] = [f for f in bm.faces if id(f) not in kill]
+
+
+def _transform(bm, matrix=None, verts=(), space=None, **kw):
+    for v in verts:
+        v.co = matrix @ v.co
+
+
+def _scale(bm, vec=(1, 1, 1), verts=(), **kw):
+    for v in verts:
+        v.co = Vector((v.co.x * vec[0], v.co.y * vec[1], v.co.z * vec[2]))
+
+
+class _Data:
+    def __init__(self):
+        self.store = {}
+
+    def get(self, name):
+        return self.store.get(name)
+
+    def new(self, name, *a):
+        o = types.SimpleNamespace(name=name, _geo=None, users=0, materials=[], color_attributes=None)
+        self.store[name] = o
+        return o
+
+    def remove(self, o, **kw):
+        self.store.pop(getattr(o, "name", None), None)
+
+    def __iter__(self):
+        return iter(list(self.store.values()))
+
+
+def standin_install():
+    """put the stand-in modules in sys.modules (bpy, bmesh, mathutils, mathutils.bvhtree)"""
+    mu = types.ModuleType("mathutils")
+    mu.Vector, mu.Matrix, mu.Euler, mu.Quaternion = Vector, Matrix, Euler, Quaternion
+    bvh = types.ModuleType("mathutils.bvhtree")
+    bvh.BVHTree = type("BVHTree", (), {})
+    mu.bvhtree = bvh
+    bm = types.ModuleType("bmesh")
+    bm.new = BMesh
+    bm.ops = types.SimpleNamespace(create_cube=_cube, create_cone=_cone, create_icosphere=_icosphere, bevel=lambda *a, **k: {},
+                                   recalc_face_normals=_recalc, triangulate=lambda *a, **k: {}, delete=_delete, transform=_transform,
+                                   scale=_scale, remove_doubles=lambda *a, **k: {})
+    bpy = types.ModuleType("bpy")
+    bpy.data = types.SimpleNamespace(meshes=_Data(), objects=_Data(), scenes=_Data(), materials=_Data(), worlds=_Data(),
+                                     curves=_Data(), cameras=_Data())
+    bpy.context = types.SimpleNamespace()
+    bpy.ops = types.SimpleNamespace()
+    for k, v in (("mathutils", mu), ("mathutils.bvhtree", bvh), ("bmesh", bm), ("bpy", bpy)):
+        sys.modules[k] = v
+
+
+# ── merged pieces (art-5b phase 2): the plan, its look cost and its parts ─────────────────────────────────────────
+KIT_SCRIPTS = {"ZR_MallKitA": "build_mall_kit_a.py", "ZR_MallKitB": "build_mall_kit_b.py", "ZR_MallKitC": "build_mall_kit_c.py",
+               "ZR_BunkerKitA": "build_bunker_kit_a.py", "ZR_BunkerKitB": "build_bunker_kit_b.py", "ZR_BunkerKitC": "build_bunker_kit_c.py"}
+_AREAS = {}
+
+
+def zr_kit_offline():
+    """assets/blender_scripts/zr_kit.py imported under the stand-in (its merge rule needs no Blender)"""
+    standin_install()
+    bs = os.path.join(ROOT, "assets", "blender_scripts")
+    if bs not in sys.path:
+        sys.path.insert(0, bs)
+    import zr_kit  # noqa: E402
+    return zr_kit
+
+
+def kit_areas():
+    """every mall and bunker kit piece's surface area {batch: {prop: {mat: area}}}: the build scripts' PROPS run under the
+    stand-in. Checked 2026-11-09 against the exported pieces' bounding boxes: 416 of 449 within 0.02 studs, the rest
+    rubble chunks and cylinders turned a few degrees (their area is the same)."""
+    if not _AREAS:
+        zr_kit_offline()
+        bs = os.path.join(ROOT, "assets", "blender_scripts")
+        for batch, script in KIT_SCRIPTS.items():
+            g = {"__name__": "kit_offline"}
+            exec(compile(open(os.path.join(bs, script), encoding="utf-8").read(), script, "exec"), g)
+            for nm, fn in g["PROPS"].items():
+                P = fn()
+                _AREAS.setdefault(batch, {})[nm] = {m: b.bm.area() for m, b in P.b.items() if len(b.bm.faces)}
+    return _AREAS
+
+
+def merge_entries(absorb=1.0):
+    """the merged pieces as tools/kit_meta.py will list them after zr_kit.kit_export_merged(absorb), from the split
+    exports' bounding boxes (a joined mesh's box is its pieces' boxes together), with each prop's areas and look cost"""
+    zk = zr_kit_offline()
+    out = {}
+    for batch, props in kit_areas().items():
+        meta = json.load(open(os.path.join(ROOT, "assets", "exports", batch + ".meta.json")))
+        for nm, ar in props.items():
+            plan = None if nm in zk.MERGE_SKIP else zk.merge_plan(ar, absorb)
+            if plan is None:
+                continue
+            rep, joined, cost = plan
+            lo, hi, tris = [1e9] * 3, [-1e9] * 3, 0
+            for m in joined:
+                e = meta["ZR_MK_%s__%s" % (nm, m)]
+                for i in range(3):
+                    lo[i] = min(lo[i], e["center"][i] - e["size"][i] / 2)
+                    hi[i] = max(hi[i], e["center"][i] + e["size"][i] / 2)
+                tris += e.get("tris", 0)
+            out[nm] = {"batch": batch, "mat": rep, "of": joined, "center": [(lo[i] + hi[i]) / 2 for i in range(3)],
+                       "size": [hi[i] - lo[i] for i in range(3)], "tris": tris, "cost": cost, "area": sum(ar.values())}
+    return out
+
+
+def merge_report(absorb=1.0):
+    """the plan per batch: pieces for one of each prop before and after, and the look cost (the share of the batch's
+    kit surface whose Roblox material, variant or reflectance changes)"""
+    mg = merge_entries(absorb)
+    print("merge plan, absorb %.2f (zr_kit.merge_plan; areas from the build scripts under the stand-in):" % absorb)
+    rows = []
+    for batch, props in kit_areas().items():
+        before = sum(len(a) for a in props.values())
+        after = sum(len(a) - (len(mg[nm]["of"]) - 1 if nm in mg else 0) for nm, a in props.items())
+        area = sum(sum(a.values()) for a in props.values())
+        cost = sum(mg[nm]["cost"] for nm in props if nm in mg)
+        print("  %-14s %3d props, %3d merged: %3d pieces -> %3d; look cost %4.1f %% of its surface" % (
+            batch, len(props), sum(1 for nm in props if nm in mg), before, after, 100 * cost / area))
+        rows += [(mg[nm]["cost"] / mg[nm]["area"], nm, mg[nm]["mat"], mg[nm]["of"]) for nm in props if nm in mg]
+    rows.sort(reverse=True)
+    print("  highest look cost: " + "; ".join("%s %.0f %% (%s into %s)" % (nm, 100 * c, "+".join(of), mat) for c, nm, mat, of in rows[:8]))
+    return mg
+
+
+def mergecost(split_path, merged_path):
+    """a map's merge from two runs of the same map (split, merged): the parts saved, the placements that took a merged
+    piece (and why the others did not), and the look cost by what is placed: the share of the placed kit surface whose
+    Roblox material changes"""
+    a, b = json.load(open(split_path)), json.load(open(merged_path))
+    mg = merge_entries(b.get("merge") if b.get("merge") is not None else 1.0)
+    areas = {nm: ar for props in kit_areas().values() for nm, ar in props.items()}
+    surf = cost = 0.0
+    took = kept = 0
+    for nm, merged in b.get("places", []):
+        if nm not in areas:
+            continue
+        surf += sum(areas[nm].values())
+        if merged:
+            took += 1
+            cost += mg[nm]["cost"]
+        elif nm in mg:
+            kept += 1
+    print("=== %s: %d -> %d parts (%+d); %d kit placements took a merged piece, %d of mergeable props kept their pieces "
+          "(tinted, re-materialled or NOMERGE); look cost %.1f %% of the placed kit surface ===" % (
+              a["map"], len(a["parts"]), len(b["parts"]), len(b["parts"]) - len(a["parts"]), took, kept, 100 * cost / surf if surf else 0.0))
 
 
 # ── categories by builder call ─────────────────────────────────────────────────────────────────────────────────
@@ -1073,8 +1712,8 @@ GROUP_CATS = {"stairs": "stairs", "railings": "rails", "walls": "walls", "floors
 def category(frames, path):
     """The pilot's categories (stairs, rails) and the big other families, from the builder call stack."""
     for mod, fn, _ld, _cl in frames:  # the kit's own placements first (their pieces are made by Kit.place)
-        if mod == "MapKit" and fn in ("k5Flight", "k5Rail"):
-            return "stairs" if fn == "k5Flight" else "rails"
+        if mod == "MapKit" and fn in ("k5Flight", "k5Rail", "k5Fence"):
+            return {"k5Flight": "stairs", "k5Rail": "rails", "k5Fence": "fences"}[fn]
     for mod, fn, _ld, _cl in frames:
         for rm, rf, cat in RULES:
             if rf == "?":
@@ -1173,12 +1812,22 @@ def main(argv):
         print(__doc__)
         return 2
     cmd = argv[0]
+    merge = None
+    for a in argv:
+        if a == "--merge" or a.startswith("--merge="):
+            merge = float(a.split("=", 1)[1]) if "=" in a else 1.0
     if cmd == "run" and len(argv) >= 3:
-        run(argv[1], argv[2], kit5="--kit5" in argv)
+        run(argv[1], argv[2], kit5="--kit5" in argv, merge=merge)
         return 0
     if cmd == "tests":
-        r = tests("--kit5" in argv)
+        r = tests("--kit5" in argv, merge)
         return 0 if " 0 failed" in r else 1
+    if cmd == "merge":
+        merge_report(float(argv[1]) if len(argv) > 1 else 1.0)
+        return 0
+    if cmd == "mergecost" and len(argv) == 3:
+        mergecost(argv[1], argv[2])
+        return 0
     if cmd == "compare" and len(argv) == 3:
         compare(argv[1], argv[2])
         return 0

@@ -1136,14 +1136,20 @@ return function(B)
 		end
 		for _, f in L.fences do
 			local pts = f[2]
-			for s = 1, #pts / 2 - 1 do
+			local last = #pts / 2 - 1
+			for s = 1, last do
 				local ax, az, bx, bz = pts[2 * s - 1], pts[2 * s], pts[2 * s + 1], pts[2 * s + 2]
 				for _, rn in landRuns(ax, az, bx, bz, landF) do
 					local x0, z0 = ax + (bx - ax) * rn[1], az + (bz - az) * rn[1]
 					local x1, z1 = ax + (bx - ax) * rn[2], az + (bz - az) * rn[2]
 					if (x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0) > 9 then
 						pieces(x0, z0, x1, z1, 36, 12, 0.5, function(px0, pz0, px1, pz1)
-							H.fence(fm, px0, pz0, px1, pz1, groundAt(px0, pz0), 7.8, groundAt(px1, pz1))
+							-- art-5b phase 2: where the fence line ends (it may meet a building there) the kit's end bay
+							local opts = {
+								bayStart = s == 1 and rn[1] == 0 and px0 == x0 and pz0 == z0,
+								bayEnd = s == last and rn[2] == 1 and px1 == x1 and pz1 == z1,
+							}
+							H.fence(fm, px0, pz0, px1, pz1, groundAt(px0, pz0), 7.8, groundAt(px1, pz1), opts)
 							count.fence += 1
 						end)
 					end

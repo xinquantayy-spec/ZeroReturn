@@ -13,7 +13,7 @@ Usage: imported by the build_mall_kit_*.py scripts (sys.path holds assets/blende
 import bpy, bmesh, math, random, os, json
 from mathutils import Vector, Matrix, Euler
 from mathutils.bvhtree import BVHTree
-from zr_lib import Builder, vnoise, export_batch, EXP, hexc, grey
+from zr_lib import Builder, vnoise, export_batch, EXP, hexc, grey, vertex_material
 
 # material keys -> what the Roblox side does with them (src/shared/KitMeta.luau mirrors this list)
 KIT_MATS = ("metal", "paint", "chrome", "plastic", "glass", "fabric", "wood", "rubber", "concrete", "stone",
@@ -352,3 +352,116 @@ def kit_export(objs, batch_name, scene):
     with open(os.path.join(EXP, batch_name + ".props.json"), "w") as f:
         json.dump(out, f, indent=1, sort_keys=True)
     return fbx, meta, out
+
+
+# ── art-5b phase 2: merged pieces (docs/look/MODULAR_KIT.md, "Merged pieces") ─────────────────────────────────────
+# Roblox draws each MeshPart on its own, so a prop of five materials costs five parts. The merged export joins a prop's
+# opaque pieces into one ZR_MK_<Prop>__<mat>_M mesh under one material. Play does not change: the pieces are cosmetic
+# (no collision, no queries) and the prop's box colliders keep the material they have today (Maps/Kit.luau: the
+# first piece's), which is what bullets and footsteps read. The look does: the joined surfaces take the main
+# material's grain, variant and reflectance; their colours stay, because colour is the baked vertex colour.
+# How each material key renders in Roblox (Maps/Kit.luau's Kit.MATS: material, variant, reflectance); keys that render
+# alike join at no cost.
+KIT_LOOK = {
+    "metal": ("Metal", None, 0), "paint": ("Metal", "ZR_MetalPaint", 0), "chrome": ("Metal", None, 0.12),
+    "plastic": ("SmoothPlastic", None, 0), "glass": ("Glass", None, 0.05), "fabric": ("Fabric", None, 0),
+    "wood": ("Wood", None, 0), "rubber": ("Rubber", None, 0), "concrete": ("Concrete", "ZR_ConcreteWorn", 0),
+    "stone": ("Marble", None, 0), "tile": ("CeramicTiles", None, 0), "cardboard": ("Cardboard", None, 0),
+    "leather": ("Leather", None, 0), "neon": ("SmoothPlastic", None, 0), "glow": ("Neon", None, 0),
+    "plaster": ("Plaster", "ZR_PlasterPeel", 0), "soil": ("Ground", None, 0), "plant": ("Fabric", None, 0),
+    "carpet": ("Carpet", None, 0),
+}
+MERGE_APART = ("glass", "glow")  # see-through glass; glow, which the lobby switches on and off (Lobby.luau)
+# props the game uses piece by piece (Maps/Kit.luau's Kit.NOMERGE): a shot steel plate falls by its paint piece
+# (Lobby.luau); the first aid box, which has no collider, is a loot container through its biggest piece
+MERGE_SKIP = ("SteelPlate", "FirstAid")
+MERGE_ABSORB = 1.0  # the share of a prop's opaque area a material may have and still join (1.0: one opaque piece)
+
+
+def merge_plan(areas, absorb=MERGE_ABSORB):
+    """The rule. areas: {mat: surface area} of one prop's pieces. The opaque pieces join under the material with the
+    most area (a tie: the first in KIT_MATS); a material joins when it renders like that one or its share of the
+    opaque area is absorb or less (1.0: all of them, one opaque piece per prop). Glass and glow stay apart.
+    -> (mat, [joined mats in KIT_MATS order], look cost: the joined area that renders differently from mat), or None
+    when fewer than two pieces would join."""
+    opaque = sorted((m for m in areas if m not in MERGE_APART), key=KIT_MATS.index)
+    if len(opaque) < 2:
+        return None
+    rep = max(opaque, key=lambda m: (areas[m], -KIT_MATS.index(m)))
+    total = sum(areas[m] for m in opaque) or 1.0
+    joined = [m for m in opaque if m == rep or KIT_LOOK[m] == KIT_LOOK[rep] or areas[m] / total <= absorb + 1e-9]
+    if len(joined) < 2:
+        return None
+    return rep, joined, sum(areas[m] for m in joined if KIT_LOOK[m] != KIT_LOOK[rep])
+
+
+def piece_area(o):
+    """an exported piece's surface area (studs squared)"""
+    return sum(p.area for p in o.data.polygons)
+
+
+def kit_export_merged(objs, batch_name, scene=None, absorb=MERGE_ABSORB):
+    """Export <batch>M: the batch's props with their opaque pieces joined by merge_plan, one ZR_MK_<Prop>__<mat>_M mesh
+    per prop (FBX + .blend + .meta.json, as export_batch), and <batch>M.props.json: per prop the material, the pieces
+    joined, every piece's area and the look cost (the share of the prop's surface that renders differently). Props with
+    fewer than two pieces to join, and MERGE_SKIP, are left out: they keep their pieces. objs: a built batch (its build
+    script's objects()); the joined meshes are made in their own scene and removed after the export."""
+    groups = {}
+    for o in objs:
+        prop, mat = o.name[len("ZR_MK_"):].split("__", 1)
+        groups.setdefault(prop, {})[mat] = o
+    scn = bpy.data.scenes.get("ZR_KitMerged") or bpy.data.scenes.new("ZR_KitMerged")
+    for o in list(scn.collection.objects):
+        bpy.data.objects.remove(o)
+    made, report = [], {}
+    cost_all = area_all = 0.0
+    for prop in sorted(groups):
+        if prop in MERGE_SKIP:
+            continue
+        pcs = groups[prop]
+        areas = {m: piece_area(o) for m, o in pcs.items()}
+        plan = merge_plan(areas, absorb)
+        if plan is None:
+            continue
+        rep, joined, cost = plan
+        name = "ZR_MK_%s__%s_M" % (prop, rep)
+        old = bpy.data.meshes.get(name)
+        if old:
+            bpy.data.meshes.remove(old)
+        bm = bmesh.new()
+        for m in joined:
+            bm.from_mesh(pcs[m].data)
+        me = bpy.data.meshes.new(name)
+        bm.to_mesh(me)
+        bm.free()
+        try:  # "Col" as the active and render colour attribute, as zr_lib.Builder.finish does
+            ca = me.color_attributes.get("Col")
+            if ca:
+                me.color_attributes.active_color = ca
+                me.color_attributes.render_color_index = me.color_attributes.active_color_index
+        except Exception:
+            pass
+        me.materials.append(vertex_material())
+        ob = bpy.data.objects.new(name, me)
+        scn.collection.objects.link(ob)
+        made.append(ob)
+        area = sum(areas.values())
+        cost_all += cost
+        area_all += area
+        report[prop] = {"mat": rep, "of": joined, "areas": {m: round(areas[m], 3) for m in sorted(areas)},
+                        "look": round(cost / area, 4) if area > 0 else 0.0}
+    if not made:
+        print("%sM: no prop to merge" % batch_name)
+        return None, 0, report
+    fbx, blend, meta = export_batch(made, batch_name + "M", scn)
+    with open(os.path.join(EXP, batch_name + "M.props.json"), "w") as f:
+        json.dump(report, f, indent=1, sort_keys=True)
+    for o in made:
+        me = o.data
+        bpy.data.objects.remove(o)
+        if me.users == 0:
+            bpy.data.meshes.remove(me)
+    saved = sum(len(r["of"]) - 1 for r in report.values())
+    print("%sM: %d props merged, %d pieces fewer for one of each; look cost %.1f %% of the merged props' surface" % (
+        batch_name, len(made), saved, 100.0 * cost_all / area_all if area_all else 0.0))
+    return fbx, len(made), report

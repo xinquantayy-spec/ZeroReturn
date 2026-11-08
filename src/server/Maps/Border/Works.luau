@@ -420,14 +420,17 @@ return function(B)
 		if len < 0.5 then
 			return nil
 		end
-		local n = math.max(1, math.floor(len / 6 + 0.5))
-		for k = 0, n do
-			local q = a:Lerp(b, k / n)
-			ab(p, q.X - 0.15, q.X + 0.15, y0 - 0.6, y0 + h, q.Z - 0.15, q.Z + 0.15, FENCE, M.Metal)
-		end
 		local wa, wb = F * a, F * b
 		local look = CFrame.lookAt((wa + wb) / 2, wb)
-		kit.boxCF(p, 0.15, 0.15, len, look * CFrame.new(0, h, 0), FENCE, M.Metal)
+		-- art-5b phase 2: the posts and top rail are Kit5 fence modules when the batch is loaded, these parts otherwise
+		if not H.k5Fence(p, wa, wb, h, FENCE, M.Metal) then
+			local n = math.max(1, math.floor(len / 6 + 0.5))
+			for k = 0, n do
+				local q = a:Lerp(b, k / n)
+				ab(p, q.X - 0.15, q.X + 0.15, y0 - 0.6, y0 + h, q.Z - 0.15, q.Z + 0.15, FENCE, M.Metal)
+			end
+			kit.boxCF(p, 0.15, 0.15, len, look * CFrame.new(0, h, 0), FENCE, M.Metal)
+		end
 		local mesh = kit.boxCF(p, 0.08, h - 0.2, len, look * CFrame.new(0, h / 2, 0), FENCE, M.SmoothPlastic)
 		mesh.Transparency = 1
 		mesh.CanQuery = false

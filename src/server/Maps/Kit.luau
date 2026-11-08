@@ -7,7 +7,9 @@
 --   * the pieces are cosmetic (no collision, no queries, no touch); the prop gets a few invisible box colliders
 --     instead (its bounding box, or the shapes in COLL), so physics, bullets, the AI and pathfinding deal with
 --     boxes, not the triangles;
---   * without the kit (batch not loaded yet) a prop is a plain box of its size, so the map plays the same.
+--   * without the kit (batch not loaded yet) a prop is a plain box of its size, so the map plays the same;
+--   * merged pieces (art-5b phase 2, docs/look/MODULAR_KIT.md): where Kit.MERGE is on for its batch, a prop's opaque
+--     pieces are the one mesh its merged export joined (KitMeta `merged`), so the look changes and play does not.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("ZR")
 local KitMeta = require(Shared:WaitForChild("KitMeta"))
@@ -112,6 +114,25 @@ do
 	end
 	Kit.COLL.Fountain = f
 end
+-- art-5b phase 2, merged pieces: a batch switched on here places each prop's opaque pieces as the one mesh its <batch>M
+-- export joined (KitMeta `merged`: ZR_MK_<name>__<mat>_M under one material, by the rule in zr_kit.py's merge_plan),
+-- where that mesh is loaded; the prop's other pieces (glass, glow) stay as they are. A placement that tints,
+-- re-materials or re-variants a joined piece keeps its pieces, since the joined mesh has one look. Play does not change:
+-- the pieces are cosmetic either way, and the colliders keep the material of the prop's first piece, which bullets and
+-- footsteps read (KitTests K06). All off: switch a batch on for an A/B look in Studio.
+Kit.MERGE = {
+	ZR_MallKitA = false,
+	ZR_MallKitB = false,
+	ZR_MallKitC = false,
+	ZR_BunkerKitA = false,
+	ZR_BunkerKitB = false,
+	ZR_BunkerKitC = false,
+}
+-- props whose pieces the game uses one by one keep them: a shot steel plate falls by its "paint" piece (Lobby.luau); a
+-- first aid box, which has no collider, is a loot container through its biggest piece (Border/Works.luau's cont). Keep
+-- in step with zr_kit.py's MERGE_SKIP.
+Kit.NOMERGE = { SteelPlate = true, FirstAid = true }
+
 -- the collider's surface material for impacts and footsteps
 local COLL_MAT = {
 	metal = M.Metal, paint = M.Metal, chrome = M.Metal, plastic = M.Plastic, glass = M.Glass, fabric = M.Fabric, wood = M.Wood,
@@ -132,6 +153,45 @@ end
 function Kit.size(name)
 	local p = KitMeta.props[name]
 	return p and p.size, p and p.center
+end
+
+-- the pieces a placement takes: the merged mesh and the pieces it does not join, or nil for the prop's own pieces
+local function mergedPieces(name, p, opts, l)
+	local mg = p.merged
+	if not (mg and l and Kit.MERGE[p.batch] and not Kit.NOMERGE[name]) then
+		return nil
+	end
+	local custom = {}
+	if typeof(opts.tint) == "Color3" then
+		custom.paint = true
+	elseif type(opts.tint) == "table" then
+		for k in opts.tint do
+			custom[k] = true
+		end
+	end
+	for k in opts.mats or {} do
+		custom[k] = true
+	end
+	for k in opts.variants or {} do
+		custom[k] = true
+	end
+	local joined = {}
+	for _, m in mg.of do
+		if custom[m] then
+			return nil
+		end
+		joined[m] = true
+	end
+	if not l:FindFirstChild("ZR_MK_" .. name .. "__" .. mg.mat .. "_M") then
+		return nil
+	end
+	local list = { { mat = mg.mat, center = mg.center, merged = true, joins = #mg.of } }
+	for _, pc in p.pieces do
+		if not joined[pc.mat] then
+			table.insert(list, pc)
+		end
+	end
+	return list
 end
 
 -- opts: tint (Color3 for "paint", or { [mat] = Color3 }), variants ({ [mat] = name | false }), collide (false or a
@@ -160,8 +220,8 @@ function Kit.place(parent, name, cf, opts)
 	local l = lib()
 	local placed = 0
 	local sc = opts.scale
-	for _, pc in p.pieces do
-		local src = l and l:FindFirstChild("ZR_MK_" .. name .. "__" .. pc.mat)
+	for _, pc in mergedPieces(name, p, opts, l) or p.pieces do
+		local src = l and l:FindFirstChild("ZR_MK_" .. name .. "__" .. pc.mat .. (pc.merged and "_M" or ""))
 		if src then
 			local part = src:Clone()
 			local mm = (opts.mats and opts.mats[pc.mat]) or Kit.MATS[pc.mat] or Kit.MATS.plastic
@@ -194,6 +254,12 @@ function Kit.place(parent, name, cf, opts)
 			end
 			part:SetAttribute("NoDetail", true)
 			part:SetAttribute("KitMat", pc.mat)
+			if pc.merged then
+				-- how many pieces it stands for: a builder that counts a prop's pieces against a part budget counts these, so
+				-- the merge never changes what gets placed (Meridian/StoresFill.luau's placeKit)
+				part:SetAttribute("KitMerged", true)
+				part:SetAttribute("KitJoins", pc.joins)
+			end
 			part.Parent = m
 			placed += 1
 		end
