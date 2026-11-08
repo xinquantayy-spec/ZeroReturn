@@ -36,7 +36,7 @@
   VPO-209, which needs magazines that take two calibres; more 9x19 guns, more parts, the other barter goods, keys; the items that bring in the most left-out crafts: done in the thirteenth slice); art-1a (done 2026-11-09: the Smelter on Factory's layout; next its two items, KNOWN_ISSUES 85, then Pinewatch on Woods; Quay 7 stays in the vote for now: 14 task references in QuestData still need it until the maps they stand in for exist) / 4b (done 2026-11-09: every gun part textured, 46 sheets; worn gear and close-up items next) / 5b; bays and furniture in Relay 7 for the six
   hideout modules without one (done 22:19 SGT: stations and stencils; furniture by level waits on the owner's prop budget,
   KNOWN_ISSUES 84); bipods (done 22:31 SGT: the KS-L's, EFT's -80 %; rail bipod parts come with the parts slices); ai-4a
-  voices.
+  voices (recorded packs cost money: the owner's call; the placeholder, Roblox's AudioTextToSpeech, speaks English only, is reported to fail in unpublished places such as ours and is free only during its beta, so it waits for the owner too).
 - Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
   seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator
   check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft side-by-side in Edit mode, never a runtime
