@@ -490,6 +490,43 @@ function C.aiNear(name, n, r0, r1)
 	return moved
 end
 
+-- AI looting (decision ai-8a): drop a pile of gear `dist` studs in front of a player (a better rifle with a loaded
+-- magazine, a helmet, a gold chain) and stand a scav `scavDist` studs past it; lootLog() then shows what it took.
+function C.lootPile(name, dist, scavDist)
+	local p = plr(name)
+	local root = p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return "no char"
+	end
+	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	look = look.Magnitude > 0.1 and look.Unit or Vector3.new(0, 0, -1)
+	local at = root.Position + look * (dist or 20)
+	local h = Inv.newHolder("box", 8, 8)
+	local bundles = {}
+	for _, spec in { { "KST_RIFLE" }, { "KST_MAG", { a = 30, at = "A76_PS" } }, { "HELMET_C3", { ins = p.UserId } }, { "GOLD_CHAIN", { ins = p.UserId } } } do
+		local g, it = Inv.newItem(spec[1], 1, spec[2])
+		if Inv.place(h, g, it, { "main" }) then
+			table.insert(bundles, Inv.take(h, g))
+		end
+	end
+	local c = ctx.Loot.spawnPile(at, bundles)
+	local u = ctx.AI.spawn("scav", at + look * (scavDist or 18) + Vector3.new(0, 3, 0))
+	if u then
+		ctx.AI.wake(u)
+		u.route, u.post, u.leader = nil, nil, nil
+		u.state = "WANDER"
+	end
+	return string.format("pile %s at %s, scav %s", c and c.id or "?", tostring(at), u and u.name or "none")
+end
+
+function C.lootLog()
+	local out = {}
+	for _, e in ctx.AI.lootLog do
+		table.insert(out, string.format("%s %s moved=%d gun=%s gear=%s", e.unit, e.target, e.moved, tostring(e.gun), tostring(e.gear)))
+	end
+	return table.concat(out, "\n")
+end
+
 -- send an AI unit to a point (as if it heard something there): aiGoto("Scav_3", Vector3)
 function C.aiGoto(unitName, pos)
 	for _, u in ctx.AI.units do

@@ -223,6 +223,78 @@ function T.run(ctx)
 	check(string.format("roles: every boss and crew on the %d built maps has its own role (%d checked)%s", nMaps, nLabels,
 		#unknown > 0 and (": " .. table.concat(unknown, ", ")) or ""), #unknown == 0)
 
+	-- AI looting (decision ai-8a): what a bot takes from a body (Services/BotLoot), and that it is lost to insurance
+	local okLoot, errLoot = pcall(function()
+		local Services = script.Parent.Parent:WaitForChild("Services")
+		local Inv = require(Services.Inv)
+		local BotLoot = require(Services.BotLoot)
+		local function wear(h, id, slot, extra)
+			local g, it = Inv.newItem(id, 1, extra)
+			assert(Inv.placeSlot(h, g, it, slot), id)
+			return g
+		end
+		local function carry(h, id, n, extra, order)
+			local g, it = Inv.newItem(id, n or 1, extra)
+			assert(Inv.place(h, g, it, order or Inv.loadOrder(h)), id)
+			return g
+		end
+		-- the bot: a cheap pump gun, a chest rig, a day bag. The body: a better rifle (insured) with a loaded magazine
+		-- in the pack, a helmet (insured), a gold chain (insured), a dressing, a key, and a chain in its secure container
+		local bot = Inv.newHolder("raid")
+		local pump = wear(bot, "HARROW12", "primary")
+		wear(bot, "RIG_CHEST", "rig")
+		wear(bot, "BAG_SLING", "back")
+		local body = Inv.newHolder("raid")
+		local rifle = wear(body, "KST_RIFLE", "primary", { ins = 99 })
+		local helmet = wear(body, "HELMET_C3", "head", { ins = 99 })
+		wear(body, "CANVAS_BAG", "back")
+		local sec = wear(body, "SECURE_S", "secure")
+		local mag = carry(body, "KST_MAG", 1, { a = 30, at = "A76_PS" })
+		local chain = carry(body, "GOLD_CHAIN", 1, { ins = 99 })
+		local dressing = carry(body, "BANDAGE", 1)
+		local key = carry(body, "KEY_OFFICE", 1)
+		local hidden = carry(body, "GOLD_CHAIN", 1, nil, { sec })
+		local plan = BotLoot.pick(bot, body)
+		local kinds = {}
+		for _, e in plan do
+			kinds[e.g] = e.kind
+		end
+		check("loot: a better gun with rounds for it (worth a fifth more than its own)", kinds[rifle] == "gun")
+		check("loot: a helmet for its empty head slot", kinds[helmet] == "wear")
+		check("loot: a gold chain, worth carrying", kinds[chain] == "take")
+		check("loot: no dressing (too cheap), no key, nothing out of the secure container", kinds[dressing] == nil and kinds[key] == nil and kinds[hidden] == nil)
+		local res = BotLoot.apply(bot, body, plan)
+		check("loot: the rifle in hand, the pump gun slung as its second gun", bot.slots.primary == rifle and bot.slots.secondary == pump and res.gun == rifle)
+		check("loot: the rifle's loaded magazine comes with it", bot.items[mag] ~= nil and body.items[mag] == nil)
+		check("loot: the helmet worn and the chain carried", bot.slots.head == helmet and bot.items[chain] ~= nil and body.items[chain] == nil and res.gear == true)
+		check("loot: what a bot takes is lost to insurance (EFT 0.13.5)", bot.items[rifle].ins == nil and bot.items[helmet].ins == nil and bot.items[chain].ins == nil)
+		check("loot: both inventories stay valid", (Inv.check(bot)) and (Inv.check(body)) and body.items[hidden] ~= nil)
+		-- a cheaper gun stays, ammunition for another calibre stays, four things at most
+		local bot2 = Inv.newHolder("raid")
+		wear(bot2, "KST_RIFLE", "primary")
+		wear(bot2, "BAG_PATROL", "back")
+		local body2 = Inv.newHolder("raid")
+		local pump2 = wear(body2, "HARROW12", "primary")
+		wear(body2, "BAG_RAID", "back")
+		local buck = carry(body2, "A12_BUCK", 20)
+		for _ = 1, 6 do
+			carry(body2, "GOLD_CHAIN", 1)
+		end
+		local plan2 = BotLoot.pick(bot2, body2)
+		local k2, takes = {}, 0
+		for _, e in plan2 do
+			k2[e.g] = e.kind
+			if e.kind == "take" then
+				takes += 1
+			end
+		end
+		check("loot: a cheaper gun and rounds it cannot fire stay on the body", k2[pump2] == nil and k2[buck] == nil)
+		check("loot: at most four things a search", takes == BotLoot.MAX_TAKE)
+	end)
+	if not okLoot then
+		check("loot: the checks ran (" .. tostring(errLoot) .. ")", false)
+	end
+
 	local summary = string.format("AiTests: %d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

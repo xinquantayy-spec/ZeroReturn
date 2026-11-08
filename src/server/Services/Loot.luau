@@ -931,6 +931,36 @@ function Loot.takeLoose(player, id)
 	return true
 end
 
+-- loose items within r studs of pos (AI looting, decision ai-8a): { { id, g, it, pos } }
+function Loot.looseNear(pos, r)
+	local out = {}
+	for id, e in loose do
+		if e.part and e.part.Parent then
+			local d = (e.part.Position - pos).Magnitude
+			if d <= r then
+				table.insert(out, { id = id, g = e.g, it = e.holder.items[e.g], pos = e.part.Position, holder = e.holder, d = d })
+			end
+		end
+	end
+	return out
+end
+
+-- an AI picks up loose item `id` into holder h (its own inventory, in `order`): gone from the world if it fits
+function Loot.takeLooseInto(id, h, order)
+	local e = loose[id]
+	if not e then
+		return false
+	end
+	if not Inv.transfer(e.holder, e.g, h, nil, order) then
+		return false
+	end
+	loose[id] = nil
+	if e.model then
+		e.model:Destroy()
+	end
+	return true
+end
+
 -- worn armour for an AI kit (gameplay-2a): a share of the item's durability, so its parts and the default plates that
 -- come in it (Inv.expandArmour) are worn alike. The shares keep each kit's old range against the old maximum.
 local function wornDur(id, rand, lo, hi)

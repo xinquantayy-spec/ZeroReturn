@@ -304,7 +304,7 @@ Still a gap:
 | Scav groups of up to four or five | Three at most (45 % alone, 45 % pairs, 10 % threes) | Bigger groups once ai-2b raises the cap |
 | Raiders only on Reserve and Labs; sniper scavs on Customs | Built 2026-11-08 (ai-1a, Studio check pending): Border Yard and Meridian's posts, routes and the Bastion's gunners are scavs; marksmen (hard, a scoped Tundra) on the reference's perches: the derrick always, the boiler house and depot roofs half the time, the block post empty, as EFT's waves | The Watch stays on Quay 7 and Smelter (our maps); EFT's marksmen are the sniper-scav role, ours use BotData's marksman numbers |
 | Voice lines, call-outs, boss voices, a warning to player scavs | Silent; call-outs share positions without a sound | ai-4a: recorded voice packs (the audio quota, KNOWN_ISSUES 6) |
-| Bots loot bodies and loose loot; what they take is lost to insurance | AI never loot | ai-8a |
+| Bots loot bodies and loose loot; what they take is lost to insurance | Built 2026-11-08 (ai-8a, checked in Studio): a calm scav goes to a body or dropped gear within 30 m, or a loose item worth 4,000 MK or more within 15 m, searches 4-8 s crouched (1.5 s for a loose item) and takes a gun worth a fifth more than its own with its rounds (its own gun slung), gear for an empty slot, and up to four valuables; one bot to a body; a fight or a noise breaks it off; what it takes loses its insurance (EFT 0.13.5's note) | Which items EFT's bots prefer, their search times and ranges are ours (not published); scavs only, PMC bots with ai-6b; bots do not look in containers; nothing out of the secure container |
 | Killa's LMG, Big Pipe's grenade launcher, Birdeye's marksman rifle, Tagilla's semi-auto 12 gauge, Reshala's golden pistol | Stand-ins: the Caretaker's shotgun, MORTAR throws grenades, the Stoker's pump gun, the Broker's plain pistol | ai-5b: the LMG and the launcher; stand-ins for the rest |
 | PvE mode with AI PMCs | None | ai-6b, after ai-2 and ai-3 |
 | Leaning, prone and vaulting bots; flanking and group pushes; shooting and looking at bodies | Not built; peeking steps sideways from full cover | Later |
@@ -1338,6 +1338,18 @@ and 10; the gaps they found are in the same tables.
   gun's full rate of fire (it fired an 800 RPM gun at about 600).
 - **EFT's roster (ai-1a, coordinator):** no Watch on Border Yard and Meridian Mall; scavs on their posts and the
   Bastion's guns; marksmen on Customs' perches (section 8).
+
+### M4 batch 4, coordinator's part (2026-11-08)
+
+Checked in Studio (TEST_RESULTS, 11:00 to 12:00 SGT; all 11 suites pass, 850 checks):
+- **Relay 7 counters for all eight traders.** DEKKER across the hall from VOS, HALE and TILDA; KOVAC in the gunsmith's
+  room; ROOK and BRAM either side of the motor pool's vehicle opening; each with an NPC in his own clothes and a name
+  board. Our design choice (the walk-around bunker); every trader screen still opens from its key.
+- **Plates in the drag cue.** A plate dropped on a vest's tile lights green when a slot takes it, red onto a worn vest
+  (Tarkov 0.14: take it off first). A part or plate a drop replaces goes to the stash out of a raid.
+- **Pictures for every carried item.** The 16 plates, the antidote, both flares, the ritual amulet and knife, the
+  Forester's pack and the welding mask.
+- **AI looting (ai-8a).** The row in section 8 above says what matches EFT and what is ours.
 
 ### M4 batch 1-3 checked in Studio (2026-11-08)
 

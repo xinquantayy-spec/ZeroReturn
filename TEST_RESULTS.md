@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## AI looting (decision ai-8a; 2026-11-08, 11:55 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | AiTests 65/65 (new: a better gun with rounds taken and the bot's own slung, a helmet for an empty slot, a gold chain taken, no cheap dressing, key or secure-container item, the loaded magazine follows the gun, taken items lose their insurance, a cheaper gun and other-calibre rounds left, four things at most); all 11 suites pass, 850 checks. |
+| Live, Border Yard (god and ignore on) | A pile 16 studs ahead (a KS-7 rifle, its loaded magazine, an insured helmet, an insured gold chain) and a scav 20 studs past it: within 25 s the scav (already carrying a KS-7) took the magazine, the helmet and the chain and left the rifle (not a fifth better than its own). In the same 25 s three other scavs picked up loose items worth carrying; one could not fit its item and moved on. Another scav was seen crouched in LOOT state. |
+| Not checked | The insurance flag on the live scav's items (the tests check it), a scav swapping guns live, bodies of players killed by the AI, looting during a fight (the dispatch only runs it while calm), the AI cost with many bodies. |
+
 ## Plate pictures (2026-11-08, 11:30 SGT)
 
 | Test | Result |

@@ -28,6 +28,7 @@ local Ballistics = require(Shared.Ballistics)
 local Progress = require(Shared.Progress)
 local BotData = require(Shared.BotData)
 local Recoil = require(Shared.Recoil)
+local BotLoot = require(script.Parent.BotLoot)
 local KARMA_HOSTILE = Progress.KARMA.hostileBelow
 
 local AI = {}
@@ -597,7 +598,7 @@ local function sleepTick(u)
 	end
 	local t = now()
 	-- (and standing on something: a unit put to sleep in mid-air, just spawned on a perch, would hang there anchored)
-	local calm = (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN") and t >= (u.alert or 0) and not u.target
+	local calm = (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN" or u.state == "LOOT") and t >= (u.alert or 0) and not u.target
 		and u.hum.FloorMaterial ~= Enum.Material.Air
 	local want = AI.sleepState(u.asleep == true, nearest, calm)
 	if want and not u.asleep then
@@ -1731,7 +1732,7 @@ local function perceive(u, t, dt)
 	local eye = u.head.Position
 	local look = u.root.CFrame.LookVector
 	local se = u.sense
-	local calm = t >= (u.alert or 0) and (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN")
+	local calm = t >= (u.alert or 0) and (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN" or u.state == "LOOT")
 	-- how far it sees: its role's sight, less while calm (Patrol.VISION_DIST_COEF_PEACE), in the dark and in rain, never
 	-- past the fog's wall; in the dark a light on a body shows it from further (Look.ENEMY_LIGHT_ADD)
 	local range = math.min(se.sight * envView.sight * (calm and se.peace or 1), envView.cap)
@@ -1807,6 +1808,134 @@ local function perceive(u, t, dt)
 	return best
 end
 
+-- ── looting (decision ai-8a: EFT's scavs loot bodies since 0.12.7, corpses and loose loot since 0.13.5) ────────────
+-- A calm scav that sees nothing to fight looks round every few seconds for a body or a pile of dropped gear within
+-- 30 m, or a loose item worth carrying within 15 m, walks there, searches it crouched for a few seconds and takes what
+-- BotLoot picks (a better gun with its rounds, gear for an empty slot, valuables); what it takes is lost to insurance.
+-- One bot to a body at a time; a fight or a noise breaks it off (the dispatch only runs this while calm). The ranges,
+-- times and the scavs-only rule are ours (EFT's are not published); PMC bots are a later step.
+local LOOT_KINDS = { scav = true }
+local LOOT_LOOK = 4 -- seconds between looks
+local LOOT_R = 30 * BotData.STUDS
+local LOOT_LOOSE_R = 15 * BotData.STUDS
+local LOOT_TIME = { 4, 8 } -- seconds a body or pile takes
+local LOOT_LOOSE_TIME = 1.5
+local LOOT_GIVE_UP = 25 -- seconds to get there
+local lootClaims = {} -- [container or loose id] = the unit on its way or searching
+AI.lootLog = {} -- the last searches, for ZR_Dev "ai" and the tests: { unit, target, moved, gun, gear, t }
+
+local function claimedByOther(id, u)
+	local o = lootClaims[id]
+	return o ~= nil and o ~= u and o.alive and o.state == "LOOT" and o.loot ~= nil and o.loot.id == id
+end
+
+local function lootLook(u, t)
+	if t < (u.nextLootLook or 0) then
+		return nil
+	end
+	u.nextLootLook = t + LOOT_LOOK + math.random() * 2
+	u.looted = u.looted or {}
+	local pos = u.root.Position
+	local best, bestD = nil, math.huge
+	for cid, c in ctx.Loot.containers do
+		if (c.body or c.pile) and c.part and c.part.Parent and c.holder and next(c.holder.items) ~= nil and not u.looted[cid] and not claimedByOther(cid, u) then
+			local d = (c.part.Position - pos).Magnitude
+			if d < LOOT_R and d < bestD and #BotLoot.pick(u.inv, c.holder) > 0 then
+				best, bestD = { id = cid, c = c }, d
+			end
+		end
+	end
+	if best then
+		return best
+	end
+	for _, e in ctx.Loot.looseNear(pos, LOOT_LOOSE_R) do
+		local key = "loose:" .. e.id
+		if e.it and not u.looted[key] and not claimedByOther(key, u) and BotLoot.worth(e.holder, e.g) >= BotLoot.MIN_VALUE and e.d < bestD then
+			best, bestD = { id = key, looseId = e.id, pos = e.pos }, e.d
+		end
+	end
+	return best
+end
+
+local function lootDone(u)
+	local L = u.loot
+	if L then
+		u.looted = u.looted or {}
+		u.looted[L.id] = true
+		if lootClaims[L.id] == u then
+			lootClaims[L.id] = nil
+		end
+	end
+	u.loot = nil
+	u.state = "RETURN"
+	setStance(u, "s", 0.7)
+end
+
+local function lootTick(u, t)
+	local L = u.loot
+	local target = L and (L.c and L.c.part and L.c.part.Parent and L.c.part.Position or L.pos)
+	if not L or not target then
+		lootDone(u)
+		return
+	end
+	if not L.searchAt then
+		local d = flat(target - u.root.Position).Magnitude
+		if d > 3.4 then
+			if t > L.giveUp or (u.stuck or 0) >= 4 then
+				lootDone(u) -- out of reach
+			else
+				moveTo(u, target, false)
+			end
+			return
+		end
+		stop(u)
+		face(u, target)
+		setStance(u, "c", 0.6)
+		L.searchAt = t + (L.looseId and LOOT_LOOSE_TIME or rnd(LOOT_TIME[1], LOOT_TIME[2]))
+		ctx.Chars.gesture(u.model, "check", 2.4)
+		return
+	end
+	if t < L.searchAt then
+		face(u, target)
+		return
+	end
+	-- take it
+	local res
+	if L.looseId then
+		local ok = ctx.Loot.takeLooseInto(L.looseId, u.inv, Inv.loadOrder(u.inv))
+		res = { moved = ok and 1 or 0, gear = false }
+	elseif L.c.holder then
+		res = BotLoot.apply(u.inv, L.c.holder, BotLoot.pick(u.inv, L.c.holder))
+		if res.moved > 0 then
+			pcall(ctx.Loot.changed, L.c)
+		end
+	end
+	if res and res.moved > 0 then
+		ctx.Remotes.fx("sfx", { n = "loot_pickup", p = u.root.Position, v = 0.55 })
+		if res.gun then
+			-- fight with the better gun once it has rounds in it (EFT 1.0.2: bots re-equip looted weapons)
+			local w = weaponIn(u, "primary")
+			if w then
+				local old = u.w
+				u.w = w
+				if roundsOf(u) > 0 or canReload(u) then
+					equip(u, w)
+				else
+					u.w = old
+				end
+			end
+		end
+		if res.gear or res.gun then
+			pcall(ctx.Appearance.apply, u.model, { holder = u.inv, active = u.w and u.w.g })
+		end
+	end
+	table.insert(AI.lootLog, { unit = u.name, target = L.id, moved = res and res.moved or 0, gun = res and res.gun ~= nil, gear = res and res.gear, t = t })
+	if #AI.lootLog > 40 then
+		table.remove(AI.lootLog, 1)
+	end
+	lootDone(u)
+end
+
 local function think(u)
 	local t = now()
 	local dt = math.clamp(t - (u.lastThink or t), 0.05, 0.6)
@@ -1816,7 +1945,7 @@ local function think(u)
 	end
 	-- perception: 5 Hz while alert or fighting, 2.5 Hz while calm
 	u.tick = (u.tick or 0) + 1
-	local calm = (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN") and t >= (u.alert or 0)
+	local calm = (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN" or u.state == "LOOT") and t >= (u.alert or 0)
 	local seen = nil
 	if not calm or u.tick % 2 == 0 then
 		seen = perceive(u, t, calm and dt * 2 or dt)
@@ -1896,7 +2025,21 @@ local function think(u)
 			u.goal = nil
 			u.state = (u.route or u.post or u.leader) and "PATROL" or "WANDER"
 		end
-		idle(u, t)
+		if u.state == "LOOT" then
+			lootTick(u, t)
+		else
+			local found = LOOT_KINDS[u.kind] and not u.post and not u.ambush and t >= (u.alert or 0) and lootLook(u, t)
+			if found then
+				found.giveUp = t + LOOT_GIVE_UP
+				lootClaims[found.id] = u
+				u.loot = found
+				u.state = "LOOT"
+				u.stuck = 0
+				lootTick(u, t)
+			else
+				idle(u, t)
+			end
+		end
 		-- calm: top up the magazine
 		if not u.reloadUntil and u.w and roundsOf(u) < capacityOf(u) * 0.5 and canReload(u) then
 			startReload(u, t)
@@ -2433,6 +2576,7 @@ function AI.clear()
 		end
 	end
 	table.clear(units)
+	table.clear(lootClaims)
 	for _, list in cover.cells do
 		for _, c in list do
 			c.owner = nil
