@@ -99,6 +99,7 @@ local fireLatch, dryLatch = false, false
 local aimWanted = false
 local aimA, sprintA, reloadA, checkA, tubeA, raise = 0, 0, 0, 0, 0, 0
 local reloadT0, reloadDur, joltDone = nil, 2.2, false
+local quickSent = false -- the second R of a double tap went to the server (quick reload)
 local tubeT0, tubePeriod = nil, 0.55
 local cycleT0, cycleDur, cycleKind = nil, 0, nil -- pump / bolt cycling after a shot
 local slashT0, slashSent = nil, false
@@ -1577,6 +1578,15 @@ function Weapon.init(c)
 	Input.on("Reload", function(down)
 		-- gamepad X is shared with the interaction prompt: a visible prompt takes the press
 		if down and not (Input.device() == "Gamepad" and c.Interact and c.Interact.current) then
+			-- Tarkov's quick reload (gameplay-5b): R twice drops the old magazine at your feet and reloads faster; the
+			-- server times it (Combat.QUICK_WINDOW, QUICK_MUL). Gamepad: X twice; touch: RELOAD twice
+			if Weapon.reloading and reloadT0 and not quickSent and not tubeT0 and vm and not vm.def.internal
+				and os.clock() - reloadT0 <= 0.4 and not practicing() then
+				quickSent = true
+				ctx.State.act("reload", { quick = true })
+				return
+			end
+			quickSent = false
 			Weapon.startReload()
 		end
 	end)

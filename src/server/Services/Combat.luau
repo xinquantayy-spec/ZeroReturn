@@ -522,7 +522,43 @@ local function tubeReload(player, s, w, wg, wit, wdef, wd)
 	end)
 end
 
-function Combat.reload(player)
+-- Tarkov's quick reload (gameplay-5b; a fan controls sheet, 2020, gist xXPhenomXx: "double tap R to toss the mag on
+-- the ground for a quicker reload"): a second reload press within QUICK_WINDOW of the first drops the old magazine at
+-- your feet instead of stowing it, and the reload takes QUICK_MUL of its time (ours: EFT's saving is not published)
+Combat.QUICK_WINDOW, Combat.QUICK_MUL = 0.4, 0.75
+
+local function finishReload(player, s, w, token, best, wg, wit, quick)
+	if W[player] ~= w or w.reloadToken ~= token then
+		return
+	end
+	local s2 = ctx.Raid.session(player)
+	if s2 ~= s or s.done or not alive(player) or not s.inv.items[best] or not s.inv.items[wg] then
+		return
+	end
+	local function drop()
+		-- the old magazine falls to the ground
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		local b = Inv.take(s.inv, wit.mag)
+		if b and root then
+			ctx.Loot.spawnPile(root.Position - Vector3.new(0, 2.5, 0), { b })
+		end
+	end
+	if quick and wit.mag and s.inv.items[wit.mag] then
+		drop()
+	end
+	local done, err = Inv.insertMag(s.inv, best, wg)
+	if not done and err == "NO_SPACE" and wit.mag then
+		drop() -- no room for the old magazine: it falls to the ground too
+		Inv.insertMag(s.inv, best, wg)
+	end
+	w.reloadQuick = nil
+	local m = wit.mag and s.inv.items[wit.mag]
+	ctx.Remotes.note(player, "ammo", { a = m and m.a or 0 })
+	ctx.Raid.push(player)
+end
+
+function Combat.reload(player, quick)
 	local s = ctx.Raid.session(player)
 	if not s or s.done or not alive(player) then
 		return
@@ -530,6 +566,18 @@ function Combat.reload(player)
 	local w = ws(player)
 	local t = os.clock()
 	if t < w.reloadUntil or w.tube then
+		-- the second press of a double tap turns the magazine reload under way into a quick one
+		local r = w.reloadInfo
+		if quick and r and not w.reloadQuick and w.reloadToken == r.token and t - r.t0 <= Combat.QUICK_WINDOW then
+			local token = {}
+			w.reloadToken, w.reloadQuick = token, true
+			local dur = r.dur * Combat.QUICK_MUL
+			w.reloadUntil = r.t0 + dur
+			ctx.Remotes.note(player, "reload", { state = "start", t = dur, quick = true })
+			task.delay(math.max(0, r.t0 + dur - t), function()
+				finishReload(player, s, w, token, r.best, r.wg, r.wit, true)
+			end)
+		end
 		return
 	end
 	local wg, wit, wdef, wd, cur = Combat.activeWeapon(s)
@@ -549,34 +597,18 @@ function Combat.reload(player)
 	local hs = ctx.Health.of(player)
 	local slow = hs and ctx.Health.mods(hs).reload or 1
 	local dur = ((cur and (cur.a or 0) > 0) and wdef.reload or wdef.reloadEmpty) * slow
+	if quick then
+		dur *= Combat.QUICK_MUL
+	end
 	local token = {}
-	w.reloadToken = token
+	w.reloadToken, w.reloadQuick = token, quick or nil
 	w.reloadUntil = t + dur
+	w.reloadInfo = { token = token, t0 = t, dur = dur, best = best, wg = wg, wit = wit }
 	dropAim(player, s)
-	ctx.Remotes.note(player, "reload", { state = "start", t = dur })
+	ctx.Remotes.note(player, "reload", { state = "start", t = dur, quick = quick or nil })
 	ctx.Chars.gesture(player.Character, "reload", dur)
 	task.delay(dur, function()
-		if W[player] ~= w or w.reloadToken ~= token then
-			return
-		end
-		local s2 = ctx.Raid.session(player)
-		if s2 ~= s or s.done or not alive(player) or not s.inv.items[best] or not s.inv.items[wg] then
-			return
-		end
-		local done, err = Inv.insertMag(s.inv, best, wg)
-		if not done and err == "NO_SPACE" and wit.mag then
-			-- no room for the old magazine: it falls to the ground (Tarkov quick reload)
-			local char = player.Character
-			local root = char and char:FindFirstChild("HumanoidRootPart")
-			local b = Inv.take(s.inv, wit.mag)
-			if b and root then
-				ctx.Loot.spawnPile(root.Position - Vector3.new(0, 2.5, 0), { b })
-			end
-			Inv.insertMag(s.inv, best, wg)
-		end
-		local m = wit.mag and s.inv.items[wit.mag]
-		ctx.Remotes.note(player, "ammo", { a = m and m.a or 0 })
-		ctx.Raid.push(player)
+		finishReload(player, s, w, token, best, wg, wit, quick)
 	end)
 end
 
@@ -767,9 +799,9 @@ end
 function Combat.init(c)
 	ctx = c
 	ctx.Remotes.onShoot(Combat.shoot)
-	ctx.Remotes.onAct("reload", function(player)
-		Combat.reload(player)
-	end, 2, 3)
+	ctx.Remotes.onAct("reload", function(player, p)
+		Combat.reload(player, type(p) == "table" and p.quick == true)
+	end, 3, 4)
 	ctx.Remotes.onAct("draw", function(player, p)
 		if type(p) == "table" and type(p.slot) == "string" then
 			Combat.draw(player, p.slot)

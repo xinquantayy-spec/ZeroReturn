@@ -122,6 +122,32 @@ function Chars.init(c)
 		end
 	end
 	installStarterCharacter()
+	-- Tarkov's overweight noise (0.12.4 notes: overweight brings "increased equipment noise"; gameplay-5b): every 2 s
+	-- each raider's character carries Overweight = 0 (under the limit), 1 (overweight) or 2 (critical), from the raid
+	-- kit's weight against the limits the client moves by (Config.WEIGHT_OVER / WEIGHT_CRIT, raised by Strength);
+	-- every client's footsteps rattle the kit more often and further for it (Effects.footstep)
+	task.spawn(function()
+		local Inv = require(script.Parent.Inv)
+		while true do
+			task.wait(2)
+			for _, p in Players:GetPlayers() do
+				local char = p.Character
+				local s = ctx.Raid and ctx.Raid.session(p)
+				local lvl = 0
+				if char and s and not s.done then
+					local ok, w = pcall(Inv.weight, s.inv)
+					if ok and w then
+						local prof = ctx.Profiles.get(p)
+						local strong = 1 + Progress.bonus(prof and prof.skills, "strength")
+						lvl = (w > Config.WEIGHT_CRIT * strong and 2) or (w > Config.WEIGHT_OVER * strong and 1) or 0
+					end
+				end
+				if char and char:GetAttribute("Overweight") ~= lvl then
+					char:SetAttribute("Overweight", lvl)
+				end
+			end
+		end
+	end)
 end
 
 -- ── gear ─────────────────────────────────────────────────────────────────────

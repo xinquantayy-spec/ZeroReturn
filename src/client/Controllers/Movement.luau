@@ -59,9 +59,18 @@ function Movement.poseParams()
 	return { stance = Movement.stance, depth = Movement.depth, lean = Movement.lean, pitch = 0, crouchFwd = Movement.stance == "c" and 0.15 * Movement.depth or 0 }
 end
 
+-- Tarkov: changing stance uses leg stamina (0.12.4 notes: leg stamina is for "sprinting, jumping, changing body
+-- positions"; gameplay-5b). The amounts are ours (EFT's are not published): getting up costs more than going down
+local STANCE_COST = { sc = 1, cs = 2, sp = 4, cp = 3, ps = 6, pc = 5 }
+Movement.STANCE_COST = STANCE_COST
+
 local function setStance(st)
 	if st == Movement.stance then
 		return
+	end
+	local cost = STANCE_COST[(Movement.stance or "s") .. st]
+	if cost and ctx and ctx.State.inRaid() then
+		Movement.stamina = math.max(0, Movement.stamina - cost)
 	end
 	if st == "p" or Movement.stance == "p" then
 		Movement.transitionUntil = os.clock() + Config.PRONE_TIME

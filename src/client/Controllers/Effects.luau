@@ -418,8 +418,17 @@ function Effects.footstep(pos, intensity, model, own)
 		gearReach = Hearing.perceptionReach(skills) * (1 - Hearing.covertQuiet(level, nil))
 		Effects.sfx(name, hit and hit.Position or pos, vol * (hs and 1.35 or 1), speed, Hearing.stepRadius(intensity, hs, skills, level, fam))
 	end
-	if intensity > 0.9 and math.random() < 0.35 then
-		Effects.sfx("gear_rattle", own and SoundService or pos, vol * 0.5, 1, 40 * gearReach)
+	-- an overweight walker's kit rattles more often, louder and further (Tarkov 0.12.4: overweight brings "increased
+	-- equipment noise"; the server's Overweight attribute, Chars.luau; ours: how much more)
+	local ow = 0
+	if own then
+		local M, L = ctx.Movement, ctx.Movement and ctx.Movement.limits
+		ow = (M and L and ((M.weight > L.crit and 2) or (M.weight > L.over and 1))) or 0
+	elseif model then
+		ow = model:GetAttribute("Overweight") or 0
+	end
+	if (intensity > 0.9 and math.random() < 0.35 + 0.2 * ow) or (ow > 0 and intensity > 0.45 and math.random() < 0.25 * ow) then
+		Effects.sfx("gear_rattle", own and SoundService or pos, vol * 0.5 * (1 + 0.3 * ow), 1, 40 * gearReach * (1 + 0.4 * ow))
 	end
 end
 

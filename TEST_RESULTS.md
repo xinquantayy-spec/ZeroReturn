@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Quick reload, stance stamina, overweight noise (decision gameplay-5b, part 1; 2026-11-08, about 13:55 SGT)
+
+| Test | Result |
+|---|---|
+| Quick reload, Border Yard | With 19 rounds in the R-17 and two 25-round magazines in the rig, R twice 0.15 s apart: the gun held 25 again, and a "Dropped gear" pile lay 2.9 studs away with the old magazine, which had left the kit. (A first try failed: the magazines handed in for the test sat in the backpack, and Tarkov reloads only from the rig and pockets, so NO SPARE MAGAZINES was right.) |
+| Overweight | The character's Overweight attribute read 0 with the normal kit, 1 after a 20 kg propane cylinder (over 26 kg), 2 after a second (over 46 kg), each within 2.5 s. |
+| Not checked | The quick reload's shorter time measured on its own, a stance change's stamina cost read on screen, the louder rattle by ear, the gamepad and touch double taps. |
+
 ## Light blood (decision art-7a; 2026-11-08, about 13:35 SGT)
 
 | Test | Result |
