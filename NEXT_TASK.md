@@ -14,9 +14,8 @@
   ai-7a, economy-2a, gameplay-2a) are on main; 11 suites, 830 checks pass. Studio's id is now b79ee504-12b7-4e23-b725-da89d70d2f1a;
   Rojo serves on port 34873 (after a Studio restart the owner clicks Connect).
 - Still open from those: Relay 7 counters, NPCs and portraits for ROOK, DEKKER, KOVAC and BRAM; 16 plate icons; the drag
-  cue for plates; the sky decals resolved to image ids and switched by Atmos (art.2); the M11 malfunction glow (gameplay.12),
-  rain (art.12), the lighting style (art.1, decided in Edit mode, never by a runtime switch: that hung Studio); kit origins
-  (art.9); ZR_SFX_Amb (the owner checks why it reads as 0.0 s before any re-upload).
+  cue for plates; the device-emulator check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft
+  side-by-side in Edit mode, never a runtime switch (that hung Studio); kit origins (art.9); ZR_SFX_Amb (the owner checks why it reads as 0.0 s before any re-upload).
 - Next decisions: economy-6a (a map-first core of about 120 tasks, now on eight traders), gameplay-4b (health and meds),
   ai-8a (AI looting), ui-1a (in-raid health), gameplay-3a (sound occlusion), tech-8c (a Luau runtime for tests: needs the
   owner's OK to build the official Luau from source).
@@ -136,7 +135,7 @@ Maps copy Tarkov's layouts (owner, 2026-11-01, now in the project instructions):
 
 ## After that
 
-- **M11 part B: built.** Weapon wear and heat, Tarkov's four malfunctions (found with L, cleared with Shift+T), trader repairs and the repair kit (`Combat.luau`). Still to do: the Studio malfunction check (gameplay.12) and the wiki's missing rules (gameplay.11).
+- **M11 part B: built.** Weapon wear and heat, Tarkov's four malfunctions (found with L, cleared with Shift+T), trader repairs and the repair kit (`Combat.luau`). Tarkov's heat and malfunction rules added (gameplay.11) and the Studio malfunction check done (gameplay.12, 2026-11-08: a failure to eject at 20 % condition).
 - **M14 Weapon art: done (2026-10-29).** 187 Blender part meshes; textures for first-person guns are art-4b.
 - **M15 QA:** two-client test, device emulation, performance, exploit regression (vault speed checks), docs, git bundle backup. (The inventory columns scroll since 2026-10-31.)
 - Still to check from M10: rain streaks, lens droplets and environment sounds in a rainy raid.
