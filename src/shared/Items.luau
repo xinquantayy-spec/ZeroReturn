@@ -438,6 +438,13 @@ loot("LIGHTBULB", "Light Bulb", "BULB", 1, 1, 0.1, 3500, "common", "An incandesc
 loot("TOOTHPASTE", "Toothpaste", "PASTE", 1, 1, 0.15, 4000, "common", "Unopened tube of toothpaste.", "#5A8EB8")
 loot("SOAP", "Soap Bar", "SOAP", 1, 1, 0.1, 3000, "common", "Wrapped bar of soap.", "#C8B8D8")
 loot("BLEACH", "Bleach", "BLEACH", 1, 2, 1.0, 8000, "common", "A bottle of household bleach.", "#D8DCE0")
+-- decision economy-7b (the hideout's economy core): three barter goods EFT's hideout leans on that had no counterpart here.
+-- GUNPOWDER stands for EFT's gunpowder "Kite", "Hawk" and "Eagle" (the workbench's ammunition and grenade crafts),
+-- FABRIC for its aramid, Cordura, ripstop and fleece (the lavatory's gear crafts), MOONSHINE for its bottle of moonshine
+-- (the scav case's dearest run and its construction). Sizes after EFT's (gunpowder and moonshine 1x2); values ours.
+loot("GUNPOWDER", "Powder Tin", "POWDER", 1, 2, 0.6, 15000, "uncommon", "A sealed tin of smokeless rifle powder. Reloaders and grenade makers pay well for it.", "#5E6650")
+loot("FABRIC", "Fabric Roll", "FABRIC", 1, 1, 0.3, 9000, "common", "A tight roll of heavy-duty technical fabric: aramid weave and ripstop offcuts. Good for mending vests and packs.", "#5C6B4E")
+loot("MOONSHINE", "Moonshine", "MOONSHINE", 1, 2, 1.1, 140000, "rare", "A corked bottle of home-distilled spirit, strong enough to strip paint. Scavs will do a lot for one.", "#B9A97A")
 add("DOGTAG", { name = "Dog Tag", short = "TAG", kind = "loot", w = 1, h = 1, mass = 0.02, value = 12000, rarity = "uncommon", desc = "An operator's identification tag. Worth more the more experienced its owner was.", color = c("#A7A9A0") })
 
 -- ── M14 weapon parts (WeaponParts.luau): every part is an item of kind "mod" with its part record ──────────

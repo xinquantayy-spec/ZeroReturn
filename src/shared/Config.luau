@@ -34,6 +34,10 @@ local Config = {
 	OUT_REGEN_MUL = 4,
 	OUT_REGEN_HP_HOUR = 456.6, -- EFT's HP an hour (x OUT_REGEN_MUL = 1,826.4 an hour here)
 	OUT_REGEN_VITALS_MIN = 1, -- EFT's energy and hydration a minute (x OUT_REGEN_MUL = 4 a minute here)
+	-- Hideout (decision economy-7b with economy-4b, "EFT curves, faster clocks"): EFT's costs and requirements exactly
+	-- (1 rouble = 1 MK), and every real-time hideout timer (construction, crafts, the scav case, the bitcoin farm, the
+	-- generator's fuel burn) divided by this one constant. 4 is ours: the audit's example factor (economy.md, economy-4b).
+	HIDEOUT_TIME_DIV = 4,
 	BODY_TIME = 600, -- player bodies stay lootable this long (or until the raid ends)
 	AI_MAX = 18, -- live AI cap per raid
 	SCAV_START = 4, -- AI scavs at raid start (+ SCAV_PER_PLAYER per raider, up to SCAV_CAP)
