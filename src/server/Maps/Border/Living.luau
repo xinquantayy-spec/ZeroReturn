@@ -197,6 +197,13 @@ return function(B)
 	function Frame:flight(u, v, y0, rise, run, w, dir, yBase, color, mat)
 		local n = math.max(1, math.floor(rise * 2 + 0.5))
 		local r = run / n
+		-- art-5b: the Kit5 flight (one mesh and a ramp) when the batch is loaded, these steps otherwise
+		local du = (dir == "+u" and 1) or (dir == "-u" and -1) or 0
+		local dv = (dir == "+v" and 1) or (dir == "-v" and -1) or 0
+		local foot = self.base * CFrame.lookAt(V3(u, y0, v), V3(u + du, y0, v + dv))
+		if H.k5Flight(self.parent, foot, n, rise / n, r, w, yBase and "C" or "O", color, mat, { base = yBase and (y0 - yBase) or nil }) then
+			return
+		end
 		for k = 1, n do
 			local top = y0 + k * rise / n
 			local lo = yBase or (top - 1.5)
@@ -225,6 +232,9 @@ return function(B)
 		end
 		local look = CFrame.lookAt((a + b) / 2, b)
 		local col, m = color or P.steel, mat or M.Metal
+		if H.k5Rail(self.parent, a, b, col, m) then -- art-5b: the Kit5 railing when the batch is loaded
+			return
+		end
 		kit.boxCF(self.parent, 0.25, 0.25, len, look * CFn(0, 3.3, 0), col, m)
 		kit.boxCF(self.parent, 0.18, 0.18, len, look * CFn(0, 1.7, 0), col, m)
 		for _, p in { a, b } do
