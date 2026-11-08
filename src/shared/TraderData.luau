@@ -200,12 +200,16 @@ T.offers = {
 	-- and its ammunition from LL2, rifle-cartridge and slug ammunition, a PSO-style 4x and a suppressor at LL3, AP rounds at LL4
 	vos = {
 		o("P9_PISTOL", 1, 2), o("HARROW12", 1, 2), o("P9_MAG", 1, 10), o("KST_MAG", 1, 6),
-		o("A9_PST", 1, 10, 50), o("A12_BUCK", 1, 8, 20), o("GREN_RK5", 1, 4), o("GREN_SMOKE", 1, 3), o("FLARE_GREEN", 1, 2),
+		o("GREN_RK5", 1, 4), o("GREN_SMOKE", 1, 3), o("FLARE_GREEN", 1, 2),
 		o("KST_FH_SLANT", 1, 3), o("AK_PG_RUB", 1, 2), o("KST_HG_POLY", 1, 2),
 		o("KST_RIFLE", 2, 1), o("KST_MAG_POLY", 2, 6), o("A76_PS", 2, 8, 60), o("GREN_STUN", 2, 3), o("GREN_F7", 2, 3),
 		o("BRAKE_76", 2, 1), o("KST_STK_FOLD", 2, 1), o("P9_MAG33", 2, 3), pre("HAR_SHORT", 2, 1),
-		o("A76L_LPS", 3, 4, 40), o("A12_SLUG", 3, 4, 20), o("SCOPE_4X", 3, 1), o("SUPP_76", 3, 1), o("KST_MAG40", 3, 3),
-		o("A76_BP", 4, 3, 60), o("A76L_SNB", 4, 2, 40), pre("KST_QUIET", 4, 1),
+		o("A76L_LPS", 3, 4, 40), o("SCOPE_4X", 3, 1), o("SUPP_76", 3, 1), o("KST_MAG40", 3, 3),
+		o("A76_BP", 4, 3, 60), pre("KST_QUIET", 4, 1),
+		-- rounds (economy-1a; EFT's Prapor, wiki and xgamingserver item pages): US and T-45M1 at LL3, PP and PBP at LL4, the
+		-- T-46M at LL3 and PS gzh at LL4. PS stays at LL2 here: it stands in for EFT's 7.62x39 FMJ and SP, which we do not have
+		o("A76_US", 3, 4, 60), o("A76_TR", 3, 4, 60), o("A76L_TR", 3, 4, 40), o("A76_PP", 4, 3, 60), o("A9_PBP", 4, 3, 50),
+		o("A76L_PS", 4, 3, 40),
 		-- plates (gameplay-2a): EFT sells the Korund-VM plates at Prapor LL4 (tarkovforge); the PC-4's at LL2 (ours)
 		o("PLATE_PC4F", 2, 2), o("PLATE_PC4B", 2, 2), o("PLATE_HP5F", 4, 1), o("PLATE_HP5B", 4, 1), o("PLATE_HP5S", 4, 2),
 		-- task-locked (economy-6a): Fuel Count opens the KS-7 at LL1 (EFT's BP Depot opens a gun at Prapor LL1); markers for
@@ -234,6 +238,7 @@ T.offers = {
 	rook = {
 		o("RED_DOT", 1, 1), o("GRIP_V", 1, 2), o("GRIP_STOP", 1, 3), o("LIGHT_T", 1, 2), o("R17_FH_A2", 1, 3), o("R17_RS_FLIP", 1, 2),
 		o("R17_FS_FLIP", 1, 2), o("AR_PG_ERGO", 1, 2), o("MNT_RISER", 1, 3), o("KST_MAG", 1, 6),
+		o("A12_BUCK", 1, 8, 20), o("A12_SLUG", 1, 4, 20), -- EFT's Skier sells 7 mm buckshot and the lead slug at LL1 (economy-1a)
 		o("NV_BINO", 2, 1), o("KST_DC_RAIL", 2, 1), o("KST_HG_RAIL", 2, 1), o("AK_PG_ERGO", 2, 2), o("GRIP_ANG", 2, 2),
 		o("LASER_DOT", 2, 2), o("KST_MNT_SIDE", 2, 1), o("SPR_FH_3L", 2, 2),
 		o("NV_MONO", 3, 1), o("SPARROW_SMG", 3, 1), o("KST_STK_TUBE", 3, 1), o("HAR_STK_TACT", 3, 1), pre("KST_TAC", 3, 1), pre("HAR_TAC", 3, 1),
@@ -245,9 +250,13 @@ T.offers = {
 	-- ammunition" (tarkovforge); the UN vest from LL1 (EFT's MF-UNTAR, which his Fishing Gear task asks for); the N-15 at LL3
 	-- and the GPNVG-18 at LL4 (ggrecon): our G-15 and NV-4
 	dekker = {
-		o("R17_RIFLE", 1, 2), o("R17_MAG", 1, 10), o("A62_FMJ", 1, 10, 60), o("SPARROW_MAG", 1, 6), o("ARMOR_C3", 1, 1), o("GREN_RK5", 1, 2),
-		o("SPARROW_SMG", 2, 1), o("R17_MAG40", 2, 3), o("A62_HP", 2, 6, 60), o("HOLO_EX", 2, 1), o("SUPP_9", 2, 1),
-		o("NV_GREEN", 3, 1), o("A62_AP", 3, 4, 60), o("SCOPE_16", 3, 1), o("SUPP_62", 3, 1),
+		o("R17_RIFLE", 1, 2), o("R17_MAG", 1, 10), o("SPARROW_MAG", 1, 6), o("ARMOR_C3", 1, 1), o("GREN_RK5", 1, 2),
+		o("SPARROW_SMG", 2, 1), o("R17_MAG40", 2, 3), o("HOLO_EX", 2, 1), o("SUPP_9", 2, 1),
+		o("NV_GREEN", 3, 1), o("SCOPE_16", 3, 1), o("SUPP_62", 3, 1),
+		-- rounds (economy-1a; EFT's Peacekeeper, wiki and tarkovforge): 9x19 FMJ M882 and the lead slug at LL1, 5.56 FMJ at
+		-- LL2, M855 and AP 6.3 at LL3, M856A1 at LL4; M995 by barter only (no trader sells it for cash in EFT)
+		o("A9_FMJ", 1, 10, 50), o("A12_SLUG", 1, 4, 20), o("A62_FMJ", 2, 10, 60), o("A62_SS", 3, 6, 60), o("A9_AP", 3, 4, 50),
+		o("A62_TR", 4, 3, 60),
 		-- EFT's Peacekeeper sells a 40x46 round at LL3 (the M386, after a task; the wiki); the GL-6 itself is MORTAR's only
 		o("A40_HE", 3, 6),
 		o("NV_QUAD", 4, 1), o("R17_MAG60", 4, 2),
@@ -265,7 +274,9 @@ T.offers = {
 		o("P9_SLIDE_CUT", 2, 1), o("P9_COMP", 2, 1), o("R17_BRL_105", 2, 1), o("SPR_HG_TRI", 2, 1), o("SPR_MNT_CLAW", 2, 1),
 		o("WEAPON_KIT", 2, 1), pre("R17_PATROL", 2, 1), pre("P9_TAC", 2, 1),
 		o("R17_HG_MLOK", 3, 1), o("R17_GAS_LOW", 3, 2), o("R17_BRL_18", 3, 1), o("SUPP_62C", 3, 1), o("AR_STK_SKEL", 3, 1),
-		o("MNT_RINGS", 3, 1), o("LASER_COMBO", 3, 1), o("SPR_GRIP_NAVY", 3, 1), o("SPR_MAG50", 3, 2), o("A9_AP", 3, 4, 50),
+		o("MNT_RINGS", 3, 1), o("LASER_COMBO", 3, 1), o("SPR_GRIP_NAVY", 3, 1), o("SPR_MAG50", 3, 2),
+		-- rounds (economy-1a; EFT's Mechanic): the green tracer at LL1, Pst gzh at LL2, RIP at LL4
+		o("A9_TR", 1, 10, 50), o("A9_PST", 2, 10, 50), o("A9_RIP", 4, 3, 50),
 		pre("R17_CQB", 3, 1), pre("SPR_TAC", 3, 1),
 		o("SCOPE_8X", 4, 1), pre("R17_DMR", 4, 1),
 		-- task-locked (economy-6a): Bench Work - Part 1 opens the low-profile gas block at LL1 (EFT's Gunsmith - Part 1 opens a
@@ -292,8 +303,12 @@ T.offers = {
 	-- suppressor and marksman build at LL4; the T-7 thermals are his LL4 deal (ggrecon), as a barter
 	bram = {
 		o("HARROW12", 1, 2), o("A12_BUCK", 1, 8, 20), o("FIELD_KNIFE", 1, 3), o("BANDAGE", 1, 5), o("WATER", 1, 3), o("HARDTACK", 1, 5),
+		-- rounds (economy-1a; EFT's Jaeger, the wiki's 12/70 page and round pages): the lead slug and the 5.56 and 7.62x39
+		-- hollow points at LL1, Poleva-6u at LL2, Magnum buckshot and flechettes at LL3
+		o("A12_SLUG", 1, 4, 20), o("A62_HP", 1, 6, 60), o("A76_HP", 1, 6, 60), o("A12_SABOT", 2, 4, 20), o("A12_MAG", 3, 4, 20),
+		o("A12_FLECH", 3, 3, 20),
 		o("HAR_FE_POLY", 1, 2), o("HAR_STK_PG", 1, 1),
-		o("TUNDRA_BOLT", 2, 1), o("A12_SLUG", 2, 4, 20), o("TUN_MNT_SCOUT", 2, 1), o("TUN_STK_SPORT", 2, 1), o("HAR_FE_RAIL", 2, 1),
+		o("TUNDRA_BOLT", 2, 1), o("TUN_MNT_SCOUT", 2, 1), o("TUN_STK_SPORT", 2, 1), o("HAR_FE_RAIL", 2, 1),
 		o("HAR_BRK", 2, 1), o("HAR_CHOKE", 2, 1), o("HAR_BRL_14", 2, 1), o("HAR_TUBE_4", 2, 1), o("SPLINT", 2, 3), o("STEW", 2, 3),
 		o("A76L_LPS", 3, 4, 40), o("TUN_MNT_SIDE", 3, 1), o("TUN_BRK", 3, 1), o("HAR_BRL_20", 3, 1), o("HAR_TUBE_8", 3, 1),
 		o("SCOPE_4X", 3, 1), o("MEDKIT_M", 3, 2), o("JUICE", 3, 3), pre("TUN_SCOUT", 3, 1),
@@ -304,8 +319,8 @@ T.offers = {
 }
 
 -- barter trades: get `id` for the items in `give` ({ id, n })
-local function b(id: string, ll: number, limit: number, give: { any }): any
-	return { id = id, ll = ll, limit = limit, give = give }
+local function b(id: string, ll: number, limit: number, give: { any }, n: number?): any
+	return { id = id, ll = ll, limit = limit, give = give, n = n }
 end
 T.barters = {
 	vos = {
@@ -315,6 +330,8 @@ T.barters = {
 		b("KSL_DRUM95", 3, 1, { { "BOLTS", 3 }, { "DUCT_TAPE", 2 } }),
 		b("GREN_F7", 1, 2, { { "BOLTS", 1 }, { "MATCHES", 2 } }),
 		b("SCOPE_4X", 2, 1, { { "CRACKED_LENS", 1 }, { "WIRES", 2 } }),
+		-- EFT sells SNB for no money (raids, barters and crafts, tarkovforge): a stack by barter at LL4, the goods ours (economy-1a)
+		b("A76L_SNB", 4, 2, { { "GUNPOWDER", 2 }, { "BOLTS", 4 } }, 40),
 	},
 	hale = {
 		b("MEDKIT_M", 1, 3, { { "CIGARETTES", 2 }, { "MATCHES", 1 } }),
@@ -338,6 +355,8 @@ T.barters = {
 		-- boards, flash modules and wires
 		b("SECURE_M", 2, 1, { { "BATTERY", 1 }, { "LOGIC_BOARD", 3 }, { "FLASH_MODULE", 3 }, { "WIRES", 5 } }),
 		b("PLATE_CE5", 4, 1, { { "MIL_CIRCUIT", 2 }, { "BATTERY", 1 } }), -- a class 5 plate for military electronics (ours, gameplay-2a)
+		-- EFT sells M995 for no money (raids, barters and crafts, tarkovforge): a stack by barter at LL4, the goods ours (economy-1a)
+		b("A62_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 2 } }, 60),
 	},
 	kovac = {
 		b("WEAPON_KIT", 1, 1, { { "DUCT_TAPE", 2 }, { "SPARK_PLUG", 1 }, { "WIRES", 1 } }),

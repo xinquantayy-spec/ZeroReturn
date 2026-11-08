@@ -25,9 +25,19 @@ B.through = nil
 B.shotGroup = nil
 B.MAX_PANES = 6 -- panes one bullet can pass in one step (the next one stops it)
 
--- muzzle velocity in studs/s for a weapon def and its build's velocity multiplier
-function B.muzzle(wdef, velMul)
-	return (wdef.velocity or 700) * (velMul or 1) * B.STUDS_PER_M
+-- each calibre's reference round: a gun's velocity figure is for this load, and other loads scale it by their own
+-- speed (EFT: a round's initial speed, changed by the barrel; economy-1a). M855, PS, Pst gzh, 7 mm buckshot, LPS gzh
+B.CAL_REF = { ["6.2"] = 922, ["7.6"] = 717, ["9"] = 457, ["12"] = 415, ["7.6L"] = 865 }
+
+-- muzzle velocity in studs/s for a weapon def, its build's velocity multiplier and (optional) the round's item def
+function B.muzzle(wdef, velMul, ammoDef)
+	local k = 1
+	local ref = ammoDef and B.CAL_REF[ammoDef.caliber or ""]
+	local sp = ammoDef and ammoDef.ammo and ammoDef.ammo.speed
+	if ref and sp then
+		k = sp / ref
+	end
+	return (wdef.velocity or 700) * (velMul or 1) * k * B.STUDS_PER_M
 end
 
 function B.drag(wdef)

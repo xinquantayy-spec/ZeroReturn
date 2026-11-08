@@ -944,7 +944,9 @@ local function shoot(u, t)
 		err *= 0.85
 	end
 	-- (recoilV holds Tarkov's figure / 100 since gameplay-1a; kickDeg gives the old per-shot kick in degrees)
-	err += (u.burstN or 0) * Recoil.kickDeg(w.def) * 0.28
+	-- the round's recoil modifier too (EFT: M995 +8 %, US gzh -30 %; economy-1a)
+	local rdef = m.at and Items.defs[m.at]
+	err += (u.burstN or 0) * Recoil.kickDeg(w.def) * 0.28 * (1 + ((rdef and rdef.ammo and rdef.ammo.recoil) or 0))
 	if not u.visible then
 		err += 2
 	end
@@ -975,7 +977,7 @@ local function shoot(u, t)
 	local hit, firstPos, firstNormal, firstMat = false, nil, nil, nil
 	local ms = Inv.modStats(u.inv, w.g)
 	-- ballistics: the AI holds over for the drop at the target's distance, then the bullet flies like a player's
-	local v0, k = Ballistics.muzzle(w.def, ms.vel), Ballistics.drag(w.def)
+	local v0, k = Ballistics.muzzle(w.def, ms.vel, ammoDef), Ballistics.drag(w.def) -- the round's own speed (economy-1a)
 	local aimAt = aimPos + Vector3.new(0, Ballistics.dropAt((aimPos - muzzle).Magnitude, v0, k), 0)
 	local base = CFrame.lookAt(muzzle, aimAt)
 	-- a hit has thrown the aim off (EFT's hit affection): it swings back on target over the next moment

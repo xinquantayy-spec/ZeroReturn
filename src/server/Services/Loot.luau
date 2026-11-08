@@ -77,6 +77,14 @@ local POOLS = {
 	},
 	weaponbox = {
 		{ id = "GUNPOWDER", w = 4 },
+		-- economy-1a's rounds: the plain loads often, the armour piercers rarely (EFT: ammo boxes hold mostly common rounds)
+		{ id = "A62_HP", w = 5, n = { 30, 60 } }, { id = "A62_SS", w = 6, n = { 30, 60 } }, { id = "A62_TR", w = 2, n = { 20, 40 } },
+		{ id = "A62_EP", w = 1, n = { 15, 30 } }, { id = "A76_HP", w = 5, n = { 30, 60 } }, { id = "A76_US", w = 3, n = { 20, 40 } },
+		{ id = "A76_TR", w = 4, n = { 30, 60 } }, { id = "A76_PP", w = 2, n = { 15, 30 } }, { id = "A9_FMJ", w = 6, n = { 25, 50 } },
+		{ id = "A9_TR", w = 5, n = { 25, 50 } }, { id = "A9_PBP", w = 1, n = { 10, 25 } }, { id = "A9_RIP", w = 1, n = { 10, 25 } },
+		{ id = "A12_MAG", w = 3, n = { 6, 15 } }, { id = "A12_FLECH", w = 1, n = { 5, 10 } }, { id = "A12_SABOT", w = 2, n = { 5, 12 } },
+		{ id = "A12_APS", w = 0.5, n = { 3, 8 } }, { id = "A76L_TR", w = 3, n = { 10, 30 } }, { id = "A76L_PS", w = 2, n = { 10, 25 } },
+		{ id = "A76L_BT", w = 1, n = { 5, 20 } }, { id = "A76L_SNB", w = 0.5, n = { 5, 15 } }, { id = "A76L_BS", w = 0.3, n = { 5, 10 } },
 		{ id = "A62_FMJ", w = 14, n = { 30, 60 } }, { id = "A62_AP", w = 4, n = { 15, 40 } }, { id = "A76_PS", w = 10, n = { 30, 60 } },
 		{ id = "A76_BP", w = 2, n = { 10, 30 } }, { id = "A9_PST", w = 10, n = { 25, 50 } }, { id = "A12_BUCK", w = 8, n = { 8, 20 } },
 		{ id = "A12_SLUG", w = 4, n = { 5, 15 } }, { id = "A76L_LPS", w = 4, n = { 10, 30 } }, { id = "R17_MAG", w = 8, a = { 0, 25 }, at = "A62_FMJ" },
@@ -252,6 +260,8 @@ local POOLS = {
 		{ id = "WEAPON_KIT", w = 2 }, { id = "MULTITOOL", w = 3 },
 	},
 	airdrop_weapon = {
+		{ id = "A62_EP", w = 2, n = { 30, 60 } }, { id = "A76_PP", w = 2, n = { 30, 60 } }, { id = "A9_PBP", w = 1, n = { 25, 50 } },
+		{ id = "A76L_BT", w = 1, n = { 20, 40 } }, { id = "A12_APS", w = 1, n = { 10, 20 } },
 		{ id = "R17_RIFLE", w = 3 }, { id = "KST_RIFLE", w = 3 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "P9_PISTOL", w = 2 },
 		{ id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" }, { id = "R17_MAG40", w = 2, a = { 0, 40 }, at = "A62_FMJ" },
 		{ id = "KST_MAG", w = 4, a = { 0, 30 }, at = "A76_PS" }, { id = "KST_MAG_POLY", w = 2, a = { 0, 30 }, at = "A76_PS" },
@@ -1455,9 +1465,11 @@ end
 
 -- Random scav kit (player scavs now, AI scavs in M8): a cheap weapon with some ammo, maybe a rig/pack,
 -- a few meds and junk. None of it is found-in-raid.
+-- (economy-1a: each gun's rounds are drawn from the plain loads of its calibre, as EFT's scavs carry mixed low-tier ammo)
 local SCAV_GUNS = {
-	{ "KST_RIFLE", 30, "KST_MAG", "A76_PS" }, { "SPARROW_SMG", 25, "SPARROW_MAG", "A9_PST" }, { "HARROW12", 25, nil, "A12_BUCK" },
-	{ "TUNDRA_BOLT", 8, nil, "A76L_LPS" }, { "R17_RIFLE", 12, "R17_MAG", "A62_FMJ" },
+	{ "KST_RIFLE", 30, "KST_MAG", { "A76_PS", "A76_HP", "A76_US", "A76_TR" } }, { "SPARROW_SMG", 25, "SPARROW_MAG", { "A9_PST", "A9_FMJ", "A9_TR" } },
+	{ "HARROW12", 25, nil, { "A12_BUCK", "A12_BUCK", "A12_SLUG", "A12_MAG" } }, { "TUNDRA_BOLT", 8, nil, { "A76L_LPS", "A76L_TR" } },
+	{ "R17_RIFLE", 12, "R17_MAG", { "A62_FMJ", "A62_HP", "A62_SS" } },
 }
 local function pickWeighted(rand, list)
 	local total = 0
@@ -1486,18 +1498,19 @@ function Loot.scavLoadout(rand)
 	end
 	local gun = pickWeighted(rand, SCAV_GUNS)
 	local wd = Items.defs[gun[1]]
+	local round = type(gun[4]) == "table" and gun[4][rand:NextInteger(1, #gun[4])] or gun[4]
 	local wg = slot("primary", gun[1])
 	h.items[wg].wear = math.floor(rand:NextNumber(32, 82) * 10) / 10 -- scav guns are worn (M11)
 	if gun[3] then
 		local cap = Items.defs[gun[3]].capacity
-		local mg, mag = Inv.newItem(gun[3], 1, { a = rand:NextInteger(math.floor(cap * 0.4), cap), at = gun[4] })
+		local mg, mag = Inv.newItem(gun[3], 1, { a = rand:NextInteger(math.floor(cap * 0.4), cap), at = round })
 		h.items[mg] = mag
 		h.items[wg].mag = mg
 		Inv.resize(h, wg)
 	else
 		local cap = Inv.capacityOf(h, wg) or wd.capacity or 5
 		h.items[wg].a = rand:NextInteger(math.max(1, cap - 3), cap)
-		h.items[wg].at = gun[4]
+		h.items[wg].at = round
 	end
 	local rig = rand:NextNumber() < 0.7 and slot("rig", rand:NextNumber() < 0.6 and "RIG_BELT" or "RIG_CHEST") or nil
 	local back = rand:NextNumber() < 0.5 and slot("back", rand:NextNumber() < 0.6 and "BAG_SLING" or "CANVAS_BAG") or nil
@@ -1542,14 +1555,14 @@ function Loot.scavLoadout(rand)
 	if gun[3] then
 		for _ = 1, rand:NextInteger(0, 2) do
 			local cap = Items.defs[gun[3]].capacity
-			local g, it = Inv.newItem(gun[3], 1, { a = rand:NextInteger(0, cap), at = gun[4] })
+			local g, it = Inv.newItem(gun[3], 1, { a = rand:NextInteger(0, cap), at = round })
 			if it.a == 0 then
 				it.at = nil
 			end
 			Inv.place(h, g, it, order)
 		end
 	else
-		local g, it = Inv.newItem(gun[4], rand:NextInteger(4, 12))
+		local g, it = Inv.newItem(round, rand:NextInteger(4, 12))
 		Inv.place(h, g, it, order)
 	end
 	for _ = 1, rand:NextInteger(1, 2) do

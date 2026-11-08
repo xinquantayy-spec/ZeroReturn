@@ -456,7 +456,10 @@ function Effects.gunSound(weapon, at, suppressed, distant, volMul)
 	return Effects.sound(id, at, vol, speed, suppressed and { max = 220, eq = { 2, -6, -20 } } or nil)
 end
 
-function Effects.tracer(o, p)
+-- tracer colours (economy-1a: EFT's tracers burn red or green; anything else draws the old pale trace)
+local TRACER = { red = Color3.fromHex("FF6A4A"), green = Color3.fromHex("8CFF7A") }
+
+function Effects.tracer(o, p, colour)
 	local d = p - o
 	local len = d.Magnitude
 	if len < 1 then
@@ -464,7 +467,7 @@ function Effects.tracer(o, p)
 	end
 	local seg = math.min(len, 14)
 	local start = o + d.Unit * math.min(2, len * 0.1)
-	local part = tmpPart(Vector3.new(0.06, 0.06, seg), CFrame.lookAt(start + d.Unit * seg / 2, p), Color3.fromHex("F3E2B4"), Enum.Material.Neon, 0.35)
+	local part = tmpPart(Vector3.new(0.06, 0.06, seg), CFrame.lookAt(start + d.Unit * seg / 2, p), TRACER[colour or ""] or Color3.fromHex("F3E2B4"), Enum.Material.Neon, 0.35)
 	fade(part, 0.07)
 end
 
@@ -745,7 +748,7 @@ function Effects.remoteShot(d)
 		Effects.casing(d.o - shotDir * 1.2 + right * 0.15, right, (d.w == "HARROW" and "shell") or ((d.w == "SPARROW" or d.w == "P9") and "pistol") or "rifle")
 	end
 	if d.t then
-		Effects.tracer(d.o, d.p) -- tracer rounds only (Tarkov)
+		Effects.tracer(d.o, d.p, d.t) -- tracer rounds only (Tarkov), in their colour
 	end
 	Effects.impact(d.p, d.n, d.h, typeof(d.m) == "EnumItem" and d.m or nil, shotDir)
 	Effects.impactSound(d.p, d.h, d.m)

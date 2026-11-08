@@ -404,7 +404,7 @@ function Combat.shoot(player, seq, origin, dir)
 	local pellets = ballistic.pellets or 1
 	local ms = Inv.modStats(s.inv, wg)
 	-- ballistics (Tarkov): the bullet flies with drop and travel time; the bore is tilted for the sight's zero
-	local v0, k = Ballistics.muzzle(wdef, ms.vel), Ballistics.drag(wdef)
+	local v0, k = Ballistics.muzzle(wdef, ms.vel, ammoDef), Ballistics.drag(wdef) -- the round's own speed (economy-1a)
 	local zeroM = (s.zero and s.zero[wg]) or Ballistics.DEFAULT_ZERO
 	local bore = Ballistics.tilt(dir, Ballistics.zeroAngle(zeroM, v0, k))
 	local params = filter(char)
@@ -417,7 +417,8 @@ function Combat.shoot(player, seq, origin, dir)
 	for i = 1, pellets do
 		local d2 = bore
 		if pellets > 1 then
-			local sp = math.rad(wdef.pelletSpread or 2.5)
+			-- the round's accuracy changes the pellets' spread (EFT: Magnum buckshot -15 %, flechette -10 %; economy-1a)
+			local sp = math.rad((wdef.pelletSpread or 2.5) * math.clamp(1 - (ballistic.acc or 0), 0.5, 1.5))
 			d2 = (CFrame.lookAt(Vector3.zero, bore) * CFrame.Angles((math.random() * 2 - 1) * sp, (math.random() * 2 - 1) * sp, 0)).LookVector
 		end
 		-- the shot's effects follow the arc as the world stands now

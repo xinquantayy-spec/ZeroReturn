@@ -72,25 +72,54 @@ add("P9_MAG33", { name = "P-9 33-rd Extended Magazine", short = "MAG 33", kind =
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
 	add(id, { name = name, short = short, kind = "ammo", w = 1, h = 1, mass = 0.012, stack = stack, value = value, caliber = caliber, ammo = a, rarity = rarity, desc = desc or "", color = c("#A08A5C") })
 end
-ammo("A62_FMJ", "6.2x40 FMJ", "6.2 FMJ", "6.2", 60, 120, { dmg = 46, pen = 26, armorDmg = 0.38, bleedL = 0.12, bleedH = 0.06, frag = 0.2 }, nil, "General purpose full metal jacket.")
-ammo("A62_AP", "6.2x40 AP", "6.2 AP", "6.2", 60, 650, { dmg = 41, pen = 43, armorDmg = 0.55, bleedL = 0.1, bleedH = 0.05, frag = 0.05 }, "uncommon", "Hardened core. Defeats class 4 plates.")
-ammo("A62_HP", "6.2x40 HP", "6.2 HP", "6.2", 60, 90, { dmg = 62, pen = 12, armorDmg = 0.25, bleedL = 0.3, bleedH = 0.15, frag = 0.45 }, nil, "Hollow point. Brutal on flesh, useless on plates.")
-ammo("A76_PS", "7.6x39 PS", "7.6 PS", "7.6", 60, 140, { dmg = 54, pen = 35, armorDmg = 0.52, bleedL = 0.15, bleedH = 0.08, frag = 0.17 }, nil, "Mild steel core 7.6x39.")
-ammo("A76_BP", "7.6x39 BP", "7.6 BP", "7.6", 60, 780, { dmg = 50, pen = 47, armorDmg = 0.58, bleedL = 0.12, bleedH = 0.07, frag = 0.12 }, "rare", "Armor-piercing 7.6x39.")
-ammo("A76_US", "7.6x39 US", "7.6 US", "7.6", 60, 220, { dmg = 58, pen = 10, armorDmg = 0.3, bleedL = 0.2, bleedH = 0.1, frag = 0.1, subsonic = true }, "uncommon", "Subsonic heavy bullet. Quiet with a suppressor.")
-ammo("A9_PST", "9x19 PST", "9 PST", "9", 50, 80, { dmg = 54, pen = 20, armorDmg = 0.33, bleedL = 0.12, bleedH = 0.05, frag = 0.15 }, nil, "Steel-core 9x19.")
-ammo("A9_AP", "9x19 AP", "9 AP", "9", 50, 420, { dmg = 48, pen = 30, armorDmg = 0.4, bleedL = 0.1, bleedH = 0.05, frag = 0.05 }, "uncommon", "Penetrator 9x19.")
-ammo("A9_RIP", "9x19 RIP", "9 RIP", "9", 50, 260, { dmg = 102, pen = 2, armorDmg = 0.11, bleedL = 0.4, bleedH = 0.3, frag = 1 }, "uncommon", "Fragmenting hollow point.")
-ammo("A12_BUCK", "12/70 Buckshot", "12 BUCK", "12", 20, 90, { dmg = 37, pen = 1, armorDmg = 0.65, pellets = 8, bleedL = 0.25, bleedH = 0.1, frag = 0 }, nil, "Eight pellets per shell.")
+-- Rounds (decision economy-1a, the catalogue's first slice, 2026-11-08): six of EFT's loads for each of our five gun
+-- calibres, each copying one EFT round (named in its comment) for damage, penetration, armour damage, fragmentation,
+-- muzzle velocity (speed, m/s: Ballistics.muzzle scales the gun's velocity by it against the calibre's reference
+-- round), and the recoil and accuracy modifiers (recoil +0.08 = EFT's +8 %; acc -0.07 = -7 %). Sources: the EFT wiki's
+-- round and 12/70 pages, tarkovforge.com/ammo/<round> and xgamingserver.com item pages (read 2026-11-08). EFT gives
+-- bleeding as changes to a base chance; the base chances per calibre are ours, EFT's changes added on top. Values (MK)
+-- are EFT's base prices in roubles where a page gave one; estimated from the trader price (about x0.7) where marked ~.
+-- 6.2x40 (EFT's 5.56x45 NATO): FMJ, HP, M855, M856A1, M855A1, M995
+ammo("A62_FMJ", "6.2x40 FMJ", "6.2 FMJ", "6.2", 60, 120, { dmg = 57, pen = 23, armorDmg = 0.33, bleedL = 0.12, bleedH = 0.06, frag = 0.5, speed = 957 }, nil, "General purpose full metal jacket.")
+ammo("A62_HP", "6.2x40 HP", "6.2 HP", "6.2", 60, 90, { dmg = 79, pen = 7, armorDmg = 0.22, bleedL = 0.27, bleedH = 0.21, frag = 0.5, speed = 947 }, nil, "Hollow point. Brutal on flesh, useless on plates.") -- frag: ours (not published)
+ammo("A62_SS", "6.2x40 SS", "6.2 SS", "6.2", 60, 240, { dmg = 54, pen = 31, armorDmg = 0.37, bleedL = 0.12, bleedH = 0.06, frag = 0.5, speed = 922 }, nil, "Standard steel-core penetrator load.") -- M855; value ~
+ammo("A62_TR", "6.2x40 TR", "6.2 TR", "6.2", 60, 740, { dmg = 52, pen = 38, armorDmg = 0.44, bleedL = 0.12, bleedH = 0.06, frag = 0.43, speed = 940, recoil = 0.04, acc = -0.04, tracer = "red" }, "uncommon", "Penetrator with a red tracer.") -- M856A1; value ~
+ammo("A62_EP", "6.2x40 EP", "6.2 EP", "6.2", 60, 950, { dmg = 49, pen = 44, armorDmg = 0.47, bleedL = 0.1, bleedH = 0.05, frag = 0.44, speed = 945, recoil = 0.05, acc = -0.05 }, "rare", "Enhanced penetrator with a hardened steel tip.") -- M855A1; value ours
+ammo("A62_AP", "6.2x40 AP", "6.2 AP", "6.2", 60, 1200, { dmg = 42, pen = 53, armorDmg = 0.52, bleedL = 0.1, bleedH = 0.05, frag = 0.42, speed = 1013, recoil = 0.08, acc = -0.07 }, "rare", "Tungsten-core armour piercer. Defeats class 5 plates.") -- M995; value ours
+-- 7.6x39 (EFT's 7.62x39): HP, US, T-45M1, PS, PP, BP
+ammo("A76_HP", "7.6x39 HP", "7.6 HP", "7.6", 60, 70, { dmg = 80, pen = 15, armorDmg = 0.2, bleedL = 0.2, bleedH = 0.12, frag = 0.4, speed = 754 }, nil, "Hollow point. Hits hard, stops at the first plate.")
+ammo("A76_US", "7.6x39 US", "7.6 US", "7.6", 60, 220, { dmg = 56, pen = 29, armorDmg = 0.42, bleedL = 0.15, bleedH = 0.08, frag = 0.1, speed = 301, recoil = -0.3, acc = 0.05, subsonic = true }, "uncommon", "Subsonic heavy bullet. Quiet with a suppressor.") -- frag: ours
+ammo("A76_TR", "7.6x39 TR", "7.6 TR", "7.6", 60, 230, { dmg = 65, pen = 30, armorDmg = 0.46, bleedL = 0.15, bleedH = 0.08, frag = 0.17, speed = 720, recoil = -0.06, acc = -0.04, tracer = "red" }, nil, "Steel-core load with a red tracer.") -- T-45M1; frag ours, value ~
+ammo("A76_PS", "7.6x39 PS", "7.6 PS", "7.6", 60, 240, { dmg = 61, pen = 35, armorDmg = 0.52, bleedL = 0.15, bleedH = 0.08, frag = 0.2, speed = 717 }, nil, "Mild steel core 7.6x39.")
+ammo("A76_PP", "7.6x39 PP", "7.6 PP", "7.6", 60, 900, { dmg = 59, pen = 41, armorDmg = 0.57, bleedL = 0.13, bleedH = 0.07, frag = 0.15, speed = 732, recoil = 0.05, acc = -0.01 }, "uncommon", "Improved penetration steel core.") -- value ~
+ammo("A76_BP", "7.6x39 BP", "7.6 BP", "7.6", 60, 1111, { dmg = 58, pen = 47, armorDmg = 0.63, bleedL = 0.12, bleedH = 0.07, frag = 0.12, speed = 730 }, "rare", "Armor-piercing 7.6x39.")
+-- 9x19: FMJ M882, Pst gzh, Green Tracer, AP 6.3, PBP gzh, RIP
+ammo("A9_FMJ", "9x19 FMJ", "9 FMJ", "9", 50, 120, { dmg = 56, pen = 18, armorDmg = 0.35, bleedL = 0.12, bleedH = 0.05, frag = 0.2, speed = 385 }, nil, "Plain full metal jacket.") -- M882
+ammo("A9_PST", "9x19 PST", "9 PST", "9", 50, 80, { dmg = 54, pen = 20, armorDmg = 0.33, bleedL = 0.12, bleedH = 0.05, frag = 0.15, speed = 457 }, nil, "Steel-core 9x19.")
+ammo("A9_TR", "9x19 TR", "9 TR", "9", 50, 70, { dmg = 58, pen = 14, armorDmg = 0.33, bleedL = 0.12, bleedH = 0.05, frag = 0.15, speed = 365, recoil = -0.06, acc = -0.05, tracer = "green" }, nil, "Light load with a green tracer.") -- Green Tracer; frag ours, value ~
+ammo("A9_AP", "9x19 AP", "9 AP", "9", 50, 210, { dmg = 52, pen = 30, armorDmg = 0.48, bleedL = 0.1, bleedH = 0.05, frag = 0.05, speed = 392 }, "uncommon", "Penetrator 9x19.") -- AP 6.3
+ammo("A9_PBP", "9x19 PBP", "9 PBP", "9", 50, 900, { dmg = 44, pen = 39, armorDmg = 0.55, bleedL = 0.1, bleedH = 0.05, frag = 0.05, speed = 560, recoil = 0.05, acc = 0.05 }, "rare", "Hot armour-piercing load with a hardened core.") -- PBP gzh; value ~
+ammo("A9_RIP", "9x19 FHP", "9 FHP", "9", 50, 422, { dmg = 102, pen = 2, armorDmg = 0.11, bleedL = 0.42, bleedH = 0.3, frag = 1, speed = 381, recoil = 0.2 }, "uncommon", "Fragmenting hollow point.") -- RIP (renamed: a maker's name)
 -- the GL-6's round (ai-5b), after EFT's 40x46 M406 (HE): 76 m/s, armed after 0.26 s of flight, an explosion of 1 to
 -- 7 m (the wiki's 40x46mm page); the fragments, blast and their reach are in our grenade model (Grenades.luau)
 add("A40_HE", { name = "40x46 HE Grenade", short = "40 HE", kind = "ammo", w = 1, h = 1, mass = 0.23, stack = 1, value = 9000, caliber = "40", rarity = "rare",
 	ammo = { dmg = 199, pen = 1, armorDmg = 0.95, bleedL = 0, bleedH = 0, frag = 0, subsonic = true },
 	nade = { type = "frag", impact = true, arm = 0.26, flight = 10, fuse = 10, frags = 120, fragR = 22, fragDmg = { 24, 38 }, fragPen = { 10, 17 }, blastR = 6, blastDmg = 120 },
 	desc = "High-explosive 40x46 grenade for the GL-6. It arms after about 20 m of flight and goes off where it strikes.", color = c("#4F5539") })
-ammo("A12_SLUG", "12/70 Slug", "12 SLUG", "12", 20, 380, { dmg = 168, pen = 22, armorDmg = 0.75, bleedL = 0.3, bleedH = 0.2, frag = 0.1 }, "uncommon", "Single heavy lead slug.")
-ammo("A76L_LPS", "7.6x54R LPS", "7.6L LPS", "7.6L", 40, 520, { dmg = 81, pen = 42, armorDmg = 0.78, bleedL = 0.2, bleedH = 0.15, frag = 0.18 }, "uncommon", "Full-power rifle cartridge.")
-ammo("A76L_SNB", "7.6x54R SNB", "7.6L SNB", "7.6L", 40, 1600, { dmg = 75, pen = 62, armorDmg = 0.87, bleedL = 0.15, bleedH = 0.12, frag = 0.08 }, "rare", "Sniper armor-piercing load.")
+-- 12/70: 7mm buckshot, 8.5mm "Magnum" buckshot, flechette, lead slug, Poleva-6u, AP-20 (pellets x damage)
+ammo("A12_BUCK", "12/70 Buckshot", "12 BUCK", "12", 20, 90, { dmg = 39, pen = 3, armorDmg = 0.26, pellets = 8, bleedL = 0.25, bleedH = 0.1, frag = 0, speed = 415 }, nil, "Eight 7 mm pellets per shell.")
+ammo("A12_MAG", "12/70 Magnum Buckshot", "12 MAG", "12", 20, 175, { dmg = 50, pen = 2, armorDmg = 0.26, pellets = 8, bleedL = 0.45, bleedH = 0.1, frag = 0, speed = 385, recoil = 1.15, acc = -0.15 }, "uncommon", "Eight heavy 8.5 mm pellets on a stout charge. Kicks like a mule.") -- value ~
+ammo("A12_FLECH", "12/70 Flechette", "12 FLE", "12", 20, 400, { dmg = 25, pen = 31, armorDmg = 0.26, pellets = 8, bleedL = 0.5, bleedH = 0.1, frag = 0, speed = 320, recoil = 0.25, acc = -0.1 }, "rare", "Eight steel darts. Goes through soft armour.") -- value ours
+ammo("A12_SLUG", "12/70 Slug", "12 SLUG", "12", 20, 380, { dmg = 167, pen = 15, armorDmg = 0.55, bleedL = 0.3, bleedH = 0.2, frag = 0, speed = 370, recoil = 0.1 }, "uncommon", "Single heavy lead slug.")
+ammo("A12_SABOT", "12/70 Sabot Slug", "12 SAB", "12", 20, 300, { dmg = 150, pen = 20, armorDmg = 0.5, bleedL = 0.2, bleedH = 0.2, frag = 0, speed = 430, recoil = -0.1 }, "uncommon", "Finned slug in a plastic wad. Flies flatter than lead.") -- Poleva-6u; value ours
+ammo("A12_APS", "12/70 AP Slug", "12 APS", "12", 20, 1500, { dmg = 164, pen = 37, armorDmg = 0.65, bleedL = 0.25, bleedH = 0.2, frag = 0, speed = 510, recoil = 0.5 }, "rare", "Hardened armour-piercing slug.") -- AP-20; value ours
+-- 7.6x54R (EFT's 7.62x54R): LPS gzh, T-46M gzh, PS gzh, BT gzh, SNB gzh, BS gs
+ammo("A76L_LPS", "7.6x54R LPS", "7.6L LPS", "7.6L", 40, 490, { dmg = 81, pen = 42, armorDmg = 0.78, bleedL = 0.2, bleedH = 0.15, frag = 0.18, speed = 865, acc = -0.05 }, "uncommon", "Full-power rifle cartridge.")
+ammo("A76L_TR", "7.6x54R TR", "7.6L TR", "7.6L", 40, 356, { dmg = 82, pen = 41, armorDmg = 0.83, bleedL = 0.2, bleedH = 0.15, frag = 0.18, speed = 800, tracer = "red" }, "uncommon", "Full-power load with a red tracer.") -- T-46M
+ammo("A76L_PS", "7.6x54R PS", "7.6L PS", "7.6L", 40, 920, { dmg = 84, pen = 45, armorDmg = 0.84, bleedL = 0.2, bleedH = 0.15, frag = 0.08, speed = 875 }, "uncommon", "Steel-core rifle cartridge.")
+ammo("A76L_BT", "7.6x54R BT", "7.6L BT", "7.6L", 40, 1180, { dmg = 78, pen = 55, armorDmg = 0.87, bleedL = 0.18, bleedH = 0.12, frag = 0.08, speed = 875 }, "rare", "Armour-piercing core with a tracer base.")
+ammo("A76L_SNB", "7.6x54R SNB", "7.6L SNB", "7.6L", 40, 1600, { dmg = 75, pen = 62, armorDmg = 0.87, bleedL = 0.15, bleedH = 0.12, frag = 0.08, speed = 875, recoil = 0.1 }, "rare", "Sniper armor-piercing load.")
+ammo("A76L_BS", "7.6x54R BS", "7.6L BS", "7.6L", 40, 2500, { dmg = 72, pen = 70, armorDmg = 0.88, bleedL = 0.15, bleedH = 0.1, frag = 0.05, speed = 785 }, "rare", "Tungsten-carbide core. Nothing worn stops it.") -- BS gs; frag and value ours
 
 -- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
 -- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and

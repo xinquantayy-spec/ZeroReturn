@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Rounds: six of EFT's loads a calibre (decision economy-1a, first slice; 2026-11-08, about 16:20 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 14 pass, 1,083 checks. New in GameplayTests: six loads with their own speed for each of the five gun calibres; EFT's figures (M995 53 penetration at 1,013 m/s, +8 % recoil, -7 % accuracy; BP 47 and 63 %; Magnum buckshot 8 x 50 at +115 % recoil; the green tracer; US subsonic); the round's speed in the gun (the reference load keeps the gun's figure, M995 flies over 9 % faster, US stays under 343 m/s); M995 not sold for cash, DEKKER barters a stack of 60 at LL4. TraderTests follow the moved offers. |
+| Pictures | 17 new rounds rendered (`build_items_i.py`, review sheet), sheet 4 re-packed and uploaded. |
+| Live | Bought 60 of BRAM's 6.2x40 HP at LL1 through the trade request. INSPECT for 6.2x40 AP shows BULLET SPEED 1013 M/S, RECOIL +8%, ACCURACY -7%; for the Magnum buckshot 50 x 8, 26 %, light bleeding 45 %, 385 M/S, RECOIL +115%, ACCURACY -15% (screenshot). In a raid on Quay 7 the Tundra fired a 7.6x54R TR round: the server accepted the shot, no errors in the output. |
+| Not checked | The tracers' colours by eye, the recoil of the Magnum buckshot in the hands, AI shots with the new loads, scav kits carrying the mixed loads, a phone. |
+
 ## The hideout (decision economy-7b, merged from the hideout thread) and EFT's level table (economy-4b); 2026-11-08, about 15:20 SGT
 
 | Test | Result |

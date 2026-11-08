@@ -110,11 +110,21 @@ local function sheet(items, g, it, d, opts)
 		add("LIGHT BLEEDING CHANCE", pct(a.bleedL))
 		add("HEAVY BLEEDING CHANCE", pct(a.bleedH))
 		add("CALIBER", CALIBERS[d.caliber] or d.caliber)
+		-- EFT's inspector also lists the round's speed and its recoil and accuracy modifiers (economy-1a)
+		if a.speed then
+			add("BULLET SPEED", a.speed .. " M/S", a.speed / 1000)
+		end
+		if a.recoil and a.recoil ~= 0 then
+			add("RECOIL", string.format("%+d%%", math.floor(a.recoil * 100 + 0.5)))
+		end
+		if a.acc and a.acc ~= 0 then
+			add("ACCURACY", string.format("%+d%%", math.floor(a.acc * 100 + 0.5)))
+		end
 		if a.subsonic then
 			add("SUBSONIC", "YES")
 		end
 		if a.tracer then
-			add("TRACER", "YES")
+			add("TRACER", type(a.tracer) == "string" and string.upper(a.tracer) or "YES")
 		end
 		classes = {}
 		for c = 1, 6 do

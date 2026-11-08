@@ -822,6 +822,12 @@ local function fireOnce()
 	local relP, relY = ctx.Camera.gunRel()
 	local aimCF = camCF * CFrame.Angles(relP, relY, 0)
 	local spread = (Weapon.aiming and def.aimSpread or def.hipSpread) * (Weapon.aiming and (o.ms.acc or 1) or 1)
+	-- the round's accuracy modifier (EFT: M995 -7 %, PBP +5 %; economy-1a); buckshot's spreads its pellets on the server
+	local itA, dA = activeItem()
+	local ammoA = itA and ammoDefOf(itA, dA)
+	if ammoA and ammoA.acc and not ammoA.pellets then
+		spread *= math.clamp(1 - ammoA.acc, 0.5, 1.5)
+	end
 	if not Weapon.aiming and select(2, Weapon.deviceState()) then
 		spread *= 0.8 -- a visible laser steadies hip fire (Tarkov: while it is on)
 	end
@@ -874,7 +880,7 @@ local function fireOnce()
 	local it, d = activeItem()
 	local ammo = it and ammoDefOf(it, d)
 	if ammo and ammo.tracer and not def.launcher then
-		ctx.Effects.tracer(muzzle, hit) -- Tarkov: only tracer rounds leave a visible trace
+		ctx.Effects.tracer(muzzle, hit, ammo.tracer) -- Tarkov: only tracer rounds leave a visible trace, in their colour
 	end
 	if res then
 		local m = res.Instance:FindFirstAncestorOfClass("Model")
@@ -888,7 +894,9 @@ local function fireOnce()
 	-- springs; convergence brings both back, so nothing climbs for good
 	local econ = ctx.State.data and ctx.State.data.econ
 	local vmods = ctx.State.vitals and ctx.State.vitals.mods
-	local prof = Recoil.profile(def, o.ms.recoil * (Weapon.mounted and Weapon.MOUNT.recoil or 1), Weapon.ergo, econ and econ.skills, recProf, vmods and vmods.sk)
+	-- the round's recoil modifier (EFT: M995 +8 %, Magnum buckshot +115 %, US gzh -30 %; economy-1a)
+	local ammoRec = 1 + ((ammo and ammo.recoil) or 0)
+	local prof = Recoil.profile(def, o.ms.recoil * (Weapon.mounted and Weapon.MOUNT.recoil or 1) * ammoRec, Weapon.ergo, econ and econ.skills, recProf, vmods and vmods.sk)
 	local pv, ph, pb = Recoil.pose(M and M.stance, M and M.depth)
 	local jp, jy, jb = Recoil.kick(prof, burstN, pv, ph, pb, math.random(), math.random(), math.random())
 	ctx.Camera.recoilShot(prof, jp, jy, prof.thump * pb)

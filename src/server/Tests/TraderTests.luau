@@ -173,9 +173,9 @@ function T.run(ctx)
 		end
 		check("VOS (Prapor): the Grach and the MP-133 at LL1, the AKM at LL2, all four grenades, eastern ammunition",
 			at("vos", "P9_PISTOL", 1) and at("vos", "HARROW12", 1) and at("vos", "KST_RIFLE", 2) and at("vos", "GREN_RK5") and at("vos", "GREN_F7")
-				and at("vos", "GREN_STUN") and at("vos", "GREN_SMOKE") and at("vos", "A76_PS") and at("vos", "A76L_SNB", 4) and not at("vos", "R17_RIFLE"))
-		check("DEKKER (Peacekeeper): the M4-type R-17 and its 6.2 rounds at LL1, the MP5-type SMG at LL2, the N-15 at LL3, the GPNVG at LL4, Pouch M at LL2",
-			at("dekker", "R17_RIFLE", 1) and at("dekker", "A62_FMJ", 1) and at("dekker", "SPARROW_SMG", 2) and at("dekker", "NV_GREEN", 3)
+				and at("vos", "GREN_STUN") and at("vos", "GREN_SMOKE") and at("vos", "A76_PS") and at("vos", "A76L_PS", 4) and not at("vos", "R17_RIFLE"))
+		check("DEKKER (Peacekeeper): the M4-type R-17 at LL1 and its FMJ at LL2 (EFT), the MP5-type SMG at LL2, the N-15 at LL3, the GPNVG at LL4, Pouch M at LL2",
+			at("dekker", "R17_RIFLE", 1) and at("dekker", "A62_FMJ", 2) and at("dekker", "SPARROW_SMG", 2) and at("dekker", "NV_GREEN", 3)
 				and at("dekker", "NV_QUAD", 4) and (barterAt("dekker", "SECURE_M", 2) or {}).limit == 1)
 		check("ROOK (Skier): parts and sights from LL1, the PNV-10T at LL2, the PVS-14 at LL3, smuggled western guns from LL3",
 			at("rook", "RED_DOT", 1) and at("rook", "NV_BINO", 2) and at("rook", "NV_MONO", 3) and at("rook", "SPARROW_SMG", 3))

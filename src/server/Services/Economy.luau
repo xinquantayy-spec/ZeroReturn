@@ -310,7 +310,8 @@ local function barter(player, prof, p)
 			return fail("MISSING_ITEMS", "Missing: " .. Items.defs[need[1]].name .. ".")
 		end
 	end
-	if not Economy.giveStash(prof, offer.id, 1, WP.isBase(offer.id) and { presetMag = true } or nil) then
+	-- a barter may give a stack (economy-1a: a box of rounds)
+	if not Economy.giveStash(prof, offer.id, offer.n or 1, WP.isBase(offer.id) and { presetMag = true } or nil) then
 		return fail("NO_SPACE", "No room in your stash.")
 	end
 	for _, need in offer.give do
@@ -318,7 +319,7 @@ local function barter(player, prof, p)
 	end
 	addBought(prof, key, w, 1)
 	-- barters count toward loyalty at the item's value
-	standing(prof, tid).spent += Items.defs[offer.id].value
+	standing(prof, tid).spent += Items.defs[offer.id].value * (offer.n or 1)
 	ctx.Remotes.note(player, "toast", { text = "TRADED FOR " .. string.upper(Items.defs[offer.id].name), tone = "good" })
 	return true
 end

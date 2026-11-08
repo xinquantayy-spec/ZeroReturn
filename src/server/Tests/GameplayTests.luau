@@ -214,6 +214,45 @@ function T.run(ctx)
 		check("a destroyed stomach drains energy and water five times as fast", Health.STOMACH_DRAIN == 5)
 	end)
 
+	-- the rounds (decision economy-1a): six of EFT's loads a calibre, their figures, their speed in the gun, their traders
+	do
+		local Ballistics = require(Shared.Ballistics)
+		local TD = require(Shared.TraderData)
+		local per = {}
+		for _, d in Items.defs do
+			if d.kind == "ammo" and d.caliber and Ballistics.CAL_REF[d.caliber] then
+				per[d.caliber] = (per[d.caliber] or 0) + ((d.ammo and d.ammo.speed and d.ammo.speed > 0) and 1 or 0)
+			end
+		end
+		local six = true
+		for cal in Ballistics.CAL_REF do
+			six = six and (per[cal] or 0) >= 6
+		end
+		check("six of EFT's loads for each gun calibre, every one with its own speed", six)
+		local A = Items.defs
+		check("EFT's figures: M995 53 pen at 1,013 m/s (+8 % recoil, -7 % accuracy), BP 47 pen and 63 % armour damage, Magnum buckshot 8 x 50 at +115 % recoil, the green tracer",
+			A.A62_AP.ammo.pen == 53 and A.A62_AP.ammo.speed == 1013 and near(A.A62_AP.ammo.recoil, 0.08) and near(A.A62_AP.ammo.acc, -0.07)
+				and A.A76_BP.ammo.pen == 47 and near(A.A76_BP.ammo.armorDmg, 0.63) and A.A12_MAG.ammo.pellets == 8 and A.A12_MAG.ammo.dmg == 50
+				and near(A.A12_MAG.ammo.recoil, 1.15) and A.A9_TR.ammo.tracer == "green" and A.A76_US.ammo.subsonic == true)
+		local r17, kst = Weapons.R17, Weapons.KST
+		local vM855 = Ballistics.muzzle(r17, 1, A.A62_SS) / Ballistics.STUDS_PER_M
+		local vM995 = Ballistics.muzzle(r17, 1, A.A62_AP) / Ballistics.STUDS_PER_M
+		local vUS = Ballistics.muzzle(kst, 1, A.A76_US) / Ballistics.STUDS_PER_M
+		check("a round's speed scales the gun's: the reference load keeps the gun's figure, M995 flies faster, US stays subsonic",
+			near(vM855, r17.velocity) and vM995 > vM855 * 1.09 and vUS < 343 and near(Ballistics.muzzle(r17, 1) / Ballistics.STUDS_PER_M, r17.velocity))
+		local cash, bart = false, nil
+		for _, o in TD.offers.dekker do
+			cash = cash or (o.id == "A62_AP" and not o.task and not o.start)
+		end
+		for _, b in TD.barters.dekker do
+			if b.id == "A62_AP" then
+				bart = b
+			end
+		end
+		check("M995 is not sold for cash (EFT): DEKKER barters a stack of 60 at LL4",
+			not cash and bart ~= nil and bart.ll == 4 and bart.n == 60)
+	end
+
 	-- the bosses' guns (decision ai-5b): the KS-L and the GL-6, and the launched round's impact fuze
 	do
 		local G = require(Shared.Grenades)
