@@ -1387,6 +1387,118 @@
    "x": 332,
    "y": 662
   },
+  "PLATE_BWB": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 2,
+   "y": 2
+  },
+  "PLATE_BWF": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 132,
+   "y": 2
+  },
+  "PLATE_BWS": {
+   "h": 128,
+   "sheet": 4,
+   "w": 64,
+   "x": 782,
+   "y": 196
+  },
+  "PLATE_CE4": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 262,
+   "y": 2
+  },
+  "PLATE_CE5": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 392,
+   "y": 2
+  },
+  "PLATE_CE5S": {
+   "h": 128,
+   "sheet": 4,
+   "w": 64,
+   "x": 848,
+   "y": 196
+  },
+  "PLATE_CE6": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 522,
+   "y": 2
+  },
+  "PLATE_HP5B": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 652,
+   "y": 2
+  },
+  "PLATE_HP5F": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 782,
+   "y": 2
+  },
+  "PLATE_HP5S": {
+   "h": 128,
+   "sheet": 4,
+   "w": 64,
+   "x": 914,
+   "y": 196
+  },
+  "PLATE_PC4B": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 2,
+   "y": 196
+  },
+  "PLATE_PC4F": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 132,
+   "y": 196
+  },
+  "PLATE_PE3": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 262,
+   "y": 196
+  },
+  "PLATE_PE4": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 392,
+   "y": 196
+  },
+  "PLATE_PE5": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 522,
+   "y": 196
+  },
+  "PLATE_PE6": {
+   "h": 192,
+   "sheet": 4,
+   "w": 128,
+   "x": 652,
+   "y": 196
+  },
   "POWER_BANK": {
    "h": 64,
    "sheet": 2,
@@ -1883,7 +1995,8 @@
   "ZR_ItemIcons_0.png",
   "ZR_ItemIcons_1.png",
   "ZR_ItemIcons_2.png",
-  "ZR_ItemIcons_3.png"
+  "ZR_ItemIcons_3.png",
+  "ZR_ItemIcons_4.png"
  ],
  "size": 1024
 }

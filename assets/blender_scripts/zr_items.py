@@ -175,10 +175,12 @@ def lathe(b, profile, color, seg=20, x=0.0, y=0.0, z=0.0, smooth=True, cap_top=T
 def render_material(key):
     name = "ZR_IT_M3_" + key
     mat = bpy.data.materials.get(name)
-    if mat:
+    if mat and mat.use_nodes and any(n.bl_idname == "ShaderNodeAttribute" and n.attribute_name == "Col" for n in mat.node_tree.nodes):
         return mat
+    # missing, or a material of the same name without the vertex colours (seen 2026-11-08: metal, gunmetal, polymer
+    # and rubber in the working .blend had three nodes and rendered white): (re)build it in place
     p = ITEM_MATS[key]
-    mat = bpy.data.materials.new(name)
+    mat = mat or bpy.data.materials.new(name)
     mat.use_nodes = True
     nt = mat.node_tree
     for n in list(nt.nodes):
