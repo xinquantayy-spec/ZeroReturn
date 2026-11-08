@@ -31,6 +31,7 @@ return {
 	{ key = "ZR_GunsLMG", id = 87298401147258 }, -- Kestrel KS-L light machine gun receiver and its 95-round drum (ai-5b, 2026-11-08)
 	{ key = "ZR_GunsGL", id = 125849516891348 }, -- Bittern GL-6 grenade launcher (ai-5b, 2026-11-08)
 	{ key = "ZR_GunsDMR", id = 110062670524120 }, -- Siskin SK-45 carbine; Merlin MR-10 marksman rifle, flash hider, magazine (economy-1a fourth slice, 2026-11-08)
+	{ key = "ZR_GunsNATO", id = 117198564439083 }, -- Shrike S-14 rifle, Osprey OB-7 bolt-action, their magazines, flash suppressor, mount and rail base (economy-1a fifth slice, 2026-11-08)
 	-- Relay 7 lobby bunker kit (ZR_MK_<Prop>__<material> pieces like the mall kit; see KitMeta.luau, Maps/Relay7.luau)
 	{ key = "ZR_BunkerKitA", id = 126010320295919 }, -- shell and services: blast door, door frames, pipes and valves, cable trays, beams, ducts, lamps, boxes, safety kit, sandbags, rubble (build_bunker_kit_a.py)
 	{ key = "ZR_BunkerKitB", id = 100322751912819 }, -- rooms and stations: bunks, lockers, mirror sink, map table, boards, trader counters, gun racks, armour stands, hideout modules, range booth and targets (build_bunker_kit_b.py)

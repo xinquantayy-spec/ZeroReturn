@@ -1509,7 +1509,7 @@ function T.run(ctx)
 	-- into a known group, a level-up reported once, reloading while aiming from level 3, saved with the profile
 	do
 		local P = require(Shared.Progress)
-		check("mastering: every weapon group in the order, thresholds rising", #P.MASTERY_ORDER == 10 and (function()
+		check("mastering: every weapon group in the order, thresholds rising", #P.MASTERY_ORDER == 12 and (function()
 			for _, gid in P.MASTERY_ORDER do
 				local g = P.MASTERING[gid]
 				if not (g and g.level2 > 0 and g.level3 > g.level2 and P.MASTERY_OF[g.weapons[1]] == gid) then

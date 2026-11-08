@@ -60,6 +60,12 @@ add("PM_PISTOL", { name = "Makar PM", short = "PM", kind = "pistol", w = 2, h = 
 -- EFT's handbook prices (SKS 19,331, SVDS 42,800); weights EFT's (3.9 and 4.3 kg)
 add("SKS_RIFLE", { name = "Siskin SK-45", short = "SK-45", kind = "weapon", w = 6, h = 1, mass = 3.9, value = 19331, caliber = "7.6", weapon = "SKS", capacity = 10, desc = "Old self-loading carbine in 7.6x39 with a wooden stock and a folding bayonet. Ten rounds, loaded one at a time.", color = c("#6A4A2E") })
 add("SVD_RIFLE", { name = "Merlin MR-10", short = "MR-10", kind = "weapon", w = 6, h = 2, mass = 4.3, value = 42800, caliber = "7.6L", weapon = "SVD", family = "SVD", rarity = "rare", desc = "Self-loading marksman rifle in 7.6x54R with a skeleton stock. Takes a scope on the side dovetail and the Tundra's muzzle devices.", color = c("#4E3A2A") })
+-- economy-1a, fifth slice (2026-11-08): EFT's 7.62x51 NATO rifles (our 7.6x51). The Shrike S-14 copies the Springfield
+-- Armory M1A (a marksman rifle in EFT's handbook): single shots, 10- and 20-round magazines, a bridge mount for a scope.
+-- The Osprey OB-7 copies the Remington Model 700 bolt-action: a detachable 5- or 10-round magazine, no iron sights, a rail
+-- base for a scope. Values are EFT's handbook prices (M1A 30,264, M700 17,500); the weights are ours (not found)
+add("M1A_RIFLE", { name = "Shrike S-14", short = "S-14", kind = "weapon", w = 6, h = 2, mass = 4.2, value = 30264, caliber = "7.6N", weapon = "M1A", family = "M1A", rarity = "uncommon", desc = "Self-loading battle rifle in 7.6x51 with a synthetic stock. Heavy, slow to handle, hits hard at range. Takes a scope on its bridge mount.", color = c("#2E302E") })
+add("M700_BOLT", { name = "Osprey OB-7", short = "OB-7", kind = "weapon", w = 6, h = 2, mass = 4.4, value = 17500, caliber = "7.6N", weapon = "M700", family = "M700", rarity = "uncommon", desc = "Bolt-action rifle in 7.6x51 with a heavy free-floated barrel and a detachable box magazine. No iron sights: it needs a scope on its rail base.", color = c("#4B5442") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -85,6 +91,12 @@ add("KS74_MAG", { name = "KS-74 30-rd Magazine", short = "MAG 30", kind = "mag",
 add("KS74_MAG45", { name = "KS-74 45-rd Magazine", short = "MAG 45", kind = "mag", w = 1, h = 3, mass = 0.33, value = 3765, capacity = 45, caliber = "5.4", family = "KS74", rarity = "uncommon", desc = "Long 45-round magazine from the support-weapon variant.", color = c("#313537") })
 add("SVD_MAG", { name = "MR-10 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 1, mass = 0.22, value = 3750, capacity = 10, caliber = "7.6L", family = "SVD", desc = "Steel 10-round 7.6x54R magazine for the MR-10.", color = c("#2E3133") }) -- EFT's SVD 10-round magazine (3,750)
 add("PM_MAG", { name = "PM 8-rd Magazine", short = "MAG 8", kind = "mag", w = 1, h = 1, mass = 0.093, value = 940, capacity = 8, caliber = "9.18", family = "PM", desc = "Single-stack 8-round magazine for the Makar PM.", color = c("#2F3233") })
+-- economy-1a, fifth slice: EFT's M1A 10- and 20-round magazines (1,234 and 2,468) and the M700's 5- and 10-round
+-- magazines (Wyatt's Outdoor, 1,850 and 3,500); handbook prices, weights ours
+add("M1A_MAG", { name = "S-14 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 1, mass = 0.16, value = 1234, capacity = 10, caliber = "7.6N", family = "M1A", desc = "Short steel 10-round 7.6x51 magazine for the S-14.", color = c("#2C2E2C") })
+add("M1A_MAG20", { name = "S-14 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 2, mass = 0.24, value = 2468, capacity = 20, caliber = "7.6N", family = "M1A", desc = "Steel 20-round 7.6x51 magazine for the S-14.", color = c("#2C2E2C") })
+add("M700_MAG", { name = "OB-7 5-rd Magazine", short = "MAG 5", kind = "mag", w = 1, h = 1, mass = 0.12, value = 1850, capacity = 5, caliber = "7.6N", family = "M700", desc = "Flush 5-round 7.6x51 box magazine for the OB-7.", color = c("#262829") })
+add("M700_MAG10", { name = "OB-7 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 1, mass = 0.18, value = 3500, capacity = 10, caliber = "7.6N", family = "M700", rarity = "uncommon", desc = "Extended 10-round 7.6x51 box magazine for the OB-7.", color = c("#262829") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -156,6 +168,18 @@ ammo("A76L_PS", "7.6x54R PS", "7.6L PS", "7.6L", 40, 920, { dmg = 84, pen = 45, 
 ammo("A76L_BT", "7.6x54R BT", "7.6L BT", "7.6L", 40, 1180, { dmg = 78, pen = 55, armorDmg = 0.87, bleedL = 0.18, bleedH = 0.12, frag = 0.08, speed = 875 }, "rare", "Armour-piercing core with a tracer base.")
 ammo("A76L_SNB", "7.6x54R SNB", "7.6L SNB", "7.6L", 40, 1600, { dmg = 75, pen = 62, armorDmg = 0.87, bleedL = 0.15, bleedH = 0.12, frag = 0.08, speed = 875, recoil = 0.1 }, "rare", "Sniper armor-piercing load.")
 ammo("A76L_BS", "7.6x54R BS", "7.6L BS", "7.6L", 40, 2500, { dmg = 72, pen = 70, armorDmg = 0.88, bleedL = 0.15, bleedH = 0.1, frag = 0.05, speed = 785 }, "rare", "Tungsten-carbide core. Nothing worn stops it.") -- BS gs; frag and value ours
+-- 7.6x51 (EFT's 7.62x51 NATO; economy-1a, fifth slice): Ultra Nosler, TCW SP, BCP FMJ, M62 Tracer, M80, M80A1, M61, M993.
+-- Damage, penetration, armour damage, fragmentation, speed and the recoil and accuracy modifiers from
+-- tarkovforge.com/ammo/762x51mm-<round> (read 2026-11-08); values are EFT's handbook prices (SPT's handbook.json). EFT
+-- gives bleeding as changes (+5 % on M993 to +20 % on Ultra Nosler); ours adds them to a base of 0.10 light and 0.05 heavy
+ammo("A76N_HP", "7.6x51 HP", "7.6N HP", "7.6N", 40, 105, { dmg = 105, pen = 15, armorDmg = 0.4, bleedL = 0.3, bleedH = 0.25, frag = 0.7, speed = 800, recoil = -0.05, acc = 0.35 }, nil, "Polymer-tipped hunting bullet. Tears flesh apart, stopped by any plate.") -- Ultra Nosler
+ammo("A76N_SP", "7.6x51 SP", "7.6N SP", "7.6N", 40, 170, { dmg = 85, pen = 30, armorDmg = 0.25, bleedL = 0.25, bleedH = 0.2, frag = 0.35, speed = 800, recoil = -0.03, acc = 0.2 }, nil, "Soft point in a steel case. Good on flesh, poor on armour.") -- TCW SP
+ammo("A76N_FMJ", "7.6x51 FMJ", "7.6N FMJ", "7.6N", 40, 240, { dmg = 83, pen = 37, armorDmg = 0.56, bleedL = 0.22, bleedH = 0.17, frag = 0.2, speed = 840 }, nil, "Commercial full metal jacket in a steel case.") -- BCP FMJ
+ammo("A76N_TR", "7.6x51 TR", "7.6N TR", "7.6N", 40, 600, { dmg = 82, pen = 42, armorDmg = 0.65, bleedL = 0.2, bleedH = 0.15, frag = 0.14, speed = 820, recoil = 0.01, acc = -0.1, tracer = "red" }, "uncommon", "Service load with an orange-tipped tracer.") -- M62 Tracer
+ammo("A76N_BALL", "7.6x51 Ball", "7.6N BALL", "7.6N", 40, 420, { dmg = 80, pen = 43, armorDmg = 0.67, bleedL = 0.18, bleedH = 0.13, frag = 0.17, speed = 820, recoil = 0.01, acc = -0.13 }, nil, "Standard service ball round.") -- M80
+ammo("A76N_EP", "7.6x51 EP", "7.6N EP", "7.6N", 40, 1200, { dmg = 75, pen = 55, armorDmg = 0.74, bleedL = 0.17, bleedH = 0.12, frag = 0.13, speed = 929, recoil = 0.04, acc = -0.05 }, "rare", "Enhanced service round with an exposed steel penetrator.") -- M80A1
+ammo("A76N_AP", "7.6x51 AP", "7.6N AP", "7.6N", 40, 1240, { dmg = 73, pen = 60, armorDmg = 0.79, bleedL = 0.16, bleedH = 0.11, frag = 0.14, speed = 833, recoil = 0.03, acc = 0.05 }, "rare", "Black-tipped armour piercer with a hardened steel core.") -- M61
+ammo("A76N_TC", "7.6x51 TC", "7.6N TC", "7.6N", 40, 1723, { dmg = 70, pen = 65, armorDmg = 0.85, bleedL = 0.15, bleedH = 0.1, frag = 0.13, speed = 930, recoil = 0.06, acc = 0.15 }, "rare", "Tungsten-carbide core. Goes through class 6 plates.") -- M993
 
 -- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
 -- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and

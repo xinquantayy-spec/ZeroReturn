@@ -91,6 +91,11 @@ W.SLOTS = {
 	P9_BRL_THR = { muzzle = { fit = "t9" } },
 	-- Merlin MR-10 (economy-1a, fourth slice): a muzzle thread that takes the Tundra's devices and the AK-type dovetail
 	SVD_RIFLE = { muzzle = { fit = "t76l" }, mount = { fit = "dovetail" } },
+	-- Shrike S-14 and Osprey OB-7 (economy-1a, fifth slice): the S-14's muzzle thread and bridge mount, the OB-7's rail base
+	M1A_RIFLE = { muzzle = { fit = "t76n" }, mount = { fit = "m14_mnt" } },
+	M1A_MNT = { scope = { fit = "pica", cats = RAIL_SIGHT } },
+	M700_BOLT = { mount = { fit = "m700_base" } },
+	M700_RAIL = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	-- Makar PM (economy-1a, third slice): EFT's PM has a slide, a magazine and grip panels; ours are on the frame
 	PM_PISTOL = { slide = { fit = "pm_slide", req = true } },
 	-- mounts
@@ -209,6 +214,11 @@ part("TUN_MNT_SIDE", "Tundra side mount", "SIDE MNT", "mount", "tun_side", { w =
 part("TUN_MNT_SCOUT", "Tundra scout rail", "SCOUT", "mount", "tun_scout", { w = 2, h = 1, mass = 0.16, value = 7200, ergo = -1, desc = "Rail on the rear sight base for long eye relief optics." })
 -- the MR-10's flash hider (EFT's SVD flash hider; ours changes no recoil, the gun's figures already hold it)
 part("SVD_FH", "MR-10 flash hider", "FH", "muzzle", "t76l", { w = 1, h = 1, mass = 0.07, value = 602, loud = 0.95, desc = "Long slotted flash hider. Hides the flash, does little else." })
+-- the fifth slice's parts (handbook prices): EFT's M1A National Match flash suppressor (4,759; the front sight is on it),
+-- its M14 A.R.M.S. #18 scope mount (3,217) and the M700 extended multi-slot Weaver rail base (2,640)
+part("M1A_FH", "S-14 flash suppressor", "FS", "muzzle", "t76n", { w = 1, h = 1, mass = 0.1, value = 4759, loud = 0.95, desc = "Slotted flash suppressor with the front sight and a bayonet lug." })
+part("M1A_MNT", "S-14 bridge mount", "BRIDGE", "mount", "m14_mnt", { w = 2, h = 1, mass = 0.26, value = 3217, ergo = -2, desc = "Bridge over the receiver, clamped to its side, with a rail for a scope." })
+part("M700_RAIL", "OB-7 rail base", "RAIL", "mount", "m700_base", { w = 2, h = 1, mass = 0.1, value = 2640, desc = "Long rail base screwed to the receiver's top. The OB-7 has no other sights." })
 part("TUN_BRK", "Tundra muzzle brake", "BRAKE", "muzzle", "t76l", { w = 1, h = 1, mass = 0.12, value = 8000, recoil = -14, loud = 1.15, desc = "Ported brake for the full-power cartridge." })
 part("SUPP_76L", "Kaltan SR-54 suppressor", "SR-54", "muzzle", "t76l", { w = 2, h = 1, mass = 0.62, value = 46000, rarity = "rare", recoil = -3, ergo = -13, loud = 0.38, acc = -4, desc = "Sound suppressor for 7.6x54R." })
 

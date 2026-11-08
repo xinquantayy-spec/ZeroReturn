@@ -245,6 +245,7 @@ T.offers = {
 		o("RED_DOT", 1, 1), o("GRIP_V", 1, 2), o("GRIP_STOP", 1, 3), o("LIGHT_T", 1, 2), o("R17_FH_A2", 1, 3), o("R17_RS_FLIP", 1, 2),
 		o("R17_FS_FLIP", 1, 2), o("AR_PG_ERGO", 1, 2), o("MNT_RISER", 1, 3), o("KST_MAG", 1, 6),
 		o("A12_BUCK", 1, 8, 20), o("A12_SLUG", 1, 4, 20), -- EFT's Skier sells 7 mm buckshot and the lead slug at LL1 (economy-1a)
+		o("A76N_SP", 2, 6, 40), -- the fifth slice: EFT's Skier sells 7.62x51 TCW SP at LL2 (tarkovforge.com)
 		o("NV_BINO", 2, 1), o("KST_DC_RAIL", 2, 1), o("KST_HG_RAIL", 2, 1), o("AK_PG_ERGO", 2, 2), o("GRIP_ANG", 2, 2),
 		o("LASER_DOT", 2, 2), o("KST_MNT_SIDE", 2, 1), o("SPR_FH_3L", 2, 2),
 		o("NV_MONO", 3, 1), o("SPARROW_SMG", 3, 1), o("KST_STK_TUBE", 3, 1), o("HAR_STK_TACT", 3, 1), pre("KST_TAC", 3, 1), pre("HAR_TAC", 3, 1),
@@ -259,6 +260,7 @@ T.offers = {
 		o("R17_RIFLE", 1, 2), o("R17_MAG", 1, 10), o("SPARROW_MAG", 1, 6), o("ARMOR_C3", 1, 1), o("GREN_RK5", 1, 2),
 		o("SPARROW_SMG", 2, 1), o("R17_MAG40", 2, 3), o("HOLO_EX", 2, 1), o("SUPP_9", 2, 1),
 		o("NV_GREEN", 3, 1), o("SCOPE_16", 3, 1), o("SUPP_62", 3, 1),
+		o("A76N_BALL", 4, 6, 40), -- the fifth slice: EFT's Peacekeeper sells 7.62x51 M80 at LL4 (tarkovforge.com)
 		-- rounds (economy-1a; EFT's Peacekeeper, wiki and tarkovforge): 9x19 FMJ M882 and the lead slug at LL1, 5.56 FMJ at
 		-- LL2, M855 and AP 6.3 at LL3, M856A1 at LL4; M995 by barter only (no trader sells it for cash in EFT)
 		o("A9_FMJ", 1, 10, 50), o("A12_SLUG", 1, 4, 20), o("A62_FMJ", 2, 10, 60), o("A62_SS", 3, 6, 60), o("A9_AP", 3, 4, 50),
@@ -283,6 +285,9 @@ T.offers = {
 		o("MNT_RINGS", 3, 1), o("LASER_COMBO", 3, 1), o("SPR_GRIP_NAVY", 3, 1), o("SPR_MAG50", 3, 2),
 		-- the KS-74 at LL2: EFT's Mechanic sells the AK-74N at LL2 (tarkovforge.com's AK-74N page)
 		o("KS74_RIFLE", 2, 1), o("BRAKE_74", 1, 2),
+		-- the fifth slice: EFT's Mechanic sells the M1A at LL3 (tarkovforge.com's M1A page); its magazines, flash suppressor and
+		-- mount beside it (ours)
+		o("M1A_RIFLE", 3, 1), o("M1A_MAG", 3, 4), o("M1A_MAG20", 3, 3), o("M1A_FH", 3, 2), o("M1A_MNT", 3, 2),
 		-- rounds (economy-1a; EFT's Mechanic): the green tracer at LL1, Pst gzh at LL2, RIP at LL4
 		o("A9_TR", 1, 10, 50), o("A9_PST", 2, 10, 50), o("A9_RIP", 4, 3, 50),
 		pre("R17_CQB", 3, 1), pre("SPR_TAC", 3, 1),
@@ -315,6 +320,9 @@ T.offers = {
 		-- hollow points at LL1, Poleva-6u at LL2, Magnum buckshot and flechettes at LL3
 		o("A12_SLUG", 1, 4, 20), o("A62_HP", 1, 6, 60), o("A76_HP", 1, 6, 60), o("A12_SABOT", 2, 4, 20), o("A12_MAG", 3, 4, 20),
 		o("A54_HP", 1, 6, 60), o("A918_PSV", 2, 6, 50), -- the third slice: Jaeger's 5.45 HP (LL1) and 9x18 PSV (LL2)
+		-- the fifth slice: Jaeger's 7.62x51 Ultra Nosler at LL1 and BCP FMJ at LL3 (tarkovforge.com's round pages); the OB-7's
+		-- magazines and rail base (ours; the rifle itself is a barter, below)
+		o("A76N_HP", 1, 6, 40), o("A76N_FMJ", 3, 6, 40), o("M700_MAG", 2, 4), o("M700_MAG10", 3, 2), o("M700_RAIL", 2, 2),
 		o("A12_FLECH", 3, 3, 20),
 		o("HAR_FE_POLY", 1, 2), o("HAR_STK_PG", 1, 1),
 		o("TUNDRA_BOLT", 2, 1), o("TUN_MNT_SCOUT", 2, 1), o("TUN_STK_SPORT", 2, 1), o("HAR_FE_RAIL", 2, 1),
@@ -373,6 +381,12 @@ T.barters = {
 		b("PLATE_CE5", 4, 1, { { "MIL_CIRCUIT", 2 }, { "BATTERY", 1 } }), -- a class 5 plate for military electronics (ours, gameplay-2a)
 		-- EFT sells M995 for no money (raids, barters and crafts, tarkovforge): a stack by barter at LL4, the goods ours (economy-1a)
 		b("A62_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 2 } }, 60),
+		-- the fifth slice: EFT sells M62, M80A1, M61 and M993 for no money (barters, crafts and raids; tarkovforge.com): stacks by
+		-- barter here, the tracer at LL3 and the piercers at LL4 (the goods ours)
+		b("A76N_TR", 3, 2, { { "GUNPOWDER", 1 }, { "BOLTS", 2 } }, 40),
+		b("A76N_EP", 4, 2, { { "GUNPOWDER", 2 }, { "SPARK_PLUG", 2 } }, 40),
+		b("A76N_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 2 } }, 40),
+		b("A76N_TC", 4, 1, { { "GUNPOWDER", 3 }, { "MIL_CIRCUIT", 1 } }, 40),
 	},
 	kovac = {
 		b("WEAPON_KIT", 1, 1, { { "DUCT_TAPE", 2 }, { "SPARK_PLUG", 1 }, { "WIRES", 1 } }),
@@ -386,6 +400,8 @@ T.barters = {
 	-- Jaeger: an early bolt rifle for fuel and bolts; the T-7 thermals for high-end electronics and valuables
 	bram = {
 		b("TUNDRA_BOLT", 1, 1, { { "FUEL_CAN", 1 }, { "BOLTS", 2 } }),
+		-- EFT's Remington Model 700 is barter-only (tarkovforge.com: no trader sells it for money); the trader, level and goods ours
+		b("M700_BOLT", 2, 1, { { "GUN_LUBE", 1 }, { "WEAPON_PARTS", 2 } }),
 		b("TH_T7", 4, 1, { { "MIL_CIRCUIT", 2 }, { "COLD_WALLET", 2 }, { "BATTERY", 2 } }),
 	},
 }

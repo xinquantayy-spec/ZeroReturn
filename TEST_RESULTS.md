@@ -8,7 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## The SK-45 carbine and the MR-10 marksman rifle (decision economy-1a, fourth slice; 2026-11-08, about 18:55 SGT)
+## The 7.6x51 calibre: the S-14 rifle and the OB-7 bolt-action (decision economy-1a, fifth slice; 2026-11-08, about 18:15 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_nato.py added a new batch, ZR_GunsNATO (9 parts: the two rifles, four magazines, the flash suppressor, the bridge mount and the rail base; 5,156 triangles), uploaded as 117198564439083. build_items_l.py drew the eight rounds. The sprite sheet was packed again with 152 sprites (image 99050696404728). The sixth icon sheet was packed again with its 4 old and 17 new icons (image 93493037713841). |
+| In a raid (Quay 7, rain, Studio) | The S-14 as the primary, with the flash suppressor put on through the modding operation, loaded a 10-round magazine of ball from the rig and fired 2 (10 to 8). The OB-7 on the back, with the rail base and a 4x scope put on the same way, loaded a 5-round magazine of TC and fired twice with the bolt worked between shots (5 to 4 to 3). The inventory shows both rifles with their parts in the weapon slots. |
+| Tests | 14 suites, 1,083 checks, all passed. RecoilTests check the S-14 at 214 / 405 and the OB-7 at 199 / 670; LogicTests count 12 mastering groups. |
+| Not checked | Aiming through the OB-7's scope, AI with the new rifles, the trader screens by eye, a phone. |
+
+## The SK-45 carbine and the MR-10 marksman rifle (decision economy-1a, fourth slice; 2026-11-08, about 17:45 SGT)
 
 | Test | Result |
 |---|---|

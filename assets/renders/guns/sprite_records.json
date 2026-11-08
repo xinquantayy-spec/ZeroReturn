@@ -496,6 +496,69 @@
   "oy": 9.97,
   "w": 59
  },
+ "M1A_FH@long": {
+  "file": "M1A_FH@long",
+  "h": 26,
+  "ox": 28.75,
+  "oy": 15.02,
+  "w": 31
+ },
+ "M1A_MAG20@long": {
+  "file": "M1A_MAG20@long",
+  "h": 50,
+  "ox": 17.54,
+  "oy": 5.45,
+  "w": 34
+ },
+ "M1A_MAG@long": {
+  "file": "M1A_MAG@long",
+  "h": 32,
+  "ox": 16.65,
+  "oy": 5.45,
+  "w": 33
+ },
+ "M1A_MNT@long": {
+  "file": "M1A_MNT@long",
+  "h": 24,
+  "ox": 28.4,
+  "oy": 10.98,
+  "w": 56
+ },
+ "M1A_RIFLE@long": {
+  "file": "M1A_RIFLE@long",
+  "h": 70,
+  "ox": 255.44,
+  "oy": 18.19,
+  "w": 377
+ },
+ "M700_BOLT@long": {
+  "file": "M700_BOLT@long",
+  "h": 61,
+  "ox": 298.38,
+  "oy": 8.16,
+  "w": 433
+ },
+ "M700_MAG10@long": {
+  "file": "M700_MAG10@long",
+  "h": 40,
+  "ox": 16.78,
+  "oy": 5.45,
+  "w": 34
+ },
+ "M700_MAG@long": {
+  "file": "M700_MAG@long",
+  "h": 27,
+  "ox": 16.78,
+  "oy": 5.45,
+  "w": 34
+ },
+ "M700_RAIL@long": {
+  "file": "M700_RAIL@long",
+  "h": 11,
+  "ox": 38.96,
+  "oy": 7.46,
+  "w": 75
+ },
  "MNT_RINGS@long": {
   "file": "MNT_RINGS@long",
   "h": 27,

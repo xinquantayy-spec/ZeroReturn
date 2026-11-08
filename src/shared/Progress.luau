@@ -169,8 +169,11 @@ P.MASTERING = {
 	-- the fourth slice's self-loaders (thresholds not found: the SK-45 has the KS-7's, the MR-10 the Tundra's; ours)
 	SKS = { name = "SK-45", class = "ASSAULT CARBINE", level2 = 500, level3 = 600, weapons = { "SKS" } },
 	SVD = { name = "MR-10", class = "MARKSMAN RIFLE", level2 = 200, level3 = 250, weapons = { "SVD" } },
+	-- the fifth slice (thresholds not found: the S-14 has the MR-10's, the OB-7 the Tundra's; ours)
+	M1A = { name = "S-14", class = "MARKSMAN RIFLE", level2 = 200, level3 = 250, weapons = { "M1A" } },
+	M700 = { name = "OB-7", class = "SNIPER RIFLE", level2 = 200, level3 = 250, weapons = { "M700" } },
 }
-P.MASTERY_ORDER = { "R17", "KST", "KS74", "SKS", "SPARROW", "HARROW", "SVD", "TUNDRA", "P9", "PM" }
+P.MASTERY_ORDER = { "R17", "KST", "KS74", "SKS", "SPARROW", "HARROW", "SVD", "M1A", "TUNDRA", "M700", "P9", "PM" }
 -- what a level gives (Tarkov): 2 another reload animation (magazine-fed guns here), 3 reloading while aiming down sights
 P.MASTERY_PERKS = { [2] = "ANOTHER RELOAD ANIMATION", [3] = "RELOAD WHILE AIMING DOWN SIGHTS" }
 -- [weapon id] = group id (a group may hold several weapons later, as Tarkov's do)

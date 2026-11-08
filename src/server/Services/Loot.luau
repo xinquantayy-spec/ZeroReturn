@@ -117,6 +117,13 @@ local POOLS = {
 		{ id = "KS74_MAG45", w = 1, a = { 0, 45 }, at = "A54_PS" }, { id = "PM_MAG", w = 5, a = { 0, 8 }, at = "A918_P" },
 		{ id = "KS74_RIFLE", w = 1.5 }, { id = "PM_PISTOL", w = 3 }, { id = "BRAKE_74", w = 2 },
 		{ id = "SKS_RIFLE", w = 1 }, { id = "SVD_RIFLE", w = 0.4 }, { id = "SVD_MAG", w = 1.5, a = { 0, 10 }, at = "A76L_LPS" }, { id = "SVD_FH", w = 1 },
+		-- the fifth slice: the S-14 and OB-7, their magazines and parts, and the 7.6x51 rounds (the piercers rarely)
+		{ id = "M1A_RIFLE", w = 0.6 }, { id = "M700_BOLT", w = 0.5 }, { id = "M1A_MAG", w = 1.5, a = { 0, 10 }, at = "A76N_BALL" },
+		{ id = "M1A_MAG20", w = 0.8, a = { 0, 20 }, at = "A76N_BALL" }, { id = "M700_MAG", w = 1.2, a = { 0, 5 }, at = "A76N_BALL" },
+		{ id = "M700_MAG10", w = 0.5, a = { 0, 10 }, at = "A76N_BALL" }, { id = "M1A_FH", w = 1 }, { id = "M1A_MNT", w = 0.8 }, { id = "M700_RAIL", w = 1 },
+		{ id = "A76N_HP", w = 2, n = { 10, 30 } }, { id = "A76N_SP", w = 3, n = { 10, 30 } }, { id = "A76N_FMJ", w = 4, n = { 10, 30 } },
+		{ id = "A76N_TR", w = 2, n = { 10, 25 } }, { id = "A76N_BALL", w = 4, n = { 10, 30 } }, { id = "A76N_EP", w = 0.5, n = { 5, 15 } },
+		{ id = "A76N_AP", w = 0.5, n = { 5, 15 } }, { id = "A76N_TC", w = 0.3, n = { 5, 10 } },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -346,6 +353,8 @@ local POOLS = {
 		{ id = "A62_EP", w = 2, n = { 30, 60 } }, { id = "A76_PP", w = 2, n = { 30, 60 } }, { id = "A9_PBP", w = 1, n = { 25, 50 } },
 		{ id = "A54_BP", w = 2, n = { 30, 60 } }, { id = "A54_BS", w = 1, n = { 20, 40 } }, { id = "KS74_RIFLE", w = 1 }, { id = "KS74_MAG45", w = 1, a = { 0, 45 }, at = "A54_BP" },
 		{ id = "SVD_RIFLE", w = 0.6 }, { id = "SVD_MAG", w = 1, a = { 0, 10 }, at = "A76L_PS" },
+		{ id = "M1A_RIFLE", w = 0.8 }, { id = "M700_BOLT", w = 0.6 }, { id = "M1A_MAG20", w = 1, a = { 0, 20 }, at = "A76N_AP" },
+		{ id = "A76N_AP", w = 1, n = { 20, 40 } }, { id = "A76N_TC", w = 0.6, n = { 10, 30 } },
 		{ id = "A76L_BT", w = 1, n = { 20, 40 } }, { id = "A12_APS", w = 1, n = { 10, 20 } },
 		{ id = "R17_RIFLE", w = 3 }, { id = "KST_RIFLE", w = 3 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "P9_PISTOL", w = 2 },
 		{ id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" }, { id = "R17_MAG40", w = 2, a = { 0, 40 }, at = "A62_FMJ" },
