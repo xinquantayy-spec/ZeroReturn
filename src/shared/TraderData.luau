@@ -56,7 +56,7 @@ T.defs = {
 	dekker = {
 		name = "DEKKER", title = "Liaison", markup = 1.25,
 		desc = "Stayed on after the ceasefire mission left. Western rifles, ammunition, optics and night vision for anything of value.",
-		buys = { weapon = 0.45, pistol = 0.45, mod = 0.45, nvg = 0.45, ammo = 0.45, armor = 0.45, helmet = 0.45 },
+		buys = { weapon = 0.45, pistol = 0.45, mod = 0.45, nvg = 0.45, ammo = 0.45, armor = 0.45, helmet = 0.45, plate = 0.45 },
 		-- EFT's Peacekeeper also takes intelligence: drives, diaries, flash drives (gameslikefinder.com)
 		buyIds = { FLASH_MODULE = 0.45, INTEL_FOLDER = 0.45, HDD = 0.45 },
 	},
@@ -68,7 +68,7 @@ T.defs = {
 	tilda = {
 		name = "TILDA", title = "Outfitter", markup = 1.25,
 		desc = "Stitches, sells and fits armour, helmets, rigs, packs, headsets and eyewear.",
-		buys = { armor = 0.55, helmet = 0.55, rig = 0.55, backpack = 0.55, headwear = 0.5, headset = 0.55, facecover = 0.5, eyewear = 0.5 },
+		buys = { armor = 0.55, helmet = 0.55, plate = 0.55, rig = 0.55, backpack = 0.55, headwear = 0.5, headset = 0.55, facecover = 0.5, eyewear = 0.5 },
 	},
 	bram = {
 		-- Jaeger's food and basic medicine are among the cheapest (tarkovforge.com/traders/jaeger): a lower markup
@@ -191,6 +191,8 @@ T.offers = {
 		o("BRAKE_76", 2, 1), o("KST_STK_FOLD", 2, 1), o("P9_MAG33", 2, 3), pre("HAR_SHORT", 2, 1),
 		o("A76L_LPS", 3, 4, 40), o("A12_SLUG", 3, 4, 20), o("SCOPE_4X", 3, 1), o("SUPP_76", 3, 1), o("KST_MAG40", 3, 3),
 		o("A76_BP", 4, 3, 60), o("A76L_SNB", 4, 2, 40), pre("KST_QUIET", 4, 1),
+		-- plates (gameplay-2a): EFT sells the Korund-VM plates at Prapor LL4 (tarkovforge); the PC-4's at LL2 (ours)
+		o("PLATE_PC4F", 2, 2), o("PLATE_PC4B", 2, 2), o("PLATE_HP5F", 4, 1), o("PLATE_HP5B", 4, 1), o("PLATE_HP5S", 4, 2),
 	},
 	-- the Therapist: dressings and painkillers first, bigger kits and stimulants of their kind higher up
 	hale = {
@@ -222,6 +224,8 @@ T.offers = {
 		o("SPARROW_SMG", 2, 1), o("R17_MAG40", 2, 3), o("A62_HP", 2, 6, 60), o("HOLO_EX", 2, 1), o("SUPP_9", 2, 1),
 		o("NV_GREEN", 3, 1), o("A62_AP", 3, 4, 60), o("SCOPE_16", 3, 1), o("SUPP_62", 3, 1),
 		o("NV_QUAD", 4, 1), o("R17_MAG60", 4, 2),
+		-- western plates by loyalty (ours, gameplay-2a): class 3 polyethylene at LL1 up to class 5 side plates at LL3
+		o("PLATE_PE3", 1, 2), o("PLATE_CE4", 2, 2), o("PLATE_PE4", 3, 1), o("PLATE_CE5S", 3, 2),
 	},
 	-- the Mechanic: "high-end attachments, suppressors, and optics" gated by loyalty, "pre-built custom weapons, available at
 	-- higher loyalty levels" (tarkovforge): plain parts at LL1, rails, brakes and the first builds at LL2, free-float
@@ -243,7 +247,7 @@ T.offers = {
 		o("CAP_FIELD", 1, 3), o("BEANIE", 1, 3), o("GAITER", 1, 3), o("NV_STRAP", 1, 2), o("HEADSET_GS1", 2, 1), o("HEADSET_COMM", 3, 1),
 		o("RIG_CHEST", 2, 2), o("CANVAS_BAG", 2, 2), o("ARMOR_C3", 2, 2), o("HELMET_C3", 2, 1),
 		o("BAG_PATROL", 3, 1), o("ARMOR_C4", 3, 1), o("HELMET_C4", 3, 1), o("RIG_PLATE", 3, 1),
-		o("BAG_RAID", 4, 1), o("ARMOR_C5", 4, 1),
+		o("BAG_RAID", 4, 1), o("ARMOR_C5", 4, 1), o("PLATE_PE3", 2, 2), -- (a spare class 3 plate, gameplay-2a)
 		-- eyewear (Tarkov: the outfitter's plain glasses from LL1, the shooting glasses at LL3, ballistic glasses at LL3-4; gas masks
 		-- are not sold for cash)
 		o("GLASSES_SUN", 1, 3), o("GLASSES_RANGE", 3, 2), o("GLASSES_BG1", 3, 1), o("GLASSES_AF2", 4, 1),
@@ -290,6 +294,7 @@ T.barters = {
 		-- SPT copies it, traders/5935c25fb3acc3127c3d8cd9). Ours, all items that spawn: the deep-cycle battery, control
 		-- boards, flash modules and wires
 		b("SECURE_M", 2, 1, { { "BATTERY", 1 }, { "LOGIC_BOARD", 3 }, { "FLASH_MODULE", 3 }, { "WIRES", 5 } }),
+		b("PLATE_CE5", 4, 1, { { "MIL_CIRCUIT", 2 }, { "BATTERY", 1 } }), -- a class 5 plate for military electronics (ours, gameplay-2a)
 	},
 	kovac = {
 		b("WEAPON_KIT", 1, 1, { { "DUCT_TAPE", 2 }, { "SPARK_PLUG", 1 }, { "WIRES", 1 } }),
@@ -333,7 +338,8 @@ end
 function T.price(traderId: string, offer: any, _ll: number?, karma: number?): number
 	local d = Items.defs[offer.id]
 	local tr = T.defs[traderId]
-	local value = WP.isBase(offer.id) and T.buildValue(offer.id, offer.preset) or d.value
+	-- (a carrier comes with its default plates since gameplay-2a, so it costs the vest and the plates: Items.kitValue)
+	local value = WP.isBase(offer.id) and T.buildValue(offer.id, offer.preset) or Items.kitValue(offer.id)
 	local mul = traderId == "fence" and T.fencePriceMul(karma) or 1
 	return math.max(1, math.ceil(value * (offer.n or 1) * tr.markup * mul))
 end
@@ -369,7 +375,7 @@ local GUNS = { weapon = true, pistol = true }
 T.REPAIRS = {
 	vos = { kinds = GUNS, weapon = 0.004, coef = { 0.8, 0.9, 0.95, 1 } },
 	-- plain glasses have no durability: nothing to repair
-	rook = { kinds = { weapon = true, pistol = true, armor = true, helmet = true, rig = true, eyewear = true }, weapon = 0.004, armor = 0.4, coef = { 1.1, 1.2, 1.3, 1.4 } },
+	rook = { kinds = { weapon = true, pistol = true, armor = true, helmet = true, plate = true, rig = true, eyewear = true }, weapon = 0.004, armor = 0.4, coef = { 1.1, 1.2, 1.3, 1.4 } },
 	kovac = { kinds = GUNS, weapon = 0.004, coef = { 1, 1, 1, 1 } },
 }
 T.KIT_DEGRADE = 0.03

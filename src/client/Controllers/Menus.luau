@@ -144,7 +144,7 @@ end
 -- they had no category here, so the handbook and the flea market never listed them (audit economy.11)
 local CAT = {
 	weapon = "WEAPONS", pistol = "WEAPONS", melee = "WEAPONS", mod = "WEAPON PARTS", mag = "MAGAZINES", ammo = "AMMUNITION", grenade = "GRENADES",
-	armor = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", eyewear = "GEAR", secure = "CONTAINERS",
+	armor = "GEAR", plate = "GEAR", helmet = "GEAR", rig = "GEAR", backpack = "GEAR", headwear = "GEAR", headset = "GEAR", facecover = "GEAR", eyewear = "GEAR", secure = "CONTAINERS",
 	med = "MEDICATION", food = "PROVISIONS", key = "KEYS", loot = "BARTER ITEMS", repair = "BARTER ITEMS", quest = "INFO ITEMS", nvg = "GEAR",
 	flare = "SPECIAL EQUIPMENT",
 }
