@@ -263,7 +263,10 @@
       store's lock are built. Where EFT spawns the keycard is unknown (ours: rare key loot).
     - Seen in Studio from the main hall: thin bright slits between the far wall's panels. Rays fanned at 0.025-degree
       steps at 3 to 24 studs high found no opening, so they look like a render seam where panels meet (the build pulls
-      753 coplanar faces back against z-fighting), not a hole. The stairs, the high bridge, the pit, the sump drop and
+      753 coplanar faces back against z-fighting), not a hole.
+    - The exit walk (ZR_Dev exitcheck, doors open, 2026-11-09) finds the Smelter not yet fully walkable: no spawn reaches
+      ORE GATE or TIMEKEEPER'S WINDOW (the office's third floor does not connect to the second), one reaches AID POST
+      GATE, and four spawns (NORTH STAIR, WASHROOM, AID POST 2, SOUTH STAIR) are walled in. With the factory thread. The stairs, the high bridge, the pit, the sump drop and
       every exit have not been walked yet.
 86. **Gun texture sheets: 46 sheets of four 1024 px maps (art-4b, 2026-11-09).**
     - A gun build loads every sheet its parts sit on (two to four for most guns). The memory this takes on a low-end phone
