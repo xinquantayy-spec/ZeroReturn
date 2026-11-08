@@ -424,10 +424,11 @@ function T.run(ctx)
 					if kind == "weekly" then
 						ok = ok and inst.reward.items ~= nil and Items.defs[inst.reward.items[1][1]] ~= nil
 					end
+					-- Fence's count in scav raids, the others in PMC raids
 					if kind == "scav" then
 						ok = ok and (inst.reward.karma or 0) > 0 and (o.scav == true)
 					else
-						ok = ok and (inst.reward.rep or 0) > 0
+						ok = ok and (inst.reward.rep or 0) > 0 and (o.kind == "handin" or o.scav == false)
 					end
 					if not ok and #bad < 5 then
 						table.insert(bad, kind .. " L" .. level .. " " .. tostring(o and o.kind))

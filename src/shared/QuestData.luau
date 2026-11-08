@@ -988,6 +988,10 @@ function Q.rollOp(kind: string, level: number, rng: any, exits: any?): any
 		local n = unc and rng:NextInteger(1, 2) or rng:NextInteger(2, 4)
 		o = handin(id, weekly and n * 3 or n)
 	end
+	-- the PMC's operational tasks count in PMC raids, Fence's in scav raids (EFT: Fence's are played as a scav)
+	if kind ~= "scav" and (o.kind == "kill" or o.kind == "extract") then
+		o.scav = false
+	end
 	local mul = cfg.mul
 	local reward: any = {
 		money = math.floor((6000 + 1800 * level) * mul / 100) * 100,
