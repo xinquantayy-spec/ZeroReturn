@@ -49,6 +49,15 @@ do
 		warn("[ZR] Transit failed to load, no transits this server:", Transit)
 	end
 end
+-- the raid chat rules (Services/Chat.luau, ui-7a) are optional: without them the chat stays Roblox's default
+do
+	local okChat, Chat = pcall(require, Services:WaitForChild("Chat"))
+	if okChat then
+		ctx.Chat = Chat
+	else
+		warn("[ZR] Chat failed to load, the chat keeps Roblox's defaults:", Chat)
+	end
+end
 -- airdrops (Services/Airdrop.luau) are optional too: a fault is logged and the raid runs without the plane
 do
 	local okAir, Airdrop = pcall(require, Services:WaitForChild("Airdrop"))
@@ -96,6 +105,12 @@ for _, name in { "Health", "Chars", "Appearance", "Loot", "Combat", "Grenades", 
 end
 if ctx.Airdrop then
 	ctx.Airdrop.init(ctx)
+end
+if ctx.Chat then
+	local okChat, errChat = pcall(ctx.Chat.init, ctx)
+	if not okChat then
+		warn("[ZR] Chat init failed:", errChat)
+	end
 end
 if ctx.Glass then
 	local okInit, errInit = pcall(ctx.Glass.init, ctx)

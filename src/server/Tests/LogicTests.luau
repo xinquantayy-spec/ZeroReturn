@@ -3296,6 +3296,26 @@ function T.run(ctx)
 		end
 	end
 
+	-- ui-7a: no public text chat in a raid (Tarkov has none); the squad channel reaches the squad only (Chat.luau). The
+	-- raid and squad lookups are stood in for while the checks run (they do not yield)
+	if ctx.Chat then
+		local Chat = ctx.Chat
+		local A, B, C = {}, {}, {}
+		local oldS, oldQ = ctx.Raid.session, ctx.Match.squadOf
+		local inR, sq = { [A] = { done = false } }, { [A] = "s1", [B] = "s1" }
+		ctx.Raid.session = function(p)
+			return inR[p]
+		end
+		ctx.Match.squadOf = function(p)
+			return sq[p]
+		end
+		local okPub = Chat.allowPublic(B, C) and not Chat.allowPublic(A, B) and not Chat.allowPublic(B, A)
+		local okSq = Chat.allowSquad(A, B) and Chat.allowSquad(B, A) and not Chat.allowSquad(A, C) and Chat.allowSquad(C, C)
+		ctx.Raid.session, ctx.Match.squadOf = oldS, oldQ
+		check("chat: the public channel only between two players in the bunker", okPub)
+		check("chat: the squad channel reaches the sender and the squad, nobody else", okSq)
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed) .. (skipped > 0 and string.format(", %d skipped (maps not built on this server)", skipped) or "")
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

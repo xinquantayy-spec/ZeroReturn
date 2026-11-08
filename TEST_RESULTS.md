@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Chat in raids (decision ui-7a; 2026-11-08, about 13:20 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 12 pass, 913 checks. LogicTests 423/423, new: the public channel only between two players in the bunker; the squad channel reaches the sender and the squad, nobody else. |
+| One player, bunker then Border Yard | In the bunker the chat bar pointed at RBXGeneral. In the raid it pointed at ZR_Squad. A message sent there came back to the sender (alone, so his own squad). A message sent on the public channel in the raid reached nobody, the sender included. |
+| Not checked | Two or more players (a squadmate receiving it, a bunker player not hearing a raider), bubble chat, phones. |
+
 ## Tarkov's menu bar (decision ui-6a; 2026-11-08, about 13:00 SGT)
 
 | Test | Result |
