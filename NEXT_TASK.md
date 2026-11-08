@@ -13,16 +13,16 @@
 - Checked in Studio 2026-11-08 (TEST_RESULTS): all of M3 batch 6, M4 batches 1-3 (ai-3a, gameplay-1a, ai-1a, ai-2,
   ai-7a, economy-2a, gameplay-2a), M4 batch 4 (Relay 7 counters for all eight traders, plates in the drag cue, pictures
   for every carried item, AI looting ai-8a, health and stamina indicators ui-1a) and the map-first tasks (economy-6a: 122
-  tasks, 31 task places) and gameplay-4b (four stims, fracture penalties, the stomach rule) are on main; 12 suites, 910
-  checks pass. Studio's id is b79ee504-12b7-4e23-b725-da89d70d2f1a;
+  tasks, 31 task places), gameplay-4b (four stims, fracture penalties, the stomach rule) and gameplay-3a (sound through
+  walls, piloted on Border Yard) are on main; 12 suites, 910 checks pass. Studio's id is b79ee504-12b7-4e23-b725-da89d70d2f1a;
   Rojo serves on port 34873 (after a Studio restart the owner clicks Connect).
 - Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
   seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator
   check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft side-by-side in Edit mode, never a runtime
   switch (that hung Studio); kit origins (art.9); ZR_SFX_Amb (the owner checks why it reads as 0.0 s before any
   re-upload).
-- Next decisions: gameplay-3a (sound occlusion), tech-8c (a Luau runtime for tests: needs the owner's OK to build the
-  official Luau from source).
+- Next: the other maps on Acoustic Simulation once Border Yard has been heard (gameplay-3a's pilot); tech-8c (a Luau
+  runtime for tests) needs the owner's OK to build the official Luau from source.
 - The gaps by area: `docs/design/EFT_PARITY.md` sections 8 (AI), 9 (core gameplay), 10 (economy) and 11 (art); the look
   rules for new art: `docs/look/ART_BIBLE.md`.
 - Parked: the players' tripwire kit. The server side is merged on branch `wip/tripwire-kit`, the client is not built, and the branch is not on main.

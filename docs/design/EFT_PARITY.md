@@ -134,7 +134,7 @@ MEDIUM and PCs at HIGH (tech-3b, M1). Numbers move with - and +, which repeat wh
 | Night vision and thermals | Goggles done 2026-11-01: four night-vision tubes (monocular circle, two binoculars, panoramic quad; phosphor colour, gain, grain, light flare each) and thermal goggles, on mounted helmets or a head strap, drawn on characters up or down (ZR_EyeGear); the faceplate helmet's shield (raised = face open to hits, lowered = visor tint) | Night-vision and thermal scopes, the flip animation of the mount, AI wearing goggles at night |
 | Face shield, glasses and gas mask overlays (cracks when hit) | Face shield: a tinted visor round the view (N). Glasses and gas mask built 2026-11-01: a mild lens tint per item, blindness protection against stun charges, the mask's rubber frame with smoked lenses; both step aside while night-vision goggles are down | Cracks when hit, the mask's breathing loop, fogging and raindrops (notes below) |
 | Full-body awareness, weapon inertia and sway (0.13.5), visual recoil with bolt movement and camera shake (0.16) | Arms, sway, recoil | Legs in view, bolt movement |
-| Audio: Steam Audio reverb and occlusion from the geometry (0.12.6 on, occlusion reworked in 0.16.7.0); indoor and outdoor sound; Interchange's mall soundscape | Written 2026-11-01: one reverb for the listener's space (7 classes plus marked floors), room tone, mains hum with the power, car park tone, drips, the IRONSIGHT siren, the substation generator, dust in the skylights (MEDIUM and up); far shots only from real shots since 2026-11-07 (gameplay.13). Everything from the ambience atlas is silent: the asset in `Sounds.AMB_ATLAS` loads as 0.0 s long (KNOWN_ISSUES 73) | The owner re-uploads `ZR_SFX_Amb` (gameplay.17), then levels are set by ear. Occlusion through walls, floors and doors is now possible: Roblox's Acoustic Simulation left beta on 22 September 2026, for the Audio API only (gameplay-3a, approved; section 9) |
+| Audio: Steam Audio reverb and occlusion from the geometry (0.12.6 on, occlusion reworked in 0.16.7.0); indoor and outdoor sound; Interchange's mall soundscape | Written 2026-11-01: one reverb for the listener's space (7 classes plus marked floors), room tone, mains hum with the power, car park tone, drips, the IRONSIGHT siren, the substation generator, dust in the skylights (MEDIUM and up); far shots only from real shots since 2026-11-07 (gameplay.13). Everything from the ambience atlas is silent: the asset in `Sounds.AMB_ATLAS` loads as 0.0 s long (KNOWN_ISSUES 73) | The owner re-uploads `ZR_SFX_Amb` (gameplay.17), then levels are set by ear. World one-shots on Border Yard are occluded since 2026-11-08 (gameplay-3a, the notes "Sound through walls" near the end); the other maps, the ambience loops and the phones' fallback check are still open |
 
 ### Eyewear, gas mask and goggles on characters (2026-11-01)
 
@@ -240,11 +240,11 @@ Matched (as far as Roblox allows):
   the security terminal (existing rule, 60 s cap).
 
 Gaps (not copied or not found):
-- **No per-source reverb or occlusion** (Steam Audio's geometry raycasts per sound, the 0.16.7.0 floor and stairway transmission).
-  The legacy `Sound` objects this game uses get one reverb for the listener and no occlusion: a shot in a hall heard from a
-  washroom gets the washroom's reverb, and sounds carry through walls within their radius. Since 22 September 2026 Roblox's
-  Acoustic Simulation gives occlusion, bending round corners and reverb from the geometry, but only to the Audio API
-  (`AudioPlayer`, `AudioEmitter`); moving the sounds to it is the owner's pick gameplay-3a (audit gameplay finding 3).
+- **Per-source reverb and occlusion only on Border Yard so far** (gameplay-3a, 2026-11-08; the notes "Sound through walls"
+  near the end). There, world one-shots play through Roblox's Acoustic Simulation: occlusion, bending round corners and
+  reverb from the geometry, as Steam Audio does for Tarkov. Elsewhere, and on POTATO, a world sound counts the walls
+  between it and you once as it starts (ours). Ambience loops and your own sounds stay legacy `Sound`s with one reverb for
+  the listener.
 - **Not in any source, so our design:** the mall's room tone, the fluorescent and mains hum, the car park tone, the drips, the dust
   in the skylights. Tarkov's Interchange soundscape (empty mall, wind, arcade, escalators) was not found documented anywhere.
 - **Distant gunfire was scripted** (a faint burst every 40 to 120 s, tied to no one). Removed on 2026-11-07 (gameplay.13): only
@@ -344,7 +344,7 @@ Still a gap:
 | Fractures (a leg -45 %; arms slow aiming, drawing and searching); stims with buffs and side effects; a destroyed stomach drains energy and water x5 | EFT's fracture penalties and the stomach rule; four stims with EFT's figures, after Propital, SJ6, Zagustin and the Adrenaline injector (gameplay-4b, 2026-11-08) | About 34 more stims, per-kit costs and two surgery kits (option a); the gaps under "Stimulants" near the end of this file |
 | After death or MIA: 30 % health regaining 7.61 HP a minute, paid healing at the Therapist; insurance 12 to 36 h, held 4 to 6 days; scav cooldown about 25 min | Full health after death, no paid healing; one insurer, 15 min, kept until collected; 10 min | gameplay-6b: Tarkov's rules, scaled times |
 | PMCs only enter at the start of a raid | PMCs may join for 5 min (`Config.LATE_JOIN`) | gameplay-7a: a server per raid (needs the published place) |
-| Occlusion through walls, floors and stairways | Legacy sounds with one reverb for the listener | gameplay-3a: Acoustic Simulation (section 6) |
+| Occlusion through walls, floors and stairways | On Border Yard, world sounds through Roblox's Acoustic Simulation (one wall about -17 dB, a floor about -14 dB); elsewhere a wall count muffles them (gameplay-3a, 2026-11-08) | The other maps after the pilot; the ambience loops; a phone check |
 | Each gun its own sound; footsteps on snow, water, tile and metal stairs; headsets with their own compression | One recording pitched for every gun; five surface families; one headset rule | Recorded or licensed sounds; gameplay.16 |
 | Perception lengthens how far you hear steps; Covert Movement quietens yours | Built 2026-11-08 (gameplay.9, Studio check pending): Perception +0.3 % hearing a level (+15 % elite), Covert Movement -1.2 % a level on common surfaces (-60 % elite), for players and the AI | Perception's loot radius and elite loot notice; Covert Movement's sneak speed; metal and gravel as Tarkov's uncommon surfaces is our reading |
 | A tutorial raid (1.0) | A welcome message | ui-5a |
@@ -1375,6 +1375,34 @@ Still a gap:
 - Gunsmith specs check kinds of parts, not named parts, and have no size or effective-distance condition.
 - Pins work for tasks, not for operational tasks.
 - A place on a floor is found by SpotFinder near a point we chose; EFT's places are set by hand.
+
+### Sound through walls (decision gameplay-3a, 2026-11-08; piloted on Border Yard)
+
+Built by the coordinator; measured in Studio (TEST_RESULTS). Tarkov's 0.16.7.0 notes say sound now passes walls by their
+thickness, floors and stairways, doors and windows; EFT uses Steam Audio's geometry for occlusion and reverb.
+
+Matches Tarkov now (on Border Yard, not on POTATO):
+- **World one-shots go through Roblox's Acoustic Simulation:** other people's shots and steps, impacts, blasts, gulls and
+  creaks. Walls, floors, doors and window panes muffle a sound between its source and you. Sound bends round corners and
+  through doorways, and the reverb comes from the geometry.
+- **Measured** with an AudioAnalyzer on the listener in the watchhouse's watch room, against the same sound with every map
+  part made transparent to sound:
+  - through the room's wall, 9.7 studs away: -17.6 dB;
+  - through the floor, 8 studs below: -13.8 dB;
+  - in the same room, 3 studs away: +0.7 dB (the room's reflections).
+- **What blocks:** walls, floors, doors, kit colliders and unbroken window panes. Decor without collision, the detail layer,
+  bodies, loot and effects do not.
+
+Still a gap:
+- **The acoustic density is ours.** At Roblox's own densities our thin plaster walls hardly muffle: -2.8 dB for the
+  source above. On each client the anchored solid parts get x3 their density, at most 6. Anchored parts do not move, so
+  physics is unchanged.
+- **Only Border Yard, and not on POTATO.** Elsewhere a world sound counts the walls between it and the camera once as it
+  starts. Each wall takes its volume x0.25 and cuts the highs (ours, option b as the fallback).
+- **Still legacy `Sound`s:** your own sounds (rightly 2D) and the ambience loops (room tone, hum, generator, rain).
+  Legacy sounds are not simulated (Roblox is working on it).
+- **Not checked:** the cost on phones and the frame rate with many emitters (at most 24 at once), and the levels by ear.
+  Roblox lowers the simulation's accuracy on weak devices.
 
 ### Stimulants, fractures and the stomach (decision gameplay-4b, 2026-11-08)
 

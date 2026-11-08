@@ -28,6 +28,12 @@ if not okGlassFx then
 	warn("[ZR] GlassFx failed to load:", GlassFx)
 	GlassFx = nil
 end
+-- world sounds through the Audio API with Acoustic Simulation (gameplay-3a); without it the legacy path below
+local okWorldAudio, WorldAudio = pcall(require, script.Parent.WorldAudio)
+if not okWorldAudio then
+	warn("[ZR] WorldAudio failed to load:", WorldAudio)
+	WorldAudio = nil
+end
 
 local Effects = {}
 local ctx
@@ -71,18 +77,74 @@ local function fade(p, life)
 	table.insert(live, { p = p, t0 = os.clock(), life = life, base = p.Transparency })
 end
 
-function Effects.sound(id, at, volume, speed)
+-- the scripted occlusion (gameplay-3's option b, ours): where Acoustic Simulation is off (POTATO, the maps not yet
+-- piloted) a world sound counts the walls between it and the camera once, as it starts, and each one muffles it
+local occParams = RaycastParams.new()
+occParams.FilterType = Enum.RaycastFilterType.Include
+occParams.RespectCanCollide = true
+occParams.IgnoreWater = true
+Effects.OCCLUDE = { vol = 0.25, high = -12, mid = -5, max = 3 } -- near the 17 dB a wall takes off in WorldAudio
+function Effects.wallsBetween(at)
+	local cam = workspace.CurrentCamera
+	local map = workspace:FindFirstChild("ZR_World") -- the raid map and the bunker
+	if not (cam and map) then
+		return 0
+	end
+	occParams.FilterDescendantsInstances = { map }
+	local from = cam.CFrame.Position
+	local n = 0
+	for _ = 1, Effects.OCCLUDE.max do
+		local d = at - from
+		if d.Magnitude < 1 then
+			break
+		end
+		local hit = workspace:Raycast(from, d, occParams)
+		if not hit then
+			break
+		end
+		n += 1
+		from = hit.Position + d.Unit * 0.6 -- on through the wall
+	end
+	return n
+end
+
+local function occlude(s, at)
+	local n = Effects.wallsBetween(at)
+	if n > 0 then
+		local O = Effects.OCCLUDE
+		s.Volume *= O.vol ^ n
+		local e = Instance.new("EqualizerSoundEffect")
+		e.Name = "Occlusion"
+		e.HighGain = O.high * n
+		e.MidGain = O.mid * n
+		e.LowGain = 0
+		e.Parent = s
+	end
+end
+
+-- opts: min, max (roll-off distances), eq = { low, mid, high } dB (a suppressor's muffle)
+function Effects.sound(id, at, volume, speed, opts)
 	if not id or id == "" then
 		return
+	end
+	local minD, maxD = (opts and opts.min) or 12, (opts and opts.max) or 600
+	if typeof(at) == "Vector3" and WorldAudio and WorldAudio.on then
+		return WorldAudio.play(id, at, volume or 0.6, speed or 1, nil, minD, maxD, opts and opts.eq, 6)
 	end
 	local s = Instance.new("Sound")
 	s.SoundId = id
 	s.Volume = volume or 0.6
 	s.PlaybackSpeed = speed or 1
-	s.RollOffMaxDistance = 600
-	s.RollOffMinDistance = 12
+	s.RollOffMaxDistance = maxD
+	s.RollOffMinDistance = minD
 	s.SoundGroup = world
+	if opts and opts.eq then
+		local e = Instance.new("EqualizerSoundEffect")
+		e.LowGain, e.MidGain, e.HighGain = opts.eq[1], opts.eq[2], opts.eq[3]
+		e.Parent = s
+	end
 	if typeof(at) == "Vector3" then
+		occlude(s, at)
 		local a = Instance.new("Attachment")
 		a.WorldPosition = at
 		a.Parent = workspace.Terrain
@@ -136,12 +198,7 @@ function Effects.sfx(name, at, volume, speed, maxDist)
 		end
 		local big = BIG_FALLBACK[name]
 		if big and Sounds[big[1]] ~= "" then
-			local s = Effects.sound(Sounds[big[1]], at, (volume or 0.6) * big[3], (speed or 1) * big[2])
-			if s then
-				s.RollOffMaxDistance = maxDist or 600
-				s.RollOffMinDistance = 30
-			end
-			return s
+			return Effects.sound(Sounds[big[1]], at, (volume or 0.6) * big[3], (speed or 1) * big[2], { min = 30, max = maxDist or 600 })
 		end
 		return nil
 	end
@@ -152,6 +209,15 @@ function Effects.sfx(name, at, volume, speed, maxDist)
 	if positional and live3d > 24 then
 		return nil -- cap concurrent world sounds
 	end
+	local minD, maxD = (maxDist and maxDist > 300) and 30 or 5, maxDist or 120
+	if positional and WorldAudio and WorldAudio.on then
+		live3d += 1
+		local life = r[2] / (speed or 1) + 0.25
+		task.delay(life, function()
+			live3d -= 1
+		end)
+		return WorldAudio.play(id, at, (volume or 0.6) * r[3], speed or 1, NumberRange.new(r[1], r[1] + r[2]), minD, maxD, nil, life)
+	end
 	local s = Instance.new("Sound")
 	s.SoundId = id
 	s.PlaybackRegionsEnabled = true
@@ -159,11 +225,12 @@ function Effects.sfx(name, at, volume, speed, maxDist)
 	s.Volume = (volume or 0.6) * r[3]
 	s.PlaybackSpeed = speed or 1
 	s.RollOffMode = Enum.RollOffMode.InverseTapered
-	s.RollOffMinDistance = (maxDist and maxDist > 300) and 30 or 5
-	s.RollOffMaxDistance = maxDist or 120
+	s.RollOffMinDistance = minD
+	s.RollOffMaxDistance = maxD
 	s.SoundGroup = world
 	local life = r[2] / (speed or 1) + 0.25
 	if positional then
+		occlude(s, at)
 		live3d += 1
 		local a = Instance.new("Attachment")
 		a.WorldPosition = at
@@ -263,6 +330,9 @@ local function updateDeaf()
 	end
 	if world then
 		world.Volume = (1 - 0.5 * k) * fxVol
+	end
+	if WorldAudio then
+		WorldAudio.setMix(k, fxVol)
 	end
 	if tinnitus then
 		tinnitus.Volume = (tinnitusGain or 0.5) * 1.2 * k
@@ -373,16 +443,8 @@ function Effects.gunSound(weapon, at, suppressed, distant, volMul)
 	local id = (distant and not suppressed and Sounds.R17_FIRE_FAR ~= "") and Sounds.R17_FIRE_FAR or Sounds.R17_FIRE
 	local vol = g.v * (suppressed and 0.32 or 1) * (volMul or 1)
 	local speed = g.s * (suppressed and 1.18 or 1) * (1 + (math.random() - 0.5) * 0.05)
-	local s = Effects.sound(id, at, vol, speed)
-	if s and suppressed then
-		s.RollOffMaxDistance = 220
-		local eq = Instance.new("EqualizerSoundEffect")
-		eq.HighGain = -20
-		eq.MidGain = -6
-		eq.LowGain = 2
-		eq.Parent = s
-	end
-	return s
+	-- a suppressor: shorter reach and the highs cut
+	return Effects.sound(id, at, vol, speed, suppressed and { max = 220, eq = { 2, -6, -20 } } or nil)
 end
 
 function Effects.tracer(o, p)
@@ -685,6 +747,12 @@ function Effects.init(c)
 		local okLaser, errLaser = pcall(LaserFx.init, c)
 		if not okLaser then
 			warn("[ZR] LaserFx init:", errLaser)
+		end
+	end
+	if WorldAudio then
+		local okWA, errWA = pcall(WorldAudio.init, c)
+		if not okWA then
+			warn("[ZR] WorldAudio init failed:", errWA)
 		end
 	end
 	if GlassFx then
