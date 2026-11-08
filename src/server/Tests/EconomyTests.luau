@@ -135,7 +135,7 @@ function T.run(ctx)
 		end
 	end
 
-	-- economy.7: Pouch M from TILDA's LL2 barter (EFT's Beta), Pouch L from FENCE's collector task (EFT's Kappa); weapon
+	-- economy.7: Pouch M from DEKKER's LL2 barter (EFT's Beta), Pouch L from FENCE's collector task (EFT's Kappa); weapon
 	-- parts, grenades and eyewear (and goggles, headsets) go into secure containers, guns and armour still do not
 	do
 		local K = Items.SECURE_KINDS
@@ -157,7 +157,7 @@ function T.run(ctx)
 			enters("RED_DOT") == true and enters("GREN_RK5") == true and enters("GLASSES_BG1") == true and enters("SUPP_62") == true
 				and whyRifle == "SECURE_RESTRICTED")
 		local beta = nil
-		for _, bt in TD.barters.tilda do
+		for _, bt in TD.barters.dekker do
 			if bt.id == "SECURE_M" then
 				beta = bt
 			end
@@ -166,7 +166,7 @@ function T.run(ctx)
 		for _, need in (beta and beta.give) or {} do
 			okGive = okGive and Items.defs[need[1]] ~= nil and need[2] >= 1
 		end
-		check("Pouch M: TILDA's barter at loyalty 2, one a restock, for real items", beta ~= nil and beta.ll == 2 and beta.limit == 1 and okGive)
+		check("Pouch M: DEKKER's barter at loyalty 2 (EFT's Beta, the Peacekeeper's), one a restock, for real items", beta ~= nil and beta.ll == 2 and beta.limit == 1 and okGive)
 		-- what the pouches ask for can be found: in a container pool (the amulet: the cult priest's kit, 60 %)
 		local Loot = require(Services.Loot)
 		local function inPools(id)
@@ -214,20 +214,23 @@ function T.run(ctx)
 				qp.quests[id] = { s = "claimed", p = {} }
 			end
 			qp.karma = 3
-			local top = TD.LL[4]
-			for _, tid in { "vos", "hale", "tilda" } do
-				qp.traders[tid] = { spent = top.spent, rep = top.rep }
+			-- (EFT 1.1.0 asks no money for loyalty, so standing breaks the LL now; economy-2a)
+			for _, tid in TD.list do
+				if tid ~= "fence" then
+					local top = TD.loyaltyReq(tid, 4)
+					qp.traders[tid] = { spent = top.spent, rep = top.rep }
+				end
 			end
 			local open = ctx.Quests.status(qp, kappa)
 			qp.karma = 2.9
 			local lowKarma = ctx.Quests.status(qp, kappa)
 			qp.karma = 3
-			qp.traders.hale.spent = 0
+			qp.traders.hale.rep = 0
 			local lowLL = ctx.Quests.status(qp, kappa)
-			qp.traders.hale.spent = top.spent
+			qp.traders.hale.rep = TD.loyaltyReq("hale", 4).rep
 			qp.quests.T5 = nil
 			local lowTasks = ctx.Quests.status(qp, kappa)
-			check("Pouch L task: locked until level 40, karma 3.0, LL4 with VOS, HALE and TILDA and the four chains are done",
+			check("Pouch L task: locked until level 40, karma 3.0, LL4 with all seven traders but Fence and the four chains are done",
 				before == "locked" and open == "available" and lowKarma == "locked" and lowLL == "locked" and lowTasks == "locked")
 		end
 	end

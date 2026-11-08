@@ -1,6 +1,7 @@
 --!nonstrict
 -- Trader tasks (M9): accept in the hideout, progress during raids (kills count even if you die, extractions,
--- visiting places), hand in found-in-raid items and collect rewards at the trader.
+-- visiting places), hand in found-in-raid items and collect rewards at the trader. Each task belongs to the trader whose
+-- EFT counterpart gives it (QuestData, decision economy-2a); its standing goes to that trader.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
@@ -28,7 +29,8 @@ function Quests.status(prof, q)
 	if ctx.Economy.level(prof) < (q.level or 1) then
 		return "locked"
 	end
-	-- EFT 1.1.0's collector rules (audit economy.7): more finished tasks, a Fence standing, a loyalty level everywhere
+	-- EFT 1.1.0's collector rules (audit economy.7): more finished tasks, a Fence standing, a loyalty level with every
+	-- trader but Fence (the seven of EFT's eight)
 	for _, id in q.needs or {} do
 		if not (prof.quests[id] and prof.quests[id].s == "claimed") then
 			return "locked"
@@ -230,6 +232,8 @@ local function questReq(player, p)
 	if ctx.Raid.session(player) then
 		return fail("IN_RAID", "Tasks are managed from the hideout.")
 	end
+	-- an old save moves to the eight traders first, so a task's standing goes to the trader that gives it now (once)
+	ctx.Economy.migrate(prof)
 	local q = type(p.id) == "string" and QD.byId[p.id]
 	if not q then
 		return fail("BAD_INPUT")

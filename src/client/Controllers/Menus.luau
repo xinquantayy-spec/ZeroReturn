@@ -42,9 +42,10 @@ local function ago(t, now)
 	return math.floor(s / 86400) .. " D AGO"
 end
 
-local function sideButton(parent, label, on, order, fn)
+-- a list button down the left side; tall: a phone's 44 pt touch height (the radio's compact layout, ui-3a)
+local function sideButton(parent, label, on, order, fn, tall)
 	local b = K.button(parent, label, {
-		LayoutOrder = order, Size = UDim2.new(1, -6, 0, 32), TextSize = 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2,
+		LayoutOrder = order, Size = UDim2.new(1, -6, 0, tall and 44 or 32), TextSize = tall and 13 or 12, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2,
 		TextColor3 = on and K.C.ochre or K.C.dim, TextXAlignment = Enum.TextXAlignment.Left,
 	})
 	K.new("UIPadding", { PaddingLeft = UDim.new(0, 10) }, b)
@@ -64,7 +65,11 @@ end
 -- ── MESSENGER ────────────────────────────────────────────────────────────────
 function Menus.messenger(f, x, y, w, h, d, refresh)
 	local now = d.serverTime or os.time()
-	local left = scroller(f, x, y, 220, h, "Dialogs")
+	-- one chat per trader (EFT's eight, in TraderData's order) plus INSURANCE and SYSTEM; a phone gets a narrower list of
+	-- taller buttons, which scrolls (ten chats do not fit a landscape phone's height)
+	local compact = K.viewport().Y < 500
+	local listW = compact and math.clamp(math.floor(w * 0.3), 150, 220) or 220
+	local left = scroller(f, x, y, listW, h, "Dialogs")
 	local dialogs = { { "insurance", "INSURANCE" } }
 	for _, id in TD.list do
 		table.insert(dialogs, { id, TD.defs[id].name })
@@ -80,10 +85,10 @@ function Menus.messenger(f, x, y, w, h, d, refresh)
 		local b = sideButton(left, e[2] .. (n > 0 and ("   " .. n) or ""), ui.dialog == e[1], i, function()
 			ui.dialog = e[1]
 			refresh()
-		end)
+		end, compact)
 		b.Name = "Dialog_" .. e[1]
 	end
-	local right = scroller(f, x + 232, y, w - 232, h - 44, "Messages")
+	local right = scroller(f, x + listW + 12, y, w - listW - 12, h - 44, "Messages")
 	local order = 0
 	if ui.dialog == "insurance" then
 		local ready = 0

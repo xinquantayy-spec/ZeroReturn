@@ -17,14 +17,19 @@ local P = require(Shared.Progress)
 local Trade = { open = nil }
 local ctx, K
 local ui = { tab = "vos", scroll = {}, cpanel = "GOODS" }
--- the relay radio's tabs, left to right (LB / RB step through them on a gamepad; audit ui.5)
-local RADIO_TABS = { "vos", "hale", "tilda", "fence", "flea", "messenger", "handbook" }
+-- the relay radio's tabs, left to right (LB / RB step through them on a gamepad; audit ui.5): EFT's eight traders in EFT's
+-- order (TraderData.list, decision economy-2a), then the flea market, messenger and handbook
+local RADIO_TABS = table.clone(TD.list)
+for _, id in { "flea", "messenger", "handbook" } do
+	table.insert(RADIO_TABS, id)
+end
+Trade.RADIO_TABS = RADIO_TABS -- read by TraderTests
 -- ui-3a: on a phone (under about 500 pt of height) the trade tab shows one panel at a time: GOODS, STASH or DEAL
 local compact = false
 local live = {} -- { label, at (server os.time), fmt }
 local dirty = false
 
--- the Charisma discount on trader prices (the server charges the same)
+-- the Charisma discount on repairs (audit economy.6; trader prices ignore it; the server charges the same)
 local function charisma()
 	local d = ctx.State.data
 	return P.bonus(d and d.econ and d.econ.skills, "charisma")
@@ -142,12 +147,18 @@ local function loyaltyText(econ, tid)
 		return (st.ll or 1) >= 2 and string.format("LOYALTY 2 (MAX)  ·  KARMA %.2f", econ.karma or 0)
 			or string.format("LOYALTY 1  ·  NEXT: KARMA %.1f (%.2f)", TD.FENCE_LL2 or 6, econ.karma or 0)
 	end
-	local nextL = TD.LL[st.ll + 1]
+	-- each trader's own table (EFT 1.1.0: player level and standing; no money asked, so none shown)
+	local ll = st.ll or 1
+	local nextL = TD.loyaltyReq(tid, ll + 1)
 	if not nextL then
-		return string.format("LOYALTY %d (MAX)  ·  STANDING %.2f", st.ll, st.rep or 0)
+		return string.format("LOYALTY %d (MAX)  ·  STANDING %.2f", ll, st.rep or 0)
 	end
-	return string.format("LOYALTY %d  ·  NEXT: LEVEL %d (%d) · %s MK TRADED (%s) · STANDING %.2f (%.2f)",
-		st.ll, nextL.level, econ.level or 1, Util.commas(nextL.spent), Util.commas(math.floor(st.spent or 0)), nextL.rep, st.rep or 0)
+	local need = { string.format("LEVEL %d (%d)", nextL.level, econ.level or 1) }
+	if (nextL.spent or 0) > 0 then
+		table.insert(need, string.format("%s MK TRADED (%s)", Util.commas(nextL.spent), Util.commas(math.floor(st.spent or 0))))
+	end
+	table.insert(need, string.format("STANDING %.2f (%.2f)", nextL.rep, st.rep or 0))
+	return string.format("LOYALTY %d  ·  NEXT: %s", ll, table.concat(need, " · "))
 end
 
 -- ── Tarkov's TRADE screen: the trader's goods as a grid with prices, your stash beside it, the deal below ──
@@ -770,15 +781,20 @@ local function tasksTab(f, x, y, w, h, d, tid)
 end
 
 
--- SERVICES: repairs (VOS weapons, TILDA armour); each repair costs some maximum durability (Tarkov)
+-- SERVICES: repairs (EFT's repairers: VOS and KOVAC weapons, ROOK weapons and armour); each repair costs some maximum
+-- durability (Tarkov), and the price follows the trader's loyalty level (the server charges the same)
 local function servicesTab(f, x, y, w, h, d, tid)
 	local sf = scroller(f, x, y, w, h, "Services_" .. tid)
+	local kinds = TD.REPAIRS[tid].kinds
+	local st = d.econ and d.econ.traders and d.econ.traders[tid]
+	local ll = (st and st.ll) or 1
 	section(sf, "REPAIRS")
-	text(sf, TD.defs[tid].name .. (TD.REPAIRS[tid].kinds.weapon and " repairs weapons." or " repairs body armour, armoured rigs, helmets and ballistic glasses.")
-		.. " Every repair lowers the item's maximum durability a little; a repair kit wears it less.", K.C.dim, 11)
+	local what = (kinds.weapon and kinds.armor) and " repairs weapons, body armour, armoured rigs, helmets and ballistic glasses."
+		or (kinds.weapon and " repairs weapons." or " repairs body armour, armoured rigs, helmets and ballistic glasses.")
+	text(sf, TD.defs[tid].name .. what .. " Every repair lowers the item's maximum durability a little; a repair kit wears it less.", K.C.dim, 11)
 	local any = false
 	for g, it in d.items or {} do
-		local pts, cost, newMax = TD.repairQuote(tid, it, charisma())
+		local pts, cost, newMax = TD.repairQuote(tid, it, charisma(), ll)
 		if pts then
 			any = true
 			local def = Items.defs[it.id]
@@ -909,6 +925,10 @@ function Trade.traders(tab, sub)
 		table.clear(ui.basket)
 	end
 	ui.tab = tab or ui.tab
+	-- a counter or an old bridge call may name a trader this build does not have: open the first trader instead
+	if not (TD.defs[ui.tab] or ui.tab == "flea" or ui.tab == "messenger" or ui.tab == "handbook" or ui.tab == "profile") then
+		ui.tab = TD.list[1]
+	end
 	if sub == "GOODS" or sub == "STASH" or sub == "DEAL" then
 		ui.sub, ui.cpanel = "trade", sub -- the phone layout's panels (also the test bridge's way to open one)
 	else
@@ -939,19 +959,23 @@ function Trade.traders(tab, sub)
 	}, f)
 	K.list(tabs, Enum.FillDirection.Horizontal, 6)
 	local first, firstX, tabW = nil, 0, 0
+	-- eight traders and three more tabs: on a PC they share the row (about 100 pt each at full width); a phone's strip
+	-- keeps 112 pt tabs and scrolls, bringing the open one into view (below)
+	local nTabs = #RADIO_TABS
+	tabW = compact and math.max(112, math.floor((w - 6 * (nTabs - 1)) / nTabs)) or math.max(92, math.min(170, math.floor((w - 6 * (nTabs - 1)) / nTabs)))
+	local tabText = (compact or tabW >= 112) and 13 or 12
 	for i, id in RADIO_TABS do
 		local st = econ.traders and econ.traders[id]
-		local label = (id == "flea" and "FLEA MARKET") or (id == "messenger" or id == "handbook") and string.upper(id) or string.format("%s  ·  LL%d", TD.defs[id].name, st and st.ll or 1)
+		local label = (id == "flea" and "FLEA MARKET") or (id == "messenger" or id == "handbook") and string.upper(id) or string.format("%s · LL%d", TD.defs[id].name, st and st.ll or 1)
 		if id == "messenger" and ctx.Menus then
 			local n = ctx.Menus.unread(d)
 			if n > 0 and ui.tab ~= "messenger" then
-				label ..= "  (" .. n .. ")" -- Tarkov's unread count (audit ui.6)
+				label ..= " (" .. n .. ")" -- Tarkov's unread count (audit ui.6)
 			end
 		end
 		local sel = ui.tab == id
-		tabW = compact and math.max(112, math.floor((w - 36) / 7)) or math.min(170, math.floor((w - 36) / 7))
 		local b = K.button(tabs, label, {
-			Size = UDim2.fromOffset(tabW, tabH), TextSize = 13, LayoutOrder = i,
+			Size = UDim2.fromOffset(tabW, tabH), TextSize = tabText, LayoutOrder = i,
 			BackgroundColor3 = sel and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = sel and K.C.ochre or K.C.dim,
 		})
 		b.Name = "Tab_" .. string.upper(id)

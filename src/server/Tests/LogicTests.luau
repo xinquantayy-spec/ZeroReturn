@@ -367,7 +367,8 @@ function T.run(ctx)
 		local TDm = require(Shared.TraderData)
 		local pts, cost, newMax = TDm.repairQuote("vos", { id = "R17_RIFLE", wear = 60 })
 		check("trader repair: 40 points, a cost, the maximum drops", pts == 40 and cost and cost > 0 and newMax and newMax < 100 and newMax > 90)
-		check("trader repair: VOS does not repair armour", TDm.repairQuote("vos", { id = "ARMOR_C4", dur = 10 }) == nil and TDm.repairQuote("tilda", { id = "ARMOR_C4", dur = 10 }) ~= nil)
+		check("trader repair: VOS does not repair armour, ROOK does (EFT: Prapor weapons, Skier armour)",
+			TDm.repairQuote("vos", { id = "ARMOR_C4", dur = 10 }) == nil and TDm.repairQuote("rook", { id = "ARMOR_C4", dur = 10 }) ~= nil)
 		local gp = Items.gearPenalties({ slots = { armor = "a", head = "h" }, items = { a = { id = "ARMOR_C4" }, h = { id = "HELMET_C3" } } })
 		check("gear penalties add up (movement, turn, ergonomics)", gp.speed == -4 and gp.turn == -5 and gp.ergo == -8)
 	end
@@ -1163,8 +1164,15 @@ function T.run(ctx)
 		local m4 = ctx.Economy.fatigueMul(fk, "endurance", 300)
 		check("skill fatigue: 129% fresh, 36% after three points, 100% after 200 s idle", math.abs(m1 - 1.29) < 1e-9 and math.abs(m3 - 0.36) < 1e-9 and m4 == 1)
 		local rifle = TD.offers.vos[1]
-		check("loyalty discounts prices", TD.price("vos", rifle, 2) < TD.price("vos", rifle, 1) and TD.price("vos", rifle, 1) > Items.defs[rifle.id].value)
-		check("ammo offers sell a stack", TD.price("vos", TD.offers.vos[9], 1) == math.ceil(Items.defs["A62_FMJ"].value * 60 * 1.25))
+		check("loyalty opens goods, prices stay (EFT)", TD.price("vos", rifle, 2) == TD.price("vos", rifle, 1) and TD.price("vos", rifle, 1) > Items.defs[rifle.id].value)
+		-- (6.2 rounds are the Peacekeeper role's, DEKKER's, since economy-2a)
+		local fmj = nil
+		for _, o in TD.offers.dekker do
+			if o.id == "A62_FMJ" then
+				fmj = o
+			end
+		end
+		check("ammo offers sell a stack", fmj ~= nil and fmj.n == 60 and TD.price("dekker", fmj, 1) == math.ceil(Items.defs["A62_FMJ"].value * 60 * TD.defs.dekker.markup))
 		local chain = { id = "GOLD_CHAIN", n = 1 }
 		local who, price = TD.bestBuyer(chain, 0)
 		check("best buyer for valuables", who == "hale" and price == math.floor(Items.defs.GOLD_CHAIN.value * 0.5))
@@ -1218,10 +1226,10 @@ function T.run(ctx)
 			local E = ctx.Economy
 			local p2 = Settle.newProfile()
 			check("loyalty starts at 1", E.loyalty(p2, "vos") == 1)
-			p2.xp = P.xpFor(3)
-			E.standing(p2, "vos").spent = 150000
-			E.standing(p2, "vos").rep = 0.15
-			check("loyalty 2 at level 3 / 150k / 0.15", E.loyalty(p2, "vos") == 2)
+			local r2 = TD.loyaltyReq("vos", 2)
+			p2.xp = P.xpFor(r2.level)
+			E.standing(p2, "vos").rep = r2.rep
+			check("loyalty 2 at EFT 1.1.0's level and standing, no money asked", E.loyalty(p2, "vos") == 2)
 			check("give and consume stash items", E.giveStash(p2, "BOLTS", 3) and select(2, E.stashItems(p2, "BOLTS")) == 3 and E.consumeStash(p2, "BOLTS", 2) and select(2, E.stashItems(p2, "BOLTS")) == 1 and inv(p2))
 			local wg = nil
 			for g, it in p2.items do
@@ -2147,10 +2155,11 @@ function T.run(ctx)
 		check("eyewear: TILDA buys eyewear and VOS does not; prices rise with protection",
 			sellBg ~= nil and sellBg > 0 and TDe.sellPrice("vos", { id = "GLASSES_BG1", n = 1, dur = 25 }) == nil
 			and TDe.price("tilda", oS, 1) < TDe.price("tilda", oR, 3) and TDe.price("tilda", oR, 3) < TDe.price("tilda", oB, 3) and TDe.price("tilda", oB, 3) < TDe.price("tilda", oA, 4))
-		-- TILDA repairs worn ballistic glasses like other armour (each repair lowers the maximum); plain glasses have no condition to restore
-		local rpBg, _, rpMax = TDe.repairQuote("tilda", { id = "GLASSES_BG1", n = 1, dur = 10 })
-		check("eyewear: TILDA repairs worn ballistic glasses (the maximum drops); plain glasses and VOS give no repair",
-			rpBg == 15 and rpMax ~= nil and rpMax < 25 and TDe.repairQuote("tilda", { id = "GLASSES_SUN", n = 1 }) == nil and TDe.repairQuote("vos", { id = "GLASSES_BG1", n = 1, dur = 10 }) == nil)
+		-- ROOK repairs worn ballistic glasses like other armour (each repair lowers the maximum); plain glasses have no condition
+		-- to restore (EFT: Skier repairs armour, the Ragman does not)
+		local rpBg, _, rpMax = TDe.repairQuote("rook", { id = "GLASSES_BG1", n = 1, dur = 10 })
+		check("eyewear: ROOK repairs worn ballistic glasses (the maximum drops); plain glasses and VOS give no repair",
+			rpBg == 15 and rpMax ~= nil and rpMax < 25 and TDe.repairQuote("rook", { id = "GLASSES_SUN", n = 1 }) == nil and TDe.repairQuote("vos", { id = "GLASSES_BG1", n = 1, dur = 10 }) == nil)
 		-- the loot tables carry the mask and the glasses
 		local function pooled(pool, id)
 			for _, e in Loot.POOLS[pool] do

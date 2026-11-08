@@ -10,6 +10,8 @@
 -- Unlocking: level, after (the task before it); optionally needs { ids } (more tasks to have finished), karma (the
 -- Fence standing it needs) and ll (the loyalty level it needs with every trader but Fence; audit economy.7).
 -- Rewards: money, xp, rep (trader standing), karma, items { { id, n } }.
+-- Traders (decision economy-2a, EFT's eight): each task belongs to the trader whose EFT counterpart gives it; the ids, the
+-- chains (after, needs) and the objectives did not change when tasks moved. Old saves: Economy.migrate.
 local Maps = require(script.Parent.Maps)
 
 local Q = {}
@@ -28,10 +30,13 @@ local function visit(zone: string, map: string?, scav: boolean?): any
 end
 
 Q.list = {
-	-- VOS
+	-- VOS (EFT's Prapor) and his chain; V5 is KOVAC's now and V7 BRAM's (decision economy-2a). V1 is after EFT's "Debut",
+	-- Prapor's first task (eliminate scavs on Customs)
 	{ id = "V1", trader = "vos", name = "Signal Check", level = 1, after = nil,
 		desc = "Scavs keep cutting the relay cables. Thin them out.",
 		obj = { kill("scav", 5) }, reward = { money = 15000, xp = 500, rep = 0.05, items = { { "R17_MAG40", 1 } } } },
+	-- after EFT's "No Place for Renegades" (Prapor: eliminate 5 Raiders in the Reserve command bunker; consolepcgaming.com/
+	-- eft-no-place-for-renegades): the Watch are this game's raiders
 	{ id = "V2", trader = "vos", name = "Range Day", level = 2, after = "V1",
 		desc = "The Harbor Watch think the quay is theirs. Show them otherwise.",
 		obj = { kill("watch", 3) }, reward = { money = 30000, xp = 1200, rep = 0.07 } },
@@ -41,8 +46,10 @@ Q.list = {
 	{ id = "V4", trader = "vos", name = "The Foreman's Ledger", level = 8, after = "V3",
 		desc = "The Foreman keeps a ledger of every crate that left the harbour. Bring it to me.",
 		obj = { handin("LEDGER", 1) }, reward = { money = 250000, xp = 6000, rep = 0.15 } },
-	-- tasks on the new maps' places (audit economy.9), in EFT's patterns: reach and survey places, then get out
-	{ id = "V5", trader = "vos", name = "High Ground", level = 5, after = "V2",
+	-- tasks on the new maps' places (audit economy.9), in EFT's patterns: reach and survey places, then get out.
+	-- V5 is KOVAC's (EFT's Mechanic) since decision economy-2a: after EFT's "Signal - Part 1" (Mechanic: two signal sources
+	-- on high points of one map, in one raid; consolepcgaming.com/eft-signal-part-1)
+	{ id = "V5", trader = "kovac", name = "High Ground", level = 5, after = "V2",
 		desc = "Two places on Border Yard see the whole crossing: the top of the derrick and the top of the frame. Climb both and tell me who has been up there.",
 		obj = { visit("DERRICK", "border"), visit("FRAME", "border") }, reward = { money = 35000, xp = 1600, rep = 0.05 } },
 	{ id = "V6", trader = "vos", name = "Slag Run", level = 3, after = "V1",
@@ -50,8 +57,8 @@ Q.list = {
 		obj = { visit("STACK", "smelter"), extract(1, nil, nil, "smelter") }, reward = { money = 20000, xp = 900, rep = 0.04 } },
 	-- the second boss task with its own target (audit economy.9), after EFT's "The Huntsman Path - Trophy" (Jaeger: locate
 	-- and neutralize Reshala, +3,000 XP, +0.10 standing, no money; tarkovforge.com/task-guide). EFT also wants his golden
-	-- TT handed in; the Broker carries no unique item yet.
-	{ id = "V7", trader = "vos", name = "Dealer's Due", level = 10, after = "V3",
+	-- TT handed in; the Broker carries no unique item yet. Trophy is Jaeger's, so the task is BRAM's (decision economy-2a).
+	{ id = "V7", trader = "bram", name = "Dealer's Due", level = 10, after = "V3",
 		desc = "The Broker sells our crates back to us out of the Border Yard dorms. He has bodyguards. Settle it.",
 		obj = { kill("boss", 1, "Broker") }, reward = { xp = 3000, rep = 0.1 } },
 	-- HALE
@@ -75,18 +82,23 @@ Q.list = {
 		desc = "Two camps stand outside Meridian Mall: the rescue camp and the west camp. Check both for survivors, then come home.",
 		obj = { visit("RESCUE_CAMP", "meridian"), visit("WEST_CAMP", "meridian"), extract(1, nil, nil, "meridian") },
 		reward = { money = 30000, xp = 1300, rep = 0.05 } },
-	-- TILDA
+	-- TILDA (EFT's Ragman) and her old chain: T2 is DEKKER's now, T3 ROOK's, T4 and T5 BRAM's, T7 VOS's (decision economy-2a)
 	{ id = "T1", trader = "tilda", name = "Dress Code", level = 1, after = nil,
 		desc = "Cigarettes and matches buy thread around here. Bring me some.",
 		obj = { handin("CIGARETTES", 2), handin("MATCHES", 2) }, reward = { money = 10000, xp = 300, rep = 0.05, items = { { "BAG_SLING", 1 } } } },
-	{ id = "T2", trader = "tilda", name = "Tide Marks", level = 2, after = "T1",
+	-- DEKKER's (EFT's Peacekeeper): after EFT's "Fishing Gear" (Peacekeeper: locate the boat hidden by the breakwater on
+	-- Shoreline; tarkovforge.com/task-guide/fishing-gear)
+	{ id = "T2", trader = "dekker", name = "Tide Marks", level = 2, after = "T1",
 		desc = "Check that the pier boat and the relay tower are still standing.",
 		obj = { visit("PIER3", "quay7"), visit("RELAY", "quay7") }, reward = { money = 30000, xp = 1000, rep = 0.07 } },
-	{ id = "T3", trader = "tilda", name = "Dead Drop", level = 3, after = "T2",
+	-- ROOK's (EFT's Skier): no EFT task asks for one exit like this; Skier, the customs-terminal smuggler, runs the
+	-- couriers, so the courier route is his
+	{ id = "T3", trader = "rook", name = "Dead Drop", level = 3, after = "T2",
 		desc = "Use the rail cut. If it's clear, my couriers will too.",
 		obj = { extract(1, "C", nil, "quay7") }, reward = { money = 25000, xp = 900, rep = 0.06 } },
-	-- the Foreman by name: any boss used to count (audit economy.9)
-	{ id = "T4", trader = "tilda", name = "Heavy Plate", level = 7, after = "T3",
+	-- the Foreman by name: any boss used to count (audit economy.9). BRAM's (EFT's Jaeger): EFT's boss hunts are Jaeger's
+	-- "The Huntsman Path" tasks (Trophy: Reshala, as V7)
+	{ id = "T4", trader = "bram", name = "Heavy Plate", level = 7, after = "T3",
 		desc = "The Foreman wears the best plate on the quay. Take it off him.",
 		obj = { kill("boss", 1, "Foreman") }, reward = { money = 120000, xp = 4000, rep = 0.12, items = { { "ARMOR_C4", 1 } } } },
 	-- after EFT's "Big Sale" (Ragman: visit five Interchange stores and extract; 8,200 XP, +0.03, 30,000 roubles and a
@@ -95,12 +107,16 @@ Q.list = {
 		desc = "I want to know what is left in Meridian Mall. Walk the concourse, look into IRONSIGHT and the kart track, then get out with your eyes intact.",
 		obj = { visit("CONCOURSE", "meridian"), visit("IRONSIGHT", "meridian"), visit("KART_TRACK", "meridian"), extract(1, nil, nil, "meridian") },
 		reward = { money = 30000, xp = 3000, rep = 0.03, items = { { "CANVAS_BAG", 1 } } } },
-	-- Customs' marked room 314 in the three-storey dorm is Border Yard's block A room 314 (its key: KEY_BY_314)
-	{ id = "T7", trader = "tilda", name = "Room 314", level = 6, after = "T3",
+	-- Customs' marked room 314 in the three-storey dorm is Border Yard's block A room 314 (its key: KEY_BY_314). VOS's: EFT's
+	-- dorm-room task is Prapor's "Shaking up the Teller" (the valuable item in dorm room 203, access to room 214; gamemaps.net);
+	-- the marked room itself has no task in EFT (tarkovforge.com/keys/dorm-room-314-marked-key)
+	{ id = "T7", trader = "vos", name = "Room 314", level = 6, after = "T3",
 		desc = "Block A, room 314, on Border Yard. People pay well to know what is behind that door. Go and see for yourself.",
 		obj = { visit("DORM314", "border") }, reward = { money = 40000, xp = 1500, rep = 0.05 } },
-	-- the Sealed Drive had no use (audit economy.8): Tilda wants what is on it, like Tarkov's data-carrier tasks
-	{ id = "T5", trader = "tilda", name = "Sealed Records", level = 9, after = "T3",
+	-- the Sealed Drive had no use (audit economy.8): someone wants what is on it, like Tarkov's data-carrier tasks. BRAM's:
+	-- after EFT's "Shady Business" (Jaeger: find 3 Secure Flash drives in raid and hand them over; consolepcgaming.com/
+	-- eft-shady-business)
+	{ id = "T5", trader = "bram", name = "Sealed Records", level = 9, after = "T3",
 		desc = "The evacuation office kept its records on sealed drives. Find two and bring them to me unopened.",
 		obj = { handin("SEALED_DRIVE", 2) }, reward = { money = 180000, xp = 5000, rep = 0.12 } },
 	-- FENCE
