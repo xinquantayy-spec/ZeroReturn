@@ -3,8 +3,11 @@
 -- scroll to zoom), the description, and the attribute sheet for its kind. Weapons: weight, ergonomics, accuracy,
 -- sighting range, recoil, muzzle velocity, effective distance, fire modes, rate of fire, caliber. Ammo: damage,
 -- penetration and the chance to go through fresh armor of each class, armor damage, fragmentation and bleeding.
--- Armor: class, durability, material, armored areas. Eyewear and masks: blindness protection, lens tint and the slots they
--- block. Meds, food, grenades, keys, parts, magazines and containers get their own rows. Windows drag by the title bar and up to three stay open, as in Tarkov.
+-- Armour (Tarkov 0.14, gameplay-2a): class, durability, material, the armoured zones, blunt throughput, ricochet, each
+-- built-in part with its class and durability, each plate slot with the plate in it (or EMPTY); a plate: its class,
+-- durability, material, position, the zones it covers and the vests it fits. Eyewear and masks: blindness protection,
+-- lens tint and the slots they block. Meds, food, grenades, keys, parts, magazines and containers get their own rows.
+-- Windows drag by the title bar and up to three stay open, as in Tarkov.
 -- Gamepad (audit ui.5): the right stick turns the top window's model, B closes the top window.
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -15,6 +18,7 @@ local WP = require(Shared.WeaponParts)
 local Weapons = require(Shared.Weapons)
 local ItemModel = require(Shared.ItemModel)
 local Equipment = require(Shared.Equipment)
+local Plates = require(Shared.Plates)
 
 local Inspect = {}
 local ctx, K, gui
@@ -33,19 +37,18 @@ for _, d in defs do
 	end
 end
 local MODES = { AUTO = "FULL AUTO", SEMI = "SINGLE", BURST = "BURST", PUMP = "PUMP-ACTION", BOLT = "BOLT-ACTION" }
--- Tarkov's armor materials by how fast they wear (destructibility)
-local MATERIALS = { { 0.1, "GLASS" }, { 0.25, "ARAMID" }, { 0.45, "UHMWPE" }, { 0.5, "COMBINED MATERIALS" }, { 0.55, "TITAN" }, { 0.6, "ALUMINIUM" }, { 0.7, "ARMORED STEEL" }, { 0.8, "CERAMIC" } }
-local ZONES = { "thorax", "stomach", "arms", "legs", "head", "eyes" }
+local ROMAN = { "I", "II", "III", "IV", "V", "VI" } -- Tarkov marks armour classes in Roman numerals (0.14)
 
-local function material(destr)
-	local best, bd = "ARAMID", math.huge
-	for _, m in MATERIALS do
-		local dd = math.abs(m[1] - (destr or 0.25))
-		if dd < bd then
-			best, bd = m[2], dd
-		end
-	end
-	return best
+-- Tarkov's armour material name (Plates.MATERIALS, EFT 1.0's list)
+local function material(mat)
+	local m = Plates.MATERIALS[mat or ""]
+	return m and m.name or "ARAMID"
+end
+
+-- the zones a set covers, in Tarkov's order, as one line
+local function zoneLine(set)
+	local names = Plates.zoneNames(set)
+	return #names > 0 and table.concat(names, ", ") or "NONE"
 end
 
 local function pct(x)
@@ -170,29 +173,86 @@ local function sheet(items, g, it, d, opts)
 		end
 	end
 	if d.armor then
+		-- the armour panel (Tarkov 0.14): the whole piece, then each built-in part and each plate slot
 		local ar = d.armor
 		local dur = it.dur or ar.dur
-		add("ARMOR CLASS", ar.class)
+		local slots = Plates.slotsOf(d)
+		local cls = Plates.classOf(defs, items, it)
+		add("ARMOR CLASS", ROMAN[cls] and string.format("%s (%d)", ROMAN[cls], cls) or cls)
 		local dmax = it.dmax or ar.dur
-		add("DURABILITY", dmax < ar.dur - 0.05 and string.format("%d/%d (MAX %d)", math.ceil(dur), math.floor(dmax), ar.dur) or string.format("%d/%d", math.ceil(dur), ar.dur), dur / ar.dur)
-		add("MATERIAL", material(ar.destr))
-		if ar.zones then
-			local z = {}
-			for _, name in ZONES do
-				if ar.zones[name] then
-					table.insert(z, string.upper(name))
+		local durName = slots and "SOFT ARMOR DURABILITY" or "DURABILITY"
+		add(durName, dmax < ar.dur - 0.05 and string.format("%d/%d (MAX %d)", math.ceil(dur), math.floor(dmax), ar.dur) or string.format("%d/%d", math.ceil(dur), ar.dur), dur / ar.dur)
+		add("MATERIAL", material(ar.mat))
+		if d.plate then
+			local p = d.plate
+			add("POSITION", p.pos == "any" and "FRONT OR BACK" or p.pos == "side" and "SIDE" or string.upper(p.pos))
+			-- the zones it covers and the vests it fits
+			local covered, fits = {}, {}
+			for _, cd in defs do
+				local cs = Plates.slotsOf(cd)
+				if cs then
+					local any = false
+					for _, s in Plates.SLOTS do
+						if cs[s] and Plates.fits(cd, s, d) then
+							any = true
+							for z in Plates.plateZones(cd, s, d) do
+								covered[z] = true
+							end
+						end
+					end
+					if any then
+						table.insert(fits, cd.short or cd.name)
+					end
 				end
 			end
-			add("ARMORED AREAS", table.concat(z, ", "))
+			table.sort(fits)
+			add("ARMORED AREAS", zoneLine(covered))
+			add("FITS", #fits > 0 and table.concat(fits, ", ") or "NONE")
+		else
+			-- the zones of its parts, with what its plates in place add
+			local set = table.clone(ar.zones or {})
+			for _, s in Plates.SLOTS do
+				local pg = slots and it.mods and it.mods[s]
+				local p = pg and items[pg]
+				if p and defs[p.id] then
+					for z in Plates.plateZones(d, s, defs[p.id]) do
+						set[z] = true
+					end
+				end
+			end
+			add("ARMORED AREAS", zoneLine(set))
 		end
-		if ar.coverage then
-			add("HEAD COVERAGE", pct(ar.coverage))
+		add("BLUNT THROUGHPUT", pct(ar.blunt))
+		if ar.ric then
+			add("RICOCHET CHANCE", string.upper(ar.ric))
 		end
-		if ar.ricochet then
-			add("RICOCHET CHANCE", ar.ricochet < 0.25 and "LOW" or ar.ricochet < 0.5 and "MEDIUM" or "HIGH")
+		-- each built-in part (EFT: soft armour inserts, helmet parts): its zones, class and durability
+		local parts = Plates.partsOf(d)
+		if parts and #parts > 1 then
+			for _, e in parts do
+				local cur = Plates.partDur(it, d, e.k)
+				local zs = {}
+				for z in e.zones do
+					zs[z] = true
+				end
+				add(e.name .. "  ·  " .. zoneLine(zs), string.format("%s  ·  %d/%d", ROMAN[e.class] or tostring(e.class), math.ceil(cur), e.dur), cur / math.max(e.dur, 1), cur <= 0 and "bad" or nil)
+			end
 		end
-		if ar.face then
-			add("FACE PROTECTION", "YES")
+		-- each plate slot: the plate in it (class, durability) or EMPTY
+		if slots then
+			for _, s in Plates.SLOTS do
+				if slots[s] then
+					local pg = it.mods and it.mods[s]
+					local p = pg and items[pg]
+					local pd = p and defs[p.id]
+					if pd and pd.armor then
+						local pdur = p.dur or pd.armor.dur
+						add(Plates.SLOT_NAMES[s], string.format("%s  ·  %s  ·  %d/%d", pd.short or pd.name, ROMAN[pd.armor.class] or tostring(pd.armor.class), math.ceil(pdur), pd.armor.dur), pdur / pd.armor.dur, pdur <= 0 and "bad" or nil)
+					else
+						add(Plates.SLOT_NAMES[s], "EMPTY", nil, "bad")
+					end
+				end
+			end
 		end
 	end
 	-- eyewear and gas masks: the share of a stun charge's white-out the lenses stop (Tarkov's blindness protection) and the tint
