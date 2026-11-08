@@ -261,8 +261,9 @@
       on bodies; it cannot leave the raid) and a storage room opened with the TerraGroup storage room keycard (10 uses).
       Both exist since 2026-11-09 (NOTE_SMELT_CRAWL, raid-only and Smelter-only; KEY_SMELT_STORE); the crawl and the
       store's lock are built. Where EFT spawns the keycard is unknown (ours: rare key loot).
-    - Seen in Studio from the main hall: thin bright slits between the far wall's panels; not yet checked whether they
-      are openings Factory has or gaps between our wall segments. The stairs, the high bridge, the pit, the sump drop and
+    - Seen in Studio from the main hall: thin bright slits between the far wall's panels. Rays fanned at 0.025-degree
+      steps at 3 to 24 studs high found no opening, so they look like a render seam where panels meet (the build pulls
+      753 coplanar faces back against z-fighting), not a hole. The stairs, the high bridge, the pit, the sump drop and
       every exit have not been walked yet.
 86. **Gun texture sheets: 46 sheets of four 1024 px maps (art-4b, 2026-11-09).**
     - A gun build loads every sheet its parts sit on (two to four for most guns). The memory this takes on a low-end phone
