@@ -1240,7 +1240,7 @@ function Inv.expandArmour(h: any, g: string)
 		local pd = e and e.def and defs[e.def]
 		if pd and not (it.mods and it.mods[s]) then
 			local pg, p = Inv.newItem(e.def, 1)
-			p.dur = pd.armor.dur * frac
+			p.dur = Plates.tenth(pd.armor.dur * frac)
 			p.fir, p.fip, p.ins = it.fir, it.fip, it.ins
 			h.items[pg] = p
 			it.mods = it.mods or {}
@@ -1271,7 +1271,7 @@ function Inv.migrateArmour(h: any): number
 		local fm = it.dmax and math.clamp(it.dmax / old, 0, 1) or nil
 		Plates.initParts(it, d, f)
 		if fm then
-			it.dmax = d.armor.dur * fm
+			it.dmax = Plates.tenth(d.armor.dur * fm)
 		end
 		if Plates.slotsOf(d) and not it.pf then
 			Inv.expandArmour(h, g)

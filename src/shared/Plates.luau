@@ -450,20 +450,27 @@ function P.partDur(it, d, k)
 	return p.dur * math.clamp((it.dur or total) / math.max(total, 1e-6), 0, 1)
 end
 
+-- a durability kept to a tenth (a share like 22 x 0.6 would otherwise read 13.200000000000001, and the inventory's
+-- rounding up shows 30.000000000000004 as 31)
+local function tenth(x)
+	return math.floor(x * 10 + 0.5) / 10
+end
+P.tenth = tenth
+
 -- give a new (or migrated) item its parts' durability at `frac` of their maximum; it.dur becomes their sum
 function P.initParts(it, d, frac)
 	if not P.multi(d) then
-		it.dur = d.armor.dur * math.clamp(frac or 1, 0, 1)
+		it.dur = tenth(d.armor.dur * math.clamp(frac or 1, 0, 1))
 		return
 	end
 	it.sd = {}
 	local sum = 0
 	for _, e in P.partsOf(d) do
-		local v = e.dur * math.clamp(frac or 1, 0, 1)
+		local v = tenth(e.dur * math.clamp(frac or 1, 0, 1))
 		it.sd[e.k] = v
 		sum += v
 	end
-	it.dur = sum
+	it.dur = tenth(sum)
 end
 
 -- something outside this module changed it.dur (a trader's repair sets it to the new maximum): the parts follow, each
@@ -482,10 +489,11 @@ function P.sync(it, d)
 	local f = math.clamp(it.dur / math.max(d.armor.dur, 1e-6), 0, 1)
 	sum = 0
 	for _, e in P.partsOf(d) do
-		it.sd[e.k] = e.dur * f
-		sum += e.dur * f
+		local v = tenth(e.dur * f)
+		it.sd[e.k] = v
+		sum += v
 	end
-	it.dur = sum
+	it.dur = tenth(sum)
 end
 
 -- set part `k` of item `it` to `v` (it.dur follows)
