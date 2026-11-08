@@ -90,6 +90,27 @@
   "oy": 6.93,
   "w": 30
  },
+ "BZ12_REV@pistol": {
+  "file": "BZ12_REV@pistol",
+  "h": 94,
+  "ox": 122.96,
+  "oy": 23.5,
+  "w": 155
+ },
+ "CRK357_REV@pistol": {
+  "file": "CRK357_REV@pistol",
+  "h": 73,
+  "ox": 91.6,
+  "oy": 18.13,
+  "w": 122
+ },
+ "CRK9_REV@pistol": {
+  "file": "CRK9_REV@pistol",
+  "h": 73,
+  "ox": 58.0,
+  "oy": 18.13,
+  "w": 89
+ },
  "FN57_MAG@pistol": {
   "file": "FN57_MAG@pistol",
   "h": 58,

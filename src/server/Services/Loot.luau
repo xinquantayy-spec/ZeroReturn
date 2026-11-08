@@ -156,6 +156,11 @@ local POOLS = {
 		{ id = "A921_SUB", w = 1.2, n = { 10, 25 } }, { id = "A921_BT", w = 0.8, n = { 10, 20 } }, { id = "A921_AP", w = 0.3, n = { 5, 15 } },
 		{ id = "A96_FMJ", w = 3, n = { 10, 30 } }, { id = "A96_EXP", w = 2.5, n = { 10, 30 } }, { id = "A96_CU", w = 1.5, n = { 10, 25 } },
 		{ id = "A96_AP", w = 0.3, n = { 5, 12 } },
+		-- the eleventh slice: the revolvers and the 9x33R and 12.7x55 rounds
+		{ id = "CRK357_REV", w = 1 }, { id = "CRK9_REV", w = 1.2 }, { id = "BZ12_REV", w = 0.3 },
+		{ id = "A933_FMJ", w = 1.5, n = { 6, 24 } }, { id = "A933_JHP", w = 2, n = { 6, 24 } }, { id = "A933_HP", w = 2.5, n = { 6, 24 } },
+		{ id = "A933_SP", w = 2.5, n = { 6, 24 } }, { id = "A127_PS12", w = 1, n = { 5, 15 } }, { id = "A127_PS12A", w = 1, n = { 5, 15 } },
+		{ id = "A127_PS12B", w = 0.3, n = { 5, 10 } },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },

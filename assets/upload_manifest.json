@@ -216,10 +216,10 @@
   "uploaded": "2026-10-28 20:30:45"
  },
  "ZR_GunSprites_0": {
-  "assetId": "137171796790662",
+  "assetId": "90594341899162",
   "file": "assets\\renders\\guns\\ZR_GunSprites_0.png",
-  "sha1": "9847ff2e7d4c0182de1382f0a870e2a08a15e12e",
-  "uploaded": "2026-11-08 21:35:01"
+  "sha1": "c9722cbe6dd874be5e417677a916922ecf5e7607",
+  "uploaded": "2026-11-08 21:53:01"
  },
  "ZR_Guns21": {
   "assetId": "125081825640710",
@@ -293,6 +293,12 @@
   "sha1": "6b7cd0957fba94f79a191fb879cedb09b6a314c6",
   "uploaded": "2026-11-08 17:28:53"
  },
+ "ZR_GunsRev": {
+  "assetId": "136885242607396",
+  "file": "assets\\exports\\ZR_GunsRev.fbx",
+  "sha1": "87f7ee6ab149e2a569fc8121f1297a7f134b9887",
+  "uploaded": "2026-11-08 21:52:43"
+ },
  "ZR_GunsSG": {
   "assetId": "70558979775509",
   "file": "assets\\exports\\ZR_GunsSG.fbx",
@@ -354,10 +360,10 @@
   "uploaded": "2026-11-08 20:28:34"
  },
  "ZR_ItemIcons_6": {
-  "assetId": "76402542983535",
+  "assetId": "71351449566170",
   "file": "assets\\renders\\items\\ZR_ItemIcons_6.png",
-  "sha1": "d6860c924ddaa7208eba7c6c329f3f887ac7abdd",
-  "uploaded": "2026-11-08 21:35:05"
+  "sha1": "e641a8f3e72b27340d6b4a3207ae9de2478d5b5d",
+  "uploaded": "2026-11-08 21:53:06"
  },
  "ZR_ItemsA": {
   "assetId": "91684040376497",

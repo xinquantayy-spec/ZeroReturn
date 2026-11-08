@@ -30,8 +30,9 @@
 - The owner's to try: the flea market between two servers needs a published place (publishing is the owner's call).
 - Done 2026-11-08 evening (TEST_RESULTS): the crafts thread (76 of EFT's crafts, merged, HideoutTests 103/0 in Studio)
   and ui-5a, the FIRST RAID (checked in Studio with the dev bridges). 16 suites, 1,190 checks.
-- Done 21:55 SGT: economy-1a's tenth slice (9x21 and .366 TKM: W-21, J-21, T-215; 505 items).
-- Next, in order: economy-1a's next slices (a revolver, which needs a cylinder that is not a detachable magazine; the
+- Done 21:55 SGT: economy-1a's tenth slice (9x21 and .366 TKM: W-21, J-21, T-215; 505 items); 22:10 SGT the eleventh
+  (revolvers: Crake C-357 and C-9, Bustard B-12; 515 items).
+- Next, in order: economy-1a's next slices (the
   VPO-209, which needs magazines that take two calibres; more 9x19 guns, more parts, the other barter goods, keys; the items that bring in the most left-out crafts: printer paper, a cook book, a Geiger counter, a textbook, SJ1,
   a magnet, a sledgehammer, 7.62x54R FMJ, 7.62x39 FMJ); art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
   hideout modules without one; bipods; ai-4a voices.

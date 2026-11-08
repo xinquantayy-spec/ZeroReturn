@@ -189,8 +189,11 @@ P.MASTERING = {
 	W21 = { name = "W-21", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "W21" } },
 	J21 = { name = "J-21", class = "SMG", level2 = 200, level3 = 250, weapons = { "J21" } },
 	T215 = { name = "T-215", class = "SNIPER RIFLE", level2 = 200, level3 = 250, weapons = { "T215" } },
+	-- the eleventh slice: the two Crakes share a group, as EFT's Rhinos do (thresholds ours)
+	CRK = { name = "Crake", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "CRK357", "CRK9" } },
+	BZ12 = { name = "B-12", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "BZ12" } },
 }
-P.MASTERY_ORDER = { "R17", "KST", "KS74", "VAL", "SKS", "SPARROW", "MP7", "P90", "UMP", "PPSH", "J21", "HARROW", "SVD", "M1A", "VSS", "TUNDRA", "M700", "T215", "P9", "PM", "M1911", "FN57", "TT", "W21" }
+P.MASTERY_ORDER = { "R17", "KST", "KS74", "VAL", "SKS", "SPARROW", "MP7", "P90", "UMP", "PPSH", "J21", "HARROW", "SVD", "M1A", "VSS", "TUNDRA", "M700", "T215", "P9", "PM", "M1911", "FN57", "TT", "W21", "CRK", "BZ12" }
 -- what a level gives (Tarkov): 2 another reload animation (magazine-fed guns here), 3 reloading while aiming down sights
 P.MASTERY_PERKS = { [2] = "ANOTHER RELOAD ANIMATION", [3] = "RELOAD WHILE AIMING DOWN SIGHTS" }
 -- [weapon id] = group id (a group may hold several weapons later, as Tarkov's do)

@@ -544,6 +544,264 @@
    "tris": 408,
    "w": 1
   },
+  "BZ12_REV": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.14375,
+     -0.0375
+    ],
+    "grip": [
+     -0.0,
+     -0.23438,
+     0.04375
+    ],
+    "hand": [
+     0.05625,
+     -0.275,
+     0.05625
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.84375
+    ],
+    "port": [
+     -0.0,
+     0.05937,
+     -0.175
+    ]
+   },
+   "batch": "ZR_GunsRev",
+   "cls": "pistol",
+   "ext": [
+    -0.84375,
+    0.20532,
+    -0.47124,
+    0.15
+   ],
+   "family": "rev",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_BZ12_REV__gunmetal": {
+     "center": [
+      -0.0,
+      -0.0141,
+      -0.4125
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.125,
+      0.3156,
+      0.8625
+     ],
+     "sub": null
+    },
+    "ZR_WP_BZ12_REV__metal": {
+     "center": [
+      -0.0,
+      -0.0006,
+      -0.3891
+     ],
+     "mat": "metal",
+     "size": [
+      0.1703,
+      0.3013,
+      0.9094
+     ],
+     "sub": null
+    },
+    "ZR_WP_BZ12_REV__rubber": {
+     "center": [
+      -0.0,
+      -0.2731,
+      0.0738
+     ],
+     "mat": "rubber",
+     "size": [
+      0.125,
+      0.3962,
+      0.2629
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 1156,
+   "w": 3
+  },
+  "CRK357_REV": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.10625,
+     -0.03125
+    ],
+    "grip": [
+     -0.0,
+     -0.1875,
+     0.0375
+    ],
+    "hand": [
+     0.04375,
+     -0.21875,
+     0.05
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.625
+    ],
+    "port": [
+     -0.0,
+     0.04375,
+     -0.1375
+    ]
+   },
+   "batch": "ZR_GunsRev",
+   "cls": "pistol",
+   "ext": [
+    -0.625,
+    0.19692,
+    -0.36808,
+    0.1125
+   ],
+   "family": "rev",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_CRK357_REV__gunmetal": {
+     "center": [
+      -0.0,
+      -0.0194,
+      -0.3062
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0938,
+      0.2512,
+      0.6375
+     ],
+     "sub": null
+    },
+    "ZR_WP_CRK357_REV__metal": {
+     "center": [
+      -0.0,
+      -0.0069,
+      -0.2828
+     ],
+     "mat": "metal",
+     "size": [
+      0.1312,
+      0.2388,
+      0.6594
+     ],
+     "sub": null
+    },
+    "ZR_WP_CRK357_REV__rubber": {
+     "center": [
+      -0.0,
+      -0.209,
+      0.0748
+     ],
+     "mat": "rubber",
+     "size": [
+      0.1,
+      0.3181,
+      0.2442
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 1008,
+   "w": 2
+  },
+  "CRK9_REV": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.10625,
+     -0.03125
+    ],
+    "grip": [
+     -0.0,
+     -0.1875,
+     0.0375
+    ],
+    "hand": [
+     0.04375,
+     -0.21875,
+     0.05
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.39062
+    ],
+    "port": [
+     -0.0,
+     0.04375,
+     -0.1375
+    ]
+   },
+   "batch": "ZR_GunsRev",
+   "cls": "pistol",
+   "ext": [
+    -0.39062,
+    0.19692,
+    -0.36808,
+    0.1125
+   ],
+   "family": "rev",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_CRK9_REV__gunmetal": {
+     "center": [
+      -0.0,
+      -0.0194,
+      -0.1891
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0938,
+      0.2512,
+      0.4031
+     ],
+     "sub": null
+    },
+    "ZR_WP_CRK9_REV__metal": {
+     "center": [
+      -0.0,
+      -0.0069,
+      -0.1656
+     ],
+     "mat": "metal",
+     "size": [
+      0.1312,
+      0.2388,
+      0.425
+     ],
+     "sub": null
+    },
+    "ZR_WP_CRK9_REV__rubber": {
+     "center": [
+      -0.0,
+      -0.209,
+      0.0748
+     ],
+     "mat": "rubber",
+     "size": [
+      0.1,
+      0.3181,
+      0.2442
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 1008,
+   "w": 2
+  },
   "FN57_MAG": {
    "anchors": {},
    "batch": "ZR_Guns45",
@@ -9765,6 +10023,27 @@
   }
  },
  "presets": {
+  "BZ12_REV": {
+   "base": "BZ12_REV",
+   "tree": {
+    "id": "BZ12_REV",
+    "mods": {}
+   }
+  },
+  "CRK357_REV": {
+   "base": "CRK357_REV",
+   "tree": {
+    "id": "CRK357_REV",
+    "mods": {}
+   }
+  },
+  "CRK9_REV": {
+   "base": "CRK9_REV",
+   "tree": {
+    "id": "CRK9_REV",
+    "mods": {}
+   }
+  },
   "FN57_PISTOL": {
    "base": "FN57_PISTOL",
    "tree": {

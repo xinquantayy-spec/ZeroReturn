@@ -249,6 +249,33 @@ local W = {
 		moveSpread = 2.4, modes = { "BOLT" }, loudness = 1.2, viewmodel = "TUNDRA", draw = 0.9,
 		slots = { rail = true },
 	},
+	-- the C-357 (economy-1a, eleventh slice) in the place of EFT's Chiappa Rhino 50DS: double action, ergonomics 80, recoil
+	-- 383 / 280, 70 m (tarkovforge.com); 385 m/s with FMJ; a 6-round cylinder loaded round by round
+	CRK357 = {
+		id = "CRK357", item = "CRK357_REV", name = "C-357", class = "pistol", rpm = 300, range = 70, velocity = 385,
+		ergo = 80, recoilV = 3.83, recoilH = 2.8, reload = 0.6, reloadEmpty = 0.6, hipSpread = 1.9, aimSpread = 0.22,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
+		moveSpread = 1.0, modes = { "SEMI" }, loudness = 1.0, internal = true, viewmodel = "P9", draw = 0.45,
+		slots = {},
+	},
+	-- the C-9 (economy-1a, eleventh slice) in the place of EFT's Rhino 200DS: ergonomics 95, recoil 306 / 200, 70 m
+	-- (tarkovforge.com); 400 m/s from its 2-inch barrel (ours)
+	CRK9 = {
+		id = "CRK9", item = "CRK9_REV", name = "C-9", class = "pistol", rpm = 300, range = 70, velocity = 400,
+		ergo = 95, recoilV = 3.06, recoilH = 2.0, reload = 0.55, reloadEmpty = 0.55, hipSpread = 1.8, aimSpread = 0.26,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
+		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.9, internal = true, viewmodel = "P9", draw = 0.42,
+		slots = {},
+	},
+	-- the B-12 (economy-1a, eleventh slice) in the place of EFT's RSh-12: ergonomics 40, recoil 493 / 340, 70 m
+	-- (tarkovforge.com); 300 m/s with PS12; a 5-round cylinder loaded round by round
+	BZ12 = {
+		id = "BZ12", item = "BZ12_REV", name = "B-12", class = "pistol", rpm = 200, range = 70, velocity = 300,
+		ergo = 40, recoilV = 4.93, recoilH = 3.4, reload = 0.75, reloadEmpty = 0.75, hipSpread = 2.2, aimSpread = 0.24,
+		recoilAngle = 90, recoilDisp = 14, recoilConv = 6, recoilCam = 0.7, recoilStable = 0,
+		moveSpread = 1.2, modes = { "SEMI" }, loudness = 1.35, internal = true, viewmodel = "P9", draw = 0.55,
+		slots = {},
+	},
 	KNIFE = {
 		id = "KNIFE", item = "FIELD_KNIFE", name = "Knife", class = "melee", rpm = 90, range = 6, velocity = 0,
 		ergo = 90, recoilV = 0, recoilH = 0, reload = 0, reloadEmpty = 0, hipSpread = 0, aimSpread = 0, moveSpread = 0,
@@ -307,7 +334,7 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771, W21 = 0.1771, J21 = 0.1771, T215 = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771, W21 = 0.1771, J21 = 0.1771, T215 = 0.1771, CRK357 = 0.1771, CRK9 = 0.1771, BZ12 = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The revolvers: Crake C-357, Crake C-9 and Bustard B-12 (decision economy-1a, eleventh slice; 2026-11-08, about 22:10 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_rev.py added a new batch, ZR_GunsRev (3 parts, 3,172 triangles), uploaded as 136885242607396. build_items_r.py drew the seven rounds. Sprites 186 in one run (image 91771839617670); icon sheet 6 packed again with the ten new pictures (image 128249367983912). |
+| In a raid (Quay 7, Studio) | The first try did not load: a revolver item with a magazine family takes the magazine path, which found no magazine; with the family removed the cylinder loads round by round from the pockets like the Harrow's tube. The C-357 then loaded 6 FMJ and fired 3 (6 to 3); the B-12 loaded 5 PS12 and fired 2 (5 to 3). |
+| Tests | 16 suites, 1,192 checks, all passed: the load check allows 9x33R its four and 12.7x55 its three, RecoilTests check the three revolvers, LogicTests count 26 mastering groups. |
+| Not checked | The C-9 fired; the revolvers' first-person look (they use the pistol hold); aiming; AI with them; a phone. |
+
 ## The 9x21 and 9.6x39 guns: W-21, J-21 and T-215 (decision economy-1a, tenth slice; 2026-11-08, about 21:55 SGT)
 
 | Test | Result |

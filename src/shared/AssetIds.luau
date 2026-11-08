@@ -35,6 +35,7 @@ return {
 	{ key = "ZR_GunsVSS", id = 85841185372239 }, -- Owl SV-9 and Nightjar AV-9 rifles, their integral barrel-suppressors and magazines (economy-1a sixth slice, 2026-11-08)
 	{ key = "ZR_GunsPDW", id = 98715920208334 }, -- Swift PW-46 and Petrel PD-57 personal defence weapons and their magazines (economy-1a seventh slice, 2026-11-08)
 	{ key = "ZR_Guns45", id = 99440020868996 }, -- Harrier HS-45, Lark L-11 and Finch F-57 and their magazines (economy-1a eighth slice, 2026-11-08)
+	{ key = "ZR_GunsRev", id = 136885242607396 }, -- Crake C-357, Crake C-9 and Bustard B-12 (economy-1a eleventh slice, 2026-11-08)
 	{ key = "ZR_Guns21", id = 125081825640710 }, -- Wren W-21, Jay J-21, Tern T-215 and their magazines (economy-1a tenth slice, 2026-11-08)
 	{ key = "ZR_GunsTT", id = 138032227885924 }, -- Pipit P-33 and Grackle G-41 and their magazines (economy-1a ninth slice, 2026-11-08)
 	-- Relay 7 lobby bunker kit (ZR_MK_<Prop>__<material> pieces like the mall kit; see KitMeta.luau, Maps/Relay7.luau)

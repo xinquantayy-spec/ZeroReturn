@@ -218,6 +218,8 @@ T.offers = {
 		-- of PS, BT and 7N42 and the magazines' are ours
 		o("A921_PE", 1, 8, 50), o("A921_P", 2, 8, 50), o("A921_PS", 2, 6, 50), o("A921_SUB", 3, 6, 50), o("A921_BT", 3, 4, 50),
 		o("A921_AP", 4, 3, 50), o("W21_MAG", 2, 4), o("J21_MAG20", 3, 3), o("J21_MAG30", 3, 3),
+		-- the eleventh slice: EFT's Prapor sells the three 12.7x55 loads (tarkovforge.com; the levels ours)
+		o("A127_PS12A", 2, 4, 20), o("A127_PS12", 3, 4, 20), o("A127_PS12B", 4, 2, 20),
 		-- the third slice (tarkovforge.com round pages, 2026-11-08): Prapor sells 5.45 US gs at LL1, T gs and PS gs at LL2 and
 		-- BT gs at LL4 (BP gs and BS gs come from loot and crafts), and the 9x18 P, PPT, Pst, RG028 and PBM loads at LL1;
 		-- the 6L20 magazine at LL1 and the 6L26 at LL3
@@ -344,6 +346,9 @@ T.offers = {
 		o("A76T_LRN", 1, 8, 50), o("A76T_LRNPC", 1, 8, 50), -- the ninth slice: EFT's Jaeger sells 7.62x25 LRN and LRNPC at LL1
 		-- the tenth slice: EFT's Jaeger sells .366 TKM FMJ, Geksa and EKO (tarkovforge.com); the T-215 and its magazine at LL2 ours
 		o("A96_FMJ", 1, 8, 40), o("A96_EXP", 1, 8, 40), o("A96_CU", 1, 6, 40), o("T215_BOLT", 2, 1), o("T215_MAG", 2, 4),
+		-- the eleventh slice: EFT's Jaeger sells .357 Magnum HP at LL1 and FMJ and JHP at LL2 (tarkovforge.com); SP's level
+		-- and the two Crakes' ours
+		o("A933_HP", 1, 8, 50), o("A933_SP", 1, 8, 50), o("A933_FMJ", 2, 6, 50), o("A933_JHP", 2, 6, 50), o("CRK9_REV", 1, 1), o("CRK357_REV", 2, 1),
 		o("A12_FLECH", 3, 3, 20),
 		o("HAR_FE_POLY", 1, 2), o("HAR_STK_PG", 1, 1),
 		o("TUNDRA_BOLT", 2, 1), o("TUN_MNT_SCOUT", 2, 1), o("TUN_STK_SPORT", 2, 1), o("HAR_FE_RAIL", 2, 1),
@@ -388,6 +393,7 @@ T.barters = {
 		b("W21_PISTOL", 2, 1, { { "WEAPON_PARTS", 1 }, { "SCREWS", 2 } }),
 		b("J21_SMG", 3, 1, { { "WEAPON_PARTS", 2 }, { "SPARE_PARTS", 2 }, { "BOLTS", 2 } }),
 		b("A96_AP", 3, 2, { { "GUNPOWDER", 1 }, { "CAPACITOR", 1 } }, 40),
+		b("BZ12_REV", 4, 1, { { "WEAPON_PARTS", 3 }, { "SPARE_PARTS", 2 }, { "GUNPOWDER", 1 } }), -- the eleventh slice (ours)
 		-- EFT's PM is barter-only (tarkovforge.com: no trader sells it for money); ours at Prapor for small household goods
 		b("PM_PISTOL", 1, 2, { { "TOILET_PAPER", 1 }, { "SOAP", 1 } }),
 		-- EFT's RPK-16 comes by Prapor's barters at LL2 and LL3 (wiki): the KS-L and its drum at LL3 here
