@@ -472,6 +472,52 @@ local function actionsFor(ref, g)
 			req({ op = "unmod", g = g, slot = "mount" })
 		end)
 	end
+	-- plates (Tarkov 0.14, gameplay-2a): into a slot of a vest or armoured rig that is not worn, and out again. Tarkov
+	-- wants a worn vest taken off first; the menu says so instead of offering it. Same menu on mouse, touch and gamepad.
+	local SLOT_SHORT = { front = "FRONT", back = "BACK", lside = "LEFT SIDE", rside = "RIGHT SIDE" }
+	if mine and d.kind == "plate" and locate(view, g) == "grid" then
+		local wornHint = nil
+		for cg, c in view.items do
+			local cd = defs[c.id]
+			local slots = cd and Plates.slotsOf(cd)
+			local where = slots and locate(view, cg)
+			if where then
+				for _, s in Plates.SLOTS do
+					if slots[s] and Plates.fits(cd, s, d) then
+						if where == "slot" then
+							wornHint = wornHint or cd.short
+						else
+							local cur = c.mods and c.mods[s] and view.items[c.mods[s]]
+							add(string.format("%s %s  ·  %s", cur and "SWAP INTO" or "INSERT INTO", cd.short, SLOT_SHORT[s]), function()
+								req({ op = "mod", g = cg, slot = s, mod = g })
+							end, "good")
+						end
+					end
+				end
+			end
+		end
+		if wornHint then
+			add("TAKE OFF " .. wornHint .. " TO PUT IN PLATES", function() end)
+		end
+	end
+	if mine and Plates.slotsOf(d) and it.mods then
+		local worn = locate(view, g) == "slot"
+		local any = false
+		for _, s in Plates.SLOTS do
+			local p = it.mods[s] and view.items[it.mods[s]]
+			if p and defs[p.id] then
+				any = true
+				if not worn then
+					add(string.format("REMOVE %s PLATE (%s)", SLOT_SHORT[s], defs[p.id].short), function()
+						req({ op = "unmod", g = g, slot = s })
+					end)
+				end
+			end
+		end
+		if worn and any then
+			add("TAKE IT OFF TO CHANGE PLATES", function() end)
+		end
+	end
 	if mine and d.kind == "mod" and locate(view, g) == "grid" then
 		for wg, w in view.items do
 			if w ~= it and WP.isBase(w.id) and locate(view, wg) ~= nil then
