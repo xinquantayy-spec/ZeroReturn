@@ -56,6 +56,8 @@ local POOLS = {
 		{ id = "GREN_RK5", w = 3 }, { id = "GREN_SMOKE", w = 2 }, { id = "GLASSES_RANGE", w = 2 }, { id = "GAS_MASK", w = 1 },
 		{ id = "FLARE_RED", w = 1.2 },
 		{ id = "FLARE_GREEN", w = 1.6 },
+		-- economy-1a's thirteenth slice: EFT's magnet among its electronics, the sledgehammer rarely, the two FMJ loads
+		{ id = "MAGNET", w = 2 }, { id = "SLEDGEHAMMER", w = 0.3 }, { id = "A76_FMJ", w = 4, n = { 15, 40 } }, { id = "A76L_FMJ", w = 1.5, n = { 10, 25 } },
 	},
 	locker = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -79,6 +81,8 @@ local POOLS = {
 		{ id = "INTEL_FOLDER", w = 3 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 }, { id = "SEALED_DRIVE", w = 2 },
 		{ id = "GOLD_CHAIN", w = 3 }, { id = "PAINKILLERS", w = 6 },
 		{ id = "KEY_MM_BOLT_OFFICE", w = 1 }, { id = "KEY_MM_BOLT_GOODS", w = 1 }, { id = "KEY_MM_IRON_GRATE", w = 0.4 },
+		-- economy-1a's thirteenth slice: printer paper in desk drawers, now and then a cookbook
+		{ id = "PRINTER_PAPER", w = 3 }, { id = "COOK_BOOK", w = 0.3 },
 	},
 	medbag = {
 		-- economy-1a's second slice: EFT's medical supplies (the transilluminator very rarely)
@@ -87,8 +91,9 @@ local POOLS = {
 		{ id = "BANDAGE", w = 20 }, { id = "TOURNIQUET", w = 12 }, { id = "SPLINT", w = 12 }, { id = "PAINKILLERS", w = 12 },
 		{ id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MEDKIT_L", w = 3 },
 		{ id = "MED_TOOLS", w = 4 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 }, { id = "GAS_MASK", w = 1 },
-		-- stimulants (gameplay-4b; rarer the stronger)
+		-- stimulants (gameplay-4b; rarer the stronger; the SV-1, EFT's SJ1, since economy-1a's thirteenth slice)
 		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
+		{ id = "STIM_COMBAT", w = 1 },
 	},
 	weaponbox = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -165,6 +170,8 @@ local POOLS = {
 		{ id = "D17_PISTOL", w = 2 }, { id = "AV9_SMG", w = 0.6 }, { id = "B19_SMG", w = 0.8 },
 		{ id = "D17_MAG", w = 2.5, a = { 0, 17 }, at = "A9_PST" }, { id = "AV9_MAG20", w = 1, a = { 0, 20 }, at = "A9_PST" },
 		{ id = "AV9_MAG30", w = 1, a = { 0, 30 }, at = "A9_PST" }, { id = "B19_MAG", w = 1.2, a = { 0, 30 }, at = "A9_PST" },
+		-- the thirteenth slice: the 7.6x39 and 7.6x54R FMJ loads, as common as the other plain loads
+		{ id = "A76_FMJ", w = 8, n = { 30, 60 } }, { id = "A76L_FMJ", w = 4, n = { 10, 30 } },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -197,6 +204,8 @@ local POOLS = {
 		{ id = "FLARE_GREEN", w = 0.9 },
 		-- the tasks' Spot Marker turns up as loot too (economy-6a; EFT's MS2000 markers lie in toolboxes and tech)
 		{ id = "MARKER", w = 2 },
+		-- economy-1a's thirteenth slice: EFT's magnet and Geiger counter with the other electronics
+		{ id = "MAGNET", w = 3 }, { id = "GEIGER", w = 0.8 },
 	},
 	jacket = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -216,6 +225,7 @@ local POOLS = {
 		{ id = "SURVEY_MAPS", w = 2 },
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
 		{ id = "COLD_WALLET", w = 2 }, { id = "OLD_COIN", w = 10 }, { id = "RUSTED_KEYCARD", w = 1 },
+		{ id = "SEMI_TEXTBOOK", w = 0.15 }, -- economy-1a's thirteenth slice: the rare textbook (EFT's info items)
 	},
 	-- loose loot (M10): what lies around in the open, in the dorm rooms, the office and the vault
 	junk = {
@@ -230,6 +240,8 @@ local POOLS = {
 		{ id = "A12_BUCK", w = 4, n = { 3, 8 } }, { id = "BATTERY", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "CAPACITOR", w = 3 },
 		{ id = "A54_PS", w = 6, n = { 5, 20 } }, { id = "A54_HP", w = 3, n = { 5, 15 } }, { id = "A918_P", w = 5, n = { 5, 16 } },
 		{ id = "SIGNAL_COIL", w = 4 }, { id = "CERAMIC_FUSE", w = 4 },
+		-- economy-1a's thirteenth slice: paper and magnets lie about; EFT's sledgehammer turns up loose, rarely
+		{ id = "PRINTER_PAPER", w = 1.5 }, { id = "MAGNET", w = 1.5 }, { id = "SLEDGEHAMMER", w = 0.3 },
 	},
 	dorm = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -244,6 +256,8 @@ local POOLS = {
 		{ id = "PM_PISTOL", w = 1.5 }, { id = "PM_MAG", w = 2, a = { 0, 8 }, at = "A918_P" }, { id = "A918_P", w = 4, n = { 8, 24 } },
 		{ id = "M1911_PISTOL", w = 0.6 }, { id = "M1911_MAG", w = 1, a = { 0, 7 }, at = "A114_FMJ" }, { id = "A114_FMJ", w = 2, n = { 7, 21 } },
 		{ id = "TT_PISTOL", w = 1.2 }, { id = "TT_MAG", w = 1.5, a = { 0, 8 }, at = "A76T_P" }, { id = "A76T_P", w = 3, n = { 8, 24 } },
+		-- economy-1a's thirteenth slice: a cookbook in the kitchens, printer paper
+		{ id = "COOK_BOOK", w = 0.6 }, { id = "PRINTER_PAPER", w = 1 },
 	},
 	dorm_good = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -252,11 +266,14 @@ local POOLS = {
 		{ id = "GOLD_CHAIN", w = 8 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
 		{ id = "SEALED_DRIVE", w = 2 }, { id = "LOGIC_BOARD", w = 5 }, { id = "MIL_CIRCUIT", w = 2 }, { id = "COLD_WALLET", w = 1 },
 		{ id = "OLD_COIN", w = 6 }, { id = "MEDKIT_M", w = 4 }, { id = "HEMOSTAT", w = 2 }, { id = "RUSTED_KEYCARD", w = 1 },
+		{ id = "SEMI_TEXTBOOK", w = 0.15 }, -- economy-1a's thirteenth slice
 	},
 	office = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
 		{ id = "SURVEY_MAPS", w = 3 }, { id = "SECURE_FLASH", w = 4 }, { id = "SSD", w = 2 }, { id = "ES_LAMP", w = 3 }, { id = "TPLUG", w = 3 },
 		{ id = "POWER_CORD", w = 2 },
+		-- the thirteenth slice: printer paper by the printers, the textbook rarely
+		{ id = "PRINTER_PAPER", w = 5 }, { id = "SEMI_TEXTBOOK", w = 0.2 },
 		{ id = "INTEL_FOLDER", w = 6 }, { id = "FLASH_MODULE", w = 5 }, { id = "SEALED_DRIVE", w = 2 }, { id = "CIGARETTES", w = 6 },
 		{ id = "OLD_COIN", w = 5 }, { id = "BATTERY", w = 3 }, { id = "CAPT_WATCH", w = 2 },
 	},
@@ -266,6 +283,7 @@ local POOLS = {
 		{ id = "GOLD_CHAIN", w = 8 }, { id = "BRASS_LION", w = 3 }, { id = "COLD_WALLET", w = 3 }, { id = "MIL_CIRCUIT", w = 4 },
 		{ id = "SEALED_DRIVE", w = 5 }, { id = "INTEL_FOLDER", w = 6 }, { id = "CAPT_WATCH", w = 6 }, { id = "LEDGER", w = 2 },
 		{ id = "FLASH_MODULE", w = 5 }, { id = "GREN_F7", w = 2 }, { id = "TH_T7", w = 0.3 }, { id = "NV_QUAD", w = 0.6 },
+		{ id = "SEMI_TEXTBOOK", w = 0.3 }, -- economy-1a's thirteenth slice
 	},
 	keys = {
 		{ id = "KEY_DORM_104", w = 6 }, { id = "KEY_DORM_203", w = 4 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 },
@@ -303,6 +321,8 @@ local POOLS = {
 		{ id = "CRACKED_LENS", w = 3 },
 		-- the tasks' marker, trail camera and signal beacon (economy-6a)
 		{ id = "MARKER", w = 2 }, { id = "CAMERA", w = 1 }, { id = "BEACON", w = 1 },
+		-- economy-1a's thirteenth slice: EFT's tech crates hold its magnets and Geiger counters
+		{ id = "MAGNET", w = 5 }, { id = "GEIGER", w = 2 },
 	},
 	pharmacy = {
 		-- economy-1a's second slice: EFT's medical supplies (the transilluminator very rarely)
@@ -312,6 +332,7 @@ local POOLS = {
 		{ id = "TOURNIQUET", w = 8 }, { id = "SPLINT", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MED_TOOLS", w = 4 },
 		{ id = "MEDKIT_L", w = 3 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 },
 		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
+		{ id = "STIM_COMBAT", w = 1 }, -- economy-1a's thirteenth slice
 	},
 	grocery = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -331,6 +352,7 @@ local POOLS = {
 		{ id = "SOAP", w = 5 }, { id = "PHONE", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "BATTERY", w = 2 },
 		{ id = "WIRES", w = 4 }, { id = "DUCT_TAPE", w = 4 }, { id = "A9_PST", w = 3, n = { 5, 15 } }, { id = "BANDAGE", w = 4 },
 		{ id = "GLASSES_SUN", w = 2 },
+		{ id = "PRINTER_PAPER", w = 2 }, { id = "COOK_BOOK", w = 0.3 }, -- economy-1a's thirteenth slice: the shops' shelves
 	},
 	mallkeys = {
 		{ id = "KEY_MALL_STAFF", w = 8 }, { id = "KEY_MEDIQ", w = 6 }, { id = "KEY_MALL_SECURITY", w = 3 },
@@ -367,6 +389,7 @@ local POOLS = {
 		{ id = "HELMET_C3", w = 2 }, { id = "ARMOR_C4", w = 1.5 }, { id = "RIG_CHEST", w = 2 }, { id = "BAG_PATROL", w = 1.5 }, { id = "HEADSET_GS1", w = 1.5 },
 		{ id = "R17_RIFLE", w = 1 }, { id = "KST_RIFLE", w = 1 }, { id = "SPARROW_SMG", w = 1 }, { id = "GREN_RK5", w = 3 }, { id = "GREN_F7", w = 1 },
 		{ id = "PLATE_PE4", w = 1 }, { id = "PLATE_CE4", w = 1 }, { id = "PLATE_CE5", w = 0.5 }, { id = "PLATE_HP5B", w = 0.4 },
+		{ id = "MAGNET", w = 1 }, -- economy-1a's thirteenth slice
 	},
 	airdrop_medical = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -377,6 +400,7 @@ local POOLS = {
 		{ id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "HARDTACK", w = 5 }, { id = "VOLT_DRINK", w = 3 }, { id = "JUICE", w = 3 },
 		{ id = "CHOC_BAR", w = 3 },
 		{ id = "STIM_ADREN", w = 4 }, { id = "STIM_REGEN", w = 3 }, { id = "STIM_HEMO", w = 3 }, { id = "STIM_STAMINA", w = 2 },
+		{ id = "STIM_COMBAT", w = 3 }, -- economy-1a's thirteenth slice
 	},
 	airdrop_supply = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -391,6 +415,8 @@ local POOLS = {
 		{ id = "BATTERY", w = 5 }, { id = "FUEL_CAN", w = 4 }, { id = "DECK_TRANSCEIVER", w = 3 }, { id = "FLASH_MODULE", w = 4 },
 		{ id = "SEALED_DRIVE", w = 2 }, { id = "GOLD_CHAIN", w = 4 }, { id = "CAPT_WATCH", w = 3 }, { id = "COLD_WALLET", w = 1 },
 		{ id = "WEAPON_KIT", w = 2 }, { id = "MULTITOOL", w = 3 },
+		-- economy-1a's thirteenth slice: the magnet, the Geiger counter and the sledgehammer with the supply drop's goods
+		{ id = "MAGNET", w = 3 }, { id = "GEIGER", w = 1 }, { id = "SLEDGEHAMMER", w = 0.5 },
 	},
 	airdrop_weapon = {
 		{ id = "A62_EP", w = 2, n = { 30, 60 } }, { id = "A76_PP", w = 2, n = { 30, 60 } }, { id = "A9_PBP", w = 1, n = { 25, 50 } },
@@ -1620,13 +1646,14 @@ end
 -- a few meds and junk. None of it is found-in-raid.
 -- (economy-1a: each gun's rounds are drawn from the plain loads of its calibre, as EFT's scavs carry mixed low-tier ammo)
 local SCAV_GUNS = {
-	{ "KST_RIFLE", 30, "KST_MAG", { "A76_PS", "A76_HP", "A76_US", "A76_TR" } }, { "SPARROW_SMG", 25, "SPARROW_MAG", { "A9_PST", "A9_FMJ", "A9_TR" } },
-	{ "HARROW12", 25, nil, { "A12_BUCK", "A12_BUCK", "A12_SLUG", "A12_MAG" } }, { "TUNDRA_BOLT", 8, nil, { "A76L_LPS", "A76L_TR" } },
+	-- (the thirteenth slice added the 7.6x39 and 7.6x54R FMJ loads to their guns' plain loads)
+	{ "KST_RIFLE", 30, "KST_MAG", { "A76_PS", "A76_HP", "A76_US", "A76_TR", "A76_FMJ" } }, { "SPARROW_SMG", 25, "SPARROW_MAG", { "A9_PST", "A9_FMJ", "A9_TR" } },
+	{ "HARROW12", 25, nil, { "A12_BUCK", "A12_BUCK", "A12_SLUG", "A12_MAG" } }, { "TUNDRA_BOLT", 8, nil, { "A76L_LPS", "A76L_TR", "A76L_FMJ" } },
 	{ "R17_RIFLE", 12, "R17_MAG", { "A62_FMJ", "A62_HP", "A62_SS" } },
 	-- economy-1a, third slice: EFT's scavs carry AK-74s more than anything (weights ours)
 	{ "KS74_RIFLE", 30, "KS74_MAG", { "A54_PS", "A54_HP", "A54_US", "A54_T" } },
 	-- the fourth slice: the SK-45 is the scavs' second rifle in EFT
-	{ "SKS_RIFLE", 18, nil, { "A76_PS", "A76_HP", "A76_US" } },
+	{ "SKS_RIFLE", 18, nil, { "A76_PS", "A76_HP", "A76_US", "A76_FMJ" } },
 }
 local function pickWeighted(rand, list)
 	local total = 0

@@ -304,7 +304,7 @@ function T.run(ctx)
 		end
 		check(string.format("EFT's current crafts with a product here: %d (medstation %d, workbench %d, lavatory %d, nutrition %d, water %d, intel %d), no ids clash",
 			#HD.recipes, perModule.medstation or 0, perModule.workbench or 0, perModule.lavatory or 0, perModule.nutrition or 0, perModule.water or 0, perModule.intel or 0),
-			#HD.recipes >= 78 and #dupe == 0)
+			#HD.recipes >= 83 and #dupe == 0)
 		check("every craft's module, level, product, inputs and tools are real items and levels" .. listed(badItem), #badItem == 0)
 		check("every craft takes positive counts and time, lists each input once and names EFT's product" .. listed(badNum), #badNum == 0)
 		check("no craft only turns an item into more of itself" .. listed(selfLoop), #selfLoop == 0)
@@ -316,9 +316,23 @@ function T.run(ctx)
 		for _, rc in HD.recipes do
 			makes[rc.get[1]] = (makes[rc.get[1]] or 0) + 1
 		end
-		check("no craft makes 7.62x39 PS (EFT's craft makes FMJ), 9x18 Pst or PSV (PstM, SP8), 7.62x54R LPS or SNB, 12/70 buckshot or lead slugs (Piranha, the .50 BMG slug), M995",
-			not makes.A76_PS and not makes.A918_PST and not makes.A918_PSV and not makes.A76L_LPS and not makes.A76L_SNB and not makes.A12_BUCK and not makes.A12_SLUG and not makes.A62_AP)
-		check("SJ6 (our SV-3) is made by no craft: EFT's needs an SJ1, and SJ1, PNB and AHF1-M have no counterpart here", not makes.STIM_STAMINA)
+		-- (7.62x54R LPS left this list in the thirteenth catalogue slice: EFT's craft makes it from 7.62x54R FMJ, now ours)
+		check("no craft makes 7.62x39 PS (EFT's craft makes FMJ), 9x18 Pst or PSV (PstM, SP8), 7.62x54R SNB, 12/70 buckshot or lead slugs (Piranha, the .50 BMG slug), M995",
+			not makes.A76_PS and not makes.A918_PST and not makes.A918_PSV and not makes.A76L_SNB and not makes.A12_BUCK and not makes.A12_SLUG and not makes.A62_AP)
+		-- the header's value rule, made exact for the two crafts the thirteenth slice could not bring in: value out over value
+		-- used up at our values, against EFT's handbook prices (SPT's handbook.json: 7.62x39 FMJ 140, Eagle 32,000; SJ6 27,950,
+		-- SJ1 35,893, pile of meds 6,500, saline 8,508, OLOLO multivitamins 25,090). Left out while ours is over 1.5 and over
+		-- twice EFT's; if our powder tin or SV-3 is revalued, these checks fail and the crafts can come in
+		local function rich(out, used, eftOut, eftUsed)
+			local ours, eft = out / used, eftOut / eftUsed
+			return ours > 1.5 and ours > 2 * eft
+		end
+		local A = Items.defs
+		check("7.62x39 FMJ x200 from one Eagle stays out: far richer at our values (a powder tin for 200 rounds) than at EFT's",
+			not makes.A76_FMJ and A.A76_FMJ ~= nil and rich(200 * A.A76_FMJ.value, A.GUNPOWDER.value, 200 * 140, 32000))
+		check("SJ6 (our SV-3) is made by no craft: EFT's 2 from an SJ1 would be far richer at our values (SV-3 against EFT's SJ6)",
+			not makes.STIM_STAMINA and A.STIM_COMBAT ~= nil and rich(2 * A.STIM_STAMINA.value, A.STIM_COMBAT.value + 3 * A.MEDS_PILE.value + A.SALINE.value,
+				2 * 27950, 35893 + 2 * 6500 + 8508 + 25090))
 		check("no craft makes a near armour, helmet or magazine (Module-3M, Zhuk, MICH, the 6L31)", not makes.ARMOR_C2 and not makes.ARMOR_C3 and not makes.HELMET_C3 and not makes.KST_MAG40)
 		check("LogicTests' crafts are still there: RK-5 grenades and the repair kit", HD.byRecipe.NADE_RK5 ~= nil and HD.byRecipe.GUN_KIT ~= nil
 			and Items.defs[HD.byRecipe.GUN_KIT.get[1]].kind == "repair")
@@ -392,6 +406,34 @@ function T.run(ctx)
 		check("rounds by their copies: M855A1 (EP) from M855 (SS), 7.62x54R BT from PS, 7.62x39 BP from PP", HD.byRecipe.AMMO_AP.get[1] == "A62_EP"
 			and has(HD.byRecipe.AMMO_AP.give, "A62_SS", 180) and HD.byRecipe.AMMO_76LBT.get[1] == "A76L_BT" and has(HD.byRecipe.AMMO_76LBT.give, "A76L_PS", 50)
 			and has(HD.byRecipe.AMMO_BP.give, "A76_PP", 90))
+		-- economy-1a's thirteenth catalogue slice: the crafts its nine items let in (tarkovforge.com/hideout/<module>, read
+		-- 2026-11-08; tools from SPT's production.json and xgamingserver's item pages, snapshot 2026-11-04)
+		r = HD.byRecipe.WB_MAGNET
+		check("workbench 1: a magnet from a damaged hard drive, the screwdriver returned, 2,600 s (SPT; tarkovforge 43 min)",
+			is("WB_MAGNET", "workbench", 1, 2600, "MAGNET", 1) and has(r.give, "HDD", 1) and #r.give == 1 and has(r.tools, "SCREWDRIVER", 1))
+		r = HD.byRecipe.AMMO_FLECH
+		check("workbench 1: 12/70 flechette x40 from 3 nails and 2 gunpowder, the sledgehammer returned, 50 min (EFT 1.x; 0.16.9: 60 at level 3)",
+			is("AMMO_FLECH", "workbench", 1, 3000, "A12_FLECH", 40) and has(r.give, "NAILS", 3) and has(r.give, "GUNPOWDER", 2) and #r.give == 2
+				and has(r.tools, "SLEDGEHAMMER", 1) and not has(r.give, "SLEDGEHAMMER"))
+		r = HD.byRecipe.AMMO_LPS
+		check("workbench 2: 7.62x54R LPS x50 from its FMJ x70 and a gunpowder, the multitool returned, 4 h (EFT 1.x; 0.16.9 made 70)",
+			is("AMMO_LPS", "workbench", 2, 14400, "A76L_LPS", 50) and has(r.give, "A76L_FMJ", 70) and has(r.give, "GUNPOWDER", 1) and #r.give == 2
+				and has(r.tools, "MULTITOOL", 1))
+		r = HD.byRecipe.MED_SJ1
+		check("medstation 2: SJ1 (our SV-1) x5 from 7 piles of meds, 2 saline, 3 Propital and a morphine (our analgesic tabs), 4,990 s, no tool",
+			is("MED_SJ1", "medstation", 2, 4990, "STIM_COMBAT", 5) and has(r.give, "MEDS_PILE", 7) and has(r.give, "SALINE", 2) and has(r.give, "STIM_REGEN", 3)
+				and has(r.give, "PAINKILLERS", 1) and #r.give == 4 and #(r.tools or {}) == 0)
+		r = HD.byRecipe.LAV_TOILET
+		check("lavatory 1: toilet paper x2 from a ream of printer paper, 26 min", is("LAV_TOILET", "lavatory", 1, 1560, "TOILET_PAPER", 2)
+			and has(r.give, "PRINTER_PAPER", 1) and #r.give == 1)
+		check("the tools EFT's crafts lacked here: the Geiger counter (Salty Dog), the cook book (Max Energy, Hot Rod), the textbook (graphics card)",
+			has(HD.byRecipe.NUT_SAUSAGE.tools, "GEIGER", 1) and has(HD.byRecipe.NUT_ENERGY.tools, "COOK_BOOK", 1) and has(HD.byRecipe.NUT_HOTROD.tools, "COOK_BOOK", 1)
+				and has(HD.byRecipe.NUT_HOTROD.tools, "WATER_FILTER", 1) and has(HD.byRecipe.INT_GPU.tools, "SEMI_TEXTBOOK", 1)
+				and not has(HD.byRecipe.INT_GPU.give, "SEMI_TEXTBOOK"))
+		check("the intelligence folder uses up a ream of printer paper, the motor and the rest space take the magnet itself",
+			has(HD.byRecipe.INT_FOLDER.give, "PRINTER_PAPER", 1) and has(HD.byRecipe.INT_FOLDER.give, "SECURE_FLASH", 2)
+				and has(HD.byRecipe.WB_MOTOR.give, "MAGNET", 1) and not has(HD.byRecipe.WB_MOTOR.give, "SIGNAL_COIL")
+				and has(HD.modules.rest.levels[2].items, "MAGNET", 1))
 	end)
 
 	-- ── the bitcoin farm ─────────────────────────────────────────────────────────────────────────────────────────────
