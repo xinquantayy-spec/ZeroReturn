@@ -10,14 +10,16 @@
 - Done (the section 7 entries of `docs/design/EFT_PARITY.md`, TEST_RESULTS): M1 release blockers; M2 lean servers
   (tech-4b) and phone menus (ui-3a); M3 quick wins in five batches; the Broker on Reshala's zones (ai.3); scav groups
   (ai.8); the mesh library split (tech.13).
-- Merged into main 2026-11-08, NOT yet checked in Studio (Studio hung at 03:20 SGT with an "Error" window; the owner must
-  restart it): the economy, ui, gameplay and docs helpers' quick wins (EFT_PARITY "batch 6"); the coordinator's pins,
-  mall kit B (new upload 127419668580872), sky textures (decals uploaded, image ids not yet resolved), AI sleep (ai-2),
-  the player scav window (ai-7a). Every source file on the PC matches main at d527088 or later (sync_points in the
-  coordinator's scratchpad). First Studio session: run ZR_Dev "tests" (Logic, Char, Look, Map, Economy, Ui, Gameplay),
-  then the helpers' check lists on the coordination board, then the M11 malfunction check (gameplay.12), rain (art.12),
-  the lighting style (art.1) and the kit origins (art.9).
-- M4: ai-3a, gameplay-1a, ai-1a, ai-2, ai-7a merged into main (untested). Waiting on branches until main passes its Studio session, then merged one at a time: wip/eight-traders (economy-2a; then the Relay 7 counters and NPCs for ROOK, DEKKER, KOVAC and BRAM) and wip/plates (gameplay-2a; then the traders' plate offers, buy and repair lists, the handbook's ARMOR PLATES, the drag cue for plates, 16 plate icons).
+- Checked in Studio 2026-11-08 (TEST_RESULTS): all of M3 batch 6 and M4 batches 1-3 (ai-3a, gameplay-1a, ai-1a, ai-2,
+  ai-7a, economy-2a, gameplay-2a) are on main; 11 suites, 830 checks pass. Studio's id is now b79ee504-12b7-4e23-b725-da89d70d2f1a;
+  Rojo serves on port 34873 (after a Studio restart the owner clicks Connect).
+- Still open from those: Relay 7 counters, NPCs and portraits for ROOK, DEKKER, KOVAC and BRAM; 16 plate icons; the drag
+  cue for plates; the sky decals resolved to image ids and switched by Atmos (art.2); the M11 malfunction glow (gameplay.12),
+  rain (art.12), the lighting style (art.1, decided in Edit mode, never by a runtime switch: that hung Studio); kit origins
+  (art.9); ZR_SFX_Amb (the owner checks why it reads as 0.0 s before any re-upload).
+- Next decisions: economy-6a (a map-first core of about 120 tasks, now on eight traders), gameplay-4b (health and meds),
+  ai-8a (AI looting), ui-1a (in-raid health), gameplay-3a (sound occlusion), tech-8c (a Luau runtime for tests: needs the
+  owner's OK to build the official Luau from source).
 - The gaps by area: `docs/design/EFT_PARITY.md` sections 8 (AI), 9 (core gameplay), 10 (economy) and 11 (art); the look
   rules for new art: `docs/look/ART_BIBLE.md`.
 - Parked: the players' tripwire kit. The server side is merged on branch `wip/tripwire-kit`, the client is not built, and the branch is not on main.
