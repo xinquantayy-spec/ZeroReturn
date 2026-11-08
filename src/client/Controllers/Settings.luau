@@ -16,6 +16,9 @@ local Settings = {
 		binds = {}, quick = {}, -- rebound PC keys (Input.setBinds) and Tarkov quick slots 4 to 0 (item guids)
 		-- Tarkov's GAME / POSTFX / SOUND / CONTROLS rows (docs/design/EFT_PARITY.md section 5)
 		headBob = 1, quickBar = 1, aimSens = 1,
+		-- Tarkov's HEALTH CONDITION and STAMINA AND STANCE (1 always shown, 2 auto-hide, 3 never) and HEALTH COLOR SCHEME
+		-- (1 polychrome, 2 monochrome) (audit ui-1a)
+		hudHealth = 1, hudStamina = 2, hudColors = 1,
 		-- audit ui.7, ui.8, ui.6: a sensitivity per input, invert Y, Tarkov's malfunction notice and double-click use,
 		-- and the time the messenger was last read (its unread count)
 		padSens = 1, touchSens = 1, invertY = false, malfNotes = true, dblUse = true, msgSeen = 0,

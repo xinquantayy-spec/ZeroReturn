@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Tarkov's health and stamina indicators (decision ui-1a; 2026-11-08, 12:25 SGT)
+
+| Test | Result |
+|---|---|
+| Health figure, Border Yard, PC layout | The numbers are gone from the top left. Bottom left, a body outline: shot in the left arm (9 mm, 6 of 60 left) and twice in the right leg (destroyed), the arm showed red, the leg black and the rest green, with the bleeding icon beside it (screenshot, zoomed). |
+| Stamina and stance | After a 3.5 s sprint and a crouch the stamina and arm bars and the stance marker showed over the weapon line (auto-hide), then went (screenshot). |
+| Automated suites | All 11 pass, 851 checks (the server keeps the three new settings). |
+| Not checked | The touch layout (figure top left) and the exits drop-down beside it on a phone, the MONOCHROME scheme and the NEVER modes on screen, the low energy and water warnings, holding breath (blue arm bar). |
+
 ## AI looting (decision ai-8a; 2026-11-08, 11:55 SGT)
 
 | Test | Result |

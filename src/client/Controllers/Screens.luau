@@ -648,6 +648,10 @@ local SETTING_TABS = {
 		{ "REDUCE MOTION", "reduceMotion", "bool" },
 		{ "AIM MODE", "adsToggle", "bool", "TOGGLE", "HOLD" },
 		{ "QUICK SLOTS", "quickBar", "enum", { "AUTO-HIDE", "ALWAYS", "NEVER" }, 1 },
+		-- Tarkov's HUD indicators (audit ui-1a): the body outline and effects, the stamina bars and stance
+		{ "HEALTH CONDITION", "hudHealth", "enum", { "ALWAYS SHOWN", "AUTO-HIDE", "NEVER" }, 1 },
+		{ "STAMINA AND STANCE", "hudStamina", "enum", { "ALWAYS SHOWN", "AUTO-HIDE", "NEVER" }, 1 },
+		{ "HEALTH COLOR SCHEME", "hudColors", "enum", { "POLYCHROME", "MONOCHROME" }, 1 },
 		{ "CENTER DOT", "reticle", "bool" },
 		{ "HIT FEEDBACK", "hitfx", "bool" },
 		{ "HUD SCALE", "hudScale", "num", 0.7, 1.4, 0.1, "pct" },

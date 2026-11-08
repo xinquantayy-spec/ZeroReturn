@@ -55,6 +55,51 @@ local SZ = {
 	toast = 32, death = 90, deathSub = 34, match = 32,
 }
 Hud.SZ = SZ
+-- Tarkov's health condition indicator (audit ui-1a): a body outline whose seven parts take their condition's colour
+-- (HEALTH COLOR SCHEME: polychrome or monochrome), the effects as icons beside it, energy and water only as warnings;
+-- the numbers are on the HEALTH tab. Segments in figure units (y down from the crown; 1 unit = 40 px at 1080p):
+-- part, x0, y0, x1, y1, thickness.
+local FIG = {
+	{ "head", 0, 0.04, 0, 0.32, 0.3 },
+	{ "thorax", 0, 0.41, 0, 0.83, 0.44 },
+	{ "stomach", 0, 0.87, 0, 1.19, 0.38 },
+	{ "larm", -0.36, 0.43, -0.44, 1.15, 0.15 },
+	{ "rarm", 0.36, 0.43, 0.44, 1.15, 0.15 },
+	{ "lleg", -0.12, 1.25, -0.16, 2.1, 0.18 },
+	{ "rleg", 0.12, 1.25, 0.16, 2.1, 0.18 },
+}
+local FIG_H, FIG_W, FIG_UNIT = 2.1, 0.9, 40
+local fig = { x = 0, y = 0, s = 40, shown = false, showUntil = 0, sig = "", touch = false }
+-- Tarkov's stamina and stance indicator: the stamina and arm-stamina bars (bottom centre) and a stance marker beside
+-- them, shown always or only while they change (STAMINA AND STANCE)
+local bars = { x0 = 0, x1 = 0, y = 0, showUntil = 0 }
+
+-- a part's colour: polychrome green, yellow, orange, red as it is hurt, black destroyed (Tarkov); monochrome greys
+local function partColor(hp, mx, mono)
+	local f = mx > 0 and hp / mx or 0
+	if hp <= 0 then
+		return Color3.fromRGB(48, 16, 14), 0.05
+	end
+	if mono then
+		return C.white, 0.12 + 0.6 * (1 - f)
+	end
+	if f >= 0.75 then
+		return C.green, 0.12
+	elseif f >= 0.5 then
+		return C.yellow, 0.12
+	elseif f >= 0.25 then
+		return C.orange, 0.1
+	end
+	return C.red, 0.08
+end
+
+local function setLine(o, ax, ay, bx, by, W, H)
+	local a, b = Vector2.new(ax / W, ay / H), Vector2.new(bx / W, by / H)
+	if o.a ~= a or o.b ~= b then
+		o.a, o.b = a, b
+		o.dirty = true
+	end
+end
 -- the exits, then the transits (Tarkov lists both on O). A Border Yard PMC has up to 9 exits and the transit, a scav 25
 -- and the transit; placeExits shrinks a long list to fit and splits it in two columns past that
 local MAX_EXITS = 30
@@ -117,8 +162,25 @@ local function layout()
 	if band.Max.Y > 0 and band.Min.X > SIDE_L * W then
 		leftTop = math.max(top, band.Max.Y + 4 * u)
 	end
-	-- vitals (top-left), toasts below them
-	local leftEnd = stack({ { O.hp, SZ.hp }, { O.st, SZ.st }, { O.needs, SZ.needs }, { O.status, SZ.status } }, SIDE_L, leftTop, gap)
+	-- the health figure: bottom left on a PC (Tarkov), top left on touch (the stick has the bottom left); its effect
+	-- icons and the energy and water warnings beside it. Toasts start under whatever holds the top left.
+	local touchRow = ctx.Touch and ctx.Touch.topRowBottom and ctx.Touch.topRowBottom()
+	local bottom0 = 0.955 * H - 4 * u
+	local s = FIG_UNIT * u
+	fig.s, fig.touch = s, touchRow ~= nil
+	local fw, fh = FIG_W * s, FIG_H * s
+	local fx = SIDE_L * W + fw * 0.5
+	local fy = touchRow and leftTop or (bottom0 - fh)
+	fig.x, fig.y = fx, fy
+	for _, e in FIG do
+		local o = O.fig[e[1]]
+		setLine(o, fx + e[2] * s, fy + e[3] * s, fx + e[4] * s, fy + e[5] * s, W, H)
+		o.thick = e[6] * s / math.max(u, 1e-3)
+	end
+	local sx = (fx + fw * 0.5 + 10 * u) / W
+	O.status:setAt(sx, (fy + 0.62 * s) / H)
+	O.needs:setAt(sx, (fy + 0.62 * s + (SZ.status + SZ.needs) * 0.5 * u + gap) / H)
+	local leftEnd = touchRow and (fy + fh) or leftTop
 	toastTop = (leftEnd + 10 * u + SZ.toast * u * 0.5) / H
 	toastStep = (SZ.toast * u + gap) / H
 	-- recorder line and clock (top-right), the exits list below them. On touch the menu row (SET, EXIT, BAG) stands at
@@ -140,7 +202,7 @@ local function layout()
 	end
 	exitArea = {
 		touch = row ~= nil, y0 = row and (row + gap) or (rightEnd + 4 * u), y1 = 0.88 * H, gap = gap * 0.7,
-		vit = { leftTop, leftEnd }, rec = { top, rightEnd }, -- the vitals' and the recorder column's bands (the touch drop-down passes between)
+		vit = { leftTop, leftEnd }, rec = { top, rightEnd }, -- the figure's and the recorder column's bands (the touch drop-down passes between)
 	}
 	-- notices sit above the sight line (and below the touch menu row), progress below it
 	local ny = 0.19 * H
@@ -158,6 +220,11 @@ local function layout()
 	O.match:setAt(0.5, (bottom - SZ.weapon * u - gap - SZ.match * u * 0.5) / H)
 	squadBottom = (bottom - SZ.squad * u * 0.5) / H
 	squadStep = (SZ.squad * u + gap * 0.6) / H
+	fig.squadBottom = (fy - gap - SZ.squad * u * 0.5) / H -- in a raid on a PC the roster stands over the figure
+	-- the stamina bars over the weapon line, the stance marker left of them
+	bars.x0, bars.x1 = 0.5 * W - 90 * u, 0.5 * W + 90 * u
+	bars.y = bottom - SZ.weapon * u - gap - 8 * u
+	bars.u, bars.W, bars.H = u, W, H
 	-- death card
 	O.death:setAt(0.5, 0.45)
 	O.deathSub:setAt(0.5, (0.45 * H + (SZ.death + SZ.deathSub) * 0.5 * u + gap) / H)
@@ -211,7 +278,7 @@ local function placeExits(rows)
 	if a.touch then
 		-- the drop-down passes between the vitals (top left) and the recorder column (top right), and keeps to the screen:
 		-- a row too wide for the room beside it shrinks the list again (text scales with its size, so one pass fits it)
-		local left = SIDE_L * W + math.max(O.hp:measure(), O.st:measure(), O.needs:measure(), O.status:measure()) + 12 * u
+		local left = fig.x + FIG_W * fig.s * 0.5 + 10 * u + math.max(O.needs:measure(), O.status:measure()) + 12 * u
 		local right = SIDE_R * W - math.max(O.rec:measure(), O.dev:measure(), O.clock:measure()) - 12 * u
 		local rowH0, g0, k = SZ.exit * f * u, a.gap * f, 1
 		for i = 1, n do
@@ -271,11 +338,19 @@ local function build()
 	Lens.prewarm(Lens.FONT, "0123456789:/+-.,%$ ABCDEFGHIJKLMNOPQRSTUVWXYZ·|()[]")
 	Lens.prewarm(Lens.FONT_MED, "0123456789:/+-.,% ABCDEFGHIJKLMNOPQRSTUVWXYZ·|()")
 	local V0 = Vector2.new(0.5, 0.5)
-	-- vitals (top-left)
-	O.hp = txt("Health", V0, SZ.hp)
-	O.st = txt("Stamina", V0, SZ.st)
+	-- the health figure (bottom left, top left on touch), its effect icons and the energy and water warnings
+	O.fig = {}
+	for _, e in FIG do
+		O.fig[e[1]] = L:line({ name = "Fig_" .. e[1], a = V0, b = V0, thick = 4, segments = 1, color = C.green, alpha = 0.12 })
+	end
 	O.needs = txt("Needs", V0, SZ.needs, 0, { font = Lens.FONT_MED, glow = nil })
 	O.status = txt("Status", V0, SZ.status, 0, { font = Lens.FONT_MED, glow = nil })
+	-- the stamina and arm bars and the stance marker (bottom centre)
+	O.stBack = L:line({ name = "StaminaBack", a = V0, b = V0, thick = 3, segments = 4, color = C.dim, alpha = 0.75 })
+	O.stBar = L:line({ name = "StaminaBar", a = V0, b = V0, thick = 3, segments = 4, color = C.yellow, alpha = 0.1 })
+	O.armBack = L:line({ name = "ArmsBack", a = V0, b = V0, thick = 2, segments = 4, color = C.dim, alpha = 0.75 })
+	O.armBar = L:line({ name = "ArmsBar", a = V0, b = V0, thick = 2, segments = 4, color = C.white, alpha = 0.2 })
+	O.stance = L:line({ name = "Stance", a = V0, b = V0, thick = 3, segments = 1, color = C.white, alpha = 0.2 })
 	-- recorder overlay (top-right)
 	O.rec = txt("Rec", V0, SZ.rec, 1, { glow = 0.9 })
 	O.dev = txt("Device", V0, SZ.dev, 1, { font = Lens.FONT_MED, glow = nil, ca = 0.6 })
@@ -523,7 +598,8 @@ local function slowUpdate()
 		local on = i <= rows
 		o:show(on)
 		if on then
-			o:setAt(SIDE_L, squadBottom - (rows - i) * squadStep)
+			local sb = (inRaid and fig.shown and not fig.touch and fig.squadBottom) or squadBottom
+			o:setAt(SIDE_L, sb - (rows - i) * squadStep)
 			if i == 1 then
 				o:set({ { icon = I.PERSON, color = band, size = SZ.squadHead * 0.8 }, { t = " SQUAD", color = C.yellow }, { t = "   ARMBAND", size = SZ.squad * 0.8, color = band, top = true } })
 			else
@@ -600,51 +676,94 @@ end
 local function fastUpdate(dt)
 	local S = ctx.Settings.data
 	local v = vitals()
-	local hp, max = math.max(0, v.hp or 0), math.max(1, v.max or 100)
-	local frac = hp / max
-	local hpCol = frac < 0.3 and C.red or (frac < 0.6 and C.orange or C.green)
-	local hpDim = frac < 0.3 and Color3.fromRGB(180, 40, 32) or (frac < 0.6 and C.orangeDim or C.greenDim)
-	O.hp:set({ { icon = I.PLUS, color = hpCol, size = SZ.hp * 0.83 }, { t = " " .. math.ceil(hp), color = hpCol }, { t = " /" .. math.floor(max), size = SZ.hp * 0.5, color = hpDim, top = true } })
-	if lastHp and hp < lastHp - 0.5 then
-		O.hp:pop(0.32)
-		O.hp:shake(4, 0.3)
-	elseif lastHp and hp > lastHp + 5 then
-		O.hp:pop(0.18)
-	end
-	lastHp = hp
-	local stMax = v.stMax or Config.MAX_STAMINA
-	local M = ctx.Movement
-	local st = v.st or (M and M.stamina) or stMax
-	local stCol = st < stMax * 0.2 and C.orange or C.yellow
-	local segs = { { icon = I.BOLT, color = stCol, size = SZ.st * 0.9 }, { t = " " .. math.floor(st), color = stCol }, { t = " /" .. math.floor(stMax), size = SZ.st * 0.52, color = C.yellowDim, top = true } }
-	local arms = M and M.arms or Config.MAX_ARMS
-	if arms < Config.MAX_ARMS - 0.5 then
-		local ac = arms < 20 and C.orange or C.yellowDim
-		segs[#segs + 1] = { t = "   ARMS " .. math.floor(arms), size = SZ.st * 0.52, color = ac, top = true }
-	end
-	O.st:set(segs)
-	-- Tarkov has no vitals on screen out of a raid (audit ui.4): the bunker shows them only in the HEALTH tab
 	local raidNow = ctx.State.inRaid()
-	O.hp:show(raidNow)
-	O.st:show(raidNow)
-	-- needs + status effects (only when the health model provides them)
-	if v.energy and raidNow then
-		O.needs:show(true)
-		O.needs:set({ { icon = I.ENERGY, color = v.energy < 20 and C.red or C.orange, size = SZ.needs * 0.75 }, { t = " " .. math.floor(v.energy) .. "    ", color = C.white }, { icon = I.WATER, color = v.water < 20 and C.red or C.blue, size = SZ.needs * 0.75 }, { t = " " .. math.floor(v.water), color = C.white } })
-	else
-		O.needs:show(false)
-	end
-	local fx = v.effects
-	if fx and #fx > 0 and raidNow then
-		O.status:show(true)
-		local segs = {}
-		for _, e in fx do
-			segs[#segs + 1] = { icon = e.icon, color = e.color or C.red, size = SZ.status * 0.85 }
-			segs[#segs + 1] = { t = " " .. e.label .. "   ", color = e.color or C.red }
+	local t = os.clock()
+	-- the health figure (HEALTH CONDITION: always shown, auto-hide, never); auto-hide shows it for 5 s after a part
+	-- changes and while an effect lasts. Out of a raid Tarkov shows no vitals (audit ui.4): the HEALTH tab has them.
+	local parts = v.parts
+	local mode = S.hudHealth or 1
+	local sig = ""
+	if parts then
+		for _, e in FIG do
+			local p = parts[e[1]]
+			sig ..= (p and p[1] or "-") .. "/"
 		end
+	end
+	if sig ~= fig.sig then
+		fig.sig = sig
+		fig.showUntil = t + 5
+	end
+	local effects = v.effects or {}
+	local showFig = raidNow and parts ~= nil and (mode == 1 or (mode == 2 and (t < fig.showUntil or #effects > 0)))
+	for _, e in FIG do
+		local o = O.fig[e[1]]
+		o:show(showFig)
+		if showFig then
+			local p = parts[e[1]]
+			local col, alpha = partColor(p and p[1] or 1, p and p[2] or 1, S.hudColors == 2)
+			if o.color ~= col or o.alpha ~= alpha then
+				o:setColor(col, alpha)
+			end
+		end
+	end
+	fig.shown = showFig
+	-- effects as icons beside the figure; energy and water appear only as warnings (a quarter left: orange; the
+	-- server adds EXHAUSTED and DEHYDRATED at nothing)
+	local segs = {}
+	for _, e in effects do
+		segs[#segs + 1] = { icon = e.icon, color = e.color or C.red, size = SZ.status * 0.9 }
+		segs[#segs + 1] = { t = "  ", size = SZ.status * 0.5 }
+	end
+	if showFig and v.energy and v.energy > 0 and v.energy < 25 then
+		segs[#segs + 1] = { icon = I.ENERGY, color = C.orange, size = SZ.status * 0.9 }
+		segs[#segs + 1] = { t = "  ", size = SZ.status * 0.5 }
+	end
+	if showFig and v.water and v.water > 0 and v.water < 25 then
+		segs[#segs + 1] = { icon = I.WATER, color = C.orange, size = SZ.status * 0.9 }
+	end
+	O.status:show(showFig and #segs > 0)
+	if showFig and #segs > 0 then
 		O.status:set(segs)
-	else
-		O.status:show(false)
+	end
+	O.needs:show(false)
+	if lastHp and (v.hp or 0) < lastHp - 0.5 then
+		fig.showUntil = t + 5
+	end
+	lastHp = v.hp or 0
+	-- the stamina and stance indicator (STAMINA AND STANCE: always shown, auto-hide, never); auto-hide shows it while
+	-- stamina or the arms are spent, the breath is held or the stance changes, and 1.5 s after
+	local smode = S.hudStamina or 2
+	local M = ctx.Movement
+	local stMax = v.stMax or Config.MAX_STAMINA
+	local st = v.st or (M and M.stamina) or stMax
+	local arms = M and M.arms or Config.MAX_ARMS
+	local stance, depth = M and M.stance or "s", M and M.depth or 0
+	if st < stMax - 0.5 or arms < Config.MAX_ARMS - 0.5 or (M and M.breath) or stance ~= bars.stance or math.abs(depth - (bars.depth or depth)) > 0.04 then
+		bars.showUntil = t + 1.5
+	end
+	bars.stance, bars.depth = stance, depth
+	local showBars = raidNow and (smode == 1 or (smode == 2 and t < bars.showUntil))
+	for _, o in { O.stBack, O.stBar, O.armBack, O.armBar, O.stance } do
+		o:show(showBars)
+	end
+	if showBars and bars.W then
+		local W, H, u = bars.W, bars.H, bars.u
+		local x0, x1, y = bars.x0, bars.x1, bars.y
+		local fs, fa = math.clamp(st / stMax, 0, 1), math.clamp(arms / Config.MAX_ARMS, 0, 1)
+		setLine(O.stBack, x0, y, x1, y, W, H)
+		setLine(O.stBar, x0, y, x0 + (x1 - x0) * math.max(fs, 0.002), y, W, H)
+		O.stBar:setColor(fs < 0.2 and C.orange or C.yellow, 0.1)
+		setLine(O.armBack, x0, y + 6 * u, x1, y + 6 * u, W, H)
+		setLine(O.armBar, x0, y + 6 * u, x0 + (x1 - x0) * math.max(fa, 0.002), y + 6 * u, W, H)
+		O.armBar:setColor((M and M.breath) and C.blue or (fa < 0.2 and C.orange or C.white), 0.2)
+		-- the stance: a bar as tall as the body stands (lower the deeper the crouch), lying flat when prone
+		local sx, base = x0 - 16 * u, y + 7 * u
+		if stance == "p" then
+			setLine(O.stance, sx - 9 * u, base, sx + 3 * u, base, W, H)
+		else
+			local hgt = (stance == "c" and (0.75 - 0.3 * depth) or 1) * 22 * u
+			setLine(O.stance, sx, base, sx, base - hgt, W, H)
+		end
 	end
 	-- progress priority: extract > car seat > search > heal > generic (mag loading, examining...)
 	local label, pf, col = nil, 0, C.yellow
