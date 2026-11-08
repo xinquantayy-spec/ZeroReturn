@@ -2181,6 +2181,7 @@ return function(B)
 		f:prop("Chair", -14, y1, -16.0, -90)
 		f:jacket("LV_SQUAT_J1", "Coat", -36.2, y1, -18, 90)
 		f:loose(-20, y1 + 3.6, -15.5, "drinks", 0.5)
+		points.BY_SQUAT = f:pt(-22.4, y1 + 3.15, -15.5) -- a task's quest item: on the living-room table, beside the drinks
 		f:loose(-30, y1 + 0.5, -20, "dorm", 0.4)
 		f:loose(-12, y1 + 0.5, -21, "junk", 0.4)
 		f:lamp(-21, y1 + 9.7, -17, 24, false)
@@ -2324,6 +2325,7 @@ return function(B)
 		f:door("LV_WATCH_NE", "North door", "u", 56, V0 + 0.6, y1, 1, nil, P.door, 0.3)
 		f:door("LV_WATCH_E1", "East door", "v", 0, U1 - 0.6, y1, -1, nil, P.door, 0.3)
 		f:door("LV_WATCH_RB", "Watch room", "u", -59, 15.0, y1, 1, "KEY_BY_WATCHROOM", P.doorDk)
+		points.BY_WATCHROOM = f:pt(-52.5, y1 + 0.05, 23) -- a task's quest item: the floor of the locked watch room, past the desk
 		f:door("LV_WATCH_RA", "Store room", "u", -41, 18.4, y1, 1, "KEY_BY_WATCHSTORE", P.doorDk)
 		f:door("LV_WATCH_D1", "Briefing room", "u", 30, -8.8, y1, 1, nil, P.door, 0.5)
 		-- upper floors
@@ -2559,6 +2561,7 @@ return function(B)
 		f:loose(0, y1 + 0.5, -6, "weaponbox", 0.5)
 		f:loose(5, y1 + 0.5, -8, "vault", 0.4)
 		f:loose(-4, y1 + 0.5, -9, "dorm_good", 0.5)
+		points.BY_ARMYHUT = f:pt(-4, y1 + 0.05, -3) -- a task's quest item and place: the locked armoury's floor
 		f:lamp(0, y1 + 9.7, -6, 18, false)
 		-- guard room
 		f:prop("Bed", -8.6, y2, -7.6, 0)

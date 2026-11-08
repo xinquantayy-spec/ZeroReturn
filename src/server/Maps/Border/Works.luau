@@ -1607,6 +1607,7 @@ return function(B)
 		cont("techbox", "Radio crate", -56, 26.6, FACE.s, D1)
 		cont("crate", "Stock crate", -40, 12, 0, D1)
 		cont("weaponbox", "Ammunition crate", -30, 22, 90, D1)
+		point("BY_STORE17", -60, D1, 20) -- a task's quest item: the foreman's office floor (standing height, as every point)
 		K("RollCage", -32, 4, 20, D1)
 		cont("toolbox", "Gallery chest", -72, -20, FACE.w, D2)
 		cont("medbag", "First aid bag", -67, -23.6, FACE.n, D2 + 3) -- on the wall beside the rack, not inside it
@@ -2013,6 +2014,7 @@ return function(B)
 		end
 		cont("weaponbox", "Seized weapons", -68, -12.1, 0, DECK)
 		cont("weaponbox", "Seized weapons", -58, -9.7, 180, DECK)
+		point("BY_RED_CAGE", -54, DECK, -12) -- a task's quest item: inside the seized goods cage
 		cont("crate", "Seized goods", -72, -10.9, 0, DECK)
 		cont("crate", "Seized goods", -62, -10.9, 0, DECK)
 		cont("safe", "Evidence safe", -76, -10.9, 90, DECK)
@@ -3404,6 +3406,8 @@ return function(B)
 			local dth = 2.4 / rc
 			local th0 = math.rad(30 + ci * 75)
 			local dr = (top - 0.5) / N
+			-- a task's mark: on the ground by the foot of the stair, outside the pad
+			point(prefix .. "_STAIR", (R + 6) * math.cos(th0 - math.rad(12)), 0, (R + 6) * math.sin(th0 - math.rad(12)))
 			local posts = {}
 			for k = 1, N do
 				local th = th0 + (k - 1) * dth

@@ -197,6 +197,23 @@ function Interact.init(c)
 		end
 	end)
 	c.Input.deviceChanged:Connect(render)
+	-- task places (economy-6a): the server makes one prompt per owner at each plant, mark and find place (attribute
+	-- TaskFor = the owner's UserId) and ignores anyone else; this client hides the ones that are not its own
+	task.spawn(function()
+		local tf = workspace:WaitForChild("ZR_TaskSpots", 60)
+		local me = game:GetService("Players").LocalPlayer
+		local function hide(d)
+			if d:IsA("ProximityPrompt") and d:GetAttribute("TaskFor") ~= nil and d:GetAttribute("TaskFor") ~= me.UserId then
+				d.Enabled = false
+			end
+		end
+		if tf then
+			tf.DescendantAdded:Connect(hide)
+			for _, d in tf:GetDescendants() do
+				hide(d)
+			end
+		end
+	end)
 end
 
 return Interact

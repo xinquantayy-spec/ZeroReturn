@@ -442,7 +442,11 @@ local function tradeTab(f, x, y, w, h, d, tid)
 		drawCells(sf, COLS, math.max(rows, math.floor(viewH / cellW)), cellW)
 		for k, e in entries do
 			local p, o = pos[k], e.o
-			local locked = o.ll > st.ll
+			-- a task-locked offer (economy-6a) shows greyed with TASK, as EFT shows the task that opens it
+			local locked, lockWhy = o.ll > st.ll, nil
+			if TD.offerLock then
+				locked, lockWhy = TD.offerLock(o, st.ll, d.quests)
+			end
 			local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 			local left = o.limit - used
 			-- karma moves Fence's prices (the server charges the same; other traders ignore it, audit economy.5)
@@ -454,7 +458,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 				corner = (o.n or 1) > 1 and tostring(o.n) or nil,
 				price = price and Util.commas(price) or "BARTER",
 				priceColor = price and (((d.money or 0) >= price) and K.C.ochre or K.C.red) or K.C.green,
-				overlay = locked and ("LL" .. o.ll) or (left <= 0 and "SOLD OUT" or nil),
+				overlay = locked and (o.ll > st.ll and ("LL" .. o.ll) or "TASK") or (left <= 0 and "SOLD OUT" or nil),
 				stroke = on and K.C.ochre or nil,
 			})
 			t.Activated:Connect(function()
@@ -625,7 +629,11 @@ local function tradeTab(f, x, y, w, h, d, tid)
 	local tx = pw + 16
 	local oname = (o.preset and WP.PRESET_NAMES[o.preset]) or Items.defs[o.id].name
 	K.label(deal, string.upper(oname) .. ((o.n or 1) > 1 and ("  x" .. o.n) or ""), 14, { FontFace = K.bold, Position = UDim2.fromOffset(tx, 6), Size = UDim2.fromOffset(math.max(80, w - 380 - tx), 18), TextTruncate = Enum.TextTruncate.AtEnd })
-	local locked = o.ll > st.ll
+	local locked, lockWhy = o.ll > st.ll, nil
+	if TD.offerLock then
+		locked, lockWhy = TD.offerLock(o, st.ll, d.quests)
+	end
+	local lockText = string.upper(lockWhy or ("Requires loyalty level " .. o.ll))
 	local used = (econ.bought and econ.bought[(e.kind == "barter" and "b:" or "") .. tid .. ":" .. e.i]) or 0
 	local left = math.max(0, o.limit - used)
 	if e.kind == "offer" then
@@ -633,7 +641,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 		ui.qty = math.clamp(ui.qty, 1, math.max(1, math.min(10, left)))
 		local total = unit * ui.qty
 		local afford = (d.money or 0) >= total
-		K.label(deal, locked and ("REQUIRES LOYALTY LEVEL " .. o.ll) or string.format("%s %s EACH  ·  %d LEFT UNTIL RESTOCK", Util.commas(unit), Config.CURRENCY, left), 12, {
+		K.label(deal, locked and lockText or string.format("%s %s EACH  ·  %d LEFT UNTIL RESTOCK", Util.commas(unit), Config.CURRENCY, left), 12, {
 			Position = UDim2.fromOffset(tx, 26), Size = UDim2.fromOffset(math.max(80, w - 380 - tx), 16), TextColor3 = locked and K.C.orange or K.C.dim,
 		})
 		K.label(deal, string.format("TOTAL  %s %s", Util.commas(total), Config.CURRENCY), 13, {
@@ -664,7 +672,7 @@ local function tradeTab(f, x, y, w, h, d, tid)
 			ok = ok and n >= need[2]
 			table.insert(parts, Items.defs[need[1]].short .. " " .. have(n, need[2]))
 		end
-		K.label(deal, locked and ("REQUIRES LOYALTY LEVEL " .. o.ll) or ("BARTER FOR  " .. table.concat(parts, "   ")), 12, {
+		K.label(deal, locked and lockText or ("BARTER FOR  " .. table.concat(parts, "   ")), 12, {
 			Position = UDim2.fromOffset(tx, 26), Size = UDim2.new(1, -tx - 280, 0, 34), TextColor3 = locked and K.C.orange or K.C.text, RichText = true, TextWrapped = true,
 		})
 		local b = dealButton("DEAL!", ok and not locked and left > 0, function()

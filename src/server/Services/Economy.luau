@@ -184,6 +184,13 @@ local function buy(player, prof, p)
 	if offer.ll > ll then
 		return fail("LOCKED", "Requires loyalty level " .. offer.ll .. ".")
 	end
+	if TD.offerLock then
+		-- a task-locked offer (economy-6a; EFT: on sale once its task is done)
+		local locked, why = TD.offerLock(offer, ll, prof.quests)
+		if locked then
+			return fail("LOCKED", why)
+		end
+	end
 	local w = window(os.time())
 	local key = tid .. ":" .. p.i
 	if boughtCount(prof, key, w) + qty > offer.limit then
@@ -254,6 +261,12 @@ local function barter(player, prof, p)
 	end
 	if offer.ll > Economy.loyalty(prof, tid) then
 		return fail("LOCKED", "Requires loyalty level " .. offer.ll .. ".")
+	end
+	if TD.offerLock then
+		local locked, why = TD.offerLock(offer, Economy.loyalty(prof, tid), prof.quests)
+		if locked then
+			return fail("LOCKED", why)
+		end
 	end
 	local w = window(os.time())
 	local key = "b:" .. tid .. ":" .. p.i
@@ -477,8 +490,9 @@ function Economy.onKill(player, victimPlayer, victimModel, headshot)
 		s.karmaDelta = (s.karmaDelta or 0) + P.KARMA.killPlayerScav
 	end
 	if ctx.Quests then
-		-- the victim's Label names a boss for tasks that want one boss (audit economy.9)
-		ctx.Quests.onKill(player, kind, victimModel and victimModel:GetAttribute("Label") or nil)
+		-- the victim's Label names a boss for tasks that want one boss (audit economy.9); its model lets the kill
+		-- conditions read the killing hit (body part, weapon) and the distance (economy-6a)
+		ctx.Quests.onKill(player, kind, victimModel and victimModel:GetAttribute("Label") or nil, victimModel or (victimPlayer and victimPlayer.Character))
 	end
 end
 
@@ -505,7 +519,11 @@ function Economy.afterRaid(player, prof, s, outcome, runThrough)
 		prof.karma = math.clamp((prof.karma or P.KARMA.start) + k, P.KARMA.min, P.KARMA.max)
 	end
 	local up = Economy.addXp(prof, gained)
-	if outcome == "SUCCESS" and ctx.Quests then
+	if ctx.Quests and ctx.Quests.onRaidEnd then
+		-- every settled outcome (economy-6a): run-throughs do not count for extraction tasks, quest items are kept only
+		-- on a survived raid, a death resets the in-one-raid objectives
+		ctx.Quests.onRaidEnd(player, prof, s, outcome, runThrough)
+	elseif outcome == "SUCCESS" and ctx.Quests then
 		ctx.Quests.onExtract(player, prof, s)
 	end
 	return gained, up

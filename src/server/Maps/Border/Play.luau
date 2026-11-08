@@ -129,6 +129,9 @@ return function(B)
 		local rope = kit.boxCF(m, 0.12, 0.12, (bow - top).Magnitude, CFrame.lookAt((bow + top) / 2, bow), kit.hex("9A8F78"), Enum.Material.Fabric)
 		rope.CanCollide = false
 		rope.CastShadow = false
+		-- a task's quest item: on the deck, aft of the bench on the starboard side
+		B.points = B.points or {}
+		B.points.SMUGGLERS_BOAT_DECK = (base * CFrame.new(1.2, 0.12, 3.8)).Position
 	end)
 
 	-- ── geometry (Dress uses it too, as B.geo) ────────────────────────────────────────────────────────────
@@ -885,9 +888,9 @@ return function(B)
 	-- ── quest places ─────────────────────────────────────────────────────────────────────────────────────
 	try("visit", function()
 		local vz = {}
-		local function zone(name, p, r)
+		local function zone(name, p, r, h)
 			if p then
-				vz[name] = { pos = p, r = r }
+				vz[name] = { pos = p, r = r, h = h }
 			end
 		end
 		zone("DORM314", named("BLOCK_A_ROOM314", 26, 17), 7)
@@ -897,6 +900,34 @@ return function(B)
 		local frame = byId[34]
 		zone("FRAME", points.FRAME_TOP or (frame and V(frame.cx, ground(frame.cx, frame.cz) + 3.3 + (frame.floors - 1) * 12.4, frame.cz)), 10)
 		zone("SMUGGLERS", points.SMUGGLERS_HOLE or underCentre("SH", 3.3), 10)
+		-- the map-first tasks (economy-6a): marks at two fuel tanks, kill areas (cylinders: h is the half height), quest
+		-- items where they rest (Works' points stand 3 studs over their floor), plants, a visit to the depot roof
+		local function rest(p, up)
+			if typeof(p) == "CFrame" then
+				p = p.Position
+			end
+			return typeof(p) == "Vector3" and (p - Vector3.new(0, up or 0, 0)) or nil
+		end
+		local function kz(name, x, z, r, h, up)
+			vz[name] = { pos = V(x, ground(x, z) + (up or h * 0.6), z), r = r, h = h }
+		end
+		zone("BY_TANK1", rest(points.BW_TK1_STAIR, 2.95), 5)
+		zone("BY_TANK3", rest(points.BW_TK3_STAIR, 2.95), 5)
+		kz("BY_DORMS", -137.5, 604, 110, 30, 18)
+		kz("BY_BASTION", -125, -295, 70, 25)
+		local mb = L.bridges and L.bridges.main
+		if mb then
+			local bx, bz = (mb.x0 + mb.x1) / 2, (mb.z0 + mb.z1) / 2
+			local hit = workspace:Raycast(V(bx, 400, bz), Vector3.new(0, -800, 0))
+			vz.BY_BRIDGE = { pos = V(bx, (hit and hit.Position.Y or ground(bx, bz)) + 4, bz), r = 60, h = 20 }
+		end
+		zone("BY_WATCHROOM", rest(points.BY_WATCHROOM), 4)
+		zone("BY_SQUAT", rest(points.BY_SQUAT), 4)
+		zone("BY_STORE17", rest(points.BY_STORE17, 2.95), 4)
+		zone("BY_BOAT", rest(points.SMUGGLERS_BOAT_DECK), 5)
+		zone("BY_RED_CAGE", rest(points.BY_RED_CAGE, 2.95), 4)
+		zone("BY_ARMYHUT", rest(points.BY_ARMYHUT), 4)
+		zone("BY_DEPOT_ROOF", rest(points.DEPOT_ROOF, 2.95), 10)
 		W.visitZones = vz
 	end)
 
