@@ -157,6 +157,34 @@ if RunService:IsStudio() then
 		elseif cmd == "traders" then
 			ctx.Trade.traders(a, b)
 			return "ok"
+		elseif cmd == "touchDrag" then
+			-- ui-4c: a scripted finger lifts the stash item a (an item id) and carries it to cell b = { grid, x, y } (a grid
+			-- frame's name, e.g. "Grid_stash"); b.menu = true holds it and lets go in place (the action menu)
+			local d = ctx.State.data
+			local g
+			for sg in (d and d.grids and d.grids.stash) or {} do
+				if d.items[sg] and d.items[sg].id == a then
+					g = sg
+					break
+				end
+			end
+			local pg = game:GetService("Players").LocalPlayer.PlayerGui
+			local tile = g and pg:FindFirstChild("Tile_" .. g, true)
+			if not tile then
+				return "no tile"
+			end
+			local from = tile.AbsolutePosition + tile.AbsoluteSize / 2
+			local to = from
+			if type(b) == "table" and b.grid then
+				local gf = pg:FindFirstChild(b.grid, true)
+				local cell = gf and gf:FindFirstChild(string.format("Cell_%d_%d", b.x or 1, b.y or 1))
+				if not cell then
+					return "no cell"
+				end
+				to = cell.AbsolutePosition + cell.AbsoluteSize / 2
+			end
+			local lifted, rotateShown = ctx.Inventory.touchTest(tile, from, to, type(b) == "table" and b.menu == true)
+			return { lifted = lifted, rotate = rotateShown, g = g, from = { from.X, from.Y }, to = { to.X, to.Y } }
 		elseif cmd == "inspect" then
 			-- a = an equipment slot ("primary") or an item id in the stash: Tarkov's INSPECT window for it
 			local d = ctx.State.data

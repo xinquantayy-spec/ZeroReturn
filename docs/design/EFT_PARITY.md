@@ -68,7 +68,7 @@ Updated 2026-11-08 from the code (`Inventory.luau`, `Inspect.luau`); the screens
 | Searching reveals container contents one by one; unknown items until examined | Have | |
 | Counters on tiles: stack size, med resource, key uses | Done: stack, med HP, key uses, armour durability, rounds in a magazine; FIR, INS, wish (W) and quick-slot marks | |
 | Weight against the overweight thresholds on the character screen | The total in kg, orange past 40 kg | The thresholds, as Tarkov shows them |
-| Drag and drop with the mouse (Tarkov is PC only) | Mouse drag; on touch and gamepad, pick up then tap to place, kept across the phone panels (M2) | Touch drag and drop (ui-4c, approved) |
+| Drag and drop with the mouse (Tarkov is PC only) | Mouse drag; since 2026-11-08 (ui-4c) touch drag too: a finger resting 0.25 s lifts the item (moving sooner scrolls), it follows the finger with the green / red cue, a ROTATE button turns it, letting go drops it; held and let go in place opens the action menu; a double tap quick-moves. On touch and gamepad, pick up then tap to place still works, kept across the phone panels (M2) | On a phone a drag stays inside the open panel (moving to another panel is tap-and-place); no auto-scroll at a list's edge while dragging; a real finger not yet tried (Studio's test bridge drives the same steps with a scripted finger) |
 
 ## 3. Out-of-raid screens
 

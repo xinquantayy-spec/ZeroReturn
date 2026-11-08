@@ -1,7 +1,9 @@
 --!nonstrict
 -- Tarkov-style inventory: equipment slots, pockets, nested rig/backpack/secure grids, stash, containers, bodies.
 -- Mouse: drag & drop (R rotates while dragging), right-click menu, Ctrl+click quick move, Alt+click equip.
--- Touch / gamepad: select an item, then a cell or slot, or use the action buttons. The server is authoritative;
+-- Touch (ui-4c): a long press (0.25 s) lifts an item, drag and let go to place it, ROTATE while carrying it; a long press
+-- let go without moving opens the action menu; a double tap quick-moves. Tap an item, then a cell or slot, still works.
+-- Gamepad: select an item, then a cell or slot, or use the action buttons. The server is authoritative;
 -- the UI re-renders from snapshots ("me" = my holder, "c:<cid>" = the open container or body).
 local UIS = game:GetService("UserInputService")
 local DEBUG = game:GetService("RunService"):IsStudio()
@@ -209,7 +211,16 @@ end
 
 -- the pointer in GUI space: GetMouseLocation counts from the top of the screen, a frame's AbsolutePosition from under
 -- Roblox's top bar (the GUI inset), so without this the context menu and the drag picture sat 58 px under the cursor
+local touchPos = nil -- the finger (GUI space) while a touch drag runs (ui-4c)
+local TOUCH_HOLD = 0.25 -- seconds a finger rests on an item to lift it (ui-4c)
+local TOUCH_SLOP = 12 -- pixels a finger may wander and still count as resting
+local liftTouch -- set below, once the drag picture and the fit cue exist
+local suppressTap = nil -- { g, t }: the tap that ends a touch drag is not also a tap on the tile
+local touchStart = setmetatable({}, { __mode = "k" }) -- tile -> its touch-press handler (also the test bridge's way in)
 local function mouse()
+	if drag and drag.touch and touchPos then
+		return touchPos
+	end
 	return UIS:GetMouseLocation() - GuiService:GetGuiInset()
 end
 
@@ -693,6 +704,14 @@ local function onTileClick(ref, g)
 			return
 		end
 	end
+	-- touch (ui-4c): a double tap quick-moves the item (the mouse's Ctrl+click)
+	if lastClick and lastClick.g == g and now - lastClick.t < 0.35 and ctx.Input.device() == "Touch" then
+		lastClick = nil
+		selected = nil
+		quick(ref, g)
+		Inventory.render()
+		return
+	end
 	lastClick = { g = g, t = now }
 	local cur = selected
 	if cur and cur.g ~= g and cur.ref then
@@ -809,8 +828,32 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 			openMenu(ref, g, mouse())
 		elseif input.UserInputType == Enum.UserInputType.MouseButton3 and not (drag and drag.started) then
 			middleClick(ref, g)
+		elseif input.UserInputType == Enum.UserInputType.Touch then
+			touchStart[t](input)
 		end
 	end)
+	-- touch (ui-4c, EFT's drag on a finger): resting 0.25 s lifts the item; moving sooner is a scroll and lets it go
+	touchStart[t] = function(input)
+		if drag then
+			return
+		end
+		closeMenu()
+		local m = Vector2.new(input.Position.X, input.Position.Y)
+		touchPos = m
+		local rel = m - t.AbsolutePosition
+		local gc = (cellAbs or Inventory.cell or 40) * K.menuScale
+		drag = { g = g, ref = ref, id = it.id, unknown = not isKnown, start = m, started = false, touch = input, grabX = cellAbs and math.floor(rel.X / gc) or 0, grabY = cellAbs and math.floor(rel.Y / gc) or 0, cell = Inventory.cell or gc, w = (sizeOf(it)), h = select(2, sizeOf(it)), r = 0, label = isKnown and d.short or "?", items = view.items }
+		local _, _, p = locate(viewOf(ref), g)
+		if p and p.r == 1 then
+			drag.w, drag.h, drag.r = drag.h, drag.w, 1
+		end
+		local dd = drag
+		task.delay(TOUCH_HOLD, function()
+			if drag == dd and not dd.started and liftTouch then
+				liftTouch()
+			end
+		end)
+	end
 	t.MouseEnter:Connect(function()
 		hoverG = { g = g, ref = ref }
 	end)
@@ -825,6 +868,10 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 	t.Activated:Connect(function(input)
 		if input and input.UserInputType == Enum.UserInputType.MouseButton1 then
 			return -- mouse handled by the drag logic
+		end
+		if suppressTap and suppressTap.g == g and os.clock() - suppressTap.t < 0.6 then
+			suppressTap = nil -- the finger that lifted and dropped (or opened the menu) let go here
+			return
 		end
 		onTileClick(ref, g)
 	end)
@@ -1071,7 +1118,8 @@ function detail(parent, w, h, selOverride)
 	if not it then
 		local dev = ctx.Input.device()
 		local hint = dev == "Gamepad" and "Select an item (A), then a free cell or slot. LB / RB switch tabs, B closes."
-			or (dev == "Touch" or compact) and "Tap an item, then a free cell or slot (switch panels on the left), or use its buttons here."
+			or dev == "Touch" and "Hold an item to lift it and drag it; or tap it, then a free cell or slot (switch panels on the left). Double tap: quick move."
+			or compact and "Tap an item, then a free cell or slot (switch panels on the left), or use its buttons here."
 			or "Drag items between grids. Right-click for actions, Ctrl+click quick move, Alt+click equip, R rotates while dragging."
 		K.label(det, hint, compact and 13 or 12, { Size = UDim2.fromScale(1, 1), TextWrapped = true, TextColor3 = K.C.dim, TextYAlignment = Enum.TextYAlignment.Center })
 		return
@@ -1632,6 +1680,7 @@ updateCue = function()
 end
 
 local function endDrag()
+	local pos = mouse() -- before the drag clears: a finger's place is kept with the drag (ui-4c)
 	if ghost then
 		ghost:Destroy()
 		ghost = nil
@@ -1646,9 +1695,9 @@ local function endDrag()
 		onTileClick(dd.ref, dd.g)
 		return
 	end
-	local tgt = dropTarget(mouse())
+	local tgt = dropTarget(pos)
 	if DEBUG then
-		print("[ZR] drop", dd.g:sub(1, 6), "at", mouse(), tgt and (tgt.kind .. " " .. tostring(tgt.slot or tgt.cid) .. " " .. tostring(tgt.x) .. "," .. tostring(tgt.y)) or "nothing")
+		print("[ZR] drop", dd.g:sub(1, 6), "at", pos, tgt and (tgt.kind .. " " .. tostring(tgt.slot or tgt.cid) .. " " .. tostring(tgt.x) .. "," .. tostring(tgt.y)) or "nothing")
 	end
 	-- the same plan the cue showed: a slot, an item to combine with (its corner cell), or free cells with the grabbed
 	-- cell under the cursor; back over its own tile nothing moves. A red drop is still sent: the server is the judge
@@ -1704,6 +1753,130 @@ local function updateGhost()
 	end
 end
 
+-- ── touch drag (ui-4c) ─────────────────────────────────────────────────────────────
+-- While a finger carries an item: the lists do not scroll under it, and a ROTATE button (a second finger) turns it
+local scrollOff = {}
+local function setScrolling(on)
+	if not on then
+		for _, sf in (panel and panel:GetDescendants()) or {} do
+			if sf:IsA("ScrollingFrame") and sf.ScrollingEnabled then
+				sf.ScrollingEnabled = false
+				table.insert(scrollOff, sf)
+			end
+		end
+		return
+	end
+	for _, sf in scrollOff do
+		if sf.Parent then
+			sf.ScrollingEnabled = true
+		end
+	end
+	table.clear(scrollOff)
+end
+
+local rotateBtn = nil
+local function showRotate(on)
+	if on and not rotateBtn and gui then
+		rotateBtn = K.button(K.root(gui), "ROTATE", { Name = "TouchRotate", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -24), Size = UDim2.fromOffset(150, 46), ZIndex = 70 }, function()
+			if drag and drag.started then
+				drag.w, drag.h = drag.h, drag.w
+				drag.r = 1 - drag.r
+				updateGhost()
+				updateCue()
+			end
+		end)
+	elseif not on and rotateBtn then
+		rotateBtn:Destroy()
+		rotateBtn = nil
+	end
+end
+
+liftTouch = function()
+	local dd = drag
+	if not dd or dd.started or not dd.touch then
+		return
+	end
+	dd.started = true
+	dd.r0 = dd.r
+	dd.lifted = touchPos
+	selected = nil
+	hover = nil -- a finger has no hover: the drop target comes from where it is (dropTarget)
+	setScrolling(false)
+	showRotate(true)
+	updateGhost()
+	updateCue()
+end
+
+-- the finger lets go: a carried item drops where it is; lifted and let go in place opens the action menu (ui-4c)
+local function endTouch()
+	local dd = drag
+	if not dd then
+		return
+	end
+	setScrolling(true)
+	showRotate(false)
+	if not dd.started then
+		drag = nil -- a tap or a scroll: the tile's own tap handling stays
+		touchPos = nil
+		return
+	end
+	suppressTap = { g = dd.g, t = os.clock() }
+	if dd.lifted and touchPos and (touchPos - dd.lifted).Magnitude < TOUCH_SLOP then
+		if ghost then
+			ghost:Destroy()
+			ghost = nil
+		end
+		clearCue()
+		drag = nil
+		openMenu(dd.ref, dd.g, touchPos)
+		touchPos = nil
+		return
+	end
+	endDrag()
+	touchPos = nil
+end
+
+-- the carrying finger moves (ui-4c): before the lift, moving away is a scroll and lets the item go
+function Inventory.touchMove(input)
+	if not (drag and drag.touch and input == drag.touch) then
+		return
+	end
+	touchPos = Vector2.new(input.Position.X, input.Position.Y)
+	if not drag.started then
+		if (touchPos - drag.start).Magnitude > TOUCH_SLOP then
+			drag = nil
+			touchPos = nil
+		end
+		return
+	end
+	updateGhost()
+	updateCue()
+end
+
+-- Studio's test bridge (ZR_ClientDev "touchDrag"): a finger made of a table goes through the same three steps; the
+-- engine's own touch events cannot be made from a script
+function Inventory.touchTest(tile, from, to, holdOnly)
+	local f = touchStart[tile]
+	if not f then
+		return "no tile handler"
+	end
+	local finger = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(from.X, from.Y, 0) }
+	f(finger)
+	task.wait(TOUCH_HOLD + 0.1)
+	local lifted = drag ~= nil and drag.started == true
+	if not holdOnly then
+		for k = 1, 4 do
+			local p = from:Lerp(to, k / 4)
+			finger.Position = Vector3.new(p.X, p.Y, 0)
+			Inventory.touchMove(finger)
+			task.wait(0.03)
+		end
+	end
+	local rotateShown = rotateBtn ~= nil
+	endTouch()
+	return lifted, rotateShown
+end
+
 function Inventory.show()
 	Inventory.open = true
 	gui.Enabled = true
@@ -1724,6 +1897,9 @@ function Inventory.close()
 	selected = nil
 	rot = 0
 	drag = nil
+	touchPos = nil
+	setScrolling(true)
+	showRotate(false)
 	closeMenu()
 	clearCue()
 	if ghost then
@@ -1847,6 +2023,10 @@ function Inventory.init(c)
 		Inventory.close()
 	end)
 	UIS.InputChanged:Connect(function(input)
+		if drag and drag.touch and input == drag.touch then
+			Inventory.touchMove(input)
+			return
+		end
 		if drag and input.UserInputType == Enum.UserInputType.MouseMovement then
 			if DEBUG and not drag.started then
 				print("[ZR] drag move", mouse())
@@ -1861,7 +2041,9 @@ function Inventory.init(c)
 		end
 	end)
 	UIS.InputEnded:Connect(function(input)
-		if drag and input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if drag and drag.touch and input == drag.touch then
+			endTouch()
+		elseif drag and input.UserInputType == Enum.UserInputType.MouseButton1 then
 			endDrag()
 		end
 	end)

@@ -8,6 +8,13 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Touch drag in the inventory (decision ui-4c; 2026-11-08, about 16:40 SGT)
+
+| Test | Result |
+|---|---|
+| Scripted finger | Studio cannot make touch events from a script, so the test bridge (ZR_ClientDev "touchDrag") sends a finger made of a table through the same three steps the engine's touch events call (press on a tile, moves, let go). On the STASH panel of the phone layout (the 1445x581 Studio window): the finger rested on a 6.2x40 HP stack, the item lifted after 0.25 s, the ROTATE button showed, and letting go one cell to the left moved the stack there (the server's move; its tile sits on the target cell after the redraw). Held and let go in place, the action menu opened at the finger with INSPECT, QUICK MOVE, SPLIT IN HALF, SELL TO VOS and DISCARD (screenshot). |
+| Not checked | A real finger on a phone or with Studio's touch emulation (the scripted finger assumes touch positions in GUI space, as the mouse's input positions are), a drag that scrolls before 0.25 s, ROTATE with a second finger, a double tap, the gamepad and mouse paths after the change. |
+
 ## Rounds: six of EFT's loads a calibre (decision economy-1a, first slice; 2026-11-08, about 16:20 SGT)
 
 | Test | Result |
