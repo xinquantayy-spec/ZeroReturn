@@ -596,7 +596,8 @@ function Match.collectInsured(h, returns)
 	return n
 end
 
--- Insured gear comes back to its owner after INSURANCE_DELAY (online: profile claims; offline: mailbox).
+-- Insured gear goes back to its owner's claims (online) or mailbox (offline); Settle.fileClaims gives each insurer's
+-- items their own return window (TraderData.INSURERS). EFT says nothing until the insurer's message (gameplay-6b).
 function Match.deliverInsured(returns)
 	for owner, bundles in returns do
 		local entry = { readyAt = os.time() + Config.INSURANCE_DELAY, bundles = bundles, raid = Match.id }
@@ -605,7 +606,6 @@ function Match.deliverInsured(returns)
 		if prof then
 			table.insert(prof.claims, entry)
 			ctx.Profiles.markDirty(p)
-			ctx.Remotes.note(p, "toast", { text = string.format("INSURANCE: %d ITEM(S) WILL BE RETURNED", #bundles), tone = "good" })
 			ctx.Raid.push(p)
 		else
 			task.spawn(ctx.Store.mail, owner, entry)

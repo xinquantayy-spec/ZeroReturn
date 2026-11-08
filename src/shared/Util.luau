@@ -63,6 +63,10 @@ end
 
 function Util.clock(sec: number): string
 	sec = math.max(0, math.floor(sec))
+	if sec >= 3600 then
+		-- an hour or more (insurance returns, gameplay-6b): H:MM:SS
+		return string.format("%d:%02d:%02d", sec // 3600, (sec // 60) % 60, sec % 60)
+	end
 	return string.format("%02d:%02d", sec // 60, sec % 60)
 end
 

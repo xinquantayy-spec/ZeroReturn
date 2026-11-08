@@ -1243,7 +1243,7 @@ function Inv.expandArmour(h: any, g: string)
 		if pd and not (it.mods and it.mods[s]) then
 			local pg, p = Inv.newItem(e.def, 1)
 			p.dur = Plates.tenth(pd.armor.dur * frac)
-			p.fir, p.fip, p.ins = it.fir, it.fip, it.ins
+			p.fir, p.fip, p.ins, p.isr = it.fir, it.fip, it.ins, it.isr
 			h.items[pg] = p
 			it.mods = it.mods or {}
 			it.mods[s] = pg

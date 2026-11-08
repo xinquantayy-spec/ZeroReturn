@@ -8,6 +8,19 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Recovery and insurance (decision gameplay-6b, merged from the recovery thread; 2026-11-08, about 13:50 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 13 pass, 985 checks, with the new RecoveryTests at 72. |
+| Insure | INSURE ALL with HALE took 10,495 MK for 21 items. A gun insured with BRAM and a vest with VOS each went through. The deploy screen shows "21 item(s) insured" with the MIA rule (screenshot). |
+| A death with insured gear, Border Yard | One head shot killed the raider, and the raid was ended. Within 12 s the messenger's INSURANCE held two returns: VOS (the vest) "ARRIVES IN 2:22:15" and BRAM (the carbine) "ARRIVES IN 10:59", both inside their windows (screenshot). With the dev tool making them ready, both showed READY with their storage time (VOS 26:21:31: its 24 h counts from the time first rolled). RECEIVE ALL put the carbine and the vest in the stash, and no return was left. |
+| Health after death | 141/440 just after (head 12/35, thorax 27/85: 30 % plus a few seconds of recovery), and 182/440 when the treatment began a minute or two later. Recovery runs; its rate was not timed. |
+| HALE's TREATMENT | HALE's SERVICES tab lists each part with its missing health and price (head 17/35, 18 HP, 540 MK: 30 MK a point at LL1), TOTAL "FREE (LEVEL 5 OR BELOW)" and HEAL ALL (screenshot). HEAL ALL brought every part to full and took no money at level 1. |
+| Scav cooldown | 854 s left about 46 s after a scav deploy (15 min). |
+| Fixed | A return still on its way read "came back"; it now reads "the insurer is bringing them back" until it is ready. |
+| Not checked | Picking the insurer on the deploy screen by mouse, touch and gamepad (everything was insured already), the item menu's three INSURE entries, a magazine coming back empty, a return lost after its storage time, MIA, recovery while offline, a destroyed limb kept out of raid and its price, an old save's pending return. RecoveryTests cover these rules; the screens were not looked at. |
+
 ## Weapon mounting and slow lean (decision gameplay-5b, part 2; 2026-11-08, about 13:35 SGT)
 
 | Test | Result |

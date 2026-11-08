@@ -187,7 +187,7 @@ local function voidInsurance(h, g)
 	for _, x in all do
 		local it = h.items[x]
 		if it then
-			it.ins = nil
+			it.ins, it.isr = nil, nil
 		end
 	end
 end

@@ -75,7 +75,7 @@ Updated 2026-11-08 from the code (`Inventory.luau`, `Inspect.luau`); the screens
 | Tarkov | Zero Return | To do |
 |---|---|---|
 | Character: gear, health, skills, mastering, overall statistics, achievements, prestige, dog tag style | Tabs in the inventory: GEAR, HEALTH, SKILLS, MASTERING, OVERALL; TASKS in and out of raid, active tasks pinnable to the top (ui.14, 2026-11-08, Studio check pending) | Achievements, prestige, dog tag style, a MAP tab |
-| Traders: TRADE (assortment grid with prices; sell from stash), TASKS (pinnable since 0.16.7), SERVICES (insurance, repair, healing) | Done 2026-10-31: TRADE, TASKS and SERVICES (repairs: weapons at VOS, armour at TILDA); insurance at the insurance window and from the context menu; one panel at a time on phones (M2) | Healing at HALE (gameplay-6b). Task pinning built (ui.14, 2026-11-08, Studio check pending) |
+| Traders: TRADE (assortment grid with prices; sell from stash), TASKS (pinnable since 0.16.7), SERVICES (insurance, repair, healing) | Done 2026-10-31: TRADE, TASKS and SERVICES (repairs: weapons at VOS, armour at TILDA); insurance at the insurance window and from the context menu; one panel at a time on phones (M2). HALE's SERVICES tab has TREATMENT since 2026-11-08 (gameplay-6b, checked in Studio) | Picking treatment lines (HEAL ALL only). Task pinning built (ui.14, 2026-11-08, Studio check pending) |
 | Flea market from level 15: offers, filters, filter by item, linked and required search, wish list | Done 2026-10-31: level 15, categories, search, WISH LIST, MY OFFERS, ADD OFFER with Tarkov's fee; simulated sellers and buyers (section 10) | Price, currency and condition filters; filter by item, linked and required search; the level gates by category are built (economy.3, 2026-11-08, Studio check pending) |
 | Messenger: one chat per trader, insurance returns, task rewards, receive all | Done 2026-10-31: trader dialogs, insurance returns with RECEIVE ALL, task, loyalty and flea messages; an unread count and a notice when mail comes (ui.6) | |
 | Handbook: every item by category with its description | Done 2026-10-31 (relay radio, HANDBOOK); flares under SPECIAL EQUIPMENT (economy.11, 2026-11-08) | |
@@ -344,7 +344,7 @@ Still a gap:
 | A round in the chamber (30 + 1) | No chamber round | The chamber round |
 | Mounting on cover and bipods; quick reload (double R drops the magazine); slow lean; stance changes cost leg stamina; overweight is louder | Since 2026-11-08 (gameplay-5b): R twice (pad X twice, touch RELOAD twice) drops the old magazine at your feet and reloads in 0.75 of the time; every stance change costs leg stamina (getting up more); an overweight raider's kit rattles more often, louder and further (the server's Overweight attribute). Part 2: V while aiming mounts the gun on a ledge under the handguard or a wall edge beside it (0.15's "suitable horizontal or vertical surface"), with 0.65 of the recoil, a quarter of the sway and a fifth of the arm stamina; moving, turning past 30 degrees, a stance change, lowering the sights or V again takes it off; not prone (EFT allows that only on a bipod); a word right of the stamina bars shows MOUNT and its key, or MOUNTED, for EFT's corner icon. A gamepad or touch player mounts by holding still for 0.4 s while aiming at a support. Slow lean: Alt+A/D lean a little at a time and the lean stays | Bipods (Ctrl+V; the wiki lists each bipod's "Recoil % when mounted", -65 to -80) with their parts; EFT's own icon and its figures for the mounted cuts (ours); the slow lean on a gamepad or touch (EFT has no pad); EFT's figures for the reload saving and the stance costs were not found (ours) |
 | Fractures (a leg -45 %; arms slow aiming, drawing and searching); stims with buffs and side effects; a destroyed stomach drains energy and water x5 | EFT's fracture penalties and the stomach rule; four stims with EFT's figures, after Propital, SJ6, Zagustin and the Adrenaline injector (gameplay-4b, 2026-11-08) | About 34 more stims, per-kit costs and two surgery kits (option a); the gaps under "Stimulants" near the end of this file |
-| After death or MIA: 30 % health regaining 7.61 HP a minute, paid healing at the Therapist; insurance 12 to 36 h, held 4 to 6 days; scav cooldown about 25 min | Full health after death, no paid healing; one insurer, 15 min, kept until collected; 10 min | gameplay-6b: Tarkov's rules, scaled times |
+| After death or MIA: 30 % health regaining 7.61 HP a minute, paid healing at the Therapist; insurance 12 to 36 h, held 4 to 6 days; scav cooldown about 25 min | Since 2026-11-08 (gameplay-6b, checked in Studio): 30 % health after death or MIA, regaining at four times EFT's rate out of raid (also while offline); HALE's TREATMENT at EFT's prices, free at level 5 or below; three insurers at EFT's times divided by 12, held for EFT's storage divided by 4; scav cooldown 15 min | EFT's message timing, faster 1.1.0 insurance figures, Jaeger's figures; the scav cooldown's base (EFT about 25 min, unofficial) (section below) |
 | PMCs only enter at the start of a raid | PMCs may join for 5 min (`Config.LATE_JOIN`) | gameplay-7a: a server per raid (needs the published place) |
 | Occlusion through walls, floors and stairways | On Border Yard, world sounds through Roblox's Acoustic Simulation (one wall about -17 dB, a floor about -14 dB); elsewhere a wall count muffles them (gameplay-3a, 2026-11-08) | The other maps after the pilot; the ambience loops; a phone check |
 | Each gun its own sound; footsteps on snow, water, tile and metal stairs; headsets with their own compression | One recording pitched for every gun; five surface families; one headset rule | Recorded or licensed sounds; gameplay.16 |
@@ -390,7 +390,7 @@ Still a gap:
 | Hideout: 26 modules, 67 levels, 214 crafts; generator fuel; scav case; bitcoin farm; the shooting range as a module | 5 modules, 8 levels, 10 crafts; no fuel; one build at a time; a free range in the lobby | economy-7b: an economy core of about 14 |
 | Builds and crafts take hours to days; level 15 at 161,139 XP (the top level about 82.6 million, unverified) | 5 to 45 minutes; level 15 at 52,383 XP, cap 40 | economy-4b: EFT's curves, faster clocks |
 | Skills such as Hideout Management, Mag Drills, Weapon Maintenance, Aim Drills, DMR, LMG, HMG, revolvers, launchers | 24 skills | With the content they need |
-| Insurance: Prapor 24 to 36 h, Therapist 12 to 24 h, Jaeger quick (1.1.0) | One insurer at 7 %, 15 min | economy-2a, gameplay-6b |
+| Insurance: Prapor 24 to 36 h, Therapist 12 to 24 h, Jaeger quick (1.1.0) | Since 2026-11-08 (gameplay-6b): VOS 2-3 h at 7 % of value, HALE 1-2 h at 1.33x, BRAM 10-20 min at 2.5x, each return held 24 h (HALE 36 h) and lost after | 1.1.0's own figures were not published; BRAM's are ours |
 | No forced wipes since 1.0; seasonal characters every 4 to 6 months (1.1.0); prestige (0.16); the PvE Zone | A wipe when the save format changes; no prestige or PvE | economy-5b: permanent plus an opt-in season |
 | Weapon builds that buy the missing parts | None (KNOWN_ISSUES 54) | - |
 | Money sinks: fuel, filters, the scav case, costly builds, flea fees, insurance, repairs | Flea fees, insurance, repairs, a one-time 785k hideout | Come with economy-7b and economy-4b |
@@ -1446,6 +1446,41 @@ Still a gap:
 - A stim's painkiller lasts longer with Stress Resistance, as our pills do (ours).
 - Tunnel vision is our dark vignette closing in.
 - Ours: HALE sells the adrenaline at LL2, and the prices are near EFT's trader prices. The AI do not use stims.
+
+### Recovery and insurance (decision gameplay-6b, 2026-11-08: Tarkov's rules, scaled times)
+
+Built by a helper thread and checked in Studio by the coordinator (TEST_RESULTS; RecoveryTests 72 checks). Figures from
+the EFT wiki (Insurance; Health system; Therapist).
+
+Matches Tarkov now:
+- **Three insurers, each with EFT's choice and price:** VOS (Prapor's role) returns in 2-3 h and holds for 24 h at 7 %
+  of the value; HALE (the Therapist's) 1-2 h, held 36 h, at 1.33 times VOS's price; BRAM (Jaeger's, 1.1.0) 10-20 min,
+  held 24 h, at 2.5 times. The times are EFT's divided by 12 and the storage by 4 (our scaling). The deploy screen and
+  the item menu offer all three with their prices.
+- **Returns:** each insurer's items come back at a random time inside its window, wait in the messenger for RECEIVE ALL
+  and are lost after the storage time, with a notice. Magazines come back empty. Insuring a pack insures what can be
+  insured inside it; food, medicine, ammunition, keys and melee weapons (but the cult's knife) cannot be insured. The
+  kit worn when you go missing in action does not come back; after a death, insured gear nobody took does.
+- **Health after a raid:** every part at 30 % after a death or MIA. Out of raid the body regains health at four times
+  EFT's rate (1,826 an hour over the damaged parts), more with the medstation, and energy and water 4 a minute; the
+  recovery carries on while the player is offline.
+- **HALE's TREATMENT:** 30, 33, 36 or 40.5 MK a point of health by loyalty level, 750 or 1,400 a bleed, 1,350 a
+  fracture; free while you are level 5 or below.
+- **Scav cooldown:** 15 minutes, with the karma curve kept.
+
+Still a gap:
+- EFT says nothing until the insurer's message at the return time, and also writes when nothing was found. We list a
+  return in the messenger as soon as the raid ends ("the insurer is bringing them back") and write nothing when
+  everything was looted.
+- EFT 1.1.0's faster returns and higher prices for Prapor and the Therapist were not published (the older hours are
+  used). BRAM's figures are ours, and HALE's price ratio is a flat 1.33 times (EFT's varies by loyalty level).
+- EFT may keep insurance on items you extract with (not confirmed); ours ends after a survived raid.
+- Not built: the Intelligence Center's shorter returns, the editions' storage times, a chat per insurer (returns share
+  one INSURANCE dialog), the 1 % health after a suicide, a team kill or a disconnect, energy and hydration treatment,
+  picking treatment lines (HEAL ALL only).
+- Ours: a destroyed part stays destroyed out of raid until HALE treats it (our reading; no source we could open says
+  so), and restoring one costs its health plus 2,500 MK (EFT's price is not published).
+- EFT's scav cooldown is about 25 minutes (unofficial); ours is 15.
 
 ### M4 batch 4, coordinator's part (2026-11-08)
 
