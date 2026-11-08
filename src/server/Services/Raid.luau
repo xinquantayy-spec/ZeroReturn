@@ -871,6 +871,8 @@ function Raid.inv(player, p)
 		end
 		if err == "NEED_MULTITOOL" then
 			return fail(err, "Vital parts need a multitool in a raid.")
+		elseif err == "TAKE_OFF_FIRST" then
+			return fail(err, "Take the vest off to change its plates.")
 		elseif err == "CONFLICT" then
 			return fail(err, "That part does not go with the rest of the build.")
 		elseif err == "UNLOAD_FIRST" then

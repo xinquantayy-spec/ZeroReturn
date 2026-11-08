@@ -1,12 +1,16 @@
 --!strict
 -- Item definitions (read-only, original names). Instances/ownership are server truth (server Services/Inv).
 -- kinds: weapon | pistol | melee | mag | ammo | helmet | armor | rig | backpack | secure | med | food | key | loot | quest
---        | grenade | repair | headwear | headset | facecover | eyewear | nvg
+--        | grenade | repair | headwear | headset | facecover | eyewear | nvg | plate
 -- Values are in MK (Tarkov-like magnitudes). Optional blocks by kind:
 --   caliber (weapon/pistol/mag/ammo), weapon (Weapons key), family (mag compatibility), capacity (mag / internal tube)
 --   ammo = { dmg, pen, armorDmg, pellets, bleedL, bleedH, frag, subsonic }
---   armor = { class, dur, zones, blunt, destr, coverage?, ricochet?, face? }   (helmets/armor/armored rigs/ballistic glasses;
---           zones: thorax | stomach | arms | legs | head | eyes)
+--   armor = Plates.armour{ class (shown), mat, destr, blunt, type?, ric?, face?, dur (all parts), zones (set of Plates.ZONES),
+--           parts = { { k, name, dur, class, zones, destr, blunt, ric, visor? } }, plates? = { [slot] = { fams, side?, def? } } }
+--           (helmets, body armour, armoured rigs, plates, ballistic glasses, the welding mask; decision gameplay-2a)
+--   plate = { pos = "any" | "front" | "back" | "side", fam = "west" | "east", shape }   (ballistic plates)
+--   item records of armour: dur (all parts), sd? ({ [part] = durability }, more than one part), dmax?, mods?
+--           ({ [plate slot] = plate guid }, carriers), pf? (true once the default plates went in)
 --   eye = { flash, tint, shade, lens }   (eyewear and gas masks: flash = the share of a stun charge's white-out the lenses stop
 --           (Tarkov's blindness protection), tint = lens colour, shade = 0..1 how strongly it tints the view, lens = its name)
 --   grid = { w, h }   (rigs / backpacks / secure containers)
@@ -74,21 +78,114 @@ ammo("A12_SLUG", "12/70 Slug", "12 SLUG", "12", 20, 380, { dmg = 168, pen = 22, 
 ammo("A76L_LPS", "7.6x54R LPS", "7.6L LPS", "7.6L", 40, 520, { dmg = 81, pen = 42, armorDmg = 0.78, bleedL = 0.2, bleedH = 0.15, frag = 0.18 }, "uncommon", "Full-power rifle cartridge.")
 ammo("A76L_SNB", "7.6x54R SNB", "7.6L SNB", "7.6L", 40, 1600, { dmg = 75, pen = 62, armorDmg = 0.87, bleedL = 0.15, bleedH = 0.12, frag = 0.08 }, "rare", "Sniper armor-piercing load.")
 
--- ── armor, helmets ────────────────────────────────────────────────────────────
-local TS = { thorax = true }
-local TSS = { thorax = true, stomach = true }
-local TSSA = { thorax = true, stomach = true, arms = true }
-add("ARMOR_C2", { name = "Quay Security Vest", short = "VEST II", kind = "armor", w = 3, h = 3, mass = 2.5, value = 18000, armor = { class = 2, dur = 40, zones = TS, blunt = 0.32, destr = 0.25 }, pen = { speed = -1, ergo = -1 }, desc = "Soft aramid vest, class 2. Thorax only.", color = c("#4C5545") })
-add("ARMOR_C3", { name = "Patrol Soft Armor", short = "VEST III", kind = "armor", w = 3, h = 3, mass = 3.6, value = 38000, armor = { class = 3, dur = 50, zones = TSS, blunt = 0.28, destr = 0.45 }, pen = { speed = -2, turn = -1, ergo = -3 }, desc = "Class 3 soft armor. Covers thorax and stomach.", color = c("#4A5242") })
-add("ARMOR_C4", { name = "PC-4 Plate Carrier", short = "PC-4", kind = "armor", w = 3, h = 3, mass = 6.8, value = 82000, rarity = "uncommon", armor = { class = 4, dur = 55, zones = TSS, blunt = 0.24, destr = 0.5 }, pen = { speed = -4, turn = -3, ergo = -6 }, desc = "Class 4 plate carrier with soft backer.", color = c("#575A47") })
-add("ARMOR_C5", { name = "HP-5 Heavy Vest", short = "HP-5", kind = "armor", w = 3, h = 3, mass = 9.8, value = 165000, rarity = "rare", armor = { class = 5, dur = 70, zones = TSS, blunt = 0.2, destr = 0.55 }, pen = { speed = -6, turn = -5, ergo = -10 }, desc = "Class 5 composite. Heavy, slows you down.", color = c("#4D4F45") })
-add("ARMOR_C6", { name = "Bulwark Assault Armor", short = "BULWARK", kind = "armor", w = 4, h = 4, mass = 13.5, value = 330000, rarity = "epic", armor = { class = 6, dur = 85, zones = TSSA, blunt = 0.18, destr = 0.6 }, pen = { speed = -9, turn = -8, ergo = -15 }, desc = "Class 6 steel assault armor with arm protection.", color = c("#3E423D") })
-add("HELMET_C2", { name = "Shell Helmet", short = "SHELL", kind = "helmet", w = 2, h = 2, mass = 1.2, value = 14000, armor = { class = 2, dur = 30, coverage = 0.55, ricochet = 0.2, blunt = 0.3, destr = 0.45 }, pen = { turn = -1, ergo = -1 }, desc = "Class 2 pressed helmet. Top and nape.", color = c("#55593F") })
-add("HELMET_C3", { name = "Tac Helmet", short = "TAC III", kind = "helmet", w = 2, h = 2, mass = 1.4, value = 34000, armor = { class = 3, dur = 36, coverage = 0.62, ricochet = 0.35, blunt = 0.27, destr = 0.45 }, pen = { turn = -2, ergo = -2 }, desc = "Class 3 cut helmet with rails.", color = c("#4F5340") })
-add("HELMET_C4", { name = "Ballistic Helmet B4", short = "B4", kind = "helmet", w = 2, h = 2, mass = 1.6, value = 78000, rarity = "uncommon", armor = { class = 4, dur = 45, coverage = 0.7, ricochet = 0.4, blunt = 0.24, destr = 0.5 }, pen = { turn = -3, ergo = -4 }, desc = "Class 4 high-cut helmet.", color = c("#45493C") })
-add("HELMET_C5", { name = "Bulwark Faceplate Helmet", short = "FACEPLATE", kind = "helmet", w = 2, h = 2, mass = 3.5, value = 260000, rarity = "epic", armor = { class = 5, dur = 60, coverage = 1, ricochet = 0.3, blunt = 0.2, destr = 0.55, face = true }, pen = { speed = -1, turn = -6, ergo = -8 }, desc = "Class 5 helmet with steel face plate.", color = c("#34372F") })
+-- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
+-- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and
+-- covering only its zones, plus plate slots (front, back, sides) for separate plates. A helmet is parts too (top, nape,
+-- ears, a face shield). Each entry copies a Tarkov 1.0 counterpart (named in its comment) for class, material, weight,
+-- penalties, blunt throughput and zones (tarkovforge.com armour, helmet and plate charts and item pages, 2026-11-08; the
+-- EFT wiki's Armor plates page for plate penalties). Durability: tarkovforge's figure for the whole item less its default
+-- plates, split evenly over the parts (EFT gives every helmet part the same share: Altyn 81 = 3 x 27, FAST MT 48 = 2 x 24;
+-- the even split of vests is ours). Values in MK keep each kit (carrier + default plates) at its old price.
+local PL = require(script.Parent.Plates)
+local WEST, EAST, BOTH = { west = true }, { east = true }, { west = true, east = true }
 
-add("HARDHAT_FOREMAN", { name = "Foreman's Hard Hat", short = "HARD HAT", kind = "helmet", w = 2, h = 2, mass = 0.6, value = 98000, rarity = "rare", armor = { class = 2, dur = 22, coverage = 0.5, ricochet = 0.45, blunt = 0.35, destr = 0.4 }, desc = "The Quay foreman's battered hard hat with a lamp bracket. Stops little; worth a lot to the right people.", color = c("#C9A23C") })
+-- Plates (EFT 1.0: 37 plates; these 16 copy one each). pos: "any" (front or back), "front", "back" or "side"; fam: the
+-- carriers that take it (west = SAPI-type universal plates, east = the Russian vests' own); shape: the area it covers
+-- (Plates.SHAPES). Grid size 2 x 3 (sides 1 x 2) is ours.
+local function plate(id: string, name: string, short: string, cls: number, dur: number, mat: string, kg: number, pos: string, fam: string, shape: string, pen: any, value: number, rarity: string, desc: string)
+	local side = pos == "side"
+	add(id, {
+		name = name, short = short, kind = "plate", w = side and 1 or 2, h = side and 2 or 3, mass = kg, value = value, rarity = rarity,
+		-- blunt 20 % for every plate is ours (the plate pages give none)
+		armor = PL.armour({ class = cls, mat = mat, blunt = 0.2, parts = { { "plate", dur } } }),
+		plate = { pos = pos, fam = fam, shape = side and "side" or shape }, pen = pen, desc = desc, color = c(mat == "ceramic" and "#6A665C" or mat == "steel" and "#4E5250" or "#5E6258"),
+	})
+end
+-- universal SAPI-type plates (front or back of a western carrier, and of the Russian vests whose slot is SAPI-shaped)
+plate("PLATE_PE3", "Kite PE Plate", "KITE III", 3, 35, "uhmwpe", 0.43, "any", "west", "sapi", { speed = -1, ergo = -1 }, 25000, "uncommon", "Thin polyethylene plate, class 3. Almost weightless; it stops pistol rounds and buckshot, not rifles. Front or back.") -- PRTCTR Lightweight
+plate("PLATE_PE4", "Heron PE Plate", "HERON IV", 4, 40, "uhmwpe", 1.35, "any", "west", "sapi", { speed = -1, ergo = -1 }, 24000, "uncommon", "Polyethylene plate, class 4. Light, and it holds up well to repairs. Front or back.") -- Monoclete level III PE
+plate("PLATE_CE4", "Shale Ceramic Plate", "SHALE IV", 4, 45, "ceramic", 1.6, "any", "west", "sapi", { speed = -1, ergo = -1.5 }, 20000, "uncommon", "Ceramic plate, class 4. Light, but ceramic cracks fast and repairs badly. Front or back.") -- SPRTN Elaphros
+plate("PLATE_CE5", "Basalt Ceramic Plate", "BASALT V", 5, 50, "ceramic", 1.82, "any", "west", "sapi", { speed = -1, turn = -0.5, ergo = -1.5 }, 62000, "rare", "Ceramic plate, class 5. Front or back.") -- SAPI level III+
+plate("PLATE_PE5", "Egret PE Plate", "EGRET V", 5, 45, "uhmwpe", 0.97, "any", "west", "sapi", { speed = -1, ergo = -1 }, 88000, "rare", "Polyethylene plate, class 5, under a kilogram. Front or back.") -- GAC 3s15m
+plate("PLATE_CE6", "Obsidian Ceramic Plate", "OBSIDIAN VI", 6, 55, "ceramic", 3.2, "any", "west", "sapi", { speed = -1.5, turn = -0.5, ergo = -1.5 }, 115000, "epic", "Ceramic plate, class 6. Stops almost anything a few times. Front or back.") -- ESAPI level IV
+plate("PLATE_PE6", "Albatross PE Plate", "ALBATROSS VI", 6, 50, "uhmwpe", 2.7, "any", "west", "sapi", { speed = -1.5, turn = -0.5, ergo = -1.5 }, 155000, "epic", "Polyethylene plate, class 6. Front or back.") -- GAC 4sss2
+plate("PLATE_CE5S", "Basalt Ceramic Side Plate", "BASALT S", 5, 15, "ceramic", 1.0, "side", "west", "side", { speed = -0.5, turn = -0.5 }, 14000, "rare", "Small ceramic side plate, class 5, for the side pockets of a western carrier.") -- SSAPI level III+ (Side)
+-- the Russian vests' own plates (front-only, back-only and side)
+plate("PLATE_PC4F", "PC-4 Steel Front Plate", "PC-4 F", 4, 50, "steel", 3.7, "front", "east", "korund", { speed = -2.5, turn = -1, ergo = -1 }, 14000, "uncommon", "Tall steel chest plate, class 4, the PC-4's own. It reaches the top of the stomach but leaves the upper corners of the chest.") -- 6B33 (Front)
+plate("PLATE_PC4B", "PC-4 Steel Back Plate", "PC-4 B", 4, 40, "steel", 3.5, "back", "east", "sapi", { speed = -1.5, ergo = -0.5 }, 9000, "uncommon", "Steel back plate, class 4, the PC-4's own.") -- 6B23-2 (Back)
+plate("PLATE_HP5F", "HP-5 Steel Front Plate", "HP-5 F", 5, 60, "steel", 3.4, "front", "east", "korund", { speed = -2, turn = -1, ergo = -1 }, 29000, "rare", "Tall steel chest plate, class 5, the HP-5's own.") -- Korund-VM (Front)
+plate("PLATE_HP5B", "HP-5 Steel Back Plate", "HP-5 B", 5, 40, "steel", 2.3, "back", "east", "sapi", { speed = -1, turn = -0.5, ergo = -1 }, 24000, "rare", "Steel back plate, class 5, the HP-5's own.") -- Korund-VM (Back)
+plate("PLATE_HP5S", "HP-5 Steel Side Plate", "HP-5 S", 5, 25, "steel", 1.1, "side", "east", "side", { speed = -0.5 }, 11000, "rare", "Steel side plate, class 5, for the HP-5's high side pockets under the arm.") -- Korund-VM (Side)
+plate("PLATE_BWF", "Bulwark Ceramic Front Plate", "BULWARK F", 6, 55, "ceramic", 3.5, "front", "east", "sapi", { speed = -2.5, turn = -2, ergo = -1.5 }, 70000, "epic", "Ceramic chest plate, class 6, the Bulwark's own.") -- Granit 4RS (Front)
+plate("PLATE_BWB", "Bulwark Ceramic Back Plate", "BULWARK B", 6, 50, "ceramic", 3.8, "back", "east", "sapi", { speed = -2, turn = -1, ergo = -1 }, 60000, "epic", "Ceramic back plate, class 6, the Bulwark's own.") -- Granit 4RS (Back)
+plate("PLATE_BWS", "Bulwark Ceramic Side Plate", "BULWARK S", 6, 20, "ceramic", 1.3, "side", "east", "side", { speed = -0.75, turn = -0.75 }, 30000, "epic", "Ceramic side plate, class 6, for the Bulwark's low side pockets.") -- Granit (Side)
+
+-- body armour (soft parts' class in pc where plates make the item's class higher)
+add("ARMOR_C2", { name = "Quay Security Vest", short = "VEST II", kind = "armor", w = 3, h = 3, mass = 3.5, value = 18000,
+	-- PACA soft armour: class 2 aramid all round the torso, 100 durability, 3.5 kg, speed -1 ergo -1, blunt 35.6 %
+	armor = PL.armour({ class = 2, mat = "aramid", blunt = 0.356, type = "light", parts = { { "front", 25 }, { "back", 25 }, { "left", 25 }, { "right", 25 } } }),
+	pen = { speed = -1, ergo = -1 },
+	desc = "Soft aramid security vest, class 2 all round the torso: chest and stomach, the back and both sides. No plate pockets; it stops pistol rounds and buckshot, not rifle rounds.", color = c("#4C5545") })
+add("ARMOR_C3", { name = "Patrol Soft Armor", short = "VEST III", kind = "armor", w = 3, h = 3, mass = 8.5, value = 38000,
+	-- MF-UNTAR body armour: class 3 aluminium inserts all round the torso, 100 durability, 8.5 kg, -3/-1/-2, blunt 23.8 %
+	armor = PL.armour({ class = 3, mat = "aluminium", blunt = 0.238, type = "light", parts = { { "front", 25 }, { "back", 25 }, { "left", 25 }, { "right", 25 } } }),
+	pen = { speed = -3, turn = -1, ergo = -2 },
+	desc = "Patrol vest with aluminium inserts, class 3 all round the torso: chest and stomach, the back and both sides. Heavy for what it stops, and no plate pockets.", color = c("#4A5242") })
+add("ARMOR_C4", { name = "PC-4 Plate Carrier", short = "PC-4", kind = "armor", w = 3, h = 3, mass = 3.3, value = 59000, rarity = "uncommon",
+	-- 6B23-2: class 2 soft armour nearly everywhere (collar, groin, buttocks too), class 4 plates front (Korund-shaped) and
+	-- back (SAPI-shaped); 246 durability with its plates, 3.3 kg empty, -1/-1/-2.5, blunt 33 % (GGRecon 0.14.11; tarkovforge)
+	armor = PL.armour({ class = 4, pc = 2, mat = "aramid", blunt = 0.33, type = "light",
+		parts = { { "front", 22 }, { "back", 22 }, { "left", 22 }, { "right", 22 }, { "collar", 22 }, { "groin", 22 }, { "buttocks", 22 } },
+		plates = { front = { fams = EAST, def = "PLATE_PC4F" }, back = { fams = BOTH, def = "PLATE_PC4B" } } }),
+	pen = { speed = -1, turn = -1, ergo = -2.5 },
+	desc = "Carrier with class 2 soft armour almost everywhere, the collar, groin and buttocks too, and a front and a back plate pocket. Comes with its class 4 steel plates.", color = c("#575A47") })
+add("ARMOR_C5", { name = "HP-5 Heavy Vest", short = "HP-5", kind = "armor", w = 3, h = 3, mass = 1.9, value = 90000, rarity = "rare",
+	-- Korund-VM: soft armour nearly everywhere, class 5 steel plates front (Korund), back (SAPI) and both high sides;
+	-- 310 durability with plates, 1.9 kg empty, -5/-2.5/-3, blunt 28.5 %, heavy. Its soft armour's class 3 is ours.
+	armor = PL.armour({ class = 5, pc = 3, mat = "aramid", blunt = 0.285, type = "heavy",
+		parts = { { "front", 23 }, { "back", 23 }, { "left", 23 }, { "right", 23 }, { "collar", 23 }, { "groin", 23 }, { "buttocks", 23 } },
+		plates = {
+			front = { fams = EAST, def = "PLATE_HP5F" }, back = { fams = BOTH, def = "PLATE_HP5B" },
+			lside = { fams = EAST, side = "high", def = "PLATE_HP5S" }, rside = { fams = EAST, side = "high", def = "PLATE_HP5S" },
+		} }),
+	pen = { speed = -5, turn = -2.5, ergo = -3 },
+	desc = "Heavy vest: class 3 soft armour almost everywhere, with front, back and high side plate pockets. Comes with its class 5 steel plates. Slows you down.", color = c("#4D4F45") })
+add("ARMOR_C6", { name = "Bulwark Assault Armor", short = "BULWARK", kind = "armor", w = 4, h = 4, mass = 10.8, value = 140000, rarity = "epic",
+	-- 6B43 Zabralo-Sh: soft armour with shoulders and collar, class 6 plates front, back (SAPI) and low sides; 510
+	-- durability with plates, 10.8 kg empty, -9/-5.5/-7, blunt 29.7 %, heavy. Its soft armour's class 3 is ours.
+	armor = PL.armour({ class = 6, pc = 3, mat = "aramid", blunt = 0.297, type = "heavy",
+		parts = { { "front", 45 }, { "back", 45 }, { "left", 45 }, { "right", 45 }, { "collar", 45 }, { "groin", 45 }, { "shoulders", 90 } },
+		plates = {
+			front = { fams = BOTH, def = "PLATE_BWF" }, back = { fams = BOTH, def = "PLATE_BWB" },
+			lside = { fams = BOTH, side = "low", def = "PLATE_BWS" }, rside = { fams = BOTH, side = "low", def = "PLATE_BWS" },
+		} }),
+	pen = { speed = -9, turn = -5.5, ergo = -7 },
+	desc = "Assault armour: class 3 soft armour from the collar to the groin, shoulders included, with front, back and low side plate pockets. Comes with its class 6 ceramic plates. Very heavy.", color = c("#3E423D") })
+
+-- helmets (parts: top, nape, ears; Tarkov's helmet zones are chosen by where the hit lands)
+add("HELMET_C2", { name = "Shell Helmet", short = "SHELL", kind = "helmet", w = 2, h = 2, mass = 1.9, value = 14000,
+	-- Kolpak-1S riot helmet: class 2 aramid, top, nape and ears, 45 durability, 1.9 kg, turn -2, ergo -2, blunt 23.8 %, low ricochet (EFT wiki)
+	armor = PL.armour({ class = 2, mat = "aramid", blunt = 0.238, ric = "low", parts = { { "top", 15 }, { "nape", 15 }, { "ears", 15 } } }),
+	pen = { turn = -2, ergo = -2 }, desc = "Class 2 riot helmet in pressed aramid. Covers the top, the nape and the ears; no room for a headset.", color = c("#55593F") })
+add("HELMET_C3", { name = "Tac Helmet", short = "TAC III", kind = "helmet", w = 2, h = 2, mass = 0.95, value = 34000,
+	-- LShZ light helmet: class 3 aramid, top and nape, 36 durability, 0.95 kg, turn -1, ergo -1, blunt 23.8 %, medium ricochet
+	armor = PL.armour({ class = 3, mat = "aramid", blunt = 0.238, ric = "medium", parts = { { "top", 18 }, { "nape", 18 } } }),
+	pen = { turn = -1, ergo = -1 }, desc = "Class 3 cut helmet with rails and a night-vision mount. Covers the top and the nape; the ears stay open for a headset.", color = c("#4F5340") })
+add("HELMET_C4", { name = "Ballistic Helmet B4", short = "B4", kind = "helmet", w = 2, h = 2, mass = 0.9, value = 78000, rarity = "uncommon",
+	-- Ops-Core FAST MT: class 4 combined materials, top and nape, 48 durability, 0.9 kg, turn -1, ergo -1, blunt 14.3 %, high ricochet
+	armor = PL.armour({ class = 4, mat = "combined", blunt = 0.143, ric = "high", parts = { { "top", 24 }, { "nape", 24 } } }),
+	pen = { turn = -1, ergo = -1 }, desc = "Class 4 high-cut helmet with a night-vision mount. Covers the top and the nape; bullets that glance off it often ricochet.", color = c("#45493C") })
+add("HELMET_C5", { name = "Bulwark Faceplate Helmet", short = "FACEPLATE", kind = "helmet", w = 2, h = 2, mass = 3.5, value = 260000, rarity = "epic",
+	-- Altyn: class 5 armoured steel, top, nape and ears, 81 durability, 2.5 kg, -1/-4/-3, blunt 16.7 %, high ricochet;
+	-- its face shield (eyes and jaws, raised with N) as class 5 steel of 50 and 1 kg is ours
+	armor = PL.armour({ class = 5, mat = "steel", blunt = 0.167, ric = "high", face = true,
+		parts = { { "top", 27 }, { "nape", 27 }, { "ears", 27 }, { "visor", 50 } } }),
+	pen = { speed = -1, turn = -4, ergo = -3 }, desc = "Class 5 steel helmet with a steel face shield. Covers the top, the nape and the ears, and with the shield down the eyes and the jaw.", color = c("#34372F") })
+
+-- THE FOREMAN's hard hat: no Tarkov counterpart; class 2 over the top only, in polyethylene (ours)
+add("HARDHAT_FOREMAN", { name = "Foreman's Hard Hat", short = "HARD HAT", kind = "helmet", w = 2, h = 2, mass = 0.6, value = 98000, rarity = "rare",
+	armor = PL.armour({ class = 2, mat = "uhmwpe", blunt = 0.35, ric = "medium", parts = { { "top", 22 } } }),
+	desc = "The Quay foreman's battered hard hat with a lamp bracket. Class 2 over the top of the head only. Stops little; worth a lot to the right people.", color = c("#C9A23C") })
 
 -- ── headwear, headsets, face covers (M16 visible equipment; no protection) ─────────────────────────────
 add("CAP_FIELD", { name = "Field Cap", short = "CAP", kind = "headwear", w = 2, h = 1, mass = 0.1, value = 2500, desc = "Soft patrol cap. Keeps the sun out of your eyes; stops nothing.", color = c("#4A4A3E") })
@@ -109,10 +206,10 @@ add("GLASSES_RANGE", { name = "Range Glasses", short = "RANGE", kind = "eyewear"
 	eye = { flash = 0.15, tint = c("#E0BE3A"), shade = 0.1, lens = "YELLOW" },
 	desc = "Shooting glasses with yellow lenses; the view takes a warm tint. A stun charge blinds you a little less; they stop nothing.", color = c("#C4A63C") })
 add("GLASSES_BG1", { name = "BG-1 Ballistic Glasses", short = "BG-1", kind = "eyewear", w = 2, h = 1, mass = 0.11, value = 20000, rarity = "uncommon",
-	armor = { class = 1, dur = 25, zones = { eyes = true }, blunt = 0.35, destr = 0.1 }, eye = { flash = 0.1, tint = c("#C9D6DC"), shade = 0.03, lens = "CLEAR" },
+	armor = PL.armour({ class = 1, mat = "glass", blunt = 0.35, parts = { { "eyes", 25 } } }), eye = { flash = 0.1, tint = c("#C9D6DC"), shade = 0.03, lens = "CLEAR" },
 	desc = "Clear class 1 ballistic glasses. They stop fragments, buckshot and weak rounds that hit the eyes; a rifle bullet goes straight through.", color = c("#5C666B") })
 add("GLASSES_AF2", { name = "AF-2 Anti-Fragmentation Glasses", short = "AF-2", kind = "eyewear", w = 2, h = 1, mass = 0.27, value = 40000, rarity = "rare",
-	armor = { class = 2, dur = 30, zones = { eyes = true }, blunt = 0.3, destr = 0.1 }, eye = { flash = 0.15, tint = c("#4678C8"), shade = 0.1, lens = "BLUE" },
+	armor = PL.armour({ class = 2, mat = "glass", blunt = 0.3, parts = { { "eyes", 30 } } }), eye = { flash = 0.15, tint = c("#4678C8"), shade = 0.1, lens = "BLUE" },
 	desc = "Blue-lens class 2 anti-fragmentation glasses on a head strap. Heavier than the BG-1, and they hold up to a few more hits.", color = c("#3E5E8C") })
 add("GAS_MASK", { name = "Canister Gas Mask", short = "GAS MASK", kind = "facecover", w = 2, h = 2, mass = 0.45, value = 45000, rarity = "uncommon",
 	eye = { flash = 0, tint = c("#3C4B3C"), shade = 0.16, lens = "SMOKED" },
@@ -120,13 +217,23 @@ add("GAS_MASK", { name = "Canister Gas Mask", short = "GAS MASK", kind = "faceco
 -- THE STOKER's welding mask (Tarkov: Tagilla's welding masks, face cover class 5, durability 40, 50 % blindness protection,
 -- 1.5 kg): a steel face cover that is armour for the face (Health.armorFor reads face covers with zones.face)
 add("MASK_WELDER", { name = "Stoker's Welding Mask", short = "WELD MASK", kind = "facecover", w = 2, h = 2, mass = 1.5, value = 95000, rarity = "epic",
-	armor = { class = 5, dur = 40, zones = { face = true }, blunt = 0.2, destr = 0.5 }, eye = { flash = 0.5, tint = c("#2A2C26"), shade = 0.32, lens = "SMOKED" },
+	armor = PL.armour({ class = 5, mat = "steel", blunt = 0.2, parts = { { "face", 40, zones = { "face" } } } }), eye = { flash = 0.5, tint = c("#2A2C26"), shade = 0.32, lens = "SMOKED" },
 	desc = "A boiler stoker's steel welding mask with a dark slit. Class 5 for the face; the view through the slit is narrow and dim, and a stun charge's flash blinds you half as much.", color = c("#3A3B35") })
 
 -- ── rigs, backpacks, secure containers ───────────────────────────────────────
 add("RIG_BELT", { name = "Utility Belt", short = "BELT", kind = "rig", w = 2, h = 2, mass = 0.4, value = 6000, grid = { w = 4, h = 1 }, desc = "Four pouches on a belt.", color = c("#5E5A47") })
 add("RIG_CHEST", { name = "Chest Rig", short = "CHEST RIG", kind = "rig", w = 2, h = 2, mass = 0.8, value = 16000, grid = { w = 4, h = 2 }, desc = "Open chest rig, eight cells.", color = c("#5A5844") })
-add("RIG_PLATE", { name = "Assault Plate Rig", short = "PLATE RIG", kind = "rig", w = 3, h = 3, mass = 6.0, value = 95000, rarity = "uncommon", grid = { w = 4, h = 2 }, armor = { class = 4, dur = 50, zones = TS, blunt = 0.25, destr = 0.5 }, pen = { speed = -3, turn = -2, ergo = -5 }, desc = "Armored rig, class 4 front plate. Cannot be worn with body armor.", color = c("#4F513F") })
+-- an armoured rig: FirstSpear Strandhogg (class 2 soft armour over the chest, stomach, upper back and sides, SAPI plates
+-- front and back, high side plate pockets; 198 durability with plates, 3.2 kg empty, speed -1, blunt 24 %). Its soft
+-- class 2 and the two class 4 plates it comes with are ours.
+add("RIG_PLATE", { name = "Assault Plate Rig", short = "PLATE RIG", kind = "rig", w = 3, h = 3, mass = 3.2, value = 47000, rarity = "uncommon", grid = { w = 4, h = 2 },
+	armor = PL.armour({ class = 4, pc = 2, mat = "aramid", blunt = 0.24, type = "light",
+		parts = { { "front", 30 }, { "back", 30, zones = { "uback" } }, { "left", 30 }, { "right", 30 } },
+		plates = {
+			front = { fams = WEST, def = "PLATE_PE4" }, back = { fams = WEST, def = "PLATE_PE4" },
+			lside = { fams = WEST, side = "high" }, rside = { fams = WEST, side = "high" },
+		} }),
+	pen = { speed = -1 }, desc = "Armoured rig: class 2 soft armour over the chest, stomach, upper back and sides, a front and a back plate pocket (two class 4 polyethylene plates come with it) and side plate pockets. Cannot be worn with body armour.", color = c("#4F513F") })
 add("BAG_SLING", { name = "Day Bag", short = "DAY BAG", kind = "backpack", w = 2, h = 2, mass = 0.4, value = 7500, grid = { w = 3, h = 2 }, desc = "Small two-strap day bag.", color = c("#6B6A4E") })
 add("CANVAS_BAG", { name = "Canvas Pack", short = "CANVAS", kind = "backpack", w = 3, h = 3, mass = 0.9, value = 18000, grid = { w = 4, h = 4 }, pen = { speed = -1 }, desc = "Worn canvas backpack with a 4x4 compartment.", color = c("#6B6A4E") })
 add("BAG_PATROL", { name = "Patrol Pack", short = "PATROL", kind = "backpack", w = 4, h = 4, mass = 1.3, value = 42000, rarity = "uncommon", grid = { w = 5, h = 5 }, pen = { speed = -2, turn = -1 }, desc = "Framed patrol pack.", color = c("#5C5B44") })
@@ -380,15 +487,47 @@ function Items.gearPenalties(view: any, armourMul: ((number) -> number)?): { spe
 			out.turn += (pen.turn or 0) * m
 			out.ergo += (pen.ergo or 0) * m
 		end
+		-- the plates in a worn carrier add their own penalties (Tarkov 0.14)
+		if it and it.mods and PL.slotsOf(d) then
+			for _, s in PL.SLOTS do
+				local pg = it.mods[s]
+				local p = pg and view.items[pg]
+				local pd = p and defs[p.id]
+				if pd and pd.pen then
+					local m = armourMul and armourMul(pd.armor and pd.armor.class or 0) or 1
+					out.speed += (pd.pen.speed or 0) * m
+					out.turn += (pd.pen.turn or 0) * m
+					out.ergo += (pd.pen.ergo or 0) * m
+				end
+			end
+		end
 	end
 	return out
 end
 
--- the chance a round with penetration `pen` goes through armor of `class` at durability fraction `durFrac`
--- (Health.luau uses it for every hit; the INSPECT window shows it against fresh armor of each class)
+-- the chance a round with penetration `pen` goes through armor of `class` at durability fraction `durFrac`: Tarkov's
+-- curve (Plates.penChance). Health.luau resolves every hit with it; the INSPECT window shows it against fresh armour.
 function Items.penChance(pen: number, class: number, durFrac: number): number
-	local eff = class * 10 * (0.55 + 0.45 * durFrac)
-	return math.clamp((pen - eff + 12) / 24, 0, 1)
+	return PL.penChance(pen, class, durFrac)
+end
+
+-- what a carrier costs with the plates it comes with (traders sell it so; Tarkov prices a preset by its parts)
+function Items.kitValue(id: string): number
+	local d = defs[id]
+	if not d then
+		return 0
+	end
+	local v = d.value
+	local slots = PL.slotsOf(d)
+	if slots then
+		for _, s in slots do
+			local pd = s.def and defs[s.def]
+			if pd then
+				v += pd.value
+			end
+		end
+	end
+	return v
 end
 
 -- items that start examined for every player (Tarkov: common gear is known)

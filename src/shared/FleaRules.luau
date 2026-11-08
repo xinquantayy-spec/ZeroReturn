@@ -18,6 +18,9 @@ Flea.BANNED = { secure = true, quest = true }
 -- patch 0.12.12 list, NME 13 Dec 2021; the red flare "Not on flea", tarkovforge 2026). Ours, item for item:
 Flea.BANNED_ITEMS = {
 	ARMOR_C5 = true, ARMOR_C6 = true, -- class 5 and 6 body armour
+	-- class 5 and 6 plates (EFT 0.14.0.0: "class 5 and 6 plates cannot be sold on the flea market"; gameplay-2a)
+	PLATE_CE5 = true, PLATE_PE5 = true, PLATE_CE6 = true, PLATE_PE6 = true, PLATE_CE5S = true,
+	PLATE_HP5F = true, PLATE_HP5B = true, PLATE_HP5S = true, PLATE_BWF = true, PLATE_BWB = true, PLATE_BWS = true,
 	HELMET_C4 = true, HELMET_C5 = true, MASK_WELDER = true, -- class 4-5 helmets and the class 5 face armour
 	HARDHAT_FOREMAN = true, -- a boss's own helmet (EFT bans Killa's Maska)
 	TH_T7 = true, NV_QUAD = true, -- thermal goggles and the panoramic quad (GPNVG-18)

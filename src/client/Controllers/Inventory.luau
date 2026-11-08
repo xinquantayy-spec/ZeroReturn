@@ -16,6 +16,7 @@ local Util = require(Shared.Util)
 local Maps = require(Shared.Maps)
 local TD = require(Shared.TraderData)
 local Drop = require(Shared.DropRules) -- what a drag-and-drop would do (the fit cue, audit ui.9)
+local Plates = require(Shared.Plates) -- plate slots of vests and armoured rigs (gameplay-2a)
 
 local Inventory = { open = false, tab = "GEAR", cpanel = "GEAR" }
 -- ui-3a: on a phone (under about 500 pt of height) one panel at a time behind a rail: EQUIPMENT, BAGS, STASH (or LOOT)
@@ -29,7 +30,7 @@ local rot = 0
 local searchText = "" -- the stash search (Tarkov 0.16.7): non-matching items are dimmed
 local SEARCH_CAT = {
 	weapon = "weapons", pistol = "weapons", melee = "weapons", mod = "parts", mag = "magazines", ammo = "ammo", grenade = "grenades",
-	armor = "gear armor", helmet = "gear helmets", rig = "gear rigs", backpack = "gear backpacks", headwear = "gear", headset = "gear headsets",
+	armor = "gear armor", helmet = "gear helmets", rig = "gear rigs", backpack = "gear backpacks", headwear = "gear", headset = "gear headsets", plate = "gear armor plates",
 	facecover = "gear", eyewear = "gear eyewear glasses", secure = "gear", med = "medical meds", food = "provisions food", key = "keys", loot = "barter", quest = "quest",
 }
 local gridTargets, slotTargets = {}, {}
@@ -159,6 +160,14 @@ local function massOf(view, g, depth)
 	end
 	if it.mag then
 		m += massOf(view, it.mag, (depth or 0) + 1)
+	end
+	-- the plates in a vest or armoured rig weigh with it (gameplay-2a)
+	if it.mods and Plates.slotsOf(d) then
+		for _, pg in it.mods do
+			if view.items[pg] then
+				m += massOf(view, pg, (depth or 0) + 1)
+			end
+		end
 	end
 	if view.grids and view.grids[g] and (depth or 0) < 6 then
 		for cg in view.grids[g] do
@@ -462,6 +471,52 @@ local function actionsFor(ref, g)
 		add("REMOVE " .. defs[view.items[it.mods.mount].id].short, function()
 			req({ op = "unmod", g = g, slot = "mount" })
 		end)
+	end
+	-- plates (Tarkov 0.14, gameplay-2a): into a slot of a vest or armoured rig that is not worn, and out again. Tarkov
+	-- wants a worn vest taken off first; the menu says so instead of offering it. Same menu on mouse, touch and gamepad.
+	local SLOT_SHORT = { front = "FRONT", back = "BACK", lside = "LEFT SIDE", rside = "RIGHT SIDE" }
+	if mine and d.kind == "plate" and locate(view, g) == "grid" then
+		local wornHint = nil
+		for cg, c in view.items do
+			local cd = defs[c.id]
+			local slots = cd and Plates.slotsOf(cd)
+			local where = slots and locate(view, cg)
+			if where then
+				for _, s in Plates.SLOTS do
+					if slots[s] and Plates.fits(cd, s, d) then
+						if where == "slot" then
+							wornHint = wornHint or cd.short
+						else
+							local cur = c.mods and c.mods[s] and view.items[c.mods[s]]
+							add(string.format("%s %s  ·  %s", cur and "SWAP INTO" or "INSERT INTO", cd.short, SLOT_SHORT[s]), function()
+								req({ op = "mod", g = cg, slot = s, mod = g })
+							end, "good")
+						end
+					end
+				end
+			end
+		end
+		if wornHint then
+			add("TAKE OFF " .. wornHint .. " TO PUT IN PLATES", function() end)
+		end
+	end
+	if mine and Plates.slotsOf(d) and it.mods then
+		local worn = locate(view, g) == "slot"
+		local any = false
+		for _, s in Plates.SLOTS do
+			local p = it.mods[s] and view.items[it.mods[s]]
+			if p and defs[p.id] then
+				any = true
+				if not worn then
+					add(string.format("REMOVE %s PLATE (%s)", SLOT_SHORT[s], defs[p.id].short), function()
+						req({ op = "unmod", g = g, slot = s })
+					end)
+				end
+			end
+		end
+		if worn and any then
+			add("TAKE IT OFF TO CHANGE PLATES", function() end)
+		end
 	end
 	if mine and d.kind == "mod" and locate(view, g) == "grid" then
 		for wg, w in view.items do
@@ -1020,7 +1075,20 @@ function detail(parent, w, h, selOverride)
 			table.insert(lines, string.format("DAMAGE %d%s   PEN %d   ARMOR DMG %d%%", d.ammo.dmg, d.ammo.pellets and ("x" .. d.ammo.pellets) or "", d.ammo.pen, math.floor(d.ammo.armorDmg * 100)))
 		end
 		if d.armor then
-			table.insert(lines, string.format("CLASS %d   DURABILITY %d/%d", d.armor.class, math.ceil(it.dur or d.armor.dur), d.armor.dur))
+			table.insert(lines, string.format("CLASS %d   DURABILITY %d/%d", Plates.classOf(defs, view.items, it), math.ceil(it.dur or d.armor.dur), d.armor.dur))
+			-- a vest's plate slots: what is in each (Tarkov 0.14)
+			local slots = Plates.slotsOf(d)
+			if slots then
+				local parts = {}
+				for _, s in Plates.SLOTS do
+					if slots[s] then
+						local p = it.mods and it.mods[s] and view.items[it.mods[s]]
+						local pd = p and defs[p.id]
+						table.insert(parts, string.format("%s %s", string.upper(s == "lside" and "left" or s == "rside" and "right" or s), pd and string.format("%s %d/%d", pd.short, math.ceil(p.dur or pd.armor.dur), pd.armor.dur) or "EMPTY"))
+					end
+				end
+				table.insert(lines, "PLATES: " .. table.concat(parts, "  ·  "))
+			end
 		end
 		if d.grid then
 			table.insert(lines, string.format("CAPACITY %dx%d", d.grid.w, d.grid.h))

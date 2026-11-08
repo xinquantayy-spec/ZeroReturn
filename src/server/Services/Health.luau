@@ -1,13 +1,15 @@
 --!nonstrict
 -- Tarkov-style health (server-authoritative): seven body-part pools (440 total), light/heavy bleeding,
--- fractures, pain, energy/hydration, armor with class/durability/penetration, blunt trauma, helmet face
--- coverage and ricochets, destroyed-limb damage spill, timed medical treatment, fall damage.
+-- fractures, pain, energy/hydration, Tarkov 0.14's armour (hit zones, plates, soft armour and helmet parts, each with
+-- its own class and durability; penetration, blunt trauma and ricochets: Plates.luau), destroyed-limb damage spill,
+-- timed medical treatment, fall damage.
 -- Players and AI share the same model; clients receive a compact "vitals" snapshot.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Items = require(Shared.Items)
 local Textures = require(Shared.Textures)
 local Inv = require(script.Parent.Inv)
 local Progress = require(Shared.Progress)
+local Plates = require(Shared.Plates)
 
 local Health = {}
 local ctx
@@ -108,6 +110,11 @@ function Health.attach(model, opts)
 	hs.hum = model:FindFirstChildOfClass("Humanoid")
 	states[model] = hs
 	syncHumanoid(hs)
+	-- old saves (gameplay-2a): armour from before plates and parts takes its new form once (Inv.migrateArmour)
+	local h0 = opts.holder and opts.holder()
+	if h0 and Inv.migrateArmour(h0) > 0 and opts.player and ctx and ctx.Profiles then
+		ctx.Profiles.markDirty(opts.player)
+	end
 	model.AncestryChanged:Connect(function(_, parent)
 		if not parent and states[model] == hs then
 			states[model] = nil
@@ -196,107 +203,130 @@ applyDamage = function(hs, key, dmg, noSpill)
 end
 Health.applyDamage = applyDamage
 
--- worn armor protecting this hit, if any: guid, item, def
-local function armorFor(hs, key, hitPos, partInst)
+-- ── armour (Tarkov 0.14, decision gameplay-2a; the zones, formats and maths in Plates.luau) ────────────────────────────
+-- Where on the body part the ray lands picks the zone (Plates.zoneOf). The pieces covering that zone are its layers,
+-- outermost first: on the torso the plate whose format covers the spot, then the vest's soft part for the zone; on the
+-- head the helmet's part (the face shield while it is down), an armoured face cover, then ballistic glasses. Each layer
+-- has its own class and durability; Plates.resolve runs the round through them.
+
+-- where a hit lands: { zone, pool, face, u, v, angle? } (angle: off head-on, for ricochets off a helmet)
+local function whereHit(info)
+	local p = info.part
+	if not (p and typeof(p) == "Instance" and p:IsA("BasePart") and PART_OF[p.Name]) then
+		return { zone = "chest", pool = "thorax", face = "front", u = 0, v = 0.3 }
+	end
+	local cf, h = p.CFrame, p.Size / 2
+	local to = cf:PointToObjectSpace(typeof(info.hitPos) == "Vector3" and info.hitPos or p.Position)
+	local from = typeof(info.from) == "Vector3" and cf:PointToObjectSpace(info.from) or nil
+	-- a blow or a blast aimed at the part's middle meets its surface on the side it came from
+	local lp = Plates.entry(from, to, h)
+	if lp.Magnitude < 1e-3 then
+		lp = Vector3.new(0, 0, -h.Z) -- no direction known: the front
+	end
+	local w = Plates.zoneOf(p.Name, lp, h)
+	if w.pool == "head" and from then
+		w.angle = Plates.incidence(lp, h, lp - from)
+	end
+	return w
+end
+Health.whereHit = whereHit
+
+-- the layers protecting a hit at `w`, outermost first: { it, d, k (part) | plate, class, cur, max, destr, blunt, soft, ric }
+local function layersFor(hs, w, partInst)
+	local out = {}
 	local h = hs.holder and hs.holder()
 	if not h then
-		return nil
+		return out
 	end
+	local zone = w.zone
 	local function worn(slot)
 		local g = h.slots[slot]
 		local it = g and h.items[g]
 		local d = it and Items.defs[it.id]
-		if d and d.armor and (it.dur or 0) > 0 then
-			return g, it, d
+		if d and d.armor then
+			return it, d
 		end
-		return nil
+		return nil, nil
 	end
-	if key == "head" then
-		-- face = the front of the head; eyes = its eye band (Tarkov's "Eyes" zone, which the body has no pool of: the band is
-		-- a hit location on the head, so damage still goes to the head)
-		local face, eyes = false, false
-		if partInst and hitPos then
-			local lp = partInst.CFrame:PointToObjectSpace(hitPos)
-			face = lp.Z < -0.2 and lp.Y < 0.25
-			eyes = face and lp.Y > -0.06
-		end
-		local g, it, d = worn("head")
-		if g then
-			local covered
-			if face then
-				covered = d.armor.face == true and not (partInst.Parent and partInst.Parent:GetAttribute("VisorUp"))
-			else
-				covered = math.random() < math.min(1, (d.armor.coverage or 0.6) + 0.3)
-			end
-			if covered then
-				return g, it, d
+	local function parts(it, d, skipVisor)
+		Plates.sync(it, d) -- a trader's repair sets it.dur: the parts follow
+		for _, e in Plates.partsOf(d) or {} do
+			if e.zones[zone] and not (e.visor and skipVisor) then
+				local cur = Plates.partDur(it, d, e.k)
+				if cur > 0 then
+					table.insert(out, {
+						-- soft: a vest's or rig's built-in armour (blunt under a stopped plate drops with it behind)
+						it = it, d = d, k = e.k, class = e.class, cur = cur, max = e.dur, destr = e.destr, blunt = e.blunt, ric = e.ric,
+						soft = d.kind == "armor" or d.kind == "rig",
+					})
+				end
 			end
 		end
-		-- a face cover that is armour (THE STOKER's welding mask) takes a hit on the front of the head: Tarkov's face
-		-- protection from the face-cover slot
-		if face then
-			local fg, fit, fd = worn("face")
-			if fg and fd.armor.zones and fd.armor.zones.face then
-				return fg, fit, fd
-			end
-		end
-		-- a face shield that is down (or absent) leaves the eyes to the ballistic glasses behind it
-		if eyes then
-			local eg, eit, ed = worn("eyes")
-			if eg and ed.armor.zones and ed.armor.zones.eyes then
-				return eg, eit, ed
-			end
-		end
-		return nil
 	end
-	local zone = (key == "thorax" and "thorax") or (key == "stomach" and "stomach") or ((key == "larm" or key == "rarm") and "arms") or nil
-	if not zone then
-		return nil
+	if w.pool == "head" then
+		local visorUp = partInst and partInst.Parent and partInst.Parent:GetAttribute("VisorUp") == true
+		for _, slot in { "head", "face", "eyes" } do
+			local it, d = worn(slot)
+			if it then
+				parts(it, d, visorUp)
+			end
+		end
+		return out
 	end
 	for _, slot in { "armor", "rig" } do
-		local g, it, d = worn(slot)
-		if g and d.armor.zones and d.armor.zones[zone] then
-			return g, it, d
+		local it, d = worn(slot)
+		if it then
+			-- a plate (only on the torso, and only where its format covers), then the soft armour behind it
+			local slots = Plates.slotsOf(d)
+			if slots and it.mods and partInst and (partInst.Name == "UpperTorso" or partInst.Name == "Torso") then
+				for _, s in Plates.SLOTS do
+					local pg = it.mods[s]
+					local p = pg and h.items[pg]
+					local pd = p and Items.defs[p.id]
+					if pd and pd.armor and (p.dur or 0) > 0 and Plates.plateCovers(Plates.shapeOf(d, s, pd), s, w) then
+						table.insert(out, {
+							it = p, d = pd, plate = true, class = pd.armor.class, cur = p.dur, max = pd.armor.dur, destr = pd.armor.destr,
+							blunt = pd.armor.blunt, soft = false,
+						})
+					end
+				end
+			end
+			parts(it, d, false)
 		end
 	end
-	return nil
+	return out
 end
+Health.layersFor = layersFor
 
--- info = { dmg, pen, armorDmg, bleedL, bleedH, part (BasePart), hitPos, attacker, cause }
--- returns { part, dmg, penetrated, armor, ricochet, killed }
+-- info = { dmg, pen, armorDmg, bleedL, bleedH, part (BasePart), hitPos, from, attacker, cause }
+-- returns { part (the health pool), zone, dmg, penetrated, armor (the first piece hit), ricochet, killed }
 function Health.hit(model, info)
 	local hs = states[model]
 	if not hs or hs.dead then
 		return nil
 	end
-	local key = PART_OF[info.part and info.part.Name or ""] or "thorax"
-	local res = { part = key, penetrated = true }
-	local dmg = info.dmg or 0
-	local wounds = true
-	local g, it, d = armorFor(hs, key, info.hitPos, info.part)
-	if g then
-		local a = d.armor
-		local durFrac = math.clamp(it.dur / a.dur, 0, 1)
-		local chance = Items.penChance(info.pen or 0, a.class, durFrac)
-		local pen = math.random() < chance
-		res.armor, res.penetrated = d.id, pen
-		if key == "head" and not pen and a.ricochet and math.random() < a.ricochet * 0.5 then
-			res.ricochet = true
-			dmg = 0
-			wounds = false
-		end
-		it.dur = math.max(0, it.dur - (info.pen or 20) * (info.armorDmg or 0.4) * (a.destr or 0.5) * (pen and 1.1 or 0.9))
-		hs.gearDirty = true
-		if pen then
-			dmg *= (1 - a.class * 0.04)
-		elseif not res.ricochet then
-			dmg = (info.dmg or 0) * (a.blunt or 0.25)
-			wounds = false
+	local w = whereHit(info)
+	local key = w.pool
+	local layers = layersFor(hs, w, info.part)
+	local r = Plates.resolve(layers, { dmg = info.dmg or 0, pen = info.pen or 0, armorDmg = info.armorDmg or 0.4, angle = w.angle }, math.random)
+	for i, loss in r.losses do
+		local L = layers[i]
+		if loss > 0 and L then
+			if L.k then
+				Plates.setPart(L.it, L.d, L.k, L.cur - loss)
+			else
+				L.it.dur = math.max(0, (L.it.dur or 0) - loss)
+			end
+			hs.gearDirty = true
 		end
 	end
+	local res = { part = key, zone = w.zone, penetrated = r.penetrated, armor = layers[1] and layers[1].d.id or nil, ricochet = r.ricochet or nil }
+	local dmg = r.dmg
+	-- a stopped or deflected round leaves no wound (no bleeding, no fracture), only its blunt damage
+	local wounds = r.penetrated
 	res.dmg = dmg
 	hs.cause = info.cause or hs.cause
-	hs.lastHit = { attacker = info.attacker, part = key, ammo = info.ammo, weapon = info.weapon, from = info.from, at = now() }
+	hs.lastHit = { attacker = info.attacker, part = key, zone = w.zone, ammo = info.ammo, weapon = info.weapon, from = info.from, at = now() }
 	applyDamage(hs, key, dmg)
 	-- vitality skill (players): fewer bleeds; taking hits trains it
 	local prof = hs.player and ctx.Profiles.get(hs.player)

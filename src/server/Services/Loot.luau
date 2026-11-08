@@ -81,6 +81,10 @@ local POOLS = {
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
+		-- ballistic plates (gameplay-2a): class 3-4 and the side plates in weapon boxes; class 5-6 come from airdrops
+		-- and bodies (the weights are ours)
+		{ id = "PLATE_PE3", w = 1.2 }, { id = "PLATE_PE4", w = 1 }, { id = "PLATE_CE4", w = 1 }, { id = "PLATE_PC4F", w = 0.8 },
+		{ id = "PLATE_PC4B", w = 0.8 }, { id = "PLATE_CE5S", w = 0.3 }, { id = "PLATE_HP5S", w = 0.3 },
 		-- M14 weapon parts (Tarkov weapon boxes hold mods too)
 		{ id = "GRIP_V", w = 3 }, { id = "GRIP_STUB", w = 2 }, { id = "GRIP_ANG", w = 1 }, { id = "LIGHT_T", w = 3 }, { id = "LASER_DOT", w = 2 },
 		{ id = "RED_DOT", w = 2 }, { id = "SIGHT_MICRO", w = 1 }, { id = "MNT_RISER", w = 2 }, { id = "R17_FH_A2", w = 3 }, { id = "R17_COMP", w = 2 },
@@ -217,6 +221,7 @@ local POOLS = {
 		{ id = "A9_PST", w = 4, n = { 30, 50 } }, { id = "R17_MAG", w = 3, a = { 0, 25 }, at = "A62_FMJ" }, { id = "KST_MAG", w = 3, a = { 0, 30 }, at = "A76_PS" },
 		{ id = "HELMET_C3", w = 2 }, { id = "ARMOR_C4", w = 1.5 }, { id = "RIG_CHEST", w = 2 }, { id = "BAG_PATROL", w = 1.5 }, { id = "HEADSET_GS1", w = 1.5 },
 		{ id = "R17_RIFLE", w = 1 }, { id = "KST_RIFLE", w = 1 }, { id = "SPARROW_SMG", w = 1 }, { id = "GREN_RK5", w = 3 }, { id = "GREN_F7", w = 1 },
+		{ id = "PLATE_PE4", w = 1 }, { id = "PLATE_CE4", w = 1 }, { id = "PLATE_CE5", w = 0.5 }, { id = "PLATE_HP5B", w = 0.4 },
 	},
 	airdrop_medical = {
 		{ id = "MEDKIT_L", w = 8 }, { id = "MEDKIT_XL", w = 3 }, { id = "MEDKIT_M", w = 10 }, { id = "SURGKIT", w = 3 }, { id = "HEMOSTAT", w = 8 },
@@ -240,6 +245,10 @@ local POOLS = {
 		{ id = "A76L_LPS", w = 2, n = { 20, 40 } }, { id = "RED_DOT", w = 2 }, { id = "SIGHT_MICRO", w = 1 }, { id = "GRIP_V", w = 2 },
 		{ id = "LIGHT_T", w = 2 }, { id = "LASER_DOT", w = 1 }, { id = "R17_COMP", w = 1 }, { id = "KST_FH_SLANT", w = 1 }, { id = "AR_STK_CARB", w = 1 },
 		{ id = "GREN_F7", w = 2 }, { id = "GREN_RK5", w = 3 }, { id = "ARMOR_C4", w = 1 }, { id = "ARMOR_C5", w = 0.5 }, { id = "HELMET_C4", w = 1 },
+		-- ballistic plates (gameplay-2a): the airdrop's weapon crate is where loose class 5-6 plates turn up (ours)
+		{ id = "PLATE_CE5", w = 1 }, { id = "PLATE_PE5", w = 0.6 }, { id = "PLATE_HP5F", w = 0.6 }, { id = "PLATE_HP5B", w = 0.6 },
+		{ id = "PLATE_CE6", w = 0.4 }, { id = "PLATE_PE6", w = 0.3 }, { id = "PLATE_BWF", w = 0.2 }, { id = "PLATE_BWB", w = 0.2 },
+		{ id = "PLATE_BWS", w = 0.3 },
 	},
 }
 Loot.POOLS = POOLS
@@ -357,7 +366,7 @@ function Loot.visible(c, player, g)
 				return true
 			end
 			cur = a
-		elseif k == "mag" then
+		elseif k == "mag" or k == "mod" then -- (a body's vest shows its plates, a gun its parts: gameplay-2a)
 			cur = a
 		else
 			return false
@@ -922,6 +931,12 @@ function Loot.takeLoose(player, id)
 	return true
 end
 
+-- worn armour for an AI kit (gameplay-2a): a share of the item's durability, so its parts and the default plates that
+-- come in it (Inv.expandArmour) are worn alike. The shares keep each kit's old range against the old maximum.
+local function wornDur(id, rand, lo, hi)
+	return math.max(1, math.floor(Items.defs[id].armor.dur * rand:NextNumber(lo, hi) + 0.5))
+end
+
 -- AI loadouts (M8). Everything an AI carries is real inventory: it fires the rounds in its magazines, reloads
 -- from its rig and drops all of it as a lootable body.
 local function kit(rand)
@@ -1031,10 +1046,12 @@ function Loot.guardLoadout(rand)
 	-- coordinated Watch kit: black rigs, slate vests, full-cut shells or caps; some wear a headset (M16 visuals)
 	k.slot("rig", rand:NextNumber() < 0.6 and "RIG_CHEST" or "RIG_BELT", { tint = "black" })
 	if rand:NextNumber() < 0.7 then
-		k.slot("armor", rand:NextNumber() < 0.65 and "ARMOR_C2" or "ARMOR_C3", { dur = rand:NextInteger(18, 45) })
+		local vest = rand:NextNumber() < 0.65 and "ARMOR_C2" or "ARMOR_C3"
+		k.slot("armor", vest, { dur = wornDur(vest, rand, 0.45, 0.9) })
 	end
 	if rand:NextNumber() < 0.55 then
-		k.slot("head", rand:NextNumber() < 0.7 and "HELMET_C2" or "HELMET_C3", { dur = rand:NextInteger(10, 30), tint = "black" })
+		local helm = rand:NextNumber() < 0.7 and "HELMET_C2" or "HELMET_C3"
+		k.slot("head", helm, { dur = wornDur(helm, rand, 0.3, 0.85), tint = "black" })
 	elseif rand:NextNumber() < 0.6 then
 		k.slot("head", "CAP_FIELD", { tint = "black" })
 	end
@@ -1108,8 +1125,8 @@ function Loot.bossLoadout(rand)
 	local k = kit(rand)
 	k.wear = { 88, 100 }
 	-- heavy armour worn under his padded work jacket (the Foreman look conceals it), his signature hard hat
-	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(55, 70) })
-	k.slot("head", "HARDHAT_FOREMAN", { dur = rand:NextInteger(16, 22) })
+	k.slot("armor", "ARMOR_C5", { dur = wornDur("ARMOR_C5", rand, 0.78, 1) })
+	k.slot("head", "HARDHAT_FOREMAN", { dur = wornDur("HARDHAT_FOREMAN", rand, 0.72, 1) })
 	k.slot("rig", "RIG_CHEST", { tint = "charcoal" })
 	k.slot("back", "BAG_PATROL", { tint = "charcoal" })
 	k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3, nil, "KST_TAC")
@@ -1144,8 +1161,8 @@ function Loot.caretakerLoadout(rand)
 	local k = kit(rand)
 	k.wear = { 85, 100 }
 	k.doublePockets() -- Killa carries five double pockets too (audit ai.5)
-	k.slot("armor", "ARMOR_C6", { dur = rand:NextInteger(60, 80), tint = "black" })
-	k.slot("head", "HELMET_C5", { dur = rand:NextInteger(30, 45) })
+	k.slot("armor", "ARMOR_C6", { dur = wornDur("ARMOR_C6", rand, 0.7, 0.94), tint = "black" })
+	k.slot("head", "HELMET_C5", { dur = wornDur("HELMET_C5", rand, 0.5, 0.75) })
 	k.slot("rig", "RIG_CHEST", { tint = "black" })
 	k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.6 and "A12_SLUG" or "A12_BUCK", 4, nil, "HAR_TAC")
 	k.gun("secondary", "R17_RIFLE", "R17_MAG40", "A62_AP", 2, nil, "R17_CQB")
@@ -1184,7 +1201,7 @@ function Loot.stokerLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
 	k.wear = { 80, 100 }
-	k.slot("armor", "ARMOR_C6", { dur = rand:NextInteger(55, 80), tint = "black" })
+	k.slot("armor", "ARMOR_C6", { dur = wornDur("ARMOR_C6", rand, 0.65, 0.94), tint = "black" })
 	k.slot("face", "MASK_WELDER", { dur = rand:NextInteger(28, 40) })
 	k.slot("rig", "RIG_CHEST", { tint = "charcoal" })
 	k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.7 and "A12_SLUG" or "A12_BUCK", 3)
@@ -1207,7 +1224,7 @@ function Loot.halberdLoadout(rand)
 	local k = kit(rand)
 	k.wear = { 85, 100 }
 	k.doublePockets()
-	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(50, 70), tint = "black" })
+	k.slot("armor", "ARMOR_C5", { dur = wornDur("ARMOR_C5", rand, 0.71, 1), tint = "black" })
 	-- no helmet (Tarkov: his head is unarmoured): a goggle head mount, now and then with the panoramic goggles
 	local strap = k.slot("head", "NV_STRAP")
 	if rand:NextNumber() < 0.35 then
@@ -1232,7 +1249,7 @@ function Loot.mortarLoadout(rand)
 	local k = kit(rand)
 	k.wear = { 80, 100 }
 	k.doublePockets()
-	k.slot("armor", "ARMOR_C5", { dur = rand:NextInteger(45, 65), tint = "olive" })
+	k.slot("armor", "ARMOR_C5", { dur = wornDur("ARMOR_C5", rand, 0.64, 0.93), tint = "olive" })
 	k.slot("head", "BEANIE", { tint = "charcoal" }) -- in place of the bandana: no head armour, as Big Pipe
 	k.slot("rig", "RIG_CHEST", { tint = "olive" })
 	k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3, nil, "KST_TAC")
@@ -1254,8 +1271,8 @@ function Loot.kestrelLoadout(rand)
 	local k = kit(rand)
 	k.wear = { 85, 100 }
 	k.doublePockets()
-	k.slot("armor", "ARMOR_C4", { dur = rand:NextInteger(35, 50), tint = "olive" })
-	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 35), tint = "tan" })
+	k.slot("armor", "ARMOR_C4", { dur = wornDur("ARMOR_C4", rand, 0.64, 0.91), tint = "olive" })
+	k.slot("head", "HELMET_C3", { dur = wornDur("HELMET_C3", rand, 0.55, 0.97), tint = "tan" })
 	k.slot("rig", "RIG_CHEST", { tint = "ranger" })
 	k.slot("back", "BAG_PATROL", { tint = "tan" })
 	k.gun("primary", "R17_RIFLE", "R17_MAG", "A62_AP", 4, nil, "R17_DMR")
@@ -1346,8 +1363,9 @@ function Loot.crewLoadout(rand)
 	local k = kit(rand)
 	k.wear = { 72, 98 }
 	-- better-coordinated black kit, comms headsets (the white shoulder markers come with the bodyguard look)
-	k.slot("armor", rand:NextNumber() < 0.5 and "ARMOR_C3" or "ARMOR_C4", { dur = rand:NextInteger(35, 55), tint = "black" })
-	k.slot("head", "HELMET_C3", { dur = rand:NextInteger(20, 36), tint = "black" })
+	local vest = rand:NextNumber() < 0.5 and "ARMOR_C3" or "ARMOR_C4"
+	k.slot("armor", vest, { dur = wornDur(vest, rand, 0.65, 1), tint = "black" })
+	k.slot("head", "HELMET_C3", { dur = wornDur("HELMET_C3", rand, 0.55, 1), tint = "black" })
 	k.slot("ears", "HEADSET_COMM")
 	k.slot("rig", "RIG_CHEST", { tint = "black" })
 	if rand:NextNumber() < 0.4 then
@@ -1425,12 +1443,12 @@ function Loot.scavLoadout(rand)
 	local rig = rand:NextNumber() < 0.7 and slot("rig", rand:NextNumber() < 0.6 and "RIG_BELT" or "RIG_CHEST") or nil
 	local back = rand:NextNumber() < 0.5 and slot("back", rand:NextNumber() < 0.6 and "BAG_SLING" or "CANVAS_BAG") or nil
 	if rand:NextNumber() < 0.15 then
-		slot("armor", "ARMOR_C2", { dur = rand:NextInteger(8, 30) })
+		slot("armor", "ARMOR_C2", { dur = wornDur("ARMOR_C2", rand, 0.2, 0.75) })
 	end
 	-- mismatched headwear: an old shell now and then, otherwise a beanie or a cap; some cover their face
 	local hr = rand:NextNumber()
 	if hr < 0.2 then
-		slot("head", "HELMET_C2", { dur = rand:NextInteger(6, 20) })
+		slot("head", "HELMET_C2", { dur = wornDur("HELMET_C2", rand, 0.2, 0.67) })
 	elseif hr < 0.55 then
 		slot("head", "BEANIE", rand:NextNumber() < 0.5 and { tint = "olive" } or nil)
 	elseif hr < 0.85 then

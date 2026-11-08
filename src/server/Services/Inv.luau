@@ -8,7 +8,8 @@
 --   erev?  equipment revision: bumped on every slot change (stale equip requests are refused, M16)
 -- }
 -- Invariant: every item has exactly one location: a grid placement, a slot, a weapon's magazine well, or a slot
--- of a weapon part (M14 builds: a weapon base holds parts, parts hold parts; see WeaponParts).
+-- of a weapon part (M14 builds: a weapon base holds parts, parts hold parts; see WeaponParts), or a plate slot of a
+-- vest or armoured rig (gameplay-2a: it.mods[front | back | lside | rside] = plate guid; see Plates).
 local RS = game:GetService("ReplicatedStorage")
 local Shared = RS:WaitForChild("ZR")
 local Items = require(Shared.Items)
@@ -17,6 +18,7 @@ local Config = require(Shared.Config)
 local Util = require(Shared.Util)
 local Equipment = require(Shared.Equipment)
 local WP = require(Shared.WeaponParts)
+local Plates = require(Shared.Plates)
 
 local Inv = {}
 local defs = Items.defs
@@ -471,6 +473,10 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 				return Inv.attachMod(h, occ, g, Inv.loadOrder(h), opts)
 			end
 		end
+		-- a plate onto a worn vest: Tarkov 0.14 wants the vest taken off first
+		if od and d.kind == "plate" and Plates.slotsOf(od) then
+			return false, "TAKE_OFF_FIRST"
+		end
 		local okE, errE = Inv.canEquip(h, g, dest.slot)
 		if not okE then
 			return false, errE
@@ -503,6 +509,10 @@ function Inv.move(h: any, g: string, dest: any, opts: any?): (boolean, string?)
 		if d.kind == "mod" and WP.SLOTS[t.id] then
 			-- a part dropped on a gun or a part goes into a free slot that takes it (Tarkov)
 			return Inv.attachMod(h, target, g, Inv.loadOrder(h), opts)
+		end
+		-- a plate dropped on a vest or armoured rig goes into a plate slot that takes it (a rig's grid otherwise)
+		if d.kind == "plate" and Plates.slotsOf(td) and (Plates.freeSlot(td, t.mods, d) or Plates.swapSlot(td, t.mods, d)) then
+			return Inv.attachPlateAny(h, target, g, Inv.loadOrder(h), opts)
 		end
 		if td.grid and target ~= g then
 			return Inv.autoPlace(h, g, { target })
@@ -602,6 +612,10 @@ end
 -- it.bare keeps a stripped receiver.
 function Inv.expandBuild(h: any, g: string)
 	local it = h.items[g]
+	if it and Plates.slotsOf(defs[it.id]) then
+		Inv.expandArmour(h, g)
+		return
+	end
 	if not it or not WP.isBase(it.id) or it.mods ~= nil or it.bare then
 		it.preset, it.presetMag = nil, nil
 		return
@@ -639,7 +653,7 @@ end
 -- Tarkov's SORT button: the stash rearranged by kind (weapons, gear, parts, ammo, meds...), larger items first;
 -- all or nothing (the old layout stays if the new one does not fit)
 local SORT_KIND = {
-	weapon = 1, pistol = 2, melee = 3, armor = 4, helmet = 5, rig = 6, backpack = 7, secure = 8, headwear = 9, headset = 10,
+	weapon = 1, pistol = 2, melee = 3, armor = 4, plate = 4.5, helmet = 5, rig = 6, backpack = 7, secure = 8, headwear = 9, headset = 10,
 	facecover = 11, eyewear = 12, mod = 13, mag = 14, ammo = 15, grenade = 16, med = 17, food = 18, repair = 19, key = 20, loot = 21, quest = 22,
 }
 function Inv.sortStash(h: any): (boolean, string?)
@@ -992,6 +1006,9 @@ function Inv.attachPart(h: any, pg: string, sname: string, mg: string, order: { 
 	if not parent or not part then
 		return false, "NO_ITEM"
 	end
+	if Plates.slotsOf(defs[parent.id]) then
+		return Inv.attachPlate(h, pg, sname, mg, order, opts)
+	end
 	if type(sname) ~= "string" then
 		return false, "BAD_INPUT"
 	end
@@ -1056,6 +1073,9 @@ end
 -- take the part out of slot `sname` of pg (with the parts on it) and put it into the grids in `order`
 function Inv.detachPart(h: any, pg: string, sname: string, order: { string }, opts: any?): (boolean, string?)
 	local parent = h.items[pg]
+	if parent and Plates.slotsOf(defs[parent.id]) then
+		return Inv.detachPlate(h, pg, sname, order, opts)
+	end
 	local mg = parent and parent.mods and parent.mods[sname]
 	if not mg or not h.items[mg] then
 		return false, "NO_MOD"
@@ -1086,6 +1106,9 @@ function Inv.attachMod(h: any, wg: string, mg: string, order: { string }, opts: 
 	if not h.items[wg] or not m then
 		return false, "NO_ITEM"
 	end
+	if defs[m.id] and defs[m.id].kind == "plate" then
+		return Inv.attachPlateAny(h, wg, mg, order, opts)
+	end
 	if not WP.parts[m.id] then
 		return false, "INCOMPATIBLE"
 	end
@@ -1109,6 +1132,152 @@ end
 -- multipliers against the default build, sights, light, laser, suppressed, operable
 function Inv.modStats(h: any, wg: string): any
 	return WP.stats(h.items, wg)
+end
+
+-- ── plates (Tarkov 0.14, decision gameplay-2a; the rules in Plates.luau) ─────────────────────────────────────────────
+-- A vest or armoured rig keeps its plates in it.mods[front | back | lside | rside]. Tarkov: plates go in and out only
+-- while the vest is not worn ("take it off first"); a plate fits a slot by its position and its family.
+
+-- is g worn (in an equipment slot)?
+function Inv.isWorn(h: any, g: string): boolean
+	return Inv.locate(h, g) == "slot"
+end
+
+-- put plate pg into slot `slot` of carrier cg; a plate already there goes to the grids in `order`
+function Inv.attachPlate(h: any, cg: string, slot: string, pg: string, order: { string }, _opts: any?): (boolean, string?)
+	local c, p = h.items[cg], h.items[pg]
+	if not c or not p then
+		return false, "NO_ITEM"
+	end
+	if type(slot) ~= "string" then
+		return false, "BAD_INPUT"
+	end
+	local okF, errF = Plates.fits(defs[c.id], slot, defs[p.id])
+	if not okF then
+		return false, errF
+	end
+	if Inv.isWorn(h, cg) then
+		return false, "TAKE_OFF_FIRST"
+	end
+	local old = c.mods and c.mods[slot]
+	if old == pg then
+		return true, nil
+	end
+	local sk, sa, sb = Inv.locate(h, pg)
+	if sk == "slot" or sk == "mag" then
+		return false, "BAD_SOURCE"
+	end
+	if sk == "mod" and sa and Inv.isWorn(h, sa) then
+		return false, "TAKE_OFF_FIRST" -- out of another vest that is worn
+	end
+	detach(h, pg)
+	c.mods = c.mods or {}
+	c.mods[slot] = pg
+	if old and h.items[old] and not Inv.autoPlace(h, old, order) then
+		-- undo: the old plate back in, the new one back where it was
+		c.mods[slot] = old
+		if sk == "grid" and h.grids[sa] then
+			h.grids[sa][pg] = sb
+		elseif sk == "mod" and h.items[sa] then
+			h.items[sa].mods = h.items[sa].mods or {}
+			h.items[sa].mods[sb] = pg
+		end
+		return false, "NO_SPACE"
+	end
+	return true, nil
+end
+
+-- a plate dropped on a carrier: the first empty slot that takes it, else a filled one it can replace
+function Inv.attachPlateAny(h: any, cg: string, pg: string, order: { string }, opts: any?): (boolean, string?)
+	local c, p = h.items[cg], h.items[pg]
+	if not c or not p then
+		return false, "NO_ITEM"
+	end
+	local cd, pd = defs[c.id], defs[p.id]
+	if not Plates.slotsOf(cd) then
+		return false, "INCOMPATIBLE"
+	end
+	local slot = Plates.freeSlot(cd, c.mods, pd) or Plates.swapSlot(cd, c.mods, pd)
+	if not slot then
+		return false, "NO_SLOT"
+	end
+	return Inv.attachPlate(h, cg, slot, pg, order, opts)
+end
+
+-- take the plate out of slot `slot` of carrier cg into the grids in `order`
+function Inv.detachPlate(h: any, cg: string, slot: string, order: { string }, _opts: any?): (boolean, string?)
+	local c = h.items[cg]
+	local pg = c and c.mods and c.mods[slot]
+	if not pg or not h.items[pg] then
+		return false, "NO_MOD"
+	end
+	if Inv.isWorn(h, cg) then
+		return false, "TAKE_OFF_FIRST"
+	end
+	detach(h, pg)
+	local okP, err = Inv.autoPlace(h, pg, order)
+	if not okP then
+		c.mods = c.mods or {}
+		c.mods[slot] = pg
+		return false, err
+	end
+	return true, nil
+end
+
+-- A new vest comes with its default plates (Tarkov: traders sell, and loot and bodies carry, the preset), as worn as the
+-- vest itself. it.pf marks it done, so a vest a player emptied stays empty; it.bare keeps a new one empty.
+function Inv.expandArmour(h: any, g: string)
+	local it = h.items[g]
+	local d = it and defs[it.id]
+	local slots = d and Plates.slotsOf(d)
+	if not slots or it.pf or it.bare then
+		return
+	end
+	it.pf = true
+	local frac = math.clamp((it.dur or d.armor.dur) / math.max(d.armor.dur, 1e-6), 0, 1)
+	for _, s in Plates.SLOTS do
+		local e = slots[s]
+		local pd = e and e.def and defs[e.def]
+		if pd and not (it.mods and it.mods[s]) then
+			local pg, p = Inv.newItem(e.def, 1)
+			p.dur = Plates.tenth(pd.armor.dur * frac)
+			p.fir, p.fip, p.ins = it.fir, it.fip, it.ins
+			h.items[pg] = p
+			it.mods = it.mods or {}
+			it.mods[s] = pg
+		end
+	end
+end
+
+-- Old saves (before gameplay-2a): a vest, rig or helmet held one durability against its old maximum. It becomes its new
+-- form once: every part at the share it had, a vest's default plates at the same share. Returns how many items changed.
+-- Runs on every holder Health.attach sees (the profile in the bunker, raid kits) and wherever Profiles.load calls it.
+function Inv.migrateArmour(h: any): number
+	if not (h and h.items) then
+		return 0
+	end
+	local list = {}
+	for g, it in h.items do
+		local d = defs[it.id]
+		if d and Plates.multi(d) and it.sd == nil then
+			table.insert(list, g)
+		end
+	end
+	for _, g in list do
+		local it = h.items[g]
+		local d = defs[it.id]
+		local old = Plates.OLD_DUR[it.id] or d.armor.dur
+		local f = math.clamp((it.dur or old) / old, 0, 1)
+		local fm = it.dmax and math.clamp(it.dmax / old, 0, 1) or nil
+		Plates.initParts(it, d, f)
+		if fm then
+			it.dmax = Plates.tenth(d.armor.dur * fm)
+		end
+		if Plates.slotsOf(d) and not it.pf then
+			Inv.expandArmour(h, g)
+		end
+	end
+	return #list
 end
 
 -- shells a tube-fed gun holds (its tube part), or a magazine's / internal magazine's capacity
@@ -1372,7 +1541,13 @@ function Inv.check(h: any): (boolean, string?)
 					return false, e
 				end
 				local m = h.items[mg]
-				if not m or not WP.fits(it.id, sname, m.id) then
+				local fits
+				if Plates.slotsOf(d) then
+					fits = m ~= nil and (Plates.fits(d, sname, defs[m.id])) -- a plate in a vest's plate slot
+				else
+					fits = m ~= nil and (WP.fits(it.id, sname, m.id))
+				end
+				if not fits then
 					return false, "part " .. tostring(m and m.id) .. " does not fit " .. it.id .. "." .. sname
 				end
 			end
@@ -1406,7 +1581,8 @@ function Inv.newItem(id: string, n: number?, extra: any?): (string, any)
 	local it = { id = id, n = n or 1 }
 	local d = defs[id]
 	if d and d.armor then
-		it.dur = d.armor.dur
+		-- each built-in part at full durability (Plates: it.sd per part, it.dur their sum)
+		Plates.initParts(it, d, 1)
 	end
 	if d and d.med then
 		if d.med.hp then
@@ -1424,6 +1600,10 @@ function Inv.newItem(id: string, n: number?, extra: any?): (string, any)
 	if extra then
 		for k, v in extra do
 			it[k] = v
+		end
+		-- a durability given for the whole armour (kits, loot) spreads over its parts at the same share
+		if d and d.armor and type(extra.dur) == "number" and extra.sd == nil and Plates.multi(d) then
+			Plates.initParts(it, d, extra.dur / math.max(d.armor.dur, 1e-6))
 		end
 	end
 	return Util.guid(), it
