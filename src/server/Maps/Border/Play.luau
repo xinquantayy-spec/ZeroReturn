@@ -661,6 +661,9 @@ return function(B)
 				if typeof(p) == "CFrame" then
 					p = p.Position
 				end
+				if typeof(p) == "Vector3" then
+					p -= Vector3.new(0, 3, 0) -- (Works' named points stand 3 studs up; AI.spawn lifts the body itself)
+				end
 				if typeof(p) ~= "Vector3" then
 					p = V(sp[3], ground(sp[3], sp[4]) + sp[5] + 1, sp[4]) -- on the roof at the building's height
 				end

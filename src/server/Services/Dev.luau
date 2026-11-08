@@ -458,6 +458,38 @@ function C.spawnAI(kind, pos)
 	return u and u.name or "failed"
 end
 
+-- aiNear(name, n, r0, r1): wake n AI units and stand them in a ring r0-r1 studs round a player (a worst case for the AI's
+-- cost: every one awake and in range of him). Returns how many moved.
+function C.aiNear(name, n, r0, r1)
+	local p = plr(name)
+	local root = p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return 0
+	end
+	local moved, i = 0, 0
+	n, r0, r1 = n or 18, r0 or 60, r1 or 180
+	for _, u in ctx.AI.units do
+		if moved >= n then
+			break
+		end
+		if u.alive and u.root and u.root.Parent and u.model then
+			i += 1
+			local a = i / n * math.pi * 2
+			local d = r0 + (i % 3) / 2 * (r1 - r0)
+			local at = root.Position + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+			local hit = workspace:Raycast(at + Vector3.new(0, 300, 0), Vector3.new(0, -600, 0))
+			if hit then
+				ctx.AI.wake(u)
+				u.model:PivotTo(CFrame.new(hit.Position + Vector3.new(0, 3.3, 0)))
+				u.route, u.post, u.leader = nil, nil, nil
+				u.state = "WANDER"
+				moved += 1
+			end
+		end
+	end
+	return moved
+end
+
 -- send an AI unit to a point (as if it heard something there): aiGoto("Scav_3", Vector3)
 function C.aiGoto(unitName, pos)
 	for _, u in ctx.AI.units do

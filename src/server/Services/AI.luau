@@ -596,7 +596,9 @@ local function sleepTick(u)
 		end
 	end
 	local t = now()
+	-- (and standing on something: a unit put to sleep in mid-air, just spawned on a perch, would hang there anchored)
 	local calm = (u.state == "PATROL" or u.state == "WANDER" or u.state == "RETURN") and t >= (u.alert or 0) and not u.target
+		and u.hum.FloorMaterial ~= Enum.Material.Air
 	local want = AI.sleepState(u.asleep == true, nearest, calm)
 	if want and not u.asleep then
 		stop(u)
