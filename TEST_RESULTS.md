@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Thirteenth catalogue slice: nine goods and rounds that let more crafts in (decision economy-1a; 2026-11-08, 22:47 SGT)
+
+| Test | Result |
+|---|---|
+| Offline (the slice thread, Lua 5.4 harness with stand-ins; not Studio) | HideoutTests 113 passed, 0 failed; 15 of 15 deliberate breakages caught; nothing missing from "every barter ingredient can be found, bought or crafted". |
+| Pictures | build_items_s.py rendered the nine icons in Blender (printer paper, cookbook, textbook, Geiger counter, magnet, sledgehammer, SV-1, both FMJs; looked at side by side), packed into icon sheet 6 and uploaded (image 127106355430078); ItemIcons now lists 531 items on 7 sheets. |
+| Tests (Studio) | 16 suites, 1,201 checks, all passed; HideoutTests 113, and UiTests' "every carried item has a picture" passes with the nine new items. |
+| Not checked | The HIDEOUT screen's lists (36 workbench, 13 medstation, 19 lavatory crafts), a magnet craft run, an SV-1 used in a raid, buying the FMJs from VOS and the HALE barter; a phone. |
+
 ## Bipods: the KS-L mounts lying down (gameplay-5b part 3; 2026-11-08, 22:31 SGT)
 
 | Test | Result |
