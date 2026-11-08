@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The 11.4x23 guns and the F-57 pistol (decision economy-1a, eighth slice; 2026-11-08, about 20:22 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_45.py added a new batch, ZR_Guns45 (7 parts, 3,904 triangles), uploaded as 99440020868996. build_items_o.py drew the five rounds. The first sprite run hit its time limit with 5 sprites left; they were rendered and the sheet packed again before use (171 sprites; image 79716360737835). The sixth icon sheet was packed again too (image 100547521648082). |
+| In a raid (Quay 7, Studio) | The HS-45 loaded a 25-round magazine of FMJ and fired 5 (25 to 20). The L-11 in the holster loaded 7 HP and fired 2 (7 to 5). The F-57 was refused on the back ("WRONG_SLOT": pistols go in the holster, as in EFT). In the holster it loaded 20 SS and fired 3 (20 to 17). |
+| Tests | The first run failed the loads-per-calibre check again, because EFT has five .45 ACP loads. The check now names the two five-load calibres. Then 15 suites, 1,156 checks, all passed. RecoilTests check the UMP 45 at 72 / 240, the M1911A1 at 451 / 355 and the Five-seveN MK2 at 281 / 240. LogicTests count 19 mastering groups. |
+| Not checked | Aiming the three guns, their sounds by ear, AI with them, a phone. |
+
 ## The PW-46 and PD-57 personal defence weapons with 4.6x30 and 5.7x28 (decision economy-1a, seventh slice; 2026-11-08, about 20:10 SGT)
 
 | Test | Result |

@@ -77,6 +77,12 @@ add("VAL_RIFLE", { name = "Nightjar AV-9", short = "AV-9", kind = "weapon", w = 
 -- P90 45,200); the weights are ours (not found)
 add("MP7_SMG", { name = "Swift PW-46", short = "PW-46", kind = "weapon", w = 3, h = 2, mass = 1.9, value = 44288, caliber = "4.6", weapon = "MP7", family = "MP7", rarity = "rare", desc = "Compact personal defence weapon in 4.6x30 with the magazine in its grip, a top rail and a sliding stock. Fast, light recoil, small rounds that pierce.", color = c("#232526") })
 add("P90_SMG", { name = "Petrel PD-57", short = "PD-57", kind = "weapon", w = 3, h = 2, mass = 2.6, value = 45200, caliber = "5.7", weapon = "P90", family = "P90", rarity = "rare", desc = "Bullpup personal defence weapon in 5.7x28 with a 50-round magazine lying on top and a built-in ring sight.", color = c("#3B3E36") })
+-- economy-1a, eighth slice (2026-11-08): EFT's .45 ACP guns (our 11.4x23, the calibre's metric name) and its 5.7x28 pistol.
+-- The Harrier HS-45 copies the HK UMP 45, the Lark L-11 the Colt M1911A1 and the Finch F-57 the FN Five-seveN MK2. Values
+-- are EFT's handbook prices (UMP 45 26,500, M1911A1 5,408, Five-seveN MK2 14,238); the weights are ours (not found)
+add("UMP_SMG", { name = "Harrier HS-45", short = "HS-45", kind = "weapon", w = 3, h = 2, mass = 2.3, value = 26500, caliber = "11.4", weapon = "UMP", family = "UMP", rarity = "uncommon", desc = "Boxy polymer submachine gun in 11.4x23 with a folding stock. Slow-firing, hard-hitting, easy to hold.", color = c("#1E1F20") })
+add("M1911_PISTOL", { name = "Lark L-11", short = "L-11", kind = "pistol", w = 2, h = 1, mass = 1.1, value = 5408, caliber = "11.4", weapon = "M1911", family = "M1911", desc = "Single-action steel pistol in 11.4x23. Seven heavy rounds, a crisp trigger, a sharp kick.", color = c("#2C2E30") })
+add("FN57_PISTOL", { name = "Finch F-57", short = "F-57", kind = "pistol", w = 2, h = 1, mass = 0.74, value = 14238, caliber = "5.7", weapon = "FN57", family = "FN57", rarity = "uncommon", desc = "Light polymer pistol in 5.7x28 with a 20-round magazine. Fires the PD-57's rounds.", color = c("#1C1D1E") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -118,6 +124,12 @@ add("MP7_MAG20", { name = "PW-46 20-rd Magazine", short = "MAG 20", kind = "mag"
 add("MP7_MAG30", { name = "PW-46 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.13, value = 6001, capacity = 30, caliber = "4.6", family = "MP7", desc = "30-round 4.6x30 magazine for the PW-46.", color = c("#1E1F20") })
 add("MP7_MAG40", { name = "PW-46 40-rd Magazine", short = "MAG 40", kind = "mag", w = 1, h = 2, mass = 0.16, value = 12142, capacity = 40, caliber = "4.6", family = "MP7", rarity = "rare", desc = "Long 40-round 4.6x30 magazine for the PW-46.", color = c("#1E1F20") })
 add("P90_MAG", { name = "PD-57 50-rd Magazine", short = "MAG 50", kind = "mag", w = 2, h = 1, mass = 0.2, value = 10500, capacity = 50, caliber = "5.7", family = "P90", rarity = "uncommon", desc = "Smoky polymer 50-round 5.7x28 magazine that lies on top of the PD-57.", color = c("#4A4D4F") })
+-- economy-1a, eighth slice: EFT's UMP 45 25-round (2,300), M1911A1 7-round (1,100) and Mec-Gar 11-round (2,100) and
+-- Five-seveN 20-round (3,660) magazines; handbook prices, weights ours
+add("UMP_MAG", { name = "HS-45 25-rd Magazine", short = "MAG 25", kind = "mag", w = 1, h = 2, mass = 0.18, value = 2300, capacity = 25, caliber = "11.4", family = "UMP", desc = "Straight polymer 25-round 11.4x23 magazine for the HS-45.", color = c("#1E1F20") })
+add("M1911_MAG", { name = "L-11 7-rd Magazine", short = "MAG 7", kind = "mag", w = 1, h = 1, mass = 0.07, value = 1100, capacity = 7, caliber = "11.4", family = "M1911", desc = "Single-stack steel 7-round 11.4x23 magazine for the L-11.", color = c("#2E3032") })
+add("M1911_MAG11", { name = "L-11 11-rd Magazine", short = "MAG 11", kind = "mag", w = 1, h = 1, mass = 0.1, value = 2100, capacity = 11, caliber = "11.4", family = "M1911", rarity = "uncommon", desc = "Extended 11-round 11.4x23 magazine for the L-11.", color = c("#2E3032") })
+add("FN57_MAG", { name = "F-57 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 1, mass = 0.06, value = 3660, capacity = 20, caliber = "5.7", family = "FN57", desc = "Polymer 20-round 5.7x28 magazine for the F-57.", color = c("#1C1D1E") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -225,6 +237,14 @@ ammo("A57_SR", "5.7x28 SR", "5.7 SR", "5.7", 60, 150, { dmg = 62, pen = 25, armo
 ammo("A57_SUB", "5.7x28 Subsonic", "5.7 SUB", "5.7", 60, 270, { dmg = 59, pen = 27, armorDmg = 0.37, bleedL = 0.12, bleedH = 0.06, frag = 0.35, speed = 299, recoil = -0.15, acc = 0.05, subsonic = true }, nil, "Subsonic load for suppressed fire.") -- SB193
 ammo("A57_TR", "5.7x28 TR", "5.7 TR", "5.7", 60, 310, { dmg = 53, pen = 33, armorDmg = 0.41, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 715, acc = -0.04, tracer = "red" }, "uncommon", "Duty load with an orange-tipped tracer.") -- L191
 ammo("A57_SS", "5.7x28 SS", "5.7 SS", "5.7", 60, 460, { dmg = 49, pen = 37, armorDmg = 0.43, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 715 }, "uncommon", "Duty round with a steel core. Goes through class 3 and 4.") -- SS190
+-- 11.4x23 (EFT's .45 ACP; economy-1a, eighth slice): RIP, Hydra-Shok, Lasermatch FMJ, Match FMJ, AP, all subsonic.
+-- Figures from tarkovforge.com/ammo/45-acp-<round> (read 2026-11-08), values EFT's handbook prices; bleeding as for the 6.2
+-- with EFT's changes (RIP +30 % / +20 %, Hydra-Shok heavy +30 %)
+ammo("A114_FX", "11.4x23 FX", "11.4 FX", "11.4", 50, 420, { dmg = 130, pen = 3, armorDmg = 0.12, bleedL = 0.42, bleedH = 0.26, frag = 1, speed = 293, acc = -0.05, subsonic = true }, "uncommon", "Fragmenting copper cup. Shreds flesh, stopped by anything.") -- RIP
+ammo("A114_HP", "11.4x23 HP", "11.4 HP", "11.4", 50, 150, { dmg = 100, pen = 13, armorDmg = 0.3, bleedL = 0.12, bleedH = 0.36, frag = 0.5, speed = 274, subsonic = true }, nil, "Hollow point with a centre post.") -- Hydra-Shok
+ammo("A114_TR", "11.4x23 TR", "11.4 TR", "11.4", 50, 76, { dmg = 76, pen = 19, armorDmg = 0.37, bleedL = 0.12, bleedH = 0.06, frag = 0.01, speed = 290, acc = 0.1, tracer = "red", subsonic = true }, nil, "Full metal jacket with an orange-tipped tracer.") -- Lasermatch FMJ
+ammo("A114_FMJ", "11.4x23 FMJ", "11.4 FMJ", "11.4", 50, 94, { dmg = 72, pen = 25, armorDmg = 0.36, bleedL = 0.12, bleedH = 0.06, frag = 0.01, speed = 340, subsonic = true }, nil, "Match full metal jacket.") -- Match FMJ
+ammo("A114_AP", "11.4x23 AP", "11.4 AP", "11.4", 50, 670, { dmg = 66, pen = 38, armorDmg = 0.48, bleedL = 0.12, bleedH = 0.06, frag = 0.01, speed = 299, recoil = 0.07, acc = -0.05, subsonic = true }, "rare", "Steel-core piercer. Goes through class 4.") -- AP
 
 -- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
 -- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and

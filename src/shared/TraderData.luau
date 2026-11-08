@@ -265,6 +265,8 @@ T.offers = {
 		o("A76N_BALL", 4, 6, 40), -- the fifth slice: EFT's Peacekeeper sells 7.62x51 M80 at LL4 (tarkovforge.com)
 		-- the seventh slice: EFT's Peacekeeper sells 5.7x28 SS198LF (LL1), SS197SR and SB193 (LL2), L191 (LL3) and SS190 (LL4)
 		o("A57_LF", 1, 6, 60), o("A57_SR", 2, 6, 60), o("A57_SUB", 2, 6, 60), o("A57_TR", 3, 4, 60), o("A57_SS", 4, 4, 60),
+		-- the eighth slice: EFT's Peacekeeper sells .45 ACP Lasermatch and Match FMJ (LL1), Hydra-Shok (LL2) and AP (LL4)
+		o("A114_TR", 1, 6, 50), o("A114_FMJ", 1, 6, 50), o("A114_HP", 2, 6, 50), o("A114_AP", 4, 3, 50),
 		-- rounds (economy-1a; EFT's Peacekeeper, wiki and tarkovforge): 9x19 FMJ M882 and the lead slug at LL1, 5.56 FMJ at
 		-- LL2, M855 and AP 6.3 at LL3, M856A1 at LL4; M995 by barter only (no trader sells it for cash in EFT)
 		o("A9_FMJ", 1, 10, 50), o("A12_SLUG", 1, 4, 20), o("A62_FMJ", 2, 10, 60), o("A62_SS", 3, 6, 60), o("A9_AP", 3, 4, 50),
@@ -295,6 +297,7 @@ T.offers = {
 		-- the seventh slice: EFT's Mechanic sells 4.6x30 Action SX (LL1), Subsonic SX (LL2), JSP SX (LL3) and FMJ SX (LL4), and
 		-- 5.7x28 R37.X (LL2) and R37.F (LL3) (tarkovforge.com's round pages)
 		o("A46_HP", 1, 6, 60), o("A46_SUB", 2, 6, 60), o("A46_JSP", 3, 6, 60), o("A46_FMJ", 4, 4, 60), o("A57_EX", 2, 6, 60), o("A57_FX", 3, 6, 60),
+		o("A114_FX", 4, 4, 50), -- the eighth slice: EFT's Mechanic sells .45 ACP RIP at LL4 (tarkovforge.com)
 		-- rounds (economy-1a; EFT's Mechanic): the green tracer at LL1, Pst gzh at LL2, RIP at LL4
 		o("A9_TR", 1, 10, 50), o("A9_PST", 2, 10, 50), o("A9_RIP", 4, 3, 50),
 		pre("R17_CQB", 3, 1), pre("SPR_TAC", 3, 1),
@@ -412,6 +415,15 @@ T.barters = {
 		b("MP7_MAG40", 4, 2, { { "SPARE_PARTS", 2 }, { "CAPACITOR", 1 } }),
 		b("P90_MAG", 3, 3, { { "SPARE_PARTS", 1 }, { "BOLTS", 2 } }),
 		b("A46_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 1 } }, 60),
+		-- the eighth slice: EFT sells none of the UMP 45, M1911A1 and Five-seveN for money (tarkovforge.com); here by barter, with
+		-- their magazines (levels and goods ours)
+		b("UMP_SMG", 2, 1, { { "WEAPON_PARTS", 1 }, { "BOLTS", 3 } }),
+		b("M1911_PISTOL", 1, 1, { { "SCREWS", 2 }, { "BOLTS", 1 } }),
+		b("FN57_PISTOL", 2, 1, { { "WEAPON_PARTS", 1 }, { "CAPACITOR", 1 } }),
+		b("UMP_MAG", 2, 4, { { "SPARE_PARTS", 1 } }),
+		b("M1911_MAG", 1, 5, { { "SCREWS", 1 } }),
+		b("M1911_MAG11", 2, 3, { { "SPARE_PARTS", 1 } }),
+		b("FN57_MAG", 2, 4, { { "SPARE_PARTS", 1 } }),
 	},
 	kovac = {
 		b("WEAPON_KIT", 1, 1, { { "DUCT_TAPE", 2 }, { "SPARK_PLUG", 1 }, { "WIRES", 1 } }),

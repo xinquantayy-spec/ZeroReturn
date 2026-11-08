@@ -90,6 +90,20 @@
   "oy": 6.93,
   "w": 30
  },
+ "FN57_MAG@pistol": {
+  "file": "FN57_MAG@pistol",
+  "h": 58,
+  "ox": 13.2,
+  "oy": 5.14,
+  "w": 27
+ },
+ "FN57_PISTOL@pistol": {
+  "file": "FN57_PISTOL@pistol",
+  "h": 71,
+  "ox": 93.84,
+  "oy": 15.44,
+  "w": 106
+ },
  "GL6_LAUNCHER@long": {
   "file": "GL6_LAUNCHER@long",
   "h": 111,
@@ -495,6 +509,27 @@
   "ox": 36.05,
   "oy": 9.97,
   "w": 59
+ },
+ "M1911_MAG11@pistol": {
+  "file": "M1911_MAG11@pistol",
+  "h": 67,
+  "ox": 10.96,
+  "oy": 5.9,
+  "w": 22
+ },
+ "M1911_MAG@pistol": {
+  "file": "M1911_MAG@pistol",
+  "h": 53,
+  "ox": 10.96,
+  "oy": 5.9,
+  "w": 22
+ },
+ "M1911_PISTOL@pistol": {
+  "file": "M1911_PISTOL@pistol",
+  "h": 66,
+  "ox": 96.98,
+  "oy": 14.1,
+  "w": 111
  },
  "M1A_FH@long": {
   "file": "M1A_FH@long",
@@ -1104,6 +1139,20 @@
   "ox": 229.04,
   "oy": 9.04,
   "w": 346
+ },
+ "UMP_MAG@long": {
+  "file": "UMP_MAG@long",
+  "h": 63,
+  "ox": 10.1,
+  "oy": 5.06,
+  "w": 21
+ },
+ "UMP_SMG@long": {
+  "file": "UMP_SMG@long",
+  "h": 67,
+  "ox": 118.16,
+  "oy": 21.71,
+  "w": 209
  },
  "VAL_RIFLE@long": {
   "file": "VAL_RIFLE@long",

@@ -21,16 +21,16 @@
   (recovery and insurance, merged from its thread), ui-8a and ui-2b (accessibility, recorder overlay), ai-5b (the
   Caretaker's KS-L, MORTAR's GL-6), economy-7b (EFT's 14 hideout modules, merged from its thread, all its requests
   applied) and economy-4b's experience side (EFT's level table to 79). 14 suites, 1,079 checks.
-- Done later on 2026-11-08 (TEST_RESULTS, pushed): economy-1a's first seven slices (30 rounds; 54 barter goods with the
+- Done later on 2026-11-08 (TEST_RESULTS, pushed): economy-1a's first eight slices (30 rounds; 54 barter goods with the
   hideout built from them; the KS-74 and the PM with 5.4x39 and 9x18; the SK-45 and the MR-10; the 7.6x51 calibre with
-  the S-14 and the OB-7; the 9x39 calibre with the SV-9 and the AV-9; 4.6x30 and 5.7x28 with the PW-46 and the PD-57: 461 items, 18 guns, 70 rounds in 11 calibres),
+  the S-14 and the OB-7; the 9x39 calibre with the SV-9 and the AV-9; 4.6x30 and 5.7x28 with the PW-46 and the PD-57; 11.4x23 with the HS-45 and the L-11, and the F-57: 473 items, 21 guns, 75 rounds in 12 calibres),
   economy-3a (a flea market of real players across servers with an AI floor, built by a helper thread and merged),
   ui-4c (touch drag), the gamepad and touch slow lean, art-6a (first-person reload and check poses). 15 suites, 1,156
   checks.
 - The owner's to try: the flea market between two servers needs a published place (publishing is the owner's call).
 - In a helper thread since 17:20 SGT: economy-3a (the flea market with an AI floor; the first thread was stopped by the
   15:25 interrupt before it wrote anything). When its DONE is on the board: merge, apply its REQUESTs, run FleaTests.
-- Next, in order: economy-1a's next slices (.366, .45 ACP, the Five-seveN, a revolver, more parts, the other barter goods, keys;
+- Next, in order: economy-1a's next slices (.366, a revolver, 9x19 and 7.62x25 guns, more parts, the other barter goods, keys;
   more hideout crafts with them), ui-5a (tutorial raid), art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
   hideout modules without one; bipods; ai-4a voices.
 - Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over

@@ -1,6 +1,8 @@
 --!nonstrict
 -- Cosmetic-only effects: tracers, muzzle flashes, impacts, bullet marks, positional sounds. Bounded counts.
 -- World sounds run through one SoundGroup so a blast or a stun charge can muffle them (deafness, M11).
+-- guns whose empty cases are pistol-sized (the 9x19, 9x18, 11.4x23, 4.6x30 and 5.7x28 guns)
+local PISTOL_CASE = { SPARROW = true, P9 = true, PM = true, M1911 = true, FN57 = true, UMP = true, MP7 = true, P90 = true }
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
@@ -444,7 +446,7 @@ end
 local GUN = {
 	R17 = { s = 1.0, v = 0.9 }, KST = { s = 0.9, v = 0.95 }, KSL = { s = 0.86, v = 1.0 }, GL6 = { s = 0.42, v = 0.75 }, SPARROW = { s = 1.16, v = 0.8 },
 	HARROW = { s = 0.68, v = 1.0 }, TUNDRA = { s = 0.78, v = 1.0 }, P9 = { s = 1.28, v = 0.72 },
-	KS74 = { s = 0.98, v = 0.92 }, PM = { s = 1.36, v = 0.66 }, SKS = { s = 0.88, v = 0.98 }, SVD = { s = 0.74, v = 1.0 }, M1A = { s = 0.78, v = 1.0 }, M700 = { s = 0.72, v = 1.0 }, VSS = { s = 1.1, v = 0.9 }, VAL = { s = 1.12, v = 0.9 }, MP7 = { s = 1.24, v = 0.8 }, P90 = { s = 1.2, v = 0.82 }, -- economy-1a's third slice: the 5.4 cracks sharper than the 7.6, the 9x18 pops
+	KS74 = { s = 0.98, v = 0.92 }, PM = { s = 1.36, v = 0.66 }, SKS = { s = 0.88, v = 0.98 }, SVD = { s = 0.74, v = 1.0 }, M1A = { s = 0.78, v = 1.0 }, M700 = { s = 0.72, v = 1.0 }, VSS = { s = 1.1, v = 0.9 }, VAL = { s = 1.12, v = 0.9 }, MP7 = { s = 1.24, v = 0.8 }, P90 = { s = 1.2, v = 0.82 }, UMP = { s = 1.04, v = 0.82 }, M1911 = { s = 1.2, v = 0.7 }, FN57 = { s = 1.4, v = 0.62 }, -- economy-1a's third slice: the 5.4 cracks sharper than the 7.6, the 9x18 pops
 	-- the stationary guns (Stationary): the same recorded shot pitched down, louder
 	HMG12 = { s = 0.52, v = 1.0 }, AGL30 = { s = 0.62, v = 1.0 },
 }
@@ -746,7 +748,7 @@ function Effects.remoteShot(d)
 	if shotDir then
 		-- the shooter's case, out to his right (Effects.casing keeps it to shooters within 60 studs)
 		local right = shotDir:Cross(Vector3.yAxis)
-		Effects.casing(d.o - shotDir * 1.2 + right * 0.15, right, (d.w == "HARROW" and "shell") or ((d.w == "SPARROW" or d.w == "P9") and "pistol") or "rifle")
+		Effects.casing(d.o - shotDir * 1.2 + right * 0.15, right, (d.w == "HARROW" and "shell") or (PISTOL_CASE[d.w] and "pistol") or "rifle")
 	end
 	if d.t then
 		Effects.tracer(d.o, d.p, d.t) -- tracer rounds only (Tarkov), in their colour
