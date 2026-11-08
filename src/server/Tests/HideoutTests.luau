@@ -2,6 +2,8 @@
 -- Hideout checks for decision economy-7b ("Economy core, about 14"): EFT's modules, levels, costs and requirements,
 -- bonuses, power and fuel burn, craft timing online and offline, the scav case and the bitcoin farm, old saves'
 -- migration, and the server's operations on a scratch profile (Hideout.act, no player). Pure rules where possible.
+-- Since economy-1a's crafts (2026-11-08): every craft's items, tools and numbers, the rules that keep a craft out, and
+-- spot checks against EFT's current crafts with their sources.
 -- Run via ZR_Dev "tests" (every module in Tests). EFT's figures and their sources: HideoutData.luau's header.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Services = script.Parent.Parent:WaitForChild("Services")
@@ -193,7 +195,7 @@ function T.run(ctx)
 		local h2 = hideout({ generator = 1, workbench = 1, lavatory = 1 })
 		h2.fuel = { 300 * HD.burnRate() }
 		h2.on = true
-		h2.crafts.workbench = { r = "AMMO_PS", get = { "A76_PS", 200 }, need = 1000, done = 0 }
+		h2.crafts.workbench = { r = "AMMO_BP", get = { "A76_BP", 60 }, need = 1000, done = 0 }
 		h2.crafts.lavatory = { r = "LAV_SOAP", get = { "SOAP", 6 }, need = 1000, done = 0 }
 		local ev2 = HD.tick(h2, 1000)
 		local outOfFuel, lavDone = false, false
@@ -211,7 +213,7 @@ function T.run(ctx)
 	-- ── craft timing, online (many small ticks) and offline (one long tick) alike ─────────────────────────────────────
 	guard("crafts", function()
 		local r = HD.byRecipe.AMMO_BP
-		check("craft time: EFT's 2 h 37 min / 4", near(HD.craftNeed(r, nil), 9420 / 4))
+		check("craft time: EFT's 2 h 36 min 40 s / 4 (SPT's 9,400 s; tarkovforge shows 2 h 37 min)", near(HD.craftNeed(r, nil), 9400 / 4))
 		check("the Crafting skill shortens it (Progress' rate), never under 5 s", HD.craftNeed(r, { crafting = 4650 }) < HD.craftNeed(r, nil) and HD.craftNeed({ time = 1 }, nil) == 5)
 		local function setup()
 			local hd = hideout({ generator = 1, medstation = 1 })
@@ -234,22 +236,45 @@ function T.run(ctx)
 		h3.t = 100
 		local ev = HD.tick(h3, 50)
 		check("a clock that runs backwards changes nothing", h3.t == 100 and h3.crafts.medstation.done == 0 and #ev == 0)
-		local ids, dupe, selfLoop, both, badItem = {}, {}, {}, {}, {}
+		local ids, dupe, selfLoop, both, badItem, badNum, mostly, refills = {}, {}, {}, {}, {}, {}, {}, {}
+		local CRAFTING = { medstation = true, workbench = true, lavatory = true, nutrition = true, water = true, intel = true }
+		local perModule = {}
+		local function value(id)
+			local d = Items.defs[id]
+			return (d and d.value) or 0
+		end
 		for _, rc in HD.recipes do
 			if ids[rc.id] then
 				table.insert(dupe, rc.id)
 			end
 			ids[rc.id] = true
-			if not HD.modules[rc.module] or rc.level > #HD.modules[rc.module].levels or not Items.defs[rc.get[1]] then
+			perModule[rc.module] = (perModule[rc.module] or 0) + 1
+			if not HD.modules[rc.module] or not CRAFTING[rc.module] or rc.level < 1 or rc.level > #HD.modules[rc.module].levels or not Items.defs[rc.get[1]] then
 				table.insert(badItem, rc.id)
+			end
+			if not (rc.time > 0 and rc.get[2] >= 1 and #rc.give >= 1 and type(rc.eft) == "string" and #rc.eft > 0) then
+				table.insert(badNum, rc.id)
 			end
 			local only = #rc.give == 1 and rc.give[1][1] == rc.get[1]
 			if only then
 				table.insert(selfLoop, rc.id)
 			end
+			-- the header's rule made exact: the product may go in too (our generic food, fabric...) only when the rest of
+			-- what goes in is worth at least the product units it uses up and more comes out than went in; EFT's own
+			-- refills (refill = true) are the exception
+			local seen, own, rest = {}, 0, 0
 			for _, e in rc.give do
 				if not Items.defs[e[1]] then
 					table.insert(badItem, rc.id .. ":" .. e[1])
+				end
+				if seen[e[1]] or not (e[2] > 0) then
+					table.insert(badNum, rc.id .. ":" .. e[1])
+				end
+				seen[e[1]] = true
+				if e[1] == rc.get[1] then
+					own += e[2]
+				else
+					rest += value(e[1]) * e[2]
 				end
 				for _, tl in rc.tools or {} do
 					if tl[1] == e[1] then
@@ -257,13 +282,116 @@ function T.run(ctx)
 					end
 				end
 			end
+			for _, tl in rc.tools or {} do
+				if not Items.defs[tl[1]] then
+					table.insert(badItem, rc.id .. ":tool " .. tl[1])
+				end
+				if not (tl[2] >= 1) then
+					table.insert(badNum, rc.id .. ":tool " .. tl[1])
+				end
+			end
+			if rc.refill then
+				table.insert(refills, rc.id)
+				if own ~= rc.get[2] then
+					table.insert(mostly, rc.id .. " (a refill takes one of its product)")
+				end
+			elseif own > 0 and (own >= rc.get[2] or rest < own * value(rc.get[1])) then
+				table.insert(mostly, rc.id)
+			end
 		end
-		check(string.format("about a hundred crafts asked; %d of EFT's crafts have a product here (no new ids clash)", #HD.recipes), #HD.recipes >= 60 and #dupe == 0)
-		check("every craft's module, level, product and inputs are real" .. (#badItem > 0 and (": " .. table.concat(badItem, " ")) or ""), #badItem == 0)
-		check("no craft only turns an item into more of itself" .. (#selfLoop > 0 and (": " .. table.concat(selfLoop, " ")) or ""), #selfLoop == 0)
+		local function listed(t)
+			return #t > 0 and (": " .. table.concat(t, " ")) or ""
+		end
+		check(string.format("EFT's current crafts with a product here: %d (medstation %d, workbench %d, lavatory %d, nutrition %d, water %d, intel %d), no ids clash",
+			#HD.recipes, perModule.medstation or 0, perModule.workbench or 0, perModule.lavatory or 0, perModule.nutrition or 0, perModule.water or 0, perModule.intel or 0),
+			#HD.recipes >= 76 and #dupe == 0)
+		check("every craft's module, level, product, inputs and tools are real items and levels" .. listed(badItem), #badItem == 0)
+		check("every craft takes positive counts and time, lists each input once and names EFT's product" .. listed(badNum), #badNum == 0)
+		check("no craft only turns an item into more of itself" .. listed(selfLoop), #selfLoop == 0)
+		check("no craft takes in mostly its own product or makes no more of it (EFT's refills aside)" .. listed(mostly), #mostly == 0)
+		check("the one refill is EFT's weapon repair kit's (a used kit in, a full one out)", #refills == 1 and refills[1] == "GUN_KIT")
 		check("no item is both used up and a tool in one craft", #both == 0)
+		-- products are the items ours copies (economy-1a's crafts): no craft makes a near round or stim any more
+		local makes = {}
+		for _, rc in HD.recipes do
+			makes[rc.get[1]] = (makes[rc.get[1]] or 0) + 1
+		end
+		check("no craft makes 7.62x39 PS (EFT's craft makes FMJ), 9x18 Pst or PSV (PstM, SP8), 7.62x54R LPS or SNB, 12/70 buckshot or lead slugs (Piranha, the .50 BMG slug), M995",
+			not makes.A76_PS and not makes.A918_PST and not makes.A918_PSV and not makes.A76L_LPS and not makes.A76L_SNB and not makes.A12_BUCK and not makes.A12_SLUG and not makes.A62_AP)
+		check("SJ6 (our SV-3) is made by no craft: EFT's needs an SJ1, and SJ1, PNB and AHF1-M have no counterpart here", not makes.STIM_STAMINA)
+		check("no craft makes a near armour, helmet or magazine (Module-3M, Zhuk, MICH, the 6L31)", not makes.ARMOR_C2 and not makes.ARMOR_C3 and not makes.HELMET_C3 and not makes.KST_MAG40)
 		check("LogicTests' crafts are still there: RK-5 grenades and the repair kit", HD.byRecipe.NADE_RK5 ~= nil and HD.byRecipe.GUN_KIT ~= nil
 			and Items.defs[HD.byRecipe.GUN_KIT.get[1]].kind == "repair")
+	end)
+
+	-- ── spot checks against EFT's current crafts (decision economy-1a's crafts; sources beside each) ───────────────────
+	guard("EFT crafts", function()
+		local function has(list, id, n)
+			for _, e in list or {} do
+				if e[1] == id then
+					return n == nil or e[2] == n
+				end
+			end
+			return false
+		end
+		local function is(id, module, level, time, get, n)
+			local r = HD.byRecipe[id]
+			return r ~= nil and r.module == module and r.level == level and r.time == time and r.get[1] == get and r.get[2] == n
+		end
+		-- tarkovforge.com/hideout/workbench (2 h 1 min, 150 from 150 M882 and 2 Kite); xgamingserver's toolset page: the
+		-- toolset is returned; SPT's 7,250 s
+		local r = HD.byRecipe.AMMO_9AP
+		check("workbench 3: 9x19 AP 6.3 x150 from FMJ M882 x150 and 2 gunpowder, the toolset returned, 7,250 s",
+			is("AMMO_9AP", "workbench", 3, 7250, "A9_AP", 150) and has(r.give, "A9_FMJ", 150) and has(r.give, "GUNPOWDER", 2) and #r.give == 2 and has(r.tools, "TOOLSET", 1))
+		-- xgamingserver's Zagustin page (snapshot 2026-11-04): medstation 3, 1 h 52 min, CALOK-B, Grizzly, 2 piles of meds,
+		-- the silicone tube "tool, returned"
+		r = HD.byRecipe.MED_ZAGUSTIN
+		check("medstation 3: Zagustin (our HM-2) from CALOK-B, Grizzly and 2 piles of meds, the silicone tube returned, 1 h 52 min",
+			is("MED_ZAGUSTIN", "medstation", 3, 6720, "STIM_HEMO", 1) and has(r.give, "HEMOSTAT", 1) and has(r.give, "MEDKIT_XL", 1) and has(r.give, "MEDS_PILE", 2)
+				and has(r.tools, "SILICONE_TUBE", 1) and not has(r.give, "SILICONE_TUBE"))
+		-- xgamingserver's fuel tank page: lavatory 2, 1 h 2 min, 2 Zibbo and 2 Crickent lighters, water used up, the tube
+		-- returned (economy-7b used the tube up)
+		r = HD.byRecipe.LAV_FUEL
+		check("lavatory 2: the fuel tank from 4 lighters and water, the silicone tube now a tool", is("LAV_FUEL", "lavatory", 2, 3720, "FUEL_CAN", 1)
+			and has(r.give, "LIGHTER", 4) and has(r.give, "WATER", 1) and has(r.tools, "SILICONE_TUBE", 1) and not has(r.give, "SILICONE_TUBE"))
+		-- xgamingserver's radiator helix page: workbench 3, 2 h 18 min, 80 M80, 2 Hawk, a helix, the multitool returned, 40 M80A1
+		r = HD.byRecipe.AMMO_M80A1
+		check("workbench 3: 7.62x51 M80A1 x40 from M80 x80, 2 gunpowder and a helix (our signal coil), multitool returned",
+			is("AMMO_M80A1", "workbench", 3, 8280, "A76N_EP", 40) and has(r.give, "A76N_BALL", 80) and has(r.give, "GUNPOWDER", 2) and has(r.give, "SIGNAL_COIL", 1)
+				and has(r.tools, "MULTITOOL", 1))
+		-- xgamingserver's toolset page: the weapon repair kit is EFT's refill (a kit, a toolset not returned, gun lube, 3
+		-- weapon parts, 2 metal spare parts, 25 min)
+		r = HD.byRecipe.GUN_KIT
+		check("workbench 3: the repair kit is EFT's refill: a kit, a toolset, gun lube, 3 weapon parts and 2 metal spare parts used up, 25 min",
+			is("GUN_KIT", "workbench", 3, 1500, "WEAPON_KIT", 1) and r.refill == true and has(r.give, "WEAPON_KIT", 1) and has(r.give, "TOOLSET", 1)
+				and has(r.give, "GUN_LUBE", 1) and has(r.give, "WEAPON_PARTS", 3) and has(r.give, "SPARE_PARTS", 2) and #(r.tools or {}) == 0)
+		-- SPT production.json (EFT 0.16.9): the AK-74N from weapon parts and its wooden handguard and stock, pliers and a
+		-- screwdriver returned, 4,900 s (tarkovforge: 1 h 22 min); the KS-74 copies the AK-74N
+		r = HD.byRecipe.WB_AK74N
+		check("workbench 1: a KS-74 (EFT's AK-74N) from weapon parts and wooden furniture, pliers and screwdriver returned",
+			is("WB_AK74N", "workbench", 1, 4900, "KS74_RIFLE", 1) and has(r.give, "WEAPON_PARTS", 1) and has(r.tools, "PLIERS", 1) and has(r.tools, "SCREWDRIVER", 1))
+		-- xgamingserver's printer paper page and SPT: the intelligence folder takes 31 h 40 min (tarkovforge shows "1d 7h")
+		check("intelligence center 3: the folder takes 31 h 40 min", is("INT_FOLDER", "intel", 3, 114000, "INTEL_FOLDER", 1))
+		-- xgamingserver's sewing kit page: every lavatory craft that sews keeps the sewing kit (returned)
+		local sewn = true
+		for _, id in { "LAV_CORDURA", "LAV_RIPSTOP", "LAV_BLACKROCK", "LAV_SWITCHBLADE", "LAV_COMMANDO", "LAV_PILGRIM" } do
+			sewn = sewn and has(HD.byRecipe[id].tools, "SEWING_KIT", 1) and not has(HD.byRecipe[id].give, "SEWING_KIT")
+		end
+		check("the lavatory's sewing crafts keep the sewing kit as a tool", sewn)
+		-- SPT: the water collector's and nutrition unit's emergency water rations keep the silicone tube; the Hot Rod keeps the
+		-- water filter (xgamingserver's BakeEzy page too)
+		check("the silicone tube and water filter are tools in the water rations and the Hot Rod", has(HD.byRecipe.WC_RATION.tools, "SILICONE_TUBE", 1)
+			and has(HD.byRecipe.NUT_WATER.tools, "SILICONE_TUBE", 1) and has(HD.byRecipe.NUT_HOTROD.tools, "WATER_FILTER", 1) and not has(HD.byRecipe.NUT_HOTROD.give, "WATER_FILTER"))
+		-- tarkovforge's current counts where EFT 1.x changed SPT's 0.16.9 ones: 5.45 BP 60 (0.16.9: 120), 4.6 AP SX 60 (120),
+		-- SS190 60 (100), .45 AP 100 (150), Propital 4 (7), Ox bleach 3 (5), PAB-9 100 (150), BCP FMJ 60 (120)
+		check("EFT 1.x's counts: 5.45 BP 60, 4.6 AP 60, SS190 60, .45 AP 100, Propital 4, bleach 3, PAB-9 100, 7.62x51 FMJ 60",
+			HD.byRecipe.AMMO_54BP.get[2] == 60 and HD.byRecipe.AMMO_46AP.get[2] == 60 and HD.byRecipe.AMMO_SS190.get[2] == 60 and HD.byRecipe.AMMO_45AP.get[2] == 100
+				and HD.byRecipe.MED_PROPITAL.get[2] == 4 and HD.byRecipe.LAV_BLEACH.get[2] == 3 and HD.byRecipe.AMMO_PAB9.get[2] == 100 and HD.byRecipe.AMMO_76FMJ.get[2] == 60)
+		-- the rounds the crafts now make are the ones ours copies (EFT_PARITY's catalogue): M855A1 from M855, BT from PS,
+		-- BP from PP
+		check("rounds by their copies: M855A1 (EP) from M855 (SS), 7.62x54R BT from PS, 7.62x39 BP from PP", HD.byRecipe.AMMO_AP.get[1] == "A62_EP"
+			and has(HD.byRecipe.AMMO_AP.give, "A62_SS", 180) and HD.byRecipe.AMMO_76LBT.get[1] == "A76L_BT" and has(HD.byRecipe.AMMO_76LBT.give, "A76L_PS", 50)
+			and has(HD.byRecipe.AMMO_BP.give, "A76_PP", 90))
 	end)
 
 	-- ── the bitcoin farm ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -401,26 +529,26 @@ function T.run(ctx)
 		r = H.act(nil, p, { op = "build", m = "workbench" })
 		check("workbench 1 built (EFT's screw nuts x2, bolts x2 and a multitool)", r == true and p.hideout.levels.workbench == 1 and count(p, "MULTITOOL") == 1
 			and count(p, "NUTS") == 0 and count(p, "BOLTS") == 0)
-		give(p, "AWL", 1)
-		give(p, "GUNPOWDER", 2)
-		r = H.act(nil, p, { op = "craft", r = "AMMO_PS" })
+		give(p, "SCREWDRIVER", 1)
+		give(p, "SKS_RIFLE", 1)
+		r = H.act(nil, p, { op = "craft", r = "WB_PARTS_SKS" })
 		check("no power: the workbench cannot start a craft (EFT)", type(r) == "table" and r.code == "NO_POWER")
 		r = H.act(nil, p, { op = "fuel" })
 		check("fuel needs a canister", type(r) == "table" and r.code == "MISSING_ITEMS")
 		give(p, "FUEL_CAN", 3)
 		check("a canister into the empty generator starts it", H.act(nil, p, { op = "fuel" }) == true and HD.powered(p.hideout) and #p.hideout.fuel == 1)
 		check("two fuel slots at level 1", H.act(nil, p, { op = "fuel" }) == true and (H.act(nil, p, { op = "fuel" })).code == "FULL")
-		r = H.act(nil, p, { op = "craft", r = "AMMO_PS" })
+		r = H.act(nil, p, { op = "craft", r = "WB_PARTS_SKS" })
 		local c = p.hideout.crafts.workbench
-		check("the craft starts: powder used, the awl goes in with it (EFT's tool)", r == true and c and count(p, "GUNPOWDER") == 1 and count(p, "AWL") == 0
-			and count(p, "MULTITOOL") == 1
-			and near(c.need, HD.craftNeed(HD.byRecipe.AMMO_PS, p.skills)))
-		check("one craft at a time in a module", (H.act(nil, p, { op = "craft", r = "AMMO_PST" })).code == "BUSY")
+		check("the craft starts: the SK-45 used up, the screwdriver goes in with it (EFT's tool)", r == true and c and count(p, "SKS_RIFLE") == 0
+			and count(p, "SCREWDRIVER") == 0 and count(p, "MULTITOOL") == 1
+			and near(c.need, HD.craftNeed(HD.byRecipe.WB_PARTS_SKS, p.skills)))
+		check("one craft at a time in a module", (H.act(nil, p, { op = "craft", r = "WB_KITE" })).code == "BUSY")
 		check("not ready yet", (H.act(nil, p, { op = "collect", m = "workbench" })).code == "NOT_READY")
 		HD.tick(p.hideout, p.hideout.t + c.need + 1)
 		r = H.act(nil, p, { op = "collect", m = "workbench" })
-		check("collected: 200 rounds found in raid, the awl back", r == true and count(p, "A76_PS") == 200 and firOf(p, "A76_PS") == true and count(p, "AWL") == 1
-			and p.hideout.crafts.workbench == nil)
+		check("collected: weapon parts found in raid, the screwdriver back", r == true and count(p, "WEAPON_PARTS") == 1 and firOf(p, "WEAPON_PARTS") == true
+			and count(p, "SCREWDRIVER") == 1 and p.hideout.crafts.workbench == nil)
 		check("the switch: off, and on again with fuel", H.act(nil, p, { op = "power", on = false }) == true and not HD.powered(p.hideout)
 			and H.act(nil, p, { op = "power", on = true }) == true and HD.powered(p.hideout))
 		-- the scav case and the farm, levels set directly (their EFT requirements are checked above)
@@ -480,6 +608,24 @@ function T.run(ctx)
 				end
 			end
 		end
+		-- a gun's default build can be stripped for its parts (EFT too: the AK-74N craft takes the wooden furniture that
+		-- comes on AK-74s), so the parts on an obtainable gun's default build are obtainable
+		local okWP, WP = pcall(function()
+			return require(Shared.WeaponParts)
+		end)
+		if okWP and type(WP) == "table" and WP.META and WP.META.presets then
+			local function walk(t)
+				for _, sub in t[2] or {} do
+					got[sub[1]] = true
+					walk(sub)
+				end
+			end
+			for _, pr in WP.META.presets do
+				if got[pr.base] and pr.tree then
+					walk(pr.tree)
+				end
+			end
+		end
 		local missing, pending = {}, {}
 		local function want(id)
 			if not got[id] and not table.find(missing, id) and not table.find(pending, id) then
@@ -500,6 +646,9 @@ function T.run(ctx)
 		end
 		for _, rc in HD.recipes do
 			for _, e in rc.give do
+				want(e[1])
+			end
+			for _, e in rc.tools or {} do
 				want(e[1])
 			end
 		end
