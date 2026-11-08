@@ -21,9 +21,14 @@
   (recovery and insurance, merged from its thread), ui-8a and ui-2b (accessibility, recorder overlay), ai-5b (the
   Caretaker's KS-L, MORTAR's GL-6), economy-7b (EFT's 14 hideout modules, merged from its thread, all its requests
   applied) and economy-4b's experience side (EFT's level table to 79). 14 suites, 1,079 checks.
-- Next, in order: economy-3a (the flea market with an AI floor), economy-1a (the catalogue; more hideout crafts follow
-  it), ui-4c (touch drag), ui-5a (tutorial raid), art-6a, art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
-  hideout modules without one; bipods; gamepad and touch slow lean; ai-4a voices.
+- Done later on 2026-11-08 (TEST_RESULTS, pushed): economy-1a's first two slices (30 rounds; 54 barter goods with the
+  hideout built from them, 390 items), ui-4c (touch drag), the gamepad and touch slow lean, art-6a (first-person reload
+  and check poses). 14 suites, 1,083 checks.
+- In a helper thread since 17:20 SGT: economy-3a (the flea market with an AI floor; the first thread was stopped by the
+  15:25 interrupt before it wrote anything). When its DONE is on the board: merge, apply its REQUESTs, run FleaTests.
+- Next, in order: economy-1a's next slices (guns and calibres across EFT's classes, parts, the other barter goods, keys;
+  more hideout crafts with them), ui-5a (tutorial raid), art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
+  hideout modules without one; bipods; ai-4a voices.
 - Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
   seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator
   check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft side-by-side in Edit mode, never a runtime
