@@ -850,6 +850,18 @@ function C.hideoutNow(name)
 	return HttpService:JSONEncode(ctx.Hideout.stateFor(prof))
 end
 
+-- (Studio) set hideout module levels directly, to see the bunker's furniture by level: { [module] = level }
+function C.hideoutSet(name, levels)
+	local p = plr(name)
+	local prof = ctx.Profiles.get(p)
+	for id, n in levels or {} do
+		prof.hideout.levels[id] = n
+	end
+	ctx.Hideout.settle(prof, p)
+	ctx.Raid.afterChange(p, false)
+	return "ok"
+end
+
 function C.econ(name)
 	local p = plr(name)
 	local prof = ctx.Profiles.get(p)

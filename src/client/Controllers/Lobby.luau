@@ -262,6 +262,13 @@ local function showModel(model, on)
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") and p.Name ~= "KitCollider" then
 			p.LocalTransparencyModifier = on and 0 or 1
+		elseif p:IsA("BasePart") and p:GetAttribute("ZR_Collide") ~= false then
+			-- a hidden prop's colliders stop blocking you too (your character's physics runs here); a collider made
+			-- without collision stays without it
+			if p:GetAttribute("ZR_Collide") == nil then
+				p:SetAttribute("ZR_Collide", p.CanCollide)
+			end
+			p.CanCollide = on and p:GetAttribute("ZR_Collide") == true
 		end
 	end
 end
@@ -289,6 +296,16 @@ local function updateHideout(b)
 			if craft then
 				local c = h.crafts and h.crafts[craft]
 				showModel(m, c ~= nil and (c.at or math.huge) <= t)
+			end
+			-- a module's furniture shows from the level it needs; its materials only while it is not built (Relay7Dress)
+			local mid = m:GetAttribute("ModuleId")
+			if mid then
+				local n = lv[mid] or 0
+				if m:GetAttribute("ModuleBare") then
+					showModel(m, n < 1)
+				else
+					showModel(m, n >= (m:GetAttribute("ModuleMin") or 1))
+				end
 			end
 		elseif m.Name == "GenLamp" then
 			m.Color = power and Color3.fromHex("4FD06A") or Color3.fromHex("8A2A20")

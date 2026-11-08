@@ -93,6 +93,14 @@ Relay7.HIDEOUT = {
 	{ id = "lavatory", label = "Lavatory", x0 = 10, z0 = 55, x1 = 18, z1 = 65, face = "S" },
 	{ id = "scavcase", label = "Scav case", x0 = 20, z0 = 55, x1 = 28, z1 = 65, face = "S" },
 	{ id = "intel", label = "Intelligence center", x0 = 30, z0 = 55, x1 = 38, z1 = 65, face = "S" },
+	-- the other six (2026-11-08): security at the corridor's dead end, the illumination panel and the bitcoin farm in the
+	-- wing, the nutrition unit and the rest space in the bunk room, the range's score board in the range
+	{ id = "security", label = "Security", x0 = 1, z0 = 36.6, x1 = 12.4, z1 = 40, face = "S" },
+	{ id = "illumination", label = "Illumination", x0 = 0.6, z0 = 51, x1 = 3, z1 = 57, face = "E" },
+	{ id = "bitcoin", label = "Bitcoin farm", x0 = 39, z0 = 64.8, x1 = 46, z1 = 71.5, face = "N" },
+	{ id = "nutrition", label = "Nutrition unit", x0 = 35.6, z0 = 3.4, x1 = 39.4, z1 = 13.4, face = "W" },
+	{ id = "rest", label = "Rest space", x0 = 23.6, z0 = 31.4, x1 = 37, z1 = 35.4, face = "N" },
+	{ id = "range", label = "Shooting range", x0 = 59.5, z0 = 76.6, x1 = 66.5, z1 = 78.6, face = "S" },
 }
 Relay7.FIRING_LINE = 82 -- x of the booths' front edge; lanes run west
 Relay7.LANES = { { 82, 87.5 }, { 87.5, 93 }, { 93, 98.5 }, { 98.5, 104 } } -- z bands; lane 4 runs into the tunnel

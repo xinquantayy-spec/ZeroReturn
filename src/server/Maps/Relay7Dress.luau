@@ -673,10 +673,38 @@ local function hideout(g, R)
 		paint(g, x0, z1 - 0.25, x1, z1, c)
 		paint(g, x0, z0, x0 + 0.25, z1, c)
 		paint(g, x1 - 0.25, z0, x1, z1, c)
-		floorText(g, name, (x0 + x1) / 2, (z0 + z1) / 2 - 0.6, 7.2, 1.7, "N", c)
-		floorText(g, "NOT BUILT", (x0 + x1) / 2, (z0 + z1) / 2 + 1.4, 4.6, 1.0, "N", c)
+		floorText(g, name, (x0 + x1) / 2, (z0 + 1.4), 7.2, 1.7, "S", c) -- read from the wing's door (north)
 	end
+	-- every module has its place (2026-11-08): the three middle bays get a plywood back wall, and each of the fourteen
+	-- modules a stencil that your client fills with your level (YOUR SECURITY · LV 2, or NOT BUILT). The furniture that
+	-- would show each module as it is built (the plan: sink and drum, case, desk and board, camera desk, switch cabinet,
+	-- card benches, prep table and drinks machine, sofa and computer) does not fit the bunker's budget of under 300 kit
+	-- props (owner; 298 placed): the client already hides and shows props by level (ModuleId / ModuleMin / ModuleBare,
+	-- Lobby.luau) for when the budget allows them (KNOWN_ISSUES 84).
 	put(g, "AmmoCrate", 34.2, 0, 58.0, 12) -- materials waiting in the intel bay
+	local function partition(x0, x1, z)
+		local a, b = P(x0, 0, z - 0.2), P(x1, 7, z + 0.2)
+		local p = Instance.new("Part")
+		p.Name = "Partition"
+		p.Size = (b - a):Abs()
+		p.CFrame = CFrame.new((a + b) / 2)
+		p.Color = hex("8C7A5C")
+		p.Material = M.WoodPlanks
+		p.Anchored = true
+		p.Parent = g
+		return p
+	end
+	for _, b in { { "lavatory", "LAVATORY", 10.3, 17.7 }, { "scavcase", "SCAV CASE", 20.3, 27.7 }, { "intel", "INTEL CENTRE", 30.3, 37.7 } } do
+		partition(b[3], b[4], 64.6)
+		local st = stencil(g, b[2], (b[3] + b[4]) / 2, 5.6, 64.4, "N", 7.2, 0.7)
+		st:SetAttribute("Module", b[1])
+	end
+	for _, m in { { "security", "SECURITY", 6, 7.6, 36.6, "S" }, { "illumination", "ILLUMINATION", 0.6, 8.2, 54, "E" },
+		{ "bitcoin", "BITCOIN FARM", 42.5, 8.4, 75.4, "N" }, { "nutrition", "NUTRITION UNIT", 39.4, 8.2, 8.4, "W" },
+		{ "rest", "REST SPACE", 30, 8.2, 35.4, "N" }, { "range", "SHOOTING RANGE", 63, 8, 76.6, "S" } } do
+		local st = stencil(g, m[2], m[3], m[4], m[5], m[6], 8.4, 0.8)
+		st:SetAttribute("Module", m[1])
+	end
 	-- generator cable along the ceiling, joists, fittings (cold light)
 	run(g, "CableTray", "x", 0.6, 51.4, 50.5, 12, "S", "hang", { tint = DUCT })
 	run(g, "Beam", "x", 0.6, 51.4, 69, 12, "S", "hang")

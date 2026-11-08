@@ -248,6 +248,15 @@
       second player who presses START while someone is on it is told to try again in a few minutes (IN_USE).
     - Kills and the extracted value of the first raid count in the lifetime statistics.
 
+84. **The hideout modules show no furniture by level in Relay 7 (2026-11-08).**
+    - Every module now has its place and a stencil with your level (security at the corridor's end, illumination and
+      the bitcoin farm in the wing, the nutrition unit and rest space in the bunk room, the shooting range's board),
+      but Tarkov's hideout shows each module's furniture change as it is built. The planned props (sink and drum, the
+      scav case, desk and board, the camera desk, the switch cabinet, card benches, prep table and drinks machine, sofa
+      and computer: about 30) do not fit the bunker's budget of under 300 kit props (owner; 298 placed). The client
+      already hides and shows props by level (ModuleId / ModuleMin / ModuleBare in Lobby.luau). Raising the budget to
+      about 330 is the owner's call.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

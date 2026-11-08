@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Relay 7: a place for every hideout module (2026-11-08, about 22:55 SGT)
+
+| Test | Result |
+|---|---|
+| Stations | 14 hideout stations in the bunker (was 8): security, illumination, bitcoin farm, nutrition unit, rest space and shooting range added; each opens the HIDEOUT screen on its module. |
+| Looks (Studio, capture mode) | Plywood back walls on the three middle bays with stencils reading YOUR SCAV CASE · NOT BUILT, YOUR LAVATORY · LV 2 and YOUR INTELLIGENCE CENTER · LV 1 after setting levels with the new ZR_Dev `hideoutSet`; the bay names on the floor now read from the wing's door. A first version with furniture for each level (props shown or hidden by level, checked at level 0 and 3) put the bunker at 329 kit props and failed the owner's budget check (under 300), so the furniture is out (KNOWN_ISSUES 84); it also stood a drinks machine in the bunk room's door to ops, moved before it was dropped. |
+| Tests | 16 suites, 1,192 checks, all passed; the bunker has 298 kit props. |
+| Not checked | The new stencils at every station by eye (only the middle bays were looked at after the change); a phone. |
+
 ## More 9x19 guns: Dunlin D-17, Avocet AV-9 and Bunting B-19 (decision economy-1a, twelfth slice; 2026-11-08, about 22:30 SGT)
 
 | Test | Result |
