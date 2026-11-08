@@ -61,8 +61,26 @@ local function clientNeeds(name: string): boolean
 end
 Assets.clientNeeds = clientNeeds
 
+-- art-4b: a gun piece re-exported with UVs wears its texture sheet (colour, normal, roughness, metalness): the
+-- sheet's SurfaceAppearance (ReplicatedStorage.ZR.ZR_GunSA, synced by Rojo; a game script cannot set its maps) is
+-- cloned into the library mesh, and every copy GunBuild makes carries it
+local GunTex = require(ReplicatedStorage.ZR:WaitForChild("GunTex"))
+local function dress(d)
+	local sheet = GunTex.pieces[d.Name]
+	if not sheet or d:FindFirstChildOfClass("SurfaceAppearance") then
+		return
+	end
+	local sas = ReplicatedStorage.ZR:FindFirstChild("ZR_GunSA")
+	local sa = sas and sas:FindFirstChild(sheet)
+	if sa then
+		sa:Clone().Parent = d
+	end
+end
+Assets.dress = dress
+
 -- put a library mesh where it belongs: always in the server's library, and a copy for clients when they clone it
 local function file(d)
+	dress(d)
 	local l, c = lib(), clientLib()
 	if not l:FindFirstChild(d.Name) then
 		d.Parent = l

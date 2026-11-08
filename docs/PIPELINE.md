@@ -74,6 +74,8 @@ uploaded as Decals (`upload_model(png, key, desc, asset_type="Decal")`); the ima
 Decal (`InsertService:LoadAsset(decalId)`, then `Decal.Texture`) and written to `src/materials/<name>.model.json`.
 A texture with grid lines (tiles, ceiling grid) uses `MaterialPattern = "Regular"`.
 
+**Gun texture sheets (art-4b).** `zr_tex.py` re-exports a gun batch with UVs and bakes 1024 px sheets for it, one step per MCP call: `T.build(batch)` (the pieces with their vertex AO; minutes for a big family), `T.pack(batch)` (pieces into sheets by area at 1.5 px per mm, a part's pieces together; one smart-UV space per sheet), `T.bake(batch, seconds)` (per sheet: the edge masks measured from the mesh in numpy, then colour, roughness and metalness as Cycles emission bakes and the normal map with a 1.2 mm bevel; about 25 s a sheet on the T490), `T.export(batch)` (PNGs to assets/textures/guns, the FBX with UVs and no vertex colours, `<batch>.tex.json`). Upload the four PNGs of each sheet as Decals and the FBX as the batch's new Model, read each Decal's image id in Studio (`InsertService:LoadAsset`), record them with `python3 tools/gun_tex.py SHEET col=.. nrm=.. rgh=.. mtl=..` (writes `src/shared/ZR_GunSA/<sheet>.model.json` and `GunTex.luau`) and put the new model id in AssetIds in the same commit. A fresh image can fail to load for a few minutes after upload (seen once: a metalness map, fine ten minutes later).
+
 **Item models and pictures.** Every item is modelled once (`build_items_a/b/c.py` on `zr_items.py`). The same
 model is rendered to the inventory picture, which is packed into two atlas sheets uploaded as Decals; and it is
 exported with baked AO for the loose loot (three Model batches). Generated tables are `ItemIcons.luau`

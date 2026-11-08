@@ -1,0 +1,60 @@
+{
+ "batch": "ZR_GunsAR",
+ "px_per_mm": 1.5,
+ "sheets": {
+  "ZR_GT_AR_T1": [
+   "ZR_WP_AR_CH_EXT__gunmetal",
+   "ZR_WP_AR_CH_STD__gunmetal",
+   "ZR_WP_AR_PG_A2__polymer",
+   "ZR_WP_AR_PG_ANG__polymer",
+   "ZR_WP_AR_PG_ERGO__polymer",
+   "ZR_WP_AR_PG_ERGO__rubber",
+   "ZR_WP_AR_STK_A2__polymer",
+   "ZR_WP_AR_STK_A2__metal",
+   "ZR_WP_AR_STK_CARB__polymer",
+   "ZR_WP_AR_STK_CARB__rubber",
+   "ZR_WP_AR_STK_CARB__gunmetal",
+   "ZR_WP_AR_STK_SKEL__gunmetal",
+   "ZR_WP_AR_STK_SKEL__rubber",
+   "ZR_WP_R17_BRK__gunmetal",
+   "ZR_WP_R17_BRL_105__gunmetal",
+   "ZR_WP_R17_BRL_105__metal"
+  ],
+  "ZR_GT_AR_T2": [
+   "ZR_WP_R17_BRL_145__gunmetal",
+   "ZR_WP_R17_BRL_145__metal",
+   "ZR_WP_R17_BRL_18__gunmetal",
+   "ZR_WP_R17_BRL_18__metal",
+   "ZR_WP_R17_COMP__gunmetal",
+   "ZR_WP_R17_FH_A2__gunmetal",
+   "ZR_WP_R17_FS_FLIP__gunmetal",
+   "ZR_WP_R17_FS_FLIP__metal",
+   "ZR_WP_R17_GAS_FSP__gunmetal",
+   "ZR_WP_R17_GAS_FSP__metal",
+   "ZR_WP_R17_GAS_LOW__gunmetal",
+   "ZR_WP_R17_HG_CARB__gunmetal",
+   "ZR_WP_R17_HG_CARB__polymer",
+   "ZR_WP_R17_HG_MLOK__gunmetal"
+  ],
+  "ZR_GT_AR_T3": [
+   "ZR_WP_R17_HG_QUAD__gunmetal",
+   "ZR_WP_R17_MAG__metal",
+   "ZR_WP_R17_MAG__brass",
+   "ZR_WP_R17_MAG40__metal",
+   "ZR_WP_R17_MAG40__brass",
+   "ZR_WP_R17_MAG60__polymer",
+   "ZR_WP_R17_MAG60__brass"
+  ],
+  "ZR_GT_AR_T4": [
+   "ZR_WP_R17_RIFLE__gunmetal",
+   "ZR_WP_R17_RIFLE__metal",
+   "ZR_WP_R17_RS_FLIP__gunmetal",
+   "ZR_WP_R17_RS_FLIP__metal",
+   "ZR_WP_R17_UPPER__gunmetal",
+   "ZR_WP_R17_UPPER__metal",
+   "ZR_WP_SUPP_62__gunmetal",
+   "ZR_WP_SUPP_62C__gunmetal"
+  ]
+ },
+ "size": 1024
+}

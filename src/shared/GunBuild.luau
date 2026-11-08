@@ -87,7 +87,8 @@ function M.pieces(items, g, origin: CFrame, scale: number?): { BasePart }?
 					p.Color = Color3.new(1, 1, 1)
 					local mm = M.MAT[pc[2]] or M.MAT.plastic
 					p.Material = mm[1]
-					p.Reflectance = mm[2] or 0
+					-- a textured piece (art-4b: its sheet's SurfaceAppearance, cloned in by Assets) takes its look from the maps
+					p.Reflectance = p:FindFirstChildOfClass("SurfaceAppearance") and 0 or (mm[2] or 0)
 					p.Transparency = mm[3] or 0
 					p.CastShadow = pc[2] ~= "glass"
 					local cf = e.cf * CFrame.new(pc[3])
@@ -229,7 +230,8 @@ function M.build(items, it, origin: CFrame, scale: number, g: string?)
 					p.Color = Color3.new(1, 1, 1)
 					local mm = M.MAT[pc[2]] or M.MAT.plastic
 					p.Material = mm[1]
-					p.Reflectance = mm[2] or 0
+					-- a textured piece (art-4b: its sheet's SurfaceAppearance, cloned in by Assets) takes its look from the maps
+					p.Reflectance = p:FindFirstChildOfClass("SurfaceAppearance") and 0 or (mm[2] or 0)
 					p.Transparency = mm[3] or 0
 					p.CastShadow = pc[2] ~= "glass"
 					p.CFrame = origin * scaledCF(shiftCF * e.cf * CFrame.new(pc[3]), scale)

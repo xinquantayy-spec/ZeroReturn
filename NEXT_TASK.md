@@ -33,7 +33,7 @@
 - Done 21:43 SGT: economy-1a's tenth slice (9x21 and .366 TKM: W-21, J-21, T-215; 505 items); 21:58 SGT the eleventh
   (revolvers: Crake C-357 and C-9, Bustard B-12; 515 items); 22:05 SGT the twelfth (9x19: D-17, AV-9, B-19; 522 items); 22:47 SGT the thirteenth (printer paper, cookbook, Geiger counter, textbook, magnet, sledgehammer, SV-1, 7.6x39 and 7.6x54R FMJ; 531 items, 83 crafts).
 - Next, in order: economy-1a's next slices (the
-  VPO-209, which needs magazines that take two calibres; more 9x19 guns, more parts, the other barter goods, keys; the items that bring in the most left-out crafts: done in the thirteenth slice); art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
+  VPO-209, which needs magazines that take two calibres; more 9x19 guns, more parts, the other barter goods, keys; the items that bring in the most left-out crafts: done in the thirteenth slice); art-1a (a helper thread is rebuilding Smelter on Factory's layout) / 4b (the R-17 family textured, 23:21 SGT; the other 17 gun batches next) / 5b; bays and furniture in Relay 7 for the six
   hideout modules without one (done 22:19 SGT: stations and stencils; furniture by level waits on the owner's prop budget,
   KNOWN_ISSUES 84); bipods (done 22:31 SGT: the KS-L's, EFT's -80 %; rail bipod parts come with the parts slices); ai-4a
   voices.

@@ -21,7 +21,7 @@ return {
 	{ key = "ZR_ItemsB", id = 104263145712235 }, -- medicine, food and drink, keys and keycards, quest items
 	{ key = "ZR_ItemsC", id = 125911946207153 }, -- valuables and barter goods
 	-- M14 guns as parts (ZR_WP_<part>__<material> pieces, origin at the attach point; see GunMeta.luau, build_guns_all.py)
-	{ key = "ZR_GunsAR", id = 130670418678516 }, -- R-17 receiver, uppers, barrels, gas blocks, handguards, stocks, grips, charging handles, sights, muzzle devices, magazines
+	{ key = "ZR_GunsAR", id = 123034684749216 }, -- (2026-11-08 art-4b: with UVs for its four texture sheets, ZR_GT_AR_T1-4; was 130670418678516) R-17 receiver, uppers, barrels, gas blocks, handguards, stocks, grips, charging handles, sights, muzzle devices, magazines
 	{ key = "ZR_GunsAK", id = 104159336478565 }, -- Kestrel KS-7 and KS-74 receivers, dust covers, handguards, stocks, grips, muzzle devices (the 74 brake), side mount, magazines (economy-1a third slice, 2026-11-08)
 	{ key = "ZR_GunsSMG", id = 106931227232196 }, -- Sparrow SMG-9 receiver, handguards, stocks, grips, claw mount, magazines
 	{ key = "ZR_GunsSG", id = 70558979775509 }, -- Harrow-12 receiver, barrels, tubes, forends, stocks, chokes and brake

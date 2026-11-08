@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Gun texture sheets, the pilot: the R-17 family (decision art-4b; 2026-11-08, 23:21 SGT)
+
+| Test | Result |
+|---|---|
+| A finding first | In Studio a white SmoothPlastic MeshPart of the uploaded R-17 upper showed white: the gun pieces' metal colours do not show, and in a raid the first-person R-17 read as a black shape (Metal material over white). |
+| Bake | zr_tex.py on the R-17 family: 45 pieces in 4 sheets at 1.5 px per mm (2.6 px per mm needed 14). A first bake with ray-traced AO masks wore whole faces (the parts' overlapping inner boxes) and its fine grain aliased into speckle (seen side by side in Studio); masks are now measured from the mesh and the grain is gone. Looked at in Blender's material preview: a dark coat with patchy wear on sharp edges. |
+| Upload | 16 images and the batch again with UVs (model 123034684749216; centres and sizes of all 45 pieces unchanged). One fresh metalness map failed to load for about ten minutes, then loaded. |
+| In Studio | All 43 R-17 family meshes in the library and all 20 pieces of the first-person R-17 wear their sheet; in daylight (Quay 7, capture mode) the gun shows its edges, rail and ports where it was a black shape; with the sheets taken off the same pieces show white. 16 suites, 1,200 checks, all passed. |
+| Not checked | The other 17 gun batches (still the old look), third-person and loose guns by eye, a phone (texture memory: 4 sheets of 4 maps). |
+
 ## Thirteenth catalogue slice: nine goods and rounds that let more crafts in (decision economy-1a; 2026-11-08, 22:47 SGT)
 
 | Test | Result |
