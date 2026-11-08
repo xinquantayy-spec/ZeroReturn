@@ -195,9 +195,10 @@ function T.run(ctx)
 		local _, eFit = Inv.attachPlate(h, cg, "front", b, { "stash" })
 		check("a back plate refused in the front slot (WRONG_SLOT)", eFit == "WRONG_SLOT")
 		local okOut = Inv.detachPlate(h, cg, "lside", { "stash" })
+		local outInGrid = Inv.locate(h, l) == "grid" -- (read before the drop puts it back in the vest)
 		local _, _, at = Inv.locate(h, cg)
 		local okDrop = at ~= nil and Inv.move(h, l, { c = "stash", x = at.x, y = at.y, r = 0 }) -- dropped on the vest's tile
-		check("a side plate out of its slot, and back in by dropping it on the vest", okOut and Inv.locate(h, l) == "grid" and okDrop and c.mods.lside == l and (Inv.check(h)))
+		check("a side plate out of its slot, and back in by dropping it on the vest", okOut and outInGrid and okDrop and c.mods.lside == l and Inv.locate(h, l) == "mod" and (Inv.check(h)))
 		-- a vest a player emptied stays empty when it moves
 		Inv.detachPlate(h, cg, "front", { "stash" })
 		local b2 = Inv.take(h, cg)

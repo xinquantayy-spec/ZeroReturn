@@ -190,7 +190,8 @@ function T.run(ctx)
 		check("KOVAC (Mechanic): the R-17 builds from LL2 to LL4, compact suppressors and the 8x scope gated by loyalty",
 			presetAt("kovac", "R17_PATROL") == 2 and presetAt("kovac", "R17_CQB") == 3 and presetAt("kovac", "R17_DMR") == 4
 				and at("kovac", "SUPP_62C", 3) and at("kovac", "SCOPE_8X", 4))
-		local gearKinds = { armor = true, helmet = true, rig = true, backpack = true, headwear = true, headset = true, facecover = true, eyewear = true }
+		-- (plates are gear too since gameplay-2a: TILDA keeps a spare class 3 plate)
+		local gearKinds = { armor = true, plate = true, helmet = true, rig = true, backpack = true, headwear = true, headset = true, facecover = true, eyewear = true }
 		local onlyGear = true
 		for _, o in TD.offers.tilda do
 			onlyGear = onlyGear and gearKinds[Items.defs[o.id].kind] == true

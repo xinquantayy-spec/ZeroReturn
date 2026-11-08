@@ -8,6 +8,25 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## M3 batch 6 and M4 batches 1-3: first Studio session after the hang (2026-11-08, 10:15-11:15 SGT)
+
+Studio hung at about 03:20 SGT on a runtime lighting switch; the owner closed it and I reopened it (new Studio id
+b79ee504). Everything below ran in that session, on main as each branch was merged.
+
+| Test | Result |
+|---|---|
+| Automated suites, main (helpers' M3 work, ai-3a, gameplay-1a, ai-1a, ai-2, ai-7a) | LogicTests 419/419, CharTests 47/47, LookTests 33/33, MapTests 41/41, EconomyTests 34/34, AiTests 54/54, GameplayTests 48/48, RecoilTests 36/36, UiTests 26/26, all on the first run. |
+| + the eight traders (economy-2a) | Same, plus TraderTests 38/38. The radio's 11 tabs scroll on the compact layout (the Studio window is under 500 pt tall), DEKKER's goods and LL gates show (screenshot). |
+| + the plates (gameplay-2a) and the plate trade follow-ups | PlateTests 53/54 and TraderTests 37/38 on the first run; both failures were the tests' own: PlateTests read the side plate's place after dropping it back into the vest, and TraderTests' "gear only" list for TILDA lacked the new plate kind. Fixed: all 11 suites pass, 830 checks. |
+| Hits through the new armour, live raid | The worn class 2 vest (migrated to soft armour): a 9 mm PST in the thorax 33.6 damage (54 bare), 6.2 FMJ 37.4, stomach 34.0, an arm 54.0 with no armour. |
+| Inventory | The migrated vest shows as VEST II 100/100 in the body armour slot (compact layout). |
+| Boot and assets | Boot 16.5 s. All 1,009 meshes load, the new mall kit B batch (127419668580872) among them, with no failed batches; 527 go to clients. |
+| AI cost, Border Yard, 18 AI | Calm raid, 9 awake and 9 asleep: server heartbeat 0.47 ms a frame. Worst case, all 18 woken and stood 60-180 studs round the player, two shooting at him: 0.80 ms, 59 fps (was 0.7 ms with 18 AI before scavs saw three times as far). |
+| Marksmen | Two of three perches manned this raid: the depot roof (y 45) and the derrick (y 164), standing on THE DEPOT and THE DERRICK. Bug found: the derrick marksman spawned 6 studs above his platform and was put to sleep in mid-air; fixed (the perch drops 3 studs; units sleep only on the ground). |
+| Player scav window | Border raid 2.2 min in: scav entry opens in 14.8 min (17 min in) and closes 6 min before the end. |
+| Recoil, R-17, 30 rounds full auto | The camera climbs to 1.17° and sits at 0.49° at the end of the burst; 1.5 s later it is back to -0.19° (below the aim, as Tarkov's convergence leaves it when the shooter does not pull down). Before: 13.6° of permanent climb over 30 rounds. The gun's own climb (bullets and sights) was not measured here. |
+| Not checked | The Relay 7 counters for the four new traders (not built), plate icons (not made), gamepad and touch plate menus, sky textures (decals not yet resolved), M11 malfunction glow, rain (art.12), the lighting style (art.1). |
+
 ## M3: the Broker, scav groups and a lighter mesh library (audit ai.3, ai.8, tech.13; 2026-11-08)
 
 | Test | Result |
