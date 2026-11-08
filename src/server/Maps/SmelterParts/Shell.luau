@@ -95,6 +95,17 @@ return function(B)
 		local alongX = dir == "+x" or dir == "-x"
 		local len = alongX and (x1 - x0) or (z1 - z0)
 		local tread = len / n
+		-- art-5b: the Kit5 flight (one mesh and a ramp; the stacked steel ones keep the head room under them) when the
+		-- batch is loaded, these steps otherwise
+		local footX = (dir == "+x" and x0) or (dir == "-x" and x1) or (x0 + x1) / 2
+		local footZ = (dir == "+z" and z0) or (dir == "-z" and z1) or (z0 + z1) / 2
+		local look = (dir == "+x" and Vector3.xAxis) or (dir == "-x" and -Vector3.xAxis) or (dir == "+z" and Vector3.zAxis) or -Vector3.zAxis
+		local foot = V(footX, yb, footZ)
+		local wide = alongX and (z1 - z0) or (x1 - x0)
+		if H.k5Flight(sm, CFrame.lookAt(foot, foot + look), n, h, tread, wide, stacked and "S" or "C", color or STEP, mat or M.Concrete, { base = 0.2 }) then
+			bump("flight")
+			return
+		end
 		for k = 1, n do
 			local top = yb + k * h
 			local bot = stacked and (top - h - 0.8) or (yb - 0.2)
@@ -157,7 +168,9 @@ return function(B)
 	for _, r in L.rails do
 		local a, b = V(r[1], r[5], r[2]), V(r[3], r[5], r[4])
 		local len = (b - a).Magnitude
-		if len > 0.3 then
+		if len > 0.3 and H.k5Rail(rm, a, b, RAIL, M.Metal) then -- art-5b: the Kit5 railing when the batch is loaded
+			bump("railKit")
+		elseif len > 0.3 then
 			local look = CFrame.lookAt((a + b) / 2, b)
 			kit.boxCF(rm, 0.25, 0.25, len, look * CFrame.new(0, 3.3, 0), RAIL, M.Metal)
 			kit.boxCF(rm, 0.18, 0.18, len, look * CFrame.new(0, 1.7, 0), RAIL, M.Metal)
