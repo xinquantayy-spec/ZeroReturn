@@ -124,7 +124,7 @@ return function(B)
 			tent.CastShadow = true
 		end
 		-- the slag heap in the east yard (task STACK): broken slag and a skip
-		for k, h in { { 63, -22, 9, 3.2, 7, 15 }, { 66.5, -19, 6, 2.2, 5, -25 }, { 61.5, -18, 5, 1.6, 4, 40 } } do
+		for k, h in { { 49, 7, 9, 3.2, 7, 15 }, { 52.5, 10, 6, 2.2, 5, -25 }, { 47.5, 11, 5, 1.6, 4, 40 } } do
 			local p = H.B(tm, h[3], h[4], h[5], h[1] * 3.125, h[4] / 2, h[2] * 3.125, hex(k == 1 and "3A3631" or "45403A"), M.Basalt, h[6])
 			p.Name = "Slag"
 		end
@@ -137,12 +137,14 @@ return function(B)
 		local function at(xm, zm, y, ry)
 			return CFrame.new(V(xm * 3.125, y, zm * 3.125)) * CFrame.Angles(0, math.rad(ry or 0), 0)
 		end
-		P("OfficeDesk", fm, at(-37.6, -12.0, T3, 90))
-		P("OfficeDesk", fm, at(-37.6, -7.4, T3, 90))
-		P("Chair", fm, at(-38.8, -12.0, T3, 90))
+		-- the shift office: the desks at its two ends keep the way from both doors to TIMEKEEPER'S WINDOW open (an
+		-- exit zone under a desk was unreachable: exitcheck 2026-11-09)
+		P("OfficeDesk", fm, at(-37.6, -15.2, T3, 0))
+		P("OfficeDesk", fm, at(-37.6, -6.6, T3, 180))
+		P("Chair", fm, at(-37.6, -14.0, T3, 180))
 		P("StorageShelf", fm, at(-37.5, -21.0, T3, 0))
 		P("Pigeonholes", fm, at(-35.6, -10.5, T3, 90))
-		P("Whiteboard", fm, at(-37.5, -16.3, T3 + 3, 0))
+		P("Whiteboard", fm, at(-37.5, -5.8, T3 + 3, 180))
 		-- the hall: workbenches and tool chests against the long dividing wall and in the north-west workshop
 		P("CraftBench", fm, at(1.6, -4.0, 0, -90))
 		P("ToolChest", fm, at(4.6, -14.0, 0, 90))

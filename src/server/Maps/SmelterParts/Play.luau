@@ -211,7 +211,8 @@ return function(B)
 		local T3, S2 = LV.third, LV.second
 		W.visitZones = W.visitZones or {}
 		-- V6 Slag Run: the slag heap in the east yard (Dress heaps it there)
-		W.visitZones.STACK = { pos = P(64.0, -20.0, 0), r = 14 } -- (moved 14 m east off the parked van, checked in Studio)
+		-- (the yard's clear south end: off the parked van, and inside the yard's wall, where 64 m east was not)
+		W.visitZones.STACK = { pos = P(50.0, 9.0, 0), r = 14 }
 		-- D7 Relay Watch: a beacon on the catwalks over the main hall (the rafters, south of the beam)
 		W.visitZones.SM_CATWALK = { pos = P(-6.0, -13.8, T3 + 0.3), r = 5, free = true, reach = 4 }
 		-- K12 Furnace Readings: the furnace log on the manager's desk (third floor, behind SM_MGR and the emergency key)

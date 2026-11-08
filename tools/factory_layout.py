@@ -40,6 +40,11 @@ SLAB = 1.0  # floor slab thickness, studs
 DECK = 0.5  # catwalk deck thickness
 WALL_T = 0.4  # metres: the wall band round every floor
 SERVICE_PIT = 1.5 * S  # ours: depth of the two service pits
+# walking room (Roblox, not EFT): EFT's doorways are 0.8-1.0 m, but Roblox's pathfinding agent (radius 1 stud, 5.6
+# studs tall) found no way through 0.85 m gaps in Studio (exitcheck 2026-11-09). Every walk-through gap is made at least
+# MIN_PASS wide and every stair, landing and floor keeps HEAD studs of head room (tools/smelter_preview.py paths checks)
+MIN_PASS = 1.4  # metres (4.4 studs)
+HEAD = 7.0  # studs
 
 
 def r1(v):
@@ -112,6 +117,67 @@ def dilate(mask, metres):
     return ndimage.binary_dilation(mask, structure=np.ones((3, 3), bool), iterations=n)
 
 
+def disk(r_cells):
+    yy, xx = np.mgrid[-r_cells:r_cells + 1, -r_cells:r_cells + 1]
+    return xx * xx + yy * yy <= r_cells * r_cells
+
+
+PASSES = []  # the widened gaps (metres: x, z, level), kept clear of loot boxes
+
+
+def mouths(part, core):
+    """How many separate places a narrow part of a floor opens onto its wide parts: two or more for a doorway or a
+    passage (even into the same room), one for a corner or a dead end."""
+    contact = ndimage.binary_dilation(part, iterations=2) & core & ~part
+    return ndimage.label(contact, structure=np.ones((3, 3), bool))[1]
+
+
+def runs(m, axis):
+    """The length (cells) of the run of floor each cell is in, along x (axis 1) or z (axis 0)."""
+    a = m if axis == 1 else m.T
+    out = np.zeros(a.shape, np.int32)
+    for i in np.nonzero(a.any(axis=1))[0]:
+        d = np.diff(np.concatenate(([0], a[i].astype(np.int8), [0])))
+        for s, e in zip(np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]):
+            out[i, s:e] = e - s
+    return out if axis == 1 else out.T
+
+
+def widen_necks(m, limit, level, min_w=None):
+    """Passages of a floor narrower than MIN_PASS across x or z (EFT's doorways, 0.8-1.0 m, and a few tight
+    corridors) that open onto wider floor at two or more places are taken to MIN_PASS: each short run across them grows
+    about its middle, within `limit`. Corners, niches and dead ends (one opening) are left as they are."""
+    min_w = MIN_PASS if min_w is None else min_w
+    need = int(round(min_w / RES))
+    rx, rz = runs(m, 1), runs(m, 0)
+    narrow = m & ((rx < need) | (rz < need))
+    wide = m & ~narrow
+    lab, _ = ndimage.label(narrow, structure=np.ones((3, 3), bool))
+    sel = np.zeros_like(m)
+    for k, sl in enumerate(ndimage.find_objects(lab), start=1):
+        if sl is None:
+            continue
+        i0, i1 = max(0, sl[0].start - 3), min(NZ, sl[0].stop + 3)
+        j0, j1 = max(0, sl[1].start - 3), min(NX, sl[1].stop + 3)
+        part = lab[i0:i1, j0:j1] == k
+        if part.sum() >= 3 and mouths(part, wide[i0:i1, j0:j1]) >= 2:
+            sel[i0:i1, j0:j1] |= part
+            ii, jj = np.nonzero(part)
+            PASSES.append((X0 + (j0 + jj.mean() + 0.5) * RES, Z0 + (i0 + ii.mean() + 0.5) * RES, level))
+    add = np.zeros_like(m)
+    for axis in (0, 1):
+        a, s_ = (m, sel) if axis == 0 else (m.T, sel.T)
+        ad = add if axis == 0 else add.T
+        for j in np.nonzero(s_.any(axis=0))[0]:
+            d = np.diff(np.concatenate(([0], a[:, j].astype(np.int8), [0])))
+            for s, e in zip(np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]):
+                if e - s < need and s_[s:e, j].any():
+                    c0 = int(round((s + e) / 2 - need / 2))
+                    ad[max(0, c0):min(a.shape[0], c0 + need), j] = True
+    add &= limit & ~m
+    return m | add, add
+
+
 # ── the reference ───────────────────────────────────────────────────────────────────────────────────────────
 ref = json.loads(SRC.read_text())
 F = ref["floors"]
@@ -134,6 +200,12 @@ G_holes = {r["i"]: poly_mask(r["pts"]) for r in rings("ground", "hole")}
 G_floor = G_out.copy()
 for k, m in G_holes.items():
     G_floor &= ~m
+# the doorways with a door leaf keep the leaf's width (the openings below cut them to MIN_PASS exactly)
+DOOR_KEEP = (rect_mask(50.75 - 1.6, 50.75 + 1.6, 24.83 - 1.6, 24.83 + 1.6) | rect_mask(-42.05 - 1.6, -42.05 + 1.6, 26.04 - 1.6, 26.04 + 1.6)
+             | rect_mask(30.8 - 1.6, 30.8 + 1.6, -60.95 - 1.6, -60.95 + 1.6))
+G_floor, g_add = widen_necks(G_floor, dilate(G_out, 0.35) & ~DOOR_KEEP, "ground")
+for k in G_holes:
+    G_holes[k] &= ~g_add
 ledges = ref["ledges"]
 PIT = [l for l in ledges if l["w"] > 30][0]
 SPITS = [l for l in ledges if l["w"] < 10]
@@ -153,6 +225,9 @@ open_m = court_m | yard_e
 B_out = union(rings("basement", "outer"))
 B_holes = union(rings("basement", "hole"))
 B_floor = B_out & ~B_holes
+B_floor, _ = widen_necks(B_floor, dilate(B_out, 0.35) & ~DOOR_KEEP, "basement")
+B_floor |= rect_mask(-42.39, -41.71, 26.04 - MIN_PASS / 2, 26.04 + MIN_PASS / 2)  # the sealed store's doorway (SVG 1.09 m)
+B_floor |= rect_mask(30.8 - MIN_PASS / 2, 30.8 + MIN_PASS / 2, -61.05, -60.85)  # the cable cellar's doorway (SVG 1.0 m)
 B_isl = union(rings("basement", "island"))  # the two service pits
 sump_m = B_floor & (rect_mask(9.9, 70, 1.7, 30.2) | rect_mask(0.0, 70, 22.5, 36))
 
@@ -169,6 +244,9 @@ for b in boilers:
 s2_pump = poly_mask(S2[3]["pts"])
 s2_east = poly_mask(S2[6]["pts"]) & ~poly_mask(S2[7]["pts"])
 s2_block = poly_mask(S2[5]["pts"])  # the closed block beside the drop (re3mr: black)
+s2_office, _ = widen_necks(s2_office, dilate(s2_office, 0.35) & ~s2_dock & ~s2_block, "second")
+s2_pump, _ = widen_necks(s2_pump, dilate(s2_pump, 0.35), "second")
+s2_east, _ = widen_necks(s2_east, dilate(s2_east, 0.35) & ~poly_mask(S2[7]["pts"]), "second")
 
 # third floor
 T_out = union(rings("third", "outer"))
@@ -181,6 +259,13 @@ for r in rings("third", "void"):
         T_void_thin.append(r)  # thin "voids" are walls and beams
     T_floor &= ~poly_mask(r["pts"])
 OFFICE3 = rect_mask(-40.6, -32.0, -32.4, -1.2)  # the office block's third floor (hand-read walls below)
+# EFT's rafters are 0.9 m catwalks, in places two of them side by side 0.6 m apart: here those pairs are one deck and
+# every catwalk narrower than MIN_PASS widens to it (Roblox's pathfinding agent found no way along them, art-1a)
+_away = ~dilate(OFFICE3, 0.6)
+_seams = ndimage.binary_closing(T_floor, structure=np.ones((3, 3), bool), iterations=4) & ~T_floor & _away
+T_floor |= _seams
+T_floor, _ = widen_necks(T_floor, dilate(T_floor, 0.35) & _away, "third")
+T_out |= T_floor
 
 # ── roofs and wall heights ──────────────────────────────────────────────────────────────────────────────────
 # low annexes and corridors (ours): name, x0, x1, z0, z1
@@ -296,6 +381,23 @@ def u_tower(st, levels, half_landing_side=None):
     """A switchback tower over the symbol: two flights per storey in the two halves of its long side, landings at
     both ends (the storey landing at the end that opens onto the floors)."""
     x0, x1, z0, z1, ax = axis_box(st)
+    # the symbol can reach into the wall at a tower's end (the office's two stairs by 0.6 m): the tower stops where
+    # the ground storey's floor does, or its half landing is too shallow to turn on
+    fl = G_floor | court_m
+    if (fl & rect_mask(x0, x1, z0, z1)).sum() > 0.5 * rect_mask(x0, x1, z0, z1).sum():
+        def full(a0, a1, b0, b1):
+            m_ = rect_mask(a0, a1, b0, b1)
+            return (fl & m_).sum() >= 0.8 * max(1, m_.sum())
+        if ax == "x":
+            while x1 - x0 > 4 and not full(x0, x0 + 0.1, z0, z1):
+                x0 += 0.1
+            while x1 - x0 > 4 and not full(x1 - 0.1, x1, z0, z1):
+                x1 -= 0.1
+        else:
+            while z1 - z0 > 4 and not full(x0, x1, z0, z0 + 0.1):
+                z0 += 0.1
+            while z1 - z0 > 4 and not full(x0, x1, z1 - 0.1, z1):
+                z1 -= 0.1
     land = 1.25 if (x1 - x0 if ax == "x" else z1 - z0) < 7 else 1.5  # metres at each end
     out_f, out_l = [], []
     # which end opens onto the floors: test both ends on the first upper level
@@ -376,7 +478,10 @@ for st in ref["stairs"]:
     # a cellar stair steeper than 45 degrees is the top of a longer flight: it runs on downhill to 1.1 m per metre of rise
     run_m = (f[1] - f[0] if f[6][1] == "x" else f[3] - f[2]) / S
     need = f[5] / S * 1.1
-    if lv == ["basement", "ground"] and run_m < need:
+    # so does a flight to the second floor steeper than 45 degrees (the east block's two: EFT's symbols give 50)
+    if lv != ["basement", "ground"] and st["id"] not in TOP_GALLERY:
+        need = max(need / 1.1, f[5] / S)
+    if run_m < need:
         ext = (need - run_m) * S
         if f[6] == "+x":
             f[0] = r2(f[0] - ext)
@@ -389,6 +494,25 @@ for st in ref["stairs"]:
     flights.append(f)
     stair_log.append((st["id"], f[6], lv, r1(f[4]), r1(f[5]), f[9]))
 
+# where a straight flight arrives at the second floor: a landing a metre deep beyond its top step (the floor can
+# stop short of it), kept clear of the second floor's walls (Studio and the offline walk: the east block's two
+# stairs ran into the wall round its floor)
+ARRIVE2 = np.zeros((NZ, NX), bool)
+for f in list(flights):
+    if f[7] or abs(f[4] + f[5] - LV["second"]) > 0.3:
+        continue
+    x0_, x1_, z0_, z1_ = f[0] / S, f[1] / S, f[2] / S, f[3] / S
+    if f[6] == "+x":
+        la = (x1_, x1_ + 1.0, z0_, z1_)
+    elif f[6] == "-x":
+        la = (x0_ - 1.0, x0_, z0_, z1_)
+    elif f[6] == "+z":
+        la = (x0_, x1_, z1_, z1_ + 1.0)
+    else:
+        la = (x0_, x1_, z0_ - 1.0, z0_)
+    landings.append([r2(la[0] * S), r2(la[1] * S), r2(la[2] * S), r2(la[3] * S), r2(LV["second"])])
+    ARRIVE2 |= rect_mask(min(x0_, la[0]), max(x1_, la[1]), min(z0_, la[2]), max(z1_, la[3]))
+
 # the two service pits: a flight of steps at the south end of each (ours)
 for sp in SPITS:
     x0, x1 = sp["cx"] - sp["d"] / 2, sp["cx"] + sp["d"] / 2
@@ -400,16 +524,18 @@ def flight_mask(f):
     return rect_mask(f[0] / S, f[1] / S, f[2] / S, f[3] / S)
 
 
-def open_over(mask_level, ytop):
-    """Remove from a level's mask every flight footprint whose climb passes this level's top, and the stair landings
-    at this height (the landing is the floor there)."""
+def open_over(mask_level, ytop, th=SLAB):
+    """Remove from a level's mask every flight footprint whose climb passes this level's top or ends less than HEAD
+    under its underside, the stair landings at this height (the landing is the floor there) and those less than HEAD
+    under it (a switchback's half landings: Studio 2026-11-09 found no way from the office's second floor to the
+    third, the floors over the half landings left 4.5 studs of head room)."""
     m = mask_level.copy()
     for f in flights:
         yb, rise = f[4], f[5]
-        if yb + 0.25 < ytop <= yb + rise + 0.25:
+        if yb + 0.25 < ytop <= yb + rise + 0.25 or (yb + rise + 0.25 < ytop and yb + rise > ytop - th - HEAD):
             m &= ~flight_mask(f)
     for l in landings:
-        if abs(l[4] - ytop) < 0.3:
+        if abs(l[4] - ytop) < 0.3 or (l[4] < ytop - 0.3 and l[4] > ytop - th - HEAD):
             m &= ~rect_mask(l[0] / S, l[1] / S, l[2] / S, l[3] / S)
     return m
 
@@ -483,7 +609,7 @@ add_walls(b_band, LV["sump"] - SLAB, -SLAB, "tunnelwall")
 # second floor: the walls of the office floor, the pump house room and the east block upper floor
 s2_rooms = s2_office | s2_pump | s2_east
 s2_band = dilate(s2_rooms, 0.3) & ~s2_rooms & ~s2_dock & ~dilate(s2_bridge, 0.1)
-s2_band &= ~open_m
+s2_band &= ~open_m & ~dilate(ARRIVE2, 0.1)
 add_walls(s2_band, LV["second"], LV["third"], "wall2")
 add_walls(s2_block, LV["second"], LV["third"], "wall2")
 # third floor: the office block (hand-read from the re3mr top floor: west wall x -40, room fronts x -35, partitions
@@ -513,32 +639,76 @@ LINE_KIND = {
     "third": {2: "low", 3: "low", 4: "storey"},
 }
 lines = []  # x0, z0, x1, z1, thickness, y0, y1, kind (studs)
+DOOR_AT = [(50.75, 24.83), (30.8, -60.95), (-42.05, 26.04)]  # the leaves' doorways: cut to MIN_PASS by the openings
+
+
+def widen_line_gaps(segs, level):
+    """The doorways between two wall lines that face each other end to end (EFT's 0.9-1.1 m doors): each end steps
+    back so the gap is MIN_PASS (a stub never loses more than all but 5 cm)."""
+    n = 0
+    for s1 in range(len(segs)):
+        for e1 in (0, 1):
+            for s2 in range(s1 + 1, len(segs)):
+                for e2 in (0, 1):
+                    p1, q1 = segs[s1][e1], segs[s1][1 - e1]
+                    p2, q2 = segs[s2][e2], segs[s2][1 - e2]
+                    gx, gz = p2[0] - p1[0], p2[1] - p1[1]
+                    d = math.hypot(gx, gz)
+                    l1, l2 = math.hypot(p1[0] - q1[0], p1[1] - q1[1]), math.hypot(p2[0] - q2[0], p2[1] - q2[1])
+                    if not (0.05 < d < MIN_PASS) or l1 < 0.06 or l2 < 0.06:
+                        continue
+                    u1 = ((p1[0] - q1[0]) / l1, (p1[1] - q1[1]) / l1)
+                    u2 = ((p2[0] - q2[0]) / l2, (p2[1] - q2[1]) / l2)
+                    if (u1[0] * gx + u1[1] * gz) / d < 0.95 or -(u2[0] * gx + u2[1] * gz) / d < 0.95:
+                        continue
+                    mx, mz = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
+                    if any(math.hypot(mx - dx, mz - dz) < 1.5 for dx, dz in DOOR_AT):
+                        continue
+                    cut = (MIN_PASS - d) / 2
+                    for p, u, ln_ in ((p1, u1, l1), (p2, u2, l2)):
+                        c = min(cut, ln_ - 0.05)
+                        p[0] -= u[0] * c
+                        p[1] -= u[1] * c
+                    PASSES.append((mx, mz, level))
+                    n += 1
+    return n
+
+
 for lvname, rows in ref["walls"].items():
+    segs = []
     for i, pl in enumerate(rows):
         k = LINE_KIND[lvname].get(i)
         if k is None:
             continue
         for a, b in zip(pl[:-1], pl[1:]):
-            mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
-            if lvname == "ground":
-                y0 = LV["west"] if inmask(west_m, mx, mz) else 0.0
-                top = {"full": wall_height((min(a[0], b[0]), max(a[0], b[0]), min(a[1], b[1]), max(a[1], b[1]))), "part": y0 + 3.5 * S,
-                       "low": y0 + 1.2 * S, "tent": y0 + 2.6 * S, "glass": wall_height((min(a[0], b[0]), max(a[0], b[0]), min(a[1], b[1]), max(a[1], b[1])))}[k]
-            elif lvname == "second":
-                y0 = LV["second"]
-                top = LV["third"] if k == "storey" else y0 + 2.2 * S
-            else:
-                y0 = LV["third"]
-                top = ROOF_HALL if k == "storey" else y0 + 1.1 * S
-            lines.append([r2(a[0] * S), r2(a[1] * S), r2(b[0] * S), r2(b[1] * S), 0.78, r2(y0), r2(top), k])
+            segs.append([[a[0], a[1]], [b[0], b[1]], k])
+    nw_ = widen_line_gaps(segs, lvname)
+    print(f"  {lvname}: {nw_} doorways between wall lines widened to {MIN_PASS} m")
+    for a, b, k in segs:
+        if math.hypot(b[0] - a[0], b[1] - a[1]) < 0.1:
+            continue
+        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        if lvname == "ground":
+            y0 = LV["west"] if inmask(west_m, mx, mz) else 0.0
+            top = {"full": wall_height((min(a[0], b[0]), max(a[0], b[0]), min(a[1], b[1]), max(a[1], b[1]))), "part": y0 + 3.5 * S,
+                   "low": y0 + 1.2 * S, "tent": y0 + 2.6 * S, "glass": wall_height((min(a[0], b[0]), max(a[0], b[0]), min(a[1], b[1]), max(a[1], b[1])))}[k]
+        elif lvname == "second":
+            y0 = LV["second"]
+            top = LV["third"] if k == "storey" else y0 + 2.2 * S
+        else:
+            y0 = LV["third"]
+            top = ROOF_HALL if k == "storey" else y0 + 1.1 * S
+        lines.append([r2(a[0] * S), r2(a[1] * S), r2(b[0] * S), r2(b[1] * S), 0.78, r2(y0), r2(top), k])
 
-# extra walls the plans show and the SVG does not (metres): the cross wall in the north tunnel with the cable cellar
-# door (re3mr lock at 31.4, -61.3)
-walls.append([r2(30.0 * S), r2(33.7 * S), r2(-61.45 * S), r2(-61.15 * S), r2(LV["basement"]), r2(-SLAB), "tunnelwall"])
+# lintels over the two tunnel doors (the doorways run to the tunnel's ceiling; the leaves are 2.1 m)
+for lx0, lx1, lz0, lz1 in ((30.8 - MIN_PASS / 2, 30.8 + MIN_PASS / 2, -61.05, -60.85), (-42.39, -41.71, 26.04 - MIN_PASS / 2, 26.04 + MIN_PASS / 2)):
+    walls.append([r2(lx0 * S), r2(lx1 * S), r2(lz0 * S), r2(lz1 * S), r2(LV["basement"] + 2.1 * S), r2(-SLAB), "tunnelwall"])
 
 # ── openings: doors and windows cut out of the walls (metres; y from the floor of that level) ───────────────
 # re3mr reads (grade B): the third-floor room doors, the office windows, the jump windows from the courtyard, the
-# high bridge door, the locked doors' gaps; widths and sills ours (door 1.2 x 2.1 m, window sill 0.9 m to 2.1 m)
+# high bridge door, the locked doors' gaps; widths and sills ours (door MIN_PASS x 2.1 m, window sill 0.9 m to 2.1 m).
+# EFT's courtyard windows are vaulted through; with no vaulting here the three on the courtyard's walks are broken out
+# to the floor (the courtyard and its stair otherwise stand closed off: Studio 2026-11-09)
 OPEN = []  # x0, x1, z0, z1, y0, y1 (studs)
 
 
@@ -548,7 +718,7 @@ def opening(x0, x1, z0, z1, ylv, a, b):
 
 T3 = LV["third"]
 for zc in (-24.3, -19.6, -14.0, -8.0):  # manager's office, records room, shift office (two doors)
-    opening(-35.3, -34.7, zc - 0.6, zc + 0.6, T3, 0, 2.1)
+    opening(-35.3, -34.7, zc - MIN_PASS / 2, zc + MIN_PASS / 2, T3, 0, 2.1)
 for zc in (-24.0, -19.0, -14.8, -11.0, -7.6):  # west windows; -11.0 is the shift office window exit
     opening(-40.4, -39.8, zc - 0.6, zc + 0.6, T3, 0.9, 2.1)
 for zc in (-22.9, -16.7, -10.7, -3.7):  # east windows over the hall
@@ -558,16 +728,17 @@ opening(-32.7, -32.1, -31.8, -29.4, T3, 0, 2.3)  # the high bridge door
 S2Y = LV["second"]
 for zc in (-27.0, -24.0, -13.0, -10.0):
     opening(-47.9, -47.2, zc - 0.6, zc + 0.6, S2Y, 0.9, 2.1)
-opening(-47.9, -47.2, -6.1, -4.5, S2Y, 0.5, 2.2)
+opening(-47.9, -47.2, -6.1, -4.5, S2Y, 0, 2.2)  # broken out to the floor
 # ground floor: the two jump windows from the courtyard into the office rooms
 WY = LV["west"]
-opening(-45.4, -44.3, -23.4, -22.2, WY, 0.9, 2.1)
-opening(-43.3, -42.2, -8.9, -7.7, WY, 0.9, 2.1)
-# the aid post gate passage door (re3mr lock at 51.1, 25.0; the SVG gap is 0.94 m, ours 1.25 m)
-opening(50.4, 51.1, 24.2, 25.45, 0.0, 0, 2.1)
+opening(-45.4, -44.3, -22.8 - MIN_PASS / 2, -22.8 + MIN_PASS / 2, WY, 0, 2.2)  # broken out to the floor
+opening(-43.3, -42.2, -8.3 - MIN_PASS / 2, -8.3 + MIN_PASS / 2, WY, 0, 2.2)
+# the aid post gate passage door (re3mr lock at 51.1, 25.0; the SVG gap is 0.94 m, ours MIN_PASS)
+opening(50.4, 51.1, 24.83 - MIN_PASS / 2, 24.83 + MIN_PASS / 2, 0.0, 0, 2.1)
 # the cable cellar door in the new cross wall, the sealed store's door (east wall of the room in the south-west tunnels)
-opening(30.7, 31.9, -61.6, -61.0, LV["basement"], 0, 2.1)
-# (the sealed store's doorway is in the reference already: x -42.39..-41.71, z 25.49..26.58)
+# (the cable cellar's door stands in the SVG's doorway at x 30.8, z -60.95: the re3mr lock is 0.7 m off it)
+# (the sealed store's doorway is in the reference already: x -42.39..-41.71, z 25.49..26.58; the floor takes it to
+# MIN_PASS, z 25.34..26.74)
 
 
 def cut_box(w, o):
@@ -606,6 +777,10 @@ for o in OPEN:
     for w in walls:
         nw += cut_box(w, o)
     walls = nw
+# a doorway broken out of the second floor's outer wall gets a sill (the floor slab stops at the wall's inner face)
+for o in OPEN:
+    if abs(o[4] - LV["second"]) < 0.05:
+        slabs.append([r2(o[0]), r2(o[1]), r2(o[2]), r2(o[3]), r2(o[4]), r2(SLAB), "floor2"])
 # line walls along z or x crossing an opening: cut them the same way (they are axis-aligned there)
 nl = []
 for ln in lines:
@@ -636,12 +811,12 @@ landings.append([r2(-50.7 * S), r2(-47.3 * S), r2(-6.2 * S), r2(-4.0 * S), r2(LV
 
 # doors (World makes the leaves): id, label, x, y (floor), z, width, height, axis the leaf spans, key
 DOORS = [
-    ("SM_GATEDOOR", "Aid post gate passage", 50.75, 0.0, 24.83, 1.25, 2.1, "z", "KEY_SMELT_OFFICE"),
-    ("SM_CELLAR", "Cable cellar door", 31.3, LV["basement"], -61.3, 1.2, 2.1, "x", "KEY_SMELT_OFFICE"),
-    ("SM_MGR", "Manager's office", -35.0, T3, -24.3, 1.2, 2.1, "z", "KEY_SMELT_OFFICE"),
-    ("SM_RECORDS", "Records room", -35.0, T3, -19.6, 1.2, 2.1, "z", None),
-    ("SM_SHIFT", "Shift office", -35.0, T3, -14.0, 1.2, 2.1, "z", None),
-    ("SM_STORE", "Sealed store", -42.05, LV["basement"], 26.04, 1.08, 2.1, "z", "CARD"),
+    ("SM_GATEDOOR", "Aid post gate passage", 50.75, 0.0, 24.83, MIN_PASS, 2.1, "z", "KEY_SMELT_OFFICE"),
+    ("SM_CELLAR", "Cable cellar door", 30.8, LV["basement"], -60.95, MIN_PASS, 2.1, "x", "KEY_SMELT_OFFICE"),
+    ("SM_MGR", "Manager's office", -35.0, T3, -24.3, MIN_PASS, 2.1, "z", "KEY_SMELT_OFFICE"),
+    ("SM_RECORDS", "Records room", -35.0, T3, -19.6, MIN_PASS, 2.1, "z", None),
+    ("SM_SHIFT", "Shift office", -35.0, T3, -14.0, MIN_PASS, 2.1, "z", None),
+    ("SM_STORE", "Sealed store", -42.05, LV["basement"], 26.04, MIN_PASS, 2.1, "z", "CARD"),
 ]
 doors = [[d[0], d[1], r2(d[2] * S), r2(d[3]), r2(d[4] * S), r2(d[5] * S), r2(d[6] * S), d[7], d[8] or ""] for d in DOORS]
 
@@ -688,6 +863,71 @@ mask_edges(s2_deck, LV["second"], keep=lambda x, z: not inmask(arrive, x, z))
 mask_edges(s2_bridge, LV["gallery"], keep=lambda x, z: not inmask(arrive, x, z))
 mask_edges(s2_dock, LV["gallery"], keep=lambda x, z: not inmask(arrive, x, z) and not inmask(dilate(s2_office, 0.3), x, z))
 mask_edges(pit_m & G_out, 0.0, keep=lambda x, z: not inmask(arrive, x, z))
+
+
+# the switchback towers (walk test 2026-11-09: holding W up a hall tower's first flight carried the player across its
+# half landing and off the far edge): each flight's outer side gets a steel side panel from its foot to a rail's height
+# over its top step, each landing a rail on its open edges (a storey landing's end stays open where a floor lies
+# beyond it); a side against a wall gets nothing
+def walled(x, z, y):
+    """a wall stands at (x, z) metres between 1 and 3 studs over height y"""
+    xs, zs = x * S, z * S
+    return any(w[0] <= xs <= w[1] and w[2] <= zs <= w[3] and w[4] < y + 3 and w[5] > y + 1 for w in walls)
+
+
+def level_name(y):
+    return min((("basement", LV["basement"]), ("ground", 0.0), ("ground", LV["west"]), ("second", LV["gallery"]), ("second", LV["second"]),
+                ("third", LV["third"])), key=lambda t: abs(t[1] - y))[0]
+
+
+n_panels, n_lrails = 0, 0
+for tid, (bx0, bx1, bz0, bz1), ys in tower_boxes:
+    tfl = [f for f in flights if f[8] == tid]
+    if not tfl:
+        continue
+    ax = tfl[0][6][1]
+    for f in tfl:
+        fx0, fx1, fz0, fz1 = f[0] / S, f[1] / S, f[2] / S, f[3] / S
+        y0, y1 = f[4] - 0.2, f[4] + f[5] + 3.5
+        if ax == "x":
+            lo = abs(fz0 - bz0) < abs(fz1 - bz1)
+            zc, oz = (fz0, -1) if lo else (fz1, 1)
+            if not walled((fx0 + fx1) / 2, zc + oz * 0.3, f[4] + f[5] / 2):
+                za, zb = (zc - 0.25, zc) if lo else (zc, zc + 0.25)
+                walls.append([r2(fx0 * S), r2(fx1 * S), r2(za * S), r2(zb * S), r2(y0), r2(y1), "beam"])
+                n_panels += 1
+        else:
+            lo = abs(fx0 - bx0) < abs(fx1 - bx1)
+            xc, ox = (fx0, -1) if lo else (fx1, 1)
+            if not walled(xc + ox * 0.3, (fz0 + fz1) / 2, f[4] + f[5] / 2):
+                xa, xb = (xc - 0.25, xc) if lo else (xc, xc + 0.25)
+                walls.append([r2(xa * S), r2(xb * S), r2(fz0 * S), r2(fz1 * S), r2(y0), r2(y1), "beam"])
+                n_panels += 1
+    for l in landings:
+        lx0, lx1, lz0, lz1, ly_ = l[0] / S, l[1] / S, l[2] / S, l[3] / S, l[4]
+        if lx0 < bx0 - 0.05 or lx1 > bx1 + 0.05 or lz0 < bz0 - 0.05 or lz1 > bz1 + 0.05:
+            continue
+        storey = any(abs(ly_ - yy) < 0.1 for yy in ys)
+        if ax == "x":
+            end = bx0 if abs(lx0 - bx0) < 0.05 else bx1
+            sgn = -1 if end == bx0 else 1
+            edges = [((lx0, bz0), (lx1, bz0), (0, -1)), ((lx0, bz1), (lx1, bz1), (0, 1))]
+            beyond = level_at(level_name(ly_), end + sgn * 0.8, (bz0 + bz1) / 2)
+            if not storey or beyond is None or abs(beyond - ly_) > 1.0:
+                edges.append(((end, bz0), (end, bz1), (sgn, 0)))
+        else:
+            end = bz0 if abs(lz0 - bz0) < 0.05 else bz1
+            sgn = -1 if end == bz0 else 1
+            edges = [((bx0, lz0), (bx0, lz1), (-1, 0)), ((bx1, lz0), (bx1, lz1), (1, 0))]
+            beyond = level_at(level_name(ly_), (bx0 + bx1) / 2, end + sgn * 0.8)
+            if not storey or beyond is None or abs(beyond - ly_) > 1.0:
+                edges.append(((bx0, end), (bx1, end), (0, sgn)))
+        for (xa, za), (xb, zb), (ox, oz) in edges:
+            if walled((xa + xb) / 2 + ox * 0.3, (za + zb) / 2 + oz * 0.3, ly_):
+                continue
+            rails.append([r2(xa * S), r2(za * S), r2(xb * S), r2(zb * S), r2(ly_)])
+            n_lrails += 1
+print(f"  switchback towers: {n_panels} side panels, {n_lrails} landing rails")
 
 # ── steps where the floor changes level (the raised west part, the sump) ────────────────────────────────────
 steps = []  # x0, x1, z0, z1, yLow, rise, dir
@@ -886,6 +1126,27 @@ def spt_point(p):
 scav = [spt_point(p) for p in ref["spawns"]["scav_bot"]]
 boss = [spt_point(p) for p in ref["spawns"]["boss_capable"]]
 
+
+def clear_spot(x, z, lvn, need=2.2, reach=8.0):
+    """The point nearest (x, z) at least `need` metres from every wall, machine and stair on a level."""
+    dist = ndimage.distance_transform_edt(free_mask(lvn)) * RES
+    r = int(reach / RES)
+    i0, j0 = int((z - Z0) / RES), int((x - X0) / RES)
+    ii, jj = np.nonzero(dist[max(0, i0 - r):i0 + r, max(0, j0 - r):j0 + r] >= need)
+    if len(ii) == 0:
+        print(f"  warning: no clear floor near ({x:.1f}, {z:.1f}) on {lvn}")
+        return x, z
+    zz = Z0 + (max(0, i0 - r) + ii + 0.5) * RES
+    xx = X0 + (max(0, j0 - r) + jj + 0.5) * RES
+    k = int(np.argmin((xx - x) ** 2 + (zz - z) ** 2))
+    return float(xx[k]), float(zz[k])
+
+
+# the transit's zone stands on clear floor (the reference's point is under the van parked at the east yard's gate)
+for t_ in transits:
+    tx, tz = clear_spot(t_[1] / S, t_[3] / S, "ground")
+    t_[1], t_[2], t_[3] = r2(tx * S), r2(floor_y("ground", tx, tz)), r2(tz * S)
+
 # ── AI: guard routes (ours, along open floor) and THE CULT's three night zones (SPT: cultists come out at any scav
 # point on Night Factory; ours: three dark spots, the warriors a few metres round the priest) ───────────────
 ROUTES = {
@@ -969,8 +1230,8 @@ for st_ in steps:
 for o in OPEN:
     if o[5] - o[4] > 1.5 * S:  # doors (windows do not keep a container off the wall)
         keep_out |= dilate(rect_mask(o[0] / S, o[1] / S, o[2] / S, o[3] / S), 1.6)
-for e in ref["extracts"]:
-    keep_out |= rect_mask(e["x"] - 3.5, e["x"] + 3.5, e["z"] - 3.5, e["z"] + 3.5)
+for e in ref["extracts"]:  # (EFT keeps weapon boxes near its exits: SPT's NearWithExit group; the zone itself stays clear)
+    keep_out |= rect_mask(e["x"] - 2.5, e["x"] + 2.5, e["z"] - 2.5, e["z"] + 2.5)
 for t in ref["transits"]:
     keep_out |= rect_mask(t["x"] - 3.5, t["x"] + 3.5, t["z"] - 3.5, t["z"] + 3.5)
 for sp_ in spawns:
@@ -982,10 +1243,11 @@ for s_ in ref["silos"]:
 keep_out |= dilate(pit_m, 1.0) | dilate(dock_m, 0.6)
 keep_out |= rect_mask(-39.9, -36.0, -27.9, -25.0)  # the manager's desk (task SM_MANAGER)
 keep_out |= rect_mask(27.5, 33.5, 21.5, 25.5)  # the aid post table (task SM_CASTING)
+keep_out |= rect_mask(45.5, 54.5, 5.0, 13.0)  # the slag heap in the east yard (task STACK, Dress)
 keep_out |= dilate(blocked, 0.3)  # wall lines, machines, stairs
 for p_ in scav + boss + [q for r_ in routes.values() for q in r_] + [c_[1:4] for c_ in cult] + [q for c_ in cult for q in c_[4]]:
     keep_out |= rect_mask(p_[0] / S - 1.6, p_[0] / S + 1.6, p_[2] / S - 1.6, p_[2] / S + 1.6)
-for fx, fz, hx, hz in ((-37.6, -12.0, 0.8, 1.0), (-37.6, -7.4, 0.8, 1.0), (-37.5, -21.0, 1.3, 0.35), (-35.6, -10.5, 0.2, 1.0),
+for fx, fz, hx, hz in ((-37.6, -15.5, 1.0, 0.8), (-37.6, -6.3, 1.0, 0.8), (-37.5, -21.0, 1.3, 0.35), (-35.6, -10.5, 0.2, 1.0),
                        (1.6, -4.0, 0.6, 1.3), (4.6, -14.0, 0.4, 0.5), (-30.0, -34.0, 0.6, 1.3), (-30.6, -52.0, 0.4, 1.4), (36.0, -49.3, 0.5, 1.0),
                        (44.0, -57.0, 0.6, 0.5), (-60.0, -54.5, 0.4, 0.4), (-36.0, 30.0, 0.6, 0.6), (-60.5, 10.0, 0.4, 1.4), (-60.5, 40.0, 0.4, 1.4)):
     keep_out |= rect_mask(fx - hx - 0.7, fx + hx + 0.7, fz - hz - 0.7, fz + hz + 0.7)  # Dress's furniture (half sizes + 0.7 m)
@@ -994,15 +1256,86 @@ for d in ref["icons"]["drop"]:
 for dd in DOORS:
     keep_out |= rect_mask(dd[2] - 2.0, dd[2] + 2.0, dd[4] - 2.0, dd[4] + 2.0)
 rng = np.random.default_rng(1313)
+# what stands on each storey's floor (machines, wall lines, stairs; lockers and benches upstairs): a passage is
+# measured between them
+STANDS = {"basement": blocked, "ground": blocked, "second": np.zeros((NZ, NX), bool), "third": np.zeros((NZ, NX), bool)}
+for o in ref["obstacles"]["second"]:
+    STANDS["second"] |= dilate(box_mask(o), 0.3)
 
 
-def spots_in(floor, area, n, band=(0.74, 1.05), spacing=4.0, avoid=None):
+# the office's third floor keeps its own clear spots (the shared keep-out above is the ground storey's: it took every
+# spot in the shift office): its doors, the exit window, the furniture and the stair towers' landings
+KEEP_THIRD = rect_mask(-39.9, -36.0, -27.9, -25.0)  # the manager's desk (task SM_MANAGER)
+for dd in DOORS:
+    if abs(dd[3] - T3) < 0.1:
+        KEEP_THIRD |= rect_mask(dd[2] - 1.6, dd[2] + 1.6, dd[4] - 1.6, dd[4] + 1.6)
+for o in OPEN:
+    if abs(o[4] - T3) < 0.1:
+        KEEP_THIRD |= dilate(rect_mask(o[0] / S, o[1] / S, o[2] / S, o[3] / S), 1.0)
+for e in ref["extracts"]:
+    if e["level"] == "third":
+        KEEP_THIRD |= rect_mask(e["x"] - 2.0, e["x"] + 2.0, e["z"] - 2.0, e["z"] + 2.0)
+for fx, fz, hx, hz in ((-37.6, -15.5, 1.0, 0.8), (-37.6, -6.3, 1.0, 0.8), (-37.5, -21.0, 1.3, 0.35), (-35.6, -10.5, 0.2, 1.0)):
+    KEEP_THIRD |= rect_mask(fx - hx - 0.6, fx + hx + 0.6, fz - hz - 0.6, fz + hz + 0.6)
+for _id, (bx0, bx1, bz0, bz1), _ys in tower_boxes:
+    KEEP_THIRD |= rect_mask(bx0 - 0.8, bx1 + 0.8, bz0 - 0.8, bz1 + 0.8)
+# and the second floor its own: the stairs that reach it, its lockers and benches, the spawn on it, the drop, the
+# broken-out door to the courtyard stair
+KEEP_SECOND = dilate(ARRIVE2, 1.0) | dilate(STANDS["second"], 0.5)
+for f in flights:
+    if f[4] - 0.3 <= LV["second"] <= f[4] + f[5] + 0.3:
+        KEEP_SECOND |= dilate(flight_mask(f), 1.0)
+for l in landings:
+    if abs(l[4] - LV["second"]) < 0.3:
+        KEEP_SECOND |= dilate(rect_mask(l[0] / S, l[1] / S, l[2] / S, l[3] / S), 1.0)
+for sp_ in spawns:
+    if abs(sp_[1] - LV["second"]) < 1.0:
+        KEEP_SECOND |= rect_mask(sp_[0] / S - 2.5, sp_[0] / S + 2.5, sp_[2] / S - 2.5, sp_[2] / S + 2.5)
+for o in OPEN:
+    if abs(o[4] - LV["second"]) < 0.1:
+        KEEP_SECOND |= dilate(rect_mask(o[0] / S, o[1] / S, o[2] / S, o[3] / S), 1.6)
+for d in ref["icons"]["drop"]:
+    if d["from"] == "second":
+        KEEP_SECOND |= rect_mask(d["x"] - 1.6, d["x"] + 1.6, d["z"] - 1.6, d["z"] + 1.6)
+for _id, (bx0, bx1, bz0, bz1), _ys in tower_boxes:
+    KEEP_SECOND |= rect_mask(bx0 - 0.8, bx1 + 0.8, bz0 - 0.8, bz1 + 0.8)
+
+
+def pass_keep(level):
+    """the widened doorways and necks of a level, 1.8 m round: no box stands in them"""
+    m = np.zeros((NZ, NX), bool)
+    for px_, pz_, lv_ in PASSES:
+        if lv_ == level:
+            m |= rect_mask(px_ - 1.8, px_ + 1.8, pz_ - 1.8, pz_ + 1.8)
+    return m
+
+
+def bridges(m, half):
+    """The parts of a floor narrower than 2 x half metres that join two wider parts of it."""
+    core = ndimage.binary_opening(m, structure=disk(int(round(half / RES))))
+    lab_c, _ = ndimage.label(core)
+    lab_t, _ = ndimage.label(m & ~core, structure=np.ones((3, 3), bool))
+    out = np.zeros_like(m)
+    for k, sl in enumerate(ndimage.find_objects(lab_t), start=1):
+        if sl is None:
+            continue
+        i0, i1 = max(0, sl[0].start - 3), min(NZ, sl[0].stop + 3)
+        j0, j1 = max(0, sl[1].start - 3), min(NX, sl[1].stop + 3)
+        part = lab_t[i0:i1, j0:j1] == k
+        if mouths(part, lab_c[i0:i1, j0:j1] > 0) >= 2:
+            out[i0:i1, j0:j1] |= part
+    return out
+
+
+def spots_in(floor, area, n, band=(0.74, 1.05), spacing=4.0, avoid=None, stands=None, keep=None):
     """n spots 0.6-0.95 m off a wall inside `area` on `floor`, spread out; each with the angle facing away from the wall."""
     if n <= 0:
         return []
-    narrow = floor & ~ndimage.binary_opening(floor, structure=np.ones((3, 3), bool), iterations=8)
+    # a box (up to 1.7 m from its wall) leaves a walker at least 1.2 m: no boxes in a passage under 2.9 m wide (a part
+    # that narrow joining two wider ones; corners and dead ends may take boxes)
+    narrow = bridges(floor & ~stands if stands is not None else floor, 1.45)
     dist = ndimage.distance_transform_edt(floor) * RES
-    cand = floor & area & (dist >= band[0]) & (dist <= band[1]) & ~keep_out & ~dilate(narrow, 1.0)
+    cand = floor & area & (dist >= band[0]) & (dist <= band[1]) & ~(keep_out if keep is None else keep) & ~dilate(narrow, 1.0)
     if avoid is not None:
         cand &= ~avoid
     ii, jj = np.nonzero(cand)
@@ -1038,11 +1371,80 @@ KIND = {"crate": "crate", "toolbox": "toolbox", "jacket": "jacket", "duffle": "c
         "drawer": "drawer", "medbag": "medbag", "safe": "safe", "banksafe": "safe", "techbox": "techbox"}
 
 
+def placed_near(y):
+    """the footprints (grown by 1.6 m) of the boxes already placed within 4 studs of height y (None: all)"""
+    m = np.zeros((NZ, NX), bool)
+    for c in containers:
+        if y is None or abs(c[4] - y) < 4:
+            m |= rect_mask(c[3] / S - 1.6, c[3] / S + 1.6, c[5] / S - 1.6, c[5] / S + 1.6)
+    return m
+
+
+_OPEN_CACHE = {}
+LEVEL_FLOOR = {"basement": B_floor, "ground": G_floor | court_m, "second": s2_office | s2_pump | s2_east | s2_deck | s2_dock | s2_bridge,
+               "third": T_floor | OFFICE3}
+
+
+def reach_floor(floor, y):
+    """The part of a floor at height y (studs) a walker gets to: the floor less the walls, wall lines and machines
+    standing on it, in the pieces that hold a stair end, a landing, a spawn, an AI point or an exit (a room the
+    reference's walls seal takes no loot: two boxes stood in one over the office's north stair)"""
+    key = round(y, 1)
+    if key not in _OPEN_CACHE:
+        m = np.zeros((NZ, NX), bool)
+        for w in walls:
+            if w[4] < y + 5 and w[5] > y + 1:
+                i0, i1 = int(round((w[2] / S - Z0) / RES)), int(round((w[3] / S - Z0) / RES))
+                j0, j1 = int(round((w[0] / S - X0) / RES)), int(round((w[1] / S - X0) / RES))
+                m[max(0, i0):max(0, i1), max(0, j0):max(0, j1)] = True
+        for ln in lines:
+            if ln[5] < y + 5 and ln[6] > y + 1:
+                a_, b_ = (ln[0] / S, ln[1] / S), (ln[2] / S, ln[3] / S)
+                n_ = max(2, int(math.hypot(b_[0] - a_[0], b_[1] - a_[1]) / 0.05))
+                for k_ in range(n_ + 1):
+                    i_ = int((a_[1] + (b_[1] - a_[1]) * k_ / n_ - Z0) / RES)
+                    j_ = int((a_[0] + (b_[0] - a_[0]) * k_ / n_ - X0) / RES)
+                    if 0 <= i_ < NZ and 0 <= j_ < NX:
+                        m[i_, j_] = True
+        for bx in boxes:
+            if bx[5] < y + 5 and bx[5] + bx[6] > y + 1:
+                m |= box_mask({"cx": bx[0] / S, "cz": bx[1] / S, "w": bx[2] / S, "d": bx[3] / S, "rot": bx[4]})
+        seeds = [(p_[0] / S, p_[1], p_[2] / S) for p_ in spawns + scav + boss + [q for r_ in routes.values() for q in r_]]
+        seeds += [((l[0] + l[1]) / 2 / S, l[4], (l[2] + l[3]) / 2 / S) for l in landings]
+        seeds += [(e[2] / S, e[3], e[4] / S) for e in extracts]
+        for f in flights:
+            cx_, cz_ = (f[0] + f[1]) / 2 / S, (f[2] + f[3]) / 2 / S
+            lo_, hi_ = {"+x": ((f[0] / S, cz_), (f[1] / S, cz_)), "-x": ((f[1] / S, cz_), (f[0] / S, cz_)),
+                        "+z": ((cx_, f[2] / S), (cx_, f[3] / S)), "-z": ((cx_, f[3] / S), (cx_, f[2] / S))}[f[6]]
+            seeds += [(lo_[0], f[4], lo_[1]), (hi_[0], f[4] + f[5], hi_[1])]
+        _OPEN_CACHE[key] = (m, seeds)
+    m, seeds = _OPEN_CACHE[key]
+    lab, _ = ndimage.label(floor & ~dilate(m, 0.2), structure=np.ones((3, 3), bool))
+    keep = set()
+    for sx, sy, sz in seeds:
+        if abs(sy - y) > 2.5:
+            continue
+        i_, j_ = int((sz - Z0) / RES), int((sx - X0) / RES)
+        win = lab[max(0, i_ - 8):i_ + 9, max(0, j_ - 8):j_ + 9]
+        keep |= set(np.unique(win).tolist()) - {0}
+    return np.isin(lab, sorted(keep)) if keep else np.zeros_like(floor)
+
+
 def place(tag, floor, area, ylevel, kinds, spacing=4.0):
     want = []
     for k, c in kinds.items():
         want += [k] * c
-    pts = spots_in(floor, area, len(want), spacing=spacing)
+    yref = None if callable(ylevel) else ylevel
+    level = "basement" if yref is None or yref < -5 else ("ground" if yref < 10 else ("second" if yref < 20 else "third"))
+    yr_ = LV["basement"] if yref is None else yref
+    area = area & reach_floor(LEVEL_FLOOR[level], yr_)
+    # passages are measured between everything standing on this storey: its walls and wall lines too (a box stood
+    # in the doorway of the room north of the office's north stair, on the second floor)
+    wallm_ = _OPEN_CACHE[round(yr_, 1)][0]
+    stands_ = STANDS[level] | dilate(wallm_, 0.2)
+    # and a box keeps clear of every wall standing on its storey (two stood into the second floor's wall lines)
+    pts = spots_in(floor, area, len(want), spacing=spacing, avoid=placed_near(yref) | pass_keep(level) | dilate(wallm_, 0.7), stands=stands_,
+                   keep={"third": KEEP_THIRD, "second": KEEP_SECOND}.get(level))
     for (x, z, ang), k in zip(pts, want):
         y = ylevel(x, z) if callable(ylevel) else ylevel
         containers.append(["SM" + str(len(containers) + 1), KIND[k], LABEL[k], r2(x * S), r2(y), r2(z * S), ang, tag])
@@ -1073,6 +1475,63 @@ place("gate corridor", hall_floor, rect_mask(38.3, 63, 20.2, 26.7), 0.0, {"weapo
 place("east yard", yard_e & G_floor, yard_e, 0.0, {"crate": 1, "weaponbox": 1, "duffle": 1}, 6.0)
 place("courtyard", court_m, court_m, LV["west"], {"crate": 1, "weaponbox": 1}, 6.0)
 place("forklift bay", hall_floor, rect_mask(32, 66, -70, -53.4), 0.0, {"toolbox": 1, "crate": 1}, 4.0)
+
+
+def prune_boxes(agent=0.45):
+    """Walk each storey in 2D with the boxes standing (an agent `agent` metres round): a box that cuts floor off from
+    the stairs, spawns and AI points, or that no one can reach, goes (offline walk 2026-11-09: three boxes closed the
+    corridor north of the office's north stair on the second floor)."""
+    removed = []
+    for lvn, ys in (("basement", (LV["basement"], LV["sump"])), ("ground", (0.0, LV["west"])), ("second", (LV["second"],)), ("third", (T3,))):
+        for y in ys:
+            reach_floor(LEVEL_FLOOR[lvn], y)  # fills the cache
+            wallm, seeds = _OPEN_CACHE[round(y, 1)]
+            fl = LEVEL_FLOOR[lvn] & ~dilate(wallm, agent)
+            sd = [(sx, sz) for sx, sy, sz in seeds if abs(sy - y) <= 2.5]
+
+            def reach(mask):
+                lab, _ = ndimage.label(mask, structure=np.ones((3, 3), bool))
+                keep = set()
+                for sx, sz in sd:
+                    i_, j_ = int((sz - Z0) / RES), int((sx - X0) / RES)
+                    keep |= set(np.unique(lab[max(0, i_ - 8):i_ + 9, max(0, j_ - 8):j_ + 9]).tolist()) - {0}
+                return np.isin(lab, sorted(keep)) if keep else np.zeros_like(mask)
+
+            base = reach(fl)
+            for _ in range(12):
+                here = [c for c in containers if abs(c[4] - y) < 1.5]
+                boxm = np.zeros((NZ, NX), bool)
+                for c in here:
+                    boxm |= rect_mask(c[3] / S - 0.64 - agent, c[3] / S + 0.64 + agent, c[5] / S - 0.64 - agent, c[5] / S + 0.64 + agent)
+                now = reach(fl & ~boxm)
+                lost = base & ~now & ~boxm
+                lab_l, n_l = ndimage.label(lost)
+                worst = None
+                if n_l:
+                    sizes_ = ndimage.sum(lost, lab_l, range(1, n_l + 1))
+                    k = int(np.argmax(sizes_)) + 1
+                    if sizes_[k - 1] * RES * RES > 0.5:
+                        ii, jj = np.nonzero(lab_l == k)
+                        cx_, cz_ = X0 + (jj.mean() + 0.5) * RES, Z0 + (ii.mean() + 0.5) * RES
+                        worst = min(here, key=lambda c: math.hypot(c[3] / S - cx_, c[5] / S - cz_)) if here else None
+                if worst is None:  # boxes nobody reaches
+                    for c in here:
+                        i_, j_ = int((c[5] / S - Z0) / RES), int((c[3] / S - X0) / RES)
+                        r_ = int((0.64 + agent + 0.6) / RES)
+                        if not now[max(0, i_ - r_):i_ + r_ + 1, max(0, j_ - r_):j_ + r_ + 1].any():
+                            worst = c
+                            break
+                if worst is None:
+                    break
+                containers.remove(worst)
+                removed.append(worst[7])
+    if removed:
+        print(f"  {len(removed)} loot boxes left out where they would close a way or stand out of reach: {', '.join(removed)}")
+
+
+prune_boxes()
+for i_, c in enumerate(containers):  # ids in order again
+    c[0] = "SM" + str(i_ + 1)
 
 # loose spots (ours): office floors and desks get office loot, the halls and tunnels junk, a few keys
 avoid_c = np.zeros((NZ, NX), bool)
@@ -1107,6 +1566,8 @@ def loose_in(floor, area, ylevel, n, tbl, chance, spacing):
     k = 0
     yl = ylevel if not callable(ylevel) else None
     avoid = (avoid_c | walls_at(yl)) if yl is not None else avoid_c
+    lvn_ = "basement" if yl is None or yl < -5 else ("ground" if yl < 10 else ("second" if yl < 20 else "third"))
+    area = area & reach_floor(LEVEL_FLOOR[lvn_], LV["basement"] if yl is None else yl)
     taken = []
     for band in ((0.45, 0.75), (0.9, 1.3), (1.3, 1.8)):
         if k >= n:

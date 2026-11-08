@@ -228,6 +228,8 @@ boxes 1-3 and 4-7 (by the exits), bank safes 1-2 (`terra_stock`). Loose loot pos
 - Container and loose-loot positions: none in any reachable source; the build places them (ours).
 - tarkovkit's page contradicts itself (9 or 10 extracts, a 100 % infected boss header); tarkovforge shows the event's
   bosses. Section 8 keeps SPT's numbers and lists the others.
+- The build departs from these numbers where Roblox needs room to walk (doorways 1.4 m, the courtyard's windows
+  broken out, paired catwalks joined): `../SMELTER_FACTORY_BUILD.md`, "Walking room".
 
 ## 14. Sources
 

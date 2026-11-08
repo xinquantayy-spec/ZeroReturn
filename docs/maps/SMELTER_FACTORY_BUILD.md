@@ -94,39 +94,73 @@ One entry point (EFT): `W.sideExtracts = { all = ... }`, and every spawn lists e
   19 scav zones (SPT's 12 bot and 7 boss points). EFT's Factory has scavs only, so every post is a scav post.
 - THE STOKER (Tagilla): chance 0.3, hp 1220/440, charges, homes = SPT's seven boss points, walks the hall loop.
 - THE CULT: night only, chance 0.08 (kept), three zones: SOUTH TUNNEL, EAST TUNNEL, CONTAINER ROOM.
-- Task places: STACK (east yard), SM_CATWALK (catwalks over the hall), SM_MANAGER (manager's desk), SM_CASTING (the
+- Task places: STACK (east yard, the slag heap at 50, 9 m), SM_CATWALK (catwalks over the hall), SM_MANAGER (manager's desk), SM_CASTING (the
   aid post's table), SM_PUMPHOUSE, SM_SIDING (hopper wagons on the rail siding through the hall).
 - Doors: SM_GATEDOOR, SM_CELLAR, SM_MGR take KEY_SMELT_OFFICE (EFT's emergency exit key); SM_RECORDS and SM_SHIFT
   are plain doors; SM_STORE takes the card KEY_SMELT_STORE once that item exists (unlocked until then).
-- Loot: 92 containers (positions ours; SPT's mix by kind: 43 crates, 13 toolboxes, 12 jackets, 9 weapon boxes,
-  5 drawers, 4 safes, 3 medbags, 3 tech boxes; duffle bags and grenade boxes become crates, bank safes safes) and 50
-  loose spots (33 junk, 15 office, 2 keys).
+- Loot: 88 containers (positions ours; SPT's mix by kind: 42 crates, 13 toolboxes, 9 weapon boxes, 8 jackets,
+  7 drawers, 4 safes, 3 tech boxes, 2 medbags; duffle bags and grenade boxes become crates, bank safes safes) and 51
+  loose spots (33 junk, 15 office, 3 keys).
+- Transit: TR_BORDER's zone at (50.6, -7.8) m on clear floor in the east yard, by the east gate.
 - Raid: 20 minutes (`Maps.defs.smelter.raidTime = 1200`).
+
+## Walking room (Roblox, not EFT): what the layout gives up so every way is walkable
+
+Studio's exit walk (ZR_Dev exitcheck, Roblox's pathfinding agent: radius 1 stud, 5.6 tall, doors open; 2026-11-09)
+found the first build closed in places: no spawn reached ORE GATE or TIMEKEEPER'S WINDOW, the office's third floor
+did not connect, four spawns were walled in. The causes and what `tools/factory_layout.py` now does:
+
+- **Doorways** (`MIN_PASS` = 1.4 m, 4.4 studs): EFT's are 0.8-1.0 m, and the agent found no way through 0.85 m gaps.
+  Floor necks narrower than 1.4 m that open onto wider floor at two places are widened about their middle; gaps
+  between wall lines that face each other end to end (16 on the ground floor, 1 upstairs) step back to 1.4 m; the six
+  door leaves and their openings are 1.4 m (the cable cellar's door now stands in the SVG's own doorway at
+  x 30.8, z -60.95 m, with lintels over both tunnel doors).
+- **Head room** (`HEAD` = 7 studs): a floor over a stair that ends less than 7 studs under it is cut away (the
+  switchback towers' half landings had 4.5 studs under the office's second and third floors); the office's two towers
+  stop at the wall they reached 0.6 m into, so their half landings are deep enough to turn on.
+- **The courtyard**: EFT's two jump windows from the office and the window over the courtyard stair are vaulted
+  through; with no vaulting here they are broken out to the floor (a sill slab under the upstairs one).
+- **Stairs to the second floor**: at most 45 degrees (the east block's two were 50) and a landing a metre past the
+  top step, kept clear of the second floor's walls (both ran into them).
+- **Catwalks**: EFT's paired 0.9 m catwalks (0.6 m apart) are one deck; catwalks under 1.4 m widen to it.
+- **Switchback towers**: a steel side panel up each flight's open side (to a rail's height over its top step) and a
+  rail on every open landing edge (walk test: holding W up a hall tower's first flight ran the player off its half
+  landing); a storey landing's end stays open where a floor lies beyond it.
+- **Placement**: the transit's zone stands on clear floor (it was on the van at the east gate); STACK and the slag heap
+  stand in the east yard proper at (50, 9) m (64 m east was outside the yard's wall); the shift office's desks are off
+  TIMEKEEPER'S WINDOW's zone; loot boxes keep out of doorways, narrow passages, each other and the walls on their
+  storey, and a 2D walk per storey drops any box that would close a way or stand out of reach (88 boxes; SPT's mix).
 
 ## Budgets and part count
 
-Owner: full detail at full performance, 30 FPS on low-end phones. Counted offline (stub kit, NOT Studio):
-**3,750 instances**, of which 3,561 parts: stair steps 1,103, walls 721, railing parts 661, floors 464, lamps 227,
-machine blocks 88, roofs 64, crucibles and vessels 47, gate parts 28, outside 21, furniture 37, siding 8, container
-boxes 92; plus 104 lights, 83 kit props (each counted once: in Roblox a prop is several parts) and 50 loose spots. Real
-counts in Studio will be higher (prop pieces, container fittings, door leaves, prompts); nothing has been measured
-in Studio or on a phone. Indoor props cast no sun shadow; walls are real wall parts (the detail layer finds them).
+Owner: full detail at full performance, 30 FPS on low-end phones. Counted offline with the part fallbacks (stub kit, no
+Kit5 batch: NOT Studio): **3,952 instances**, 3,767 parts (the side panels and landing rails added about 260); 104
+lights, none casting shadows; 83 kit props (several parts each in Roblox); 88 boxes, 51 loose spots. Studio counted
+3,497 parts with the Kit5 stairs and rails before this change (coordinator, 2026-11-09). Nothing has been measured on
+a phone.
 
 ## Offline checks and previews (NOT Studio)
 
     python3 -I tools/factory_layout.py                       # regenerate Layout.luau (prints counts and warnings)
     <python with lupa> -I tools/smelter_preview.py run rec.json
     python3 -I tools/smelter_preview.py draw rec.json        # -> docs/maps/reference/smelter_build_preview.png
+    python3 -I tools/smelter_preview.py paths rec.json [png] # the walk; docs/maps/reference/smelter_walk_preview.png
     python3 -I tools/smelter_preview.py ref                  # -> docs/maps/reference/factory_layout_preview.png
 
-`run` builds the map under Lua 5.4 with a stub kit; `draw` draws every recorded part per floor over the reference
-and runs MapTests-like checks with axis-aligned boxes (spawns on a floor with head room, exits over a floor, loose
-spots on a surface, containers and AI points out of the walls). Last run: 0 problems. This is not a Roblox run: no
-physics, raycasts against real geometry, lighting or frame rate.
+`run` builds the map under Lua 5.4 with a stub kit (Kit5 off, so MapKit's part fallbacks); `draw` draws every
+recorded part per floor over the reference and runs MapTests-like box checks. `paths` voxelises every colliding part
+at 0.5 studs and walks it with two agents: strict (radius 1.5, 6.5 tall, a body from 1.6 studs over its floor) for
+every spawn to every exit it lists, the scav exits, the hidden exit and the transit, the office's floors and rooms and
+every AI point; soft (radius 1, 6 tall) for the task places, loot boxes and loose spots. Cells join their neighbours a
+stud up or down, so storeys join only where a flight, a ramp or a landing meets them. Calibration: on the build Studio
+walked it flags all of exitcheck's failures (and more: it is the stricter agent); on this build it finds 0 problems,
+and `draw` 0. Not a Roblox run: no physics, no navmesh, no door leaves (taken as open), Kit5 ramps not modelled.
 
 ## Gaps (also in EFT_PARITY.md once the coordinator logs them)
 
 - Heights of roofs, walls and the catwalks; container and loose positions; Gate 2's spot and conditions: ours.
-- Items pending: the emergency key's name and uses, the sealed store's card, the hidden exit's note.
+- Doorways 1.4 m (EFT 0.8-1.0 m), catwalks 1.4 m where EFT's are 0.9 m, the courtyard's windows broken out to the
+  floor, side panels on the switchback towers: for Roblox's pathfinding and the missing vault.
+- The second floor's small rooms north of the office's north stair take no loot (the walk finds them out of reach).
 - One raid length (EFT: 25 minutes at night). No Woods or Lab transit. No breaching or vaulting beyond doors and open
   windows. No duffle bag, grenade box or body containers (crates stand in). No PvE AI PMCs.
