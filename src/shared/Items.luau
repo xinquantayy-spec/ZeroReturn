@@ -104,6 +104,11 @@ add("BZ12_REV", { name = "Bustard B-12", short = "B-12", kind = "pistol", w = 3,
 add("D17_PISTOL", { name = "Dunlin D-17", short = "D-17", kind = "pistol", w = 2, h = 1, mass = 0.63, value = 6608, caliber = "9", weapon = "D17", family = "D17", desc = "Striker-fired polymer pistol in 9x19 with a 17-round magazine. Light, simple, everywhere.", color = c("#2A2C2D") })
 add("AV9_SMG", { name = "Avocet AV-9", short = "AV-9", kind = "weapon", w = 3, h = 2, mass = 2.3, value = 18907, caliber = "9", weapon = "AV9", family = "AV9", rarity = "uncommon", desc = "9x19 submachine gun on a rifle-style receiver with a full top rail and a collapsing stock. 850 rounds a minute.", color = c("#2B2E31") })
 add("B19_SMG", { name = "Bunting B-19", short = "B-19", kind = "weapon", w = 4, h = 2, mass = 2.9, value = 14751, caliber = "9", weapon = "B19", family = "B19", desc = "9x19 submachine gun on a Kalashnikov-pattern receiver, with a side dovetail and a folding skeleton stock.", color = c("#303437") })
+-- economy-1a, fourteenth slice (2026-11-09): EFT's Molot VPO-209, a hunting carbine on the AKM in .366 TKM (our 9.6x39).
+-- The Tern T-209 takes the KS-7's magazines (family KST: EFT's AK 7.62x39 magazines, which take .366 TKM too, see
+-- Items.MAG_CALIBERS) and fires 9.6x39 only (Items.fires). Value: EFT's handbook price (21,585, SPT's handbook.json); the
+-- weight is the KS-7's (EFT gives the VPO-209 and the AKM the same 2.092 kg receiver, SPT 3.10.1 items.json)
+add("T209_RIFLE", { name = "Tern T-209", short = "T-209", kind = "weapon", w = 5, h = 2, mass = 2.4, value = 21585, caliber = "9.6", weapon = "T209", family = "KST", desc = "Civilian hunting carbine on the KS-7's action in 9.6x39: a smooth bore rifled near the muzzle, wooden furniture, single shots only. Takes the KS-7's magazines loaded with 9.6x39.", color = c("#6A4A2E") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -168,6 +173,9 @@ add("D17_MAG", { name = "D-17 17-rd Magazine", short = "MAG 17", kind = "mag", w
 add("AV9_MAG20", { name = "AV-9 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 1, mass = 0.1, value = 1450, capacity = 20, caliber = "9", family = "AV9", desc = "Short 20-round 9x19 magazine for the AV-9.", color = c("#2B2E30") })
 add("AV9_MAG30", { name = "AV-9 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.13, value = 2073, capacity = 30, caliber = "9", family = "AV9", desc = "30-round 9x19 magazine for the AV-9.", color = c("#2B2E30") })
 add("B19_MAG", { name = "B-19 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.18, value = 2422, capacity = 30, caliber = "9", family = "B19", desc = "Polymer 30-round 9x19 magazine for the B-19.", color = c("#2A2B2C") })
+-- economy-1a, fourteenth slice: EFT's AK 7.62x39 aluminium 10-round magazine, the VPO-209's default (0.12 kg, 1 x 2 in
+-- EFT's grid, handbook 700; SPT 3.10.1). Like every KS-7 magazine it takes 7.6x39 or 9.6x39 (Items.MAG_CALIBERS)
+add("KST_MAG10", { name = "KS-7 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 2, mass = 0.12, value = 700, capacity = 10, caliber = "7.6", family = "KST", desc = "Short aluminium 10-round magazine for the KS-7 family. Light and quick to load; takes 7.6x39 or 9.6x39.", color = c("#7E827E") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -837,6 +845,49 @@ Items.SECURE_KINDS = {
 
 function Items.get(id: string): any
 	return defs[id]
+end
+
+-- ── calibres: the rounds a magazine takes and the rounds a gun fires (economy-1a, fourteenth slice) ─────────────
+-- EFT keeps the two apart: a magazine's cartridge filter lists the rounds its feed lips take, a gun's chamber filter the
+-- rounds it fires (SPT 3.10.1 items.json: every AK 7.62x39 magazine, the 6L10, AK-103, '55, 10-round, 40-round and drum
+-- magazines alike, takes the four .366 TKM loads beside the nine 7.62x39 ones; the AKM's and VPO-136's chambers take
+-- 7.62x39 only, the VPO-209's .366 TKM only). A magazine still fits a gun by its family, whatever it holds; a round the
+-- chamber cannot take is never chambered (EFT's reload and draw states chamber only when the magazine's ammunition is
+-- compatible with the weapon's chambers: the SPT Realism mod's copy of them, Weapons/ReloadPatches.cs, read 2026-11-09),
+-- so the gun does not fire it. A magazine's def.caliber is its own calibre; MAG_CALIBERS lists every calibre a family's
+-- feed lips take (the KS-7's magazines are EFT's AK 7.62x39 ones: 7.6x39 and 9.6x39, our .366 TKM). Internal magazines and
+-- tubes take their gun's calibre only, so every older gun loads as before (EFT's SKS internal magazine also takes .366 TKM,
+-- which the SKS cannot fire; logged).
+Items.MAG_CALIBERS = {
+	KST = { "7.6", "9.6" },
+}
+
+-- can these rounds (an ammo def) go into this magazine, or into this gun's internal magazine or tube?
+function Items.takesRound(d: any, ammoDef: any): boolean
+	if not (d and ammoDef and ammoDef.kind == "ammo" and ammoDef.caliber) then
+		return false
+	end
+	if d.kind == "mag" then
+		local list = d.family and Items.MAG_CALIBERS[d.family]
+		if list then
+			return table.find(list, ammoDef.caliber) ~= nil
+		end
+		return d.caliber == ammoDef.caliber
+	end
+	return (d.kind == "weapon" or d.kind == "pistol") and d.capacity ~= nil and not d.family and d.caliber == ammoDef.caliber
+end
+
+-- does this gun (its item def) chamber these rounds (an ammo id or def)? Nothing loaded counts as yes: an empty
+-- magazine stops nothing
+function Items.fires(wd: any, ammo: any): boolean
+	if ammo == nil then
+		return true
+	end
+	local ad = ammo
+	if type(ammo) == "string" then
+		ad = defs[ammo]
+	end
+	return wd ~= nil and ad ~= nil and wd.caliber ~= nil and ad.caliber == wd.caliber
 end
 
 function Items.valueOf(it: any): number

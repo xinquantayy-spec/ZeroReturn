@@ -61,6 +61,12 @@ W.SLOTS = {
 	-- Kestrel KS-L (the KS-7's light machine gun, ai-5b): the KS-7's slots and parts
 	KSL_LMG = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
 		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t76" }, rearsight = { fit = "ak_rear" }, mount = { fit = "dovetail" } },
+	-- Tern T-209 (economy-1a, fourteenth slice; EFT's VPO-209): EFT's VPO-209 takes the AKM's gas tubes and handguards,
+	-- pistol grips, dust covers and stocks (SPT 3.10.1 items.json), so every KS-7 one fits here; its .366 muzzle thread
+	-- takes only its thread protector and the Rotor 43 .366 suppressor, its rear sight base only its own rear sight, and
+	-- it has no side dovetail (EFT: none)
+	T209_RIFLE = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
+		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t96" }, rearsight = { fit = "t209_rear" } },
 	KST_DC_RAIL = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	-- Bittern GL-6 (ai-5b): one part, a rail for a sight
 	GL6_LAUNCHER = { scope = { fit = "pica", cats = RAIL_SIGHT } },
@@ -190,6 +196,22 @@ part("BRAKE_76", "7.6 Muzzle Brake", "BRAKE", "muzzle", "t76", { w = 1, h = 1, m
 -- and SPT's handbook)
 part("BRAKE_74", "KS-74 muzzle brake", "74 BRAKE", "muzzle", "t54", { w = 1, h = 1, mass = 0.1, value = 694, recoil = -5, loud = 1.1, desc = "Two-port brake for the 5.4x39 rifles. Tames the climb a little." })
 part("SUPP_76", "Kaltan SR-7 suppressor", "SR-7", "muzzle", "t76", { w = 2, h = 1, mass = 0.55, value = 39000, rarity = "uncommon", recoil = -5.5, ergo = -12, loud = 0.36, acc = -3, desc = "Sound suppressor for 7.6x39 rifles." })
+
+-- ── T-209 (economy-1a, fourteenth slice: EFT's VPO-209 parts; tarkovforge.com 2026-11-09 for the figures, SPT 3.10.1
+-- items.json for weights and sizes, SPT's handbook for values) ───────────────────────────────────────────────────────
+-- the thread protector: ergonomics +2, 0.01 kg, 600 (EFT's AKM muzzle slot takes it too); the rear sight: 300 m, 0.025 kg,
+-- 470; the wooden stock: -21 % recoil, +3, 0.45 kg, 1,820; the Rotor 43 .366 TKM suppressor (mounted straight on the
+-- thread): -7 % recoil, -22, muzzle speed +0.8 %, 0.57 kg, 25,029. EFT's VPO-209 wooden handguard, Molot gas tube, dust
+-- cover and grip carry the AKM ones' figures, so the T-209 wears the KS-7's
+part("T209_TP", "T-209 thread protector", "T-209 TP", "muzzle", { "t96", "t76" }, { w = 1, h = 1, mass = 0.01, value = 600, ergo = 2, desc = "Knurled cap over the T-209's muzzle thread. It screws onto a KS-7 too." })
+part("T209_RS", "T-209 rear sight", "T-209 RS", "ironrear", "t209_rear", { w = 1, h = 1, mass = 0.025, value = 470, range = 300, desc = "Short hunting leaf with a wide notch, for 100 to 300 m." })
+part("T209_STK", "T-209 wooden stock", "T-209 STK", "stock", "ak_stock", { w = 2, h = 1, mass = 0.45, value = 1820, ergo = 3, recoil = -21, desc = "Hunting-pattern wooden stock with a rubber butt pad. Fits any KS-7-pattern receiver." })
+part("SUPP_96", "Kaltan SR-96 suppressor", "SR-96", "muzzle", "t96", { w = 2, h = 1, mass = 0.57, value = 25029, rarity = "uncommon", recoil = -7, ergo = -22, loud = 0.36, vel = 0.8, desc = "Long sound suppressor for the T-209's 9.6x39 thread." })
+-- the KS-74's suppressor (economy-1a, fourteenth slice: the catalogue's "no 5.4 suppressor yet"): EFT's AK-74 TGP-A 5.45x39
+-- sound suppressor, which screws straight onto the AK-74N's thread (SPT 3.10.1: the AK-74N's muzzle slot takes it, the
+-- TGP-A, the PBS-4 and the Hexagon), recoil -7 %, ergonomics -18, 0.7 kg (tarkovforge.com, read 2026-11-09), muzzle speed
+-- +0.8 % and accuracy 0 (SPT 3.10.1), handbook 41,889; EFT's Prapor sells it at LL3 (tarkovforge.com)
+part("SUPP_54", "Kaltan TS-5 suppressor", "TS-5", "muzzle", "t54", { w = 2, h = 1, mass = 0.7, value = 41889, rarity = "uncommon", recoil = -7, ergo = -18, loud = 0.34, vel = 0.8, desc = "Sound suppressor for the 5.4x39 rifles. Screws straight onto the KS-74's thread." })
 
 -- ── SMG-9 ────────────────────────────────────────────────────────────────────
 part("SPR_GRIP_STD", "SMG-9 trigger group", "TRIG", "grip", "spr_grip", { w = 1, h = 1, mass = 0.2, value = 6500, ergo = 8, desc = "Trigger group and pistol grip." })
