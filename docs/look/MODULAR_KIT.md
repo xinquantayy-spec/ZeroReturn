@@ -265,9 +265,10 @@ fridges (50 to 57 %). Under absorb 0.1 the worst is the van (13 %: its plastic, 
    dorm), with first-person camera smoothness and footstep sounds; an AI following a player upstairs in each; shooting
    through a railing (passes) and at a stair (stops); a grenade thrown at a railing; nothing tidied off a doorway; the
    part counts per group against section 5; a low-end phone's frame rate (never measured).
-4. Fences (phase 2): run step 1 again (`g["build"]()` builds only what is missing: the 27 fence modules) and
-   `g["export"]("C")` -> `assets/exports/ZR_Kit5C.fbx`; upload it, add `ZR_Kit5C` to `AssetIds.luau`, run `kit_meta.py`
-   with ZR_Kit5C added to the list. Studio: KitTests (K01 sizes, K02 fence, K05 fence runs); Border's and Meridian's fence
+4. Fences (phase 2): after step 1's `exec`, `g["build"]([n for n in g["prop_names"]() if n.startswith("K5Fence")])`
+   builds the 27 fence modules alone (its "remaining" also counts batches A and B when they are not in the scene), then
+   `g["sheet"]("C")` to look and `g["export"]("C")` -> `assets/exports/ZR_Kit5C.fbx` (it refuses while a fence variant is
+   missing); upload it, add `ZR_Kit5C` to `AssetIds.luau`, run `kit_meta.py` with ZR_Kit5C added to the list. Studio: KitTests (K01 sizes, K02 fence, K05 fence runs); Border's and Meridian's fence
    lines at corners, on slopes and where they meet buildings; walking into a fence (the panel still stops you).
 5. Merged pieces (phase 2): in Blender, for each of the six kit scripts:
    `g = {}; exec(open(r"<project>/assets/blender_scripts/build_mall_kit_a.py").read(), g)`, `g["build"]()` until it no
