@@ -258,6 +258,20 @@
   "oy": 28.54,
   "w": 36
  },
+ "KSL_DRUM95@long": {
+  "file": "KSL_DRUM95@long",
+  "h": 71,
+  "ox": 25.23,
+  "oy": 5.34,
+  "w": 53
+ },
+ "KSL_LMG@long": {
+  "file": "KSL_LMG@long",
+  "h": 43,
+  "ox": 269.52,
+  "oy": 17.14,
+  "w": 273
+ },
  "KST_DC_RAIL@long": {
   "file": "KST_DC_RAIL@long",
   "h": 17,

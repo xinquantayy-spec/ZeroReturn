@@ -37,6 +37,16 @@ local W = {
 		moveSpread = 1.8, modes = { "AUTO", "SEMI" }, loudness = 1.1, viewmodel = "KST", draw = 0.8,
 		slots = { rail = true, muzzle = "7.6", under = true, side = true },
 	},
+	-- THE CARETAKER's light machine gun (decision ai-5b) in the place of EFT's RPK-16: 650 rounds a minute, ergonomics 45,
+	-- recoil 106 / 316, single and full auto, 650 m effective (TarkovForge's RPK-16 page); a 7.6 KS-7 action here, so the
+	-- muzzle speed is the KS-7's with a longer barrel (ours)
+	KSL = {
+		id = "KSL", item = "KSL_LMG", name = "KS-L", class = "lmg", rpm = 650, range = 650, velocity = 745,
+		ergo = 45, recoilV = 1.06, recoilH = 3.16, reload = 3.2, reloadEmpty = 3.9, hipSpread = 3.4, aimSpread = 0.05,
+		recoilAngle = 90, recoilDisp = 22, recoilConv = 4, recoilCam = 0.45, recoilStable = 6,
+		moveSpread = 2.2, modes = { "AUTO", "SEMI" }, loudness = 1.15, viewmodel = "KST", draw = 1.0,
+		slots = { rail = true, muzzle = "7.6", under = true, side = true },
+	},
 	SPARROW = {
 		id = "SPARROW", item = "SPARROW_SMG", name = "SMG-9", class = "smg", rpm = 800, range = 450, velocity = 400,
 		ergo = 70, recoilV = 0.43, recoilH = 2.12, reload = 2.0, reloadEmpty = 2.6, hipSpread = 2.0, aimSpread = 0.1,
@@ -122,7 +132,7 @@ W.MALF = {
 -- (0.0164727, TRP spec). It is the only figure verified for Tarkov 1.0, so every gun has it for now; the curve's own
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
-W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771 }
+W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KSL = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

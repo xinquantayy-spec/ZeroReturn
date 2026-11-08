@@ -989,11 +989,13 @@ local function shoot(u, t)
 	-- next shot: bursts for automatics (shorter at range), taps for semi, cycling for pump/bolt
 	local cls = w.def.class
 	local interval = 60 / w.def.rpm
-	if cls == "rifle" or cls == "smg" then
+	if cls == "rifle" or cls == "smg" or cls == "lmg" then
 		u.burstN = (u.burstN or 0) + 1
 		if u.burstN >= (u.burstLen or 3) then
 			u.burstN = 0
-			u.burstLen = (dist < 20 and math.random(4, 8)) or (dist < 60 and math.random(2, 5)) or math.random(1, 2)
+			-- a light machine gun keeps up long bursts at every range (Killa's suppressing fire; ai-5b)
+			u.burstLen = (cls == "lmg" and ((dist < 20 and math.random(8, 14)) or (dist < 60 and math.random(6, 11)) or math.random(4, 8)))
+				or (dist < 20 and math.random(4, 8)) or (dist < 60 and math.random(2, 5)) or math.random(1, 2)
 			u.nextShot = t + rnd(0.3, 0.8) * sk.burstPause
 			-- no head shots on a contact with someone unseen for 15 s or more (EFT 1.0; u.headOk, set per contact)
 			u.aimPart = (u.headOk and math.random() < sk.head) and "Head" or ((math.random() < 0.08) and "LowerTorso" or "UpperTorso")

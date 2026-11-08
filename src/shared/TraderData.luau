@@ -308,6 +308,9 @@ end
 T.barters = {
 	vos = {
 		b("KST_RIFLE", 1, 1, { { "CAPACITOR", 1 }, { "LOGIC_BOARD", 1 } }),
+		-- EFT's RPK-16 comes by Prapor's barters at LL2 and LL3 (wiki): the KS-L and its drum at LL3 here
+		b("KSL_LMG", 3, 1, { { "LOGIC_BOARD", 2 }, { "CAPACITOR", 2 }, { "BOLTS", 4 } }),
+		b("KSL_DRUM95", 3, 1, { { "BOLTS", 3 }, { "DUCT_TAPE", 2 } }),
 		b("GREN_F7", 1, 2, { { "BOLTS", 1 }, { "MATCHES", 2 } }),
 		b("SCOPE_4X", 2, 1, { { "CRACKED_LENS", 1 }, { "WIRES", 2 } }),
 	},

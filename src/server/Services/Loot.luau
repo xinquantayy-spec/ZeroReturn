@@ -1198,7 +1198,8 @@ function Loot.bossLoadout(rand)
 end
 
 -- M13 the Caretaker (Meridian Mall): the mall's former security chief in assault armour with arm guards and a
--- face-plate helmet, a pump gun with slugs and a carbine slung behind, and the keys to the places he guards
+-- face-plate helmet, and the keys to the places he guards. His gun (decision ai-5b): mostly the KS-L light machine gun
+-- with the 95-round drum, as Killa mostly carries the RPK-16 with its drum; else the pump gun with slugs, a carbine slung
 function Loot.caretakerLoadout(rand)
 	rand = rand or Random.new()
 	local k = kit(rand)
@@ -1207,8 +1208,14 @@ function Loot.caretakerLoadout(rand)
 	k.slot("armor", "ARMOR_C6", { dur = wornDur("ARMOR_C6", rand, 0.7, 0.94), tint = "black" })
 	k.slot("head", "HELMET_C5", { dur = wornDur("HELMET_C5", rand, 0.5, 0.75) })
 	k.slot("rig", "RIG_CHEST", { tint = "black" })
-	k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.6 and "A12_SLUG" or "A12_BUCK", 4, nil, "HAR_TAC")
-	k.gun("secondary", "R17_RIFLE", "R17_MAG40", "A62_AP", 2, nil, "R17_CQB")
+	if rand:NextNumber() < 0.7 then
+		local ammo = rand:NextNumber() < 0.6 and "A76_PS" or "A76_BP"
+		k.gun("primary", "KSL_LMG", "KSL_DRUM95", ammo, 1, nil, "KSL_BOSS")
+		k.put("KST_MAG40", 1, { a = 40, at = ammo })
+	else
+		k.gun("primary", "HARROW12", nil, rand:NextNumber() < 0.6 and "A12_SLUG" or "A12_BUCK", 4, nil, "HAR_TAC")
+		k.gun("secondary", "R17_RIFLE", "R17_MAG40", "A62_AP", 2, nil, "R17_CQB")
+	end
 	k.gun("holster", "P9_PISTOL", "P9_MAG", "A9_AP", 1, nil, "P9_TAC")
 	k.put("MEDKIT_L")
 	k.put("HEMOSTAT")

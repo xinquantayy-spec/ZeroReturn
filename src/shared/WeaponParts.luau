@@ -55,6 +55,9 @@ W.SLOTS = {
 	-- Kestrel KS-7 (AK-type)
 	KST_RIFLE = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
 		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t76" }, rearsight = { fit = "ak_rear" }, mount = { fit = "dovetail" } },
+	-- Kestrel KS-L (the KS-7's light machine gun, ai-5b): the KS-7's slots and parts
+	KSL_LMG = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
+		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t76" }, rearsight = { fit = "ak_rear" }, mount = { fit = "dovetail" } },
 	KST_DC_RAIL = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	KST_HG_POLY = { foregrip = { fit = "pica", cats = { foregrip = true } } },
 	KST_HG_RAIL = { foregrip = { fit = "pica", cats = { foregrip = true } }, tactical = { fit = "pica", cats = { tactical = true } },

@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## THE CARETAKER's light machine gun (decision ai-5b, part 1; 2026-11-08, about 14:20 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 13 pass, 986 checks. |
+| Model | The KS-L (Blender, `guns_ksl.py`): the KS-7 action, a heavy barrel with cooling rings, the front sight at the muzzle, a folded bipod, every KS-7 part on it; a 95-round drum (review render). Uploaded as the ZR_GunsLMG batch (5 mesh pieces, all in the server's library); sprites and item pictures re-packed. |
+| In the hands | Given the Caretaker's build: the drum mounted from the modding op, 95 rounds, the reflex sight on the railed cover in first person (screenshot); eight shots took it to 87. |
+| THE CARETAKER | Forced on Meridian Mall: he spawned with the KS-L and a full drum. With the player 30 studs in front of him he fired 57 rounds in about 9 s, in bursts of 8 to 13 with pauses of about half a second. |
+| Not checked | The third-person gun on him by eye, the drum on a KS-7, the barter at VOS, the gun's sound by ear, a phone. |
+
 ## Accessibility and the recorder overlay (decisions ui-8a and ui-2b; 2026-11-08, about 14:00 SGT)
 
 | Test | Result |

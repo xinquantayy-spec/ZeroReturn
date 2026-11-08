@@ -69,6 +69,7 @@ P.SKILLS = {
 	pistols = { cat = "COMBAT", name = "PISTOLS", desc = "Less recoil with pistols.", per = 0.003 },
 	shotguns = { cat = "COMBAT", name = "SHOTGUNS", desc = "Less recoil with shotguns.", per = 0.003 },
 	boltaction = { cat = "COMBAT", name = "BOLT-ACTION RIFLES", desc = "Less recoil with bolt-action rifles.", per = 0.003 },
+	lmg = { cat = "COMBAT", name = "LIGHT MACHINE GUNS", desc = "Less recoil with light machine guns.", per = 0.003 },
 	recoil = { cat = "COMBAT", name = "RECOIL CONTROL", desc = "Less recoil with every gun.", per = 0.003 },
 	throwables = { cat = "COMBAT", name = "THROWABLES", desc = "Grenades fly further.", per = 0.004 },
 	melee = { cat = "COMBAT", name = "MELEE", desc = "Knife hits do more damage.", per = 0.006 },
@@ -77,10 +78,10 @@ P.SKILL_ORDER = {
 	"endurance", "strength", "vitality", "health", "stress", "metabolism",
 	"perception", "intellect", "attention", "charisma",
 	"covert", "search", "surgery", "troubleshooting", "lightvests", "heavyvests", "crafting",
-	"rifles", "smg", "pistols", "shotguns", "boltaction", "recoil", "throwables", "melee",
+	"rifles", "smg", "pistols", "shotguns", "boltaction", "lmg", "recoil", "throwables", "melee",
 }
 -- the weapon skill that a weapon class trains and improves
-P.WEAPON_SKILL = { rifle = "rifles", smg = "smg", pistol = "pistols", shotgun = "shotguns", bolt = "boltaction" }
+P.WEAPON_SKILL = { rifle = "rifles", smg = "smg", pistol = "pistols", shotgun = "shotguns", bolt = "boltaction", lmg = "lmg" }
 -- gains in these also train another skill (Tarkov: Health from the physical skills, Charisma from the mental ones)
 P.SKILL_SPILL = {
 	endurance = { "health", 0.3 }, strength = { "health", 0.3 }, vitality = { "health", 0.3 }, metabolism = { "health", 0.3 },
@@ -135,7 +136,8 @@ end
 P.MASTERY_MAX = 3
 P.MASTERING = {
 	R17 = { name = "R-17", class = "ASSAULT RIFLE", level2 = 1600, level3 = 2000, weapons = { "R17" } },
-	KST = { name = "KS-7", class = "ASSAULT RIFLE", level2 = 500, level3 = 600, weapons = { "KST" } },
+	-- the KS-L shares the KS-7's group (ours: the RPK-16's own thresholds were not found)
+	KST = { name = "KS-7", class = "ASSAULT RIFLE", level2 = 500, level3 = 600, weapons = { "KST", "KSL" } },
 	SPARROW = { name = "SMG-9", class = "SMG", level2 = 200, level3 = 250, weapons = { "SPARROW" } },
 	HARROW = { name = "Harrow-12", class = "SHOTGUN", level2 = 150, level3 = 200, weapons = { "HARROW" } },
 	TUNDRA = { name = "Tundra", class = "SNIPER RIFLE", level2 = 200, level3 = 250, weapons = { "TUNDRA" } },

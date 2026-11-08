@@ -442,7 +442,7 @@ end
 
 -- per-weapon report: pitch/volume variants of the recorded rifle shot; suppressors muffle and shorten it
 local GUN = {
-	R17 = { s = 1.0, v = 0.9 }, KST = { s = 0.9, v = 0.95 }, SPARROW = { s = 1.16, v = 0.8 },
+	R17 = { s = 1.0, v = 0.9 }, KST = { s = 0.9, v = 0.95 }, KSL = { s = 0.86, v = 1.0 }, SPARROW = { s = 1.16, v = 0.8 },
 	HARROW = { s = 0.68, v = 1.0 }, TUNDRA = { s = 0.78, v = 1.0 }, P9 = { s = 1.28, v = 0.72 },
 	-- the stationary guns (Stationary): the same recorded shot pitched down, louder
 	HMG12 = { s = 0.52, v = 1.0 }, AGL30 = { s = 0.62, v = 1.0 },

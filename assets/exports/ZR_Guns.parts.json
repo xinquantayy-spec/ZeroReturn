@@ -1,7 +1,7 @@
 {
  "classes": {
   "long": 5.5,
-  "pistol": 8.0
+  "pistol": 7.0
  },
  "parts": {
   "AK_PG_ERGO": {
@@ -1590,6 +1590,230 @@
    "slots": {},
    "tris": 912,
    "w": 1
+  },
+  "KSL_DRUM95": {
+   "anchors": {},
+   "batch": "ZR_GunsLMG",
+   "cls": "long",
+   "ext": [
+    -0.20625,
+    0.225,
+    -0.5625,
+    0.02969
+   ],
+   "family": "ksl",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_KSL_DRUM95__brass": {
+     "center": [
+      -0.0,
+      0.0125,
+      -0.0031
+     ],
+     "mat": "brass",
+     "size": [
+      0.0327,
+      0.0344,
+      0.0688
+     ],
+     "sub": null
+    },
+    "ZR_WP_KSL_DRUM95__metal": {
+     "center": [
+      -0.05,
+      -0.1875,
+      -0.0102
+     ],
+     "mat": "metal",
+     "size": [
+      0.2,
+      0.4,
+      0.2383
+     ],
+     "sub": null
+    },
+    "ZR_WP_KSL_DRUM95__polymer": {
+     "center": [
+      -0.0,
+      -0.35,
+      0.0094
+     ],
+     "mat": "polymer",
+     "size": [
+      0.2513,
+      0.425,
+      0.4313
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 1504,
+   "w": 2
+  },
+  "KSL_LMG": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.11875,
+     -0.84375
+    ],
+    "hand": [
+     -0.0,
+     -0.0625,
+     -1.125
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -2.39688
+    ],
+    "port": [
+     0.05,
+     0.0125,
+     -0.375
+    ]
+   },
+   "batch": "ZR_GunsLMG",
+   "cls": "long",
+   "ext": [
+    -2.375,
+    0.0125,
+    -0.2102,
+    0.13438
+   ],
+   "family": "ksl",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_KSL_LMG__gunmetal": {
+     "center": [
+      -0.0044,
+      -0.0379,
+      -1.1812
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.1256,
+      0.3446,
+      2.3875
+     ],
+     "sub": null
+    },
+    "ZR_WP_KSL_LMG__metal": {
+     "center": [
+      0.0371,
+      -0.0347,
+      -1.1782
+     ],
+     "mat": "metal",
+     "size": [
+      0.1477,
+      0.3069,
+      2.138
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "dustcover": {
+     "pos": [
+      -0.0,
+      0.0375,
+      0.0
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "grip": {
+     "pos": [
+      -0.0,
+      -0.13125,
+      -0.08125
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "handguard": {
+     "pos": [
+      -0.0,
+      0.0,
+      -0.81875
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.08125,
+      -0.55
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "mount": {
+     "pos": [
+      -0.06719,
+      -0.03125,
+      -0.30625
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "muzzle": {
+     "pos": [
+      -0.0,
+      0.0,
+      -2.375
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "rearsight": {
+     "pos": [
+      -0.0,
+      0.04375,
+      -0.81875
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "stock": {
+     "pos": [
+      -0.0,
+      -0.0375,
+      0.0
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 2124,
+   "w": 6
   },
   "KST_DC_RAIL": {
    "anchors": {},
@@ -6036,6 +6260,83 @@
      },
      "tube": {
       "id": "HAR_TUBE_8",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "KSL_BOSS": {
+   "base": "KSL_LMG",
+   "tree": {
+    "id": "KSL_LMG",
+    "mods": {
+     "dustcover": {
+      "id": "KST_DC_RAIL",
+      "mods": {
+       "scope": {
+        "id": "HOLO_EX",
+        "mods": {}
+       }
+      }
+     },
+     "grip": {
+      "id": "AK_PG_ERGO",
+      "mods": {}
+     },
+     "handguard": {
+      "id": "KST_HG_RAIL",
+      "mods": {}
+     },
+     "mag": {
+      "id": "KSL_DRUM95",
+      "mods": {}
+     },
+     "muzzle": {
+      "id": "BRAKE_76",
+      "mods": {}
+     },
+     "rearsight": {
+      "id": "KST_RS_TAN",
+      "mods": {}
+     },
+     "stock": {
+      "id": "KST_STK_TUBE",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "KSL_LMG": {
+   "base": "KSL_LMG",
+   "tree": {
+    "id": "KSL_LMG",
+    "mods": {
+     "dustcover": {
+      "id": "KST_DC_STD",
+      "mods": {}
+     },
+     "grip": {
+      "id": "AK_PG_STD",
+      "mods": {}
+     },
+     "handguard": {
+      "id": "KST_HG_POLY",
+      "mods": {}
+     },
+     "mag": {
+      "id": "KSL_DRUM95",
+      "mods": {}
+     },
+     "muzzle": {
+      "id": "KST_FH_SLANT",
+      "mods": {}
+     },
+     "rearsight": {
+      "id": "KST_RS_TAN",
+      "mods": {}
+     },
+     "stock": {
+      "id": "KST_STK_TUBE",
       "mods": {}
      }
     }
