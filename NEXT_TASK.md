@@ -10,15 +10,18 @@
 - Done (the section 7 entries of `docs/design/EFT_PARITY.md`, TEST_RESULTS): M1 release blockers; M2 lean servers
   (tech-4b) and phone menus (ui-3a); M3 quick wins in five batches; the Broker on Reshala's zones (ai.3); scav groups
   (ai.8); the mesh library split (tech.13).
-- Checked in Studio 2026-11-08 (TEST_RESULTS): all of M3 batch 6 and M4 batches 1-3 (ai-3a, gameplay-1a, ai-1a, ai-2,
-  ai-7a, economy-2a, gameplay-2a) are on main; 11 suites, 830 checks pass. Studio's id is now b79ee504-12b7-4e23-b725-da89d70d2f1a;
+- Checked in Studio 2026-11-08 (TEST_RESULTS): all of M3 batch 6, M4 batches 1-3 (ai-3a, gameplay-1a, ai-1a, ai-2,
+  ai-7a, economy-2a, gameplay-2a), M4 batch 4 (Relay 7 counters for all eight traders, plates in the drag cue, pictures
+  for every carried item, AI looting ai-8a, health and stamina indicators ui-1a) and the map-first tasks (economy-6a: 122
+  tasks, 31 task places) are on main; 12 suites, 888 checks pass. Studio's id is b79ee504-12b7-4e23-b725-da89d70d2f1a;
   Rojo serves on port 34873 (after a Studio restart the owner clicks Connect).
-- Still open from those: Relay 7 counters, NPCs and portraits for ROOK, DEKKER, KOVAC and BRAM; 16 plate icons; the drag
-  cue for plates; the device-emulator check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft
-  side-by-side in Edit mode, never a runtime switch (that hung Studio); kit origins (art.9); ZR_SFX_Amb (the owner checks why it reads as 0.0 s before any re-upload).
-- Next decisions: economy-6a (a map-first core of about 120 tasks, now on eight traders), gameplay-4b (health and meds),
-  ai-8a (AI looting), ui-1a (in-raid health), gameplay-3a (sound occlusion), tech-8c (a Luau runtime for tests: needs the
-  owner's OK to build the official Luau from source).
+- Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
+  seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator
+  check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft side-by-side in Edit mode, never a runtime
+  switch (that hung Studio); kit origins (art.9); ZR_SFX_Amb (the owner checks why it reads as 0.0 s before any
+  re-upload).
+- Next decisions: gameplay-4b (health and meds), gameplay-3a (sound occlusion), tech-8c (a Luau runtime for tests: needs
+  the owner's OK to build the official Luau from source).
 - The gaps by area: `docs/design/EFT_PARITY.md` sections 8 (AI), 9 (core gameplay), 10 (economy) and 11 (art); the look
   rules for new art: `docs/look/ART_BIBLE.md`.
 - Parked: the players' tripwire kit. The server side is merged on branch `wip/tripwire-kit`, the client is not built, and the branch is not on main.

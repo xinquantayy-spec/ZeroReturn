@@ -384,7 +384,7 @@ Still a gap:
 | Loot tables per map; 21 container templates (SPT, Interchange) | One pool per container kind for every map; 13 kinds | Tables per map |
 | Secure containers Alpha to Kappa with trader and task paths; item cases (documents, keytool, SICC, junk box, medicine, magazine, keycard holder) | Pouch S, M and L: M is TILDA's LL2 barter (EFT's Beta), L the reward of FENCE's task Keepsakes (EFT 1.1's Kappa); weapon parts, grenades, goggles, glasses and headsets go in (economy.7, 2026-11-08, Studio check pending) | The cases; full containers cannot nest; Pouch L asks 10 of our valuables, Kappa 44 collectibles |
 | Stash 10x30, up to 10x68 or 10x72 | 10x20, up to 10x30 | Stash levels (economy-7b) |
-| 531 tasks for 11 traders: conditional kills, found-in-raid hand-ins, plant and mark, visit, extract, skill and LL, gunsmith builds; side tasks per LL, dailies and weeklies, task-locked offers | 23 tasks for 4 traders: kill (a named boss too), hand in, extract and visit on a named map, tasks that need other tasks, karma or loyalty (economy.7, economy.9, 2026-11-08, Studio check pending) | economy-6a: a map-first core of about 120 |
+| 531 tasks for 11 traders: conditional kills, found-in-raid hand-ins, plant and mark, visit, extract, skill and LL, gunsmith builds; side tasks per LL, dailies and weeklies, task-locked offers | 122 tasks for 8 traders in EFT 1.1.0's loyalty-level groups on our four maps: conditional kills, found-in-raid hand-ins, plant and mark, quest items kept only by getting out, visit, extract (not on a run-through), gunsmith builds; three dailies, a weekly and Fence's scav task; task-locked offers; 31 task places (economy-6a, 2026-11-08; mark and find checked in Studio) | The gaps in "Map-first tasks" near the end of this file: 409 more tasks and the story tasks; our rewards, hold times and operational figures; no skill, loyalty or failure objectives |
 | Hideout: 26 modules, 67 levels, 214 crafts; generator fuel; scav case; bitcoin farm; the shooting range as a module | 5 modules, 8 levels, 10 crafts; no fuel; one build at a time; a free range in the lobby | economy-7b: an economy core of about 14 |
 | Builds and crafts take hours to days; level 15 at 161,139 XP (the top level about 82.6 million, unverified) | 5 to 45 minutes; level 15 at 52,383 XP, cap 40 | economy-4b: EFT's curves, faster clocks |
 | Skills such as Hideout Management, Mag Drills, Weapon Maintenance, Aim Drills, DMR, LMG, HMG, revolvers, launchers | 24 skills | With the content they need |
@@ -1339,9 +1339,46 @@ and 10; the gaps they found are in the same tables.
 - **EFT's roster (ai-1a, coordinator):** no Watch on Border Yard and Meridian Mall; scavs on their posts and the
   Bastion's guns; marksmen on Customs' perches (section 8).
 
+### Map-first tasks (decision economy-6a, 2026-11-08)
+
+Built by the tasks thread (0568127, TaskTests) and placed in the maps by the coordinator. Marking and finding were
+checked in Studio on Border Yard (TEST_RESULTS); all 12 suites pass, 888 checks.
+
+Matches Tarkov now:
+- **122 tasks for the eight traders**, opening at loyalty levels in EFT 1.1.0's groups (two to four at once a level),
+  on Border Yard, Meridian Mall, the Smelter and Quay 7, in the patterns of EFT's tasks on the matching maps.
+- **Every objective type EFT's map tasks use:** conditional kills (map, place, weapon class, gun, distance, body part,
+  raid time, as a scav, suppressed, no armour, no night vision, worn item, in one raid), found-in-raid hand-ins, plant
+  and mark (a marker counts once you have stayed alive 30 s after setting it), quest items kept only by getting out,
+  visits, extracts that a run-through does not count, and gunsmith builds with stated figures.
+- **Standings:** every trader's tasks add up to at least EFT 1.1.0's LL4 standing, so the loyalty table is EFT's own.
+- **Task-locked offers:** an offer opens when its task is done and shows a TASK overlay until then.
+- **Operational tasks:** dailies, a weekly and Fence's scav task, each replaceable for money and standing.
+- **Task places:** 31 of them, with prompts only the task's owner sees. Markers, cameras and beacons also turn up as
+  loot in tech and toolbox containers.
+
+Still a gap:
+- 122 of EFT's 531 tasks: no Lightkeeper, Ref or BTR driver tasks, no story tasks.
+- Two patterns are from memory, not fetched: V15's grenade kills (after Prapor's) and H16's close-range kills in a gas
+  mask (after Decontamination Service). H8's household hand-in names no EFT task.
+- Task XP and money are ours, set against our level curve (economy-4b). Standing per task is about four times EFT's,
+  because there are fewer tasks.
+- EFT's operational counts, reward formulas, replace price and reset time were not found. Ours: three dailies, one
+  weekly and one scav task; 6,000 MK plus 1,800 a level for a daily, four times that for a weekly; half the money and
+  0.01 standing to replace one; resets at UTC midnight and on Monday.
+- Fence's scav tasks open at level 5 (EFT: Intelligence Center level 1, which Relay 7 lacks).
+- Pouch L still asks for the four old chain ends, not every trader's last task.
+- A quest item lies as a plain box that other players can see; only its prompt is the owner's alone.
+- Plant and mark hold times are ours (6 s, 4 s).
+- No skill-level or loyalty objectives, no failure conditions, no start equipment, no progress shared in a squad (1.1.0).
+- Markers, cameras and beacons are sold only while a task needs them (EFT sells markers outright).
+- Gunsmith specs check kinds of parts, not named parts, and have no size or effective-distance condition.
+- Pins work for tasks, not for operational tasks.
+- A place on a floor is found by SpotFinder near a point we chose; EFT's places are set by hand.
+
 ### M4 batch 4, coordinator's part (2026-11-08)
 
-Checked in Studio (TEST_RESULTS, 11:00 to 12:00 SGT; all 11 suites pass, 850 checks):
+Checked in Studio (TEST_RESULTS, 11:00 to 11:40 SGT; all 11 suites pass, 850 checks):
 - **Relay 7 counters for all eight traders.** DEKKER across the hall from VOS, HALE and TILDA; KOVAC in the gunsmith's
   room; ROOK and BRAM either side of the motor pool's vehicle opening; each with an NPC in his own clothes and a name
   board. Our design choice (the walk-around bunker); every trader screen still opens from its key.

@@ -8,7 +8,19 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## Tarkov's health and stamina indicators (decision ui-1a; 2026-11-08, 12:25 SGT)
+## Map-first tasks merged and placed (decision economy-6a; 2026-11-08, about 12:05 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 12 pass, 888 checks. New suite TaskTests (the list, the places, gunsmith specs, standings and loyalty groups, task-locked offers, operational tasks, kill conditions). The co-op exit check in LogicTests now runs with the task hooks (a stand-in raid has no player). |
+| Task places | The 31 places economy-6a asked for are in the maps: 12 on Border Yard, 10 on Meridian Mall, 5 on the Smelter, 4 on Quay 7. A place on a floor is moved to the nearest clear floor after the map is built (new SpotFinder: no wall, solid part or furniture over it, headroom for a kneeling player). A place on a desk, bench, shelf, deck or boat sits exactly there. ZR_Dev `taskSpots` showed every floor place set and clear. |
+| Mark, Border Yard (V10, fuel tank 1) | At the foot of tank 1 the prompt [F] MARK · SPOT MARKER showed (screenshot). Held with no marker in the raid kit (the one given before the raid went to the stash): "YOU NEED A SPOT MARKER", nothing taken. With a marker: "MARKED · STAY ALIVE 30 S", the marker left the kit, and 30 s later the objective read 1/1. |
+| Find, Border Yard (V12, watch room) | Upstairs in the watchhouse, [F] PICK UP · WATCH ROOM LOGBOOK (screenshot). Picking it up showed "FOUND WATCH ROOM LOGBOOK · GET OUT TO KEEP IT". After a survived exit the logbook went to the quest-item pouch: find 1/1, and the hand-over counted 1/1 from the pouch. |
+| Run-through | The same exit was a run-through (4:37, no XP): V10's "extract" objective did not count, as in EFT. |
+| Prompts are the owner's | Each prompt carried the owner's UserId (`taskPrompts`); the client hides prompts that are not its own. Only one client ran, so a second player's view was not seen. |
+| Not checked | The TASKS tab and the TASK overlay on locked offers on screen, handing over at a trader, a plant (the same path as a mark, without the 30 s), kill conditions in a live fight (the tests cover them), operational tasks live, quest items lost on death live, two or more clients, phone and gamepad prompts. |
+
+## Tarkov's health and stamina indicators (decision ui-1a; 2026-11-08, about 11:35 SGT)
 
 | Test | Result |
 |---|---|
@@ -17,7 +29,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Automated suites | All 11 pass, 851 checks (the server keeps the three new settings). |
 | Not checked | The touch layout (figure top left) and the exits drop-down beside it on a phone, the MONOCHROME scheme and the NEVER modes on screen, the low energy and water warnings, holding breath (blue arm bar). |
 
-## AI looting (decision ai-8a; 2026-11-08, 11:55 SGT)
+## AI looting (decision ai-8a; 2026-11-08, about 11:30 SGT)
 
 | Test | Result |
 |---|---|
@@ -25,14 +37,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Live, Border Yard (god and ignore on) | A pile 16 studs ahead (a KS-7 rifle, its loaded magazine, an insured helmet, an insured gold chain) and a scav 20 studs past it: within 25 s the scav (already carrying a KS-7) took the magazine, the helmet and the chain and left the rifle (not a fifth better than its own). In the same 25 s three other scavs picked up loose items worth carrying; one could not fit its item and moved on. Another scav was seen crouched in LOOT state. |
 | Not checked | The insurance flag on the live scav's items (the tests check it), a scav swapping guns live, bodies of players killed by the AI, looting during a fight (the dispatch only runs it while calm), the AI cost with many bodies. |
 
-## Plate pictures (2026-11-08, 11:30 SGT)
+## Plate pictures (2026-11-08, about 11:15 SGT)
 
 | Test | Result |
 |---|---|
 | Icons | The 16 plates rendered in Blender (build_items_d.py), packed on a fifth sheet (ZR_ItemIcons_4) and uploaded; in the stash KITE III, BASALT V, PC-4 F, HP-5 S, BULWARK F and ALBATROSS VI show their pictures (screenshot). The sheet showed blank for about a minute after the upload, then loaded. |
 | Coverage | 297 item definitions: 8 were without a picture. Seven now have one (build_items_e.py: the antidote, both flares, the ritual amulet and knife, the Forester's pack, the welding mask; sheet 5 packed again and uploaded, image 84071911896199), seen in the stash (screenshot; the amulet shows "?" until examined, as Tarkov does). The launcher round is never carried. New UiTests check: every carried item has a picture (UiTests 33/33, all suites 839). |
 
-## Plates in the drag cue (2026-11-08, 11:15 SGT)
+## Plates in the drag cue (2026-11-08, about 11:05 SGT)
 
 | Test | Result |
 |---|---|
@@ -60,7 +72,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Rain (art.12) | Rain 0.6 at 13:00 on Border Yard: streaks across the view, a dark overcast sky with a dense cloud layer (screenshot). Splashes and lens drops were not distinguishable in a still. |
 | Malfunction (gameplay.12) | R-17 at 20 % condition, A62_FMJ: 25 rounds, then 17 rounds and the gun stopped; the server reported a failure to eject (malf "eject", not yet known), condition 17.9 after 42 shots. The client's MalfGlow overlay exists; its flashes were not watched. |
 
-## M3 batch 6 and M4 batches 1-3: first Studio session after the hang (2026-11-08, 10:15-11:15 SGT)
+## M3 batch 6 and M4 batches 1-3: first Studio session after the hang (2026-11-08, about 10:15-10:30 SGT)
 
 Studio hung at about 03:20 SGT on a runtime lighting switch; the owner closed it and I reopened it (new Studio id
 b79ee504). Everything below ran in that session, on main as each branch was merged.
