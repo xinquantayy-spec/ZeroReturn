@@ -596,7 +596,67 @@ function Effects.casing(at, right, kind)
 	end)
 end
 
-function Effects.impact(pos, normal, isBody, material)
+-- light blood (decision art-7a): a body hit leaves a small dark mark on the wall or floor behind it, where the round would
+-- carry on, and now and then a drop on the floor under it. Small, few and fading (Roblox's "light realistic blood",
+-- the Moderate maturity label the owner chooses when publishing): no pools, no sprays. Three overlapping discs of
+-- different sizes, so a mark reads as a splat; at most 30, each gone after 40 s. Not on bodies (they move).
+local bloodMarks = {}
+local bloodParams = RaycastParams.new()
+bloodParams.FilterType = Enum.RaycastFilterType.Include
+bloodParams.RespectCanCollide = true
+Effects.BLOOD = { reach = 7, max = 30, life = 40, drop = 0.35 }
+local function bloodMark(at, normal, size)
+	local B = Effects.BLOOD
+	local face = CFrame.lookAt(at + normal * 0.014, at + normal * 2) * CFrame.Angles(0, math.pi / 2, 0)
+	local base = tmpPart(Vector3.new(0.02, size, size), face, Color3.fromHex("4A110E"), Enum.Material.SmoothPlastic, 0.2)
+	base.Name = "BloodMark"
+	base.Shape = Enum.PartType.Cylinder
+	for i = 1, 2 do
+		local r = size * (0.35 + math.random() * 0.25)
+		local off = Vector3.new(0.004 * i, (math.random() - 0.5) * size * 0.7, (math.random() - 0.5) * size * 0.7)
+		local blob = tmpPart(Vector3.new(0.02, r, r), face * CFrame.new(off), Color3.fromHex(i == 1 and "380B09" or "561510"), Enum.Material.SmoothPlastic, 0.15)
+		blob.Shape = Enum.PartType.Cylinder
+		blob.Parent = base
+	end
+	table.insert(bloodMarks, base)
+	if #bloodMarks > B.max then
+		table.remove(bloodMarks, 1):Destroy()
+	end
+	task.delay(B.life, function()
+		local i = table.find(bloodMarks, base)
+		if i then
+			table.remove(bloodMarks, i)
+		end
+		base:Destroy()
+	end)
+end
+
+function Effects.blood(pos, dir)
+	local world = workspace:FindFirstChild("ZR_World")
+	if not world or quality() < 1 then
+		return
+	end
+	local B = Effects.BLOOD
+	bloodParams.FilterDescendantsInstances = { world }
+	if dir and dir.Magnitude > 0.01 then
+		local hit = workspace:Raycast(pos, dir.Unit * B.reach, bloodParams)
+		if hit then
+			bloodMark(hit.Position, hit.Normal, 0.35 + math.random() * 0.35)
+		end
+	end
+	if math.random() < B.drop then
+		local down = workspace:Raycast(pos, Vector3.new((math.random() - 0.5) * 0.6, -8, (math.random() - 0.5) * 0.6), bloodParams)
+		if down and down.Normal.Y > 0.6 then
+			bloodMark(down.Position, down.Normal, 0.18 + math.random() * 0.15)
+		end
+	end
+end
+
+-- dir: the round's direction (where a body hit's blood carries)
+function Effects.impact(pos, normal, isBody, material, dir)
+	if isBody then
+		Effects.blood(pos, dir)
+	end
 	local fam = isBody and "body" or (material == Enum.Material.Water and "water") or (material and Effects.surfaceOf(material)) or "concrete"
 	local q = quality()
 	if q >= 2 or isBody then
@@ -671,7 +731,7 @@ function Effects.remoteShot(d)
 	if d.t then
 		Effects.tracer(d.o, d.p) -- tracer rounds only (Tarkov)
 	end
-	Effects.impact(d.p, d.n, d.h, typeof(d.m) == "EnumItem" and d.m or nil)
+	Effects.impact(d.p, d.n, d.h, typeof(d.m) == "EnumItem" and d.m or nil, shotDir)
 	Effects.impactSound(d.p, d.h, d.m)
 	local cam = workspace.CurrentCamera
 	local dist = cam and (cam.CFrame.Position - d.o).Magnitude or 0

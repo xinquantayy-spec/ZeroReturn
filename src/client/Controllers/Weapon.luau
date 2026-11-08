@@ -877,7 +877,7 @@ local function fireOnce()
 	if res then
 		local m = res.Instance:FindFirstAncestorOfClass("Model")
 		local body = m and m:FindFirstChildOfClass("Humanoid") ~= nil
-		ctx.Effects.impact(res.Position, res.Normal, body, res.Material)
+		ctx.Effects.impact(res.Position, res.Normal, body, res.Material, dir)
 		ctx.Effects.impactSound(res.Position, body, res.Material)
 	end
 	ctx.Effects.gunSound(def.id, SoundService, o.ms.suppressed, false)

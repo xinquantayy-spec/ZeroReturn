@@ -8,6 +8,13 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Light blood (decision art-7a; 2026-11-08, about 13:35 SGT)
+
+| Test | Result |
+|---|---|
+| Border Yard, watch room | Four body hits sent to the client, the rounds flying on toward the room's wall: four marks on the wall behind (0.36 to 0.61 studs) and one drop on the floor (screenshot). The marks were then made darker; that tint was not looked at again. |
+| Not checked | Own shots hitting a scav (the same function, passed the shot's direction), phones, POTATO (no marks there by design). |
+
 ## Chat in raids (decision ui-7a; 2026-11-08, about 13:20 SGT)
 
 | Test | Result |

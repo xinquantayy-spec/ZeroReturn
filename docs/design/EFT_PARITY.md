@@ -429,7 +429,7 @@ Still a gap:
 | Post effects: ambient occlusion, reflections, chromatic aberration, noise, grading | Grade, bloom, sun rays, depth of field, grain, vignette, edge haze; grading presets | Partial; part of it is a Roblox limit |
 | Detailed, textured guns, gear and items | Vertex colour, no UVs: gun parts 128 to 1,544 triangles, gear about 400, 95 item models | art-4b: PBR sets (512 to 1024) for first-person guns, attachments, worn gear and items seen up close |
 | Hand-made reloads, checks and inspects with the bolt and charging handle moving | Code-made poses | art-6a: the bolt release or charging handle, a quick reload, a magazine check that shows the magazine, a chamber pull |
-| Blood on hits | A dark red puff | art-7a: light blood marks (the Moderate label at publishing is the owner's call) |
+| Blood on hits | A dark red puff; since 2026-11-08 (art-7a) small dark marks on the wall or floor behind a body hit and now and then a drop under it (at most 30, gone after 40 s; none on bodies) | Marks on bodies; when publishing, the owner answers the maturity questionnaire for light realistic blood (Moderate) |
 | Muted, dirty colours on goods and props | Saturated shop goods and props | art.6: pull them toward the palette with a grime gradient |
 
 Also open (our own polish, no Tarkov row): one wear strip per facade instead of a decal per wall part (art.7,
