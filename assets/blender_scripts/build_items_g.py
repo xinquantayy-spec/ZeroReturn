@@ -1,4 +1,4 @@
-"""Zero Return - item models G: the stimulant injectors (decision gameplay-4b, 2026-11-08). Original designs: auto-
+"""Zero Return - item models G: the stimulant injectors (decision gameplay-4b, 2026-11-08) and the 40x46 round (ai-5b). Original designs: auto-
 injector pens lying on their side, each in its own colours so the four read apart at a glance (no maker's marks):
 RG-5 regenerative (pale green, after EFT's Propital), SV-3 combat stimulant (graphite and orange, after SJ6), HM-2
 hemostatic (deep red, after Zagustin) and the adrenaline injector (white with a blue cap). Modelled in metres (front
@@ -42,4 +42,18 @@ def stim_adren(I):
     pen(I, col("E4E6E2"), col("2F5FA8"), col("E2B83A"), label=col("F2F0E8"), grip=col("6A6E70"), length=0.12)
 
 
-EXTRA = ["STIM_REGEN", "STIM_STAMINA", "STIM_HEMO", "STIM_ADREN"]
+@item("A40_HE", 1, 1, view="three_q", margin=0.12)
+def a40_he(I):
+    """a 40x46 high-explosive round for the GL-6 (decision ai-5b), lying on its side: an aluminium case with its rim,
+    an olive projectile with a yellow band (the usual marking for high explosive) and a rounded nose"""
+    m, p = I("metal"), I("plastic")  # the projectile's paint reads as plastic
+    r, z = 0.02, 0.02
+    cyl_x(m, -0.05, -0.046, 0.0, z, r * 1.08, col("9EA3A0"), seg=24)          # rim
+    cyl_x(m, -0.046, -0.004, 0.0, z, r, col("B9BDB8"), seg=24)                 # case
+    cyl_x(p, -0.004, 0.03, 0.0, z, r * 0.98, col("4F5539"), seg=24)            # projectile body
+    cyl_x(p, 0.006, 0.013, 0.0, z, r * 0.995, col("D9B43A"), seg=24)          # yellow band
+    cyl_x(p, 0.03, 0.05, 0.0, z, r * 0.98, col("4F5539"), seg=24, r2=r * 0.4)  # nose
+    cyl_x(m, 0.05, 0.053, 0.0, z, r * 0.4, col("8C908B"), seg=16, r2=r * 0.25)  # fuze tip
+
+
+EXTRA = ["STIM_REGEN", "STIM_STAMINA", "STIM_HEMO", "STIM_ADREN", "A40_HE"]

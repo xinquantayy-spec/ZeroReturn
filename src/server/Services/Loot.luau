@@ -1302,13 +1302,15 @@ function Loot.mortarLoadout(rand)
 	k.slot("armor", "ARMOR_C5", { dur = wornDur("ARMOR_C5", rand, 0.64, 0.93), tint = "olive" })
 	k.slot("head", "BEANIE", { tint = "charcoal" }) -- in place of the bandana: no head armour, as Big Pipe
 	k.slot("rig", "RIG_CHEST", { tint = "olive" })
-	k.gun("primary", "KST_RIFLE", "KST_MAG", "A76_BP", 3, nil, "KST_TAC")
-	for _ = 1, 3 do
-		k.put("GREN_F7")
+	-- Big Pipe's launcher (decision ai-5b): the GL-6 loaded and four more rounds, the rifle on his back for close in with
+	-- a spare magazine, a grenade of each kind; it all fits his chest rig and five double pockets
+	k.gun("primary", "GL6_LAUNCHER", nil, "A40_HE", 0, nil, "GL6_BOSS")
+	k.gun("secondary", "KST_RIFLE", "KST_MAG", "A76_BP", 1, nil, "KST_TAC")
+	for _ = 1, 4 do
+		k.put("A40_HE")
 	end
-	for _ = 1, 3 do
-		k.put("GREN_RK5")
-	end
+	k.put("GREN_F7")
+	k.put("GREN_RK5")
 	k.put("MEDKIT_L")
 	k.put("PAINKILLERS")
 	k.put("SPLINT")

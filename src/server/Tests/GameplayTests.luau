@@ -214,6 +214,53 @@ function T.run(ctx)
 		check("a destroyed stomach drains energy and water five times as fast", Health.STOMACH_DRAIN == 5)
 	end)
 
+	-- the bosses' guns (decision ai-5b): the KS-L and the GL-6, and the launched round's impact fuze
+	do
+		local G = require(Shared.Grenades)
+		local Ballistics = require(Shared.Ballistics)
+		local ksl, gl6, a40 = Weapons.KSL, Weapons.GL6, Items.defs.A40_HE
+		check("KS-L: EFT's RPK-16 figures (650 rpm, ergonomics 45, recoil 106 / 316), the light machine gun skill, the drum fits the KS-7 family",
+			ksl ~= nil and ksl.rpm == 650 and ksl.ergo == 45 and near(ksl.recoilV, 1.06) and near(ksl.recoilH, 3.16)
+				and Progress.WEAPON_SKILL.lmg == "lmg" and Items.defs.KSL_DRUM95.capacity == 95 and Items.defs.KSL_DRUM95.family == "KST"
+				and Weapons.magMalf(Items.defs.KSL_DRUM95) > Weapons.magMalf(Items.defs.KST_MAG))
+		check("GL-6: a six-round launcher at 76 m/s; its round arms after 0.26 s (about 20 m), as EFT's 40x46 M406",
+			gl6 ~= nil and gl6.launcher == true and gl6.internal == true and gl6.velocity == 76 and Items.defs.GL6_LAUNCHER.capacity == 6
+				and a40 ~= nil and a40.nade.impact == true and near(a40.nade.arm, 0.26)
+				and near(gl6.velocity * a40.nade.arm, 19.76, 0.05))
+		-- the flight on its own: a flat plane 40 studs below, nothing else (a stand-in for the world's raycast)
+		local function floor(origin, dir)
+			if dir.Y >= 0 then
+				return nil
+			end
+			local k = (origin.Y - 0) / -dir.Y
+			if k > dir.Magnitude then
+				return nil
+			end
+			return origin + dir * k, Vector3.yAxis
+		end
+		local v0 = Ballistics.muzzle(gl6)
+		local far = G.simulate(Vector3.new(0, 40, 0), Vector3.new(0, -0.15, -1).Unit * v0, 10, floor, true)
+		local close = G.simulate(Vector3.new(0, 1, 0), Vector3.new(0, -0.6, -1).Unit * v0, 10, floor, true)
+		check("a launched round stops where it strikes (hitT, hitN); far off it has armed, a short shot has not",
+			far.hitT ~= nil and far.hitN == Vector3.yAxis and math.abs(far.final.Y - G.RADIUS) < 0.1 and far.hitT >= a40.nade.arm
+				and close.hitT ~= nil and close.hitT < a40.nade.arm and #far.b == 0)
+		local h = ctx and ctx.Loot and ctx.Loot.mortarLoadout and ctx.Loot.mortarLoadout(Random.new(4))
+		if h then
+			local pg, sg = h.slots.primary, h.slots.secondary
+			local rounds = 0
+			for _, it in h.items do
+				if it.id == "A40_HE" then
+					rounds += 1
+				end
+			end
+			check("MORTAR carries the GL-6 loaded with six rounds, four more, and his rifle on his back",
+				pg ~= nil and h.items[pg].id == "GL6_LAUNCHER" and h.items[pg].a == 6 and h.items[pg].at == "A40_HE" and rounds >= 4
+					and sg ~= nil and h.items[sg].id == "KST_RIFLE")
+		else
+			table.insert(notes, "MORTAR's kit: no Loot service here")
+		end
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

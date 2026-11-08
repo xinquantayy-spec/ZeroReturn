@@ -442,7 +442,7 @@ end
 
 -- per-weapon report: pitch/volume variants of the recorded rifle shot; suppressors muffle and shorten it
 local GUN = {
-	R17 = { s = 1.0, v = 0.9 }, KST = { s = 0.9, v = 0.95 }, KSL = { s = 0.86, v = 1.0 }, SPARROW = { s = 1.16, v = 0.8 },
+	R17 = { s = 1.0, v = 0.9 }, KST = { s = 0.9, v = 0.95 }, KSL = { s = 0.86, v = 1.0 }, GL6 = { s = 0.42, v = 0.75 }, SPARROW = { s = 1.16, v = 0.8 },
 	HARROW = { s = 0.68, v = 1.0 }, TUNDRA = { s = 0.78, v = 1.0 }, P9 = { s = 1.28, v = 0.72 },
 	-- the stationary guns (Stationary): the same recorded shot pitched down, louder
 	HMG12 = { s = 0.52, v = 1.0 }, AGL30 = { s = 0.62, v = 1.0 },
@@ -732,6 +732,13 @@ function Effects.remoteShot(d)
 	-- a suppressed shot shows no flash, only its wisp of smoke; the shooter's device is not sent, so a bare muzzle's size
 	local shotDir = (d.p - d.o).Magnitude > 0.01 and (d.p - d.o).Unit or nil
 	Effects.flash(d.o, nil, shotDir, d.s and 0 or 1)
+	if d.l then
+		-- a grenade launcher (ai-5b): the round flies as a grenade (Grenade.luau draws it); here the flash and the thump
+		local cam = workspace.CurrentCamera
+		local dist = cam and (cam.CFrame.Position - d.o).Magnitude or 0
+		Effects.gunSound(type(d.w) == "string" and d.w or "GL6", d.o, false, dist > 160, d.ai and 0.85 or 0.95)
+		return
+	end
 	if shotDir then
 		-- the shooter's case, out to his right (Effects.casing keeps it to shooters within 60 studs)
 		local right = shotDir:Cross(Vector3.yAxis)

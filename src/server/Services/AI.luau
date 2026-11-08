@@ -905,6 +905,24 @@ local function shoot(u, t)
 	end
 	local sk, se = u.skill, u.sense
 	local dist = (aimPos - muzzle).Magnitude
+	-- MORTAR's launcher (ai-5b): its rounds arm only past about 20 m (EFT's 0.26 s at 76 m/s), so closer in he takes his
+	-- rifle, and the launcher again at range
+	local wl = w.def.launcher == true
+	if (wl and dist < 22) or (not wl and dist > 40) then
+		for _, slot in { "primary", "secondary", "holster" } do
+			local o = weaponIn(u, slot)
+			if o and o.g ~= w.g and (o.def.launcher == true) == not wl then
+				local old = u.w
+				u.w = o
+				if roundsOf(u) > 0 then
+					equip(u, o)
+					u.nextShot = t + 0.9
+					return
+				end
+				u.w = old
+			end
+		end
+	end
 	local moving = flat(u.root.AssemblyLinearVelocity).Magnitude > 2
 	-- the kind's tuned error, scaled by the difficulty (BASE_SHIEF) and wide at the start of a contact, settling as EFT's
 	-- scatter does (BotData.aimMul)
@@ -931,6 +949,27 @@ local function shoot(u, t)
 		err += 2
 	end
 	local ammoDef = m.at and Items.defs[m.at]
+	if wl then
+		-- lob the round onto the target's feet (a round that lands beside someone still catches him) on the low arc, the
+		-- AI's aiming error turned into an angle off the launch direction
+		local v0 = Ballistics.muzzle(w.def, Inv.modStats(u.inv, w.g).vel)
+		local dirL = GR.aim(muzzle, aimPos - Vector3.new(0, 1.3, 0), v0, false)
+		if dirL and ammoDef and ammoDef.nade then
+			local sp = math.rad(math.min(err, 12) * 0.35)
+			dirL = (CFrame.lookAt(Vector3.zero, dirL) * CFrame.Angles((math.random() * 2 - 1) * sp, (math.random() * 2 - 1) * sp, 0)).LookVector
+			ctx.Grenades.launchFrom(u.model, muzzle, dirL * v0, m.at)
+		end
+		m.a -= 1
+		if m.a <= 0 then
+			m.a = 0
+			m.at = nil
+			u.wantFire = false
+		end
+		ctx.Remotes.fx("shot", { o = muzzle, p = muzzle + (dirL or rcf.LookVector) * 2, w = w.def.id, ai = true, l = true })
+		AI.hearShot(muzzle, u.model, u, w.def.loudness or 1)
+		u.nextShot = t + rnd(2.0, 3.0) -- the launcher's 30 rounds a minute
+		return
+	end
 	local ballistic = ammoDef and ammoDef.ammo or { dmg = 40, pen = 20 }
 	local pellets = ballistic.pellets or 1
 	local hit, firstPos, firstNormal, firstMat = false, nil, nil, nil

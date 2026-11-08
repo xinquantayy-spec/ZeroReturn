@@ -74,7 +74,9 @@ Status 2026-11-02: **built and checked in Studio with one player** (TEST_RESULTS
 
 ## Gaps (also in `EFT_PARITY.md`)
 
-- **No grenade launcher.** MORTAR throws grenades by hand.
+- **One launcher round.** Since 2026-11-08 (ai-5b) MORTAR carries the GL-6 six-shot launcher (our M32A1) with 40x46
+  HE rounds, lobs them past 13 m and takes his KS-7 inside 7 m, since a round arms only after about 20 m; EFT's other
+  40x46 rounds (buckshot, HEDP) are not in.
 - **No Mk47, no 7.62 x 51 marksman rifle.** HALBERD uses the R-17 close-quarters build and KESTREL the R-17 marksman build.
 - **No skull mask item.** HALBERD wears a black gaiter: cosmetic, where Tarkov's mask is class 1 for the face.
 - **No bandana or pipe items.** MORTAR wears a beanie, also no protection.

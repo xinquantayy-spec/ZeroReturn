@@ -25,6 +25,9 @@ local rng = Random.new()
 local worldRay = RaycastParams.new()
 worldRay.FilterType = Enum.RaycastFilterType.Include
 worldRay.IgnoreWater = true
+-- decor people walk through (grass, leaves, clutter without collision) does not stop a grenade; trunks and walls do.
+-- Intact panes are not hit either way (CanQuery off; their hit shells sit in a group that only shots meet)
+worldRay.RespectCanCollide = true
 local losRay = RaycastParams.new()
 losRay.FilterType = Enum.RaycastFilterType.Exclude
 
@@ -263,6 +266,55 @@ function Grenades.throwFrom(thrower, origin, vel, itemId)
 			local ok, err = pcall(explode, n)
 			if not ok then
 				warn("[ZR] grenade", err)
+			end
+		end
+	end)
+	return n
+end
+
+-- A launched grenade (the GL-6, decision ai-5b): the round flies until it strikes something and goes off there if it has
+-- armed; EFT's 40x46 rounds arm after 0.26 s of flight (about 20 m at 76 m/s; M381 and M441 after 0.04 s). One that
+-- strikes first does not go off (EFT) and lies where it fell. shooter: Player or AI Model; vel in world space.
+function Grenades.launchFrom(shooter, origin, vel, itemId)
+	local def = Items.defs[itemId]
+	local spec = def and def.nade
+	if not (spec and spec.impact) or not setWorld() then
+		return nil
+	end
+	local path = G.simulate(origin, vel, spec.flight or 10, ray, true)
+	seq += 1
+	local t = os.clock()
+	local hitT = path.hitT
+	local armed = hitT ~= nil and hitT >= (spec.arm or 0)
+	local n = { id = seq, item = itemId, spec = spec, thrower = shooter, path = path, t0 = t, at = t + (hitT or path.endT), pos = path.final, dud = not armed }
+	Grenades.stats.launched = (Grenades.stats.launched or 0) + 1
+	local who = nil
+	if typeof(shooter) == "Instance" and shooter:IsA("Player") then
+		who = shooter.UserId
+	end
+	-- f: when it goes off; a dud's "fuse" only tells clients when to clear it away
+	ctx.Remotes.noteAll("nade", {
+		id = n.id, k = spec.type, item = itemId, t0 = workspace:GetServerTimeNow(), t = path.t, p = path.p, b = path.b,
+		f = armed and hitT or ((hitT or path.endT) + 20), who = who, l = true,
+	})
+	if not armed then
+		Grenades.stats.duds = (Grenades.stats.duds or 0) + 1
+		return n
+	end
+	Grenades.live[n.id] = n
+	if ctx.AI.grenadeIncoming then
+		local tmodel = shooter
+		if typeof(tmodel) == "Instance" and tmodel:IsA("Player") then
+			tmodel = tmodel.Character
+		end
+		ctx.AI.grenadeIncoming({ pos = path.final, kind = spec.type, radius = spec.fragR * 0.75, land = n.at, boom = n.at, thrower = tmodel })
+	end
+	task.delay(hitT, function()
+		if Grenades.live[n.id] == n then
+			Grenades.live[n.id] = nil
+			local ok, err = pcall(explode, n)
+			if not ok then
+				warn("[ZR] launched grenade", err)
 			end
 		end
 	end)

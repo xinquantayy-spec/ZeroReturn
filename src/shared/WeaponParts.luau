@@ -59,6 +59,8 @@ W.SLOTS = {
 	KSL_LMG = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
 		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t76" }, rearsight = { fit = "ak_rear" }, mount = { fit = "dovetail" } },
 	KST_DC_RAIL = { scope = { fit = "pica", cats = RAIL_SIGHT } },
+	-- Bittern GL-6 (ai-5b): one part, a rail for a sight
+	GL6_LAUNCHER = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	KST_HG_POLY = { foregrip = { fit = "pica", cats = { foregrip = true } } },
 	KST_HG_RAIL = { foregrip = { fit = "pica", cats = { foregrip = true } }, tactical = { fit = "pica", cats = { tactical = true } },
 		top = { fit = "pica", cats = RAIL_SIGHT } },

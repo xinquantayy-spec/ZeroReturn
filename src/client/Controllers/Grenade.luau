@@ -72,6 +72,15 @@ local function build(id, s, parent)
 		table.insert(offs, off)
 	end
 	local up = ANG(0, 0, R(90)) -- cylinders: axis X -> local Y
+	if d and d.nade and d.nade.impact then
+		-- a 40x46 round in flight (the GL-6, ai-5b): an olive body with a yellow band and a rounded nose along local -Z
+		local fwd = ANG(0, R(90), 0) -- cylinders: axis X -> local Z
+		add(part(model, Vector3.new(0.11, 0.125, 0.125) * s, col, Enum.PartType.Cylinder), CF(0, 0, 0) * fwd)
+		add(part(model, Vector3.new(0.025, 0.127, 0.127) * s, Color3.fromHex("D9B43A"), Enum.PartType.Cylinder), CF(0, 0, -0.03 * s) * fwd)
+		add(part(model, Vector3.new(0.09, 0.09, 0.09) * s, col, Enum.PartType.Ball), CF(0, 0, -0.06 * s))
+		model.Parent = parent
+		return { model = model, parts = list, offs = offs, item = id, launched = true }
+	end
 	if L.body == "ball" then
 		add(part(model, Vector3.new(0.3, 0.34, 0.3) * s, col, Enum.PartType.Ball), CF(0, 0, 0))
 		if id == "GREN_F7" then
@@ -317,7 +326,7 @@ local function onThrown(d)
 	local g = build(d.item, 1, fxFolder)
 	local axis = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5)
 	axis = axis.Magnitude > 0.05 and axis.Unit or Vector3.xAxis
-	flying[d.id] = { g = g, path = { t = d.t, p = d.p }, t0 = d.t0, bi = 1, b = d.b or {}, axis = axis, k = d.k, item = d.item, fuse = d.f or 3.5 }
+	flying[d.id] = { g = g, path = { t = d.t, p = d.p }, t0 = d.t0, bi = 1, b = d.b or {}, axis = axis, k = d.k, item = d.item, fuse = d.f or 3.5, launched = d.l == true }
 	place(g, CF(d.p[1]))
 end
 
@@ -637,7 +646,12 @@ local function step(dt)
 		local ts = f.path.t
 		local moving = t < ts[#ts]
 		local rot
-		if moving then
+		if moving and f.launched then
+			-- a launched round flies nose first along its path (ai-5b)
+			local ahead = G.at(f.path, t + 0.02) - pos
+			rot = ahead.Magnitude > 1e-3 and CFrame.lookAt(Vector3.zero, ahead) or (f.lastRot or CFrame.identity)
+			f.lastRot = rot
+		elseif moving then
 			local a = t * 13
 			rot = CFrame.fromAxisAngle(f.axis, a) * ANG(0, t * 4, 0)
 			f.lastRot = rot

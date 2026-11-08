@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## MORTAR's grenade launcher (decision ai-5b, part 2; 2026-11-08, about 14:50 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 13 pass, 990 checks. New: the GL-6's and the round's figures, an impact flight that arms after 0.26 s and a dud before it, MORTAR's kit (the launcher with six rounds, four spare, the KS-7 and a spare magazine, two hand grenades); the recoil check now holds the KS-L's 106 / 316 and the GL-6's 238 / 560. |
+| Model | The GL-6 (Blender, `guns_gl6.py`): a six-chamber cylinder under a top strap with a rail, a ribbed barrel, a folding front grip, a pistol grip and a tube stock; the 40 mm round's picture. Uploaded as the ZR_GunsGL batch; sprites and item pictures re-packed. |
+| Fired by the player | Two rounds aimed past a building struck it 0.12 s and 0.03 s out, before arming, and lay there as duds (a debug ray found a STORE 7 wall 31 studs off in the line, not decor). A round at open ground flew 0.35 s, 85 studs, and went off where it struck. |
+| MORTAR | Forced on Border Yard. With the player 70 studs off in the open he fired two rounds about 2 s apart: one burst 5 studs from the player, the other 26 studs past him. Put 15 studs from him, he took his KS-7, emptied a magazine in about 6 s and reloaded. |
+| Not checked | The launcher's sound and the round's flight by eye or ear, MORTAR's launcher in third person, a hit on a player without god mode, a phone. |
+
 ## THE CARETAKER's light machine gun (decision ai-5b, part 1; 2026-11-08, about 14:20 SGT)
 
 | Test | Result |

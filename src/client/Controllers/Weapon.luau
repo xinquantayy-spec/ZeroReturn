@@ -854,11 +854,12 @@ local function fireOnce()
 		ctx.State.shoot(seq, origin, dir)
 	end
 	rayParams.FilterDescendantsInstances = { player.Character, o.model, workspace:FindFirstChild("ZR_Fx") }
-	local res = workspace:Raycast(origin, dir * def.range, rayParams)
+	-- a grenade launcher (ai-5b) fires a round the server flies as a grenade: no bullet, trace or impact here
+	local res = (not def.launcher) and workspace:Raycast(origin, dir * def.range, rayParams) or nil
 	local hit = res and res.Position or (origin + dir * def.range)
 	local muzzle = (o.grip * CFrame.new(o.muzzle)).Position
 	-- the spent case out of the ejection port, right and back (audit art.5); a bolt gun ejects when worked, not here
-	if def.class ~= "bolt" then
+	if def.class ~= "bolt" and not def.launcher then -- a revolving launcher keeps its cases in the cylinder
 		local port = o.grip * CFrame.new(0.06, 0.1, -0.3)
 		ctx.Effects.casing(port.Position, port.RightVector - port.LookVector * 0.3, def.class == "shotgun" and "shell" or ((def.class == "rifle" or def.class == "dmr") and "rifle" or "pistol"))
 	end
@@ -872,7 +873,7 @@ local function fireOnce()
 	end
 	local it, d = activeItem()
 	local ammo = it and ammoDefOf(it, d)
-	if ammo and ammo.tracer then
+	if ammo and ammo.tracer and not def.launcher then
 		ctx.Effects.tracer(muzzle, hit) -- Tarkov: only tracer rounds leave a visible trace
 	end
 	if res then

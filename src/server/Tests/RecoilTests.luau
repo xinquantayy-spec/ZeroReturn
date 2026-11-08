@@ -254,7 +254,7 @@ function T.run(ctx)
 			end
 		end
 		check("every gun has its recoil fields in range (full-auto guns settle, the rest do not)", ok)
-		local want = { R17 = { 79, 228 }, KST = { 90, 221 }, SPARROW = { 43, 212 }, HARROW = { 290, 381 }, TUNDRA = { 178, 541 }, P9 = { 425, 310 } }
+		local want = { R17 = { 79, 228 }, KST = { 90, 221 }, KSL = { 106, 316 }, GL6 = { 238, 560 }, SPARROW = { 43, 212 }, HARROW = { 290, 381 }, TUNDRA = { 178, 541 }, P9 = { 425, 310 } }
 		local okF = true
 		for id, f in want do
 			local def = Weapons[id]
@@ -263,7 +263,7 @@ function T.run(ctx)
 				table.insert(notes, string.format("%s shows %d / %d", id, math.floor(def.recoilV * 100 + 0.5), math.floor(def.recoilH * 100 + 0.5)))
 			end
 		end
-		check("the gunsmith figures are Tarkov's for each gun's counterpart (M4A1 79/228, AKM 90/221, MP5 43/212, MP-133 290/381, Mosin 178/541, MP-443 425/310)", okF)
+		check("the gunsmith figures are Tarkov's for each gun's counterpart (M4A1 79/228, AKM 90/221, RPK-16 106/316, M32A1 238/560, MP5 43/212, MP-133 290/381, Mosin 178/541, MP-443 425/310)", okF)
 	end)
 
 	-- ── the parts: Tarkov 1.0.4.5 and the default builds ───────────────────────────────────────────────────────────

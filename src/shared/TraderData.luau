@@ -248,6 +248,8 @@ T.offers = {
 		o("R17_RIFLE", 1, 2), o("R17_MAG", 1, 10), o("A62_FMJ", 1, 10, 60), o("SPARROW_MAG", 1, 6), o("ARMOR_C3", 1, 1), o("GREN_RK5", 1, 2),
 		o("SPARROW_SMG", 2, 1), o("R17_MAG40", 2, 3), o("A62_HP", 2, 6, 60), o("HOLO_EX", 2, 1), o("SUPP_9", 2, 1),
 		o("NV_GREEN", 3, 1), o("A62_AP", 3, 4, 60), o("SCOPE_16", 3, 1), o("SUPP_62", 3, 1),
+		-- EFT's Peacekeeper sells a 40x46 round at LL3 (the M386, after a task; the wiki); the GL-6 itself is MORTAR's only
+		o("A40_HE", 3, 6),
 		o("NV_QUAD", 4, 1), o("R17_MAG60", 4, 2),
 		-- western plates by loyalty (ours, gameplay-2a): class 3 polyethylene at LL1 up to class 5 side plates at LL3
 		o("PLATE_PE3", 1, 2), o("PLATE_CE4", 2, 2), o("PLATE_PE4", 3, 1), o("PLATE_CE5S", 3, 2),

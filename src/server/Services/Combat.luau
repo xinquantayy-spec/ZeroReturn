@@ -385,6 +385,21 @@ function Combat.shoot(player, seq, origin, dir)
 		end
 	end
 	Combat.stats.accepted += 1
+	-- a grenade launcher (the GL-6, ai-5b): the round flies as a grenade with an impact fuze (Grenades.launchFrom)
+	if wdef.launcher then
+		local ms = Inv.modStats(s.inv, wg)
+		if ammoDef and ammoDef.nade then
+			ctx.Grenades.launchFrom(player, origin, dir * Ballistics.muzzle(wdef, ms.vel), ammoDef.id)
+		end
+		local prof = ctx.Profiles.get(player)
+		ctx.Economy.skillUp(player, prof, Progress.WEAPON_SKILL[wdef.class], 0.08)
+		ctx.AI.hearShot(origin, player, nil, (wdef.loudness or 1) * ms.loud)
+		ctx.Remotes.fx("shot", { o = origin, p = origin + dir * 2, w = wd.weapon, l = true }, player)
+		if malf then
+			setMalf(player, wit, malf, hard, s.active)
+		end
+		return
+	end
 	local ballistic = ammoDef and ammoDef.ammo or { dmg = 40, pen = 20 }
 	local pellets = ballistic.pellets or 1
 	local ms = Inv.modStats(s.inv, wg)

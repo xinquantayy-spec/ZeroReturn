@@ -29,6 +29,7 @@ return {
 	{ key = "ZR_GunsPistol", id = 99358645164066 }, -- P-9 frame, slides, barrels, compensator, magazines
 	{ key = "ZR_GunsMods", id = 131071003311039 }, -- shared parts: sights and scopes, mounts, foregrips, lights and lasers, suppressors
 	{ key = "ZR_GunsLMG", id = 87298401147258 }, -- Kestrel KS-L light machine gun receiver and its 95-round drum (ai-5b, 2026-11-08)
+	{ key = "ZR_GunsGL", id = 125849516891348 }, -- Bittern GL-6 grenade launcher (ai-5b, 2026-11-08)
 	-- Relay 7 lobby bunker kit (ZR_MK_<Prop>__<material> pieces like the mall kit; see KitMeta.luau, Maps/Relay7.luau)
 	{ key = "ZR_BunkerKitA", id = 126010320295919 }, -- shell and services: blast door, door frames, pipes and valves, cable trays, beams, ducts, lamps, boxes, safety kit, sandbags, rubble (build_bunker_kit_a.py)
 	{ key = "ZR_BunkerKitB", id = 100322751912819 }, -- rooms and stations: bunks, lockers, mirror sink, map table, boards, trader counters, gun racks, armour stands, hideout modules, range booth and targets (build_bunker_kit_b.py)

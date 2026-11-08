@@ -39,6 +39,9 @@ end
 -- ── weapons ───────────────────────────────────────────────────────────────────
 add("R17_RIFLE", { name = "R-17 Carbine", short = "R-17", kind = "weapon", w = 5, h = 2, mass = 1.3, value = 8000, caliber = "6.2", weapon = "R17", family = "R17", desc = "Fictional 6.2x40 service carbine. Dependable, stiff recoil.", color = c("#55605A") })
 add("KST_RIFLE", { name = "Kestrel KS-7", short = "KS-7", kind = "weapon", w = 5, h = 2, mass = 2.4, value = 27000, caliber = "7.6", weapon = "KST", family = "KST", rarity = "uncommon", desc = "Stamped-receiver 7.6x39 rifle. Heavy hitter, climbs hard.", color = c("#5C5446") })
+-- MORTAR's grenade launcher (decision ai-5b), in the place of EFT's M32A1 MSGL (Big Pipe's): six 40x46 rounds in a
+-- revolving cylinder, loaded one at a time (guns_gl6.py; stats in Weapons.GL6)
+add("GL6_LAUNCHER", { name = "Bittern GL-6", short = "GL-6", kind = "weapon", w = 4, h = 2, mass = 5.3, value = 98000, caliber = "40", weapon = "GL6", capacity = 6, rarity = "rare", desc = "Six-shot revolving grenade launcher for 40x46 rounds. A round arms only after about 20 m of flight: closer in it will not go off.", color = c("#2F3331") })
 -- THE CARETAKER's light machine gun (decision ai-5b), in the place of EFT's RPK-16 (Killa's gun): the KS-7 action with a
 -- heavy barrel and a folded bipod; every KS-7 part and magazine fits it (guns_ksl.py; stats in Weapons.KSL)
 add("KSL_LMG", { name = "Kestrel KS-L", short = "KS-L", kind = "weapon", w = 6, h = 2, mass = 3.4, value = 43000, caliber = "7.6", weapon = "KSL", family = "KST", rarity = "rare", desc = "Light machine gun on the KS-7 action: a heavy barrel for long bursts and a folding bipod. Takes every KS-7 magazine and the 95-round drum.", color = c("#4A4A44") })
@@ -79,6 +82,12 @@ ammo("A9_PST", "9x19 PST", "9 PST", "9", 50, 80, { dmg = 54, pen = 20, armorDmg 
 ammo("A9_AP", "9x19 AP", "9 AP", "9", 50, 420, { dmg = 48, pen = 30, armorDmg = 0.4, bleedL = 0.1, bleedH = 0.05, frag = 0.05 }, "uncommon", "Penetrator 9x19.")
 ammo("A9_RIP", "9x19 RIP", "9 RIP", "9", 50, 260, { dmg = 102, pen = 2, armorDmg = 0.11, bleedL = 0.4, bleedH = 0.3, frag = 1 }, "uncommon", "Fragmenting hollow point.")
 ammo("A12_BUCK", "12/70 Buckshot", "12 BUCK", "12", 20, 90, { dmg = 37, pen = 1, armorDmg = 0.65, pellets = 8, bleedL = 0.25, bleedH = 0.1, frag = 0 }, nil, "Eight pellets per shell.")
+-- the GL-6's round (ai-5b), after EFT's 40x46 M406 (HE): 76 m/s, armed after 0.26 s of flight, an explosion of 1 to
+-- 7 m (the wiki's 40x46mm page); the fragments, blast and their reach are in our grenade model (Grenades.luau)
+add("A40_HE", { name = "40x46 HE Grenade", short = "40 HE", kind = "ammo", w = 1, h = 1, mass = 0.23, stack = 1, value = 9000, caliber = "40", rarity = "rare",
+	ammo = { dmg = 199, pen = 1, armorDmg = 0.95, bleedL = 0, bleedH = 0, frag = 0, subsonic = true },
+	nade = { type = "frag", impact = true, arm = 0.26, flight = 10, fuse = 10, frags = 120, fragR = 22, fragDmg = { 24, 38 }, fragPen = { 10, 17 }, blastR = 6, blastDmg = 120 },
+	desc = "High-explosive 40x46 grenade for the GL-6. It arms after about 20 m of flight and goes off where it strikes.", color = c("#4F5539") })
 ammo("A12_SLUG", "12/70 Slug", "12 SLUG", "12", 20, 380, { dmg = 168, pen = 22, armorDmg = 0.75, bleedL = 0.3, bleedH = 0.2, frag = 0.1 }, "uncommon", "Single heavy lead slug.")
 ammo("A76L_LPS", "7.6x54R LPS", "7.6L LPS", "7.6L", 40, 520, { dmg = 81, pen = 42, armorDmg = 0.78, bleedL = 0.2, bleedH = 0.15, frag = 0.18 }, "uncommon", "Full-power rifle cartridge.")
 ammo("A76L_SNB", "7.6x54R SNB", "7.6L SNB", "7.6L", 40, 1600, { dmg = 75, pen = 62, armorDmg = 0.87, bleedL = 0.15, bleedH = 0.12, frag = 0.08 }, "rare", "Sniper armor-piercing load.")

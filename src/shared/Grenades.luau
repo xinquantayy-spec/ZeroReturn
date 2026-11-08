@@ -49,12 +49,13 @@ function G.releasePoint(eye: Vector3, look: Vector3, under: boolean): Vector3
 end
 
 export type Ray = (Vector3, Vector3) -> (Vector3?, Vector3?)
-export type Path = { t: { number }, p: { Vector3 }, b: { number }, final: Vector3, rest: boolean, land: number?, endT: number }
+export type Path = { t: { number }, p: { Vector3 }, b: { number }, final: Vector3, rest: boolean, land: number?, endT: number, hitT: number?, hitN: Vector3? }
 
 -- Integrate a throw until the fuse runs out or it comes to rest. `rc(origin, direction)` is the caller's world
 -- raycast (returns hit position and normal). Air: gravity, bounces with restitution and Coulomb friction.
--- Ground: once a bounce is soft it slides/rolls (slope pull, friction, walls, falls off edges).
-function G.simulate(p0: Vector3, v0: Vector3, fuse: number, rc: Ray): Path
+-- Ground: once a bounce is soft it slides/rolls (slope pull, friction, walls, falls off edges). impact (a launched
+-- grenade, ai-5b): the path ends at the first thing it strikes, with hitT and hitN set.
+function G.simulate(p0: Vector3, v0: Vector3, fuse: number, rc: Ray, impact: boolean?): Path
 	local g = Vector3.new(0, -G.GRAV, 0)
 	local R = G.RADIUS
 	local p, v, t = p0, v0, 0
@@ -65,6 +66,7 @@ function G.simulate(p0: Vector3, v0: Vector3, fuse: number, rc: Ray): Path
 	local mode = "air"
 	local ground = Vector3.yAxis
 	local iter = 0
+	local hitT: number?, hitN: Vector3? = nil, nil
 	local function sample(force: boolean?)
 		if (force or t >= nextSample) and #ts < G.MAX_SAMPLES then
 			table.insert(ts, t)
@@ -91,6 +93,11 @@ function G.simulate(p0: Vector3, v0: Vector3, fuse: number, rc: Ray): Path
 				local vn = vc:Dot(n)
 				t += math.max(tc, 1e-3)
 				p = hitPos + n * (R + 0.01)
+				if impact then
+					hitT, hitN = t, n
+					sample(true)
+					break
+				end
 				if vn < 0 then
 					local vT = vc - n * vn
 					local jn = -(1 + G.REST) * vn
@@ -178,7 +185,7 @@ function G.simulate(p0: Vector3, v0: Vector3, fuse: number, rc: Ray): Path
 		table.insert(ts, t)
 		table.insert(ps, p)
 	end
-	return { t = ts, p = ps, b = bounces, final = p, rest = rest, land = land, endT = t }
+	return { t = ts, p = ps, b = bounces, final = p, rest = rest, land = land, endT = t, hitT = hitT, hitN = hitN }
 end
 
 -- position on a path at time t (seconds after release)

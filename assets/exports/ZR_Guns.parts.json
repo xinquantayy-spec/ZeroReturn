@@ -506,6 +506,110 @@
    "tris": 408,
    "w": 1
   },
+  "GL6_LAUNCHER": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.225,
+     -0.0
+    ],
+    "frontsight": [
+     -0.0,
+     0.17187,
+     -1.5
+    ],
+    "grip": [
+     -0.0,
+     -0.21875,
+     0.11875
+    ],
+    "hand": [
+     -0.0,
+     -0.28125,
+     -1.05313
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -1.58125
+    ],
+    "port": [
+     0.09375,
+     -0.0625,
+     -0.375
+    ]
+   },
+   "batch": "ZR_GunsGL",
+   "cls": "long",
+   "ext": [
+    -1.575,
+    0.88125,
+    -0.70848,
+    0.24062
+   ],
+   "family": "gl6",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_GL6_LAUNCHER__gunmetal": {
+     "center": [
+      -0.0,
+      -0.1423,
+      -0.4688
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.4,
+      0.6066,
+      2.1875
+     ],
+     "sub": null
+    },
+    "ZR_WP_GL6_LAUNCHER__metal": {
+     "center": [
+      -0.0,
+      -0.0928,
+      -0.7773
+     ],
+     "mat": "metal",
+     "size": [
+      0.323,
+      0.6669,
+      1.5954
+     ],
+     "sub": null
+    },
+    "ZR_WP_GL6_LAUNCHER__polymer": {
+     "center": [
+      -0.0,
+      -0.3205,
+      -0.1109
+     ],
+     "mat": "polymer",
+     "size": [
+      0.1437,
+      0.776,
+      1.9844
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "scope": {
+     "pos": [
+      -0.0,
+      0.16094,
+      -0.34375
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 3468,
+   "w": 4
+  },
   "GRIP_ANG": {
    "anchors": {
     "hand": [
@@ -6174,6 +6278,25 @@
   }
  },
  "presets": {
+  "GL6_BOSS": {
+   "base": "GL6_LAUNCHER",
+   "tree": {
+    "id": "GL6_LAUNCHER",
+    "mods": {
+     "scope": {
+      "id": "HOLO_EX",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "GL6_LAUNCHER": {
+   "base": "GL6_LAUNCHER",
+   "tree": {
+    "id": "GL6_LAUNCHER",
+    "mods": {}
+   }
+  },
   "HARROW12": {
    "base": "HARROW12",
    "tree": {

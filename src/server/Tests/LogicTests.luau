@@ -1583,7 +1583,8 @@ function T.run(ctx)
 			local hh, hm, hk = ctx.Loot.halberdLoadout(Random.new(seed)), ctx.Loot.mortarLoadout(Random.new(seed)), ctx.Loot.kestrelLoadout(Random.new(seed))
 			-- (at least: the loot rolls on top may add a magazine, a grenade or a med of their own)
 			local fits = count(hh, { R17_MAG = true }) >= 4 and count(hh, { P9_MAG = true }) >= 2 and count(hh, { MEDKIT_L = true }) >= 1
-				and count(hm, { KST_MAG = true }) >= 4 and count(hm, { GREN_F7 = true, GREN_RK5 = true }) >= 6 and count(hm, { MEDKIT_L = true, SPLINT = true }) >= 2
+				and count(hm, { KST_MAG = true }) >= 2 and count(hm, { A40_HE = true }) >= 4 and count(hm, { GREN_F7 = true, GREN_RK5 = true }) >= 2
+				and count(hm, { MEDKIT_L = true, SPLINT = true }) >= 2
 				and count(hk, { R17_MAG = true }) >= 5 and count(hk, { GREN_SMOKE = true }) >= 2 and count(hk, { MEDKIT_M = true }) >= 1
 			for _, h in { hh, hm, hk } do
 				local okH, err = Inv.check(h)
@@ -1598,9 +1599,9 @@ function T.run(ctx)
 		end
 		check("hounds: their kits fit whole in five double pockets (Tarkov's Goons), every seed", kitsOk, why)
 		local hh, hm, hk = ctx.Loot.halberdLoadout(Random.new(5)), ctx.Loot.mortarLoadout(Random.new(5)), ctx.Loot.kestrelLoadout(Random.new(5))
-		check("hounds: HALBERD class 5, a goggle mount and an AR, MORTAR with no head armour and six frags, KESTREL a class 4 vest, chest rig, frame pack and DMR",
+		check("hounds: HALBERD class 5, a goggle mount and an AR, MORTAR with no head armour, the GL-6 and his rifle (ai-5b), KESTREL a class 4 vest, chest rig, frame pack and DMR",
 			at(hh, "primary") == "R17_RIFLE" and at(hh, "armor") == "ARMOR_C5" and at(hh, "head") == "NV_STRAP" and at(hh, "face") == "GAITER"
-				and at(hm, "primary") == "KST_RIFLE" and at(hm, "head") == "BEANIE" and Items.defs.BEANIE.armor == nil
+				and at(hm, "primary") == "GL6_LAUNCHER" and at(hm, "secondary") == "KST_RIFLE" and at(hm, "head") == "BEANIE" and Items.defs.BEANIE.armor == nil
 				and at(hk, "primary") == "R17_RIFLE" and at(hk, "armor") == "ARMOR_C4" and at(hk, "rig") == "RIG_CHEST" and at(hk, "back") == "BAG_PATROL")
 		-- a double pocket takes a 1 x 2 upright and refuses one lying across two pockets
 		local hp = Inv.newHolder("raid")
