@@ -103,6 +103,12 @@ local function step(sv, name)
 	end
 end
 
+-- collect this player again within seconds (a purchase or listing waits on the store)
+local function soon(who)
+	pstate[who.uid] = pstate[who.uid] or { due = 0, n = 0 }
+	pstate[who.uid].due = 0
+end
+
 -- ── items in and out of the stash ────────────────────────────────────────────────────────────────────────────────
 -- Inv.place merges a stack into same-id stacks as it places it, which cannot be undone item by item; so a placement is
 -- first tried on a scratch copy of the stash, and made for real only when the whole of it fits (all or nothing)
@@ -416,6 +422,7 @@ local function buyPlayer(sv, who, prof, p, now)
 	step(sv, "afterClaim")
 	if status == nil then
 		dirty(who)
+		soon(who)
 		return fail("PENDING", "The market is slow to answer; your purchase finishes in a moment.")
 	end
 	if status == "claimed" then
@@ -562,6 +569,7 @@ local function list(sv, who, prof, p, now)
 	if not okPut or putSt == "taken" then
 		-- no answer (or an id used before): the offer is saved as "new" and collect() puts it up
 		dirty(who)
+		soon(who)
 		return fail("PENDING", "The market is slow to answer; your offer goes up in a moment.")
 	end
 	local shown, whyShow = sv.S:addOffer(it.id, rowOf(oid, mo, who, f.rating))
@@ -576,6 +584,11 @@ local function list(sv, who, prof, p, now)
 		end
 	end
 	mo.st, mo.b = "open", nil
+	if not shown then
+		-- held in escrow but not on show yet: the next collect puts it in the index
+		mo.hide = true
+		soon(who)
+	end
 	dirty(who)
 	note(who, string.format("OFFER PLACED  ·  FEE -%s %s", Util.commas(fee), Config.CURRENCY))
 	return ok({ k = oid })
@@ -896,10 +909,15 @@ function Flea.collect(sv, who, prof, opts)
 	for oid, s in sync do
 		sv.S:setOffer(s.id, oid, s.n, s.e)
 	end
+	for oid, o in f.offers do
+		if o.hide and o.st == "open" then
+			show[oid] = true
+		end
+	end
 	for oid in show do
 		local o = f.offers[oid]
-		if o then
-			sv.S:addOffer(o.id, rowOf(oid, o, who, f.rating))
+		if o and sv.S:addOffer(o.id, rowOf(oid, o, who, f.rating)) then
+			o.hide = nil
 		end
 	end
 	if opts.republish then

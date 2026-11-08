@@ -43,6 +43,9 @@ Flea.BANNED_ITEMS = {
 	-- "Removed the ability to list incomplete ammo stacks on the Flea Market" (timesaver.gg): rounds are still traded,
 	-- in full stacks (Flea.FULL_STACK), and only the top piercers are banned here.
 	A62_AP = true, A76_BP = true, A76L_SNB = true, A9_AP = true, A54_BS = true, A918_PBM = true,
+	-- 7.6x51 (economy-1a's fifth slice): EFT keeps M62, M80A1, M61 and M993 off its flea market (tarkovforge.com, the
+	-- coordinator's request of 18:06)
+	A76N_TR = true, A76N_EP = true, A76N_AP = true, A76N_TC = true,
 	FLARE_RED = true, DOGTAG = true, RITUAL_AMULET = true, COLD_WALLET = true, -- the airdrop flare, tags, amulet, the "bitcoin"
 }
 
@@ -60,7 +63,9 @@ Flea.GATES = {
 	loot = 30, repair = 30, -- barter items (the handbook lists the repair kit with them)
 	nvg = 30, -- gear components: the goggles that go on a helmet's mount
 }
-Flea.ITEM_LEVEL = { A76L_LPS = 35 } -- the full-power 7.6x54R LPS stands in for EFT's 7.62x51 M80 (pen 41 against our 42)
+-- EFT's M80 at 35: A76N_BALL is EFT's 7.62x51 M80 since economy-1a's fifth slice; the full-power 7.6x54R LPS stood in
+-- for it before (pen 41 against our 42) and keeps its gate while EconomyTests pins it
+Flea.ITEM_LEVEL = { A76N_BALL = 35, A76L_LPS = 35 }
 
 -- EFT's listing limits: some items may be on the market only a few at a time per player ("This item ({0}) has a
 -- listing limit! Maximum: {1}, in one pack: {2}", locale ragfair/restrictionLimits; globals RagFair.ItemRestrictions:
