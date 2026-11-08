@@ -20,7 +20,8 @@
 -- where one still has none, the nearest of ours by what it is stands in (the EFT name is in the comment beside it); EFT modules outside the core (vents, heating, solar
 -- power, library, gym, air filtering, booze generator, hall of fame) are not built, so prerequisites on them are left
 -- out (noted per level). EFT's crafts whose product has no counterpart here, or that would only turn an item into more
--- of itself, are left out; the rest keep EFT's counts and times.
+-- of itself, are left out; the rest keep EFT's counts and times. The crafts were brought up to EFT's current lists by
+-- economy-1a's crafts thread (2026-11-08); its sources and rules head the crafts below.
 local Config = require(script.Parent.Config)
 local Progress = require(script.Parent.Progress)
 local Items = require(script.Parent.Items)
@@ -333,10 +334,34 @@ end
 
 -- ── crafts ───────────────────────────────────────────────────────────────────────────────────────────────────────
 -- { id, module, level, time = EFT seconds, get = { id, n }, give = { { id, n } } (used up), tools = { { id, n } } (taken
--- while the craft runs and given back with the product, as EFT does), eft = EFT's product }
+-- while the craft runs and given back with the product, as EFT does), eft = EFT's product, refill = true (EFT's own
+-- refill of a used item: the same item goes in and a fresh one comes out) }
+--
+-- Decision economy-1a's crafts (2026-11-08): every craft of EFT's six crafting modules (212 on tarkovforge.com's pages
+-- for the current patch) whose product and inputs have one of ours; 76 here, the rest listed after the crafts with why.
+-- Sources: which crafts, levels, counts, inputs and times from tarkovforge.com/hideout/<module> (read 2026-11-08; it
+-- shows minutes, so a time is its minutes x 60 unless SPT's copy of the same craft gives the seconds); which ingredients
+-- are tools ("tool, returned") from xgamingserver.com's item pages (snapshot 2026-11-04) or, for a craft that has not
+-- changed, SPT's production.json (github.com/sp-tarkov/server-csharp, EFT 0.16.9), which also names the task that
+-- unlocks a craft (in the comments; tasks do not lock crafts here yet, a gap). The rules (HideoutTests checks them):
+--  · the product is the item ours copies, or our generic item of that kind (food and drink, first aid, bandages,
+--    tourniquets, splints, drugs, fabric, gunpowder, bleach and soap, plain rigs and packs, the four grenades), as
+--    economy-7b had it; a craft that makes another specific round, gun, magazine, stim, armour or helmet is left out
+--    even where a near one of ours exists (no more 7.62x39 FMJ as PS, .366 AP-M as BP, SJ1 or PNB as SJ6, Module-3M as
+--    PACA);
+--  · an input or tool without a counterpart takes the nearest of ours by what it is (EFT's name in the comment); with
+--    none the craft is left out (economy-7b's crafts that lost a book, a Geiger counter or printer paper keep a note);
+--  · also left out: a craft that would take in mostly its own product (the rest worth less, at our values, than the units
+--    of the product it uses: it would only turn an item into more of itself), one that makes no more of it than it takes
+--    (EFT's refills and swaps; the weapon repair kit's refill is kept as EFT has it), and a new craft our values would make
+--    more than twice as rich as EFT's handbook prices make it.
 H.recipes = {}
-local function R(id: string, module: string, level: number, time: number, get: string, n: number, give: any, tools: any, eft: string)
-	table.insert(H.recipes, { id = id, module = module, level = level, time = time, get = { get, n }, give = give, tools = tools, eft = eft })
+local function R(id: string, module: string, level: number, time: number, get: string, n: number, give: any, tools: any, eft: string, extra: any?)
+	local r: any = { id = id, module = module, level = level, time = time, get = { get, n }, give = give, tools = tools, eft = eft }
+	for k, v in extra or {} do
+		r[k] = v
+	end
+	table.insert(H.recipes, r)
 end
 -- the tool a craft holds while it runs and gives back (EFT's own; since economy-1a's second slice each is its own item)
 local function T(id: string): any
@@ -344,82 +369,122 @@ local function T(id: string): any
 end
 local TOOL = T("MULTITOOL") -- the Leatherman multitool
 
--- medstation (EFT's multivitamins: a pile of meds; its hydrogen peroxide: saline; its painkillers and drugs: PAINKILLERS)
-R("MED_SALEWA", "medstation", 1, 2340, "MEDKIT_L", 1, { { "MEDKIT_M", 2 }, { "TOURNIQUET", 2 } }, nil, "Salewa first aid kit") -- car first aid kit x2, Esmarch x2
+-- medstation (EFT's multivitamins: a pile of meds; its hydrogen peroxide: saline; its drugs and balms: PAINKILLERS; vodka
+-- used to clean: BLEACH; the four stims ours copies are Propital, SJ6, Zagustin and the adrenaline injector, Stims.luau)
+R("MED_SALEWA", "medstation", 1, 2350, "MEDKIT_L", 1, { { "MEDKIT_M", 2 }, { "TOURNIQUET", 2 } }, nil, "Salewa first aid kit") -- car first aid kit x2, Esmarch x2
+R("MED_SYRINGE", "medstation", 1, 5340, "SYRINGE", 4, { { "MEDKIT_S", 4 }, { "BLEACH", 1 }, { "SALINE", 1 } }, { { "LIGHTER", 1 }, { "MED_TOOLS", 1 } }, "Disposable syringe x4") -- AI-2 x4, Tarkovskaya vodka, hydrogen peroxide; tools: SurvL lighter (our lighter), medical tools
 R("MED_AI2", "medstation", 1, 1320, "MEDKIT_S", 3, { { "MEDS_PILE", 1 } }, nil, "AI-2 medkit x3") -- pile of meds
-R("MED_CMS", "medstation", 1, 2940, "SURGKIT", 1, { { "MED_TOOLS", 1 }, { "MEDKIT_M", 1 }, { "SPLINT", 1 } }, nil, "CMS surgical kit") -- medical tools, car first aid kit, aluminium splint
-R("MED_ANTIDOTE", "medstation", 2, 4200, "ANTIDOTE", 1, { { "STIM_ADREN", 1 }, { "MEDKIT_S", 2 }, { "MEDS_PILE", 2 } }, nil, "xTG-12 antidote injector") -- adrenaline, AI-2 x2, pile of meds x2
-R("MED_AHF1", "medstation", 2, 2820, "STIM_HEMO", 2, { { "MEDS_PILE", 5 }, { "SYRINGE", 2 }, { "HEMOSTAT", 1 }, { "SILICONE_TUBE", 1 } }, nil, "AHF1-M stimulant injector x2") -- meds x5, syringe x2, CALOK-B, silicone tube
-R("MED_IFAK", "medstation", 2, 3000, "MEDKIT_L", 2, { { "MEDS_PILE", 2 }, { "BANDAGE", 2 }, { "TOURNIQUET", 1 } }, nil, "IFAK individual first aid kit x2") -- meds x2, bandage x2, Esmarch
-R("MED_PNB", "medstation", 2, 3780, "STIM_STAMINA", 2, { { "MEDKIT_L", 2 }, { "SYRINGE", 2 }, { "SALINE", 2 } }, nil, "PNB (Product 16) stimulant injector x2") -- AFAK x2, syringe x2, saline, hydrogen peroxide
-R("MED_SJ1", "medstation", 2, 4980, "STIM_STAMINA", 5, { { "MEDS_PILE", 7 }, { "SALINE", 2 }, { "STIM_REGEN", 3 }, { "PAINKILLERS", 1 } }, nil, "SJ1 TGLabs combat stimulant injector x5") -- meds x7, saline x2, Propital x3, morphine
-R("MED_SJ6", "medstation", 3, 5100, "STIM_STAMINA", 2, { { "STIM_STAMINA", 1 }, { "MEDS_PILE", 3 }, { "SALINE", 1 } }, nil, "SJ6 TGLabs combat stimulant injector x2") -- SJ1, meds x2, saline, multivitamins
-R("MED_PROPITAL", "medstation", 3, 6900, "STIM_REGEN", 4, { { "PAINKILLERS", 2 }, { "MEDS_PILE", 2 } }, nil, "Propital regenerative stimulant injector x4") -- ibuprofen, Golden Star balm, meds x2
+R("MED_CMS", "medstation", 1, 2940, "SURGKIT", 1, { { "MED_TOOLS", 1 }, { "MEDKIT_M", 1 }, { "SPLINT", 1 } }, nil, "CMS surgical kit") -- medical tools (used up), car first aid kit, aluminium splint
+R("MED_ANTIDOTE", "medstation", 2, 4200, "ANTIDOTE", 1, { { "STIM_ADREN", 1 }, { "MEDKIT_S", 2 }, { "MEDS_PILE", 2 } }, nil, "xTG-12 antidote injector") -- adrenaline, AI-2 x2, pile of meds x2 (EFT 0.16.9: after the task Night Sweep)
+R("MED_IFAK", "medstation", 2, 3000, "MEDKIT_L", 2, { { "MEDS_PILE", 2 }, { "BANDAGE", 2 }, { "TOURNIQUET", 1 } }, nil, "IFAK individual first aid kit x2") -- meds x2, army bandage x2, Esmarch
+R("MED_MEDS", "medstation", 2, 2880, "MEDS_PILE", 3, { { "MEDKIT_S", 1 }, { "BANDAGE", 1 }, { "PAINKILLERS", 1 } }, nil, "Pile of meds x3") -- AI-2, aseptic bandage, Augmentin antibiotic pills
+R("MED_BLOODSET", "medstation", 2, 1680, "BLOODSET", 2, { { "SILICONE_TUBE", 1 }, { "SYRINGE", 1 }, { "MED_TOOLS", 1 } }, nil, "Medical bloodset x2") -- silicone tube, syringe, medical tools, all used up
+R("MED_VASELINE", "medstation", 2, 3300, "PAINKILLERS", 2, { { "SOAP", 5 }, { "MEDS_PILE", 1 } }, nil, "Vaseline balm x2") -- soap x3, Schaman shampoo x2, pile of meds (EFT 0.16.9 had it at level 3)
+R("MED_PROPITAL", "medstation", 3, 6900, "STIM_REGEN", 4, { { "PAINKILLERS", 2 }, { "MEDS_PILE", 2 } }, nil, "Propital regenerative stimulant injector x4") -- ibuprofen, Golden Star balm, meds x2 (EFT 0.16.9 made 7)
 R("MED_GRIZZLY", "medstation", 3, 4500, "MEDKIT_XL", 2, { { "MEDS_PILE", 4 }, { "TOURNIQUET", 2 }, { "SPLINT", 1 } }, nil, "Grizzly medical kit x2") -- meds x4, CAT x2, aluminium splint
+R("MED_ZAGUSTIN", "medstation", 3, 6720, "STIM_HEMO", 1, { { "HEMOSTAT", 1 }, { "MEDKIT_XL", 1 }, { "MEDS_PILE", 2 } }, T("SILICONE_TUBE"), "Zagustin hemostatic drug injector") -- CALOK-B, Grizzly, meds x2; silicone tube
 
--- workbench (EFT's gunpowders "Kite", "Hawk", "Eagle": GUNPOWDER;
--- calibres: 5.56 -> 6.2x40, 5.45 -> 5.4x39, 7.62x39 and .366 -> 7.6x39, 9x18 -> 9x18, 9x19 and 9x21 -> 9x19, 7.62x54R -> 7.6x54R)
-R("NADE_RK5", "workbench", 1, 18300, "GREN_RK5", 6, { { "TNT", 2 }, { "FUZE", 3 } }, nil, "RGD-5 hand grenade x6") -- TP-200 x2, fuze x3
-R("NADE_STUN", "workbench", 1, 4680, "GREN_STUN", 5, { { "FUZE", 5 }, { "GUNPOWDER", 1 } }, nil, "Zarya stun grenade x5") -- fuze x5, gunpowder "Kite"
-R("WB_BULBS", "workbench", 1, 3600, "LIGHTBULB", 4, { { "WIRES", 2 }, { "NAILS", 1 }, { "SPARE_PARTS", 1 } }, nil, "Light bulb x4") -- wires x2, nails, metal spare parts
-R("AMMO_PS", "workbench", 1, 4380, "A76_PS", 200, { { "GUNPOWDER", 1 } }, T("AWL"), "7.62x39mm FMJ x200") -- gunpowder "Eagle", awl
-R("AMMO_PST", "workbench", 1, 6180, "A918_PST", 140, { { "GUNPOWDER", 1 } }, nil, "9x18mm PMM PstM gzh x140") -- gunpowder "Kite" (Pst gzh for PstM)
-R("AMMO_RIP", "workbench", 1, 3300, "A918_PSV", 150, { { "A918_RG", 150 }, { "WIRES", 1 } }, nil, "9x18mm PM SP8 gzh x150") -- RG028 x150, wires (PSV for SP8)
-R("AMMO_BP2", "workbench", 1, 8460, "A76_BP", 60, { { "GUNPOWDER", 2 }, { "A76_PS", 100 } }, T("PLIERS"), ".366 TKM AP-M x60") -- gunpowder "Hawk" x2, 7.62x39 PS x100, pliers
-R("AMMO_BUCK", "workbench", 1, 5280, "A12_BUCK", 120, { { "NAILS", 1 }, { "GUNPOWDER", 1 } }, TOOL, "12/70 Piranha x120") -- nails, gunpowder "Hawk", multitool
-R("WB_DRILL", "workbench", 1, 9000, "HAND_DRILL", 1, { { "NUTS", 1 }, { "BOLTS", 1 }, { "SPARE_PARTS", 2 } }, nil, "Hand drill") -- screw nuts, bolts, metal spare parts x2
+-- workbench (EFT's gunpowders "Kite", "Hawk", "Eagle": GUNPOWDER; every round is the one ours copies, EFT_PARITY's
+-- catalogue row; electronic components and capacitors: CAPACITOR; CPUs and circuit boards: LOGIC_BOARD; magnets and
+-- radiator helixes: SIGNAL_COIL; flat screwdrivers: SCREWDRIVER; Pliers Elite and metal cutting scissors: PLIERS)
+R("WB_KITE", "workbench", 1, 900, "GUNPOWDER", 2, { { "A54_HP", 120 } }, T("PLIERS"), "Gunpowder \"Kite\" x2") -- 5.45x39 HP x120; pliers (EFT 0.16.9 took 5,350 s)
+R("WB_PARTS_AKM", "workbench", 1, 4680, "WEAPON_PARTS", 5, { { "KST_RIFLE", 1 } }, TOOL, "Weapon parts x5") -- an AKM (our KS-7); multitool
 R("WB_PLUG", "workbench", 1, 3420, "TPLUG", 3, { { "NAILS", 1 }, { "POWER_CORD", 1 } }, nil, "T-shaped plug x3") -- nails, power cord
-R("WB_MAGNET", "workbench", 1, 2580, "SIGNAL_COIL", 1, { { "HDD", 1 } }, T("SCREWDRIVER"), "Magnet") -- hard drive, screwdriver
-R("AMMO_LPS", "workbench", 2, 14400, "A76L_LPS", 50, { { "A76_PS", 70 }, { "GUNPOWDER", 1 } }, TOOL, "7.62x54mm R LPS gzh x50") -- FMJ x70, gunpowder "Hawk", multitool
-R("WB_GUNPOWDER", "workbench", 2, 5880, "GUNPOWDER", 2, { { "GREN_RK5", 2 }, { "GREN_SMOKE", 1 } }, T("SCREWDRIVER"), "Gunpowder \"Eagle\" x2") -- M67 grenade x2, M18 smoke grenade, screwdriver
-R("AMMO_SLUG", "workbench", 2, 4200, "A12_SLUG", 60, { { "A12_BUCK", 60 }, { "GUNPOWDER", 1 }, { "PEN_OIL", 1 } }, TOOL, "12/70 makeshift .50 BMG slug x60") -- 7 mm buckshot x60, gunpowder "Hawk", WD-40, multitool
-R("WB_SPARK", "workbench", 2, 7020, "SPARK_PLUG", 1, { { "NUTS", 1 }, { "BOLTS", 2 }, { "LIGHTER", 1 } }, T("PLIERS"), "Spark plug") -- screw nuts, bolts x2, Survl lighter, pliers
-R("AMMO_AP", "workbench", 3, 8400, "A62_AP", 90, { { "A62_FMJ", 180 }, { "GUNPOWDER", 2 } }, TOOL, "5.56x45mm M855A1 x90") -- M855 x180, gunpowder "Kite" and "Eagle", multitool
-R("AMMO_BP", "workbench", 3, 9420, "A76_BP", 60, { { "A76_PS", 90 }, { "GUNPOWDER", 1 }, { "VOLT_DRINK", 1 } }, { { "PIPE_WRENCH", 1 }, { "POWER_DRILL", 1 } }, "7.62x39mm BP gzh x60") -- PP x90, gunpowder "Eagle", Hot Rod, pipe grip wrench and drill
-R("AMMO_9AP", "workbench", 3, 7260, "A9_AP", 150, { { "A9_PST", 150 }, { "GUNPOWDER", 2 } }, T("TOOLSET"), "9x19mm AP 6.3 x150") -- M882 x150, gunpowder "Kite" x2, toolset
-R("AMMO_SNB", "workbench", 3, 9480, "A76L_SNB", 30, { { "A76L_LPS", 50 }, { "THERMITE", 1 }, { "GUNPOWDER", 2 } }, T("FILE_SET"), "7.62x54mm R BT gzh x30") -- PS x50, thermite, gunpowder "Eagle" x2, files
-R("AMMO_62BP", "workbench", 3, 13020, "A54_BP", 60, { { "A54_PS", 180 }, { "GUNPOWDER", 1 } }, T("TOOLSET"), "5.45x39mm BP gs x60") -- PS x180, gunpowder "Eagle", toolset
-R("GUN_KIT", "workbench", 3, 1500, "WEAPON_KIT", 1, { { "GUN_LUBE", 1 }, { "WEAPON_PARTS", 3 }, { "SPARE_PARTS", 2 } }, T("TOOLSET"), "Weapon repair kit") -- gun lube, weapon parts x3, metal spare parts x2, toolset (EFT also takes a used kit to refill; ours makes a new one)
+R("WB_DRILL", "workbench", 1, 9000, "HAND_DRILL", 1, { { "NUTS", 1 }, { "BOLTS", 1 }, { "SPARE_PARTS", 2 } }, nil, "Hand drill") -- screw nuts, bolts, metal spare parts x2
+R("NADE_RK5", "workbench", 1, 18300, "GREN_RK5", 6, { { "TNT", 2 }, { "FUZE", 3 } }, nil, "RGD-5 hand grenade x6") -- TP-200 x2, fuze x3
+R("WB_BULBS", "workbench", 1, 3600, "LIGHTBULB", 4, { { "WIRES", 2 }, { "NAILS", 1 }, { "SPARE_PARTS", 1 } }, nil, "Light bulb x4") -- wires x2, nails, metal spare parts
+R("WB_AK74N", "workbench", 1, 4900, "KS74_RIFLE", 1, { { "WEAPON_PARTS", 1 }, { "KST_HG_WOOD", 1 }, { "KST_STK_WOOD", 1 } }, { { "PLIERS", 1 }, { "SCREWDRIVER", 1 } }, "Kalashnikov AK-74N (default)") -- weapon parts, AK-74 wooden handguard and stock (the KS-7's, which the KS-74 takes); pliers, screwdriver
+R("WB_TOOLSET", "workbench", 1, 462, "TOOLSET", 1, { { "PLIERS", 1 }, { "SCREWDRIVER", 1 }, { "WRENCH", 1 }, { "DUCT_TAPE", 1 }, { "TAPE_MEASURE", 1 }, { "FABRIC", 1 } }, nil, "Toolset") -- pliers, screwdriver, wrench, insulating tape, measuring tape, ripstop, all used up
+R("WB_WIRES", "workbench", 1, 7100, "WIRES", 8, { { "POWER_CORD", 2 } }, nil, "Bundle of wires x8") -- power cord x2
+R("WB_CORD", "workbench", 1, 2100, "POWER_CORD", 2, { { "TPLUG", 2 }, { "WIRES", 2 }, { "DUCT_TAPE", 1 } }, nil, "Power cord x2") -- T-plug x2, wires x2, insulating tape
+R("WB_PHONE", "workbench", 1, 1500, "PHONE", 1, { { "LOGIC_BOARD", 2 }, { "CAPACITOR", 1 } }, nil, "Broken GPhone smartphone") -- PC CPU, printed circuit board, electronic components
+R("WB_PARTS_SKS", "workbench", 1, 3100, "WEAPON_PARTS", 1, { { "SKS_RIFLE", 1 } }, T("SCREWDRIVER"), "Weapon parts") -- an SKS (our SK-45); flat screwdriver
+R("NADE_STUN", "workbench", 1, 4680, "GREN_STUN", 5, { { "FUZE", 5 }, { "GUNPOWDER", 1 } }, nil, "Zarya stun grenade x5") -- fuze x5, gunpowder "Kite"
+R("AMMO_PAB9", "workbench", 2, 7350, "A939_PAB", 100, { { "GUNPOWDER", 3 } }, T("LIGHTER"), "9x39mm PAB-9 gs x100") -- gunpowder "Eagle" x3; SurvL lighter (EFT 0.16.9 made 150, after the task Test Drive - Part 1)
+R("WB_MOTOR", "workbench", 2, 4800, "MOTOR", 1, { { "WIRES", 2 }, { "SIGNAL_COIL", 1 }, { "CAPACITOR", 3 } }, nil, "Electric motor") -- wires x2, magnet, electronic components, capacitors x2
+R("AMMO_76FMJ", "workbench", 2, 5900, "A76N_FMJ", 60, { { "GUNPOWDER", 2 } }, nil, "7.62x51mm BCP FMJ x60") -- gunpowder "Kite" x2 (EFT 0.16.9 made 120)
+R("AMMO_L191", "workbench", 2, 3400, "A57_TR", 150, { { "GUNPOWDER", 2 } }, TOOL, "5.7x28mm L191 x150") -- gunpowder "Kite" and "Hawk"; multitool
+R("WB_GUNPOWDER", "workbench", 2, 5870, "GUNPOWDER", 2, { { "GREN_RK5", 2 }, { "GREN_SMOKE", 1 } }, T("SCREWDRIVER"), "Gunpowder \"Eagle\" x2") -- M67 grenade x2, M18 smoke grenade; screwdriver
+R("WB_LITHIUM", "workbench", 2, 8640, "LI_BATTERY", 1, { { "POWER_BANK", 3 }, { "CAPACITOR", 2 } }, nil, "GreenBat lithium battery") -- rechargeable battery, Powerbank x2, electronic components x2
+R("WB_SPARK", "workbench", 2, 7000, "SPARK_PLUG", 1, { { "NUTS", 1 }, { "BOLTS", 2 }, { "LIGHTER", 1 } }, T("PLIERS"), "Spark plug") -- screw nuts, bolts x2, SurvL lighter; pliers
+R("AMMO_46AP", "workbench", 3, 12400, "A46_AP", 60, { { "A46_FMJ", 120 }, { "CAPACITOR", 1 }, { "SPARE_PARTS", 1 } }, { { "PLIERS", 1 }, { "ES_LAMP", 1 } }, "4.6x30mm AP SX x60") -- FMJ SX x120, capacitors, metal spare parts; Pliers Elite, ultraviolet lamp (our energy-saving lamp) (EFT 0.16.9 made 120, after the task The Guide)
+R("AMMO_AP20", "workbench", 3, 8400, "A12_APS", 50, { { "GUNPOWDER", 3 }, { "A12_BUCK", 50 }, { "PEN_OIL", 1 } }, T("HAND_DRILL"), "12/70 AP-20 armor-piercing slug x50") -- gunpowder "Eagle" x3, 7 mm buckshot x50, WD-40 400 ml (our 100 ml can); hand drill (EFT 0.16.9: after the task The Huntsman Path - Outcasts)
+R("AMMO_45AP", "workbench", 3, 12400, "A114_AP", 100, { { "A114_TR", 150 }, { "GUNPOWDER", 2 }, { "NAILS", 1 } }, { { "MULTITOOL", 1 }, { "FILE_SET", 1 } }, ".45 ACP AP x100") -- Lasermatch FMJ x150, gunpowder "Hawk" and "Eagle", nails; multitool, files (EFT 0.16.9 made 150)
+R("AMMO_BP", "workbench", 3, 9400, "A76_BP", 60, { { "A76_PP", 90 }, { "GUNPOWDER", 1 }, { "VOLT_DRINK", 1 } }, { { "PIPE_WRENCH", 1 }, { "POWER_DRILL", 1 } }, "7.62x39mm BP gzh x60") -- PP x90, gunpowder "Eagle", Hot Rod; pipe grip wrench, drill (EFT 0.16.9: after the task Intimidator)
+R("AMMO_AP", "workbench", 3, 8400, "A62_EP", 90, { { "A62_SS", 180 }, { "GUNPOWDER", 2 } }, TOOL, "5.56x45mm M855A1 x90") -- M855 x180, gunpowder "Kite" and "Eagle"; multitool (EFT 0.16.9: after the task Your Car Needs a Service)
+R("AMMO_M80A1", "workbench", 3, 8280, "A76N_EP", 40, { { "A76N_BALL", 80 }, { "GUNPOWDER", 2 }, { "SIGNAL_COIL", 1 } }, TOOL, "7.62x51mm M80A1 x40") -- M80 x80, gunpowder "Hawk" x2, radiator helix; multitool
+R("AMMO_76LBT", "workbench", 3, 9500, "A76L_BT", 30, { { "A76L_PS", 50 }, { "THERMITE", 1 }, { "GUNPOWDER", 2 } }, T("FILE_SET"), "7.62x54mm R BT gzh x30") -- PS x50, thermite, gunpowder "Eagle" x2; files (EFT 0.16.9: after the task The Tarkov Shooter - Part 7)
+R("GUN_KIT", "workbench", 3, 1500, "WEAPON_KIT", 1, { { "WEAPON_KIT", 1 }, { "TOOLSET", 1 }, { "GUN_LUBE", 1 }, { "WEAPON_PARTS", 3 }, { "SPARE_PARTS", 2 } }, nil, "Weapon repair kit", { refill = true }) -- EFT's refill: a used kit, a toolset (used up), gun lube, weapon parts x3, metal spare parts x2
+R("AMMO_SS190", "workbench", 3, 8700, "A57_SS", 60, { { "A57_LF", 100 }, { "GUNPOWDER", 1 }, { "CAPACITOR", 4 } }, TOOL, "5.7x28mm SS190 x60") -- SS198LF x100, gunpowder "Eagle", capacitors x4; multitool (EFT 0.16.9 made 100)
+R("AMMO_9AP", "workbench", 3, 7250, "A9_AP", 150, { { "A9_FMJ", 150 }, { "GUNPOWDER", 2 } }, T("TOOLSET"), "9x19mm AP 6.3 x150") -- FMJ M882 x150, gunpowder "Kite" x2; toolset
+R("AMMO_54BP", "workbench", 3, 13000, "A54_BP", 60, { { "A54_PS", 180 }, { "GUNPOWDER", 1 } }, T("TOOLSET"), "5.45x39mm BP gs x60") -- PS x180, gunpowder "Eagle"; toolset (EFT 0.16.9 made 120, after the task Gendarmerie - District Patrol)
 
--- lavatory (EFT's fabrics: FABRIC; vodka used to clean: BLEACH; shampoo: SOAP)
+-- lavatory, no power needed (EFT's fabrics: FABRIC; Clin window cleaner: BLEACH; shampoo: SOAP; insulating tape and
+-- duct tape: DUCT_TAPE; sodium bicarbonate: ALKALI; the Zibbo and SurvL lighters: LIGHTER)
+R("LAV_ARAMID", "lavatory", 1, 2000, "FABRIC", 2, { { "ARMOR_C2", 1 } }, TOOL, "Aramid fiber fabric x2") -- PACA soft armor (ours copies it); multitool
+R("LAV_CORDURA", "lavatory", 1, 2900, "FABRIC", 2, { { "BAG_SLING", 2 } }, T("SEWING_KIT"), "Cordura polyamide fabric x2") -- tactical sling bag x2 (our day bag); sewing kit (EFT 0.16.9 made 1)
 R("NADE_SMOKE", "lavatory", 1, 3600, "GREN_SMOKE", 6, { { "CHLORINE", 1 }, { "MATCHES", 1 }, { "DUCT_TAPE", 1 }, { "TOILET_PAPER", 1 } }, nil, "RDG-2B smoke grenade x6") -- chlorine, hunting matches, duct tape, toilet paper
-R("LAV_BANDAGE", "lavatory", 1, 1020, "BANDAGE", 10, { { "BANDAGE", 5 }, { "BLEACH", 1 } }, nil, "Army bandage x10") -- aseptic bandage x5, vodka
-R("LAV_ASEPTIC", "lavatory", 1, 1920, "BANDAGE", 6, { { "FABRIC", 1 } }, nil, "Aseptic bandage x6") -- fleece fabric
-R("LAV_ARAMID", "lavatory", 1, 1980, "FABRIC", 2, { { "ARMOR_C2", 1 } }, TOOL, "Aramid fiber fabric x2") -- PACA soft armor, multitool
-R("LAV_RIPSTOP", "lavatory", 1, 2220, "FABRIC", 2, { { "RIG_CHEST", 1 } }, nil, "Ripstop fabric x2") -- scav vest
+R("LAV_HOSE", "lavatory", 1, 12100, "CORR_HOSE", 2, { { "SILICONE_TUBE", 1 }, { "WIRES", 3 }, { "DUCT_TAPE", 3 } }, nil, "Corrugated hose x2") -- silicone tube, wires x3, insulating tape x3
+R("LAV_ASEPTIC", "lavatory", 1, 1900, "BANDAGE", 6, { { "FABRIC", 1 } }, nil, "Aseptic bandage x6") -- fleece fabric
 R("LAV_SOAP", "lavatory", 1, 3000, "SOAP", 6, { { "ALKALI", 1 }, { "SALT", 1 }, { "STEW", 1 } }, nil, "Soap x6") -- alkali, white salt, beef sausage
-R("LAV_MODULE3M", "lavatory", 1, 3240, "ARMOR_C2", 1, { { "FABRIC", 2 } }, nil, "BNTI Module-3M body armor") -- aramid, ripstop
-R("LAV_ZHUK", "lavatory", 1, 4020, "ARMOR_C3", 1, { { "FABRIC", 2 }, { "PLATE_PE3", 1 } }, nil, "BNTI Zhuk body armor (class 3)") -- aramid, ripstop, Zhuk-3 front plate
-R("LAV_6B23", "lavatory", 1, 7020, "ARMOR_C4", 1, { { "PLATE_PC4F", 1 }, { "FABRIC", 2 }, { "BLEACH", 1 } }, nil, "6B23-2 body armor") -- 6B33 front plate, Cordura, aramid, bleach
-R("LAV_MAG", "lavatory", 1, 4980, "KST_MAG40", 1, { { "KST_MAG", 4 }, { "SEAL_TAPE", 1 } }, T("SCREWDRIVER"), "AK-74 6L31 60-round magazine") -- 6L23 30-round x4, KEKTAPE, screwdriver
-R("LAV_SCAVPACK", "lavatory", 1, 1200, "BAG_SLING", 1, { { "FABRIC", 1 }, { "DUCT_TAPE", 1 } }, nil, "Scav backpack") -- Cordura, insulating tape
-R("LAV_FUEL", "lavatory", 2, 3720, "FUEL_CAN", 1, { { "LIGHTER", 4 }, { "SILICONE_TUBE", 1 }, { "WATER", 1 } }, nil, "Expeditionary fuel tank") -- Zibbo x2, Crickent x2, silicone tube, water
-R("LAV_COMMANDO", "lavatory", 2, 2820, "RIG_CHEST", 1, { { "FABRIC", 2 } }, T("AWL"), "BlackHawk! Commando chest harness") -- Cordura, ripstop, awl
-R("LAV_BLACKROCK", "lavatory", 2, 3600, "RIG_CHEST", 1, { { "RIG_BELT", 1 }, { "FABRIC", 2 } }, nil, "BlackRock chest rig") -- Tarzan M22 rig, ripstop, Cordura
-R("LAV_SWITCHBLADE", "lavatory", 2, 2520, "BAG_PATROL", 1, { { "FABRIC", 4 }, { "BLEACH", 1 } }, nil, "Eberlestock F5 Switchblade backpack") -- ripstop x2, Cordura x2, bleach
-R("LAV_HELMET", "lavatory", 2, 4320, "HELMET_C3", 1, { { "DUCT_TAPE", 2 }, { "FABRIC", 2 } }, T("FILE_SET"), "MSA ACH TC-2002 MICH helmet") -- duct tape x2, aramid, ripstop, files
-R("LAV_CLIN", "lavatory", 2, 2460, "BLEACH", 2, { { "BLEACH", 1 }, { "SOAP", 1 }, { "SILICONE_TUBE", 1 } }, nil, "Clin window cleaner x2") -- vodka, shampoo, silicone tube
 R("LAV_SHAMPOO", "lavatory", 1, 2100, "SOAP", 2, { { "SOAP", 1 }, { "JUICE", 1 } }, nil, "Schaman shampoo x2") -- soap, beer
+R("LAV_6B23", "lavatory", 1, 7000, "ARMOR_C4", 1, { { "PLATE_PC4F", 1 }, { "FABRIC", 2 }, { "BLEACH", 1 } }, nil, "6B23-2 body armor") -- 6B33 front plate, Cordura, aramid, bleach (EFT 0.16.9: after the task Sew it Good - Part 1)
+R("LAV_RIPSTOP", "lavatory", 1, 2200, "FABRIC", 2, { { "RIG_CHEST", 1 } }, T("SEWING_KIT"), "Ripstop fabric x2") -- scav vest; sewing kit
+R("LAV_SCAVPACK", "lavatory", 1, 1200, "BAG_SLING", 1, { { "FABRIC", 1 }, { "DUCT_TAPE", 1 } }, nil, "Scav backpack") -- Cordura, insulating tape
+R("LAV_BLACKROCK", "lavatory", 2, 3600, "RIG_CHEST", 1, { { "RIG_BELT", 1 }, { "FABRIC", 2 } }, T("SEWING_KIT"), "BlackRock chest rig") -- Tarzan M22 rig, ripstop, Cordura; sewing kit
+R("LAV_FUEL", "lavatory", 2, 3720, "FUEL_CAN", 1, { { "LIGHTER", 4 }, { "WATER", 1 } }, T("SILICONE_TUBE"), "Expeditionary fuel tank") -- Zibbo x2, Crickent x2, water; silicone tube
+R("LAV_SWITCHBLADE", "lavatory", 2, 2520, "BAG_PATROL", 1, { { "FABRIC", 4 }, { "BLEACH", 1 } }, T("SEWING_KIT"), "Eberlestock F5 Switchblade backpack") -- ripstop x2, Cordura x2, bleach; sewing kit
+R("LAV_KEKTAPE", "lavatory", 2, 4800, "SEAL_TAPE", 1, { { "DUCT_TAPE", 4 }, { "BLEACH", 1 } }, T("LIGHTER"), "KEKTAPE duct tape") -- duct tape x2, insulating tape x2, Clin; Crickent lighter
+R("LAV_COMMANDO", "lavatory", 2, 2820, "RIG_CHEST", 1, { { "FABRIC", 2 } }, { { "AWL", 1 }, { "SEWING_KIT", 1 } }, "BlackHawk! Commando chest harness") -- Cordura, ripstop; awl, sewing kit
+R("LAV_STRANDHOGG", "lavatory", 2, 1980, "RIG_PLATE", 1, { { "FABRIC", 4 }, { "PLATE_PE4", 1 } }, T("PLIERS"), "FirstSpear Strandhogg plate carrier") -- ripstop, aramid, Cordura x2, NewSphereTech level III plate (our Heron, EFT's Monoclete level III PE); metal cutting scissors (EFT 0.16.9 took 6,000 s, after the task Minibus)
+R("LAV_BLEACH", "lavatory", 2, 2310, "BLEACH", 3, { { "SOAP", 1 }, { "ALKALI", 2 } }, nil, "Ox bleach x3") -- soap, alkaline cleaner, sodium bicarbonate (EFT 0.16.9 made 5)
+R("LAV_PILGRIM", "lavatory", 3, 2500, "BAG_RAID", 1, { { "TAPE_MEASURE", 1 }, { "BAG_PATROL", 2 }, { "DUCT_TAPE", 2 } }, T("SEWING_KIT"), "Pilgrim tourist backpack") -- measuring tape, LolKek 3F Transfer x2 (our patrol pack), insulating tape x2; sewing kit
 
--- nutrition unit (our pantry is small: tinned and boxed food -> STEW, crackers and croutons -> HARDTACK, sodas, teas, purees
--- and beer -> JUICE, energy drinks and coffee -> VOLT_DRINK, sweets -> CHOC_BAR; books and Geiger counters are left out)
-R("NUT_WATER", "nutrition", 1, 4020, "WATER", 2, { { "WATER", 1 }, { "SEAL_TAPE", 1 }, { "SILICONE_TUBE", 1 } }, nil, "Emergency Water Ration x2") -- water, KEKTAPE, silicone tube
-R("NUT_ENERGY", "nutrition", 1, 6480, "VOLT_DRINK", 4, { { "JUICE", 1 }, { "VOLT_DRINK", 1 }, { "WATER", 1 } }, nil, "Max Energy energy drink x4") -- TarCola, Majaica coffee, water
-R("NUT_KVASS", "nutrition", 1, 3780, "JUICE", 2, { { "WATER", 2 }, { "HARDTACK", 2 } }, nil, "Norvinsky kvass x2") -- water x2, Emelya croutons x2
-R("NUT_ISKRA", "nutrition", 1, 2880, "STEW", 2, { { "HARDTACK", 2 }, { "STEW", 1 }, { "JUICE", 1 } }, nil, "Iskra ration pack x2") -- crackers x2, Tushonka, Squash
+-- nutrition unit (our pantry is small: tinned and boxed food and condensed milk -> STEW, crackers and croutons ->
+-- HARDTACK, sodas, teas, milk, purees and beer -> JUICE, energy drinks and coffee -> VOLT_DRINK, sweets and sugar ->
+-- CHOC_BAR; a canister of purified water is ten bottles, as the water collector makes it and as EFT's own craft of ten
+-- bottles from one canister has it)
+R("NUT_SAUSAGE", "nutrition", 1, 1980, "STEW", 3, { { "SALT", 1 }, { "STEW", 1 }, { "TOILET_PAPER", 1 } }, nil, "Salty Dog beef sausage x3") -- white salt, Tushonka, toilet paper (EFT's tool, a Geiger-Muller counter, has no counterpart yet)
 R("NUT_MRE", "nutrition", 1, 2400, "STEW", 2, { { "STEW", 1 }, { "HARDTACK", 2 }, { "CHOC_BAR", 1 } }, nil, "MRE ration pack x2") -- Tushonka, crackers x2, Slickers
-R("NUT_SAUSAGE", "nutrition", 1, 1980, "STEW", 3, { { "SALT", 1 }, { "STEW", 1 }, { "TOILET_PAPER", 1 } }, nil, "Salty Dog beef sausage x3") -- white salt, Tushonka, toilet paper
-R("NUT_BEER", "nutrition", 3, 36000, "JUICE", 10, { { "HARDTACK", 5 }, { "JUICE", 3 }, { "WATER", 1 } }, nil, "Pevko Light beer x10") -- croutons x5, kvass x3, purified water
-R("NUT_HOTROD", "nutrition", 3, 43200, "VOLT_DRINK", 20, { { "WATER", 1 }, { "CHOC_BAR", 1 }, { "VOLT_DRINK", 1 }, { "JUICE", 1 }, { "WATER_FILTER", 1 } }, nil, "Hot Rod energy drink x20") -- purified water, sugar, Majaica, tea, water filter
+R("NUT_WATER", "nutrition", 1, 4000, "WATER", 2, { { "WATER", 1 }, { "SEAL_TAPE", 1 } }, T("SILICONE_TUBE"), "Emergency Water Ration x2") -- water, KEKTAPE; silicone tube
+R("NUT_ENERGY", "nutrition", 1, 6500, "VOLT_DRINK", 4, { { "JUICE", 1 }, { "VOLT_DRINK", 1 }, { "WATER", 1 } }, nil, "Max Energy energy drink x4") -- TarCola, Majaica coffee, water (EFT's tool, the BakeEzy cook book, has no counterpart yet)
+R("NUT_KVASS", "nutrition", 1, 3800, "JUICE", 2, { { "WATER", 2 }, { "HARDTACK", 2 } }, nil, "Norvinsky kvass x2") -- water x2, Emelya croutons x2
+R("NUT_ISKRA", "nutrition", 1, 2900, "STEW", 2, { { "HARDTACK", 2 }, { "STEW", 1 }, { "JUICE", 1 } }, nil, "Iskra ration pack x2") -- crackers x2, Tushonka, squash spread
+R("NUT_MAJAICA", "nutrition", 2, 2700, "VOLT_DRINK", 2, { { "VOLT_DRINK", 1 }, { "GUNPOWDER", 1 } }, nil, "Majaica coffee beans x2") -- Dr. Lupo's coffee, gunpowder "Kite"
+R("NUT_MILK", "nutrition", 2, 4900, "STEW", 3, { { "CHOC_BAR", 1 }, { "JUICE", 1 } }, nil, "Condensed milk x3") -- sugar, milk
+R("NUT_BEER", "nutrition", 3, 36000, "JUICE", 10, { { "HARDTACK", 5 }, { "JUICE", 3 }, { "WATER", 10 } }, nil, "Pevko Light beer x10") -- croutons x5, kvass x3, a canister of purified water
+R("NUT_HOTROD", "nutrition", 3, 43200, "VOLT_DRINK", 20, { { "WATER", 10 }, { "CHOC_BAR", 1 }, { "VOLT_DRINK", 1 }, { "JUICE", 1 } }, T("WATER_FILTER"), "Hot Rod energy drink x20") -- a canister of purified water, sugar, Majaica, tea; water filter (EFT's other tool, the BakeEzy cook book, has no counterpart yet)
 
 -- water collector
-R("WC_RATION", "water", 2, 1800, "WATER", 2, { { "JUICE", 1 }, { "SILICONE_TUBE", 1 } }, nil, "Emergency Water Ration x2") -- Grand juice, silicone tube
+R("WC_RATION", "water", 2, 1800, "WATER", 2, { { "JUICE", 1 } }, T("SILICONE_TUBE"), "Emergency Water Ration x2") -- Grand juice; silicone tube
 R("WC_PURIFIED", "water", 3, 19500, "WATER", 10, { { "WATER_FILTER", 1 } }, nil, "Canister with purified water") -- 0.66 of a water filter (EFT runs it nonstop; ours is started each time)
 
--- intelligence center (electronic components: CAPACITOR; CPUs: LOGIC_BOARD; VPX: FLASH_MODULE)
-R("INT_FLASH", "intel", 1, 28800, "SECURE_FLASH", 3, { { "CAPACITOR", 1 }, { "PHONE", 1 }, { "SSD", 1 } }, nil, "Secure Flash drive x3") -- electronic components, Golden 1GPhone X, SSD drive
-R("INT_FOLDER", "intel", 3, 111600, "INTEL_FOLDER", 1, { { "SECURE_FLASH", 2 } }, nil, "Intelligence folder") -- military flash drive x2 (printer paper left out)
-R("INT_GPU", "intel", 3, 54000, "GPU_CARD", 1, { { "LOGIC_BOARD", 4 }, { "CPU_FAN", 2 }, { "RAM_STICK", 1 }, { "FLASH_MODULE", 1 }, { "CAPACITOR", 4 } }, nil, "Graphics card") -- PCB x2, CPU x2, CPU fan x2, RAM, VPX, electronic components x4 (textbook left out)
+-- intelligence center (electronic components: CAPACITOR; CPUs and circuit boards: LOGIC_BOARD; VPX: FLASH_MODULE)
+R("INT_FLASH", "intel", 1, 28800, "SECURE_FLASH", 3, { { "CAPACITOR", 1 }, { "PHONE", 1 }, { "SSD", 1 } }, nil, "Secure Flash drive x3") -- electronic components, broken GPhone X (our smartphone), SSD drive
+R("INT_FOLDER", "intel", 3, 114000, "INTEL_FOLDER", 1, { { "SECURE_FLASH", 2 } }, nil, "Intelligence folder") -- military flash drive x2 (our secure flash drive); 31 h 40 min (xgamingserver, SPT); EFT also uses up printer paper, which has no counterpart yet
+R("INT_GPU", "intel", 3, 54000, "GPU_CARD", 1, { { "LOGIC_BOARD", 4 }, { "CPU_FAN", 2 }, { "RAM_STICK", 1 }, { "FLASH_MODULE", 1 }, { "CAPACITOR", 4 } }, nil, "Graphics card") -- PCB x2, CPU x2, CPU fan x2, RAM, VPX, electronic components x4 (EFT's tool, the Advanced Electronic Materials textbook, has no counterpart yet)
+
+-- Left out of EFT's current 212 (136), and why:
+--  · no counterpart for the product: medstation morphine, 2A2, defibrillator, eTG-change, M.U.L.E., AHF1-M, PNB, SJ1,
+--    Perfotoran; workbench .366 AP-M, 7.62x39 FMJ, 9x18 SP8 and PstM, 9x21 P gzh, 12/70 Piranha and makeshift .50 BMG
+--    slug, 5.45 PP, 5.56 MK 318, 9x19 Luger CCI, .300 Blackout AP and M62, .338 FMJ, 23x75 Zvezda, 30x165 shells, VOG-17
+--    and VOG-25 Khattabkas, magnet, SAS drive, round pliers, rechargeable battery, Bulbex cable cutter, AK-74M, PP-9 Klin,
+--    AK-50, the PM drum, broken and working LCDs, plexiglass, gas analyzer, Geiger counter, radio repeater, NIXXOR lenses,
+--    microcontroller boards, the two thermal sights, nut can, Icebreaker, half a bitcoin, Gamma container and armored case
+--    upkeep, crate openings; lavatory 6L31 60-round magazine, gas mask filter, Module-3M, Zhuk, 6B47, MICH, Rys-T, 6B13
+--    plates, grenade and magazine cases, Lucky Scav box, paracord, Skanda, Bagariy, ANA M2, TacTec, FP-100 absorber;
+--    nutrition vodka and whiskey; intelligence center every keycard and pass, tape cassette, printout, Fence's laptop
+--    data, Blue Folders, RFID reader, Virtex, DSP transmitter, military flash drive, decrypted folder;
+--  · no counterpart for an input or tool: 12/70 flechette (a sledgehammer), AKM from a Vepr-KM, circuit boards from a DVD
+--    drive or a gas analyzer, thermite (the dorm room 308 key), Hawk from an OFZ shell, military circuit board (a COFDM
+--    transmitter), 7.62x54R LPS (its FMJ), SJ6 (an SJ1), LEDX (RFID readers, a textbook), Aquamari bottles (gas mask
+--    filters, Aquapeps), toilet paper and water filters (printer paper), survey maps (diaries);
+--  · mostly its own product, or no more of it: Hawk x3 from Eagle and matches, army bandages from aseptic ones and vodka,
+--    Clin from vodka, WD-40 100 ml from 400 ml, car batteries from a tank battery, Slickers from Alyonka, sugar from
+--    Alyonka, small and large Tushonka, Wilston, CALOK-B, aluminium splints, AFAK, Surv12, bottled water (collector and
+--    nutrition unit);
+--  · far richer at our values than EFT's: capacitors x6 from a power supply (ours worth 18,000 each, EFT's handbook 2,500),
+--    fleece from two beanies (a trader sells beanies).
 
 H.byRecipe = {}
 for _, r in H.recipes do
