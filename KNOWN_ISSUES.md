@@ -283,6 +283,14 @@
       processed after an upload, its pieces show their plain tint, and pieces with their own colours (tint white, such
       as the body camera) show white. Seen once in Studio for a few minutes on the pack sheet's colour map.
 
+87. **Every item's model goes to every client (2026-11-09).** The three item batches added for the 280 items that lay as
+    blocks (ZR_ItemsD to F) bring the loose-loot meshes to 375 items, 894 pieces, about 140,000 more triangles. Like every
+    ZR_IT_ mesh they are copied to ReplicatedStorage at start-up (Assets.clientNeeds), because INSPECT builds the model on
+    the client. A phone's memory with them has not been measured. If it is too much, the client could fetch an item's
+    pieces when INSPECT opens rather than at start-up.
+    - Items added by later slices need a loose-loot export too (an entry in assets/exports/ZR_ItemsWorld.json, then
+      `world_start` .. `world_finish` and tools/item_meta.py): LookTests L05 fails until they have one.
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

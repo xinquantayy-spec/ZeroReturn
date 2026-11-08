@@ -392,7 +392,7 @@ local function buildModel(view, items, g, it, d)
 		end
 		lo, hi = ItemModel.bounds(pieces)
 	else
-		local size, centre = ItemModel.placeMeta(model, it.id, CFrame.new())
+		local size, centre = ItemModel.placeMeta(model, it.id, CFrame.new(), true)
 		if not size then
 			size, centre = ItemModel.placeWear(model, d, CFrame.new())
 		end

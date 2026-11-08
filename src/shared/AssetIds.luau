@@ -20,6 +20,10 @@ return {
 	{ key = "ZR_ItemsA", id = 91684040376497 }, -- magazines, ammunition, grenades, weapon mods, repair kit, secure containers
 	{ key = "ZR_ItemsB", id = 104263145712235 }, -- medicine, food and drink, keys and keycards, quest items
 	{ key = "ZR_ItemsC", id = 125911946207153 }, -- valuables and barter goods
+	-- (2026-11-09) every item the slices added since, which lay as blocks before (assets/exports/ZR_ItemsWorld.json)
+	{ key = "ZR_ItemsD", id = 91023062213501 }, -- 91 rounds, the two signal flares, the two knives
+	{ key = "ZR_ItemsE", id = 136377420283268 }, -- 49 keys and notes, 14 quest items, 16 armour plates, 6 injectors, sugar, the propane tank
+	{ key = "ZR_ItemsF", id = 79177483408574 }, -- 98 barter goods, tools, electronics, books and valuables
 	-- M14 guns as parts (ZR_WP_<part>__<material> pieces, origin at the attach point; see GunMeta.luau, build_guns_all.py)
 	{ key = "ZR_GunsAR", id = 123034684749216 }, -- (2026-11-08 art-4b: with UVs for its four texture sheets, ZR_GT_AR_T1-4; was 130670418678516) R-17 receiver, uppers, barrels, gas blocks, handguards, stocks, grips, charging handles, sights, muzzle devices, magazines
 	{ key = "ZR_GunsAK", id = 83385351744718 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 104159336478565) Kestrel KS-7 and KS-74 receivers, dust covers, handguards, stocks, grips, muzzle devices (the 74 brake), side mount, magazines (economy-1a third slice, 2026-11-08)

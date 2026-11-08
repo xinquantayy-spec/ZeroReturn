@@ -8,6 +8,18 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Every item lies as its own model (art-4b follow-up; 2026-11-09, 03:50 SGT)
+
+| Test | Result |
+|---|---|
+| Found | A Studio census of the 577 items: 286 lay in raids as plain coloured blocks and showed only their picture in INSPECT. They had Blender models for their pictures but no loose-loot export: 91 rounds, 49 keys and notes, 98 barter goods, 16 plates, 14 quest items, 6 injectors, 5 night-vision devices, 2 knives, 2 flares, sugar, the propane tank and the launcher round. In EFT every item lies as its own model. |
+| Blender | `build_items_export.py` gained a stepwise export (`load_all`, `world_start`, `world_step`, `world_finish`; batches listed in assets/exports/ZR_ItemsWorld.json). `load_all` re-runs builder modules imported earlier in the session: they had registered into an older registry and only 395 of 571 items were found at first. 280 items built in about 15 s: ZR_ItemsD (199 pieces, 72,518 triangles, mostly the rounds), ZR_ItemsE (205, 20,506) and ZR_ItemsF (255, 46,872). |
+| Upload | ZR_ItemsD 91023062213501, ZR_ItemsE 136377420283268, ZR_ItemsF 79177483408574. `tools/item_meta.py` reads batches A to F: ItemMeta has 375 items and 894 pieces. |
+| Code | Night-vision devices lie as their worn goggles, flipped down (ItemModel). An item modelled standing for its picture lies at rest if it would topple: taller than 1.8 times its narrower side, it lies on its broadest face. That covers knives, the sledgehammer, plates, panels, books and flares. Bottles, cans, tins, the jerry can and the figurine stand on their bases (ItemModel.STAND). This applies to loose loot and INSPECT; a grenade on a tripwire stands as modelled. |
+| In Studio | 16 sample items laid on the bunker floor: every one sits on the floor (lowest corner within 0.004 studs), and the knife, plate, sledgehammer and panels lie flat. INSPECT on the sledgehammer shows the turnable model where it showed the picture before (the view fills about a second after opening). |
+| Tests | LookTests L05: every item lies as its own model, every piece is loaded, the rest rule and the standing list. 18 suites, 1,321 checks, all passed. |
+| Not checked | The new loot in a raid's real spots; a phone's memory with the 140,000 extra triangles (every item mesh is sent to every client). |
+
 ## The body textured (art-4b; 2026-11-09, 03:30 SGT)
 
 | Test | Result |

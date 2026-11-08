@@ -35,13 +35,43 @@ function ItemModel.quiet(p)
 	p.Massless = true
 end
 
--- the item's Blender model (ItemMeta pieces) at surface cf; returns its bounding box (size, centre CFrame) or nil
-function ItemModel.placeMeta(model, id, cf)
+-- an item at rest lies as EFT's loose loot does: one modelled standing (for its picture) that would topple, being
+-- taller than TOPPLE times its narrower side, lies on its broadest face with its long axis level (a knife on its flat,
+-- a sledgehammer on its side, an armour plate face down). Returns the turn about the model's box centre, the height
+-- of that centre above the surface and the turned box size; nil when the item stands as modelled.
+local TOPPLE = 1.8
+ItemModel.TOPPLE = TOPPLE
+-- what stands on a flat base whatever its proportions: bottles, cans, tins, the jerry can, the figurine
+local STAND = {
+	WATER = true, JUICE = true, VOLT_DRINK = true, MOONSHINE = true, SHAMPOO = true, BLEACH = true, ALKALI = true, PEROXIDE = true,
+	SALINE = true, GUN_LUBE = true, PEN_OIL = true, WATER_FILTER = true, FUEL_CAN = true, GUNPOWDER = true, POWDER_BALL = true,
+	POWDER_FLAKE = true, FOAM = true, FOAM_MOUNT = true, BICARB = true, CAPACITOR = true, BEACON = true, GOLD_ROOSTER = true,
+}
+ItemModel.STAND = STAND
+function ItemModel.restTurn(size, id)
+	if (id and STAND[id]) or size.Y <= TOPPLE * math.min(size.X, size.Z) then
+		return nil
+	end
+	if size.X <= size.Z then
+		return CFrame.Angles(0, 0, math.pi / 2), size.X / 2, Vector3.new(size.Y, size.X, size.Z)
+	end
+	return CFrame.Angles(math.pi / 2, 0, 0), size.Z / 2, Vector3.new(size.X, size.Z, size.Y)
+end
+
+-- the item's Blender model (ItemMeta pieces) at surface cf; returns its bounding box (size, centre CFrame) or nil.
+-- rest: lie at rest (loose loot, INSPECT) rather than as modelled (a grenade standing on a tripwire stake)
+function ItemModel.placeMeta(model, id, cf, rest)
 	local meta = ItemMeta[id]
 	local lib = assetLib()
 	if not meta or not lib then
 		return nil
 	end
+	local turn, lift, turned
+	if rest then
+		turn, lift, turned = ItemModel.restTurn(meta.size, id)
+	end
+	-- the frame the pieces hang from: as modelled, or turned about the box centre and set down centred over the spot
+	local frame = turn and (cf * CFrame.new(0, lift, 0) * turn * CFrame.new(-meta.center)) or cf
 	local n = 0
 	for _, pc in meta.pieces do
 		local src = lib:FindFirstChild("ZR_IT_" .. id .. "__" .. pc[1])
@@ -54,13 +84,16 @@ function ItemModel.placeMeta(model, id, cf)
 			p.Transparency = mm[3] or 0
 			p.Color = Color3.new(1, 1, 1)
 			p.CastShadow = meta.size.Magnitude > 0.5 and pc[1] ~= "glass"
-			p.CFrame = cf * CFrame.new(pc[2])
+			p.CFrame = frame * CFrame.new(pc[2])
 			p.Parent = model
 			n += 1
 		end
 	end
 	if n == 0 then
 		return nil
+	end
+	if turn then
+		return turned, cf * CFrame.new(0, lift, 0)
 	end
 	return meta.size, cf * CFrame.new(meta.center)
 end
@@ -69,6 +102,10 @@ end
 function ItemModel.placeWear(model, d, cf)
 	local slot = WEAR_SLOT[d.kind]
 	local vis = slot and Equipment.visualOf(slot, d.id)
+	if not vis and d.kind == "nvg" and Equipment.NVG[d.id] then
+		-- night-vision devices are no slot (they ride a head mount): they lie as the goggles worn flipped down
+		vis = { pieces = { Equipment.NVG[d.id].down } }
+	end
 	local lib = assetLib()
 	if not vis or not lib then
 		return nil

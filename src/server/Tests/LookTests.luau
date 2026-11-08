@@ -329,6 +329,63 @@ function T.run(ctx)
 		check("L04 wall finish checks ran", ok, err)
 	end
 
+	-- L05 every item lies as its own model and turns in INSPECT, as in EFT (no stand-in blocks): guns, parts and
+	-- magazines from their gun parts, worn gear and night-vision devices from the character meshes, everything else
+	-- from its ItemMeta pieces (ZR_ItemsA..F, build_items_export.py); every piece loaded
+	do
+		local ok, err = pcall(function()
+			local Items = require(Shared.Items)
+			local ItemMeta = require(Shared.ItemMeta)
+			local Equipment = require(Shared.Equipment)
+			local lib = ReplicatedStorage:FindFirstChild("ZR_Assets")
+			local GUN = { weapon = true, pistol = true, mod = true, mag = true }
+			local WORN = { helmet = true, headwear = true, headset = true, facecover = true, eyewear = true, armor = true, rig = true, backpack = true }
+			local NEVER = { AGL30_ROUND = true } -- the launcher's round is never carried and never lies as loot
+			local none, missing, n = {}, {}, 0
+			for id, d in Items.defs do
+				if GUN[d.kind] or WORN[d.kind] or NEVER[id] then
+					continue
+				end
+				n += 1
+				local meta = ItemMeta[id]
+				if d.kind == "nvg" then
+					if not Equipment.NVG[id] then
+						table.insert(none, id)
+					end
+				elseif not meta then
+					table.insert(none, id)
+				else
+					for _, pc in meta.pieces do
+						local key = "ZR_IT_" .. id .. "__" .. pc[1]
+						if not (lib and lib:FindFirstChild(key)) then
+							table.insert(missing, key)
+						end
+					end
+				end
+			end
+			table.sort(none)
+			table.sort(missing)
+			check("L05 every item lies as its own model", #none == 0, #none .. " of " .. n .. ": " .. table.concat(none, ",", 1, math.min(#none, 12)))
+			check("L05 every item model piece is loaded", #missing == 0, #missing .. ": " .. table.concat(missing, ",", 1, math.min(#missing, 8)))
+			-- at rest (loose loot, INSPECT): what would topple lies on its broadest face, the rest stands as modelled
+			local ItemModel = require(Shared.ItemModel)
+			local _, liftK, sizeK = ItemModel.restTurn(Vector3.new(0.07, 1.03, 0.16)) -- a knife on its tip
+			local _, liftP, sizeP = ItemModel.restTurn(Vector3.new(0.78, 1.0, 0.08)) -- an armour plate on edge
+			check("L05 a knife modelled on its tip lies on its flat", math.abs(liftK - 0.035) < 1e-5 and sizeK == Vector3.new(1.03, 0.07, 0.16), sizeK)
+			check("L05 a plate modelled on edge lies face down", math.abs(liftP - 0.04) < 1e-5 and sizeP == Vector3.new(0.78, 0.08, 1.0), sizeP)
+			check("L05 a jar and a gas bottle stand as modelled", ItemModel.restTurn(Vector3.new(0.21, 0.29, 0.19)) == nil and ItemModel.restTurn(Vector3.new(0.94, 1.56, 0.95)) == nil)
+			check("L05 a bottle stands on its base though it is slender", ItemModel.restTurn(Vector3.new(0.2, 0.67, 0.2), "WATER") == nil and ItemModel.restTurn(Vector3.new(0.2, 0.67, 0.2)) ~= nil)
+			local strays = {}
+			for sid in ItemModel.STAND do
+				if not Items.defs[sid] then
+					table.insert(strays, sid)
+				end
+			end
+			check("L05 every standing item is a real item", #strays == 0, table.concat(strays, ","))
+		end)
+		check("L05 item model checks ran", ok, err)
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

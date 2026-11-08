@@ -1095,7 +1095,7 @@ local function looseModel(holder, g, it, cf)
 		hit.Size = (hi - lo):Max(Vector3.new(0.6, 0.4, 0.6)) + Vector3.new(0.2, 0.2, 0.2)
 		hit.CFrame = cf * CFrame.new(0, (hi.Y - lo.Y) / 2, 0)
 	else
-		local size, centre = placeItemModel(model, it.id, cf)
+		local size, centre = placeItemModel(model, it.id, cf, true)
 		if not size then
 			size, centre = placeWearModel(model, d, cf)
 		end
