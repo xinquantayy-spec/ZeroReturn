@@ -158,7 +158,7 @@ function BotLoot.pick(bot, src)
 			if d and not planned[g] and not SKIP[d.kind] and d.kind ~= "weapon" and d.kind ~= "pistol" and not inSecure(src, g) and not (d.grid and next(src.grids[g] or {}) ~= nil) then
 				local ok = true
 				if d.kind == "ammo" or d.kind == "mag" then
-					ok = myCal ~= nil and d.caliber == myCal
+					ok = myCal ~= nil and (d.caliber == myCal or (d.kind == "mag" and d.family ~= nil and d.family == defs[bot.items[myG].id].family))
 				end
 				local v = BotLoot.worth(src, g)
 				if ok and v >= BotLoot.MIN_VALUE then

@@ -39,6 +39,7 @@ return {
 	{ key = "ZR_GunsRev", id = 94114734867311 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 136885242607396) Crake C-357, Crake C-9 and Bustard B-12 (economy-1a eleventh slice, 2026-11-08)
 	{ key = "ZR_Guns21", id = 138690334269254 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 125081825640710) Wren W-21, Jay J-21, Tern T-215 and their magazines (economy-1a tenth slice, 2026-11-08)
 	{ key = "ZR_GunsTT", id = 98975135525819 }, -- (2026-11-09 art-4b: with UVs for its texture sheets; was 138032227885924) Pipit P-33 and Grackle G-41 and their magazines (economy-1a ninth slice, 2026-11-08)
+	{ key = "ZR_GunsVPO", id = 89975142902996 }, -- (2026-11-09, with UVs for its two texture sheets ZR_GT_VPO_T1-2) Tern T-209 rifle, thread protector, rear sight and hunting stock; SR-96 and TS-5 suppressors; the KS-7's 10-round magazine (economy-1a fourteenth slice, 2026-11-09)
 	-- Relay 7 lobby bunker kit (ZR_MK_<Prop>__<material> pieces like the mall kit; see KitMeta.luau, Maps/Relay7.luau)
 	{ key = "ZR_BunkerKitA", id = 126010320295919 }, -- shell and services: blast door, door frames, pipes and valves, cable trays, beams, ducts, lamps, boxes, safety kit, sandbags, rubble (build_bunker_kit_a.py)
 	{ key = "ZR_BunkerKitB", id = 100322751912819 }, -- rooms and stations: bunks, lockers, mirror sink, map table, boards, trader counters, gun racks, armour stands, hideout modules, range booth and targets (build_bunker_kit_b.py)

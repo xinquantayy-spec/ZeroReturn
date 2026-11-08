@@ -462,11 +462,10 @@ local function actionsFor(ref, g)
 				req({ op = "unload", g = g })
 			end)
 		end
-		local cal = d.caliber
 		local seen = {}
 		for ag, a in view.items do
 			local ad = defs[a.id]
-			if ad.kind == "ammo" and ad.caliber == cal and not seen[a.id] and locate(view, ag) == "grid" then
+			if ad.kind == "ammo" and Items.takesRound(d, ad) and not seen[a.id] and locate(view, ag) == "grid" then
 				seen[a.id] = true
 				add("LOAD " .. ad.short .. " (" .. a.n .. ")", function()
 					req({ op = "load", g = g, ammo = ag })

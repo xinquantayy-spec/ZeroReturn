@@ -8,6 +8,19 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The Tern T-209 and EFT's two-calibre magazines (economy-1a's fourteenth slice; 2026-11-09, 01:50 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_vpo.py built the seven parts in Blender; the review render looked at (the KS-7's furniture at the KS-7's places, the thread protector at the muzzle, the 10-round magazine in the well); icons and side sprites rendered; ZR_GunsVPO exported (7 parts, 5,222 triangles), baked on two texture sheets and uploaded; icon sheet 6 and sprite sheet 0 uploaded again. GunMeta 178 parts, 200 sprites, 47 presets; ItemIcons 540 items; GunTex 332 pieces on 48 sheets. |
+| A new T-209 | Given with its trader build: the KS-7's dust cover, wooden handguard and grip, the T-209 stock, thread protector and rear sight, and an empty 10-round magazine; recoil -21 % (the stock), range 300 m. |
+| Loading | A KS-7 10-round magazine took 10 rounds of 9.6x39 FMJ; a KS-7 30-round magazine took 30 of 7.6x39 FMJ. |
+| Firing | Three shots from the T-209 with 9.6x39: three accepted by the server, 7 rounds left on both sides. |
+| Foreign rounds | The 30-round 7.6x39 magazine went into the T-209 (it fits by type); the client showed 0 rounds and fired nothing; a shot sent to the server by hand with that magazine in was refused and the magazine kept its 30 rounds. |
+| Reload | With a 9.6x39 magazine in the rig, R swapped the 7.6x39 one out for it (spare count 1, then 0) and two more shots were accepted. A 9.6x39 magazine in the backpack was not counted (quick reload takes from the rig and pockets). |
+| Tests | 17 suites, 1,235 checks, all passed (RecoilTests 47). |
+| Not checked | Buying the T-209 through Skier's and Jaeger's screens; the LOAD menu by eye (it now lists both calibres for a KS-7 magazine); a scav carrying a T-209; a KS-7 holding a 9.6x39 magazine (the same server check). |
+
 ## The Smelter's code-word note and stores keycard (art-1a follow-up; 2026-11-09, 00:46 SGT)
 
 | Test | Result |
