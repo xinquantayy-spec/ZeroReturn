@@ -17,12 +17,12 @@ so no map streams in while you are here. Plan coordinates: x east 0..140, z sout
 |---|---|---|
 | Bunk room | 0-40, 0-36 | Six double bunks (12 beds; you spawn at yours), 12 lockers with callsign cards (stash), the mirror |
 | Ops room | 40-92, 0-36 | Map table with four map sheets (deploy screen, votes), split-flap departure board, roster whiteboard (squad), cork task board (tasks), insurance window |
-| Traders' hall | 92-140, 0-36 | VOS, HALE and TILDA at their counters (NPCs), the Fence by the back door, 12 mail pigeonholes |
+| Traders' hall | 92-140, 0-36 | VOS, HALE and TILDA at their counters on the north wall, DEKKER's counter across from them (NPCs), the Fence by the back door, 12 mail pigeonholes |
 | Corridor | 0-140, 36-44 | Blast doors into ops, the hall and the hideout; signs over every door |
 | Hideout wing | 0-52, 44-76 | Generator, workbench, medstation, water collector, storage racks; spare bays painted out |
-| Gunsmith | 52-92, 44-76 | Bench with your gun in the vise (modding), two gun racks |
+| Gunsmith | 52-92, 44-76 | Bench with your gun in the vise (modding), two gun racks, KOVAC's counter on the south side |
 | Firing range | 0-92, 76-104 + tunnel | Four booths, paper at 5 m, steel at 10 and 25 m, 50 m down the tunnel on lane 4 |
-| Motor pool | 92-140, 44-104 | The van (deploy), ramp up to a roller door, scav hatch with its cooldown sign |
+| Motor pool | 92-140, 44-104 | The van (deploy), ramp up to a roller door, scav hatch with its cooldown sign, ROOK's counter east of the vehicle opening and BRAM's west of it |
 
 ## How it is built
 
@@ -46,7 +46,7 @@ so no map streams in while you are here. Plan coordinates: x east 0..140, z sout
   4 rows of 24: the shared raid, PMC entry, who is inside, scav entry; or matching and the vote), roster (everyone on
   the server, squad colour, bunker / queued / in raid), the four map sheets (votes, the live raid), callsign cards, the
   van's dashboard, and the van leaving (fx `van`). Also the trader NPCs: block-body rigs in their own clothes and kit
-  (looks `vos`, `hale`, `tilda`, `fence` in `Equipment.LOOKS`) who turn to the nearest customer and now and then do
+  (looks `vos`, `hale`, `tilda`, `dekker`, `kovac`, `rook`, `bram`, `fence` in `Equipment.LOOKS`; each stands behind his counter in `Relay7.TRADERS`) who turn to the nearest customer and now and then do
   something with their hands.
 - `src/server/Services/Range.luau`: range shots. A shot counts only from inside a booth, aimed downrange, at the gun's
   fire rate; the ray only meets the targets and the range itself, so nobody can be hurt. Steel falls and stands up again,

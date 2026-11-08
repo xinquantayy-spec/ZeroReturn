@@ -184,7 +184,7 @@ local LOOKS: { [string]: any } = {
 	priest = { jacket = "1E1A18", pants = "1A1715", skin = "B3A08F", glove = "141210", boot = "161412",
 		overlays = { P("ZR_OV_Hood", "UpperTorso", "1E1A18", "Fabric", { region = "hood" }), P("ZR_OV_Armband", "LeftUpperArm", "6A1E1A", "Fabric") } },
 	-- Relay 7 traders (lobby NPCs), each in their trade's clothes: VOS the quartermaster (olive, red armband), HALE
-	-- the field medic (pale coat, blue gloves, red-cross armband), TILDA the outfitter (dark, fleece collar), the Fence
+	-- the field medic (pale coat, blue gloves, red armband), TILDA the outfitter (dark, fleece collar), the Fence
 	-- (hooded, shabby)
 	vos = { jacket = "4E5338", pants = "393A31", skin = "B8957A", glove = "2A2B26", boot = "3E3528",
 		overlays = join({ P("ZR_OV_Armband", "LeftUpperArm", "8A3A2E", "Fabric") }, KNEE("33352E")) },
@@ -194,6 +194,16 @@ local LOOKS: { [string]: any } = {
 		overlays = { P("ZR_OV_FleeceCollar", "UpperTorso", "9A8F7A", "Fabric") } },
 	fence = { jacket = "57503F", pants = "3A372F", skin = "BF9C80", glove = "3E352B", boot = "3A3128",
 		overlays = { P("ZR_OV_Hood", "UpperTorso", "4F4838", "Fabric", { region = "hood" }) } },
+	-- DEKKER the liaison (a khaki field uniform, a pale blue armband: the outside's man), KOVAC the gunsmith (grey work
+	-- clothes, knee pads), ROOK the fixer (a dark leather jacket, dark jeans), BRAM the gamekeeper (a brown field coat
+	-- with a sheepskin collar)
+	dekker = { jacket = "8C8063", pants = "6E6750", skin = "B8957A", glove = "3A352C", boot = "4A3F30",
+		overlays = join({ P("ZR_OV_Armband", "LeftUpperArm", "5E8FBF", "Fabric") }, KNEE("5C5544")) },
+	kovac = { jacket = "4B5257", pants = "434A4F", skin = "C4A386", glove = "2B2723", boot = "2E2A26", overlays = KNEE("2C2E2F") },
+	rook = { jacket = "2E2520", pants = "2B2F38", skin = "C9A58A", glove = "1E1A17", boot = "1F1C1A",
+		overlays = { P("ZR_OV_PaddedJacket", "UpperTorso", "33281F", "Leather", { shell = "jacket" }) } },
+	bram = { jacket = "6A5A3C", pants = "3F3A2E", skin = "B8957A", glove = "3A3226", boot = "3B3024",
+		overlays = { P("ZR_OV_PaddedJacket", "UpperTorso", "6A5A3C", "Fabric", { shell = "jacket" }), P("ZR_OV_FleeceCollar", "UpperTorso", "B5A888", "Fabric") } },
 }
 Equipment.LOOKS = LOOKS
 Equipment.LOOK_ALIAS = { boss = "foreman", follower = "bodyguard", watch = "guard" }

@@ -488,11 +488,17 @@ local function opsRoom(g, R)
 	wk(g, "ZR_WK_Litter", 85.5, 31.0, 75)
 end
 
-local function tradersHall(g, R)
+-- the seven trade counters (Relay7.TRADERS), each with its desk lamp and a name board on the wall behind the trader
+local function counters(g, R)
+	local board = hex("23261F")
 	for _, t in R.TRADERS do
-		put(g, "Counter", (t.x0 + t.x1) / 2, 0, 10.5, "S")
-		propLamp(g, at((t.x0 + t.x1) / 2, 0, 10.5, "S"), V(-5.0, 4.6, 0.7), hex("FFC890"), 13, 0.9) -- the desk lamp
+		local _, cf = put(g, "Counter", t.x, 0, t.z, t.face)
+		propLamp(g, cf, V(-5.0, 4.6, 0.7), hex("FFC890"), 13, 0.9) -- the desk lamp
+		stencil(g, t.label .. " · " .. t.title, t.board[1], 9.4, t.board[2], t.face, 9, 1.3, STENCIL, board) -- faces the room, as the counter does
 	end
+end
+
+local function tradersHall(g, R)
 	-- VOS, the quartermaster: a gun rack, a wall of parts, ammunition crates
 	wall(g, "GunRack", 101, 1.2, 0.6, "S")
 	wall(g, "Pegboard", 92.6, 2.2, 4.8, "E", { scale = V(0.8, 1, 1) })
@@ -507,12 +513,9 @@ local function tradersHall(g, R)
 	put(g, "ArmorStand", 126.7, 0, 2.6, 172)
 	put(g, "RigStand", 129.3, 0, 2.6, 188)
 	wall(g, "StorageRack", 134.6, 0, 0.6, "S")
-	-- the boards over the counters
-	local board = hex("23261F")
-	for _, t in R.TRADERS do
-		local def = ({ vos = "VOS · QUARTERMASTER", hale = "HALE · FIELD MEDIC", tilda = "TILDA · OUTFITTER" })[t.id]
-		stencil(g, def, (t.x0 + t.x1) / 2, 9.4, 0.6, "S", 9, 1.3, STENCIL, board)
-	end
+	-- DEKKER, the liaison, across the hall: a rack of western rifles on the wall behind him, a crate of rounds
+	wall(g, "GunRack", 114, 1.2, 35.4, "N")
+	put(g, "AmmoCrate", 109.8, 0, 33.4, 182)
 	-- the Fence's junk stall by the back door (the motor pool side)
 	local _, fcf = wall(g, "FenceStall", 123.4, 0, 35.4, "N")
 	propLamp(g, fcf, V(-1.3, 2.6, 0.3), hex("FFB070"), 9, 0.7)
@@ -547,10 +550,6 @@ local function tradersHall(g, R)
 		end
 	end
 	stencil(g, "MAIL", 139.4, 8.0, 22.5, "W", 2.6, 0.8)
-	-- a table to wait at
-	put(g, "Table", 113, 0, 24, 92)
-	put(g, "Chair", 110.6, 0, 24.6, 88)
-	put(g, "Chair", 115.4, 0, 23.0, 262)
 	wall(g, "WallClock", 92.6, 8.6, 28.5, "E")
 	wall(g, "Extinguisher", 126.4, 0.6, 35.4, "N")
 	wall(g, "PipeRun", 139.4, 9.6, 9.0, "W")
@@ -562,8 +561,8 @@ local function tradersHall(g, R)
 	fluoro(g, 116, 17, 12, "S", { WARM, 36, 1.3, true })
 	fluoro(g, 107, 27, 12, "S", nil, true)
 	fluoro(g, 126, 30, 12, "S")
-	wk(g, "ZR_WK_Litter", 108.0, 33.5, 20)
-	wk(g, "ZR_WK_Cardboard", 113.0, 30.4, 70)
+	wk(g, "ZR_WK_Litter", 103.0, 22.5, 20)
+	wk(g, "ZR_WK_Cardboard", 118.6, 31.0, 70)
 end
 
 local function corridor(g, R)
@@ -706,10 +705,10 @@ local function gunsmith(g, R)
 	Dress.racks = { r1, r2 }
 	wall(g, "ToolChest", 76.2, 0, 44.6, "S")
 	put(g, "WorkLight", 77.5, 0, 52.5, toward(77.5, 52.5, 68, 47))
-	-- a cleaning table, crates of ammunition, a parts rack
-	put(g, "Table", 68, 0, 62.5, 178)
-	put(g, "Chair", 66.4, 0, 64.8, 10)
-	put(g, "Chair", 70.6, 0, 60.2, 195)
+	-- a cleaning table, crates of ammunition; KOVAC's counter on the south side, his parts rack behind him
+	put(g, "Table", 68, 0, 57.5, 178)
+	put(g, "Chair", 66.4, 0, 59.8, 10)
+	put(g, "Chair", 70.6, 0, 55.2, 195)
 	put(g, "AmmoCrate", 56.6, 0, 73.0, 2)
 	put(g, "AmmoCrate", 56.4, 0, 70.4, 356)
 	put(g, "AmmoCrate", 56.5, 1.59, 71.7, 8)
@@ -888,14 +887,18 @@ local function motorPool(g, R)
 	put(g, "TyreStack", 99.2, 0, 47.6, 28)
 	put(g, "JerryCans", 108.0, 0, 60.6, 70)
 	put(g, "JerryCans", 124.4, 0, 86.0, 200)
-	put(g, "Drum", 137.6, 0, 47.4, 0)
-	put(g, "Drum", 135.3, 0, 47.2, 0)
-	put(g, "Drum", 137.4, 0, 49.7, 0)
+	-- ROOK, the fixer, east of the vehicle opening: his stock on a rack and in drums behind the counter
+	wall(g, "StorageRack", 139.4, 0, 53, "W")
+	put(g, "Drum", 137.7, 0, 46.2, 0)
+	put(g, "Drum", 135.4, 0, 46.0, 0)
 	do -- one drum on its side
-		local cf = at(134.2, 1.0, 51.2, 64) * CFrame.Angles(0, 0, math.rad(90))
+		local cf = at(137.4, 1.0, 60.8, 4) * CFrame.Angles(0, 0, math.rad(90))
 		count += 1
 		place(g, "Drum", cf * CFrame.new(0, -1.0, 0))
 	end
+	-- BRAM, the gamekeeper, west of it: hunting rifles on the wall behind him, a crate of rounds
+	wall(g, "GunRack", 92.6, 1.2, 56, "E")
+	put(g, "AmmoCrate", 95.2, 0, 63.6, 4)
 	-- work lights on the van
 	for _, w in { { 109.0, 83.0 }, { 104.5, 63.0 } } do
 		local m = put(g, "WorkLight", w[1], 0, w[2], toward(w[1], w[2], 118, 72))
@@ -954,6 +957,7 @@ function Dress.build(f, plan, R)
 	bunkRoom(group(root, "BunkRoom"), R)
 	opsRoom(group(root, "Ops"), R)
 	tradersHall(group(root, "Traders"), R)
+	counters(group(root, "Counters"), R)
 	corridor(group(root, "Corridor"), R)
 	hideout(group(root, "Hideout"), R)
 	gunsmith(group(root, "Gunsmith"), R)

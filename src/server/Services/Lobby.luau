@@ -217,12 +217,17 @@ end
 Lobby.update = update
 
 -- ── the traders at work (lobby L7) ──────────────────────────────────────────────────────────────────────
--- Block-body NPCs in their own clothes and kit behind the counters (the Fence by the back door). They turn to the
--- nearest customer and now and then do something with their hands; the trade screens open from the counters.
+-- Block-body NPCs in their own clothes and kit behind the counters (Relay7.TRADERS places them; the Fence by the
+-- back door). They turn to the nearest customer and now and then do something with their hands; the trade screens
+-- open from the counters.
 local TRADERS = {
-	{ id = "vos", x = 101, z = 6.4, face = 180, act = "check", gear = { head = "CAP_FIELD", rig = "RIG_CHEST", ears = "HEADSET_COMM" } },
-	{ id = "hale", x = 116, z = 6.4, face = 180, act = "heal", gear = { head = "BEANIE", rig = "RIG_BELT" } },
-	{ id = "tilda", x = 131, z = 6.4, face = 180, act = "check", gear = { armor = "ARMOR_C4", ears = "HEADSET_GS1" } },
+	{ id = "vos", act = "check", gear = { head = "CAP_FIELD", rig = "RIG_CHEST", ears = "HEADSET_COMM" } },
+	{ id = "hale", act = "heal", gear = { head = "BEANIE", rig = "RIG_BELT" } },
+	{ id = "tilda", act = "check", gear = { armor = "ARMOR_C4", ears = "HEADSET_GS1" } },
+	{ id = "dekker", act = "check", gear = { armor = "ARMOR_C2", eyes = "GLASSES_BG1" } },
+	{ id = "kovac", act = "check", gear = { eyes = "GLASSES_RANGE", rig = "RIG_BELT" } },
+	{ id = "rook", act = "check", gear = { eyes = "GLASSES_SUN" } },
+	{ id = "bram", act = "check", gear = { head = "CAP_FIELD", back = "CANVAS_BAG" } },
 	{ id = "fence", x = 127.4, z = 32.4, face = 250, act = "check", gear = { face = "GAITER", back = "BAG_SLING" } },
 }
 local traders = {}
@@ -242,7 +247,13 @@ function Lobby.spawnTraders()
 	folder = Instance.new("Folder")
 	folder.Name = "ZR_Traders"
 	folder.Parent = workspace
+	local spots = {}
+	for _, c in R7.TRADERS or {} do
+		local _, _, _, _, x, z, face = R7.counter(c)
+		spots[c.id] = { x = x, z = z, face = face }
+	end
 	for _, t in TRADERS do
+		local s = spots[t.id] or t
 		local rig = ctx.Chars.buildRig(t.id)
 		rig.Name = "Trader_" .. t.id
 		rig.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
@@ -251,7 +262,7 @@ function Lobby.spawnTraders()
 		hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 		local root = rig.HumanoidRootPart
 		root.Anchored = true
-		local home = CFrame.new(R7.P(t.x, RigSpec.hrp.center.Y, t.z)) * CFrame.Angles(0, yawOf(t.face), 0)
+		local home = CFrame.new(R7.P(s.x, RigSpec.hrp.center.Y, s.z)) * CFrame.Angles(0, yawOf(s.face), 0)
 		rig:PivotTo(home)
 		rig.Parent = folder
 		local holder = { items = {}, slots = {} }
@@ -261,7 +272,7 @@ function Lobby.spawnTraders()
 			holder.slots[slot] = g
 		end
 		pcall(ctx.Appearance.apply, rig, { look = t.id, holder = holder })
-		table.insert(traders, { rig = rig, root = root, home = home, yaw = yawOf(t.face), face = yawOf(t.face), act = t.act, nextAct = os.clock() + 6 + math.random() * 10 })
+		table.insert(traders, { rig = rig, root = root, home = home, yaw = yawOf(s.face), face = yawOf(s.face), act = t.act, nextAct = os.clock() + 6 + math.random() * 10 })
 	end
 end
 local function stepTraders()

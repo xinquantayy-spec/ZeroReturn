@@ -2,9 +2,9 @@
 -- Relay 7: the safehouse bunker (the physical lobby, owner approved 2026-10-29). A cold-war relay station dug under
 -- the zone and taken over by the contractors. Seven rooms off one corridor, every Tarkov screen a station:
 --   bunk room (spawn bunks, stash lockers, mirror) · ops room (map table, departure board, roster, task board,
---   insurance window) · traders' hall (VOS, HALE, TILDA counters, the Fence at the back door, mail pigeonholes) ·
---   hideout wing (module bays) · gunsmith bench · firing range (booths, plates at 10/25/50 m) · motor pool (the van,
---   the scav hatch).
+--   insurance window) · traders' hall (VOS, HALE, TILDA and DEKKER counters, the Fence at the back door, mail
+--   pigeonholes) · hideout wing (module bays) · gunsmith's room (the bench, KOVAC's counter) · firing range (booths,
+--   plates at 10/25/50 m) · motor pool (the van, the scav hatch, ROOK's and BRAM's counters).
 -- Design: docs/maps/RELAY7_LOBBY.md. Plan coordinates are studs: x east 0..140, z south 0..104, floor at y 0; the
 -- plan's centre (70, 52) sits on Config.SAFEHOUSE_ORIGIN, far from every map so no map streams in while you are here.
 -- This module owns the layout and builds the shell (painted plaster walls with an olive lower band, plain concrete
@@ -57,11 +57,32 @@ Relay7.WALLS = {
 -- stations (plan coordinates; the kit dressing places its props on the same spots)
 Relay7.BUNKS = { 7, 11.5, 16, 20.5, 25, 29.5 } -- bunk units along the west wall (x 1.5..8.5), 3 deep each
 Relay7.LOCKER_X0, Relay7.LOCKER_W = 1.4, 1.95 -- the locker row on the bunk room's north wall (12 lockers)
+-- the trade counters (12 x 3, the customer's side toward `face`, the trader 4.1 behind the middle): VOS, HALE and
+-- TILDA along the traders' hall's north wall, DEKKER across the hall from them, KOVAC in the gunsmith's room, ROOK and
+-- BRAM either side of the motor pool's vehicle opening; `board` is where the name board hangs (x, z on the wall
+-- behind). The Fence keeps his stall by the hall's back door.
 Relay7.TRADERS = {
-	{ id = "vos", label = "VOS", x0 = 95, x1 = 107 },
-	{ id = "hale", label = "HALE", x0 = 110, x1 = 122 },
-	{ id = "tilda", label = "TILDA", x0 = 125, x1 = 137 },
+	{ id = "vos", label = "VOS", title = "QUARTERMASTER", x = 101, z = 10.5, face = "S", board = { 101, 0.6 } },
+	{ id = "hale", label = "HALE", title = "FIELD MEDIC", x = 116, z = 10.5, face = "S", board = { 116, 0.6 } },
+	{ id = "tilda", label = "TILDA", title = "OUTFITTER", x = 131, z = 10.5, face = "S", board = { 131, 0.6 } },
+	{ id = "dekker", label = "DEKKER", title = "LIAISON", x = 114, z = 25.5, face = "N", board = { 114, 35.4 } },
+	{ id = "kovac", label = "KOVAC", title = "GUNSMITH", x = 68, z = 68, face = "N", board = { 68, 75.4 } },
+	{ id = "rook", label = "ROOK", title = "FIXER", x = 132, z = 53, face = "W", board = { 139.4, 53 } },
+	{ id = "bram", label = "BRAM", title = "GAMEKEEPER", x = 98.5, z = 56, face = "E", board = { 92.6, 56 } },
 }
+local FACING = { N = { 0, -1, 0 }, S = { 0, 1, 180 }, E = { 1, 0, 90 }, W = { -1, 0, 270 } }
+-- a counter's footprint (x0, z0, x1, z1), where its trader stands (x, z) and which way he faces (degrees clockwise
+-- from north: toward the customer)
+function Relay7.counter(t)
+	local d = FACING[t.face]
+	local x0, z0, x1, z1
+	if d[1] == 0 then
+		x0, z0, x1, z1 = t.x - 6, t.z - 1.5, t.x + 6, t.z + 1.5
+	else
+		x0, z0, x1, z1 = t.x - 1.5, t.z - 6, t.x + 1.5, t.z + 6
+	end
+	return x0, z0, x1, z1, t.x - d[1] * 4.1, t.z - d[2] * 4.1, d[3]
+end
 Relay7.HIDEOUT = {
 	{ id = "generator", label = "Generator", x0 = 3, z0 = 45, x1 = 15, z1 = 50, face = "S" },
 	{ id = "workbench", label = "Workbench", x0 = 35.5, z0 = 45, x1 = 44.5, z1 = 49, face = "S" },
@@ -357,7 +378,12 @@ function Relay7.grime(host)
 	add("FloorDust", 23, 0, 70.2, UPV, 26, 3.5, { alpha = 0.55, off = 0.11, tu = 6, tv = 3.5 })
 	-- 4. where people stand: at the counters, round the map table, down the bunk aisle, along the corridor
 	for _, t in Relay7.TRADERS do
-		add("FloorDust", (t.x0 + t.x1) / 2, 0, 14, UPV, t.x1 - t.x0, 3.5, { alpha = 0.55, off = 0.11, tu = 6, tv = 3.5 })
+		local d = FACING[t.face]
+		local w, h = 12, 3.5
+		if d[1] ~= 0 then
+			w, h = h, w
+		end
+		add("FloorDust", t.x + d[1] * 3.5, 0, t.z + d[2] * 3.5, UPV, w, h, { alpha = 0.55, off = 0.11, tu = 6, tv = 3.5 })
 	end
 	add("FloorDust", 123.4, 0, 29.4, UPV, 4.5, 3, { alpha = 0.5, off = 0.11, tu = 4, tv = 3 })
 	add("FloorDust", 68, 0, 10.8, UPV, 24, 2.6, { alpha = 0.58, off = 0.11, tu = 6, tv = 2.6 })
@@ -448,9 +474,11 @@ function Relay7.build(root, origin)
 	out.stations.tasks = station(st, "TaskBoard", 90.6, 3, 24, 91.4, 7.2, 32, "Read tasks", "Task board", "tasks", 8, "W")
 	out.stations.insurance = station(st, "InsuranceWindow", 44, 2, 33.5, 54, 7, 35.4, "Insure kit", "Insurance window", "insurance", 8, "N")
 
-	-- traders' hall: three counters, the Fence by the south wall, the mail pigeonholes
+	-- the trade counters (three on the hall's north wall, DEKKER across from them, KOVAC, ROOK and BRAM in their
+	-- rooms), the Fence by the hall's south wall, the mail pigeonholes
 	for _, t in Relay7.TRADERS do
-		out.stations["trader_" .. t.id] = station(st, "Counter_" .. t.id, t.x0, 0, 9, t.x1, 4, 12, "Trade", t.label, "trader:" .. t.id, 9, "S")
+		local x0, z0, x1, z1 = Relay7.counter(t)
+		out.stations["trader_" .. t.id] = station(st, "Counter_" .. t.id, x0, 0, z0, x1, 4, z1, "Trade", t.label, "trader:" .. t.id, 9, t.face)
 	end
 	out.stations.trader_fence = station(st, "FenceStall", 121.2, 0, 31, 125.6, 3.5, 35.4, "Trade", "The Fence", "trader:fence", 8, "N")
 	out.stations.mail = station(st, "Pigeonholes", 138.2, 1.5, 19.5, 139.4, 7.2, 25.5, "Collect mail", "Pigeonholes", "mail", 8, "W")

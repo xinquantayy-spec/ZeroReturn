@@ -8,7 +8,18 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## Skies, rain and malfunctions (audit art.2, art.12, gameplay.12; 2026-11-08, 11:20 SGT)
+## Relay 7: counters for all eight traders (2026-11-08, 11:00 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests 421/421 (new: every trader of the trader screen has a counter prompt and an NPC), the other 10 suites unchanged and passing: 832 checks. |
+| DEKKER, traders' hall | A counter across the hall from VOS, HALE and TILDA, facing them; DEKKER behind it with a gun rack on the wall behind him, the board DEKKER · LIAISON, the prompt [F] TRADE · DEKKER at the counter (screenshot). The Fence's stall and the blast door's leaves are clear of it. |
+| KOVAC, gunsmith's room | On the south side, his parts rack behind him, board KOVAC · GUNSMITH, prompt [F] TRADE · KOVAC; the path from the corridor door to the range door stays open (screenshot). |
+| ROOK and BRAM, motor pool | Either side of the vehicle opening: ROOK on the east wall (a stock rack, drums), BRAM on the west wall (hunting rifles on a rack), boards ROOK · FIXER and BRAM · GAMEKEEPER, their prompts (screenshots). |
+| VOS, HALE, TILDA | Unchanged (screenshot). |
+| Not checked | Opening each new trader's screen from its counter (the prompt routes to the same trader screen as before, by id), phone and gamepad prompts. |
+
+## Skies, rain and malfunctions (audit art.2, art.12, gameplay.12; 2026-11-08, about 10:35 SGT)
 
 | Test | Result |
 |---|---|
@@ -34,7 +45,7 @@ b79ee504). Everything below ran in that session, on main as each branch was merg
 | Marksmen | Two of three perches manned this raid: the depot roof (y 45) and the derrick (y 164), standing on THE DEPOT and THE DERRICK. Bug found: the derrick marksman spawned 6 studs above his platform and was put to sleep in mid-air; fixed (the perch drops 3 studs; units sleep only on the ground). |
 | Player scav window | Border raid 2.2 min in: scav entry opens in 14.8 min (17 min in) and closes 6 min before the end. |
 | Recoil, R-17, 30 rounds full auto | The camera climbs to 1.17° and sits at 0.49° at the end of the burst; 1.5 s later it is back to -0.19° (below the aim, as Tarkov's convergence leaves it when the shooter does not pull down). Before: 13.6° of permanent climb over 30 rounds. The gun's own climb (bullets and sights) was not measured here. |
-| Not checked | The Relay 7 counters for the four new traders (not built), plate icons (not made), gamepad and touch plate menus, sky textures (decals not yet resolved), M11 malfunction glow, rain (art.12), the lighting style (art.1). |
+| Not checked | The Relay 7 counters for the four new traders (built and checked at 11:00, above), plate icons (not made), gamepad and touch plate menus, sky textures (decals not yet resolved), M11 malfunction glow, rain (art.12), the lighting style (art.1). |
 
 ## M3: the Broker, scav groups and a lighter mesh library (audit ai.3, ai.8, tech.13; 2026-11-08)
 

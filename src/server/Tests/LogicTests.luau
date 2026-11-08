@@ -2021,6 +2021,24 @@ function T.run(ctx)
 			end
 		end
 		check("lobby: every station has its prompt", #missing == 0)
+		-- every trader of the trader screen has a counter (the Fence his stall) and stands behind it
+		local TDl = require(game:GetService("ReplicatedStorage").ZR.TraderData)
+		local counterFor, npcs = {}, workspace:FindFirstChild("ZR_Traders")
+		for _, d in sh.model:GetDescendants() do
+			if d:IsA("ProximityPrompt") then
+				local id = string.match(d:GetAttribute("Screen") or "", "^trader:(.+)$")
+				if id then
+					counterFor[id] = true
+				end
+			end
+		end
+		local noCounter = {}
+		for _, id in TDl.list do
+			if not counterFor[id] or not (npcs and npcs:FindFirstChild("Trader_" .. id)) then
+				table.insert(noCounter, id)
+			end
+		end
+		check("lobby: all eight traders at a counter" .. (#noCounter > 0 and " (missing " .. table.concat(noCounter, ", ") .. ")" or ""), #noCounter == 0)
 		check("lobby: twelve beds, lockers and spawns", #sh.spawns == 12 and #sh.lockers == 12)
 		-- owner, 2026-11-01: the bunker is kept, not dirty all over, and nothing flickers
 		local worn, slabs, spotsN, shrunk = 0, 0, 0, 0
