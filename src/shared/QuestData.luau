@@ -114,7 +114,7 @@ Q.list = {
 		desc = "The Harbor Watch think the quay is theirs. Show them otherwise.",
 		obj = { kill("watch", 3) }, reward = { money = 30000, xp = 2000, rep = 0.07 } },
 	{ id = "V6", trader = "vos", tl = 1, name = "Slag Run", level = 3, after = "V1",
-		desc = "Someone keeps a lookout on the slag stack in the smelter's north yard. Go and look, then get out of there alive.",
+		desc = "Someone keeps a lookout on the slag stack in the smelter's east yard. Go and look, then get out of there alive.",
 		obj = { visit("STACK", "smelter"), extract(1, nil, nil, "smelter") }, reward = { money = 20000, xp = 1700, rep = 0.04 } },
 	-- after EFT's "Debut" (Prapor: eliminate 5 Scavs on Woods, Ground Zero, Interchange or Customs; +3,000 XP, +0.10 standing;
 	-- tarkovforge.com/task-guide/debut), on Border Yard
@@ -239,7 +239,7 @@ Q.list = {
 		obj = { extract(3, nil, nil, "meridian") }, reward = { money = 35000, xp = 5500, rep = 0.35 } },
 	-- LL3: three at once
 	{ id = "H14", trader = "hale", tl = 3, name = "Reagents", level = 18,
-		desc = "The smelter's lab kept reagents in a case in the casting shed. If it still holds, it is worth more than you.",
+		desc = "The smelter's lab kept reagents in a case at the aid post in the south hall. If it still holds, it is worth more than you.",
 		obj = { find("QI_REAGENT", "SM_CASTING", "smelter"), handin("QI_REAGENT", 1) }, reward = { money = 90000, xp = 32100, rep = 1.25 } },
 	{ id = "H15", trader = "hale", tl = 3, name = "Surgeon's Debt", level = 20,
 		desc = "A surgical kit, a trauma case and two rolls of surgical tools, all found out there. I have patients waiting.",
@@ -343,7 +343,7 @@ Q.list = {
 		obj = { find("QI_REGISTER", "BY_ARMYHUT", "border"), handin("QI_REGISTER", 1) }, reward = { money = 45000, xp = 8700, rep = 0.45 } },
 	-- after EFT's signal tasks (Mechanic's "Signal" series): beacons at two places
 	{ id = "D7", trader = "dekker", tl = 2, name = "Relay Watch", level = 13,
-		desc = "Plant a signal beacon at the relay tower on Quay 7 and one on the furnace catwalk in the Smelter. KOVAC sells them.",
+		desc = "Plant a signal beacon at the relay tower on Quay 7 and one on the catwalks over the Smelter's main hall. KOVAC sells them.",
 		obj = { plant("BEACON", "RELAY", "quay7"), plant("BEACON", "SM_CATWALK", "smelter") }, reward = { money = 50000, xp = 11600, rep = 0.45 } },
 	-- LL3: three at once
 	{ id = "D8", trader = "dekker", tl = 3, name = "Night Optics", level = 19,
@@ -624,7 +624,7 @@ Q.ZONE_NAMES = {
 	MM_KASSA = "the KASSA hall", MM_FOOD_COURT = "the food court", MM_MEDIQ = "the MEDIQ store room", MM_SECURITY = "the security room",
 	MM_UNIT14 = "UNIT 14", MM_BOLT_OFFICE = "the BOLTWORKS offices", MM_RESCUE_POINT = "the RESCUE POINT store",
 	MM_NESTA_TOWER = "the NESTA sign tower", MM_BOLT_TOWER = "the BOLTWORKS sign tower", MM_CARPARK = "the underground car park",
-	SM_CATWALK = "the furnace catwalk", SM_MANAGER = "the manager's office", SM_CASTING = "the casting shed",
+	SM_CATWALK = "the catwalks over the hall", SM_MANAGER = "the manager's office", SM_CASTING = "the aid post",
 	SM_PUMPHOUSE = "the pump house", SM_SIDING = "the hopper wagons on the siding",
 	Q7_DORM203 = "dorm room 203", Q7_COLDSTORE = "the cold store", Q7_BOAT = "the pier 3 boat", Q7_CRANE = "the crane yard",
 }
@@ -654,11 +654,12 @@ Q.NEW_ZONES = {
 	MM_NESTA_TOWER = { map = "meridian", r = 6, where = "the plinth of the NESTA TOWER sign pylon (112, -1137)", what = "mark" },
 	MM_BOLT_TOWER = { map = "meridian", r = 6, where = "the plinth of the BOLTWORKS TOWER sign pylon (-394, 695)", what = "mark" },
 	MM_CARPARK = { map = "meridian", r = 300, h = 8, where = "the L0 car parks A to D (centre of the car park level, y about 8)", what = "kill area" },
-	SM_CATWALK = { map = "smelter", r = 5, where = "the furnace hall catwalk by the overwatch post (0, DY, -54)", what = "plant" },
-	SM_MANAGER = { map = "smelter", r = 4, where = "the desk in the manager's office (door SM_MGR, KEY_SMELT_OFFICE)", what = "quest item" },
-	SM_CASTING = { map = "smelter", r = 4, where = "a bench in the casting shed (door SM_SHED, about -15, 0, 34)", what = "quest item" },
-	SM_PUMPHOUSE = { map = "smelter", r = 5, where = "inside the pump house (door SM_PUMP, about 76, 0, 50)", what = "plant" },
-	SM_SIDING = { map = "smelter", r = 6, where = "beside the hopper wagons on the rail siding (111, 0, -2)", what = "plant" },
+	-- the Smelter's places on the EFT Factory layout (art-1a, 2026-11-08; reference metres x east, z south, Maps/SmelterParts/Play.luau)
+	SM_CATWALK = { map = "smelter", r = 5, where = "the catwalks over the main hall (-6, -13.8 m, third-floor level)", what = "plant" },
+	SM_MANAGER = { map = "smelter", r = 4, where = "the desk in the manager's office, office block third floor (door SM_MGR, KEY_SMELT_OFFICE)", what = "quest item" },
+	SM_CASTING = { map = "smelter", r = 4, where = "the table in the aid post's tent in the south hall (30.5, 23.5 m)", what = "quest item" },
+	SM_PUMPHOUSE = { map = "smelter", r = 5, where = "inside the pump house, ground floor (12.6, -34.4 m)", what = "plant" },
+	SM_SIDING = { map = "smelter", r = 6, where = "beside the hopper wagons on the rail siding through the hall (-23.4, -14 m)", what = "plant" },
 	Q7_DORM203 = { map = "quay7", r = 4, where = "inside crew dormitory room 203 (door dorm203, KEY_DORM_203)", what = "quest item" },
 	Q7_COLDSTORE = { map = "quay7", r = 4, where = "inside the cold store by the COLD STORE spawn (60, 184)", what = "quest item" },
 	Q7_BOAT = { map = "quay7", r = 5, where = "aboard the pier 3 boat (236, 0, 150)", what = "plant" },

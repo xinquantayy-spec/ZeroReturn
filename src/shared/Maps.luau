@@ -30,12 +30,13 @@ Maps.defs = {
 		raidTime = 1500,
 		desc = "Container stacks, a pump annex, the freight depot and a crew dormitory on a cold harbour. Long sight lines; the Foreman holds the depot in some raids.",
 	},
+	-- EFT's Factory rebuilt at real scale (decision art-1a; docs/maps/SMELTER_FACTORY_BUILD.md): our names and buildings
 	smelter = {
 		id = "smelter",
 		name = "SMELTER",
-		kind = "FACTORY",
-		raidTime = 1200, -- Tarkov's Factory: 20 minutes (audit gameplay.15)
-		desc = "Blast furnaces, catwalks, a casting shed, offices and service tunnels under the yard. Short raids, close fights.",
+		kind = "SMELTING WORKS",
+		raidTime = 1200, -- Tarkov's Factory: 20 minutes by day (25 at night: docs/maps/reference/FACTORY_REFERENCE.md; one length here)
+		desc = "A smelting works under one roof at full scale: the furnace hall, the crucible pit, the workshops and catwalks of the main hall, a three-storey office block, a cellar of tunnels and two small yards. Short raids, close fights; the Stoker walks the halls in some raids.",
 	},
 	meridian = {
 		id = "meridian",
