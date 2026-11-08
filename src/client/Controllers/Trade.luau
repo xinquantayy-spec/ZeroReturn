@@ -678,9 +678,96 @@ local function tradeTab(f, x, y, w, h, d, tid)
 	insp.Name = "Inspect"
 end
 
+-- an objective's line (the character tab's, so both screens say the same)
+local function objText(o)
+	if ctx.Character and ctx.Character.objectiveText then
+		return ctx.Character.objectiveText(o)
+	end
+	local what = QD.describe(o)
+	if o.kind == "handin" then
+		what = what .. ": " .. Items.defs[o.item].name
+	end
+	return what
+end
+
+-- the reward line: money, XP, standing (and what it costs with another trader), karma, items and the offers it opens
+local function rewardText(r, taskId)
+	local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
+	if r.rep then
+		table.insert(rew, string.format("+%.2f standing", r.rep))
+	end
+	for otid, dv in r.reps or {} do
+		table.insert(rew, string.format("%+.2f with %s", dv, TD.defs[otid] and TD.defs[otid].name or otid))
+	end
+	if r.karma then
+		table.insert(rew, string.format("+%.2f karma", r.karma))
+	end
+	for _, e in r.items or {} do
+		table.insert(rew, Items.defs[e[1]].name .. ((e[2] or 1) > 1 and (" x" .. e[2]) or ""))
+	end
+	-- EFT: "Unlocks purchase of X at Trader LLn" (TraderData's task-locked offers)
+	for _, u in (taskId and TD.unlocksOf and TD.unlocksOf(taskId)) or {} do
+		local od = Items.defs[u.offer.id]
+		local oname = (u.offer.preset and WP.PRESET_NAMES[u.offer.preset]) or (od and od.name) or u.offer.id
+		table.insert(rew, string.format("unlocks %s at %s LL%d", oname, TD.defs[u.trader].name, u.offer.ll))
+	end
+	return "  REWARD  " .. table.concat(rew, "  ·  ")
+end
+
+-- the operational tasks this trader gives (EFT's dailies and weeklies; Fence's scav task): timer, objectives, reward,
+-- ACCEPT or TURN IN, and REPLACE for money and standing (economy-6a)
+local function opsBlock(right, d, tid)
+	local list = {}
+	for _, inst in (d.quests and d.quests.ops) or {} do
+		if inst.trader == tid and inst.s ~= "failed" then
+			table.insert(list, inst)
+		end
+	end
+	if #list == 0 then
+		return
+	end
+	section(right, "OPERATIONAL TASKS")
+	local now = d.serverTime or os.time()
+	for _, inst in list do
+		local statusText = ({ available = "AVAILABLE", active = "ACTIVE", claimed = "COMPLETED" })[inst.s] or string.upper(inst.s)
+		local color = ({ available = K.C.ochre, active = K.C.green, claimed = K.C.dim })[inst.s] or K.C.text
+		local left = ctx.Character and ctx.Character.timeLeft and ctx.Character.timeLeft(inst.ends, now) or ""
+		text(right, string.format("%s   ·   %s   ·   %s LEFT", inst.name, statusText, left), color, 13, true)
+		local complete = true
+		for i, o in inst.obj do
+			local p = (inst.p and inst.p[i]) or 0
+			complete = complete and p >= o.n
+			text(right, string.format("  •  %s   %s", objText(o), (inst.s == "available") and ("x" .. o.n) or have(p, o.n)), K.C.text, 11)
+		end
+		text(right, rewardText(inst.reward or {}, nil), K.C.green, 11)
+		if inst.s == "available" then
+			local _, b = row(right, "", "", "ACCEPT", true, function()
+				req("quest", { op = "accept", id = inst.id })
+			end)
+			b.Name = "Accept_" .. inst.id
+		elseif inst.s == "active" then
+			local _, b = row(right, "", complete and "READY" or "IN PROGRESS", "TURN IN", complete, function()
+				req("quest", { op = "turnin", id = inst.id })
+			end, complete and K.C.green or K.C.dim)
+			b.Name = "TurnIn_" .. inst.id
+		end
+		if inst.s == "available" or inst.s == "active" then
+			local cost = inst.cost or 0
+			local what = tid == "fence" and "karma" or "standing"
+			local _, rb = row(right, "", string.format("REPLACE: %s %s, -%.2f %s", Util.commas(cost), Config.CURRENCY, inst.costRep or 0, what), "REPLACE",
+				(d.money or 0) >= cost, function()
+					req("quest", { op = "replace", id = inst.id })
+				end, (d.money or 0) >= cost and K.C.dim or K.C.red)
+			rb.Name = "Replace_" .. inst.id
+		end
+	end
+	section(right, "TASKS")
+end
+
 local function tasksTab(f, x, y, w, h, d, tid)
 	local econ = d.econ or {}
 	local right = scroller(f, x, y, w, h, "Tasks_" .. tid)
+	opsBlock(right, d, tid)
 	local mine = {}
 	for _, q in QD.list do
 		if q.trader == tid then
@@ -720,6 +807,11 @@ local function tasksTab(f, x, y, w, h, d, tid)
 			if q.after then
 				table.insert(why, "after " .. QD.byId[q.after].name)
 			end
+			-- EFT 1.1.0: side tasks open in groups at the giver's loyalty levels (economy-6a; the server checks it too)
+			local st = econ.traders and econ.traders[tid]
+			if (q.tl or 1) > ((st and st.ll) or 1) then
+				table.insert(why, "loyalty level " .. q.tl .. " with " .. (TD.defs[tid] and TD.defs[tid].name or tid))
+			end
 			-- EFT 1.1.0's collector rules (audit economy.7, the server checks them in Quests.status): more finished tasks,
 			-- a Fence standing, a loyalty level with every trader
 			for _, id in q.needs or {} do
@@ -744,24 +836,9 @@ local function tasksTab(f, x, y, w, h, d, tid)
 					p = o.n
 				end
 				complete = complete and p >= o.n
-				local what = QD.describe(o)
-				if o.kind == "handin" then
-					what = what .. ": " .. Items.defs[o.item].name
-				end
-				text(right, string.format("  •  %s   %s", what, (qs.s == "available") and ("x" .. o.n) or have(p, o.n)), K.C.text, 11)
+				text(right, string.format("  •  %s   %s", objText(o), (qs.s == "available") and ("x" .. o.n) or have(p, o.n)), K.C.text, 11)
 			end
-			local r = q.reward or {}
-			local rew = { Util.commas(r.money or 0) .. " " .. Config.CURRENCY, (r.xp or 0) .. " XP" }
-			if r.rep then
-				table.insert(rew, string.format("+%.2f standing", r.rep))
-			end
-			if r.karma then
-				table.insert(rew, string.format("+%.1f karma", r.karma))
-			end
-			for _, e in r.items or {} do
-				table.insert(rew, Items.defs[e[1]].name .. ((e[2] or 1) > 1 and (" x" .. e[2]) or ""))
-			end
-			text(right, "  REWARD  " .. table.concat(rew, "  ·  "), K.C.green, 11)
+			text(right, rewardText(q.reward or {}, q.id), K.C.green, 11)
 			if qs.s == "available" then
 				local _, b = row(right, "", "", "ACCEPT", true, function()
 					req("quest", { op = "accept", id = q.id })
