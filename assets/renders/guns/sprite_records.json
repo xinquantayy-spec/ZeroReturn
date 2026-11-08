@@ -286,6 +286,27 @@
   "oy": 28.54,
   "w": 36
  },
+ "J21_MAG20@long": {
+  "file": "J21_MAG20@long",
+  "h": 52,
+  "ox": 10.97,
+  "oy": 4.64,
+  "w": 20
+ },
+ "J21_MAG30@long": {
+  "file": "J21_MAG30@long",
+  "h": 70,
+  "ox": 12.67,
+  "oy": 4.64,
+  "w": 22
+ },
+ "J21_SMG@long": {
+  "file": "J21_SMG@long",
+  "h": 62,
+  "ox": 121.68,
+  "oy": 16.08,
+  "w": 199
+ },
  "KS74_MAG45@long": {
   "file": "KS74_MAG45@long",
   "h": 107,
@@ -1112,6 +1133,20 @@
   "oy": 16.02,
   "w": 422
  },
+ "T215_BOLT@long": {
+  "file": "T215_BOLT@long",
+  "h": 61,
+  "ox": 291.34,
+  "oy": 10.98,
+  "w": 427
+ },
+ "T215_MAG@long": {
+  "file": "T215_MAG@long",
+  "h": 27,
+  "ox": 15.38,
+  "oy": 4.75,
+  "w": 31
+ },
  "TT_MAG@pistol": {
   "file": "TT_MAG@pistol",
   "h": 50,
@@ -1230,5 +1265,19 @@
   "ox": 136.46,
   "oy": 12.91,
   "w": 139
+ },
+ "W21_MAG@pistol": {
+  "file": "W21_MAG@pistol",
+  "h": 60,
+  "ox": 10.96,
+  "oy": 5.36,
+  "w": 22
+ },
+ "W21_PISTOL@pistol": {
+  "file": "W21_PISTOL@pistol",
+  "h": 72,
+  "ox": 91.6,
+  "oy": 14.1,
+  "w": 105
  }
 }

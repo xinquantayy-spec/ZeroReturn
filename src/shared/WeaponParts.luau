@@ -103,6 +103,9 @@ W.SLOTS = {
 	-- Swift PW-46 (economy-1a, seventh slice): its full-length top rail; the PD-57's ring sight is part of it
 	MP7_SMG = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	UMP_SMG = { scope = { fit = "pica", cats = RAIL_SIGHT } }, -- the HS-45's top rail (economy-1a, eighth slice)
+	-- the J-21's top rail and the T-215's (economy-1a, tenth slice; EFT's VPO-215 takes a separate scope mount)
+	J21_SMG = { scope = { fit = "pica", cats = RAIL_SIGHT } },
+	T215_BOLT = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	-- Makar PM (economy-1a, third slice): EFT's PM has a slide, a magazine and grip panels; ours are on the frame
 	PM_PISTOL = { slide = { fit = "pm_slide", req = true } },
 	-- mounts

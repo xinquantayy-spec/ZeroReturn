@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The 9x21 and 9.6x39 guns: W-21, J-21 and T-215 (decision economy-1a, tenth slice; 2026-11-08, about 21:55 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_21.py added a new batch, ZR_Guns21 (7 parts, 4,612 triangles), uploaded as 125081825640710; the review renders were redone once (the J-21's grip and guard sat behind the receiver, its folded stock floated over the rail; the W-21's back strap floated). build_items_q.py drew the ten rounds. The sprites needed a second run for their last 5 (183; image 85090467694525). Item icons sheet 5 was full, so the 17 new pictures went on a new sheet 6 (image 81847625454004). |
+| In a raid (Quay 7 at night, Studio) | The T-215 loaded its 4-round magazine of FMJ and fired 2 (4 to 2, the bolt cycling). The J-21 fired 8 from a 30-round magazine of PS (30 to 22; its magazine had gone into the backpack, so it was put in by hand). The W-21 in the holster loaded 18 P from the pockets and fired 3 (18 to 15). The night made the first-person picture too dark to judge the models. |
+| Tests | 16 suites, 1,192 checks, all passed: the load check allows 9.6x39 its four loads, RecoilTests check the three guns' recoil, LogicTests count 24 mastering groups, HideoutTests 78 crafts. |
+| Not checked | The guns in daylight, aiming with a sight on the J-21's or T-215's rail, AI with the new guns, the two new crafts run in the hideout, a phone. |
+
 ## The first raid (decision ui-5a) and the hideout crafts merge (2026-11-08, about 21:20 SGT)
 
 | Test | Result |

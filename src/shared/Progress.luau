@@ -185,8 +185,12 @@ P.MASTERING = {
 	-- the ninth slice (thresholds not found: the PM's and the SMG-9's; ours)
 	TT = { name = "P-33", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "TT" } },
 	PPSH = { name = "G-41", class = "SMG", level2 = 200, level3 = 250, weapons = { "PPSH" } },
+	-- the tenth slice (thresholds ours, as the ninth's)
+	W21 = { name = "W-21", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "W21" } },
+	J21 = { name = "J-21", class = "SMG", level2 = 200, level3 = 250, weapons = { "J21" } },
+	T215 = { name = "T-215", class = "SNIPER RIFLE", level2 = 200, level3 = 250, weapons = { "T215" } },
 }
-P.MASTERY_ORDER = { "R17", "KST", "KS74", "VAL", "SKS", "SPARROW", "MP7", "P90", "UMP", "PPSH", "HARROW", "SVD", "M1A", "VSS", "TUNDRA", "M700", "P9", "PM", "M1911", "FN57", "TT" }
+P.MASTERY_ORDER = { "R17", "KST", "KS74", "VAL", "SKS", "SPARROW", "MP7", "P90", "UMP", "PPSH", "J21", "HARROW", "SVD", "M1A", "VSS", "TUNDRA", "M700", "T215", "P9", "PM", "M1911", "FN57", "TT", "W21" }
 -- what a level gives (Tarkov): 2 another reload animation (magazine-fed guns here), 3 reloading while aiming down sights
 P.MASTERY_PERKS = { [2] = "ANOTHER RELOAD ANIMATION", [3] = "RELOAD WHILE AIMING DOWN SIGHTS" }
 -- [weapon id] = group id (a group may hold several weapons later, as Tarkov's do)

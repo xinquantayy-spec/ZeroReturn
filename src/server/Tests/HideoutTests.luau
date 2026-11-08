@@ -304,7 +304,7 @@ function T.run(ctx)
 		end
 		check(string.format("EFT's current crafts with a product here: %d (medstation %d, workbench %d, lavatory %d, nutrition %d, water %d, intel %d), no ids clash",
 			#HD.recipes, perModule.medstation or 0, perModule.workbench or 0, perModule.lavatory or 0, perModule.nutrition or 0, perModule.water or 0, perModule.intel or 0),
-			#HD.recipes >= 76 and #dupe == 0)
+			#HD.recipes >= 78 and #dupe == 0)
 		check("every craft's module, level, product, inputs and tools are real items and levels" .. listed(badItem), #badItem == 0)
 		check("every craft takes positive counts and time, lists each input once and names EFT's product" .. listed(badNum), #badNum == 0)
 		check("no craft only turns an item into more of itself" .. listed(selfLoop), #selfLoop == 0)

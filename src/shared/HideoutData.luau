@@ -338,7 +338,8 @@ end
 -- refill of a used item: the same item goes in and a fresh one comes out) }
 --
 -- Decision economy-1a's crafts (2026-11-08): every craft of EFT's six crafting modules (212 on tarkovforge.com's pages
--- for the current patch) whose product and inputs have one of ours; 76 here, the rest listed after the crafts with why.
+-- for the current patch) whose product and inputs have one of ours; 78 here, the rest listed after the crafts with why
+-- (the tenth catalogue slice brought in .366 TKM AP-M and 9x21 P gzh, 2026-11-08).
 -- Sources: which crafts, levels, counts, inputs and times from tarkovforge.com/hideout/<module> (read 2026-11-08; it
 -- shows minutes, so a time is its minutes x 60 unless SPT's copy of the same craft gives the seconds); which ingredients
 -- are tools ("tool, returned") from xgamingserver.com's item pages (snapshot 2026-11-04) or, for a craft that has not
@@ -403,6 +404,8 @@ R("NADE_STUN", "workbench", 1, 4680, "GREN_STUN", 5, { { "FUZE", 5 }, { "GUNPOWD
 R("AMMO_PAB9", "workbench", 2, 7350, "A939_PAB", 100, { { "GUNPOWDER", 3 } }, T("LIGHTER"), "9x39mm PAB-9 gs x100") -- gunpowder "Eagle" x3; SurvL lighter (EFT 0.16.9 made 150, after the task Test Drive - Part 1)
 R("WB_MOTOR", "workbench", 2, 4800, "MOTOR", 1, { { "WIRES", 2 }, { "SIGNAL_COIL", 1 }, { "CAPACITOR", 3 } }, nil, "Electric motor") -- wires x2, magnet, electronic components, capacitors x2
 R("AMMO_76FMJ", "workbench", 2, 5900, "A76N_FMJ", 60, { { "GUNPOWDER", 2 } }, nil, "7.62x51mm BCP FMJ x60") -- gunpowder "Kite" x2 (EFT 0.16.9 made 120)
+R("AMMO_366APM", "workbench", 1, 8460, "A96_AP", 60, { { "GUNPOWDER", 2 }, { "A76_PS", 100 } }, T("PLIERS"), ".366 TKM AP-M x60") -- gunpowder "Hawk" x2, 7.62x39 PS gzh x100; pliers (tarkovforge.com: 2 h 21 min)
+R("AMMO_921P", "workbench", 1, 5400, "A921_P", 150, { { "GUNPOWDER", 1 } }, nil, "9x21mm P gzh x150") -- gunpowder "Kite" (tarkovforge.com: 1 h 30 min)
 R("AMMO_L191", "workbench", 2, 3400, "A57_TR", 150, { { "GUNPOWDER", 2 } }, TOOL, "5.7x28mm L191 x150") -- gunpowder "Kite" and "Hawk"; multitool
 R("WB_GUNPOWDER", "workbench", 2, 5870, "GUNPOWDER", 2, { { "GREN_RK5", 2 }, { "GREN_SMOKE", 1 } }, T("SCREWDRIVER"), "Gunpowder \"Eagle\" x2") -- M67 grenade x2, M18 smoke grenade; screwdriver
 R("WB_LITHIUM", "workbench", 2, 8640, "LI_BATTERY", 1, { { "POWER_BANK", 3 }, { "CAPACITOR", 2 } }, nil, "GreenBat lithium battery") -- rechargeable battery, Powerbank x2, electronic components x2
@@ -464,9 +467,9 @@ R("INT_FLASH", "intel", 1, 28800, "SECURE_FLASH", 3, { { "CAPACITOR", 1 }, { "PH
 R("INT_FOLDER", "intel", 3, 114000, "INTEL_FOLDER", 1, { { "SECURE_FLASH", 2 } }, nil, "Intelligence folder") -- military flash drive x2 (our secure flash drive); 31 h 40 min (xgamingserver, SPT); EFT also uses up printer paper, which has no counterpart yet
 R("INT_GPU", "intel", 3, 54000, "GPU_CARD", 1, { { "LOGIC_BOARD", 4 }, { "CPU_FAN", 2 }, { "RAM_STICK", 1 }, { "FLASH_MODULE", 1 }, { "CAPACITOR", 4 } }, nil, "Graphics card") -- PCB x2, CPU x2, CPU fan x2, RAM, VPX, electronic components x4 (EFT's tool, the Advanced Electronic Materials textbook, has no counterpart yet)
 
--- Left out of EFT's current 212 (136), and why:
+-- Left out of EFT's current 212 (134), and why:
 --  · no counterpart for the product: medstation morphine, 2A2, defibrillator, eTG-change, M.U.L.E., AHF1-M, PNB, SJ1,
---    Perfotoran; workbench .366 AP-M, 7.62x39 FMJ, 9x18 SP8 and PstM, 9x21 P gzh, 12/70 Piranha and makeshift .50 BMG
+--    Perfotoran; workbench 7.62x39 FMJ, 9x18 SP8 and PstM, 12/70 Piranha and makeshift .50 BMG
 --    slug, 5.45 PP, 5.56 MK 318, 9x19 Luger CCI, .300 Blackout AP and M62, .338 FMJ, 23x75 Zvezda, 30x165 shells, VOG-17
 --    and VOG-25 Khattabkas, magnet, SAS drive, round pliers, rechargeable battery, Bulbex cable cutter, AK-74M, PP-9 Klin,
 --    AK-50, the PM drum, broken and working LCDs, plexiglass, gas analyzer, Geiger counter, radio repeater, NIXXOR lenses,

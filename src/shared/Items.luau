@@ -87,6 +87,12 @@ add("FN57_PISTOL", { name = "Finch F-57", short = "F-57", kind = "pistol", w = 2
 -- Grackle G-41 the PPSh-41. Values are EFT's handbook prices (TT-33 4,189, PPSh-41 10,251); the weights are ours
 add("TT_PISTOL", { name = "Pipit P-33", short = "P-33", kind = "pistol", w = 2, h = 1, mass = 0.85, value = 4189, caliber = "7.6T", weapon = "TT", family = "TT", desc = "Flat steel pistol in 7.6x25. Eight fast rounds, a heavy kick, found everywhere.", color = c("#2D3032") })
 add("PPSH_SMG", { name = "Grackle G-41", short = "G-41", kind = "weapon", w = 5, h = 2, mass = 3.6, value = 10251, caliber = "7.6T", weapon = "PPSH", family = "PPSH", desc = "Wooden-stocked submachine gun in 7.6x25 with a perforated jacket and a 71-round drum. A thousand rounds a minute.", color = c("#6A4228") })
+-- economy-1a, tenth slice (2026-11-08): EFT's 9x21 guns and the .366 TKM bolt-action (our 9.6x39). The Wren W-21 copies
+-- the SR-1MP Gyurza, the Jay J-21 the SR-2M Veresk and the Tern T-215 the VPO-215 Gornostay. Values are EFT's handbook
+-- prices (19,292, 31,000 and 7,350); the weights are ours
+add("W21_PISTOL", { name = "Wren W-21", short = "W-21", kind = "pistol", w = 2, h = 1, mass = 0.95, value = 19292, caliber = "9.21", weapon = "W21", family = "W21", rarity = "uncommon", desc = "Long-slide service pistol in 9x21 with a polymer frame and an 18-round magazine. Its rounds go through soft armour.", color = c("#2B2D2E") })
+add("J21_SMG", { name = "Jay J-21", short = "J-21", kind = "weapon", w = 3, h = 2, mass = 1.65, value = 31000, caliber = "9.21", weapon = "J21", family = "J21", rarity = "rare", desc = "Compact 9x21 submachine gun with a top rail, a folding front grip and a pressed-steel stock. Light recoil, 950 rounds a minute.", color = c("#33373A") })
+add("T215_BOLT", { name = "Tern T-215", short = "T-215", kind = "weapon", w = 6, h = 1, mass = 3.4, value = 7350, caliber = "9.6", weapon = "T215", family = "T215", desc = "Sporting bolt-action rifle in 9.6x39 on an old military action, with a walnut stock, a top rail and a 4-round magazine.", color = c("#5E3A22") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -139,6 +145,12 @@ add("FN57_MAG", { name = "F-57 20-rd Magazine", short = "MAG 20", kind = "mag", 
 add("TT_MAG", { name = "P-33 8-rd Magazine", short = "MAG 8", kind = "mag", w = 1, h = 1, mass = 0.07, value = 1157, capacity = 8, caliber = "7.6T", family = "TT", desc = "Single-stack 8-round 7.6x25 magazine for the P-33.", color = c("#2E3133") })
 add("PPSH_MAG35", { name = "G-41 35-rd Magazine", short = "MAG 35", kind = "mag", w = 1, h = 2, mass = 0.23, value = 2631, capacity = 35, caliber = "7.6T", family = "PPSH", desc = "Curved 35-round 7.6x25 magazine for the G-41.", color = c("#2B2E30") })
 add("PPSH_DRUM", { name = "G-41 71-rd Drum", short = "DRUM 71", kind = "mag", w = 2, h = 2, mass = 1.8, value = 16000, capacity = 71, caliber = "7.6T", family = "PPSH", rarity = "rare", desc = "71-round 7.6x25 drum for the G-41. Heavy and slow to load.", color = c("#2D3032") })
+-- economy-1a, tenth slice: EFT's SR-1MP 18-round (1,506), SR-2M 20- and 30-round (2,900 and 3,500) and VPO-215 4-round
+-- (1,200) magazines; handbook prices, weights ours
+add("W21_MAG", { name = "W-21 18-rd Magazine", short = "MAG 18", kind = "mag", w = 1, h = 1, mass = 0.12, value = 1506, capacity = 18, caliber = "9.21", family = "W21", desc = "Double-stack 18-round 9x21 magazine for the W-21.", color = c("#2D3032") })
+add("J21_MAG20", { name = "J-21 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 2, mass = 0.12, value = 2900, capacity = 20, caliber = "9.21", family = "J21", desc = "Short 20-round 9x21 magazine for the J-21.", color = c("#2B2E30") })
+add("J21_MAG30", { name = "J-21 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.15, value = 3500, capacity = 30, caliber = "9.21", family = "J21", desc = "30-round 9x21 magazine for the J-21.", color = c("#2B2E30") })
+add("T215_MAG", { name = "T-215 4-rd Magazine", short = "MAG 4", kind = "mag", w = 1, h = 1, mass = 0.1, value = 1200, capacity = 4, caliber = "9.6", family = "T215", desc = "Detachable 4-round 9.6x39 box magazine for the T-215.", color = c("#2E3236") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -267,6 +279,19 @@ ammo("A76T_PST", "7.6x25 PST", "7.6T PST", "7.6T", 50, 70, { dmg = 50, pen = 25,
 ammo("A76T_SBT", "7.6x25 SBT", "7.6T SBT", "7.6T", 50, 130, { dmg = 36, pen = 27, armorDmg = 0.31, bleedL = 0.38, bleedH = 0.13, frag = 0.08, speed = 900, tracer = "red" }, "uncommon", "Light sabot tracer. Very fast, little punch.") -- TT M856A1
 ammo("A76T_SB", "7.6x25 SB", "7.6T SB", "7.6T", 50, 280, { dmg = 34, pen = 31, armorDmg = 0.33, bleedL = 0.29, bleedH = 0.12, frag = 0.02, speed = 900 }, "uncommon", "Light sabot penetrator. Very fast.") -- TT M855A1
 ammo("A76T_SBAP", "7.6x25 SBAP", "7.6T SBAP", "7.6T", 50, 420, { dmg = 32, pen = 37, armorDmg = 0.36, bleedL = 0.26, bleedH = 0.1, frag = 0.25, speed = 940 }, "rare", "Sabot armour piercer. Goes through class 4.") -- TT M995
+-- 9x21 (EFT's 9x21 gzh; economy-1a, tenth slice): PE, P, PS, 7U4 (our SUB), BT and 7N42 (our AP); and 9.6x39 (EFT's
+-- .366 TKM): FMJ, Geksa (our EXP), EKO (our CU) and AP-M (our AP). Figures from tarkovforge.com/ammo/<round> (read
+-- 2026-11-08); values EFT's handbook prices; bleeding as for the 6.2 with EFT's changes
+ammo("A921_PE", "9x21 PE", "9x21 PE", "9.21", 50, 70, { dmg = 80, pen = 15, armorDmg = 0.63, bleedL = 0.27, bleedH = 0.16, frag = 0.35, speed = 415, recoil = -0.05, acc = 0.03 }, nil, "Expanding hollow point. Hits hard, stops at armour.") -- PE gzh
+ammo("A921_P", "9x21 P", "9x21 P", "9.21", 50, 140, { dmg = 65, pen = 18, armorDmg = 0.44, bleedL = 0.27, bleedH = 0.16, frag = 0.3, speed = 413, recoil = -0.03, acc = 0.01 }, nil, "Lead core in a steel jacket.") -- P gzh
+ammo("A921_PS", "9x21 PS", "9x21 PS", "9.21", 50, 242, { dmg = 59, pen = 22, armorDmg = 0.39, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 410 }, nil, "Steel core. Gets through light vests.") -- PS gzh
+ammo("A921_SUB", "9x21 SUB", "9x21 SUB", "9.21", 50, 273, { dmg = 53, pen = 27, armorDmg = 0.44, bleedL = 0.12, bleedH = 0.06, frag = 0.25, speed = 300 }, "uncommon", "Heavy subsonic round for a suppressed gun.") -- 7U4
+ammo("A921_BT", "9x21 BT", "9x21 BT", "9.21", 50, 558, { dmg = 52, pen = 32, armorDmg = 0.42, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 410, recoil = 0.05, acc = -0.05, tracer = "red" }, "uncommon", "Armour-piercing tracer.") -- BT gzh
+ammo("A921_AP", "9x21 AP", "9x21 AP", "9.21", 50, 788, { dmg = 49, pen = 38, armorDmg = 0.47, bleedL = 0.12, bleedH = 0.06, frag = 0.1, speed = 400, recoil = 0.1, acc = -0.03 }, "rare", "Hardened steel penetrator. Goes through class 4.") -- 7N42 Zubilo
+ammo("A96_FMJ", "9.6x39 FMJ", "9.6 FMJ", "9.6", 40, 80, { dmg = 98, pen = 23, armorDmg = 0.48, bleedL = 0.32, bleedH = 0.31, frag = 0.25, speed = 580, recoil = 0.1 }, nil, "Full metal jacket. Heavy and slow.") -- .366 TKM FMJ
+ammo("A96_EXP", "9.6x39 EXP", "9.6 EXP", "9.6", 40, 75, { dmg = 110, pen = 14, armorDmg = 0.38, bleedL = 0.42, bleedH = 0.16, frag = 0.45, speed = 550 }, nil, "Expanding hunting bullet. Terrible wounds, no use against armour.") -- .366 TKM Geksa
+ammo("A96_CU", "9.6x39 CU", "9.6 CU", "9.6", 40, 110, { dmg = 73, pen = 30, armorDmg = 0.4, bleedL = 0.12, bleedH = 0.26, frag = 0.2, speed = 770, recoil = -0.15, acc = -0.1 }, nil, "Light solid-copper bullet. Fast and flat.") -- .366 TKM EKO
+ammo("A96_AP", "9.6x39 AP", "9.6 AP", "9.6", 40, 720, { dmg = 90, pen = 42, armorDmg = 0.6, bleedL = 0.12, bleedH = 0.16, frag = 0.01, speed = 602, recoil = 0.35, acc = -0.22 }, "rare", "Steel-core armour piercer. A brutal kick.") -- .366 TKM AP-M
 
 -- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
 -- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and

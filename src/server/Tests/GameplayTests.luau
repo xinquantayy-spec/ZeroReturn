@@ -225,13 +225,14 @@ function T.run(ctx)
 			end
 		end
 		-- EFT has exactly five loads in 4.6x30 (Action, Subsonic, JSP, FMJ and AP SX) and in .45 ACP (RIP, Hydra-Shok,
-		-- Lasermatch, Match FMJ, AP): economy-1a's seventh and eighth slices
-		local FIVE = { ["4.6"] = true, ["11.4"] = true }
+		-- Lasermatch, Match FMJ, AP): economy-1a's seventh and eighth slices; and four in .366 TKM (FMJ, Geksa, EKO, AP-M; our
+		-- 9.6x39, the tenth slice)
+		local FEWER = { ["4.6"] = 5, ["11.4"] = 5, ["9.6"] = 4 }
 		local six = true
 		for cal in Ballistics.CAL_REF do
-			six = six and (per[cal] or 0) >= (FIVE[cal] and 5 or 6)
+			six = six and (per[cal] or 0) >= (FEWER[cal] or 6)
 		end
-		check("six of EFT's loads for each gun calibre (4.6x30 and 11.4x23: their five), every one with its own speed", six)
+		check("six of EFT's loads for each gun calibre (4.6x30 and 11.4x23: their five; 9.6x39: its four), every one with its own speed", six)
 		local A = Items.defs
 		check("EFT's figures: M995 53 pen at 1,013 m/s (+8 % recoil, -7 % accuracy), BP 47 pen and 63 % armour damage, Magnum buckshot 8 x 50 at +115 % recoil, the green tracer",
 			A.A62_AP.ammo.pen == 53 and A.A62_AP.ammo.speed == 1013 and near(A.A62_AP.ammo.recoil, 0.08) and near(A.A62_AP.ammo.acc, -0.07)

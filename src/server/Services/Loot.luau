@@ -148,6 +148,14 @@ local POOLS = {
 		{ id = "A76T_PST", w = 2, n = { 10, 30 } }, { id = "A76T_LRN", w = 2, n = { 10, 30 } }, { id = "A76T_LRNPC", w = 1.5, n = { 10, 30 } },
 		{ id = "A76T_MATCH", w = 1.5, n = { 10, 30 } }, { id = "A76T_SBT", w = 1, n = { 10, 25 } }, { id = "A76T_SB", w = 0.6, n = { 10, 20 } },
 		{ id = "A76T_SBAP", w = 0.3, n = { 5, 15 } },
+		-- the tenth slice: the W-21, J-21 and T-215, their magazines and the 9x21 and 9.6x39 rounds
+		{ id = "W21_PISTOL", w = 1 }, { id = "J21_SMG", w = 0.5 }, { id = "T215_BOLT", w = 1.2 },
+		{ id = "W21_MAG", w = 2, a = { 0, 18 }, at = "A921_P" }, { id = "J21_MAG20", w = 1.2, a = { 0, 20 }, at = "A921_PS" },
+		{ id = "J21_MAG30", w = 0.8, a = { 0, 30 }, at = "A921_PS" }, { id = "T215_MAG", w = 1.5, a = { 0, 4 }, at = "A96_FMJ" },
+		{ id = "A921_PE", w = 3, n = { 10, 30 } }, { id = "A921_P", w = 3, n = { 10, 30 } }, { id = "A921_PS", w = 2, n = { 10, 30 } },
+		{ id = "A921_SUB", w = 1.2, n = { 10, 25 } }, { id = "A921_BT", w = 0.8, n = { 10, 20 } }, { id = "A921_AP", w = 0.3, n = { 5, 15 } },
+		{ id = "A96_FMJ", w = 3, n = { 10, 30 } }, { id = "A96_EXP", w = 2.5, n = { 10, 30 } }, { id = "A96_CU", w = 1.5, n = { 10, 25 } },
+		{ id = "A96_AP", w = 0.3, n = { 5, 12 } },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },

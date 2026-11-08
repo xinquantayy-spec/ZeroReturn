@@ -222,6 +222,33 @@ local W = {
 		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.9, viewmodel = "P9", draw = 0.45,
 		slots = { side = true },
 	},
+	-- the W-21 (economy-1a, tenth slice) in the place of EFT's SR-1MP Gyurza: ergonomics 82, recoil 442 / 325, 50 m
+	-- (tarkovforge.com); 410 m/s with PS (EFT's 9x21 PS gzh)
+	W21 = {
+		id = "W21", item = "W21_PISTOL", name = "W-21", class = "pistol", rpm = 400, range = 50, velocity = 410,
+		ergo = 82, recoilV = 4.42, recoilH = 3.25, reload = 1.7, reloadEmpty = 2.1, hipSpread = 1.9, aimSpread = 0.25,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
+		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.88, viewmodel = "P9", draw = 0.45,
+		slots = { side = true },
+	},
+	-- the J-21 (economy-1a, tenth slice) in the place of EFT's SR-2M Veresk: single shots or bursts at 950 a minute,
+	-- ergonomics 59, recoil 54 / 234, 200 m (tarkovforge.com); 400 m/s from its short barrel (ours)
+	J21 = {
+		id = "J21", item = "J21_SMG", name = "J-21", class = "smg", rpm = 950, range = 200, velocity = 400,
+		ergo = 59, recoilV = 0.54, recoilH = 2.34, reload = 2.6, reloadEmpty = 3.2, hipSpread = 2.2, aimSpread = 0.1,
+		recoilAngle = 90, recoilDisp = 18, recoilConv = 6, recoilCam = 0.4, recoilStable = 4,
+		moveSpread = 1.2, modes = { "AUTO", "SEMI" }, loudness = 0.85, viewmodel = "SPARROW", draw = 0.5,
+		slots = { rail = true },
+	},
+	-- the T-215 (economy-1a, tenth slice) in the place of EFT's VPO-215 Gornostay: bolt action, ergonomics 41, recoil
+	-- 200 / 486, 1,000 m (tarkovforge.com); 600 m/s from its 600 mm barrel (ours)
+	T215 = {
+		id = "T215", item = "T215_BOLT", name = "T-215", class = "bolt", rpm = 30, range = 1000, velocity = 600,
+		ergo = 41, recoilV = 2.0, recoilH = 4.86, reload = 2.6, reloadEmpty = 3.2, hipSpread = 4.0, aimSpread = 0.015,
+		recoilAngle = 90, recoilDisp = 8, recoilConv = 4, recoilCam = 0.5, recoilStable = 0,
+		moveSpread = 2.4, modes = { "BOLT" }, loudness = 1.2, viewmodel = "TUNDRA", draw = 0.9,
+		slots = { rail = true },
+	},
 	KNIFE = {
 		id = "KNIFE", item = "FIELD_KNIFE", name = "Knife", class = "melee", rpm = 90, range = 6, velocity = 0,
 		ergo = 90, recoilV = 0, recoilH = 0, reload = 0, reloadEmpty = 0, hipSpread = 0, aimSpread = 0, moveSpread = 0,
@@ -280,7 +307,7 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771, W21 = 0.1771, J21 = 0.1771, T215 = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}
