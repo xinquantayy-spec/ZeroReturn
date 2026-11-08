@@ -304,6 +304,22 @@ local W = {
 		moveSpread = 1.2, modes = { "AUTO", "SEMI" }, loudness = 0.85, viewmodel = "KST", draw = 0.6,
 		slots = {},
 	},
+	-- the T-209 (economy-1a, fourteenth slice) in the place of EFT's Molot VPO-209: the KS-7's action in 9.6x39 (EFT's .366
+	-- TKM), single shots, 600 a minute, 300 m (tarkovforge.com's VPO-209 page, read 2026-11-09). Recoil 154 / 386 with the
+	-- default build's wooden stock (EFT's VPO-209 stock -21 %, tarkovforge.com) = 122 / 305. Ergonomics: the KS-7's 40 (EFT's
+	-- AKM default build) plus the difference between EFT's two default builds, the VPO-209's base 30 against the AKM's 28,
+	-- its thread protector's +2 and its aluminium 10-round magazine's +4 against the 30-round magazine's -4
+	-- (tarkovforge.com) = 52. 590 m/s with FMJ (EFT's 580 m/s round and the gun's +1.8 %, SPT 3.10.1 items.json). The
+	-- recoil angle 90, the base malfunction chance and the heat are EFT's (SPT 3.10.1: the AKM's figures); dispersion,
+	-- convergence and the camera share as the KS-7's (by class, as every gun's). It takes the KS-7's magazines and fires
+	-- only 9.6x39 (Items.fires)
+	T209 = {
+		id = "T209", item = "T209_RIFLE", name = "T-209", class = "rifle", rpm = 600, range = 300, velocity = 590,
+		ergo = 52, recoilV = 1.22, recoilH = 3.05, reload = 2.5, reloadEmpty = 3.1, hipSpread = 2.9, aimSpread = 0.055,
+		recoilAngle = 90, recoilDisp = 26, recoilConv = 5, recoilCam = 0.5, recoilStable = 0,
+		moveSpread = 1.8, modes = { "SEMI" }, loudness = 1.1, viewmodel = "KST", draw = 0.8,
+		slots = { rail = true, muzzle = "9.6" },
+	},
 	KNIFE = {
 		id = "KNIFE", item = "FIELD_KNIFE", name = "Knife", class = "melee", rpm = 90, range = 6, velocity = 0,
 		ergo = 90, recoilV = 0, recoilH = 0, reload = 0, reloadEmpty = 0, hipSpread = 0, aimSpread = 0, moveSpread = 0,
@@ -362,7 +378,8 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771, W21 = 0.1771, J21 = 0.1771, T215 = 0.1771, CRK357 = 0.1771, CRK9 = 0.1771, BZ12 = 0.1771, D17 = 0.1771, AV9 = 0.1771, B19 = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771, UMP = 0.1771, M1911 = 0.1771, FN57 = 0.1771, TT = 0.1771, PPSH = 0.1771, W21 = 0.1771, J21 = 0.1771, T215 = 0.1771, CRK357 = 0.1771, CRK9 = 0.1771, BZ12 = 0.1771, D17 = 0.1771, AV9 = 0.1771, B19 = 0.1771,
+	T209 = 0.1771 } -- the VPO-209's own BaseMalfunctionChance is the AKM's 0.1771 (SPT 3.10.1 items.json)
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

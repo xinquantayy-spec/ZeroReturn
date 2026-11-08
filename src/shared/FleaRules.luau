@@ -50,6 +50,10 @@ Flea.BANNED_ITEMS = {
 	-- the AS VAL (tarkovforge.com, read 2026-11-08)
 	A939_PAB = true, A939_BP = true, VSS_RIFLE = true,
 	A96_AP = true, -- .366 TKM AP-M (economy-1a's tenth slice): no flea price on tarkovforge.com
+	-- the T-209's thread protector (economy-1a's fourteenth slice): EFT's VPO-209 thread protector is "Not on the flea
+	-- market" (tarkovforge.com, read 2026-11-09); the VPO-209 itself, its rear sight and stock, the Rotor 43 .366 suppressor
+	-- and the aluminium 10-round magazine all have flea prices there, so they are sold
+	T209_TP = true,
 	A76T_SBAP = true, -- 7.6x25 TT M995 (economy-1a's ninth slice): "Flea market: Not sold" (tarkovforge.com)
 	A46_AP = true, -- 4.6x30 AP SX (economy-1a's seventh slice): "Sold on flea market: No" (tarkovforge.com)
 	FLARE_RED = true, DOGTAG = true, RITUAL_AMULET = true, COLD_WALLET = true, -- the airdrop flare, tags, amulet, the "bitcoin"
