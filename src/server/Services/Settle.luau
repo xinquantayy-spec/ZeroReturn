@@ -1,14 +1,16 @@
 --!strict
 -- Pure profile transactions: new profile, migration (wipe on schema change), deploy reservation,
--- idempotent raid settlement (secure container survives death, found-in-raid on extraction), recovery kit.
+-- idempotent raid settlement (secure container survives death, found-in-raid on extraction), recovery kit,
+-- insurance with three insurers and their claims (gameplay-6b).
 local RS = game:GetService("ReplicatedStorage")
 local Shared = RS:WaitForChild("ZR")
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local Inv = require(script.Parent.Inv)
-local WP = require(Shared.WeaponParts)
+local Health = require(script.Parent.Health)
 local Progress = require(Shared.Progress)
+local TD = require(Shared.TraderData)
 
 local Settle = {}
 Settle.SCHEMA = 3 -- 3: M14 weapon builds (guns are part trees); older profiles are wiped like a Tarkov wipe
@@ -48,6 +50,7 @@ function Settle.newProfile(): any
 	p.finalized = {}
 	p.stats = { raids = 0, survived = 0, kia = 0, mia = 0, lost = 0, kills = 0, extractedValue = 0, pmcKills = 0, scavKills = 0, bossKills = 0, scavRaids = 0, scavSurvived = 0 }
 	p.claims = {}
+	p.insv = 2 -- insurance with three insurers (gameplay-6b): nothing old to file
 	p.scavReadyAt = 0
 	p.settings = {}
 	p.known = {}
@@ -107,6 +110,12 @@ function Settle.migrate(p: any): any
 		p.stats[k] = p.stats[k] or 0
 	end
 	p.claims = p.claims or {}
+	-- insurance returns an old save was waiting for (gameplay-6b, once: insv 2): through VOS, at the old rule's time, with
+	-- the full storage time from now (Settle.fileClaims' legacy mode)
+	if (p.insv or 1) < 2 then
+		Settle.fileClaims(p, os.time(), nil, true)
+		p.insv = 2
+	end
 	p.scavReadyAt = p.scavReadyAt or 0
 	p.settings = p.settings or {}
 	p.known = p.known or {}
@@ -196,12 +205,17 @@ function Settle.deployScav(p: any, raidId: string, now: number, kit: any): (any?
 	return kit, nil
 end
 
--- Tarkov insurance rules: weapons, gear, mags, attachments and loot can be insured; ammo, quest items, the
--- secure container (and what is inside it - it always comes home) and free recovery-kit items cannot.
+-- Tarkov's insurance rules (EFT wiki, Insurance): weapons, gear, magazines, attachments, containers and loot can be
+-- insured; "Secure containers, the Compass, Melee weapons (Except the Cultist knife), and Armbands can not be insured",
+-- nor "Consumable items (Food, Meds or Ammo)", nor keys. Quest items and free recovery-kit items cannot either, and
+-- whatever sits in the secure container always comes home anyway.
+local NOT_INSURABLE = { secure = true, quest = true, ammo = true, med = true, food = true, key = true, melee = true }
+local INSURABLE_IDS = { RITUAL_KNIFE = true } -- the cult's knife, as EFT's Cultist knife
+Settle.NOT_INSURABLE = NOT_INSURABLE
 local function insurable(p: any, g: string): boolean
 	local it = p.items[g]
 	local d = it and Items.defs[it.id]
-	if not d or it.rk or d.kind == "secure" or d.kind == "quest" or d.kind == "ammo" then
+	if not d or it.rk or (NOT_INSURABLE[d.kind] and not INSURABLE_IDS[it.id]) then
 		return false
 	end
 	local sg = p.slots.secure
@@ -209,29 +223,30 @@ local function insurable(p: any, g: string): boolean
 end
 Settle.insurable = insurable
 
-local function insureCost(it: any): number
-	return math.max(150, math.floor(Items.valueOf(it) * Config.INSURANCE_RATE))
-end
-
--- cost and item count to insure everything not yet insured in `list`
-local function quote(p: any, list: { string }, userId: number): (number, { string })
-	local cost, todo = 0, {}
+-- cost and items to insure everything in `list` that is not insured yet, with one insurer (TraderData.INSURERS: VOS at
+-- Config.INSURANCE_RATE of the value, HALE 1.33x, BRAM 2.5x; rounds are not paid for); Charisma takes 0.1 % a level off
+-- the sum (Tarkov; audit economy.6)
+local function quote(p: any, list: { string }, userId: number, isr: string): (number, { string })
+	local items, todo = {}, {}
 	for _, x in list do
 		local xi = p.items[x]
 		if xi and xi.ins ~= userId and insurable(p, x) then
-			cost += insureCost(xi)
+			table.insert(items, xi)
 			table.insert(todo, x)
 		end
 	end
-	-- Charisma: 0.1 % off a level (Tarkov; audit economy.6)
-	return math.floor(cost * (1 - Progress.bonus(p.skills, "charisma"))), todo
+	return TD.insureTotal(isr, items, Progress.bonus(p.skills, "charisma")), todo
 end
 
-local function insureList(p: any, list: { string }, userId: number): (number?, string?)
+local function insureList(p: any, list: { string }, userId: number, isr: string?): (number?, string?)
 	if p.pendingRaid then
 		return nil, "IN_RAID"
 	end
-	local cost, todo = quote(p, list, userId)
+	if isr ~= nil and not TD.INSURERS[isr] then
+		return nil, "NO_INSURER"
+	end
+	local by = TD.insurerOf(isr)
+	local cost, todo = quote(p, list, userId, by)
 	if #todo == 0 then
 		return nil, "ALREADY_INSURED"
 	end
@@ -241,13 +256,17 @@ local function insureList(p: any, list: { string }, userId: number): (number?, s
 	p.money -= cost
 	for _, x in todo do
 		p.items[x].ins = userId
+		p.items[x].isr = by
 	end
 	p.rev += 1
 	return cost, nil
 end
 
--- Insure one item (and the parts attached to it: magazine, attachments) for the next raid.
-function Settle.insure(p: any, g: string, userId: number): (number?, string?)
+-- Insure one item for the next raid with an insurer (isr: "vos", "hale" or "bram"; VOS when nil): with its magazine and
+-- every part on it, and for a container everything inside that can be insured (EFT wiki: "if you insure a container,
+-- everything inside that container will also be insured as well"; the uninsurable things in it stay uninsured and do not
+-- come back with it).
+function Settle.insure(p: any, g: string, userId: number, isr: string?): (number?, string?)
 	local it = p.items[g]
 	if not it then
 		return nil, "NO_ITEM"
@@ -255,22 +274,29 @@ function Settle.insure(p: any, g: string, userId: number): (number?, string?)
 	if not insurable(p, g) then
 		return nil, "NOT_INSURABLE"
 	end
-	-- the item with its magazine and every part on it (M14 builds)
-	local list = {}
-	WP.walk(p.items, g, function(bg)
-		table.insert(list, bg)
-	end)
-	return insureList(p, list, userId)
+	local list = { g }
+	Inv.descendants(p, g, list)
+	return insureList(p, list, userId, isr)
 end
 
--- "Insure all" on the deploy screen: everything worn and carried that can be insured.
-function Settle.insureAll(p: any, userId: number): (number?, string?)
-	return insureList(p, Inv.equippedGuids(p), userId)
+-- "Insure all" on the deploy screen: everything worn and carried that can be insured, with one insurer.
+function Settle.insureAll(p: any, userId: number, isr: string?): (number?, string?)
+	return insureList(p, Inv.equippedGuids(p), userId, isr)
 end
 
+-- the deploy screen's insurance figures: cost (VOS's price, as before), n items not insured yet, insured items, and by =
+-- { [insurer] = price } for EFT's choice of insurers
 function Settle.insureQuote(p: any, userId: number): any
 	local list = Inv.equippedGuids(p)
-	local cost, todo = quote(p, list, userId)
+	local by = {}
+	local cost, todo = 0, {}
+	for _, isr in TD.INSURER_LIST do
+		local c, t = quote(p, list, userId, isr)
+		by[isr] = c
+		if isr == "vos" then
+			cost, todo = c, t
+		end
+	end
 	local insured = 0
 	for _, g in list do
 		local it = p.items[g]
@@ -278,20 +304,117 @@ function Settle.insureQuote(p: any, userId: number): any
 			insured += 1
 		end
 	end
-	return { cost = cost, n = #todo, insured = insured }
+	return { cost = cost, n = #todo, insured = insured, by = by }
 end
 
--- Deliver ready insurance returns into the stash; returns items delivered and claims still waiting.
-function Settle.claim(p: any, now: number): (number, number)
+-- Whether insured gear worn at the end of a raid can come back (EFT wiki, Insurance): after a death it stays on the body
+-- and comes back when the raid ends unless someone extracts with it (Match.settleInsurance); "Ending a raid with the
+-- Missing in Action status will not bring back insured equipped items". Raid.finalize asks this for an MIA kit.
+function Settle.kitReturns(outcome: string): boolean
+	return outcome ~= "MIA"
+end
+
+-- ── claims (decision gameplay-6b) ─────────────────────────────────────────────────────────────────────────────────
+-- prof.claims holds insurance returns and task rewards that did not fit the stash (Quests: raid = "task:<id>"; those are
+-- not insurance and are left as they are).
+function Settle.isTaskClaim(c: any): boolean
+	return type(c.raid) == "string" and string.sub(c.raid, 1, 5) == "task:"
+end
+
+-- File new insurance returns. An entry without an insurer (Match.deliverInsured's at the raid's end, one mailed to an
+-- offline owner, an old save's) is split by each item's insurer (EFT: each insurer sends its own message), and each part
+-- gets its insurer's return time, rolled in the insurer's window (TraderData.insureWindow) from the moment the gear was
+-- lost - Match stamps readyAt with that moment, Config.INSURANCE_DELAY being 0 - and its storage time after that (exp).
+-- Rounds do not come back in magazines or guns (EFT wiki: "If you insure a magazine with ammunition inside, you will only
+-- get the magazine back"). rng: () -> [0, 1) (tests pass their own). legacy (Settle.migrate, once per old save): the
+-- return keeps the time the old 15-minute rule gave it and gets its full storage time from now, so nothing an old save
+-- was waiting for is lost by the update. Returns how many returns were filed.
+local OLD_DELAY = 900 -- the old rule's one fixed return time (Config.INSURANCE_DELAY before gameplay-6b)
+function Settle.fileClaims(p: any, now: number, rng: (() -> number)?, legacy: boolean?): number
+	local roll = rng or math.random
+	local out, filed = {}, 0
+	for _, c in p.claims or {} do
+		if c.isr or Settle.isTaskClaim(c) then
+			table.insert(out, c)
+		else
+			-- readyAt 0 (the ZR_Dev claimNow tool) or missing: lost now
+			local at = ((c.readyAt or 0) > 0) and math.min(c.readyAt, now) or now
+			if legacy then
+				at = (((c.readyAt or 0) > 0) and c.readyAt or now) - OLD_DELAY
+			end
+			local by = {}
+			for _, b in c.bundles or {} do
+				local isr = TD.insurerOf(b.it and b.it.isr)
+				by[isr] = by[isr] or {}
+				table.insert(by[isr], b)
+				local all = { b }
+				for _, sub in b.subs or {} do
+					table.insert(all, sub)
+				end
+				for _, x in all do
+					local xi = x.it
+					if xi and xi.a and xi.at then
+						xi.a, xi.at = 0, nil
+					end
+				end
+			end
+			for _, isr in TD.INSURER_LIST do
+				local list = by[isr]
+				if list then
+					local lo, hi, hold = TD.insureWindow(isr)
+					local ready = at + lo + math.floor((hi - lo) * roll())
+					local exp = ready + hold
+					if legacy then
+						ready = at + OLD_DELAY
+						exp = math.max(ready, now) + hold
+					end
+					table.insert(out, { isr = isr, at = at, readyAt = ready, exp = exp, bundles = list, raid = c.raid, id = string.format("%s%d.%d", isr, math.floor(at), #out + 1) })
+					filed += 1
+				end
+			end
+		end
+	end
+	p.claims = out
+	if filed > 0 then
+		p.rev += 1
+	end
+	return filed
+end
+
+-- Returns left in the messenger past their storage time are lost (EFT wiki: "If you do not claim them in the available
+-- collect time, the insured items will be lost"). Returns the expired entries (the caller sends the notice).
+function Settle.expireClaims(p: any, now: number): { any }
+	local keep, gone = {}, {}
+	for _, c in p.claims or {} do
+		if c.exp and c.exp <= now then
+			table.insert(gone, c)
+		else
+			table.insert(keep, c)
+		end
+	end
+	if #gone > 0 then
+		p.claims = keep
+		p.rev += 1
+	end
+	return gone
+end
+
+-- RECEIVE ALL in the messenger: ready returns into the stash - every one, only the one whose id is `only`, or those
+-- `only(c)` picks (the 10 s loop hands task rewards in by themselves) - while there is room; a return past its storage
+-- time is not handed out (Settle.expireClaims drops it). Returns the items delivered and the items still waiting (not
+-- ready yet, or no room).
+function Settle.claim(p: any, now: number, only: any): (number, number)
 	local delivered, waiting = 0, 0
 	local keep = {}
 	for _, c in p.claims or {} do
-		if (c.readyAt or 0) <= now then
+		local expired = c.exp ~= nil and c.exp <= now
+		local picked = only == nil or (type(only) == "function" and only(c)) or (type(only) == "string" and c.id == only)
+		if picked and not expired and (c.readyAt or 0) <= now then
 			local rest = {}
 			for _, b in c.bundles or {} do
-				b.it.ins = nil
+				b.it.ins, b.it.isr = nil, nil
 				for _, sub in b.subs or {} do
-					sub.it.ins = nil
+					sub.it.ins, sub.it.isr = nil, nil
 				end
 				if Inv.give(p, b, nil, { "stash" }) then
 					delivered += 1
@@ -373,7 +496,7 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 								it.fip = nil
 								it.fir = not closed or nil
 							end
-							it.ins = nil
+							it.ins, it.isr = nil, nil
 						end
 						receipt.value += Items.valueOf(b.it)
 						table.insert(receipt.retained, { id = b.it.id, n = b.it.n, a = b.it.a })
@@ -415,7 +538,7 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 					it.fir = true
 				end
 			end
-			it.ins = nil -- insurance covers one raid (and loot from other bodies is now yours)
+			it.ins, it.isr = nil, nil -- insurance covers one raid (and loot from other bodies is now yours)
 			p.items[g] = it
 		end
 		for cid, pl in raid.grids do
@@ -480,6 +603,9 @@ function Settle.finalize(p: any, raidId: string, outcome: string, raid: any?, no
 		else
 			p.stats.lost += 1
 		end
+		-- EFT: after death or MIA every part comes back at 30 % of its maximum (Health.afterDeath; gameplay-6b). Energy and
+		-- water keep what Raid.finalize left in p.health; a crashed raid (raid == nil) gets the same.
+		p.health = Health.afterDeath(p.health, now)
 	end
 	p.pendingRaid = nil
 	p.finalized[raidId] = { o = outcome, t = now }

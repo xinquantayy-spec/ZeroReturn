@@ -322,7 +322,11 @@ local function modSlot(view, wg, pid)
 	return pg, sname, pg ~= nil
 end
 
--- client mirror of Settle.insurable: no ammo, quest items, recovery-kit items or secure-container contents
+-- client mirror of Settle.insurable (EFT wiki, Insurance): no secure containers, melee weapons (but the cult's knife),
+-- consumables (meds, food, ammo), keys, quest items, recovery-kit items or secure-container contents
+local NOT_INSURABLE = { secure = true, quest = true, ammo = true, med = true, food = true, key = true, melee = true }
+local INSURABLE_IDS = { RITUAL_KNIFE = true }
+local Progress = require(Shared.Progress) -- Charisma's discount on insurance (Settle charges the same)
 local function holderOf(view, g)
 	local k, cid = locate(view, g)
 	if k == "grid" then
@@ -346,7 +350,7 @@ end
 local function insurable(view, g)
 	local it = view.items[g]
 	local d = it and defs[it.id]
-	if not d or it.rk or d.kind == "secure" or d.kind == "quest" or d.kind == "ammo" then
+	if not d or it.rk or (NOT_INSURABLE[d.kind] and not INSURABLE_IDS[it.id]) then
 		return false
 	end
 	local sg = view.slots and view.slots.secure
@@ -363,21 +367,34 @@ local function insurable(view, g)
 	return true
 end
 
-local function insureCost(view, g)
+-- what Settle.insure would charge with one insurer (gameplay-6b): the item, its magazine, every part on it and, for a
+-- container, everything inside that can be insured (Inv.descendants on the server)
+local function insureCost(view, g, isr)
 	local uid = game:GetService("Players").LocalPlayer.UserId
-	local it = view.items[g]
-	local cost = 0
-	local list = { g, it.mag }
-	for _, mg in it.mods or {} do
-		table.insert(list, mg)
+	local list, items = { g }, {}
+	local i = 1
+	while i <= #list and i <= 400 do
+		local it = view.items[list[i]]
+		if it then
+			if it.mag then
+				table.insert(list, it.mag)
+			end
+			for _, mg in it.mods or {} do
+				table.insert(list, mg)
+			end
+			for cg in (view.grids and view.grids[list[i]]) or {} do
+				table.insert(list, cg)
+			end
+		end
+		i += 1
 	end
 	for _, x in list do
-		local xi = x and view.items[x]
+		local xi = view.items[x]
 		if xi and xi.ins ~= uid and insurable(view, x) then
-			cost += math.max(150, math.floor(Items.valueOf(xi) * Config.INSURANCE_RATE))
+			table.insert(items, xi)
 		end
 	end
-	return cost
+	return TD.insureTotal(isr, items, Progress.bonus(view.econ and view.econ.skills, "charisma"))
 end
 
 local function actionsFor(ref, g)
@@ -550,11 +567,15 @@ local function actionsFor(ref, g)
 		entry.discard = drop
 	end
 	if mine and not inRaid and insurable(view, g) then
-		local cost = insureCost(view, g)
-		if cost > 0 then
-			add(string.format("INSURE  -%s %s", Util.commas(cost), Config.CURRENCY), function()
-				req({ op = "insure", g = g })
-			end, "good")
+		-- EFT's choice of insurers (gameplay-6b), each with its price: VOS returns in 2-3 h, HALE in 1-2 h, BRAM in 10-20 min
+		-- (TraderData.INSURERS); the same entries on mouse, touch and gamepad
+		for _, isr in TD.INSURER_LIST do
+			local cost = insureCost(view, g, isr)
+			if cost > 0 then
+				add(string.format("INSURE · %s (%s)  -%s %s", TD.defs[isr].name, (TD.insureSpan(isr)), Util.commas(cost), Config.CURRENCY), function()
+					req({ op = "insure", g = g, isr = isr })
+				end, "good")
+			end
 		end
 	end
 	if mine and not inRaid and view.slots.secure ~= g then

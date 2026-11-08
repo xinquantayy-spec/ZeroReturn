@@ -11,11 +11,29 @@ local Config = {
 	MATCH_TIME = 12, -- countdown after the first player queues (others can join the queue)
 	LATE_JOIN = 300, -- PMCs may still deploy into a running raid this long after it starts
 	SCAV_CUTOFF = 360, -- player scavs can join until this many seconds remain
-	SCAV_COOLDOWN = 600,
+	-- Decision gameplay-6b, "Tarkov's rules, scaled times": EFT's out-of-raid waits, each divided (or its rate multiplied)
+	-- by one constant so they fit Roblox sessions.
+	-- Scav cooldown: EFT's is about 25 minutes before karma and hideout bonuses (west-games.com scav cooldown calculator, a
+	-- planning figure, not official); ours is 15 minutes, still lengthened or shortened by karma (Progress.scavCooldown).
+	SCAV_COOLDOWN = 900,
 	MAX_PLAYERS = 12,
 	MAX_SQUAD = 5,
-	INSURANCE_RATE = 0.07, -- fee as a share of item value
-	INSURANCE_DELAY = 900, -- seconds until unlooted insured gear comes back
+	-- Insurance (EFT wiki, Insurance: Prapor returns after 24-36 h and holds 4 days, the Therapist 12-24 h and 6 days; EFT
+	-- 1.1.0 added Jaeger, faster and dearer). Each insurer's hours and price are in TraderData.INSURERS; here the shared rules.
+	INSURANCE_RATE = 0.07, -- VOS's (Prapor's) fee as a share of an item's value; HALE and BRAM multiply VOS's price
+	INSURANCE_MIN = 150, -- the least VOS charges for one item
+	INSURANCE_RETURN_DIV = 12, -- EFT's return windows divided by 12: Prapor's 24-36 h -> VOS 2-3 h
+	INSURANCE_HOLD_DIV = 4, -- EFT's storage times divided by 4: Prapor's 4 days -> VOS 24 h in the messenger
+	INSURANCE_DELAY = 0, -- added by Match.deliverInsured to a new claim's readyAt: 0, so readyAt is the moment the gear was lost and Settle.fileClaims rolls the insurer's own window from there
+	-- Health after death or MIA (EFT wiki, Health system: "HP is reset to 30 % and automatically recovers"): every part at
+	-- this share of its maximum when the player is next in the bunker.
+	DEATH_HEALTH = 0.3,
+	-- Out-of-raid recovery (EFT wiki, Health system: 456.6 HP an hour, 7.61 a minute, and 1 energy and 1 hydration a
+	-- minute; the hideout's medical station raises it): EFT's rates times OUT_REGEN_MUL. The HP is one pool spread over the
+	-- damaged parts (not per part); the medstation's multiplier (Hideout.healRate) applies to the HP.
+	OUT_REGEN_MUL = 4,
+	OUT_REGEN_HP_HOUR = 456.6, -- EFT's HP an hour (x OUT_REGEN_MUL = 1,826.4 an hour here)
+	OUT_REGEN_VITALS_MIN = 1, -- EFT's energy and hydration a minute (x OUT_REGEN_MUL = 4 a minute here)
 	BODY_TIME = 600, -- player bodies stay lootable this long (or until the raid ends)
 	AI_MAX = 18, -- live AI cap per raid
 	SCAV_START = 4, -- AI scavs at raid start (+ SCAV_PER_PLAYER per raider, up to SCAV_CAP)

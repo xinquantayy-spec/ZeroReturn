@@ -3,9 +3,11 @@
 -- fractures, pain, energy/hydration, Tarkov 0.14's armour (hit zones, plates, soft armour and helmet parts, each with
 -- its own class and durability; penetration, blunt trauma and ricochets: Plates.luau), destroyed-limb damage spill,
 -- timed medical treatment, fall damage, Tarkov's stimulants (timed buffs and side effects: Stims.luau), fracture
--- penalties and the destroyed stomach (gameplay-4b).
+-- penalties and the destroyed stomach (gameplay-4b); out of raid, Tarkov's recovery, health after death or MIA and HALE's
+-- treatment (gameplay-6b).
 -- Players and AI share the same model; clients receive a compact "vitals" snapshot.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
+local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Textures = require(Shared.Textures)
 local Inv = require(script.Parent.Inv)
@@ -32,6 +34,7 @@ Health.PART_OF = PART_OF
 local SPILL = { larm = 0.49, rarm = 0.49, lleg = 0.7, rleg = 0.7, stomach = 1.05 }
 Health.SPILL = SPILL
 local LIMB = { larm = true, rarm = true, lleg = true, rleg = true }
+local VITAL = { head = true, thorax = true } -- at 0 the body is dead
 local BLEED_L, BLEED_H = 0.55, 1.5 -- hp/s
 -- the cult's poison (Tarkov's cultist knife: a toxin that keeps hurting after the fight until an antidote stops it):
 -- 1 hp/s spread over the body by each part's share, plus faster thirst and hunger. Our numbers; no source gives them.
@@ -104,11 +107,20 @@ function Health.attach(model, opts)
 	if saved and saved.parts then
 		for k, v in saved.parts do
 			if hs.parts[k] and type(v) == "number" then
-				hs.parts[k].hp = math.clamp(v, 1, hs.parts[k].max)
+				-- a destroyed part stays destroyed until it is treated (gameplay-6b); head and thorax are never saved at 0
+				hs.parts[k].hp = math.clamp(v, VITAL[k] and 1 or 0, hs.parts[k].max)
 			end
 		end
 		hs.energy = math.clamp(saved.energy or 100, 0, 100)
 		hs.water = math.clamp(saved.water or 100, 0, 100)
+	end
+	-- the body kept recovering out of raid since the health was saved (EFT regenerates while you are away; gameplay-6b)
+	if saved and type(saved.t) == "number" then
+		local away = os.time() - saved.t
+		if away > 0 then
+			local prof = opts.player and ctx and ctx.Profiles and ctx.Profiles.get(opts.player)
+			Health.recoverFor(hs, away, (prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1)
+		end
 	end
 	hs.hum = model:FindFirstChildOfClass("Humanoid")
 	states[model] = hs
@@ -492,13 +504,112 @@ function Health.push(hs)
 	end
 end
 
--- persisted between raids (bleeds/fractures are treated on return; destroyed parts come back at 1 hp)
+-- persisted between raids (bleeds and fractures are treated on return). A destroyed part is kept at 0: it stays destroyed
+-- out of raid until HALE restores it (gameplay-6b); a living part keeps at least 1 HP. t: when (out-of-raid recovery
+-- counts from it, Health.attach)
 function Health.save(hs)
 	local parts = {}
 	for k, p in hs.parts do
-		parts[k] = math.max(1, math.floor(p.hp))
+		parts[k] = (p.hp <= 0 and not VITAL[k]) and 0 or math.max(1, math.floor(p.hp))
 	end
-	return { parts = parts, energy = math.floor(hs.energy), water = math.floor(hs.water) }
+	return { parts = parts, energy = math.floor(hs.energy), water = math.floor(hs.water), t = os.time() }
+end
+
+-- ── out of raid (decision gameplay-6b, "Tarkov's rules, scaled times") ────────────────────────────────────────────
+-- EFT wiki, Health system: out of raid the body regains 456.6 HP an hour (7.61 a minute) and 1 energy and 1 hydration a
+-- minute, and the hideout's medical station raises it. Ours is EFT's times Config.OUT_REGEN_MUL (4): 1,826.4 HP an hour
+-- as one pool spread over the damaged parts (not per part), 4 energy and 4 hydration a minute; the medstation multiplies the
+-- HP (Hideout.healRate). A destroyed part does not come back by itself: HALE restores it (TraderData.TREATMENT). After death
+-- or MIA every part is set to Config.DEATH_HEALTH (30 %) of its maximum (EFT: "HP is reset to 30 % and automatically
+-- recovers"; EFT sets 1 % after a suicide, a team kill or a disconnect, which is not copied here).
+Health.OUT_HP_SEC = Config.OUT_REGEN_HP_HOUR * Config.OUT_REGEN_MUL / 3600
+Health.OUT_VITALS_SEC = Config.OUT_REGEN_VITALS_MIN * Config.OUT_REGEN_MUL / 60
+
+-- spread `amount` HP evenly over the damaged living parts of parts = { [k] = { hp, max } }, what a full part cannot take
+-- going to the others; destroyed parts get nothing (pure). Returns the HP added.
+function Health.recover(parts, amount)
+	local left, used = amount, 0
+	for _ = 1, #Health.PARTS do
+		local need = {}
+		for _, k in Health.PARTS do
+			local p = parts[k]
+			if p and p.hp > 0 and p.hp < p.max then
+				table.insert(need, p)
+			end
+		end
+		if #need == 0 or left <= 1e-9 then
+			break
+		end
+		local share = left / #need
+		left = 0
+		for _, p in need do
+			local add = math.min(share, p.max - p.hp)
+			p.hp += add
+			used += add
+			left += share - add
+		end
+	end
+	return used
+end
+
+-- `seconds` of out-of-raid recovery on a body { parts, energy, water } (an hs or a plain table; pure). mul: the
+-- medstation's multiplier on the HP. Returns the HP added.
+function Health.recoverFor(body, seconds, mul)
+	local used = Health.recover(body.parts, seconds * Health.OUT_HP_SEC * (mul or 1))
+	local v = seconds * Health.OUT_VITALS_SEC
+	body.energy = math.min(100, (body.energy or 100) + v)
+	body.water = math.min(100, (body.water or 100) + v)
+	return used
+end
+
+-- a saved health (Health.save's shape) after `seconds` out of raid: a new table (pure; the profile's view of recovery)
+function Health.recoverSaved(saved, seconds, mul)
+	local body = { parts = {}, energy = saved and saved.energy or 100, water = saved and saved.water or 100 }
+	for _, k in Health.PARTS do
+		local v = saved and saved.parts and saved.parts[k]
+		body.parts[k] = { hp = type(v) == "number" and math.clamp(v, 0, MAX[k]) or MAX[k], max = MAX[k] }
+	end
+	Health.recoverFor(body, seconds, mul)
+	local parts = {}
+	for k, p in body.parts do
+		parts[k] = p.hp
+	end
+	return { parts = parts, energy = body.energy, water = body.water, t = (saved and saved.t or 0) + seconds }
+end
+
+-- the health a PMC comes back to after death or MIA: every part at 30 % of its maximum; energy and water keep the floor of
+-- 40 the raid's end has always given them (prev: what Raid.finalize kept). now: when (recovery counts from it)
+function Health.afterDeath(prev, now)
+	local parts = {}
+	for _, k in Health.PARTS do
+		parts[k] = MAX[k] * Config.DEATH_HEALTH
+	end
+	return {
+		parts = parts, t = now,
+		energy = math.max(40, math.floor(prev and prev.energy or 100)), water = math.max(40, math.floor(prev and prev.water or 100)),
+	}
+end
+
+-- what HALE's treatment sees (TraderData.treatQuote's state): each part as the health screen shows it (Health.vitals: HP
+-- rounded up, maximum down), its bleed (0, 1 light, 2 heavy) and fracture
+function Health.treatState(hs)
+	local st = {}
+	for k, p in hs.parts do
+		st[k] = { hp = math.ceil(math.max(0, p.hp)), max = math.floor(p.max), bleed = hs.bleedH[k] and 2 or (hs.bleedL[k] and 1 or 0), fract = hs.fract[k] == true }
+	end
+	return st
+end
+
+-- HALE's HEAL ALL: every part (destroyed ones too) to its maximum, bleeds and fractures gone
+function Health.treat(hs)
+	for _, p in hs.parts do
+		p.hp = p.max
+	end
+	table.clear(hs.bleedL)
+	table.clear(hs.bleedH)
+	table.clear(hs.fract)
+	hs.dirty = true
+	syncHumanoid(hs)
 end
 
 -- ── treatment ──────────────────────────────────────────────────────────────────
@@ -963,16 +1074,13 @@ function Health.start()
 								applyDamage(hs, "stomach", 0.2)
 							end
 						else
-							-- hideout: slow natural recovery (the medstation speeds it up)
-							local rate = 0.6 * ((prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1)
-							for _, p in hs.parts do
-								if p.hp < p.max then
-									p.hp = math.min(p.max, p.hp + rate)
-									hs.dirty = true
-								end
+							-- out of raid: EFT's recovery x4, one pool over the damaged parts, the medstation on the HP
+							-- (Health.recoverFor; gameplay-6b). Pushed when the HP or a whole point of energy or water changes.
+							local e0, w0 = math.floor(hs.energy), math.floor(hs.water)
+							local used = Health.recoverFor(hs, 1, (prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1)
+							if used > 0 or math.floor(hs.energy) ~= e0 or math.floor(hs.water) ~= w0 then
+								hs.dirty = true
 							end
-							hs.energy = math.min(100, hs.energy + 0.25)
-							hs.water = math.min(100, hs.water + 0.25)
 						end
 					end
 					if hs.bleedL and (next(hs.bleedL) or next(hs.bleedH)) then

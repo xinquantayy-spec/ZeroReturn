@@ -248,16 +248,41 @@ function Screens.deploy()
 		L(string.format("SPARE     %d magazines · %d rounds · %d medical", mags, rounds, meds), K.C.dim, 12)
 		L(string.format("AT RISK   %s %s", Util.commas(value), Config.CURRENCY), K.C.ochre, 15, true)
 		L("Everything you wear and carry is lost if you are killed or miss extraction - except your secure container.", K.C.dim, 12)
-		-- insurance
+		-- insurance (decision gameplay-6b): EFT's choice of insurers, each with its price, return window and storage time
+		-- (TraderData.INSURERS). Pick one, then INSURE; the insurer buttons are selectable for touch and gamepad.
+		local TD = require(Shared.TraderData)
 		local q = d.insureAll or { cost = 0, n = 0, insured = 0 }
+		Screens.insurer = TD.INSURERS[Screens.insurer or ""] and Screens.insurer or "vos"
+		local isr = Screens.insurer
 		L("INSURANCE", K.C.ochre, 13, true)
-		L(string.format("%d item(s) insured. Unlooted insured gear is returned %d min after the raid ends.", q.insured or 0, math.floor(Config.INSURANCE_DELAY / 60)), K.C.dim, 12)
+		L(string.format("%d item(s) insured. If you are killed, insured gear that nobody extracts with comes back from your insurer; what you wear when you go missing in action does not.", q.insured or 0), K.C.dim, 12)
 		if (q.n or 0) > 0 then
 			n += 1
-			local ib = K.button(left, string.format("INSURE %d MORE  ·  %s %s", q.n, Util.commas(q.cost), Config.CURRENCY), { LayoutOrder = n, Size = UDim2.new(1, -8, 0, 32), TextSize = 13, TextColor3 = (d.money or 0) >= q.cost and K.C.green or K.C.dim })
+			local pick = K.frame(left, { Name = "Insurers", LayoutOrder = n, BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 40) })
+			K.list(pick, Enum.FillDirection.Horizontal, 6)
+			for _, id in TD.INSURER_LIST do
+				local on = id == isr
+				local price = (q.by and q.by[id]) or q.cost
+				local b = K.button(pick, string.format("%s %s\n%s %s", TD.defs[id].name, (TD.insureSpan(id)), Util.commas(price), Config.CURRENCY), {
+					Size = UDim2.new(1 / 3, -4, 1, 0), TextSize = 12, TextWrapped = true, BackgroundColor3 = on and Color3.fromHex("3A3524") or K.C.panel2,
+					TextColor3 = on and K.C.ochre or K.C.dim,
+				})
+				b.Name = "Insurer_" .. string.upper(id)
+				b.Activated:Connect(function()
+					if Screens.insurer ~= id then
+						Screens.insurer = id
+						Screens.deploy()
+					end
+				end)
+			end
+			local span, hold = TD.insureSpan(isr)
+			L(string.format("%s returns lost gear %s after the raid and keeps it %s in the messenger; after that it is gone.", TD.defs[isr].name, span, hold), K.C.dim, 11)
+			local cost = (q.by and q.by[isr]) or q.cost
+			n += 1
+			local ib = K.button(left, string.format("INSURE %d MORE WITH %s  ·  %s %s", q.n, TD.defs[isr].name, Util.commas(cost), Config.CURRENCY), { LayoutOrder = n, Size = UDim2.new(1, -8, 0, 32), TextSize = 13, TextColor3 = (d.money or 0) >= cost and K.C.green or K.C.dim })
 			ib.Name = "Btn_INSUREALL"
 			ib.Activated:Connect(function()
-				local res = ctx.State.req("inv", { op = "insure", all = true })
+				local res = ctx.State.req("inv", { op = "insure", all = true, isr = isr })
 				if res and res.ok then
 					task.wait(0.25)
 					Screens.deploy()
@@ -266,7 +291,9 @@ function Screens.deploy()
 		end
 		local cl = d.claims
 		if cl and (cl.waiting > 0 or cl.ready > 0) then
-			local txt = cl.ready > 0 and string.format("%d RETURNED ITEM(S) WAITING FOR STASH SPACE", cl.ready) or string.format("%d ITEM(S) RETURNING IN %s", cl.waiting, Util.clock(cl.nextIn or 0))
+			local sec = math.max(0, math.floor(cl.nextIn or 0)) -- returns run for hours: H:MM:SS from an hour up
+			local eta = sec >= 3600 and string.format("%d:%02d:%02d", sec // 3600, (sec % 3600) // 60, sec % 60) or Util.clock(sec)
+			local txt = cl.ready > 0 and string.format("%d RETURNED ITEM(S) WAITING IN THE MESSENGER", cl.ready) or string.format("%d ITEM(S) RETURNING IN %s", cl.waiting, eta)
 			L("RETURNS   " .. txt, K.C.green, 12)
 		end
 	else
