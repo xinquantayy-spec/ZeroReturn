@@ -111,6 +111,7 @@ function Settle.migrate(p: any): any
 	p.settings = p.settings or {}
 	p.known = p.known or {}
 	Settle.progressFields(p)
+	Inv.migrateArmour(p) -- vests and helmets to soft armour parts plus plates, once (gameplay-2a)
 	return p
 end
 

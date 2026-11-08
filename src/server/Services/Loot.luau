@@ -366,7 +366,7 @@ function Loot.visible(c, player, g)
 				return true
 			end
 			cur = a
-		elseif k == "mag" then
+		elseif k == "mag" or k == "mod" then -- (a body's vest shows its plates, a gun its parts: gameplay-2a)
 			cur = a
 		else
 			return false

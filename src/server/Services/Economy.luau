@@ -598,7 +598,9 @@ function Economy.start()
 						local ag = s.inv.slots and s.inv.slots.armor
 						local ad = ag and s.inv.items[ag] and Items.defs[s.inv.items[ag].id]
 						if v > 2 and ad and ad.armor then
-							skillUp(player, prof, (ad.armor.class or 0) >= 4 and "heavyvests" or "lightvests", 0.08)
+							-- (EFT's armour type, every vest has one since gameplay-2a: the PC-4 copies the light 6B23-2)
+							local heavy = ad.armor.type == "heavy" or (ad.armor.type == nil and (ad.armor.class or 0) >= 4)
+							skillUp(player, prof, heavy and "heavyvests" or "lightvests", 0.08)
 						end
 						if v > 2 then
 							local kg = Inv.weight(s.inv)

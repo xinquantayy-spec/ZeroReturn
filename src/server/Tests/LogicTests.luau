@@ -369,7 +369,8 @@ function T.run(ctx)
 		check("trader repair: 40 points, a cost, the maximum drops", pts == 40 and cost and cost > 0 and newMax and newMax < 100 and newMax > 90)
 		check("trader repair: VOS does not repair armour", TDm.repairQuote("vos", { id = "ARMOR_C4", dur = 10 }) == nil and TDm.repairQuote("tilda", { id = "ARMOR_C4", dur = 10 }) ~= nil)
 		local gp = Items.gearPenalties({ slots = { armor = "a", head = "h" }, items = { a = { id = "ARMOR_C4" }, h = { id = "HELMET_C3" } } })
-		check("gear penalties add up (movement, turn, ergonomics)", gp.speed == -4 and gp.turn == -5 and gp.ergo == -8)
+		-- (the PC-4 copies the 6B23-2 empty, -1/-1/-2.5; the class 3 helmet the LShZ, 0/-1/-1; no plates in the test vest)
+		check("gear penalties add up (movement, turn, ergonomics)", gp.speed == -1 and gp.turn == -2 and gp.ergo == -3.5)
 	end
 	-- Tarkov's messenger keeps the last 40 messages, newest last
 	do
@@ -523,7 +524,9 @@ function T.run(ctx)
 		check("line of sight: a wall blocks looting and doors, the container's own furniture does not", not seenThroughWall and seenInDesk and seenClear)
 	end
 	-- the INSPECT window's per-class penetration chances use the same formula as hits (Health.luau)
-	check("penetration chance formula shared", math.abs(Items.penChance(26, 2, 1) - 0.75) < 1e-6 and Items.penChance(26, 4, 1) == 0 and Items.penChance(72, 6, 1) == 1)
+	-- (Tarkov's curve since gameplay-2a: none 15 below the class's 10x, always 15 above since EFT 0.14.6; 6.2 FMJ vs class 2: 96.7 %)
+	check("penetration chance formula shared (Tarkov's curve, gameplay-2a)", Items.penChance(25, 4, 1) == 0 and Items.penChance(56, 4, 1) == 1
+		and Items.penChance(26, 2, 1) > 0.95 and Items.penChance(26, 2, 1) < 1)
 	-- audit gameplay.2-4 and .14-15 (Tarkov's numbers): velocity factor, fragmentation, spill, grenade gravity, Factory time
 	if ctx and ctx.Combat and ctx.Combat.velocityFactor then
 		local C = ctx.Combat
