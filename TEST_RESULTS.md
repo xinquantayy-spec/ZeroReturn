@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Skies, rain and malfunctions (audit art.2, art.12, gameplay.12; 2026-11-08, 11:20 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | LogicTests 420/420 (new: the sky sets and the server's sky), every other suite unchanged and passing. |
+| Sky (art.2) | The server's ZR_Sky starts on the clear set; Border Yard at 13:00 shows our hazy blue-grey gradient (screenshot). Switching the raid to rain turned the client's sky to the overcast set within 3 s. The night set was not seen. |
+| Rain (art.12) | Rain 0.6 at 13:00 on Border Yard: streaks across the view, a dark overcast sky with a dense cloud layer (screenshot). Splashes and lens drops were not distinguishable in a still. |
+| Malfunction (gameplay.12) | R-17 at 20 % condition, A62_FMJ: 25 rounds, then 17 rounds and the gun stopped; the server reported a failure to eject (malf "eject", not yet known), condition 17.9 after 42 shots. The client's MalfGlow overlay exists; its flashes were not watched. |
+
 ## M3 batch 6 and M4 batches 1-3: first Studio session after the hang (2026-11-08, 10:15-11:15 SGT)
 
 Studio hung at about 03:20 SGT on a runtime lighting switch; the owner closed it and I reopened it (new Studio id

@@ -637,6 +637,13 @@ local function setupLighting()
 			c:Destroy()
 		end
 	end
+	-- our own hazy sky (audit art.2), clear by default; clients switch the set with the raid's weather and hour (Atmos)
+	local sky = Instance.new("Sky")
+	sky.Name = "ZR_Sky"
+	sky.CelestialBodiesShown = true
+	sky.StarCount = 3000
+	require(Shared.Sky).apply(sky, "clear")
+	sky.Parent = Lighting
 	local atm = Instance.new("Atmosphere")
 	atm.Density = 0.46
 	atm.Offset = 0.18

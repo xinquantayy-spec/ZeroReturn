@@ -17,7 +17,7 @@
       "$ignoreUnknownInstances": true,
       "$properties": {
         "LightingStyle": "Soft",
-        "PrioritizeLightingQuality": true,
+        "PrioritizeLightingQuality": false,
         "GlobalShadows": true
       }
     },

@@ -70,8 +70,17 @@ Also: at most 4 shadow-casting lights in view; indoor props cast no sun shadows.
 
 ## Light and sky
 
-Set `LightingStyle` and `PrioritizeLightingQuality` on purpose and record the choice in `docs/look` (art.1). Skies are an
-original hazy set, clear, overcast and night, switched with the weather under the cloud layer (art.2). No exit markers in
+Lighting engine settings (art.1, decided 2026-11-08, in `default.project.json`):
+- `LightingStyle = Soft`, kept. The BODYCAM grade (Atmosphere, ColorCorrection, bloom, auto-exposure) was tuned and
+  approved under Soft. `Realistic` is closer to Tarkov's hard sun shadows, but it needs a side-by-side in Edit mode on the
+  PC before it replaces the approved look; switching it at runtime hung Studio for seven hours on 2026-11-08.
+- `PrioritizeLightingQuality = false`. Low-end devices keep their view distance and lose shadow detail first. Border
+  Yard and Meridian are long-sightline maps, and Tarkov players lower shadows long before visibility.
+- Not done: the device emulator check of the shadow-casting lamps (it needs Studio's emulator panel, a click the owner
+  makes).
+
+Skies are an original hazy set, clear, overcast and night, switched with the weather under the cloud layer (art.2;
+`src/shared/Sky.luau`, built and checked 2026-11-08: clear at noon, overcast in rain). No exit markers in
 the world: exits are learned and read from landmarks (art-8b). Blood stays light: small marks on walls, floors and bodies
 (art-7a).
 

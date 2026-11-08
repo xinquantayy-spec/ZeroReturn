@@ -681,6 +681,20 @@ function T.run(ctx)
 		check("every barter ingredient can be found, bought or crafted" .. (#missing > 0 and (" (missing: " .. table.concat(missing, ", ") .. ")") or ""),
 			#missing == 0)
 	end
+	-- audit art.2: our own hazy skies; the server puts up the clear set, clients switch by weather and hour
+	do
+		local SkyM = require(Shared.Sky)
+		local okIds = true
+		for _, set in SkyM.SETS do
+			for _, v in set do
+				okIds = okIds and string.match(v, "^rbxassetid://%d+$") ~= nil
+			end
+		end
+		local live = game:GetService("Lighting"):FindFirstChild("ZR_Sky")
+		check("skies: three sets of real image ids; night from dusk to dawn, overcast under weather; the server's sky starts clear",
+			okIds and SkyM.pick("clear", 2) == "night" and SkyM.pick("clear", 12) == "clear" and SkyM.pick("rain", 12) == "overcast"
+				and SkyM.pick("fog", 21.5) == "night" and live ~= nil and live.SkyboxBk == SkyM.SETS.clear.side)
+	end
 	-- audit ai-1a: EFT's roster on the Tarkov-layout maps. Border Yard (Customs): scavs on the posts and the Bastion's guns,
 	-- marksmen on the reference's perches (the tower one always, the bridge and factory ones half the time); no Watch
 	do

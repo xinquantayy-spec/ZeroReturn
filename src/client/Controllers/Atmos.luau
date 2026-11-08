@@ -9,6 +9,7 @@ local CollectionService = game:GetService("CollectionService")
 local SoundService = game:GetService("SoundService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Env = require(Shared.Env)
+local SkySets = require(Shared.Sky)
 local Textures = require(Shared.Textures)
 
 local Atmos = { env = nil, mode = nil, rain = 0, dark = 0, cover = 0 }
@@ -668,6 +669,15 @@ local function step(dt)
 	blend(t, (mode ~= Atmos.mode) and 1 or math.min(1, dt * 0.8))
 	Atmos.mode = mode
 	Atmos.env = e
+	-- the sky set follows the weather and the hour (audit art.2): clear, overcast or night; only a change rewrites it
+	local skyName = e and SkySets.pick(e.w, t.ClockTime or 12) or "clear"
+	if skyName ~= Atmos.skyName then
+		local sky = Lighting:FindFirstChild("ZR_Sky")
+		if sky then
+			SkySets.apply(sky, skyName)
+			Atmos.skyName = skyName
+		end
+	end
 	local w = e and (Env.WEATHER[e.w] or Env.WEATHER.clear) or nil
 	local rain = e and (e.rain or 0) or 0
 	Atmos.rain = rain
