@@ -8,6 +8,13 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Plate pictures (2026-11-08, 11:30 SGT)
+
+| Test | Result |
+|---|---|
+| Icons | The 16 plates rendered in Blender (build_items_d.py), packed on a fifth sheet (ZR_ItemIcons_4) and uploaded; in the stash KITE III, BASALT V, PC-4 F, HP-5 S, BULWARK F and ALBATROSS VI show their pictures (screenshot). The sheet showed blank for about a minute after the upload, then loaded. |
+| Coverage | 297 item definitions: 8 still without a picture (AGL30_ROUND, ANTIDOTE, FLARE_GREEN, FLARE_RED, FORESTER_PACK, MASK_WELDER, RITUAL_AMULET, RITUAL_KNIFE). |
+
 ## Plates in the drag cue (2026-11-08, 11:15 SGT)
 
 | Test | Result |
