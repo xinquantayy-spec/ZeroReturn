@@ -613,6 +613,9 @@ local function dropPrompt(player, key)
 end
 
 local function dropAll(player)
+	if player == nil then
+		return -- a stand-in raid in the tests
+	end
 	for _, part in prompts[player] or {} do
 		part:Destroy()
 	end
@@ -779,6 +782,7 @@ local function tick()
 		end
 	end
 end
+Quests.tick, Quests.act = tick, act -- (the tests drive them with a stand-in raid)
 
 -- ── the end of a raid ─────────────────────────────────────────────────────────────────────────────────────────────
 -- every settled raid (Economy.afterRaid): outcome SUCCESS, KIA, MIA, SERVER_CLOSED; runThrough as Raid decided it
@@ -974,6 +978,7 @@ local function replaceOp(player, prof, inst)
 	toast(player, "TASK REPLACED")
 	return true
 end
+Quests.replaceOp = replaceOp
 
 local function questReq(player, p)
 	local prof = ctx.Profiles.get(player)

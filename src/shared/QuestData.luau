@@ -152,10 +152,11 @@ Q.list = {
 	{ id = "V13", trader = "vos", tl = 2, name = "Night Shift", level = 9,
 		desc = "The Smelter runs a night shift of scavs. Work it with them: six of them, between nine at night and five in the morning.",
 		obj = { kill("scav", 6, { map = "smelter", time = { 21, 5 } }) }, reward = { money = 35000, xp = 1700, rep = 0.5 } },
-	-- a kill in a place (EFT's InZone condition, e.g. Peacekeeper's scav hunt in the mall)
+	-- a kill in a place (EFT's InZone condition, e.g. Peacekeeper's scav hunt in the mall), all in one raid (EFT's
+	-- objectives that reset when the raid ends)
 	{ id = "V14", trader = "vos", tl = 2, name = "Bastion Census", level = 10, after = "V3",
-		desc = "The scavs in the Bastion have started charging a toll. Count eight of them out, inside the walls.",
-		obj = { kill("scav", 8, { map = "border", zone = "BY_BASTION" }) }, reward = { money = 45000, xp = 2000, rep = 0.5 } },
+		desc = "The scavs in the Bastion have started charging a toll. Count eight of them out, inside the walls, in one raid.",
+		obj = { kill("scav", 8, { map = "border", zone = "BY_BASTION", raid = true }) }, reward = { money = 45000, xp = 2000, rep = 0.5 } },
 	-- grenade kills (EFT: Prapor's grenade task)
 	{ id = "V15", trader = "vos", tl = 2, name = "Frag Season", level = 12, after = "V12",
 		desc = "I have crates of grenades nobody buys. Show the buyers what they do: four kills with grenades, anywhere.",
@@ -381,7 +382,7 @@ Q.list = {
 		obj = { plant("BEACON", "SM_PUMPHOUSE", "smelter"), extract(1, nil, nil, "smelter") }, reward = { money = 15000, xp = 800, rep = 0.15 } },
 	{ id = "K4", trader = "kovac", tl = 1, name = "Bench Work - Part 2", level = 6, after = "K2",
 		desc = "An SMG-9 that does not climb: a muzzle device on it, recoil down, still light in the hand.",
-		obj = { build("SPARROW_SMG", { dur = 60, ergo = 68, recoil = 246, cap = 30, muzzle = true }, { preset = "SPARROW_SMG", add = { { "SPARROW_SMG", "muzzle", "SPR_FH_3L" } } }) },
+		obj = { build("SPARROW_SMG", { dur = 60, ergo = 68, recoil = 248, cap = 30, muzzle = true }, { preset = "SPARROW_SMG", add = { { "SPARROW_SMG", "muzzle", "SPR_FH_3L" } } }) },
 		reward = { money = 15000, xp = 900, rep = 0.15 } },
 	-- after EFT 1.1.0's "Informed Means Armed" (WI-FI cameras on Woods and Interchange; allthings.how)
 	{ id = "K5", trader = "kovac", tl = 1, name = "Eyes On", level = 8, after = "K3",
@@ -745,13 +746,14 @@ function Q.describe(o: any): string
 	elseif o.kind == "visit" then
 		return "Visit " .. (Q.ZONE_NAMES[o.zone] or o.zone) .. where .. (o.scav and " as a scav" or "")
 	elseif o.kind == "plant" then
-		return "Plant " .. itemName(o.item) .. " at " .. (Q.ZONE_NAMES[o.zone] or o.zone) .. where
+		return "Plant a " .. itemName(o.item) .. " at " .. (Q.ZONE_NAMES[o.zone] or o.zone) .. where
 	elseif o.kind == "mark" then
 		return "Mark " .. (Q.ZONE_NAMES[o.zone] or o.zone) .. where .. " with a " .. itemName(o.item)
 	elseif o.kind == "find" then
-		return "Locate and obtain " .. itemName(o.item) .. " at " .. (Q.ZONE_NAMES[o.zone] or o.zone) .. where
+		return "Locate and obtain the " .. itemName(o.item) .. " at " .. (Q.ZONE_NAMES[o.zone] or o.zone) .. where
 	elseif o.kind == "build" then
-		return "Modify a " .. itemName(o.base) .. ": " .. Q.buildText(o)
+		-- EFT: "Modify an MP-133 to comply with the given specifications" (Gunsmith - Part 1)
+		return "Modify the " .. itemName(o.base) .. " to spec: " .. Q.buildText(o)
 	end
 	return "?"
 end
