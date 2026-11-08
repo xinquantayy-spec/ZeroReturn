@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Tasks: the TASKS tab and a hand-over (economy-6a follow-up; 2026-11-08, about 14:05 SGT)
+
+| Test | Result |
+|---|---|
+| TASKS tab | VOS's TASKS tab lists SIGNAL CHECK and YARD SWEEP as available with ACCEPT, RANGE DAY and SLAG RUN as locked with their reasons (screenshot). |
+| Find and hand over (V12) | Picked up the watch room logbook on Border Yard and got out: V12 read 1/1 found and 1/1 to hand over. Turning it in (the trader screen's request) claimed the task: +40,000 MK, level 2, standing 0.70 (0.50), a new message in the messenger (screenshot). |
+| Seen | Once the level is met, a locked task's reason reads "Requires after Signal Check." (the level drops out of the sentence but "Requires" stays). To be worded in Trade.luau after the recovery thread's merge. |
+| Not checked | Clicking TURN IN by hand (the list did not scroll to V12 under the test's mouse wheel), a plant, kills in a live fight, operational tasks. |
+
 ## Quick reload, stance stamina, overweight noise (decision gameplay-5b, part 1; 2026-11-08, about 13:55 SGT)
 
 | Test | Result |
