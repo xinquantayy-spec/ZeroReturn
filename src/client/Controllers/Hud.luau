@@ -52,7 +52,7 @@ end
 local SZ = {
 	hp = 78, st = 64, needs = 40, status = 36, rec = 46, dev = 26, clock = 66, exit = 34,
 	notice = 84, noticeSub = 34, progLabel = 34, progBar = 34, weapon = 32, squadHead = 36, squad = 32,
-	toast = 32, death = 90, deathSub = 34, match = 32,
+	toast = 32, death = 90, deathSub = 34, match = 32, mount = 26,
 }
 Hud.SZ = SZ
 -- Tarkov's health condition indicator (audit ui-1a): a body outline whose seven parts take their condition's colour
@@ -225,6 +225,7 @@ local function layout()
 	bars.x0, bars.x1 = 0.5 * W - 90 * u, 0.5 * W + 90 * u
 	bars.y = bottom - SZ.weapon * u - gap - 8 * u
 	bars.u, bars.W, bars.H = u, W, H
+	O.mount:setAt((bars.x1 + 14 * u) / W, (bars.y + 3 * u) / H)
 	-- death card
 	O.death:setAt(0.5, 0.45)
 	O.deathSub:setAt(0.5, (0.45 * H + (SZ.death + SZ.deathSub) * 0.5 * u + gap) / H)
@@ -370,6 +371,9 @@ local function build()
 	O.weapon = txt("Weapon", V0, SZ.weapon, 0.5, { font = Lens.FONT_MED, glow = nil })
 	O.match = txt("Match", V0, SZ.match, 0.5, { font = Lens.FONT_MED, glow = nil })
 	O.match:show(false)
+	-- weapon mounting, right of the stamina bars (gameplay-5b)
+	O.mount = txt("Mount", V0, SZ.mount, 0, { font = Lens.FONT_MED, glow = nil })
+	O.mount:show(false)
 	-- squad (bottom-left)
 	O.squad = {}
 	for i = 1, 1 + 5 do
@@ -587,6 +591,20 @@ local function slowUpdate()
 		O.weapon:show(false)
 	end
 	O.dot:show(S.reticle == true and inRaid and not W.aiming)
+	-- weapon mounting (gameplay-5b): EFT's corner icon "shows whether the weapon is mounted" and whether the surface
+	-- will take it; here a word right of the stamina bars: MOUNTED, or MOUNT and its key while aiming over a support
+	local mk = nil
+	if inRaid and W.hasWeapon and not (St and St.mounted) then
+		if W.mounted then
+			mk = "MOUNTED"
+		elseif W.mountable and W.mountable() ~= nil then -- ten times a second (slowUpdate)
+			mk = ctx.Input.device() == "KBM" and ("MOUNT  ·  " .. ctx.Input.label("Knife")) or "MOUNT"
+		end
+	end
+	O.mount:show(mk ~= nil)
+	if mk then
+		O.mount:set({ { t = mk, color = W.mounted and C.yellow or C.dim, alpha = W.mounted and 0.1 or 0.2 } })
+	end
 	-- squad roster (bottom-left): always in the hideout; in raid only with the exits check (Tarkov has no
 	-- friendly markers or teammate health, squads are told apart by armband colour)
 	local sq = ctx.State.squad

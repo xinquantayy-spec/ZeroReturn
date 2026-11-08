@@ -8,7 +8,21 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## No exit markers, darker nights (decision art-8b; 2026-11-08, about 14:20 SGT)
+## Weapon mounting and slow lean (decision gameplay-5b, part 2; 2026-11-08, about 13:35 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 12 pass, 912 checks (MapTests counted 40 checks this run against 41 before; none failed). |
+| Mounting on a ledge, Border Yard | In the watchhouse's watch room, crouched at the duty desk and aiming over it: V mounted the R-17 on the desk, and V again took it off without drawing the knife. Standing at the same desk finds nothing (the gun is too high). The first build probed one point 1.1 studs ahead of the eye and needed a full crouch (C + wheel) to reach the desk; the handguard is now probed at 1.1, 1.6 and 2.1 studs, and the gun mounts on the desk at the default crouch. |
+| Taking it off | Turning 45 degrees took it off and 25 degrees kept it; stepping back off the spot took it off; standing up with C took it off. |
+| Recoil | Six single shots each way: the sight's peak rise was 0.76 degrees mounted against 1.31 free (0.58; the rule is 0.65 and each kick's strength is random). The mount held through the shots. |
+| Mounting on a wall edge | A test pillar beside the handguard (standing, no ledge under it) gave a wall mount. The single-point probe had missed the same pillar by 0.05 studs. |
+| HUD | Aiming over the desk shows "MOUNT · V" right of the stamina bars, and "MOUNTED" in yellow once mounted (screenshots). |
+| Slow lean | Alt+D held for 0.5 s moved the view 0.54 studs right with a 7-degree roll, and the body did not step sideways. The lean stayed after the keys were let go. |
+| Test tool | Aiming was switched on through the test bridge: the tool's mouse buttons reach UserInputService (the right button read as pressed) but not the game's input actions, while its keys do. |
+| Not checked | Aiming with a real right mouse button in this build, gamepad and touch mounting (hold still while aiming), the stamina saving and the smaller sway while mounted, a building's own wall edge (only the test pillar), a phone. |
+
+## No exit markers, darker nights (decision art-8b; 2026-11-08, about 13:15 SGT)
 
 | Test | Result |
 |---|---|
@@ -16,7 +30,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Exits | The 44 exit models on the four maps hold no visible part (each keeps an invisible anchor and its trigger zone); the relay tower's lamp and the other landmarks stay. |
 | Not checked | Looking at an exit in a raid, a night raid's darkness on screen (the bodycam lift is now 0.31 at full dark instead of 0.62), the car exits' cars in their exit models. |
 
-## Tasks: the TASKS tab and a hand-over (economy-6a follow-up; 2026-11-08, about 14:05 SGT)
+## Tasks: the TASKS tab and a hand-over (economy-6a follow-up; 2026-11-08, about 13:10 SGT)
 
 | Test | Result |
 |---|---|
@@ -25,7 +39,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Seen | Once the level is met, a locked task's reason reads "Requires after Signal Check." (the level drops out of the sentence but "Requires" stays). To be worded in Trade.luau after the recovery thread's merge. |
 | Not checked | Clicking TURN IN by hand (the list did not scroll to V12 under the test's mouse wheel), a plant, kills in a live fight, operational tasks. |
 
-## Quick reload, stance stamina, overweight noise (decision gameplay-5b, part 1; 2026-11-08, about 13:55 SGT)
+## Quick reload, stance stamina, overweight noise (decision gameplay-5b, part 1; 2026-11-08, about 13:10 SGT)
 
 | Test | Result |
 |---|---|
@@ -33,14 +47,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Overweight | The character's Overweight attribute read 0 with the normal kit, 1 after a 20 kg propane cylinder (over 26 kg), 2 after a second (over 46 kg), each within 2.5 s. |
 | Not checked | The quick reload's shorter time measured on its own, a stance change's stamina cost read on screen, the louder rattle by ear, the gamepad and touch double taps. |
 
-## Light blood (decision art-7a; 2026-11-08, about 13:35 SGT)
+## Light blood (decision art-7a; 2026-11-08, about 13:05 SGT)
 
 | Test | Result |
 |---|---|
 | Border Yard, watch room | Four body hits sent to the client, the rounds flying on toward the room's wall: four marks on the wall behind (0.36 to 0.61 studs) and one drop on the floor (screenshot). The marks were then made darker; that tint was not looked at again. |
 | Not checked | Own shots hitting a scav (the same function, passed the shot's direction), phones, POTATO (no marks there by design). |
 
-## Chat in raids (decision ui-7a; 2026-11-08, about 13:20 SGT)
+## Chat in raids (decision ui-7a; 2026-11-08, about 13:00 SGT)
 
 | Test | Result |
 |---|---|
@@ -48,7 +62,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | One player, bunker then Border Yard | In the bunker the chat bar pointed at RBXGeneral. In the raid it pointed at ZR_Squad. A message sent there came back to the sender (alone, so his own squad). A message sent on the public channel in the raid reached nobody, the sender included. |
 | Not checked | Two or more players (a squadmate receiving it, a bunker player not hearing a raider), bubble chat, phones. |
 
-## Tarkov's menu bar (decision ui-6a; 2026-11-08, about 13:00 SGT)
+## Tarkov's menu bar (decision ui-6a; 2026-11-08, about 12:55 SGT)
 
 | Test | Result |
 |---|---|

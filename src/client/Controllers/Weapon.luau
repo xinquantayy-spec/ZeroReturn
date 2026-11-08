@@ -887,7 +887,7 @@ local function fireOnce()
 	-- springs; convergence brings both back, so nothing climbs for good
 	local econ = ctx.State.data and ctx.State.data.econ
 	local vmods = ctx.State.vitals and ctx.State.vitals.mods
-	local prof = Recoil.profile(def, o.ms.recoil, Weapon.ergo, econ and econ.skills, recProf, vmods and vmods.sk)
+	local prof = Recoil.profile(def, o.ms.recoil * (Weapon.mounted and Weapon.MOUNT.recoil or 1), Weapon.ergo, econ and econ.skills, recProf, vmods and vmods.sk)
 	local pv, ph, pb = Recoil.pose(M and M.stance, M and M.depth)
 	local jp, jy, jb = Recoil.kick(prof, burstN, pv, ph, pb, math.random(), math.random(), math.random())
 	ctx.Camera.recoilShot(prof, jp, jy, prof.thump * pb)
@@ -1210,10 +1210,103 @@ local function handleFire()
 	end
 end
 
+-- Tarkov's weapon mounting (0.15 notes: aiming at a suitable horizontal or vertical surface, the "Mount weapon" key, V,
+-- mounts the gun; "the recoil and stamina consumption is reduced when firing a mounted weapon"; gameplay-5b). Here V
+-- while aiming mounts on a ledge under the handguard or a wall edge beside it (V not aiming is still the knife); a
+-- gamepad or touch player mounts by holding still while aiming at such a spot. Moving, turning past the limits,
+-- lowering the sights, a stance change or V again takes it off. The cuts are ours (EFT's figures are not published);
+-- no bipods yet (they need their parts), and no mounting prone (EFT allows that only on a bipod).
+Weapon.MOUNT = { recoil = 0.65, sway = 0.25, stamina = 0.2, yaw = math.rad(30), pitch = math.rad(15), move = 0.6, still = 0.4, probes = { 1.1, 1.6, 2.1 } }
+Weapon.mounted = nil
+local mountParams = RaycastParams.new()
+mountParams.FilterType = Enum.RaycastFilterType.Include
+mountParams.RespectCanCollide = true
+local function mountSpot()
+	local cam = workspace.CurrentCamera
+	local world = workspace:FindFirstChild("ZR_World")
+	if not (cam and world) then
+		return nil
+	end
+	mountParams.FilterDescendantsInstances = { world }
+	local cf = cam.CFrame
+	-- the handguard runs from about a stud to two ahead of the eye (0.3-0.6 m), half a stud under it: any point along
+	-- it over a ledge or beside a wall edge will do (one point alone missed a pillar 0.05 studs to its side)
+	for _, ahead in Weapon.MOUNT.probes do
+		local hand = cf.Position + cf.LookVector * ahead - cf.UpVector * 0.45
+		local down = workspace:Raycast(hand, Vector3.new(0, -0.9, 0), mountParams)
+		if down and down.Normal.Y > 0.7 then
+			return "ledge"
+		end
+		for _, side in { cf.RightVector, -cf.RightVector } do
+			local hit = workspace:Raycast(hand, side * 0.7, mountParams)
+			if hit and math.abs(hit.Normal.Y) < 0.35 then
+				return "wall"
+			end
+		end
+	end
+	return nil
+end
+Weapon.mountSpot = mountSpot
+
+-- what the gun would mount on now (nil: no support, or not while lying, sprinting or not aiming); the HUD shows it
+function Weapon.mountable()
+	local M = ctx.Movement
+	if not Weapon.aiming or Weapon.melee or not vm or (M and (M.stance == "p" or M.sprinting)) then
+		return nil
+	end
+	return mountSpot()
+end
+
+function Weapon.setMount(on)
+	local M = ctx.Movement
+	if not on then
+		Weapon.mounted = nil
+		return
+	end
+	if Weapon.mounted then
+		return
+	end
+	local kind = Weapon.mountable()
+	local _, char = alive()
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (kind and root) then
+		return
+	end
+	Weapon.mounted = { kind = kind, yaw = ctx.Camera.yaw, pitch = ctx.Camera.pitch, pos = root.Position, stance = M and M.stance }
+	ctx.Effects.sfx("mag_in", SoundService, 0.25, 0.8)
+end
+
+local stillSince = nil
+local function updateMount(now)
+	local m = Weapon.mounted
+	local M = ctx.Movement
+	local _, char = alive()
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if m then
+		local dy = math.abs(((ctx.Camera.yaw - m.yaw + math.pi) % (2 * math.pi)) - math.pi)
+		if not Weapon.aiming or not root or (root.Position - m.pos).Magnitude > Weapon.MOUNT.move or dy > Weapon.MOUNT.yaw
+			or math.abs(ctx.Camera.pitch - m.pitch) > Weapon.MOUNT.pitch or (M and (M.stance ~= m.stance or M.sprinting)) then
+			Weapon.mounted = nil
+		end
+		return
+	end
+	-- a gamepad or touch: mount by holding still while aiming at a support
+	if Weapon.aiming and ctx.Input.device() ~= "KBM" and root and root.AssemblyLinearVelocity.Magnitude < 0.5 then
+		stillSince = stillSince or now
+		if now - stillSince >= Weapon.MOUNT.still then
+			stillSince = now + 0.6 -- look again a little later
+			Weapon.setMount(true)
+		end
+	else
+		stillSince = nil
+	end
+end
+
 local function update(dt)
 	local hum, char = alive()
 	local inRaid = ctx.State.inRaid()
 	local now = os.clock()
+	updateMount(now)
 	Weapon.drawing = now - drawT0 < drawDur
 	if cycleT0 and now - cycleT0 >= cycleDur then
 		cycleT0 = nil
@@ -1732,6 +1825,11 @@ function Weapon.init(c)
 	for action, slot in SLOT_KEYS do
 		Input.on(action, function(down)
 			if down then
+				-- V while aiming mounts the gun or takes it off (Tarkov's "Mount weapon" key is V)
+				if action == "Knife" and (Weapon.aiming or Weapon.mounted) and not Weapon.melee then
+					Weapon.setMount(Weapon.mounted == nil)
+					return
+				end
 				Weapon.switchTo(slot)
 			end
 		end)

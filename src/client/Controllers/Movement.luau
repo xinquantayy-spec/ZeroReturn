@@ -302,6 +302,9 @@ local function update(dt)
 		-- x1 at 50, x0.7 at 100
 		local ergoK = 1.3 - math.clamp(W.ergo or 50, 0, 100) * 0.006
 		local drain = (Config.ADS_DRAIN + mass * 0.25) * ergoK + (Movement.breath and Config.BREATH_DRAIN or 0)
+		if W.mounted then
+			drain *= W.MOUNT.stamina -- a mounted gun rests on its support (gameplay-5b)
+		end
 		if Movement.stance == "p" then
 			drain *= 0.35 -- rested on the ground
 		elseif Movement.stance == "c" then
@@ -312,6 +315,16 @@ local function update(dt)
 		Movement.arms = math.min(Config.MAX_ARMS, Movement.arms + Config.ARMS_REGEN * dt)
 	end
 	Movement.armFatigue = Movement.arms < 25 and (1 - Movement.arms / 25) or 0
+	-- Tarkov's slow lean (a fan controls sheet, 2020: "Alt + A / D", the lean stays where it went; Q or E resets it;
+	-- gameplay-5b): holding Alt, A and D lean a little at a time instead of stepping sideways. PC only (Tarkov has no pad)
+	Movement.slowLeaning = false
+	if not ctx.Input.isMenu() and UIS:IsKeyDown(Enum.KeyCode.LeftAlt) then
+		local a, d = UIS:IsKeyDown(Enum.KeyCode.A), UIS:IsKeyDown(Enum.KeyCode.D)
+		if a ~= d then
+			Movement.leanTarget = math.clamp(Movement.leanTarget + (d and 1 or -1) * dt * 1.2, -1, 1)
+			Movement.slowLeaning = true
+		end
+	end
 	-- lean (blocked by walls next to the head)
 	if Movement.stance == "p" or Movement.sprinting or Movement.vaulting then
 		Movement.leanTarget = 0
@@ -354,6 +367,12 @@ local function update(dt)
 	local fy = ctx.Camera.freeYaw or 0
 	if math.abs(fy) > 0.01 and md.Magnitude > 0.1 then
 		md = CFrame.Angles(0, -fy, 0):VectorToWorldSpace(md)
+		hum:Move(md, false)
+	end
+	-- a slow lean replaces the sideways step: keep only the forward part of the move
+	if Movement.slowLeaning and md.Magnitude > 0.1 then
+		local fwd = (CFrame.Angles(0, ctx.Camera.yaw, 0)).LookVector
+		md = fwd * md:Dot(fwd)
 		hum:Move(md, false)
 	end
 	if md.Magnitude > 0.1 then

@@ -174,6 +174,15 @@ if RunService:IsStudio() then
 			end
 			ctx.Inspect.open(d.items, g, { key = "dev:" .. g })
 			return "ok"
+		elseif cmd == "mount" then
+			-- weapon mounting (gameplay-5b): what is under or beside the handguard now, and the mount in effect
+			local W = ctx.Weapon
+			if a == "on" then
+				W.setMount(true)
+			elseif a == "off" then
+				W.setMount(false)
+			end
+			return tostring(W.mountSpot()) .. " | mounted " .. tostring(W.mounted and W.mounted.kind) .. " | aiming " .. tostring(W.aiming)
 		elseif cmd == "inspectClose" then
 			ctx.Inspect.closeAll()
 			return "ok"
