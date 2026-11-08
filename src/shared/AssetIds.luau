@@ -44,4 +44,7 @@ return {
 	{ key = "ZR_BunkerKitA", id = 126010320295919 }, -- shell and services: blast door, door frames, pipes and valves, cable trays, beams, ducts, lamps, boxes, safety kit, sandbags, rubble (build_bunker_kit_a.py)
 	{ key = "ZR_BunkerKitB", id = 100322751912819 }, -- rooms and stations: bunks, lockers, mirror sink, map table, boards, trader counters, gun racks, armour stands, hideout modules, range booth and targets (build_bunker_kit_b.py)
 	{ key = "ZR_BunkerKitC", id = 100282091818165 }, -- motor pool: van and its two rear door leaves, ramp, roller door, manhole, sign post, tool chest, tyres, jerry cans, work light, hose reel, oil stain (build_bunker_kit_c.py)
+	-- art-5b modular kit (ZR_MK_K5<Prop>__<material>; placed by MapKit's k5Flight / k5Rail, see docs/look/MODULAR_KIT.md)
+	{ key = "ZR_Kit5A", id = 123416596562671 }, -- (2026-11-09) stair flights: solid and open concrete, steel, a stopped escalator's step block (89 variants, build_kit5.py)
+	{ key = "ZR_Kit5B", id = 103422237552076 }, -- (2026-11-09) handrails for two riser heights and level railing modules (81 variants, build_kit5.py)
 }

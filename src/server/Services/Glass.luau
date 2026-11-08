@@ -393,6 +393,12 @@ function Glass.init(c)
 	if c.AI and c.AI.setSightGroup then
 		c.AI.setSightGroup(Glass.SIGHT_GROUP)
 	end
+	-- grenades fly and blast in the sight group too: it passes panes and shells as the Default group did, and also the
+	-- railings' body-only colliders (art-5b's ZR_Move), which bullets and sight already pass (EFT's thin railings shelter
+	-- nobody from a blast)
+	if c.Grenades and c.Grenades.setRayGroup then
+		c.Grenades.setRayGroup(Glass.SIGHT_GROUP)
+	end
 	local per = {}
 	if c.World and c.World.maps then
 		for id, m in c.World.maps do

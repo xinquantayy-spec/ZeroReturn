@@ -8,6 +8,18 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The modular stair and railing kit (art-5b phase 1; 2026-11-09, 02:40 SGT)
+
+| Test | Result |
+|---|---|
+| Blender and upload | build_kit5.py built the 170 variants; contact sheet and two turntables looked at (the steel flight's treads, stringers and nosings; the escalator block dark by design, its baked colour about 0.2 against near white for the others); ZR_Kit5A (89 flights) and ZR_Kit5B (81 handrails and railings) exported and uploaded; KitMeta 325 props. |
+| Build log | 1,338 library meshes loaded, 0 batches failed. The Smelter 4,363 parts to 3,497 (stair steps 1,103 to 50, railing parts 661 to 0); Border Yard 28,600 to 26,523; Meridian 20,554 to 20,090 (treads 490 to 0); the world 53,068 to 48,411. |
+| Walking | On the Smelter's steel stair tower, holding W from the foot: the character rose smoothly from 3.2 to 10.2 studs over 12 studs of run and walked on along the landing. On a concrete flight down into the tunnels: down 8.5 studs and back up, no fall, no snag at either end. |
+| Looks | One still of the steel stair tower from its landing: treads, nosings, handrails and the railing beside it in place, no gaps seen. |
+| Grenades | A grenade thrown at a deck railing bounced back off the railing's collider (REQUEST 3); after the fix (grenades fly and check blast cover in the sight group, which passes railing colliders as bullets do) the same throw went through and fell to the floor below. |
+| Tests | 18 suites, 1,293 checks, all passed (KitTests 60: Smelter 72 flights and 132 railings, Border 93 and 292, Meridian 13, Quay 7 2, all from the kit). |
+| Not checked | Sprinting, crouching and going prone on each flight kind; footstep sounds; an AI following a player over the ramps; the escalators and Border's flights by eye; a phone's frame rate. |
+
 ## The Tern T-209 and EFT's two-calibre magazines (economy-1a's fourteenth slice; 2026-11-09, 01:50 SGT)
 
 | Test | Result |

@@ -31,6 +31,12 @@ worldRay.RespectCanCollide = true
 local losRay = RaycastParams.new()
 losRay.FilterType = Enum.RaycastFilterType.Exclude
 
+-- Glass.init: the group both rays are cast in (the sight group passes panes, their hit shells and railing colliders)
+function Grenades.setRayGroup(group)
+	worldRay.CollisionGroup = group
+	losRay.CollisionGroup = group
+end
+
 local function setWorld()
 	local w = workspace:FindFirstChild("ZR_World")
 	worldRay.FilterDescendantsInstances = { workspace.Terrain, w } -- terrain maps bounce grenades off the ground
