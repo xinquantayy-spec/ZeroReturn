@@ -1376,7 +1376,8 @@ function Raid.start()
 					local changed = tendClaims(prof, t)
 					local arrived, from = 0, {}
 					for _, c in prof.claims do
-						if c.isr and not c.told and (c.readyAt or 0) <= t then
+						-- announced in the bunker (a return that arrives during a raid is announced after it)
+						if c.isr and not c.told and (c.readyAt or 0) <= t and not sessions[player] then
 							c.told = true
 							changed = true
 							arrived += #(c.bundles or {})
