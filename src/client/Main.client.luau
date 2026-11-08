@@ -139,7 +139,7 @@ if RunService:IsStudio() then
 				input = ctx.Input.backend, device = ctx.Input.device(), invOpen = ctx.Inventory.open,
 				modal = ctx.Screens.modal and ctx.Screens.modal:FindFirstChildOfClass("TextLabel").Text or nil,
 				prompt = ctx.Interact.current and ctx.Interact.current.ObjectText or nil,
-				stance = M.stance, freeLook = ctx.Input.down("FreeLook"), freeYaw = math.deg(ctx.Camera.freeYaw or 0),
+				stance = M.stance, lean = M.leanTarget, freeLook = ctx.Input.down("FreeLook"), freeYaw = math.deg(ctx.Camera.freeYaw or 0),
 				lastCheck = W.lastCheck, modeCheckedAt = W.modeCheckedAt, now = os.clock(), tray = ctx.Touch.tray and ctx.Touch.tray(),
 				gun = W.debugState and W.debugState() or nil, nade = ctx.Grenade and ctx.Grenade.state or nil,
 			})

@@ -15,6 +15,7 @@ local RigMath = require(Shared.RigMath)
 local Progress = require(Shared.Progress)
 
 local Movement = {
+	LEAN_TAP = 0.25, -- a press shorter than this is a tap (a full lean or upright); longer leans slowly (pad, touch)
 	stance = "s", depth = 0.7, lean = 0, leanTarget = 0, speedStep = 10, sprinting = false, crouching = false, prone = false,
 	stamina = Config.MAX_STAMINA, arms = Config.MAX_ARMS, breath = false, weight = 0, vaulting = false, transitionUntil = 0,
 	armFatigue = 0,
@@ -318,6 +319,11 @@ local function update(dt)
 	-- Tarkov's slow lean (a fan controls sheet, 2020: "Alt + A / D", the lean stays where it went; Q or E resets it;
 	-- gameplay-5b): holding Alt, A and D lean a little at a time instead of stepping sideways. PC only (Tarkov has no pad)
 	Movement.slowLeaning = false
+	local lh = Movement.leanHold
+	if lh and not ctx.Input.isMenu() then
+		-- a held LB / RB or LEAN L / R (gameplay-5b's slow lean on a pad and a touch screen): the lean grows while held
+		Movement.leanTarget = math.clamp(Movement.leanTarget + lh.dir * dt * 1.2, -1, 1)
+	end
 	if not ctx.Input.isMenu() and UIS:IsKeyDown(Enum.KeyCode.LeftAlt) then
 		local a, d = UIS:IsKeyDown(Enum.KeyCode.A), UIS:IsKeyDown(Enum.KeyCode.D)
 		if a ~= d then
@@ -439,10 +445,24 @@ function Movement.init(c)
 			setStance(Movement.stance == "p" and "s" or "p")
 		end
 	end)
+	-- a tap toggles the full lean (Tarkov's Q / E). On a pad or a touch screen, holding LB / RB or LEAN L / R leans a
+	-- little at a time while held and stays there (Tarkov's slow lean is Alt + A / D on a keyboard, below; it has no pad)
 	local function lean(dir)
 		return function(down)
+			local dev = c.Input.device()
+			local slow = dev == "Gamepad" or dev == "Touch"
 			if down then
-				Movement.leanTarget = (Movement.leanTarget == dir) and 0 or dir
+				if slow then
+					Movement.leanHold = { dir = dir, t0 = os.clock(), before = Movement.leanTarget }
+				else
+					Movement.leanTarget = (Movement.leanTarget == dir) and 0 or dir
+				end
+			elseif Movement.leanHold and Movement.leanHold.dir == dir then
+				local h = Movement.leanHold
+				Movement.leanHold = nil
+				if os.clock() - h.t0 < Movement.LEAN_TAP then
+					Movement.leanTarget = (h.before == dir) and 0 or dir -- a tap: the full lean, or back upright
+				end
 			end
 		end
 	end

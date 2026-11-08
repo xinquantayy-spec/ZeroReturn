@@ -8,6 +8,13 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Slow lean on a gamepad and a touch screen (gameplay-5b follow-up; 2026-11-08, about 16:55 SGT)
+
+| Test | Result |
+|---|---|
+| Gamepad (forced device, presses through the shared pad buttons) | From upright, a tap of LB leaned fully left (-1.00), a second tap stood upright (0.00); RB held 0.5 s leaned right to 0.62 and stayed there. With the device set to keyboard and mouse the same press toggled the full lean (-1.00), as before. |
+| Not checked | A real pad, the touch LEAN buttons held by a finger (they send the same press and release), a phone. |
+
 ## Touch drag in the inventory (decision ui-4c; 2026-11-08, about 16:40 SGT)
 
 | Test | Result |
