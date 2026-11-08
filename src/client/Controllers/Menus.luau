@@ -94,6 +94,11 @@ function Menus.messenger(f, x, y, w, h, d, refresh)
 		-- insurance returns (decision gameplay-6b): each from its insurer, with its items, when it arrives and how long the
 		-- messenger holds it; RECEIVE ALL brings the ready ones to the stash; a return not collected in time is gone (EFT).
 		-- Task rewards that did not fit the stash wait here too.
+		local function hms(sec)
+			-- returns and storage run for hours: H:MM:SS from an hour up (Util.clock shows MM:SS)
+			sec = math.max(0, math.floor(sec))
+			return sec >= 3600 and string.format("%d:%02d:%02d", sec // 3600, (sec % 3600) // 60, sec % 60) or Util.clock(sec)
+		end
 		local ready = 0
 		for _, c in d.claimList or {} do
 			order += 1
@@ -109,8 +114,8 @@ function Menus.messenger(f, x, y, w, h, d, refresh)
 				ready += c.n
 			end
 			local who = c.k == "task" and "TASK REWARD" or ((c.isr and TD.defs[c.isr]) and TD.defs[c.isr].name or "INSURANCE")
-			local head = who .. "  ·  " .. (not isReady and ("ARRIVES IN " .. Util.clock(c.readyIn))
-				or (c.expIn and ("READY  ·  COLLECT WITHIN " .. Util.clock(c.expIn)) or "READY TO COLLECT"))
+			local head = who .. "  ·  " .. (not isReady and ("ARRIVES IN " .. hms(c.readyIn))
+				or (c.expIn and ("READY  ·  COLLECT WITHIN " .. hms(c.expIn)) or "READY TO COLLECT"))
 			local body = c.k == "task" and ("Task reward items waiting for room in your stash: " .. table.concat(names, ", ") .. ".")
 				or ("Your insured items were not found by anyone and came back: " .. table.concat(names, ", ") .. ".")
 			message(right, order, head, body, isReady and ((c.expIn and c.expIn < 3600) and K.C.orange or K.C.green) or K.C.text)

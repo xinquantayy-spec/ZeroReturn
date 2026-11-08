@@ -291,7 +291,9 @@ function Screens.deploy()
 		end
 		local cl = d.claims
 		if cl and (cl.waiting > 0 or cl.ready > 0) then
-			local txt = cl.ready > 0 and string.format("%d RETURNED ITEM(S) WAITING IN THE MESSENGER", cl.ready) or string.format("%d ITEM(S) RETURNING IN %s", cl.waiting, Util.clock(cl.nextIn or 0))
+			local sec = math.max(0, math.floor(cl.nextIn or 0)) -- returns run for hours: H:MM:SS from an hour up
+			local eta = sec >= 3600 and string.format("%d:%02d:%02d", sec // 3600, (sec % 3600) // 60, sec % 60) or Util.clock(sec)
+			local txt = cl.ready > 0 and string.format("%d RETURNED ITEM(S) WAITING IN THE MESSENGER", cl.ready) or string.format("%d ITEM(S) RETURNING IN %s", cl.waiting, eta)
 			L("RETURNS   " .. txt, K.C.green, 12)
 		end
 	else
