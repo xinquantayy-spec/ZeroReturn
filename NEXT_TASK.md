@@ -17,7 +17,7 @@
   coordinator's scratchpad). First Studio session: run ZR_Dev "tests" (Logic, Char, Look, Map, Economy, Ui, Gameplay),
   then the helpers' check lists on the coordination board, then the M11 malfunction check (gameplay.12), rain (art.12),
   the lighting style (art.1) and the kit origins (art.9).
-- M4: ai-3a, gameplay-1a, ai-1a, ai-2, ai-7a merged into main (untested). economy-2a (eight traders) waits on branch wip/eight-traders (tests updated) until main passes its Studio session; then the Relay 7 counters and NPCs for ROOK, DEKKER, KOVAC and BRAM.
+- M4: ai-3a, gameplay-1a, ai-1a, ai-2, ai-7a merged into main (untested). Waiting on branches until main passes its Studio session, then merged one at a time: wip/eight-traders (economy-2a; then the Relay 7 counters and NPCs for ROOK, DEKKER, KOVAC and BRAM) and wip/plates (gameplay-2a; then the traders' plate offers, buy and repair lists, the handbook's ARMOR PLATES, the drag cue for plates, 16 plate icons).
 - The gaps by area: `docs/design/EFT_PARITY.md` sections 8 (AI), 9 (core gameplay), 10 (economy) and 11 (art); the look
   rules for new art: `docs/look/ART_BIBLE.md`.
 - Parked: the players' tripwire kit. The server side is merged on branch `wip/tripwire-kit`, the client is not built, and the branch is not on main.
