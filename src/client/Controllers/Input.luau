@@ -451,6 +451,12 @@ function Input.deviceLabel(dev, action)
 	return LABELS[dev] and LABELS[dev][action] or nil
 end
 
+-- HINTS (Settings, decision ui-8a): the control hints our screens add beyond Tarkov's (a prompt's key, the menu bar's
+-- keys, the HUD's "how to" words); off, they show what Tarkov shows
+function Input.hints()
+	return not (ictx and ictx.Settings and ictx.Settings.data.hints == false)
+end
+
 function Input.label(action)
 	local dev = Input.device()
 	if dev ~= "KBM" and LABELS[dev] and LABELS[dev][action] then

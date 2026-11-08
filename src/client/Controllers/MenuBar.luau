@@ -98,14 +98,15 @@ end
 local function build()
 	gui = K.screen("ZR_MenuBar", 40)
 	gui.Enabled = false
-	bar = K.frame(gui, { Name = "Bar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2), Size = UDim2.new(1, -16, 0, MB.H - 4), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.05 })
+	bar = K.frame(K.root(gui), { Name = "Bar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2), Size = UDim2.new(1, -16, 0, MB.H - 4), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.05 })
 	K.stroke(bar, K.C.line, 0.5)
-	local left = K.frame(bar, { Name = "Left", BackgroundTransparency = 1, Size = UDim2.new(1, -150, 1, 0) })
+	local left = K.frame(bar, { Name = "Left", BackgroundTransparency = 1, Size = UDim2.new(1, -190, 1, 0) }) -- clear of X and DEPLOY
 	K.list(left, Enum.FillDirection.Horizontal, 4)
 	K.pad(left, 3)
 	for i, it in MB.ITEMS do
 		local parent = left
-		local props = { LayoutOrder = i, Size = UDim2.new(0, 124, 1, 0), TextSize = 13, AutoButtonColor = true }
+		-- six buttons share the strip left of DEPLOY, so they fit a phone and a larger MENU TEXT SIZE
+		local props = { LayoutOrder = i, Size = UDim2.new(1 / 6, -4, 1, 0), TextSize = 13, AutoButtonColor = true, TextTruncate = Enum.TextTruncate.AtEnd }
 		if it.right then
 			parent = bar
 			props = { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -3, 0.5, 0), Size = UDim2.new(0, 140, 1, -6), TextSize = 14, BackgroundColor3 = K.C.ochre, TextColor3 = K.C.bg }
@@ -127,9 +128,11 @@ end
 local function labels()
 	local dev = ctx.Input.device()
 	local n = unread()
+	-- a narrow bar (a phone, a large menu text size) leaves the keys out: a button under 150 wide fits only its name
+	local narrow = (K.viewport(gui).X - 212) / 6 < 150
 	for _, it in MB.ITEMS do
 		local b = buttons[it.id]
-		local key = (dev == "KBM" and it.action) and ctx.Input.pcLabel(it.action) or nil
+		local key = (dev == "KBM" and it.action and ctx.Input.hints() and not narrow) and ctx.Input.pcLabel(it.action) or nil
 		local text = it.label
 		if it.id == "messenger" and n > 0 then
 			text ..= "  (" .. n .. ")"

@@ -17,6 +17,63 @@ K.C = {
 	text = hex("D6DBC9"), dim = hex("8C948D"), ochre = hex("C9A13C"), orange = hex("C07946"), rust = hex("8A6252"),
 	red = hex("C24A35"), green = hex("93A57C"), black = hex("000000"),
 }
+local BASE_C = table.clone(K.C)
+
+-- ── colorblind palettes (decision ui-8a) ─────────────────────────────────────────────────────────────────────
+-- EFT's COLORBLIND MODE filters the whole picture. Roblox cannot remap the colour channels of the 3D image, so the
+-- HUD's and the menus' colours are daltonized instead (Fidaner, Lin and Ozguven, as the common daltonize tools do it):
+-- what a protanope, deuteranope or tritanope would see is simulated in LMS space, and the difference they lose is moved
+-- into the channels they still see. Words and shapes stay beside every colour. mode 0 none, 1 protanopia,
+-- 2 deuteranopia, 3 tritanopia; k the intensity (0 to 1, EFT's slider).
+local SIM = {
+	function(l, m, s)
+		return 2.02344 * m - 2.52581 * s, m, s
+	end,
+	function(l, m, s)
+		return l, 0.494207 * l + 1.24827 * s, s
+	end,
+	function(l, m, s)
+		return l, m, -0.395913 * l + 0.801109 * m
+	end,
+}
+function K.cvd(c, mode, k)
+	local sim = SIM[mode or 0]
+	k = math.clamp(k or 0, 0, 1)
+	if not sim or k <= 0 then
+		return c
+	end
+	local r, g, b = c.R * 255, c.G * 255, c.B * 255
+	local l = 17.8824 * r + 43.5161 * g + 4.11935 * b
+	local m = 3.45565 * r + 27.1554 * g + 3.86714 * b
+	local s = 0.0299566 * r + 0.184309 * g + 1.46709 * b
+	l, m, s = sim(l, m, s)
+	local r2 = 0.0809444479 * l - 0.130504409 * m + 0.116721066 * s
+	local g2 = -0.0102485335 * l + 0.0540193266 * m - 0.113614708 * s
+	local b2 = -0.000365296938 * l - 0.00412161469 * m + 0.693511405 * s
+	local er, eg, eb = r - r2, g - g2, b - b2
+	local ng = g + (0.7 * er + eg) * k
+	local nb = b + (0.7 * er + eb) * k
+	return Color3.fromRGB(math.clamp(math.floor(r + 0.5), 0, 255), math.clamp(math.floor(ng + 0.5), 0, 255), math.clamp(math.floor(nb + 0.5), 0, 255))
+end
+
+-- recolour a palette table in place from its base colours (the menus' K.C here; the HUD passes its own)
+K.cvdMode, K.cvdK = 0, 1
+function K.recolour(tbl, base)
+	for key, col in base do
+		tbl[key] = K.cvd(col, K.cvdMode, K.cvdK)
+	end
+end
+
+-- the colorblind setting changed: true when the palettes changed (the open screens then need building again)
+function K.setCvd(mode, k)
+	mode, k = math.floor(tonumber(mode) or 0), math.clamp(tonumber(k) or 1, 0, 1)
+	if mode == K.cvdMode and math.abs(k - K.cvdK) < 1e-3 then
+		return false
+	end
+	K.cvdMode, K.cvdK = mode, k
+	K.recolour(K.C, BASE_C)
+	return true
+end
 
 function K.new(class, props, parent)
 	local i = Instance.new(class)
@@ -134,7 +191,7 @@ function K.focus(obj)
 	end
 end
 
-function K.viewport(gui)
+local function rawViewport(gui)
 	if K.previewSize then
 		return K.previewSize -- Studio preview of another screen size (ZR_ClientDev "preview")
 	end
@@ -146,10 +203,65 @@ function K.viewport(gui)
 	return Vector2.new(v.X, v.Y - 58)
 end
 
--- uniform scale for HUD-like text based on screen height (720p reference)
+-- MENU TEXT SIZE (decision ui-8a, 100 to 150 %): each menu screen's content sits in a root frame laid out for the screen
+-- divided by this scale and drawn that much larger by a UIScale, so text, buttons and gaps grow together and every
+-- layout still fits (a phone at 150 % gets the compact layouts sooner). The HUD keeps HUD SCALE.
+K.menuScale = 1
+local rooted = setmetatable({}, { __mode = "k" }) -- ScreenGui -> its root frame
+
+-- the size a menu screen lays out for: the safe area divided by the menu scale
+function K.viewport(gui)
+	return rawViewport(gui) / K.menuScale
+end
+
+-- uniform scale for HUD-like text based on screen height (720p reference; not the menu scale)
 function K.scale()
-	local v = K.viewport()
+	local v = rawViewport()
 	return math.clamp(v.Y / 720, 0.72, 1.6)
+end
+
+-- a menu ScreenGui's root frame (made on first use): menu content is parented here
+function K.root(gui)
+	local r = rooted[gui]
+	if r and r.Parent == gui then
+		return r
+	end
+	r = K.new("Frame", { Name = "ZR_Root", BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1 / K.menuScale, 1 / K.menuScale) }, gui)
+	K.new("UIScale", { Name = "MenuScale", Scale = K.menuScale }, r)
+	rooted[gui] = r
+	return r
+end
+
+-- a new menu scale for every root; true when it changed (the open screens then need building again)
+function K.setMenuScale(s)
+	s = math.clamp(tonumber(s) or 1, 1, 1.5)
+	if math.abs(s - K.menuScale) < 1e-3 then
+		return false
+	end
+	K.menuScale = s
+	for _, r in rooted do
+		if r.Parent then
+			r.Size = UDim2.fromScale(1 / s, 1 / s)
+			local u = r:FindFirstChild("MenuScale")
+			if u then
+				u.Scale = s
+			end
+		end
+	end
+	return true
+end
+
+-- a point in GUI space (AbsolutePosition's: GetMouseLocation less GuiService:GetGuiInset()) in a menu root's own
+-- units; and a length the same way
+function K.toLocal(gui, pt)
+	local r = rooted[gui]
+	if not r then
+		return pt
+	end
+	return (pt - r.AbsolutePosition) / K.menuScale
+end
+function K.toLocalLen(v)
+	return v / K.menuScale
 end
 
 -- an item's Blender picture centred in `parent`, w x h pixels as the item lies there; rotated: the item lies turned

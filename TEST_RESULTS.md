@@ -8,7 +8,20 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## Recovery and insurance (decision gameplay-6b, merged from the recovery thread; 2026-11-08, about 13:50 SGT)
+## Accessibility and the recorder overlay (decisions ui-8a and ui-2b; 2026-11-08, about 14:00 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 13 pass, 986 checks; UiTests' new check: the settings request keeps the colorblind mode and intensity, the menu text size (clamped to 150 %, and per device), HINTS and the recorder overlay, and refuses a wrong type. |
+| MENU TEXT SIZE | At 130 % the settings screen, the inventory and the menu bar are drawn 1.3 times larger and still fit (screenshots); the CLOSE button and the STASH tab click at their new places. A right click on an item opens its context menu 5 px from the cursor (4 at 100 %). |
+| Context menu and drag picture | Before the fix the inventory compared the pointer, counted from the top of the screen, with frames counted from under Roblox's top bar: the context menu opened 58 px under the cursor. It now opens at the cursor. |
+| Menu bar | At 130 % on the Studio window the six buttons share the strip left of DEPLOY with their keys left out (screenshot); before, MESSENGER ran under DEPLOY. |
+| COLORBLIND MODE | Deuteranopia at full intensity: the REC tag, the hit arm and SAVING OFF turn pink, the clock salmon, the healthy parts stay green (screenshots before and after). |
+| RECORDER OVERLAY | CLEAN (the default): REC, the time stamp, SAVING OFF, the clock and the brackets, no device line. FULL: the device line and the colour split on the clock. OFF: no REC or brackets, SAVING OFF and the clock move up (screenshots). |
+| HINTS | The duty desk's prompt reads "[F]  SEARCH  ·  DUTY DESK" with HINTS on and "SEARCH  ·  DUTY DESK" off, redrawn at once. |
+| Not checked | Dragging an item with the mouse at 130 % (the test tool's drags did not move items at 100 % either), protanopia and tritanopia on screen, the new locked-task wording, a phone, a gamepad. |
+
+## Recovery and insurance (decision gameplay-6b, merged from the recovery thread; 2026-11-08, about 13:40 SGT)
 
 | Test | Result |
 |---|---|
@@ -21,7 +34,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Fixed | A return still on its way read "came back"; it now reads "the insurer is bringing them back" until it is ready. |
 | Not checked | Picking the insurer on the deploy screen by mouse, touch and gamepad (everything was insured already), the item menu's three INSURE entries, a magazine coming back empty, a return lost after its storage time, MIA, recovery while offline, a destroyed limb kept out of raid and its price, an old save's pending return. RecoveryTests cover these rules; the screens were not looked at. |
 
-## Weapon mounting and slow lean (decision gameplay-5b, part 2; 2026-11-08, about 13:35 SGT)
+## Weapon mounting and slow lean (decision gameplay-5b, part 2; 2026-11-08, about 13:30 SGT)
 
 | Test | Result |
 |---|---|

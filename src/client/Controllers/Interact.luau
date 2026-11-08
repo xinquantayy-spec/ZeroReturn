@@ -27,7 +27,8 @@ local function render()
 	btn.Visible = p ~= nil and not ctx.Input.isMenu()
 	if p then
 		local key = ctx.Input.label("Interact")
-		btn.Text = string.format("[%s]  %s  ·  %s", key, string.upper(p.ActionText), objectText(p))
+		btn.Text = ctx.Input.hints() and string.format("[%s]  %s  ·  %s", key, string.upper(p.ActionText), objectText(p))
+			or string.format("%s  ·  %s", string.upper(p.ActionText), objectText(p)) -- HINTS off: no key (Tarkov)
 		local w = math.max(260, #btn.Text * 10 + 32)
 		btn.Size = UDim2.fromOffset(w, 42)
 	end
@@ -54,6 +55,10 @@ function Interact.init(c)
 		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -196), Size = UDim2.fromOffset(260, 34),
 		BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.25, TextSize = 18, Visible = false, Selectable = false,
 	})
+	-- HINTS on or off (ui-8a) redraws the prompt at once
+	c.Settings.changed:Connect(function()
+		render()
+	end)
 	btn.Activated:Connect(function()
 		local p = Interact.current
 		if p then

@@ -24,6 +24,11 @@ local Settings = {
 		padSens = 1, touchSens = 1, invertY = false, malfNotes = true, dblUse = true, msgSeen = 0,
 		pfxBright = 0, pfxSat = 0, pfxClarity = 0, pfxGrade = 0, pfxGradeK = 0.5,
 		volMaster = 1, volFx = 1, volUi = 1, volAmb = 1,
+		-- accessibility (decision ui-8a): EFT's COLORBLIND MODE (0 none, 1 protanopia, 2 deuteranopia, 3 tritanopia) and
+		-- its intensity, done on the HUD and menu colours; MENU TEXT SIZE (1 to 1.5, per device); HINTS (the control hints)
+		cvdMode = 0, cvdK = 1, menuScale = 1, hints = true,
+		-- RECORDER OVERLAY (decision ui-2b): 1 FULL, 2 CLEAN (default), 3 OFF; `film` was its old on/off
+		recOverlay = 2,
 	},
 }
 local SoundService = game:GetService("SoundService")
@@ -99,6 +104,13 @@ function Settings.apply()
 	if groups.ui then
 		applyVolumes(Settings.data)
 	end
+	-- accessibility (ui-8a): the menu and HUD palettes, the menu scale; an open screen is built again to take them
+	local K = ctx and ctx.UiKit
+	if K and K.setCvd then
+		local recoloured = K.setCvd(Settings.data.cvdMode, Settings.data.cvdK)
+		local rescaled = K.setMenuScale(Settings.data.menuScale)
+		Settings.restyled = recoloured or rescaled
+	end
 	changedEvent:Fire(Settings.data)
 end
 
@@ -148,7 +160,7 @@ end
 -- Graphics level, FOV, sensitivity and grain are kept per kind of device, so a phone does not inherit the PC's HIGH
 -- (audit tech-3 and quick win tech.8). Phones start at LOW, consoles at MEDIUM, PCs at HIGH; HOLD 30 FPS (Detail)
 -- still steps the level down when a device cannot keep up.
-local PER_DEVICE = { quality = true, fov = true, sens = true, grain = true }
+local PER_DEVICE = { quality = true, fov = true, sens = true, grain = true, menuScale = true }
 local CLASS_QUALITY = { phone = 1, console = 2, pc = 3 }
 local deviceClass = nil
 function Settings.deviceClass(): string
@@ -196,6 +208,10 @@ function Settings.fromServer(s)
 		if want and type(v) == want then
 			Settings.data[k] = v
 		end
+	end
+	-- the old RECORDER OVERLAY switch: a player who had turned it off keeps it off
+	if s.film == false and s.recOverlay == nil then
+		Settings.data.recOverlay = 3
 	end
 	local cls = Settings.deviceClass()
 	local mine = type(Settings.data.dev) == "table" and Settings.data.dev[cls]

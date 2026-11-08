@@ -118,9 +118,9 @@ MEDIUM and PCs at HIGH (tech-3b, M1). Numbers move with - and +, which repeat wh
 
 | Tab | Tarkov | Zero Return | Plan |
 |---|---|---|---|
-| Game | FOV 50 to 75, head bobbing, show quick slots, stamina and health (always, auto-hide, never), health colour scheme, highlight available operations, double-click quick use, vaulting mode, malfunction notifications, priority window, continuous healing | FIELD OF VIEW (50 to 100, bodycam 85), HEAD BOBBING, SCREEN SHAKE, REDUCE MOTION, AIM MODE, QUICK SLOTS (AUTO-HIDE, ALWAYS, NEVER), HEALTH CONDITION and STAMINA AND STANCE (ALWAYS SHOWN, AUTO-HIDE, NEVER), HEALTH COLOR SCHEME (POLYCHROME, MONOCHROME), CENTER DOT, HIT FEEDBACK, HUD SCALE, CURVED HUD, MALFUNCTION NOTIFICATIONS, DOUBLE-CLICK QUICK USE | Highlight available operations; vaulting mode; priority window; continuous healing |
-| Graphics | Texture and shadow quality, object LOD, overall visibility, AA, resampling, DLSS/FSR, HBAO, SSR, anisotropic, sharpness, Reflex, HQ colour, Z-blur, chromatic aberrations, noise, grass shadows, mip streaming, FPS limits | GRAPHICS (POTATO to HIGH), HOLD 30 FPS, FILM GRAIN, LENS EFFECTS, MOTION BLUR, RECORDER OVERLAY | Our own rows for what we control (shadow lights, detail density, draw distance of props, grass, chromatic aberration); the rest is Roblox's slider (exception 3) |
-| PostFX | Brightness, saturation, clarity, colourfulness, luma and adaptive sharpen, colour grading with intensity, colour-blind mode with intensity | BRIGHTNESS, SATURATION, CLARITY, COLOR GRADING (NONE, STEEL, EMBER, MOSS, DUSK) and GRADING INTENSITY | Colourfulness and the two sharpen sliders; colour-blind palettes for the HUD and menus (ui-8a: Roblox cannot filter each colour channel of the 3D image) |
+| Game | FOV 50 to 75, head bobbing, show quick slots, stamina and health (always, auto-hide, never), health colour scheme, highlight available operations, double-click quick use, vaulting mode, malfunction notifications, priority window, continuous healing | FIELD OF VIEW (50 to 100, bodycam 85), HEAD BOBBING, SCREEN SHAKE, REDUCE MOTION, AIM MODE, QUICK SLOTS (AUTO-HIDE, ALWAYS, NEVER), HEALTH CONDITION and STAMINA AND STANCE (ALWAYS SHOWN, AUTO-HIDE, NEVER), HEALTH COLOR SCHEME (POLYCHROME, MONOCHROME), CENTER DOT, HIT FEEDBACK, HUD SCALE, CURVED HUD, MALFUNCTION NOTIFICATIONS, DOUBLE-CLICK QUICK USE; ours (ui-8a, 2026-11-08): MENU TEXT SIZE (100 to 150 %, per device: the menu screens drawn larger, laid out for the smaller screen) and HINTS (off, a prompt shows no key, the menu bar no keys and the HUD no "how to" words, as in Tarkov) | Highlight available operations; vaulting mode; priority window; continuous healing |
+| Graphics | Texture and shadow quality, object LOD, overall visibility, AA, resampling, DLSS/FSR, HBAO, SSR, anisotropic, sharpness, Reflex, HQ colour, Z-blur, chromatic aberrations, noise, grass shadows, mip streaming, FPS limits | GRAPHICS (POTATO to HIGH), HOLD 30 FPS, FILM GRAIN, LENS EFFECTS, MOTION BLUR, RECORDER OVERLAY (ui-2b: FULL, CLEAN by default, OFF) | Our own rows for what we control (shadow lights, detail density, draw distance of props, grass, chromatic aberration); the rest is Roblox's slider (exception 3) |
+| PostFX | Brightness, saturation, clarity, colourfulness, luma and adaptive sharpen, colour grading with intensity, colour-blind mode with intensity | BRIGHTNESS, SATURATION, CLARITY, COLOR GRADING (NONE, STEEL, EMBER, MOSS, DUSK) and GRADING INTENSITY; COLORBLIND MODE (NONE, PROTANOPIA, DEUTERANOPIA, TRITANOPIA) and COLORBLIND INTENSITY since 2026-11-08 (ui-8a): the HUD's and the menus' colours are daltonized (the lost difference moved into the channels that type still sees: red reads pink against green for a deuteranope) | Colourfulness and the two sharpen sliders; the colour-blind filter on the 3D image itself (Roblox cannot filter each colour channel of it) |
 | Sound | Volume sliders: overall, interface, music, chat, VoIP | OVERALL VOLUME, EFFECTS, INTERFACE, AMBIENCE | Music, chat and voice once the game has them |
 | Controls | Sensitivity, aim sensitivity, invert, every bind | MOUSE, AIM, GAMEPAD and TOUCH SENSITIVITY, INVERT Y AXIS (ui.7), touch AIM WHEN FIRING and FLOATING STICK, and every PC key rebindable (section 4) | Bind modes (press, release, hold, double press) |
 
@@ -1481,6 +1481,37 @@ Still a gap:
 - Ours: a destroyed part stays destroyed out of raid until HALE treats it (our reading; no source we could open says
   so), and restoring one costs its health plus 2,500 MK (EFT's price is not published).
 - EFT's scav cooldown is about 25 minutes (unofficial); ours is 15.
+
+### Accessibility and the recorder overlay (decisions ui-8a and ui-2b, 2026-11-08)
+
+Checked in Studio (TEST_RESULTS). EFT has a COLORBLIND MODE on its POSTFX tab (protanopia, deuteranopia, tritanopia,
+with an intensity) and no menu text size or hints setting.
+
+Matches Tarkov now:
+- **COLORBLIND MODE and its intensity** on the POSTFX tab, with EFT's three types.
+
+Ours:
+- **The colour-blind mode recolours the HUD and the menus only.** Roblox cannot remap the colour channels of the 3D
+  image, so the colours are daltonized instead: what that type of colour blindness loses is moved into the channels it
+  still sees. Words and shapes stay beside every colour.
+- **MENU TEXT SIZE** (100 to 150 %, kept per device): each menu screen (inventory, inspect, modding, the modal screens,
+  the menu bar) sits in a root frame laid out for the screen divided by the size and drawn that much larger, so text,
+  buttons and gaps grow together; a phone at 150 % gets the compact layouts sooner. The HUD keeps HUD SCALE.
+- **HINTS:** on by default; off, a prompt shows no key, the menu bar no keys and the HUD no "how to" words, as Tarkov
+  shows them.
+- **RECORDER OVERLAY** (decision ui-2b) is FULL, CLEAN (the default) or OFF. CLEAN keeps the REC dot and tag, the time
+  stamp, the raid clock and the corner brackets; it drops the device line and keeps the colour split on the REC tag only,
+  so the numbers are crisp. OFF drops the bodycam frame and keeps the clock. SAVING OFF shows in every mode.
+- **Fixed on the way:** the inventory read the pointer from the top of the screen and the frames from under Roblox's top
+  bar, so its context menu and drag picture sat 58 px under the cursor; the menu bar's six buttons now share the width
+  left of DEPLOY (they ran into it on a narrow screen); a locked task's reason now puts what is missing first and
+  the tasks to finish after ("Requires level 3. Opens after Signal Check."; not looked at on screen yet) instead of
+  "Requires after Signal Check.".
+
+Still a gap:
+- The colour-blind filter on the 3D image itself.
+- Not checked: dragging an item with the mouse at a larger MENU TEXT SIZE (the test tool's drags did not move items at
+  100 % either), a phone, the palettes by a colour-blind player.
 
 ### M4 batch 4, coordinator's part (2026-11-08)
 

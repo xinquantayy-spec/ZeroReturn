@@ -38,14 +38,22 @@ local C = {
 	blue = Color3.fromRGB(96, 192, 255),
 }
 Hud.C = C
+local BASE_C = table.clone(C) -- the colours before the COLORBLIND MODE (UiKit.cvd, ui-8a)
 
+local texts = {} -- every HUD text with its own colour split (RECORDER OVERLAY CLEAN turns the split off but on REC)
 local function txt(name, at, size, align, extra)
 	local o = { name = name, at = at, size = size, align = align or 0, glow = 0.86 }
 	for k, v in extra or {} do
 		o[k] = v
 	end
-	return L:text(o)
+	local obj = L:text(o)
+	table.insert(texts, { obj = obj, ca = o.ca == nil and 1 or o.ca })
+	return obj
 end
+-- RECORDER OVERLAY (decision ui-2b): 1 FULL (the device line, the colour split on every glyph), 2 CLEAN (the default:
+-- the REC dot and tag, the time stamp, the raid clock and the brackets; the colour split on the REC tag only, so the
+-- numbers stay crisp; no device line), 3 OFF (the bodycam frame gone; the clock stays). SAVING OFF shows in every mode.
+Hud.recMode = 2
 
 -- Text sizes at 1080p (the lens scales them with the screen and the HUD SCALE setting). Large enough to read
 -- at a glance; everything is stacked in the margins (layout()) so the centre of the view stays clear.
@@ -185,7 +193,16 @@ local function layout()
 	toastStep = (SZ.toast * u + gap) / H
 	-- recorder line and clock (top-right), the exits list below them. On touch the menu row (SET, EXIT, BAG) stands at
 	-- the top centre (Touch.luau; KNOWN_ISSUES 75) and the list drops down under it, clear of the thumb buttons
-	local rightEnd = stack({ { O.rec, SZ.rec }, { O.dev, SZ.dev }, { O.clock, SZ.clock } }, SIDE_R, top, gap)
+	-- the rows the RECORDER OVERLAY shows (ui-2b): no gap is left for a hidden REC line or device line
+	local col = {}
+	if Hud.recMode ~= 3 then
+		table.insert(col, { O.rec, SZ.rec })
+	end
+	if Hud.devShown then
+		table.insert(col, { O.dev, SZ.dev })
+	end
+	table.insert(col, { O.clock, SZ.clock })
+	local rightEnd = stack(col, SIDE_R, top, gap)
 	local row = ctx.Touch and ctx.Touch.topRowBottom and ctx.Touch.topRowBottom()
 	-- on touch the toasts start right of the movement stick when their stack would reach it (KNOWN_ISSUES 77)
 	toastX = SIDE_L
@@ -491,18 +508,29 @@ local function slowUpdate()
 	end
 	-- the bodycam stands by in the bunker and starts recording when the van doors slam (Lobby) or in the raid
 	if inRaid or Hud.recording then
-		O.rec:set({ { icon = I.DOT, color = C.red, alpha = blink and 0 or 0.85, size = SZ.rec * 0.66 }, { t = "REC", color = C.red }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
+		O.rec:set({ { icon = I.DOT, color = C.red, alpha = blink and 0 or 0.85, size = SZ.rec * 0.66 }, { t = "REC", color = C.red }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white, noca = Hud.recMode ~= 1 } })
 	else
-		O.rec:set({ { icon = I.DOT, color = C.white, alpha = 0.55, size = SZ.rec * 0.66 }, { t = "STBY", color = C.white }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white } })
+		O.rec:set({ { icon = I.DOT, color = C.white, alpha = 0.55, size = SZ.rec * 0.66 }, { t = "STBY", color = C.white }, { t = "   " .. stamp, size = SZ.rec * 0.78, color = C.white, noca = Hud.recMode ~= 1 } })
 	end
 	-- SAVING OFF whenever the server keeps progress anywhere but Roblox's DataStore (Studio's in-memory store, or a live
 	-- server whose DataStore is down: Store.luau), so nobody plays on thinking it is kept
 	local persist = ctx.State.data and ctx.State.data.persistence
-	local devLine = { { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Maps.nameOf(raid and raid.map) or "RELAY 7"), color = C.dim, alpha = 0.2 } }
-	if persist ~= nil and persist ~= "DATASTORE" then
-		table.insert(devLine, { t = "  ·  SAVING OFF", color = C.red, alpha = 0.1 })
+	local savingOff = persist ~= nil and persist ~= "DATASTORE"
+	local devLine = {}
+	if Hud.recMode == 1 then
+		devLine = { { t = "ZR BODYCAM 4  ·  X7F3A21  ·  " .. (inRaid and Maps.nameOf(raid and raid.map) or "RELAY 7"), color = C.dim, alpha = 0.2 } }
 	end
-	O.dev:set(devLine)
+	if savingOff then
+		table.insert(devLine, { t = (#devLine > 0 and "  ·  " or "") .. "SAVING OFF", color = C.red, alpha = 0.1 })
+	end
+	O.dev:show(#devLine > 0)
+	if #devLine > 0 then
+		O.dev:set(devLine)
+	end
+	if (#devLine > 0) ~= (Hud.devShown == true) then
+		Hud.devShown = #devLine > 0
+		layout() -- the right column closes up or makes room
+	end
 	signalCheck(inRaid and raid or nil)
 	-- clock / money
 	if inRaid and raid then
@@ -550,14 +578,20 @@ local function slowUpdate()
 		O.weapon:show(true)
 		local low = St.rounds <= math.max(5, St.belt * 0.1)
 		local leave = ctx.Input.device() == "Touch" and "TAP LEAVE" or (ctx.Input.label("MountLeave") .. " TO LEAVE")
-		O.weapon:set({
+		local segs = {
 			{ t = St.name .. "  ·  ", color = C.dim, alpha = 0.15 }, { t = St.rounds .. " / " .. St.belt, color = low and C.red or C.yellow, alpha = 0.1 },
-			{ t = "  ·  " .. leave, color = C.dim, alpha = 0.15 },
-		})
+		}
+		if ctx.Input.hints() then
+			table.insert(segs, { t = "  ·  " .. leave, color = C.dim, alpha = 0.15 })
+		end
+		O.weapon:set(segs)
 	elseif inRaid and Gr and Gr.state and Gr.state ~= "throw" then
 		-- grenade in hand: what it is and how to throw it
 		O.weapon:show(true)
 		local how = Gr.state == "ready" and ("RELEASE " .. ctx.Input.label("Grenade") .. " TO THROW  ·  HOLD " .. ctx.Input.label("Aim") .. ": UNDERHAND") or "PULLING THE PIN"
+		if not ctx.Input.hints() and Gr.state == "ready" then
+			how = "READY" -- HINTS off: no keys
+		end
 		O.weapon:set({ { t = (Gr.itemName and Gr.itemName() or "GRENADE") .. "  ·  " .. how, color = C.yellow, alpha = 0.1 } })
 	elseif inRaid and W.hasWeapon then
 		local line = (W.weaponName or "WEAPON") .. "  ·  " .. (W.modeLabel and W.modeLabel() or W.modeName or "SINGLE")
@@ -581,8 +615,9 @@ local function slowUpdate()
 		if W.malf and ctx.Settings.data.malfNotes ~= false then
 			-- Tarkov flashes the weapon corner on a malfunction; inspecting names it
 			local blink = math.floor(os.clock() * 2.5) % 2 == 0
-			local what = W.malfName and (W.malfName .. "  ·  " .. ctx.Input.label("ChamberCheck") .. " TO CLEAR")
-				or ("MALFUNCTION  ·  " .. ctx.Input.label("InspectWeapon") .. " TO INSPECT")
+			local hint = ctx.Input.hints()
+			local what = W.malfName and (W.malfName .. (hint and ("  ·  " .. ctx.Input.label("ChamberCheck") .. " TO CLEAR") or ""))
+				or ("MALFUNCTION" .. (hint and ("  ·  " .. ctx.Input.label("InspectWeapon") .. " TO INSPECT") or ""))
 			O.weapon:set({ { t = line .. "  ·  ", color = C.dim, alpha = 0.15 }, { t = what, color = C.red, alpha = blink and 0.05 or 0.45 } })
 		else
 			O.weapon:set({ { t = line, color = C.dim, alpha = 0.15 } })
@@ -598,7 +633,7 @@ local function slowUpdate()
 		if W.mounted then
 			mk = "MOUNTED"
 		elseif W.mountable and W.mountable() ~= nil then -- ten times a second (slowUpdate)
-			mk = ctx.Input.device() == "KBM" and ("MOUNT  ·  " .. ctx.Input.label("Knife")) or "MOUNT"
+			mk = (ctx.Input.device() == "KBM" and ctx.Input.hints()) and ("MOUNT  ·  " .. ctx.Input.label("Knife")) or "MOUNT"
 		end
 	end
 	O.mount:show(mk ~= nil)
@@ -909,14 +944,19 @@ end
 
 local function applySettings()
 	local S = ctx.Settings.data
+	K.recolour(C, BASE_C) -- COLORBLIND MODE (ui-8a)
 	-- HUD text is straight by default (owner request); "CURVED HUD" bends it with the lens again
+	local mode = S.recOverlay or 2
+	Hud.recMode = mode
 	L:setOptions(S.curve == true, S.lens ~= false, S.hudScale or 1)
 	layout()
-	local rec = S.film ~= false
+	local rec = mode ~= 3
 	O.rec:show(rec)
-	O.dev:show(rec)
 	for _, b in O.brackets do
 		b:show(rec)
+	end
+	for _, e in texts do
+		e.obj:setCa((mode == 1 or e.obj == O.rec) and e.ca or 0)
 	end
 end
 

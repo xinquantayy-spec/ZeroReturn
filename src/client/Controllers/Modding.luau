@@ -221,7 +221,7 @@ end
 local function close()
 	if gui then
 		gui.Enabled = false
-		local w = gui:FindFirstChild("Window")
+		local w = K.root(gui):FindFirstChild("Window")
 		if w then
 			w:Destroy()
 		end
@@ -244,14 +244,14 @@ function Modding.render()
 		close()
 		return
 	end
-	local old = gui:FindFirstChild("Window")
+	local old = K.root(gui):FindFirstChild("Window")
 	if old then
 		old:Destroy()
 	end
 	local vp = K.viewport(gui)
 	local W = math.floor(math.min(vp.X - 24, 1180))
 	local H = math.floor(math.min(vp.Y - 16, 680))
-	local win = K.frame(gui, { Name = "Window", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.02, ZIndex = 1 })
+	local win = K.frame(K.root(gui), { Name = "Window", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.02, ZIndex = 1 })
 	K.stroke(win, K.C.line, 0.45)
 	local def = defs[it.id]
 	K.label(win, "MODDING  ·  " .. string.upper(def.name), 16, { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -200, 0, 22), FontFace = K.bold, ZIndex = 2 })

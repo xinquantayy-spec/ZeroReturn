@@ -1175,7 +1175,8 @@ local function saveSettings(player, p)
 		and num("pfxClarity", -0.5, 0.5) and num("pfxGrade", 0, 4) and num("pfxGradeK", 0, 1) and num("volMaster", 0, 1) and num("volFx", 0, 1)
 		and num("volUi", 0, 1) and num("volAmb", 0, 1) and num("padSens", 0.2, 3) and num("touchSens", 0.2, 3)
 		and num("msgSeen", 0, 4e9) and bool("invertY") and bool("malfNotes") and bool("dblUse")
-		and num("hudHealth", 1, 3) and num("hudStamina", 1, 3) and num("hudColors", 1, 2)) then
+		and num("hudHealth", 1, 3) and num("hudStamina", 1, 3) and num("hudColors", 1, 2)
+		and num("cvdMode", 0, 3) and num("cvdK", 0, 1) and num("menuScale", 1, 1.5) and bool("hints") and num("recOverlay", 1, 3)) then
 		return fail("BAD_INPUT")
 	end
 	if not (num("fov", 50, 100) and num("sens", 0.2, 3) and num("quality", 0, 3) and num("shake", 0, 1) and num("grain", 0, 1) and num("hudScale", 0.7, 1.4)
@@ -1186,12 +1187,12 @@ local function saveSettings(player, p)
 	if s.quality then
 		s.quality = math.floor(s.quality + 0.5) -- graphics preset: 0 POTATO, 1 LOW, 2 MEDIUM, 3 HIGH
 	end
-	-- per kind of device (Settings.luau): { dev = { phone|console|pc = { quality, fov, sens, grain } } }
+	-- per kind of device (Settings.luau): { dev = { phone|console|pc = { quality, fov, sens, grain, menuScale } } }
 	if p.dev ~= nil then
 		if type(p.dev) ~= "table" then
 			return fail("BAD_INPUT")
 		end
-		local LIM = { quality = { 0, 3 }, fov = { 50, 100 }, sens = { 0.2, 3 }, grain = { 0, 1 } }
+		local LIM = { quality = { 0, 3 }, fov = { 50, 100 }, sens = { 0.2, 3 }, grain = { 0, 1 }, menuScale = { 1, 1.5 } }
 		s.dev = type(s.dev) == "table" and s.dev or {}
 		for cls, vals in p.dev do
 			if (cls ~= "phone" and cls ~= "console" and cls ~= "pc") or type(vals) ~= "table" then

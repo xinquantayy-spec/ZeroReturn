@@ -808,12 +808,12 @@ local function tasksTab(f, x, y, w, h, d, tid)
 			text(right, title, color, 13, true)
 		end
 		if qs.s == "locked" then
-			local why = {}
+			local why, after = {}, {} -- what the raider still needs; the tasks to finish first
 			if (econ.level or 1) < (q.level or 1) then
 				table.insert(why, "level " .. q.level)
 			end
 			if q.after then
-				table.insert(why, "after " .. QD.byId[q.after].name)
+				table.insert(after, QD.byId[q.after].name)
 			end
 			-- EFT 1.1.0: side tasks open in groups at the giver's loyalty levels (economy-6a; the server checks it too)
 			local st = econ.traders and econ.traders[tid]
@@ -825,7 +825,7 @@ local function tasksTab(f, x, y, w, h, d, tid)
 			for _, id in q.needs or {} do
 				local nq = d.quests and d.quests[id]
 				if not (nq and nq.s == "claimed") then
-					table.insert(why, "after " .. (QD.byId[id] and QD.byId[id].name or id))
+					table.insert(after, QD.byId[id] and QD.byId[id].name or id)
 				end
 			end
 			if q.karma and (econ.karma or 0) < q.karma then
@@ -834,7 +834,15 @@ local function tasksTab(f, x, y, w, h, d, tid)
 			if q.ll then
 				table.insert(why, "loyalty " .. q.ll .. " with every trader")
 			end
-			text(right, #why > 0 and ("Requires " .. table.concat(why, ", ") .. ".") or "Not offered yet.", K.C.dim, 11)
+			-- "Requires level 3, loyalty level 2 with VOS. Opens after Signal Check."
+			local lines = {}
+			if #why > 0 then
+				table.insert(lines, "Requires " .. table.concat(why, ", ") .. ".")
+			end
+			if #after > 0 then
+				table.insert(lines, "Opens after " .. table.concat(after, ", ") .. ".")
+			end
+			text(right, #lines > 0 and table.concat(lines, " ") or "Not offered yet.", K.C.dim, 11)
 		else
 			text(right, q.desc, K.C.dim, 11)
 			local complete = true

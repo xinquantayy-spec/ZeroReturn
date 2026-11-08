@@ -201,7 +201,7 @@ function TextObj:set(value)
 	local parts = {}
 	for _, s in segs do
 		local c = s.color or self.color
-		parts[#parts + 1] = (s.t or ("#" .. tostring(s.icon))) .. "|" .. tostring(s.size or 0) .. "|" .. c:ToHex() .. "|" .. tostring(s.alpha or "") .. (s.top and "^" or "")
+		parts[#parts + 1] = (s.t or ("#" .. tostring(s.icon))) .. "|" .. tostring(s.size or 0) .. "|" .. c:ToHex() .. "|" .. tostring(s.alpha or "") .. (s.top and "^" or "") .. (s.noca and "!" or "")
 	end
 	local sig = table.concat(parts, "~")
 	if sig == self.sig then
@@ -211,6 +211,27 @@ function TextObj:set(value)
 	self.segs = segs
 	self.dirty = true
 	return true
+end
+
+-- the colour split's strength (0 none); glyphs made without their red and blue copies are made again when it comes on
+function TextObj:setCa(v)
+	if v == self.ca then
+		return
+	end
+	if (v > 0) ~= (self.ca > 0) then
+		for _, pool in { self.tPool, self.iPool } do
+			for _, g in pool do
+				g.main:Destroy()
+				if g.r then
+					g.r:Destroy()
+					g.b:Destroy()
+				end
+			end
+			table.clear(pool)
+		end
+	end
+	self.ca = v
+	self.dirty = true
 end
 
 function TextObj:setAt(u, v)
@@ -344,14 +365,14 @@ function TextObj:layout()
 		local alpha = s.alpha or self.alpha
 		if s.icon then
 			local w = size * 0.86
-			list[#list + 1] = { icon = s.icon, x = x + w * 0.5, y = yoff, w = w, size = size * 0.86, color = color, alpha = alpha }
+			list[#list + 1] = { icon = s.icon, x = x + w * 0.5, y = yoff, w = w, size = size * 0.86, color = color, alpha = alpha, noca = s.noca }
 			x += w + size * 0.14
 		elseif s.t then
 			local font = s.font or self.font
 			for _, cp in utf8.codes(s.t) do
 				local ch = utf8.char(cp)
 				local adv = advance(font, ch) * size / 100
-				list[#list + 1] = { ch = ch, x = x + adv * 0.5, y = yoff, w = adv, size = size, color = color, alpha = alpha, font = font }
+				list[#list + 1] = { ch = ch, x = x + adv * 0.5, y = yoff, w = adv, size = size, color = color, alpha = alpha, font = font, noca = s.noca }
 				x += adv + self.tracking * size
 			end
 		end
@@ -425,8 +446,8 @@ function TextObj:layout()
 			local m = caPx * (0.7 + r * 0.9)
 			glyph.r.Position = UDim2.fromOffset(X + dx * m, Y + dy * m)
 			glyph.b.Position = UDim2.fromOffset(X - dx * m, Y - dy * m)
-			glyph.r.Visible = caPx > 0 and g.alpha < 0.98
-			glyph.b.Visible = caPx > 0 and g.alpha < 0.98
+			glyph.r.Visible = caPx > 0 and not g.noca and g.alpha < 0.98 -- a segment may keep its glyphs crisp (noca)
+			glyph.b.Visible = caPx > 0 and not g.noca and g.alpha < 0.98
 		end
 	end
 	for i = ti + 1, #self.tPool do

@@ -58,7 +58,7 @@ local function modal(w, h, title)
 	w = phone and vp.X or math.min(w, vp.X - 16)
 	h = phone and (vp.Y - barH) or math.min(h, vp.Y - 12 - barH)
 	local pad = phone and 6 or 14
-	local f = K.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -barH / 2), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
+	local f = K.frame(K.root(gui), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -barH / 2), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(f, K.C.line, 0.4)
 	K.pad(f, pad)
 	K.label(f, title, 17, { FontFace = K.bold, Size = UDim2.new(1, 0, 0, phone and 36 or 24), TextYAlignment = phone and Enum.TextYAlignment.Center or nil })
@@ -577,7 +577,7 @@ function Screens.invite(dd)
 	if inviteFrame then
 		inviteFrame:Destroy()
 	end
-	local fr = K.frame(gui, { Name = "Invite", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = UDim2.fromOffset(440, 92), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.05 })
+	local fr = K.frame(K.root(gui), { Name = "Invite", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = UDim2.fromOffset(440, 92), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.05 })
 	inviteFrame = fr
 	K.stroke(fr, K.C.ochre, 0.3)
 	K.pad(fr, 10)
@@ -688,6 +688,9 @@ local SETTING_TABS = {
 		-- Tarkov's GAME tab (audit ui.8)
 		{ "MALFUNCTION NOTIFICATIONS", "malfNotes", "bool" },
 		{ "DOUBLE-CLICK QUICK USE", "dblUse", "bool" },
+		-- accessibility (decision ui-8a; EFT has neither): menus drawn up to half as large again, and the control hints
+		{ "MENU TEXT SIZE", "menuScale", "num", 1, 1.5, 0.1, "pct" },
+		{ "HINTS", "hints", "bool" },
 	} },
 	{ "GRAPHICS", {
 		{ "GRAPHICS", "quality", "enum", { [0] = "POTATO", "LOW", "MEDIUM", "HIGH" }, 0 },
@@ -695,7 +698,8 @@ local SETTING_TABS = {
 		{ "FILM GRAIN", "grain", "num", 0, 1, 0.1, "pct" },
 		{ "LENS EFFECTS", "lens", "bool" },
 		{ "MOTION BLUR", "mblur", "bool" },
-		{ "RECORDER OVERLAY", "film", "bool" },
+		-- the bodycam frame (decision ui-2b): FULL adds the device line and the colour split on every number
+		{ "RECORDER OVERLAY", "recOverlay", "enum", { "FULL", "CLEAN", "OFF" }, 1 },
 	} },
 	{ "SOUND", {
 		{ "OVERALL VOLUME", "volMaster", "num", 0, 1, 0.1, "pct" },
@@ -709,6 +713,10 @@ local SETTING_TABS = {
 		{ "CLARITY", "pfxClarity", "num", -0.5, 0.5, 0.05, "spct" },
 		{ "COLOR GRADING", "pfxGrade", "enum", { [0] = "NONE", "STEEL", "EMBER", "MOSS", "DUSK" }, 0 },
 		{ "GRADING INTENSITY", "pfxGradeK", "num", 0, 1, 0.1, "pct" },
+		-- EFT's COLORBLIND MODE and intensity (decision ui-8a): Roblox cannot filter each colour channel of the 3D image, so
+		-- here they recolour the HUD and the menus (UiKit.cvd)
+		{ "COLORBLIND MODE", "cvdMode", "enum", { [0] = "NONE", "PROTANOPIA", "DEUTERANOPIA", "TRITANOPIA" }, 0 },
+		{ "COLORBLIND INTENSITY", "cvdK", "num", 0, 1, 0.1, "pct" },
 	} },
 	{ "CONTROLS", {
 		{ "MOUSE SENSITIVITY", "sens", "num", 0.2, 3, 0.1, "%.1f" },

@@ -486,7 +486,7 @@ function Inspect.open(items, g, opts)
 	local H = math.floor(math.min(36 + topH + 8 + sheetH + 10, vp.Y - 16))
 	local n = #windows
 	zTop += 1
-	local frame = K.frame(gui, {
+	local frame = K.frame(K.root(gui), {
 		Name = "Inspect", Active = true, ZIndex = zTop, BackgroundColor3 = K.C.bg,
 		Position = UDim2.fromOffset(math.floor((vp.X - W) / 2) + n * 26, math.floor((vp.Y - H) / 2) + n * 26), Size = UDim2.fromOffset(W, H),
 	})
@@ -652,7 +652,8 @@ function Inspect.open(items, g, opts)
 		if moving and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			local dlt = input.Position - mlast
 			mlast = input.Position
-			frame.Position += UDim2.fromOffset(dlt.X, dlt.Y)
+			local d = K.toLocalLen(dlt) -- screen pixels in the root's units (MENU TEXT SIZE)
+			frame.Position += UDim2.fromOffset(d.X, d.Y)
 		end
 	end))
 	table.insert(win.conns, UIS.InputEnded:Connect(function(input)

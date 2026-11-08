@@ -182,6 +182,30 @@ function T.run(_ctx)
 		check("every carried item has a picture" .. (#none > 0 and (" (none: " .. table.concat(none, ", ") .. ")") or ""), #none == 0)
 	end
 
+	-- accessibility (ui-8a) and the recorder overlay (ui-2b): the settings request takes the new rows (the menu text size
+	-- clamped to 150 % and kept per device too) and refuses a wrong type; the profile's settings are put back after
+	do
+		local pl = game:GetService("Players"):GetPlayers()[1]
+		local prof = pl and _ctx and _ctx.Profiles.get(pl)
+		if prof and prof.settings then
+			local keep = copy(prof.settings)
+			local r1 = _ctx.Remotes.dispatch(pl, "settings", { cvdMode = 2, cvdK = 0.5, menuScale = 1.3, hints = false, recOverlay = 1, dev = { phone = { menuScale = 1.4 } } })
+			local s = prof.settings
+			local took = r1 and r1.ok and s.cvdMode == 2 and s.cvdK == 0.5 and s.menuScale == 1.3 and s.hints == false and s.recOverlay == 1
+				and type(s.dev) == "table" and type(s.dev.phone) == "table" and s.dev.phone.menuScale == 1.4
+			task.wait(0.6)
+			local r2 = _ctx.Remotes.dispatch(pl, "settings", { menuScale = 9, recOverlay = 0 })
+			local clamped = r2 and r2.ok and prof.settings.menuScale == 1.5 and prof.settings.recOverlay == 1
+			task.wait(0.6)
+			local r3 = _ctx.Remotes.dispatch(pl, "settings", { hints = "no" })
+			prof.settings = keep
+			check("accessibility settings: colorblind mode and intensity, menu text size (to 150 %, per device), hints and the recorder overlay are kept; a wrong type is refused",
+				took and clamped and r3 ~= nil and not r3.ok)
+		else
+			table.insert(notes, "accessibility settings: no player in the playtest")
+		end
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

@@ -207,8 +207,10 @@ local function keepScroll(sf, key)
 	end)
 end
 
+-- the pointer in GUI space: GetMouseLocation counts from the top of the screen, a frame's AbsolutePosition from under
+-- Roblox's top bar (the GUI inset), so without this the context menu and the drag picture sat 58 px under the cursor
 local function mouse()
-	return UIS:GetMouseLocation()
+	return UIS:GetMouseLocation() - GuiService:GetGuiInset()
 end
 
 local function cornerText(view, it)
@@ -652,7 +654,8 @@ local function openMenu(ref, g, pos)
 	if #list == 0 then
 		return
 	end
-	menu = K.frame(gui, { Name = "ContextMenu", Position = UDim2.fromOffset(pos.X + 4, pos.Y + 4), Size = UDim2.fromOffset(230, #list * 30 + 8), BackgroundColor3 = K.C.bg, ZIndex = 50 })
+	pos = K.toLocal(gui, pos) -- the screen point in the menu root's units (MENU TEXT SIZE)
+	menu = K.frame(K.root(gui), { Name = "ContextMenu", Position = UDim2.fromOffset(pos.X + 4, pos.Y + 4), Size = UDim2.fromOffset(230, #list * 30 + 8), BackgroundColor3 = K.C.bg, ZIndex = 50 })
 	K.stroke(menu, K.C.line, 0.4)
 	K.pad(menu, 4)
 	K.list(menu, nil, 2)
@@ -670,8 +673,9 @@ local function openMenu(ref, g, pos)
 		end)
 	end
 	local vp = K.viewport(gui)
-	local s = menu.AbsoluteSize
-	menu.Position = UDim2.fromOffset(math.min(pos.X + 4, vp.X - s.X - 4), math.min(pos.Y + 4, vp.Y - s.Y - 4))
+	local s = Vector2.new(menu.Size.X.Offset, menu.Size.Y.Offset)
+	local barH = ctx.MenuBar and ctx.MenuBar.reserve() or 0 -- above the menu bar, which draws over this screen
+	menu.Position = UDim2.fromOffset(math.min(pos.X + 4, vp.X - s.X - 4), math.max(0, math.min(pos.Y + 4, vp.Y - barH - s.Y - 4)))
 end
 
 -- ── drawing ────────────────────────────────────────────────────────────────────
@@ -795,7 +799,7 @@ local function tile(parent, view, ref, g, px, py, pw, ph, cellAbs, dropAs)
 				print("[ZR] drag begin", g:sub(1, 6), m)
 			end
 			local rel = m - t.AbsolutePosition
-			local gc = cellAbs or Inventory.cell or 40
+			local gc = (cellAbs or Inventory.cell or 40) * K.menuScale -- the cell on screen (MENU TEXT SIZE)
 			drag = { g = g, ref = ref, id = it.id, unknown = not isKnown, start = m, started = false, grabX = cellAbs and math.floor(rel.X / gc) or 0, grabY = cellAbs and math.floor(rel.Y / gc) or 0, cell = Inventory.cell or gc, w = (sizeOf(it)), h = select(2, sizeOf(it)), r = 0, label = isKnown and d.short or "?", items = view.items }
 			local _, _, p = locate(viewOf(ref), g)
 			if p and p.r == 1 then
@@ -1233,7 +1237,7 @@ function drawOther(right, rightW, cell, d, inRaid)
 			K.label(row, string.format("INSURANCE: %d ITEM(S) RETURNING IN %s", cl.waiting, Util.clock(math.max(0, cl.nextIn or 0))), 12, { Size = UDim2.fromOffset(330, 30), TextColor3 = K.C.green })
 		end
 	else
-		K.label(right, "Open a container or body to loot it.\nPress " .. ctx.Input.label("Inventory") .. " to close.", 13, { Size = UDim2.new(1, 0, 0, 40), TextColor3 = K.C.dim, TextWrapped = true })
+		K.label(right, "Open a container or body to loot it." .. (ctx.Input.hints() and ("\nPress " .. ctx.Input.label("Inventory") .. " to close.") or ""), 13, { Size = UDim2.new(1, 0, 0, 40), TextColor3 = K.C.dim, TextWrapped = true })
 	end
 end
 
@@ -1388,7 +1392,7 @@ local function renderWide(d, W, H, inRaid)
 		info ..= string.format("   ·   %s %.1fs", status.text, status.dur - (os.clock() - status.t0))
 	end
 	K.label(panel, info, 12, { Position = UDim2.fromOffset(12, 28), Size = UDim2.fromOffset(W - 220, 16), TextColor3 = weight > 40 and K.C.orange or K.C.dim })
-	local close = K.button(panel, "CLOSE [" .. ctx.Input.label("Inventory") .. "]", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(150, 30) })
+	local close = K.button(panel, ctx.Input.hints() and ("CLOSE [" .. ctx.Input.label("Inventory") .. "]") or "CLOSE", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(150, 30) })
 	close.Activated:Connect(Inventory.close)
 	-- Tarkov's character tabs along the top (tabList). On narrow windows the tabs narrow so the row keeps clear of the
 	-- header text (Roboto Mono is 0.6 em a glyph: 9.6 px at 16 px)
@@ -1492,7 +1496,7 @@ function Inventory.render()
 	local barH = ctx.MenuBar and ctx.MenuBar.reserve() or 0 -- the menu bar out of a raid (ui-6a)
 	local W = compact and math.floor(vp.X) or math.floor(math.min(vp.X - 12, 1360))
 	local H = compact and math.floor(vp.Y - barH) or math.floor(math.min(vp.Y - 8 - barH, 800))
-	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -barH / 2), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
+	panel = K.frame(K.root(gui), { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -barH / 2), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(panel, K.C.line, 0.45)
 	if compact then
 		Inventory.renderCompact(d, W, H, inRaid)
@@ -1520,7 +1524,8 @@ local function dropTarget(pos)
 	for _, t in gridTargets do
 		if t.frame.Parent and inside(t.frame, pos) and (not t.clip or inside(t.clip, pos)) then
 			local rel = pos - t.frame.AbsolutePosition
-			return { kind = "cell", ref = t.ref, cid = t.cid, x = math.floor(rel.X / t.cell) + 1, y = math.floor(rel.Y / t.cell) + 1, cell = t.cell }
+			local cs = t.cell * K.menuScale -- the cell on screen (MENU TEXT SIZE)
+			return { kind = "cell", ref = t.ref, cid = t.cid, x = math.floor(rel.X / cs) + 1, y = math.floor(rel.Y / cs) + 1, cell = t.cell }
 		end
 	end
 	return nil
@@ -1660,14 +1665,14 @@ local function updateGhost()
 	local c = drag.cell
 	if not ghost then
 		-- no fill: the green / red cells show through under the picture (audit ui.9)
-		ghost = K.frame(gui, { Name = "DragGhost", BackgroundColor3 = K.C.ochre, BackgroundTransparency = 1, ZIndex = 60, Active = false })
+		ghost = K.frame(K.root(gui), { Name = "DragGhost", BackgroundColor3 = K.C.ochre, BackgroundTransparency = 1, ZIndex = 60, Active = false })
 		pcall(function()
 			ghost.Interactable = false
 		end)
 		K.stroke(ghost, K.C.ochre, 0)
 		K.label(ghost, drag.label, 12, { Position = UDim2.fromOffset(3, 2), Size = UDim2.new(1, -4, 0, 14), FontFace = K.bold, ZIndex = 61 })
 	end
-	local m = mouse()
+	local m = K.toLocal(gui, mouse())
 	local gx, gy = drag.grabX, drag.grabY
 	if drag.r ~= drag.r0 then
 		gx, gy = gy, gx
