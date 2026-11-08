@@ -748,33 +748,25 @@ end
 
 local function addExtract(parent, id, name, pos, size, rule, opts)
 	local m = model("Exfil_" .. id, parent)
-	-- beacon: pole + radio box + light + sign (compact under a low ceiling, e.g. a tunnel)
-	local y0 = pos.Y
-	local poleH = (opts and opts.compact) and 6.4 or 9
-	local px, pz = pos.X + size.X / 2 - 1.5, pos.Z - size.Z / 2 + 1.5
-	vcyl(m, poleH, 0.5, px, y0, pz, C.metalDark, M.Metal)
-	-- on the short pole the radio goes up under the lamp, above eye height: lower down it hid the sign from behind
-	local radio = box(m, 1.6, 1.2, 1, px, y0 + poleH - ((opts and opts.compact) and 0.9 or 2.6), pz, C.olive, M.Metal)
-	local lamp = box(m, 0.7, 0.7, 0.7, px, y0 + poleH + 0.3, pz, C.orange, M.Neon)
-	lamp.CastShadow = false
-	lamp.Name = "BeaconLamp"
-	light(lamp, C.orange, 18, 1.2, false)
-	local plate = box(m, 5, 1.4, 0.2, px, y0 + poleH - 4.6, pz - 0.4, C.metalDark, M.Metal)
-	sign(plate, Enum.NormalId.Front, "EXFIL " .. id .. " — " .. name, C.orange)
-	sign(plate, Enum.NormalId.Back, "EXFIL " .. id .. " — " .. name, C.orange)
-	radio.Name = "Radio"
-	local zone = box(root.Triggers, size.X, size.Y, size.Z, pos.X, y0 + size.Y / 2, pos.Z, C.orange, M.ForceField)
+	-- Tarkov marks no exit in the world (decision art-8b): no lamp, sign or painted ground. An exit is found by its
+	-- place (a gate, a tunnel portal, a roadblock, a boat, a car) and the exits list (O). An invisible anchor keeps the
+	-- exit's model and spot for what hangs off it (Extract.buildCar puts a car exit's car in its model).
+	local _ = opts
+	local anchor = box(m, 1, 1, 1, pos.X, pos.Y + 0.5, pos.Z, C.metalDark, M.Metal)
+	anchor.Name = "ExitAnchor"
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.CastShadow = false
+	anchor:SetAttribute("NoDetail", true)
+	local zone = box(root.Triggers, size.X, size.Y, size.Z, pos.X, pos.Y + size.Y / 2, pos.Z, C.orange, M.ForceField)
 	zone.Transparency = 1
 	zone.CanCollide = false
 	zone.CanQuery = false
 	zone.CanTouch = false
 	zone.Name = "ExfilZone_" .. id
-	-- painted ground marking (thin, no collision)
-	local mark = box(m, size.X, 0.06, size.Z, pos.X, y0 + 0.04, pos.Z, C.orange, M.SmoothPlastic)
-	mark.Transparency = 0.82
-	mark.CanCollide = false
-	mark.CanQuery = false
-	World.extracts[id] = { id = id, name = name, cf = zone.CFrame, size = size, pos = pos, beacon = lamp, rule = rule or { kind = "open" }, map = currentMap }
+	World.extracts[id] = { id = id, name = name, cf = zone.CFrame, size = size, pos = pos, beacon = anchor, rule = rule or { kind = "open" }, map = currentMap }
 end
 
 local function buildGround(map)

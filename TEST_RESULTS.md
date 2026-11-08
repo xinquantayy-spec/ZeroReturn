@@ -8,6 +8,14 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## No exit markers, darker nights (decision art-8b; 2026-11-08, about 14:20 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 12 pass, 913 checks. |
+| Exits | The 44 exit models on the four maps hold no visible part (each keeps an invisible anchor and its trigger zone); the relay tower's lamp and the other landmarks stay. |
+| Not checked | Looking at an exit in a raid, a night raid's darkness on screen (the bodycam lift is now 0.31 at full dark instead of 0.62), the car exits' cars in their exit models. |
+
 ## Tasks: the TASKS tab and a hand-over (economy-6a follow-up; 2026-11-08, about 14:05 SGT)
 
 | Test | Result |

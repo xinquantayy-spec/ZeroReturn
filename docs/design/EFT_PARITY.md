@@ -423,8 +423,8 @@ Still a gap:
 | Fully modelled buildings: frames, sills, cornices, gutters, balconies | Part walls with cut holes, flat slabs | art-5b: a modular Blender kit of merged meshes, which also cuts the part count |
 | Dense, lived-in interiors; map edges of fences, forest and terrain | About 10 props a shop, stretched furniture, plain box containers; tall terraced rock walls | art-5b; fenced and wooded edges |
 | Trees and grass that move in the wind | See-through cards, no sway | Sway |
-| Players choose the raid time; nights so dark that goggles and lights matter | One of 8 start times; the bodycam adds about 0.6 exposure at full dark | Choose the time; art-8b |
-| No exit markers in the world | A glowing lamp, a sign and a painted zone at every exit | art-8b: remove them; the landmarks stay |
+| Players choose the raid time; nights so dark that goggles and lights matter | One of 8 start times; the bodycam adds about 0.3 exposure at full dark (halved by art-8b, 2026-11-08) | Choose the time |
+| No exit markers in the world | Since 2026-11-08 (art-8b) none either: exits are found by their place (gates, tunnel portals, a roadblock, a boat, a car) and the exits list | Some exits have no landmark of their own yet (art-8a would add them) |
 | Hazy skies | Roblox's default sky with a cloud layer; the lighting model is not set in code | art.2: an original sky set (clear, overcast, night); art.1: set LightingStyle and PrioritizeLightingQuality and record them |
 | Post effects: ambient occlusion, reflections, chromatic aberration, noise, grading | Grade, bloom, sun rays, depth of field, grain, vignette, edge haze; grading presets | Partial; part of it is a Roblox limit |
 | Detailed, textured guns, gear and items | Vertex colour, no UVs: gun parts 128 to 1,544 triangles, gear about 400, 95 item models | art-4b: PBR sets (512 to 1024) for first-person guns, attachments, worn gear and items seen up close |

@@ -97,8 +97,9 @@ local function raidTargets(e, now)
 	local tint = lerpC(rgb(186, 204, 230), rgb(236, 239, 232), d)
 	tint = lerpC(tint, rgb(255, 226, 202), gold * 0.5)
 	t.gradeTint = lerpC(tint, rgb(220, 229, 236), rain * 0.5)
-	-- bodycam auto-gain lifts dark scenes (and their noise)
-	t.exposure = lerp(0.62, 0, d) + (1 - sun) * 0.1
+	-- bodycam auto-gain lifts dark scenes (and their noise); halved by decision art-8b so nights stay dark enough that
+	-- goggles and lights matter (Tarkov's nights are dark), keeping a little of the bodycam's character
+	t.exposure = lerp(0.31, 0, d) + (1 - sun) * 0.05
 	t.grain = lerp(1.4, 1, d)
 	t.wind = Vector3.new(w.wind * 14, 0, w.wind * 7)
 	return t, d, h
