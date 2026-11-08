@@ -168,11 +168,16 @@ local function stashItems(prof, id)
 end
 Economy.stashItems = stashItems
 
--- remove n of id from the stash (smallest stacks first)
+-- remove n of id from the stash (smallest stacks first, then the most worn: a used repair kit goes before a fresh one,
+-- as EFT's refill craft takes it)
 local function consumeStash(prof, id, n)
 	local list = stashItems(prof, id)
 	table.sort(list, function(a, b)
-		return (a.it.n or 1) < (b.it.n or 1)
+		local na, nb = a.it.n or 1, b.it.n or 1
+		if na ~= nb then
+			return na < nb
+		end
+		return (a.it.pts or math.huge) < (b.it.pts or math.huge)
 	end)
 	local left = n
 	for _, e in list do

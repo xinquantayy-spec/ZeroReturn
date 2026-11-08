@@ -30,8 +30,7 @@
 - The owner's to try: the flea market between two servers needs a published place (publishing is the owner's call).
 - Done 2026-11-08 evening (TEST_RESULTS): the crafts thread (76 of EFT's crafts, merged, HideoutTests 103/0 in Studio)
   and ui-5a, the FIRST RAID (checked in Studio with the dev bridges). 16 suites, 1,190 checks.
-- Next, in order: the crafts thread's two small REQUESTs (the refill uses the most worn repair kit; crafted guns come with
-  their default magazine); economy-1a's next slices (.366, a revolver, more 9x19 guns, more parts, the other barter goods,
+- Next, in order: economy-1a's next slices (.366, a revolver, more 9x19 guns, more parts, the other barter goods,
   keys; the items that bring in the most left-out crafts: printer paper, a cook book, a Geiger counter, a textbook, SJ1,
   a magnet, a sledgehammer, 7.62x54R FMJ, 7.62x39 FMJ); art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
   hideout modules without one; bipods; ai-4a voices.

@@ -549,6 +549,27 @@ function T.run(ctx)
 		r = H.act(nil, p, { op = "collect", m = "workbench" })
 		check("collected: weapon parts found in raid, the screwdriver back", r == true and count(p, "WEAPON_PARTS") == 1 and firOf(p, "WEAPON_PARTS") == true
 			and count(p, "SCREWDRIVER") == 1 and p.hideout.crafts.workbench == nil)
+		-- the crafts thread's REQUESTs (2026-11-08): a crafted gun comes with its default magazine; a refill takes the most
+		-- worn repair kit
+		local gunOk = H.giveAll(p, { { "KS74_RIFLE", 1, true } })
+		local withMag, gunG = false, nil
+		for g, it in p.items do
+			if it.id == "KS74_RIFLE" then
+				gunG = g
+				withMag = it.mag ~= nil and p.items[it.mag] ~= nil
+			end
+		end
+		if gunG then
+			Inv.take(p, gunG)
+		end
+		check("a crafted gun arrives with its default magazine, as a trader's does", gunOk and withMag)
+		local gWorn, kWorn = Inv.newItem("WEAPON_KIT", 1, { pts = 40 })
+		local gNew, kNew = Inv.newItem("WEAPON_KIT", 1, { pts = 150 })
+		Inv.place(p, gNew, kNew, { "stash" })
+		Inv.place(p, gWorn, kWorn, { "stash" })
+		ctx.Economy.consumeStash(p, "WEAPON_KIT", 1)
+		check("the refill uses up the most worn repair kit", p.items[gWorn] == nil and p.items[gNew] ~= nil)
+		Inv.take(p, gNew)
 		check("the switch: off, and on again with fuel", H.act(nil, p, { op = "power", on = false }) == true and not HD.powered(p.hideout)
 			and H.act(nil, p, { op = "power", on = true }) == true and HD.powered(p.hideout))
 		-- the scav case and the farm, levels set directly (their EFT requirements are checked above)

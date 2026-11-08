@@ -12,6 +12,7 @@ local Util = require(Shared.Util)
 local HD = require(Shared.HideoutData)
 local HS = require(Shared.HideoutStyle)
 local Inv = require(script.Parent.Inv)
+local WP = require(Shared.WeaponParts)
 
 local Hideout = {}
 local ctx
@@ -163,7 +164,12 @@ local function giveAll(prof, list)
 		local left = d and e[2] or 0
 		while left > 0 do
 			local take = math.min(left, d.stack or 1)
-			local g, it = Inv.newItem(e[1], take, e[3] and { fir = true } or nil)
+			local extra = nil
+			if e[3] or WP.isBase(e[1]) then
+				-- a crafted gun comes as EFT's default build with its (empty) magazine, as a trader's does
+				extra = { fir = e[3] or nil, presetMag = WP.isBase(e[1]) or nil }
+			end
+			local g, it = Inv.newItem(e[1], take, extra)
 			if not Inv.place(prof, g, it, { "stash" }) then
 				for _, pg in placed do
 					Inv.take(prof, pg)
