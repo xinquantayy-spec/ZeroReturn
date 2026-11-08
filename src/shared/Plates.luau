@@ -123,10 +123,12 @@ local NECK_U, NECK_V = 0.32, 0.7 -- the neck: the middle third of the UpperTorso
 local ARMPIT_V = 0.41 -- above this on the UpperTorso's sides: the armpits, which no vest covers (0.14 notes)
 local HEAD_TOP, HEAD_EYES, HEAD_LOW = 0.43, -0.1, -0.6 -- head bands, in the head's half-height (ours, on eft-ammo's layout)
 
--- the point where the line from `from` to `to` (both in the part's own space) first meets the box of half-size h;
--- `to` itself when the line misses the box or starts inside it (a hit position on the surface stays where it is)
+-- the point where the line from `from` to `to` (both in the part's own space) first meets the box of half-size h.
+-- A ray's hit on the surface stays where it is (a bullet's arc is not the straight line from the muzzle); a point inside
+-- the box (a blow or a blast aimed at the part's middle, or a hit on a rounded mesh) moves out along the line to the
+-- face it came through; `to` itself when there is no line or it misses the box.
 function P.entry(from, to, h)
-	if not from then
+	if not from or math.max(math.abs(to.X / h.X), math.abs(to.Y / h.Y), math.abs(to.Z / h.Z)) >= 0.97 then
 		return to
 	end
 	local d = to - from
