@@ -72,6 +72,11 @@ add("M700_BOLT", { name = "Osprey OB-7", short = "OB-7", kind = "weapon", w = 6,
 -- handbook prices (VSS 65,203, AS VAL 66,869); the weights are ours (not found)
 add("VSS_RIFLE", { name = "Owl SV-9", short = "SV-9", kind = "weapon", w = 5, h = 2, mass = 2.6, value = 65203, caliber = "9.39", weapon = "VSS", family = "VSS", rarity = "rare", desc = "Silenced marksman rifle in 9x39 with a wooden skeleton stock. Its barrel is the suppressor. Whisper quiet; the heavy bullet drops hard past 200 m.", color = c("#6B4429") })
 add("VAL_RIFLE", { name = "Nightjar AV-9", short = "AV-9", kind = "weapon", w = 5, h = 2, mass = 2.5, value = 66869, caliber = "9.39", weapon = "VAL", family = "VSS", rarity = "rare", desc = "Silenced assault rifle in 9x39 with a folding skeleton stock. Takes the SV-9's magazines.", color = c("#5A3A34") })
+-- economy-1a, seventh slice (2026-11-08): EFT's personal defence weapons. The Swift PW-46 copies the HK MP7A1 (4.6x30) and
+-- the Petrel PD-57 the FN P90 (5.7x28); both fire single shots or bursts. Values are EFT's handbook prices (MP7A1 44,288,
+-- P90 45,200); the weights are ours (not found)
+add("MP7_SMG", { name = "Swift PW-46", short = "PW-46", kind = "weapon", w = 3, h = 2, mass = 1.9, value = 44288, caliber = "4.6", weapon = "MP7", family = "MP7", rarity = "rare", desc = "Compact personal defence weapon in 4.6x30 with the magazine in its grip, a top rail and a sliding stock. Fast, light recoil, small rounds that pierce.", color = c("#232526") })
+add("P90_SMG", { name = "Petrel PD-57", short = "PD-57", kind = "weapon", w = 3, h = 2, mass = 2.6, value = 45200, caliber = "5.7", weapon = "P90", family = "P90", rarity = "rare", desc = "Bullpup personal defence weapon in 5.7x28 with a 50-round magazine lying on top and a built-in ring sight.", color = c("#3B3E36") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -107,6 +112,12 @@ add("M700_MAG10", { name = "OB-7 10-rd Magazine", short = "MAG 10", kind = "mag"
 -- weights ours
 add("VSS_MAG10", { name = "SV-9 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 1, mass = 0.12, value = 4637, capacity = 10, caliber = "9.39", family = "VSS", desc = "Steel 10-round 9x39 magazine for the SV-9 and the AV-9.", color = c("#2B2D2E") })
 add("VSS_MAG20", { name = "SV-9 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 2, mass = 0.17, value = 5999, capacity = 20, caliber = "9.39", family = "VSS", rarity = "uncommon", desc = "Plum polymer 20-round 9x39 magazine for the SV-9 and the AV-9.", color = c("#5A3A34") })
+-- economy-1a, seventh slice: EFT's MP7 20-, 30- and 40-round magazines (4,026, 6,001, 12,142) and the P90's 50-round one
+-- (10,500); handbook prices, weights ours
+add("MP7_MAG20", { name = "PW-46 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 1, mass = 0.1, value = 4026, capacity = 20, caliber = "4.6", family = "MP7", desc = "Short 20-round 4.6x30 magazine for the PW-46.", color = c("#1E1F20") })
+add("MP7_MAG30", { name = "PW-46 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.13, value = 6001, capacity = 30, caliber = "4.6", family = "MP7", desc = "30-round 4.6x30 magazine for the PW-46.", color = c("#1E1F20") })
+add("MP7_MAG40", { name = "PW-46 40-rd Magazine", short = "MAG 40", kind = "mag", w = 1, h = 2, mass = 0.16, value = 12142, capacity = 40, caliber = "4.6", family = "MP7", rarity = "rare", desc = "Long 40-round 4.6x30 magazine for the PW-46.", color = c("#1E1F20") })
+add("P90_MAG", { name = "PD-57 50-rd Magazine", short = "MAG 50", kind = "mag", w = 2, h = 1, mass = 0.2, value = 10500, capacity = 50, caliber = "5.7", family = "P90", rarity = "uncommon", desc = "Smoky polymer 50-round 5.7x28 magazine that lies on top of the PD-57.", color = c("#4A4D4F") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -199,6 +210,21 @@ ammo("A939_SPP", "9x39 SPP", "9x39 SPP", "9.39", 50, 440, { dmg = 68, pen = 35, 
 ammo("A939_PAB", "9x39 PAB-9", "9x39 PAB-9", "9.39", 50, 670, { dmg = 62, pen = 43, armorDmg = 0.57, bleedL = 0.22, bleedH = 0.18, frag = 0.1, speed = 320, recoil = 0.1, acc = -0.15, subsonic = true }, "uncommon", "Armour-piercing load made for export.")
 ammo("A939_SP6", "9x39 SP-6", "9x39 SP-6", "9.39", 50, 920, { dmg = 60, pen = 48, armorDmg = 0.64, bleedL = 0.22, bleedH = 0.16, frag = 0.1, speed = 305, recoil = 0.05, subsonic = true }, "rare", "Black-tipped armour piercer with a hardened core.")
 ammo("A939_BP", "9x39 BP", "9x39 BP", "9.39", 50, 1300, { dmg = 58, pen = 54, armorDmg = 0.69, bleedL = 0.12, bleedH = 0.06, frag = 0.1, speed = 295, recoil = 0.15, acc = 0.1, subsonic = true }, "rare", "Hardened steel-core piercer. Defeats class 5 plates.")
+-- 4.6x30 and 5.7x28 (EFT's 4.6x30 and 5.7x28; economy-1a, seventh slice): Action SX, Subsonic SX, JSP SX, FMJ SX, AP SX;
+-- R37.F, R37.X, SS198LF, SS197SR, SB193, L191, SS190. Figures from tarkovforge.com/ammo/<round> (read 2026-11-08), values
+-- EFT's handbook prices; bleeding as for the 6.2, with EFT's +20 % and +10 % on R37.F and R37.X
+ammo("A46_HP", "4.6x30 HP", "4.6 HP", "4.6", 60, 70, { dmg = 65, pen = 18, armorDmg = 0.28, bleedL = 0.12, bleedH = 0.06, frag = 0.5, speed = 690 }, nil, "Expanding hollow point. Hurts flesh, stopped by plates.") -- Action SX
+ammo("A46_SUB", "4.6x30 Subsonic", "4.6 SUB", "4.6", 60, 100, { dmg = 52, pen = 23, armorDmg = 0.33, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 290, recoil = -0.22, acc = 0.1, subsonic = true }, nil, "Subsonic load for suppressed fire.") -- Subsonic SX
+ammo("A46_JSP", "4.6x30 JSP", "4.6 JSP", "4.6", 60, 280, { dmg = 46, pen = 32, armorDmg = 0.37, bleedL = 0.12, bleedH = 0.06, frag = 0.3, speed = 579 }, nil, "Jacketed soft point.") -- JSP SX
+ammo("A46_FMJ", "4.6x30 FMJ", "4.6 FMJ", "4.6", 60, 425, { dmg = 43, pen = 40, armorDmg = 0.41, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 620 }, "uncommon", "Full metal jacket with a steel core. Goes through class 3 and 4.") -- FMJ SX
+ammo("A46_AP", "4.6x30 AP", "4.6 AP", "4.6", 60, 745, { dmg = 35, pen = 53, armorDmg = 0.46, bleedL = 0.12, bleedH = 0.06, frag = 0.1, speed = 680, recoil = 0.1 }, "rare", "Hardened steel penetrator. Defeats class 5 plates.") -- AP SX
+ammo("A57_FX", "5.7x28 FX", "5.7 FX", "5.7", 60, 335, { dmg = 98, pen = 8, armorDmg = 0.07, bleedL = 0.32, bleedH = 0.26, frag = 1, speed = 729 }, nil, "Fragmenting hunting bullet. Devastating on flesh, useless on armour.") -- R37.F
+ammo("A57_EX", "5.7x28 EX", "5.7 EX", "5.7", 60, 220, { dmg = 81, pen = 11, armorDmg = 0.09, bleedL = 0.22, bleedH = 0.16, frag = 0.7, speed = 724, acc = -0.05 }, nil, "Expanding hunting bullet.") -- R37.X
+ammo("A57_LF", "5.7x28 LF", "5.7 LF", "5.7", 60, 80, { dmg = 70, pen = 17, armorDmg = 0.19, bleedL = 0.12, bleedH = 0.06, frag = 0.8, speed = 792 }, nil, "Lead-free hollow point.") -- SS198LF
+ammo("A57_SR", "5.7x28 SR", "5.7 SR", "5.7", 60, 150, { dmg = 62, pen = 25, armorDmg = 0.22, bleedL = 0.12, bleedH = 0.06, frag = 0.5, speed = 594, acc = 0.1 }, nil, "Sporting round with a polymer tip.") -- SS197SR
+ammo("A57_SUB", "5.7x28 Subsonic", "5.7 SUB", "5.7", 60, 270, { dmg = 59, pen = 27, armorDmg = 0.37, bleedL = 0.12, bleedH = 0.06, frag = 0.35, speed = 299, recoil = -0.15, acc = 0.05, subsonic = true }, nil, "Subsonic load for suppressed fire.") -- SB193
+ammo("A57_TR", "5.7x28 TR", "5.7 TR", "5.7", 60, 310, { dmg = 53, pen = 33, armorDmg = 0.41, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 715, acc = -0.04, tracer = "red" }, "uncommon", "Duty load with an orange-tipped tracer.") -- L191
+ammo("A57_SS", "5.7x28 SS", "5.7 SS", "5.7", 60, 460, { dmg = 49, pen = 37, armorDmg = 0.43, bleedL = 0.12, bleedH = 0.06, frag = 0.2, speed = 715 }, "uncommon", "Duty round with a steel core. Goes through class 3 and 4.") -- SS190
 
 -- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
 -- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and

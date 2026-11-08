@@ -263,6 +263,8 @@ T.offers = {
 		o("SPARROW_SMG", 2, 1), o("R17_MAG40", 2, 3), o("HOLO_EX", 2, 1), o("SUPP_9", 2, 1),
 		o("NV_GREEN", 3, 1), o("SCOPE_16", 3, 1), o("SUPP_62", 3, 1),
 		o("A76N_BALL", 4, 6, 40), -- the fifth slice: EFT's Peacekeeper sells 7.62x51 M80 at LL4 (tarkovforge.com)
+		-- the seventh slice: EFT's Peacekeeper sells 5.7x28 SS198LF (LL1), SS197SR and SB193 (LL2), L191 (LL3) and SS190 (LL4)
+		o("A57_LF", 1, 6, 60), o("A57_SR", 2, 6, 60), o("A57_SUB", 2, 6, 60), o("A57_TR", 3, 4, 60), o("A57_SS", 4, 4, 60),
 		-- rounds (economy-1a; EFT's Peacekeeper, wiki and tarkovforge): 9x19 FMJ M882 and the lead slug at LL1, 5.56 FMJ at
 		-- LL2, M855 and AP 6.3 at LL3, M856A1 at LL4; M995 by barter only (no trader sells it for cash in EFT)
 		o("A9_FMJ", 1, 10, 50), o("A12_SLUG", 1, 4, 20), o("A62_FMJ", 2, 10, 60), o("A62_SS", 3, 6, 60), o("A9_AP", 3, 4, 50),
@@ -290,6 +292,9 @@ T.offers = {
 		-- the fifth slice: EFT's Mechanic sells the M1A at LL3 (tarkovforge.com's M1A page); its magazines, flash suppressor and
 		-- mount beside it (ours)
 		o("M1A_RIFLE", 3, 1), o("M1A_MAG", 3, 4), o("M1A_MAG20", 3, 3), o("M1A_FH", 3, 2), o("M1A_MNT", 3, 2),
+		-- the seventh slice: EFT's Mechanic sells 4.6x30 Action SX (LL1), Subsonic SX (LL2), JSP SX (LL3) and FMJ SX (LL4), and
+		-- 5.7x28 R37.X (LL2) and R37.F (LL3) (tarkovforge.com's round pages)
+		o("A46_HP", 1, 6, 60), o("A46_SUB", 2, 6, 60), o("A46_JSP", 3, 6, 60), o("A46_FMJ", 4, 4, 60), o("A57_EX", 2, 6, 60), o("A57_FX", 3, 6, 60),
 		-- rounds (economy-1a; EFT's Mechanic): the green tracer at LL1, Pst gzh at LL2, RIP at LL4
 		o("A9_TR", 1, 10, 50), o("A9_PST", 2, 10, 50), o("A9_RIP", 4, 3, 50),
 		pre("R17_CQB", 3, 1), pre("SPR_TAC", 3, 1),
@@ -398,6 +403,15 @@ T.barters = {
 		b("A76N_EP", 4, 2, { { "GUNPOWDER", 2 }, { "SPARK_PLUG", 2 } }, 40),
 		b("A76N_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 2 } }, 40),
 		b("A76N_TC", 4, 1, { { "GUNPOWDER", 3 }, { "MIL_CIRCUIT", 1 } }, 40),
+		-- the seventh slice: EFT sells neither the MP7A1 nor the P90 for money, nor 4.6x30 AP SX (tarkovforge.com); here by barter,
+		-- with their magazines (levels and goods ours)
+		b("MP7_SMG", 3, 1, { { "GOLD_CHAIN", 1 }, { "CAPACITOR", 2 } }),
+		b("P90_SMG", 3, 1, { { "GOLD_CHAIN", 1 }, { "MIL_CIRCUIT", 1 } }),
+		b("MP7_MAG20", 2, 4, { { "SPARE_PARTS", 1 } }),
+		b("MP7_MAG30", 3, 3, { { "SPARE_PARTS", 1 }, { "BOLTS", 1 } }),
+		b("MP7_MAG40", 4, 2, { { "SPARE_PARTS", 2 }, { "CAPACITOR", 1 } }),
+		b("P90_MAG", 3, 3, { { "SPARE_PARTS", 1 }, { "BOLTS", 2 } }),
+		b("A46_AP", 4, 2, { { "GUNPOWDER", 2 }, { "CAPACITOR", 1 } }, 60),
 	},
 	kovac = {
 		b("WEAPON_KIT", 1, 1, { { "DUCT_TAPE", 2 }, { "SPARK_PLUG", 1 }, { "WIRES", 1 } }),

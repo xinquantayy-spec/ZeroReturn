@@ -115,6 +115,23 @@ local W = {
 		moveSpread = 1.8, modes = { "AUTO", "SEMI" }, loudness = 0.42, viewmodel = "KST", draw = 0.75,
 		slots = { rail = true },
 	},
+	-- the PW-46 and PD-57 (economy-1a, seventh slice) in the place of EFT's HK MP7A1 and FN P90: single shots or bursts,
+	-- 200 m; MP7A1 ergonomics 65, recoil 50 / 178, 950 a minute; P90 ergonomics 60, recoil 54 / 243, 900 a minute
+	-- (tarkovforge.com's pages, taken as the built guns'); speeds those of FMJ SX and SS190
+	MP7 = {
+		id = "MP7", item = "MP7_SMG", name = "PW-46", class = "smg", rpm = 950, range = 200, velocity = 620,
+		ergo = 65, recoilV = 0.5, recoilH = 1.78, reload = 2.0, reloadEmpty = 2.6, hipSpread = 2.0, aimSpread = 0.1,
+		recoilAngle = 90, recoilDisp = 18, recoilConv = 7, recoilCam = 0.35, recoilStable = 5,
+		moveSpread = 1.1, modes = { "AUTO", "SEMI" }, loudness = 0.8, viewmodel = "SPARROW", draw = 0.5,
+		slots = { rail = true },
+	},
+	P90 = {
+		id = "P90", item = "P90_SMG", name = "PD-57", class = "smg", rpm = 900, range = 200, velocity = 715,
+		ergo = 60, recoilV = 0.54, recoilH = 2.43, reload = 2.6, reloadEmpty = 3.2, hipSpread = 2.1, aimSpread = 0.1,
+		recoilAngle = 90, recoilDisp = 18, recoilConv = 7, recoilCam = 0.35, recoilStable = 5,
+		moveSpread = 1.2, modes = { "AUTO", "SEMI" }, loudness = 0.85, viewmodel = "SPARROW", draw = 0.55,
+		slots = {},
+	},
 	-- MORTAR's grenade launcher (ai-5b) in the place of EFT's M32A1: 76 m/s, single shots from a six-round cylinder
 	-- loaded one round at a time; the round flies as a grenade (Grenades.launchFrom). Rate 30, ergonomics 30, recoil
 	-- 238 / 560 and an effective distance of 70 m (219 studs) as tarkovforge's M32A1 page gives them
@@ -220,7 +237,7 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771, MP7 = 0.1771, P90 = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

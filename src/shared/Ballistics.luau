@@ -28,7 +28,7 @@ B.MAX_PANES = 6 -- panes one bullet can pass in one step (the next one stops it)
 -- each calibre's reference round: a gun's velocity figure is for this load, and other loads scale it by their own
 -- speed (EFT: a round's initial speed, changed by the barrel; economy-1a). M855, PS, Pst gzh, 7 mm buckshot, LPS gzh,
 -- and since the third slice 5.45 PS gs and 9x18 P gzh
-B.CAL_REF = { ["6.2"] = 922, ["7.6"] = 717, ["9"] = 457, ["12"] = 415, ["7.6L"] = 865, ["5.4"] = 890, ["9.18"] = 302, ["7.6N"] = 820, ["9.39"] = 290 }
+B.CAL_REF = { ["6.2"] = 922, ["7.6"] = 717, ["9"] = 457, ["12"] = 415, ["7.6L"] = 865, ["5.4"] = 890, ["9.18"] = 302, ["7.6N"] = 820, ["9.39"] = 290, ["4.6"] = 620, ["5.7"] = 715 }
 
 -- muzzle velocity in studs/s for a weapon def, its build's velocity multiplier and (optional) the round's item def
 function B.muzzle(wdef, velMul, ammoDef)

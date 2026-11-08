@@ -3915,6 +3915,400 @@
    "tris": 304,
    "w": 1
   },
+  "MP7_MAG20": {
+   "anchors": {},
+   "batch": "ZR_GunsPDW",
+   "cls": "long",
+   "ext": [
+    -0.06562,
+    0.06562,
+    -0.39531,
+    0.01438
+   ],
+   "family": "pdw",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_MP7_MAG20__brass": {
+     "center": [
+      -0.0,
+      0.0063,
+      -0.0002
+     ],
+     "mat": "brass",
+     "size": [
+      0.0155,
+      0.0163,
+      0.0447
+     ],
+     "sub": null
+    },
+    "ZR_WP_MP7_MAG20__polymer": {
+     "center": [
+      -0.0,
+      -0.1914,
+      0.0
+     ],
+     "mat": "polymer",
+     "size": [
+      0.0875,
+      0.4078,
+      0.1312
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 364,
+   "w": 1
+  },
+  "MP7_MAG30": {
+   "anchors": {},
+   "batch": "ZR_GunsPDW",
+   "cls": "long",
+   "ext": [
+    -0.06562,
+    0.06562,
+    -0.53594,
+    0.01438
+   ],
+   "family": "pdw",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_MP7_MAG30__brass": {
+     "center": [
+      -0.0,
+      0.0063,
+      -0.0002
+     ],
+     "mat": "brass",
+     "size": [
+      0.0155,
+      0.0163,
+      0.0447
+     ],
+     "sub": null
+    },
+    "ZR_WP_MP7_MAG30__polymer": {
+     "center": [
+      -0.0,
+      -0.2617,
+      0.0
+     ],
+     "mat": "polymer",
+     "size": [
+      0.0875,
+      0.5484,
+      0.1312
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 364,
+   "w": 1
+  },
+  "MP7_MAG40": {
+   "anchors": {},
+   "batch": "ZR_GunsPDW",
+   "cls": "long",
+   "ext": [
+    -0.06562,
+    0.06562,
+    -0.67656,
+    0.01438
+   ],
+   "family": "pdw",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_MP7_MAG40__brass": {
+     "center": [
+      -0.0,
+      0.0063,
+      -0.0002
+     ],
+     "mat": "brass",
+     "size": [
+      0.0155,
+      0.0163,
+      0.0447
+     ],
+     "sub": null
+    },
+    "ZR_WP_MP7_MAG40__polymer": {
+     "center": [
+      -0.0,
+      -0.332,
+      0.0
+     ],
+     "mat": "polymer",
+     "size": [
+      0.0875,
+      0.6891,
+      0.1312
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 364,
+   "w": 1
+  },
+  "MP7_SMG": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.175,
+     -0.01875
+    ],
+    "grip": [
+     -0.0,
+     -0.21875,
+     0.0125
+    ],
+    "hand": [
+     -0.0,
+     -0.21875,
+     -0.4875
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.79687
+    ],
+    "port": [
+     0.05,
+     0.025,
+     -0.25
+    ]
+   },
+   "batch": "ZR_GunsPDW",
+   "cls": "long",
+   "ext": [
+    -0.79688,
+    0.56875,
+    -0.41183,
+    0.18937
+   ],
+   "family": "pdw",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_MP7_SMG__gunmetal": {
+     "center": [
+      -0.0,
+      0.0097,
+      -0.3986
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0662,
+      0.3594,
+      0.7966
+     ],
+     "sub": null
+    },
+    "ZR_WP_MP7_SMG__metal": {
+     "center": [
+      -0.0,
+      -0.0272,
+      0.1755
+     ],
+     "mat": "metal",
+     "size": [
+      0.0955,
+      0.2482,
+      0.7116
+     ],
+     "sub": null
+    },
+    "ZR_WP_MP7_SMG__polymer": {
+     "center": [
+      -0.0,
+      -0.159,
+      -0.0469
+     ],
+     "mat": "polymer",
+     "size": [
+      0.1063,
+      0.5056,
+      1.2312
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.10625,
+      0.0125
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "scope": {
+     "pos": [
+      -0.0,
+      0.12344,
+      -0.26563
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 1008,
+   "w": 3
+  },
+  "P90_MAG": {
+   "anchors": {},
+   "batch": "ZR_GunsPDW",
+   "cls": "long",
+   "ext": [
+    -0.46875,
+    0.46875,
+    0.0,
+    0.09991
+   ],
+   "family": "pdw",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_P90_MAG__brass": {
+     "center": [
+      -0.0,
+      0.0469,
+      0.0094
+     ],
+     "mat": "brass",
+     "size": [
+      0.1625,
+      0.0181,
+      0.7494
+     ],
+     "sub": null
+    },
+    "ZR_WP_P90_MAG__polymer": {
+     "center": [
+      -0.0,
+      0.05,
+      0.0
+     ],
+     "mat": "polymer",
+     "size": [
+      0.1562,
+      0.0999,
+      0.9375
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 336,
+   "w": 2
+  },
+  "P90_SMG": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.25937,
+     -0.625
+    ],
+    "grip": [
+     -0.0,
+     -0.23438,
+     -0.85938
+    ],
+    "hand": [
+     -0.0,
+     -0.0625,
+     -1.25
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -1.5625
+    ],
+    "port": [
+     -0.0,
+     -0.34375,
+     -0.3125
+    ]
+   },
+   "batch": "ZR_GunsPDW",
+   "cls": "long",
+   "ext": [
+    -1.5625,
+    0.0,
+    -0.38437,
+    0.29063
+   ],
+   "family": "pdw",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_P90_SMG__gunmetal": {
+     "center": [
+      -0.0,
+      0.1289,
+      -1.2479
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0938,
+      0.3234,
+      0.6292
+     ],
+     "sub": null
+    },
+    "ZR_WP_P90_SMG__metal": {
+     "center": [
+      -0.0,
+      -0.1859,
+      -0.6813
+     ],
+     "mat": "metal",
+     "size": [
+      0.2,
+      0.3969,
+      0.925
+     ],
+     "sub": null
+    },
+    "ZR_WP_P90_SMG__polymer": {
+     "center": [
+      -0.0,
+      -0.1321,
+      -0.7009
+     ],
+     "mat": "polymer",
+     "size": [
+      0.1781,
+      0.483,
+      1.4017
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "mag": {
+     "pos": [
+      -0.0,
+      0.10938,
+      -0.625
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 616,
+   "w": 3
+  },
   "P9_BRL_STD": {
    "anchors": {
     "muzzle": [
@@ -8438,6 +8832,30 @@
      },
      "mount": {
       "id": "M700_RAIL",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "MP7_SMG": {
+   "base": "MP7_SMG",
+   "tree": {
+    "id": "MP7_SMG",
+    "mods": {
+     "mag": {
+      "id": "MP7_MAG30",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "P90_SMG": {
+   "base": "P90_SMG",
+   "tree": {
+    "id": "P90_SMG",
+    "mods": {
+     "mag": {
+      "id": "P90_MAG",
       "mods": {}
      }
     }

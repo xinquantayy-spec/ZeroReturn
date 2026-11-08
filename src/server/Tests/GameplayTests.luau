@@ -224,11 +224,12 @@ function T.run(ctx)
 				per[d.caliber] = (per[d.caliber] or 0) + ((d.ammo and d.ammo.speed and d.ammo.speed > 0) and 1 or 0)
 			end
 		end
+		-- at least five: EFT has exactly five 4.6x30 loads (Action, Subsonic, JSP, FMJ and AP SX; economy-1a's seventh slice)
 		local six = true
 		for cal in Ballistics.CAL_REF do
-			six = six and (per[cal] or 0) >= 6
+			six = six and (per[cal] or 0) >= ((cal == "4.6") and 5 or 6)
 		end
-		check("six of EFT's loads for each gun calibre, every one with its own speed", six)
+		check("six of EFT's loads for each gun calibre (4.6x30: its five), every one with its own speed", six)
 		local A = Items.defs
 		check("EFT's figures: M995 53 pen at 1,013 m/s (+8 % recoil, -7 % accuracy), BP 47 pen and 63 % armour damage, Magnum buckshot 8 x 50 at +115 % recoil, the green tracer",
 			A.A62_AP.ammo.pen == 53 and A.A62_AP.ammo.speed == 1013 and near(A.A62_AP.ammo.recoil, 0.08) and near(A.A62_AP.ammo.acc, -0.07)

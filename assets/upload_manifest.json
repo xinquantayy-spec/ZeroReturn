@@ -216,10 +216,10 @@
   "uploaded": "2026-10-28 20:30:45"
  },
  "ZR_GunSprites_0": {
-  "assetId": "136932980800649",
+  "assetId": "87163330841416",
   "file": "assets\\renders\\guns\\ZR_GunSprites_0.png",
-  "sha1": "10c82ab909d4bcc49ed50478db89d5a1d8c98c40",
-  "uploaded": "2026-11-08 18:18:11"
+  "sha1": "172d9d300a73d84bfb2a3efb4022a315ca90bdc8",
+  "uploaded": "2026-11-08 20:06:20"
  },
  "ZR_GunsAK": {
   "assetId": "104159336478565",
@@ -268,6 +268,12 @@
   "file": "assets\\exports\\ZR_GunsNATO.fbx",
   "sha1": "258ff4ff34f2962c54f2963c1cc811e0992226ca",
   "uploaded": "2026-11-08 18:01:28"
+ },
+ "ZR_GunsPDW": {
+  "assetId": "98715920208334",
+  "file": "assets\\exports\\ZR_GunsPDW.fbx",
+  "sha1": "54306a00ef4695d04d8442971553f4152dadb483",
+  "uploaded": "2026-11-08 20:06:08"
  },
  "ZR_GunsPistol": {
   "assetId": "76631608159948",
@@ -324,10 +330,10 @@
   "uploaded": "2026-11-08 16:07:19"
  },
  "ZR_ItemIcons_5": {
-  "assetId": "122704538626443",
+  "assetId": "118540441457069",
   "file": "assets\\renders\\items\\ZR_ItemIcons_5.png",
-  "sha1": "af1d078d9b2f9b660a306fb22cf31931d240b670",
-  "uploaded": "2026-11-08 18:18:16"
+  "sha1": "7050dbc652a74752b3f615a9ca4ccc530c36d398",
+  "uploaded": "2026-11-08 20:06:23"
  },
  "ZR_ItemsA": {
   "assetId": "91684040376497",

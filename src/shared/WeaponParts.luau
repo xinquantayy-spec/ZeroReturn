@@ -100,6 +100,8 @@ W.SLOTS = {
 	-- dovetail, which takes the KS-7's side mount here
 	VSS_RIFLE = { barrel = { fit = "vss_brl", req = true }, mount = { fit = "dovetail" } },
 	VAL_RIFLE = { barrel = { fit = "val_brl", req = true }, mount = { fit = "dovetail" } },
+	-- Swift PW-46 (economy-1a, seventh slice): its full-length top rail; the PD-57's ring sight is part of it
+	MP7_SMG = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	-- Makar PM (economy-1a, third slice): EFT's PM has a slide, a magazine and grip panels; ours are on the frame
 	PM_PISTOL = { slide = { fit = "pm_slide", req = true } },
 	-- mounts

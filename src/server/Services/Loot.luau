@@ -129,6 +129,13 @@ local POOLS = {
 		{ id = "VSS_MAG20", w = 0.6, a = { 0, 20 }, at = "A939_SP5" }, { id = "A939_FMJ", w = 2, n = { 10, 30 } },
 		{ id = "A939_SP5", w = 3, n = { 10, 30 } }, { id = "A939_SPP", w = 1.5, n = { 10, 25 } }, { id = "A939_PAB", w = 0.6, n = { 5, 15 } },
 		{ id = "A939_SP6", w = 0.5, n = { 5, 15 } }, { id = "A939_BP", w = 0.3, n = { 5, 10 } },
+		-- the seventh slice: the PW-46 and PD-57 rarely, their magazines and the 4.6x30 and 5.7x28 rounds
+		{ id = "MP7_SMG", w = 0.3 }, { id = "P90_SMG", w = 0.3 }, { id = "MP7_MAG30", w = 1, a = { 0, 30 }, at = "A46_JSP" },
+		{ id = "MP7_MAG20", w = 1, a = { 0, 20 }, at = "A46_HP" }, { id = "P90_MAG", w = 0.8, a = { 0, 50 }, at = "A57_SR" },
+		{ id = "A46_HP", w = 2, n = { 20, 50 } }, { id = "A46_SUB", w = 2, n = { 20, 50 } }, { id = "A46_JSP", w = 1.5, n = { 20, 40 } },
+		{ id = "A46_FMJ", w = 0.8, n = { 15, 30 } }, { id = "A46_AP", w = 0.3, n = { 10, 20 } }, { id = "A57_LF", w = 2, n = { 20, 50 } },
+		{ id = "A57_SR", w = 2, n = { 20, 50 } }, { id = "A57_EX", w = 1.5, n = { 20, 40 } }, { id = "A57_FX", w = 1, n = { 20, 40 } },
+		{ id = "A57_SUB", w = 1.5, n = { 20, 40 } }, { id = "A57_TR", w = 1, n = { 15, 30 } }, { id = "A57_SS", w = 0.6, n = { 15, 30 } },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -362,6 +369,8 @@ local POOLS = {
 		{ id = "A76N_AP", w = 1, n = { 20, 40 } }, { id = "A76N_TC", w = 0.6, n = { 10, 30 } },
 		{ id = "VAL_RIFLE", w = 0.6 }, { id = "VSS_RIFLE", w = 0.5 }, { id = "VSS_MAG20", w = 1, a = { 0, 20 }, at = "A939_SP6" },
 		{ id = "A939_SP6", w = 1, n = { 20, 40 } }, { id = "A939_BP", w = 0.6, n = { 10, 30 } },
+		{ id = "MP7_SMG", w = 0.6 }, { id = "P90_SMG", w = 0.6 }, { id = "MP7_MAG40", w = 0.8, a = { 0, 40 }, at = "A46_FMJ" },
+		{ id = "A46_AP", w = 0.6, n = { 20, 40 } }, { id = "A57_SS", w = 1, n = { 30, 50 } },
 		{ id = "A76L_BT", w = 1, n = { 20, 40 } }, { id = "A12_APS", w = 1, n = { 10, 20 } },
 		{ id = "R17_RIFLE", w = 3 }, { id = "KST_RIFLE", w = 3 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "P9_PISTOL", w = 2 },
 		{ id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" }, { id = "R17_MAG40", w = 2, a = { 0, 40 }, at = "A62_FMJ" },

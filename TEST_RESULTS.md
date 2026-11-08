@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The PW-46 and PD-57 personal defence weapons with 4.6x30 and 5.7x28 (decision economy-1a, seventh slice; 2026-11-08, about 20:10 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_pdw.py added a new batch, ZR_GunsPDW (6 parts, 3,052 triangles), uploaded as 98715920208334. build_items_n.py drew the 12 rounds. Sprites were packed again (164; image 97478716820010), and so was the sixth icon sheet (image 74324124316284). |
+| In a raid (Quay 7, Studio) | The PW-46 loaded a 20-round magazine of FMJ from the rig and fired 5 (20 to 15). The PD-57 loaded its 50-round magazine of SS and fired 6 (50 to 44). In first person the PW-46 shows its rail, irons and stock rods; the PD-57 shows the magazine on top, the rounds along its side and the ring sight. The first PD-57 picture was a close-up of its top: the gun had pulled back from a wall in front. Turned towards open ground, it sits normally. |
+| Tests | The first run failed GameplayTests' "six loads per calibre": EFT has only five 4.6x30 loads. The check now asks for EFT's five there. Then 15 suites, 1,156 checks, all passed. RecoilTests check the MP7A1 at 50 / 178 and the P90 at 54 / 243; LogicTests count 16 mastering groups. |
+| Not checked | The PD-57's reload motion by eye (its magazine sits on top), aiming through the ring sight, AI with the new guns, a phone. |
+
 ## The flea market of real players (decision economy-3a, merged 18:19) and the 9x39 rifles (economy-1a, sixth slice); 2026-11-08, checked in Studio between about 18:20 and 20:00 SGT
 
 | Test | Result |

@@ -587,6 +587,48 @@
   "oy": 14.77,
   "w": 23
  },
+ "MP7_MAG20@long": {
+  "file": "MP7_MAG20@long",
+  "h": 51,
+  "ox": 9.39,
+  "oy": 3.62,
+  "w": 19
+ },
+ "MP7_MAG30@long": {
+  "file": "MP7_MAG30@long",
+  "h": 66,
+  "ox": 9.39,
+  "oy": 3.62,
+  "w": 19
+ },
+ "MP7_MAG40@long": {
+  "file": "MP7_MAG40@long",
+  "h": 82,
+  "ox": 9.39,
+  "oy": 3.62,
+  "w": 19
+ },
+ "MP7_SMG@long": {
+  "file": "MP7_SMG@long",
+  "h": 72,
+  "ox": 91.76,
+  "oy": 23.33,
+  "w": 158
+ },
+ "P90_MAG@long": {
+  "file": "P90_MAG@long",
+  "h": 16,
+  "ox": 54.8,
+  "oy": 13.25,
+  "w": 110
+ },
+ "P90_SMG@long": {
+  "file": "P90_SMG@long",
+  "h": 81,
+  "ox": 178.0,
+  "oy": 34.74,
+  "w": 180
+ },
  "P9_BRL_STD@pistol": {
   "file": "P9_BRL_STD@pistol",
   "h": 15,
