@@ -30,13 +30,13 @@
 - The owner's to try: the flea market between two servers needs a published place (publishing is the owner's call).
 - Done 2026-11-08 evening (TEST_RESULTS): the crafts thread (76 of EFT's crafts, merged, HideoutTests 103/0 in Studio)
   and ui-5a, the FIRST RAID (checked in Studio with the dev bridges). 16 suites, 1,190 checks.
-- Done 21:55 SGT: economy-1a's tenth slice (9x21 and .366 TKM: W-21, J-21, T-215; 505 items); 22:10 SGT the eleventh
-  (revolvers: Crake C-357 and C-9, Bustard B-12; 515 items); 22:30 SGT the twelfth (9x19: D-17, AV-9, B-19; 522 items).
+- Done 21:43 SGT: economy-1a's tenth slice (9x21 and .366 TKM: W-21, J-21, T-215; 505 items); 21:58 SGT the eleventh
+  (revolvers: Crake C-357 and C-9, Bustard B-12; 515 items); 22:05 SGT the twelfth (9x19: D-17, AV-9, B-19; 522 items).
 - Next, in order: economy-1a's next slices (the
   VPO-209, which needs magazines that take two calibres; more 9x19 guns, more parts, the other barter goods, keys; the items that bring in the most left-out crafts: printer paper, a cook book, a Geiger counter, a textbook, SJ1,
   a magnet, a sledgehammer, 7.62x54R FMJ, 7.62x39 FMJ); art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
-  hideout modules without one (done 22:55 SGT: stations and stencils; furniture by level waits on the owner's prop budget,
-  KNOWN_ISSUES 84); bipods (done 23:40 SGT: the KS-L's, EFT's -80 %; rail bipod parts come with the parts slices); ai-4a
+  hideout modules without one (done 22:19 SGT: stations and stencils; furniture by level waits on the owner's prop budget,
+  KNOWN_ISSUES 84); bipods (done 22:31 SGT: the KS-L's, EFT's -80 %; rail bipod parts come with the parts slices); ai-4a
   voices.
 - Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
   seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator

@@ -8,7 +8,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## Bipods: the KS-L mounts lying down (gameplay-5b part 3; 2026-11-08, about 23:40 SGT)
+## Bipods: the KS-L mounts lying down (gameplay-5b part 3; 2026-11-08, 22:31 SGT)
 
 | Test | Result |
 |---|---|
@@ -17,7 +17,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Tests | 16 suites, 1,192 checks, all passed; RecoilTests checks that every bipod carries EFT's -65 to -80 % and the KS-L's is -80. |
 | Not checked | A gamepad or touch player's hold-still mount lying down; bursts in full auto mounted; a phone. |
 
-## Relay 7: a place for every hideout module (2026-11-08, about 22:55 SGT)
+## Relay 7: a place for every hideout module (2026-11-08, 22:19 SGT)
 
 | Test | Result |
 |---|---|
@@ -26,7 +26,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Tests | 16 suites, 1,192 checks, all passed; the bunker has 298 kit props. |
 | Not checked | The new stencils at every station by eye (only the middle bays were looked at after the change); a phone. |
 
-## More 9x19 guns: Dunlin D-17, Avocet AV-9 and Bunting B-19 (decision economy-1a, twelfth slice; 2026-11-08, about 22:30 SGT)
+## More 9x19 guns: Dunlin D-17, Avocet AV-9 and Bunting B-19 (decision economy-1a, twelfth slice; 2026-11-08, 22:05 SGT)
 
 | Test | Result |
 |---|---|
@@ -35,7 +35,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Tests | 16 suites, 1,192 checks, all passed; RecoilTests check the three guns, LogicTests count 29 mastering groups. |
 | Not checked | Reloads from the rig with these magazines, sights on the AV-9's rail and the B-19's dovetail, AI with them, a phone. |
 
-## The revolvers: Crake C-357, Crake C-9 and Bustard B-12 (decision economy-1a, eleventh slice; 2026-11-08, about 22:10 SGT)
+## The revolvers: Crake C-357, Crake C-9 and Bustard B-12 (decision economy-1a, eleventh slice; 2026-11-08, 21:58 SGT)
 
 | Test | Result |
 |---|---|
@@ -44,7 +44,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Tests | 16 suites, 1,192 checks, all passed: the load check allows 9x33R its four and 12.7x55 its three, RecoilTests check the three revolvers, LogicTests count 26 mastering groups. |
 | Not checked | The C-9 fired; the revolvers' first-person look (they use the pistol hold); aiming; AI with them; a phone. |
 
-## The 9x21 and 9.6x39 guns: W-21, J-21 and T-215 (decision economy-1a, tenth slice; 2026-11-08, about 21:55 SGT)
+## The 9x21 and 9.6x39 guns: W-21, J-21 and T-215 (decision economy-1a, tenth slice; 2026-11-08, 21:43 SGT)
 
 | Test | Result |
 |---|---|
