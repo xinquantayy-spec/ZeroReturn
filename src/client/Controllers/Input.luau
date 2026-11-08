@@ -416,7 +416,7 @@ end
 local LABELS = {
 	Gamepad = {
 		Fire = "RT", Aim = "LT", Reload = "X", Sprint = "L3", Crouch = "B", Heal = "D-UP", FireMode = "D-RIGHT", Extracts = "D-DOWN", Inventory = "Y",
-		Settings = "VIEW", Back = "B", Interact = "X", CycleWeapon = "D-LEFT", MagCheck = "R3", LeanLeft = "LB", LeanRight = "RB",
+		Settings = "VIEW", MenuBar = "HOLD VIEW", Back = "B", Interact = "X", CycleWeapon = "D-LEFT", MagCheck = "R3", LeanLeft = "LB", LeanRight = "RB",
 		Grenade = "HOLD D-DOWN", MountFire = "RT", MountZoom = "LT", MountLeave = "B", TabPrev = "LB", TabNext = "RB",
 		Prone = "HOLD B", ChamberCheck = "HOLD R3", FireModeCheck = "LT + R3", InspectWeapon = "HOLD Y", FreeLook = "HOLD D-UP",
 		Sidearm = "D-LEFT", Primary = "D-LEFT", Secondary = "D-LEFT", Knife = "D-LEFT",
@@ -429,7 +429,7 @@ local LABELS = {
 		Prone = "HOLD CROUCH", Heal = "HOLD MED", MagCheck = "HOLD RELOAD", ChamberCheck = "MORE", FireMode = "MODE",
 		FireModeCheck = "HOLD MODE", InspectWeapon = "HOLD WEAPON", FreeLook = "LOOK (DRAG)", Light = "MORE", DeviceMode = "MORE",
 		ToggleNVG = "MORE", ZeroUp = "MORE", ZeroDown = "MORE", SightMode = "MORE", CycleWeapon = "WEAPON", Grenade = "GRENADE",
-		LeanLeft = "LEAN LEFT", LeanRight = "LEAN RIGHT", Extracts = "EXITS", Inventory = "BAG", Settings = "SETTINGS",
+		LeanLeft = "LEAN LEFT", LeanRight = "LEAN RIGHT", Extracts = "EXITS", Inventory = "BAG", Settings = "SETTINGS", MenuBar = "MENU",
 		Sidearm = "WEAPON", Primary = "WEAPON", Secondary = "WEAPON", Knife = "WEAPON",
 		Quick4 = "MED", Quick5 = "MED", Quick6 = "MED", Quick7 = "MED", Quick8 = "MED", Quick9 = "MED", Quick0 = "MED",
 	},

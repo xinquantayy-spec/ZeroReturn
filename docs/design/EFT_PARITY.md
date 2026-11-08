@@ -16,11 +16,11 @@ or damage in our game (research 2026-10-31, sources at the end). Sections 8 to 1
    names (owner, 2026-11-01; in the project instructions since then).
 2. **The owner's design choices.** The name Zero Return; the BODYCAM look (lens, grain, STBY/REC, the wide bodycam
    view); the Relay 7 bunker as a walk-around lobby (every Tarkov screen still opens from its key); one bunker per server;
-   the block body (art-3a, 2026-11-07). **Not yet true of the keys:** only the inventory (Tab), settings (P) and, in a raid,
-   the time and exits (O) have one (`InputMap.luau`). Traders, flea market, messenger and handbook open at a station as one
-   relay radio window whose tabs reach the others; the hideout, deploy and insurance, and the gunsmith bench open only at
-   their own stations (`Interact.luau`). Tarkov opens all of them from its main menu; Tarkov's menu bar (ui-6a, approved
-   2026-11-07) is not built yet.
+   the block body (art-3a, 2026-11-07). **The keys (ui-6a, 2026-11-08):** out of a raid Tarkov's menu bar sits under every
+   bunker screen and opens on M (gamepad: hold View; touch: the menu button): HIDEOUT, CHARACTER, TRADERS, FLEA MARKET,
+   HANDBOOK, MESSENGER with its unread count, and DEPLOY. Each screen also has a key: H, Tab, Y, U, K and J (ours: EFT gives
+   them none). Settings are on P and, in a raid, the time and exits on O. The stations still open the same screens; the
+   gunsmith bench and insurance open only at their stations or from the inventory.
 3. **What Roblox does not let a game control.** Resolution, screen mode, VSync, frame-rate caps, DLSS/FSR, Reflex,
    anti-aliasing, texture and shadow quality belong to Roblox's own graphics slider; keys Roblox reserves (Esc, `/`,
    F9 and others); Roblox content rules (blood within the experience's maturity rating, no real-money gambling,
@@ -79,6 +79,7 @@ Updated 2026-11-08 from the code (`Inventory.luau`, `Inspect.luau`); the screens
 | Flea market from level 15: offers, filters, filter by item, linked and required search, wish list | Done 2026-10-31: level 15, categories, search, WISH LIST, MY OFFERS, ADD OFFER with Tarkov's fee; simulated sellers and buyers (section 10) | Price, currency and condition filters; filter by item, linked and required search; the level gates by category are built (economy.3, 2026-11-08, Studio check pending) |
 | Messenger: one chat per trader, insurance returns, task rewards, receive all | Done 2026-10-31: trader dialogs, insurance returns with RECEIVE ALL, task, loyalty and flea messages; an unread count and a notice when mail comes (ui.6) | |
 | Handbook: every item by category with its description | Done 2026-10-31 (relay radio, HANDBOOK); flares under SPECIAL EQUIPMENT (economy.11, 2026-11-08) | |
+| The footer: one click to the main menu, hideout, character, traders and flea market; the messenger and handbook beside them | The menu bar (ui-6a, 2026-11-08): HIDEOUT, CHARACTER, TRADERS, FLEA MARKET, HANDBOOK, MESSENGER (unread count), DEPLOY, under every bunker screen and on M, hold View or the touch menu button; a key per screen (H, Tab, Y, U, K, J: ours) | No main menu (the bunker is ours, exception 2); EFT's exact order and icons were not found documented |
 | Wish list: items flagged for tasks, hideout or trading | Done 2026-10-31: + WISH in INSPECT, a W on the tile, the flea market's WISH LIST | |
 | Hideout: modules, crafts, shooting range, customisation (0.16: wall finishes "Blue paint", "Factory walls", "Modest wallpaper"; floors "Small tiles", "Factory floor"; a "Factory ceiling"; unlocked by level, tasks, achievements and prestige; posters as hideout upgrades and loot; range targets by leveling the range) | Five modules in the shared, kept bunker (section 10); STYLE since 2026-11-02: walls (7), floor (5) and ceiling (4), drawn per player on each client, unlocked by level (`docs/design/HIDEOUT_STYLE.md`); a free practice range in the lobby | Unlocks by tasks, achievements and prestige; posters; range targets; the range as a module |
 

@@ -61,6 +61,8 @@ T.ELEMENTS = {
 	{ id = "set", name = "SETTINGS", icon = "GEAR", x = -1, y = -1, size = 46, shown = true, square = true, press = "Settings" },
 	{ id = "exits", name = "EXITS", icon = "EXITS", x = -1, y = -1, size = 46, shown = true, square = true, press = "Extracts", raid = true },
 	{ id = "bag", name = "INVENTORY", icon = "BAG", x = -1, y = -1, size = 46, shown = true, square = true, press = "Inventory" },
+	-- out of a raid: Tarkov's menu bar (MenuBar.luau, ui-6a)
+	{ id = "menu", name = "MENU BAR", icon = "MORE", x = -1, y = -1, size = 46, shown = true, square = true, press = "MenuBar", lobby = true },
 } :: { Element }
 
 T.byId = {} :: { [string]: Element }

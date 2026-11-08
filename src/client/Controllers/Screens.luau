@@ -51,12 +51,14 @@ local function modal(w, h, title)
 		ctx.Inventory.close()
 	end
 	local vp = K.viewport(gui)
+	-- the menu bar's strip at the foot stays free out of a raid (MenuBar.luau, ui-6a)
+	local barH = ctx.MenuBar and ctx.MenuBar.reserve() or 0
 	-- ui-3a: a phone (under 500 pt of height) gets the whole screen with a thin margin
 	local phone = vp.Y < 500
 	w = phone and vp.X or math.min(w, vp.X - 16)
-	h = phone and vp.Y or math.min(h, vp.Y - 12)
+	h = phone and (vp.Y - barH) or math.min(h, vp.Y - 12 - barH)
 	local pad = phone and 6 or 14
-	local f = K.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
+	local f = K.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -barH / 2), Size = UDim2.fromOffset(w, h), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(f, K.C.line, 0.4)
 	K.pad(f, pad)
 	K.label(f, title, 17, { FontFace = K.bold, Size = UDim2.new(1, 0, 0, phone and 36 or 24), TextYAlignment = phone and Enum.TextYAlignment.Center or nil })
@@ -700,6 +702,8 @@ local BIND_ROWS = {
 	{ "ZeroUp", "ZEROING UP" }, { "ZeroDown", "ZEROING DOWN" }, { "SightMode", "SIGHT MODE" }, { "ToggleNVG", "NIGHT VISION" },
 	{ "Sidearm", "SIDEARM" }, { "Primary", "WEAPON ON SLING" }, { "Secondary", "WEAPON ON BACK" }, { "Knife", "MELEE WEAPON" },
 	{ "Grenade", "GRENADE" }, { "Extracts", "TIME (TWICE: EXITS)" }, { "Inventory", "INVENTORY" }, { "Settings", "SETTINGS" },
+	{ "MenuBar", "MENU BAR (BUNKER)" }, { "ScreenHideout", "HIDEOUT" }, { "ScreenTraders", "TRADERS" }, { "ScreenFlea", "FLEA MARKET" },
+	{ "ScreenHandbook", "HANDBOOK" }, { "ScreenMessenger", "MESSENGER" },
 	{ "Quick4", "QUICK SLOT 4" }, { "Quick5", "QUICK SLOT 5" }, { "Quick6", "QUICK SLOT 6" }, { "Quick7", "QUICK SLOT 7" },
 	{ "Quick8", "QUICK SLOT 8" }, { "Quick9", "QUICK SLOT 9" }, { "Quick0", "QUICK SLOT 0" },
 }

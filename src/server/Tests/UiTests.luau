@@ -43,18 +43,27 @@ function T.run(_ctx)
 		InputMap.LeanLeft.pad[1] == Enum.KeyCode.ButtonL1 and InputMap.LeanLeft.context == "play"
 		and InputMap.LeanRight.pad[1] == Enum.KeyCode.ButtonR1 and InputMap.LeanRight.context == "play")
 	-- no two actions that can fire in a menu (menu and global contexts) share a gamepad button: Back is B, the tabs LB / RB,
-	-- the inventory Y, the settings View
+	-- the inventory Y, the settings View; one tapped and one held may (a tap opens the settings, a hold the menu bar)
 	local seen, clash = {}, nil
 	for action, spec in InputMap do
 		if spec.context == "menu" or spec.context == "global" then
 			for _, k in spec.pad or {} do
-				if seen[k] then
-					clash = seen[k] .. " and " .. action .. " on " .. k.Name
+				local other = seen[k]
+				if other then
+					local a, b = InputMap[other].padHow, spec.padHow
+					if not ((a == "tap" and b == "hold") or (a == "hold" and b == "tap")) then
+						clash = other .. " and " .. action .. " on " .. k.Name
+					end
 				end
 				seen[k] = action
 			end
 		end
 	end
+	check("input map: the menu bar is M and a held View, Tarkov's screens on H, Y, U, K and J (ui-6a)",
+		InputMap.MenuBar and InputMap.MenuBar.keys[1] == Enum.KeyCode.M and InputMap.MenuBar.pad[1] == Enum.KeyCode.ButtonSelect
+		and InputMap.MenuBar.padHow == "hold" and InputMap.Settings.padHow == "tap" and InputMap.ScreenHideout.keys[1] == Enum.KeyCode.H
+		and InputMap.ScreenTraders.keys[1] == Enum.KeyCode.Y and InputMap.ScreenFlea.keys[1] == Enum.KeyCode.U
+		and InputMap.ScreenHandbook.keys[1] == Enum.KeyCode.K and InputMap.ScreenMessenger.keys[1] == Enum.KeyCode.J)
 	check("input map: one action per gamepad button in menus" .. (clash and (" (" .. clash .. ")") or ""), clash == nil)
 
 	-- ui.9: the green / red fit cue says what the server will do with the drop. Each case plans a drop with DropRules,

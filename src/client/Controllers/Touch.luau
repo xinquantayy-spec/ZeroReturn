@@ -595,7 +595,7 @@ local function refresh()
 	local rects = ctx.Hud and ctx.Hud.exitRects
 	for id, st in els do
 		local e = st.e
-		local shown = st.wantShown and (inRaid or not e.raid)
+		local shown = st.wantShown and (inRaid or not e.raid) and not (inRaid and e.lobby)
 		if e.mount then
 			shown = shown and atGun
 		elseif atGun then

@@ -28,7 +28,15 @@ return {
 	FireModeCheck = { keys = { K.B }, mod = "Alt", pad = { K.ButtonR3 }, padHow = "tap", padAim = true, context = "play" },
 	Extracts = { keys = { K.O }, pad = { K.DPadDown }, padHow = "tap", padAim = false, touch = "EXITS", context = "play" },
 	Inventory = { keys = { K.Tab }, pad = { K.ButtonY }, padHow = "tap", touch = "BAG", context = "global" },
-	Settings = { keys = { K.P }, pad = { K.ButtonSelect }, touch = "SETTINGS", context = "global" },
+	Settings = { keys = { K.P }, pad = { K.ButtonSelect }, padHow = "tap", touch = "SETTINGS", context = "global" },
+	-- Tarkov's menu bar out of a raid (MenuBar.luau, ui-6a): M, or hold Select (a tap is the settings), or the touch
+	-- menu button; and each screen's own key (ours: EFT gives them none). Tab is the character screen (Inventory).
+	MenuBar = { keys = { K.M }, pad = { K.ButtonSelect }, padHow = "hold", touch = "MENU", context = "global" },
+	ScreenHideout = { keys = { K.H }, pad = {}, context = "global" },
+	ScreenTraders = { keys = { K.Y }, pad = {}, context = "global" },
+	ScreenFlea = { keys = { K.U }, pad = {}, context = "global" },
+	ScreenHandbook = { keys = { K.K }, pad = {}, context = "global" },
+	ScreenMessenger = { keys = { K.J }, pad = {}, context = "global" },
 	Back = { keys = { K.Backspace }, pad = { K.ButtonB }, context = "menu" },
 	-- in a menu the bumpers step through the open screen's tabs, the console convention (Tarkov has no gamepad,
 	-- exception 4; audit ui.5). Lean has them on foot; the "play" context is off while a menu is open.

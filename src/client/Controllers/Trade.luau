@@ -1000,6 +1000,14 @@ local function profilePanel(f, x, y, w, h, d)
 		s.raids or 0, s.survived or 0, s.kia or 0, s.mia or 0, s.kills or 0, s.pmcKills or 0, s.scavKills or 0, s.bossKills or 0, s.scavRaids or 0), K.C.text, 12)
 end
 
+-- the trader radio's open tab (a trader's id, "flea", "handbook", "messenger" or "profile"), and the last trader shown
+function Trade.tab()
+	return ui.tab
+end
+function Trade.lastTrader()
+	return TD.defs[ui.tab] and ui.tab or TD.list[1]
+end
+
 function Trade.traders(tab, sub)
 	local d = data()
 	if not d or ctx.State.inRaid() then

@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Tarkov's menu bar (decision ui-6a; 2026-11-08, about 13:00 SGT)
+
+| Test | Result |
+|---|---|
+| Automated suites | All 12 pass, 911 checks. UiTests 34/34 (new: the bar is M and a held View, the screens H, Y, U, K and J; a tap and a hold may share a button in menus). LogicTests: View is the eighth shared gamepad button (tap: settings, hold: the bar); screen keys need no gamepad way of their own (the bar is it). |
+| The bar, in the bunker (keyboard and mouse) | M showed the bar: [H] HIDEOUT, [TAB] CHARACTER, [Y] TRADERS, [U] FLEA MARKET, [K] HANDBOOK, [J] MESSENGER (1), an X and DEPLOY; the mouse came free (screenshot). M again hid it and locked the mouse. |
+| Screen to screen | Y opened the traders with the bar under the screen and TRADERS lit. Tab went on to the character screen, H to the hideout, K to the handbook, J to the messenger (its unread count cleared), each with its button lit (screenshots). J again closed the messenger, hid the bar and locked the mouse. Clicking DEPLOY on the bar opened the deployment screen (screenshot). Every screen kept clear of the bar. |
+| Not checked | The gamepad (hold View) and touch (menu button) by hand, a phone's layout, prompts staying off while the bar is open by itself. |
+
 ## Sound through walls on Border Yard (decision gameplay-3a; 2026-11-08, about 12:40 SGT)
 
 | Test | Result |

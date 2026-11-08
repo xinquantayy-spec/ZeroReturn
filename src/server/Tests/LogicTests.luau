@@ -188,12 +188,13 @@ function T.run(ctx)
 		check("input map: T is the tactical device and Ctrl+T its mode (Tarkov)", IM.Light.keys[1] == Enum.KeyCode.T and IM.Light.mod == nil
 			and IM.DeviceMode.keys[1] == Enum.KeyCode.T and IM.DeviceMode.mod == "Ctrl")
 		-- the gamepad has fewer buttons than Tarkov has keys (KNOWN_ISSUES 76): a button may carry several actions told
-		-- apart by a tap or a hold (padHow) and by aiming or not (padAim); only these seven buttons are shared, and no two
-		-- of their actions may fire from the same press (a press and a hold may: B crouches, then lies down)
+		-- apart by a tap or a hold (padHow) and by aiming or not (padAim); only these eight buttons are shared, and no two
+		-- of their actions may fire from the same press (a press and a hold may: B crouches, then lies down). View: a tap
+		-- opens the settings, a hold the menu bar out of a raid (ui-6a)
 		local SHARED = {
 			DPadUp = "FreeLook+Heal+ZeroUp", DPadDown = "Extracts+Grenade+ZeroDown", DPadRight = "DeviceMode+FireMode+Light",
 			DPadLeft = "CycleWeapon+SightMode+ToggleNVG", ButtonR3 = "ChamberCheck+FireModeCheck+MagCheck",
-			ButtonB = "Crouch+Prone", ButtonY = "InspectWeapon+Inventory",
+			ButtonB = "Crouch+Prone", ButtonY = "InspectWeapon+Inventory", ButtonSelect = "MenuBar+Settings",
 		}
 		local byPad = {}
 		for action, spec in IM do
@@ -238,14 +239,14 @@ function T.run(ctx)
 		local noPad = {}
 		for action, spec in IM do
 			if #(spec.pad or {}) == 0 and not ({ Sidearm = true, Primary = true, Secondary = true, Knife = true })[action]
-				and not string.match(action, "^Quick") then
+				and not string.match(action, "^Quick") and not string.match(action, "^Screen") then
 				table.insert(noPad, action)
 			end
 		end
 		table.sort(noPad)
-		check("input map: every control but the slot keys and quick slots has a gamepad way (D-left cycles the weapons, D-up heals)"
+		check("input map: every control but the slot keys, quick slots and screen keys has a gamepad way (D-left cycles the weapons, D-up heals, the menu bar opens the screens)"
 			.. (#noPad > 0 and (" (missing: " .. table.concat(noPad, ", ") .. ")") or ""), #noPad == 0)
-		check("input map: the shared gamepad buttons are the seven planned ones, each press telling its actions apart (tap, hold, aiming)" .. (badPad and (" (" .. badPad .. ")") or ""), badPad == nil)
+		check("input map: the shared gamepad buttons are the eight planned ones, each press telling its actions apart (tap, hold, aiming)" .. (badPad and (" (" .. badPad .. ")") or ""), badPad == nil)
 	end
 	-- touch controls (Touch.luau; TouchLayout.luau): every control's icon and action exist, the defaults do not overlap on
 	-- common phone and tablet screens, and the server keeps only a clean layout

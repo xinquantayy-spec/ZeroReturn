@@ -1468,9 +1468,10 @@ function Inventory.render()
 	local inRaid = ctx.State.inRaid()
 	local vp = K.viewport(gui)
 	compact = vp.Y < COMPACT_H
+	local barH = ctx.MenuBar and ctx.MenuBar.reserve() or 0 -- the menu bar out of a raid (ui-6a)
 	local W = compact and math.floor(vp.X) or math.floor(math.min(vp.X - 12, 1360))
-	local H = compact and math.floor(vp.Y) or math.floor(math.min(vp.Y - 8, 800))
-	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
+	local H = compact and math.floor(vp.Y - barH) or math.floor(math.min(vp.Y - 8 - barH, 800))
+	panel = K.frame(gui, { Name = "InvPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -barH / 2), Size = UDim2.fromOffset(W, H), BackgroundColor3 = K.C.bg, BackgroundTransparency = 0.03 })
 	K.stroke(panel, K.C.line, 0.45)
 	if compact then
 		Inventory.renderCompact(d, W, H, inRaid)
@@ -1724,6 +1725,10 @@ function Inventory.toggle()
 	elseif ctx.Grenade and ctx.Grenade.busy() then
 		return -- a grenade in hand: throw it first
 	elseif not (ctx.Screens and ctx.Screens.modal) then
+		Inventory.show()
+	elseif ctx.MenuBar and not ctx.State.inRaid() and ctx.MenuBar.current() ~= nil then
+		-- out of a raid Tab goes from a menu-bar screen to the character screen (Tarkov's menu bar, ui-6a)
+		ctx.Screens.close()
 		Inventory.show()
 	end
 end
