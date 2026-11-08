@@ -43,6 +43,11 @@ Loot.STOCK_CHANCE = { default = 0.5, safe = 1, weaponbox = 1, jacket = 0.6, regi
 -- weighted pools: n = stack range, a = rounds range (for mags: ammo type from `at`)
 local POOLS = {
 	crate = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SCREWS", w = 6 }, { id = "NUTS", w = 6 }, { id = "NAILS", w = 6 }, { id = "CORR_HOSE", w = 3 }, { id = "SILICONE_TUBE", w = 2 },
+		{ id = "SPARE_PARTS", w = 5 }, { id = "SEAL_TAPE", w = 2 }, { id = "FOAM", w = 1.5 }, { id = "PEN_OIL", w = 4 }, { id = "TNT", w = 1 },
+		{ id = "FUZE", w = 2 }, { id = "WATER_FILTER", w = 0.8 }, { id = "MOTOR", w = 1 }, { id = "RELAY", w = 3 }, { id = "PRESSURE_GAUGE", w = 0.6 },
+		{ id = "CHLORINE", w = 1 }, { id = "ALKALI", w = 2 },
 		{ id = "GUNPOWDER", w = 2 }, -- economy-7b's barter goods (EFT: gunpowder in weapon and ammo boxes, toolboxes)
 		{ id = "BOLTS", w = 14 }, { id = "DUCT_TAPE", w = 12 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 10 },
 		{ id = "SIGNAL_COIL", w = 10 }, { id = "CERAMIC_FUSE", w = 10 }, { id = "A62_FMJ", w = 10, n = { 20, 45 } },
@@ -53,6 +58,9 @@ local POOLS = {
 		{ id = "FLARE_GREEN", w = 1.6 },
 	},
 	locker = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "LIGHTER", w = 6 }, { id = "TOILET_PAPER", w = 4 }, { id = "SEWING_KIT", w = 1 }, { id = "SALT", w = 2 }, { id = "MEDS_PILE", w = 3 },
+		{ id = "PLIERS", w = 2 }, { id = "WRENCH", w = 2 }, { id = "AWL", w = 0.5 },
 		{ id = "FABRIC", w = 3 }, -- EFT: fabrics in bags, lockers and toolboxes
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
 		{ id = "HARDTACK", w = 8 }, { id = "A9_PST", w = 10, n = { 10, 35 } }, { id = "P9_MAG", w = 5, a = { 0, 17 }, at = "A9_PST" },
@@ -63,12 +71,19 @@ local POOLS = {
 		{ id = "GREN_RK5", w = 2 }, { id = "GREN_SMOKE", w = 2 },
 	},
 	drawer = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SECURE_FLASH", w = 2 }, { id = "SSD", w = 0.6 }, { id = "SURVEY_MAPS", w = 0.5 }, { id = "LIGHTER", w = 6 },
+		{ id = "TOILET_PAPER", w = 2 }, { id = "SCREWDRIVER", w = 3 }, { id = "TAPE_MEASURE", w = 2 }, { id = "SKULL_RING", w = 0.3 },
+		{ id = "TPLUG", w = 2 }, { id = "ES_LAMP", w = 2 },
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 12 }, { id = "OLD_COIN", w = 8 }, { id = "FLASH_MODULE", w = 4 },
 		{ id = "INTEL_FOLDER", w = 3 }, { id = "KEY_OFFICE", w = 5 }, { id = "RUSTED_KEYCARD", w = 1 }, { id = "SEALED_DRIVE", w = 2 },
 		{ id = "GOLD_CHAIN", w = 3 }, { id = "PAINKILLERS", w = 6 },
 		{ id = "KEY_MM_BOLT_OFFICE", w = 1 }, { id = "KEY_MM_BOLT_GOODS", w = 1 }, { id = "KEY_MM_IRON_GRATE", w = 0.4 },
 	},
 	medbag = {
+		-- economy-1a's second slice: EFT's medical supplies (the transilluminator very rarely)
+		{ id = "SYRINGE", w = 6 }, { id = "MEDS_PILE", w = 8 }, { id = "SALINE", w = 5 }, { id = "BLOODSET", w = 4 }, { id = "OPHTHALMOSCOPE", w = 0.4 },
+		{ id = "LEDX", w = 0.05 },
 		{ id = "BANDAGE", w = 20 }, { id = "TOURNIQUET", w = 12 }, { id = "SPLINT", w = 12 }, { id = "PAINKILLERS", w = 12 },
 		{ id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MEDKIT_L", w = 3 },
 		{ id = "MED_TOOLS", w = 4 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 }, { id = "GAS_MASK", w = 1 },
@@ -76,6 +91,8 @@ local POOLS = {
 		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
 	},
 	weaponbox = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "WEAPON_PARTS", w = 4 }, { id = "GUN_LUBE", w = 2 }, { id = "FUZE", w = 3 }, { id = "TNT", w = 1 }, { id = "THERMITE", w = 0.4 },
 		{ id = "GUNPOWDER", w = 4 },
 		-- economy-1a's rounds: the plain loads often, the armour piercers rarely (EFT: ammo boxes hold mostly common rounds)
 		{ id = "A62_HP", w = 5, n = { 30, 60 } }, { id = "A62_SS", w = 6, n = { 30, 60 } }, { id = "A62_TR", w = 2, n = { 20, 40 } },
@@ -108,6 +125,13 @@ local POOLS = {
 		{ id = "FLARE_GREEN", w = 1.2 },
 	},
 	toolbox = {
+		-- economy-1a's second slice: EFT's toolboxes hold its tools, building materials and lubricants
+		{ id = "SCREWS", w = 10 }, { id = "NUTS", w = 10 }, { id = "NAILS", w = 10 }, { id = "SILICONE_TUBE", w = 4 }, { id = "CORR_HOSE", w = 4 },
+		{ id = "PRESSURE_GAUGE", w = 1 }, { id = "SEAL_TAPE", w = 3 }, { id = "FOAM", w = 2 }, { id = "SPARE_PARTS", w = 8 },
+		{ id = "SCREWDRIVER", w = 6 }, { id = "PLIERS", w = 5 }, { id = "WRENCH", w = 6 }, { id = "RATCHET", w = 0.5 }, { id = "PIPE_WRENCH", w = 0.4 },
+		{ id = "HAND_DRILL", w = 0.6 }, { id = "TOOLSET", w = 1.5 }, { id = "FILE_SET", w = 1.5 }, { id = "TAPE_MEASURE", w = 6 }, { id = "AWL", w = 1 },
+		{ id = "SEWING_KIT", w = 1 }, { id = "PEN_OIL", w = 6 }, { id = "THERMITE", w = 0.6 }, { id = "GUN_LUBE", w = 1 }, { id = "WEAPON_PARTS", w = 2 },
+		{ id = "POWER_DRILL", w = 1 }, { id = "POWER_CORD", w = 3 }, { id = "TPLUG", w = 4 }, { id = "ES_LAMP", w = 2 },
 		{ id = "GUNPOWDER", w = 2 }, { id = "FABRIC", w = 4 },
 		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
 		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "WEAPON_KIT", w = 2 },
@@ -118,6 +142,8 @@ local POOLS = {
 		{ id = "MARKER", w = 2 },
 	},
 	jacket = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "LIGHTER", w = 10 }, { id = "FUZE", w = 1 }, { id = "SECURE_FLASH", w = 1 }, { id = "SCREWDRIVER", w = 1 },
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
 		{ id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "PAINKILLERS", w = 4 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "KEY_DORM_104", w = 3 }, { id = "KEY_DORM_203", w = 1 }, { id = "GREN_RK5", w = 1 },
@@ -127,11 +153,18 @@ local POOLS = {
 		{ id = "FLARE_GREEN", w = 0.9 },
 	},
 	safe = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SKULL_RING", w = 4 }, { id = "GOLD_ROOSTER", w = 1 }, { id = "SSD", w = 3 }, { id = "SECURE_FLASH", w = 5 }, { id = "LEDX", w = 0.2 },
+		{ id = "SURVEY_MAPS", w = 2 },
 		{ id = "GOLD_CHAIN", w = 10 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
 		{ id = "COLD_WALLET", w = 2 }, { id = "OLD_COIN", w = 10 }, { id = "RUSTED_KEYCARD", w = 1 },
 	},
 	-- loose loot (M10): what lies around in the open, in the dorm rooms, the office and the vault
 	junk = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SCREWS", w = 6 }, { id = "NUTS", w = 6 }, { id = "NAILS", w = 6 }, { id = "SPARE_PARTS", w = 4 }, { id = "CORR_HOSE", w = 2 },
+		{ id = "TPLUG", w = 3 }, { id = "LIGHTER", w = 5 }, { id = "TOILET_PAPER", w = 3 }, { id = "MEDS_PILE", w = 2 }, { id = "PEN_OIL", w = 2 },
+		{ id = "CPU_FAN", w = 2 }, { id = "RELAY", w = 2 },
 		{ id = "FABRIC", w = 4 },
 		{ id = "BOLTS", w = 12 }, { id = "WIRES", w = 10 }, { id = "DUCT_TAPE", w = 10 }, { id = "SPARK_PLUG", w = 8 },
 		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 9 }, { id = "WATER", w = 5 }, { id = "HARDTACK", w = 6 },
@@ -140,6 +173,9 @@ local POOLS = {
 		{ id = "SIGNAL_COIL", w = 4 }, { id = "CERAMIC_FUSE", w = 4 },
 	},
 	dorm = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "TOILET_PAPER", w = 6 }, { id = "SALT", w = 3 }, { id = "LIGHTER", w = 6 }, { id = "MEDS_PILE", w = 3 }, { id = "SYRINGE", w = 2 },
+		{ id = "SKULL_RING", w = 0.5 }, { id = "SEWING_KIT", w = 1 }, { id = "SCREWDRIVER", w = 2 },
 		{ id = "MOONSHINE", w = 1 }, -- rare: Relay 7 has no still, so loot is its only source (EFT makes it in the booze generator)
 		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 8 }, { id = "OLD_COIN", w = 8 }, { id = "PAINKILLERS", w = 6 },
 		{ id = "MEDKIT_S", w = 4 }, { id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "VOLT_DRINK", w = 2 },
@@ -148,15 +184,23 @@ local POOLS = {
 		{ id = "BATTERY", w = 2 }, { id = "P9_PISTOL", w = 1 }, { id = "GREN_RK5", w = 2 }, { id = "GREN_STUN", w = 1 },
 	},
 	dorm_good = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SKULL_RING", w = 3 }, { id = "GOLD_ROOSTER", w = 1 }, { id = "SSD", w = 2 }, { id = "SECURE_FLASH", w = 3 },
+		{ id = "OPHTHALMOSCOPE", w = 0.5 }, { id = "LEDX", w = 0.1 },
 		{ id = "GOLD_CHAIN", w = 8 }, { id = "CAPT_WATCH", w = 6 }, { id = "FLASH_MODULE", w = 6 }, { id = "INTEL_FOLDER", w = 5 },
 		{ id = "SEALED_DRIVE", w = 2 }, { id = "LOGIC_BOARD", w = 5 }, { id = "MIL_CIRCUIT", w = 2 }, { id = "COLD_WALLET", w = 1 },
 		{ id = "OLD_COIN", w = 6 }, { id = "MEDKIT_M", w = 4 }, { id = "HEMOSTAT", w = 2 }, { id = "RUSTED_KEYCARD", w = 1 },
 	},
 	office = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SURVEY_MAPS", w = 3 }, { id = "SECURE_FLASH", w = 4 }, { id = "SSD", w = 2 }, { id = "ES_LAMP", w = 3 }, { id = "TPLUG", w = 3 },
+		{ id = "POWER_CORD", w = 2 },
 		{ id = "INTEL_FOLDER", w = 6 }, { id = "FLASH_MODULE", w = 5 }, { id = "SEALED_DRIVE", w = 2 }, { id = "CIGARETTES", w = 6 },
 		{ id = "OLD_COIN", w = 5 }, { id = "BATTERY", w = 3 }, { id = "CAPT_WATCH", w = 2 },
 	},
 	vault = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "GOLD_ROOSTER", w = 2 }, { id = "SKULL_RING", w = 3 }, { id = "LEDX", w = 0.3 }, { id = "SSD", w = 3 }, { id = "SURVEY_MAPS", w = 2 },
 		{ id = "GOLD_CHAIN", w = 8 }, { id = "BRASS_LION", w = 3 }, { id = "COLD_WALLET", w = 3 }, { id = "MIL_CIRCUIT", w = 4 },
 		{ id = "SEALED_DRIVE", w = 5 }, { id = "INTEL_FOLDER", w = 6 }, { id = "CAPT_WATCH", w = 6 }, { id = "LEDGER", w = 2 },
 		{ id = "FLASH_MODULE", w = 5 }, { id = "GREN_F7", w = 2 }, { id = "TH_T7", w = 0.3 }, { id = "NV_QUAD", w = 0.6 },
@@ -185,6 +229,10 @@ local POOLS = {
 		{ id = "PHONE", w = 3 }, { id = "GOLD_CHAIN", w = 2 }, { id = "FLASH_MODULE", w = 2 }, { id = "KEY_MALL_STAFF", w = 2 },
 	},
 	tech = {
+		-- economy-1a's second slice: EFT's tech crates hold its electronics and batteries
+		{ id = "RELAY", w = 6 }, { id = "MOTOR", w = 2 }, { id = "PSU", w = 4 }, { id = "CPU_FAN", w = 6 }, { id = "POWER_CORD", w = 5 },
+		{ id = "TPLUG", w = 6 }, { id = "POWER_FILTER", w = 0.6 }, { id = "MIL_CABLE", w = 1 }, { id = "ES_LAMP", w = 4 }, { id = "SSD", w = 1 },
+		{ id = "SECURE_FLASH", w = 2 }, { id = "LI_BATTERY", w = 2 }, { id = "POWER_DRILL", w = 1 },
 		{ id = "WIRES", w = 10 }, { id = "CAPACITOR", w = 8 }, { id = "LOGIC_BOARD", w = 8 }, { id = "HDD", w = 8 },
 		{ id = "RAM_STICK", w = 8 }, { id = "POWER_BANK", w = 8 }, { id = "PHONE", w = 6 }, { id = "SIGNAL_COIL", w = 6 },
 		{ id = "BATTERY", w = 4 }, { id = "FLASH_MODULE", w = 5 }, { id = "GPU_CARD", w = 3 }, { id = "SEALED_DRIVE", w = 2 },
@@ -195,18 +243,26 @@ local POOLS = {
 		{ id = "MARKER", w = 2 }, { id = "CAMERA", w = 1 }, { id = "BEACON", w = 1 },
 	},
 	pharmacy = {
+		-- economy-1a's second slice: EFT's medical supplies (the transilluminator very rarely)
+		{ id = "SYRINGE", w = 6 }, { id = "MEDS_PILE", w = 10 }, { id = "SALINE", w = 6 }, { id = "BLOODSET", w = 4 }, { id = "OPHTHALMOSCOPE", w = 0.5 },
+		{ id = "LEDX", w = 0.08 },
 		{ id = "BANDAGE", w = 18 }, { id = "PAINKILLERS", w = 16 }, { id = "MEDKIT_S", w = 12 }, { id = "MEDKIT_M", w = 8 },
 		{ id = "TOURNIQUET", w = 8 }, { id = "SPLINT", w = 8 }, { id = "HEMOSTAT", w = 5 }, { id = "MED_TOOLS", w = 4 },
 		{ id = "MEDKIT_L", w = 3 }, { id = "SURGKIT", w = 1 }, { id = "MEDKIT_XL", w = 1 },
 		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
 	},
 	grocery = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "TOILET_PAPER", w = 8 }, { id = "SALT", w = 6 }, { id = "CHLORINE", w = 2 }, { id = "ALKALI", w = 2 }, { id = "LIGHTER", w = 6 },
 		{ id = "WATER", w = 14 }, { id = "JUICE", w = 10 }, { id = "CHOC_BAR", w = 12 }, { id = "STEW", w = 10 },
 		{ id = "HARDTACK", w = 8 }, { id = "VOLT_DRINK", w = 5 }, { id = "TOOTHPASTE", w = 6 }, { id = "SOAP", w = 6 },
 		{ id = "BLEACH", w = 4 }, { id = "CIGARETTES", w = 6 }, { id = "MATCHES", w = 6 }, { id = "LIGHTBULB", w = 4 },
 	},
 	drinks = { { id = "WATER", w = 14 }, { id = "JUICE", w = 12 }, { id = "VOLT_DRINK", w = 8 }, { id = "MOONSHINE", w = 1 } },
 	mall = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "TOILET_PAPER", w = 4 }, { id = "SALT", w = 2 }, { id = "LIGHTER", w = 5 }, { id = "TPLUG", w = 3 }, { id = "ES_LAMP", w = 4 },
+		{ id = "CPU_FAN", w = 2 }, { id = "SCREWDRIVER", w = 2 }, { id = "TAPE_MEASURE", w = 2 }, { id = "PEN_OIL", w = 2 },
 		{ id = "FABRIC", w = 3 },
 		{ id = "CHOC_BAR", w = 10 }, { id = "JUICE", w = 8 }, { id = "WATER", w = 6 }, { id = "CIGARETTES", w = 8 },
 		{ id = "MATCHES", w = 6 }, { id = "POWER_BANK", w = 6 }, { id = "LIGHTBULB", w = 6 }, { id = "TOOTHPASTE", w = 5 },
@@ -229,6 +285,8 @@ local POOLS = {
 	mk_bolt_office = { { id = "KEY_MM_BOLT_OFFICE", w = 1 } },
 	mk_bolt_goods = { { id = "KEY_MM_BOLT_GOODS", w = 1 } },
 	mallgood = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SSD", w = 3 }, { id = "SECURE_FLASH", w = 3 }, { id = "POWER_DRILL", w = 2 }, { id = "TOOLSET", w = 1 }, { id = "SKULL_RING", w = 1 },
 		{ id = "GPU_CARD", w = 2 }, { id = "FLASH_MODULE", w = 6 }, { id = "GOLD_CHAIN", w = 6 }, { id = "CAPT_WATCH", w = 4 },
 		{ id = "PHONE", w = 8 }, { id = "HDD", w = 6 }, { id = "RAM_STICK", w = 6 }, { id = "INTEL_FOLDER", w = 3 },
 		{ id = "SEALED_DRIVE", w = 2 }, { id = "MEDKIT_M", w = 4 }, { id = "KEY_MALL_SECURITY", w = 1 },
@@ -236,6 +294,9 @@ local POOLS = {
 	-- airdrops (Tarkov's four crates, 10 x 12 grids; Services/Airdrop.luau): the common crate a bit of everything, the
 	-- medical one meds and provisions, the supply one barter goods, the weapon one guns, mods and ammunition
 	airdrop_common = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SCREWS", w = 2 }, { id = "NUTS", w = 2 }, { id = "RELAY", w = 2 }, { id = "MOTOR", w = 1 }, { id = "PSU", w = 1 },
+		{ id = "POWER_CORD", w = 2 }, { id = "MEDS_PILE", w = 2 },
 		{ id = "BOLTS", w = 6 }, { id = "WIRES", w = 6 }, { id = "CAPACITOR", w = 5 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 2 },
 		{ id = "BATTERY", w = 4 }, { id = "FUEL_CAN", w = 3 }, { id = "GOLD_CHAIN", w = 3 }, { id = "MEDKIT_M", w = 6 }, { id = "MEDKIT_L", w = 3 },
 		{ id = "HEMOSTAT", w = 3 }, { id = "SPLINT", w = 4 }, { id = "PAINKILLERS", w = 4 }, { id = "WATER", w = 5 }, { id = "STEW", w = 4 },
@@ -246,6 +307,9 @@ local POOLS = {
 		{ id = "PLATE_PE4", w = 1 }, { id = "PLATE_CE4", w = 1 }, { id = "PLATE_CE5", w = 0.5 }, { id = "PLATE_HP5B", w = 0.4 },
 	},
 	airdrop_medical = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SYRINGE", w = 5 }, { id = "MEDS_PILE", w = 6 }, { id = "SALINE", w = 6 }, { id = "BLOODSET", w = 4 }, { id = "OPHTHALMOSCOPE", w = 1 },
+		{ id = "LEDX", w = 0.3 },
 		{ id = "MEDKIT_L", w = 8 }, { id = "MEDKIT_XL", w = 3 }, { id = "MEDKIT_M", w = 10 }, { id = "SURGKIT", w = 3 }, { id = "HEMOSTAT", w = 8 },
 		{ id = "SPLINT", w = 8 }, { id = "TOURNIQUET", w = 8 }, { id = "PAINKILLERS", w = 8 }, { id = "BANDAGE", w = 8 }, { id = "MED_TOOLS", w = 4 },
 		{ id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "HARDTACK", w = 5 }, { id = "VOLT_DRINK", w = 3 }, { id = "JUICE", w = 3 },
@@ -253,6 +317,13 @@ local POOLS = {
 		{ id = "STIM_ADREN", w = 4 }, { id = "STIM_REGEN", w = 3 }, { id = "STIM_HEMO", w = 3 }, { id = "STIM_STAMINA", w = 2 },
 	},
 	airdrop_supply = {
+		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
+		{ id = "SCREWS", w = 4 }, { id = "NUTS", w = 4 }, { id = "NAILS", w = 4 }, { id = "CORR_HOSE", w = 3 }, { id = "PRESSURE_GAUGE", w = 1 },
+		{ id = "SEAL_TAPE", w = 3 }, { id = "FOAM", w = 2 }, { id = "SPARE_PARTS", w = 4 }, { id = "RELAY", w = 4 }, { id = "MOTOR", w = 2 },
+		{ id = "PSU", w = 2 }, { id = "CPU_FAN", w = 3 }, { id = "POWER_CORD", w = 3 }, { id = "POWER_FILTER", w = 1 }, { id = "MIL_CABLE", w = 2 },
+		{ id = "ES_LAMP", w = 3 }, { id = "TOOLSET", w = 2 }, { id = "FILE_SET", w = 1 }, { id = "POWER_DRILL", w = 1 }, { id = "RATCHET", w = 0.5 },
+		{ id = "PIPE_WRENCH", w = 0.5 }, { id = "LI_BATTERY", w = 2 }, { id = "TNT", w = 1 }, { id = "THERMITE", w = 1 }, { id = "GUN_LUBE", w = 1 },
+		{ id = "WATER_FILTER", w = 1 },
 		{ id = "BOLTS", w = 8 }, { id = "DUCT_TAPE", w = 8 }, { id = "WIRES", w = 8 }, { id = "SPARK_PLUG", w = 6 }, { id = "CAPACITOR", w = 6 },
 		{ id = "LOGIC_BOARD", w = 5 }, { id = "MIL_CIRCUIT", w = 3 }, { id = "SIGNAL_COIL", w = 5 }, { id = "CERAMIC_FUSE", w = 5 },
 		{ id = "BATTERY", w = 5 }, { id = "FUEL_CAN", w = 4 }, { id = "DECK_TRANSCEIVER", w = 3 }, { id = "FLASH_MODULE", w = 4 },

@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The hideout's barter goods (decision economy-1a, second slice; 2026-11-08, about 17:15 SGT)
+
+| Test | Result |
+|---|---|
+| Icons | All 54 new goods rendered in Blender (build_items_j.py) and packed onto sheet 3 with its 54 earlier icons (108 items, rows to y 786 of 1024). The sheet was uploaded as decal 115823471925211 (image 115851561293058), and ItemIcons now lists 390 items on 5 sheets. Seven icons were drawn again after a contact-sheet review: the pressure gauge, power filter, lighter, ophthalmoscope, hand drill, tape measure and skull ring had Y-axis cylinders with their arguments in the wrong order. |
+| Stash in Studio | 37 of the goods were given to the stash. They show at their EFT sizes, for example the hand drill (3x2), motor, power supply, toolset, file set and rooster (2x2), sealing foam (1x3), corrugated hose, pressure gauge and power cord (2x1), and the alkaline cleaner and water filter (1x2). The ones known from the start show their picture in colour. The others are dark with a "?" until examined, as in EFT. Just after the upload, the new sheet's tiles showed only names; about a minute later the pictures were there. |
+| Hideout data | All 155 construction requirement rows name real items. All 54 new goods are used by a module, a craft or as a craft's tool. 91 barter goods have EFT's handbook folder. |
+| Tests | 14 suites, 1,083 checks, all passed. HideoutTests now builds security 1 with EFT's tape measure and workbench 1 with screw nuts, bolts and a multitool. Its ammunition craft holds the awl and gives it back. |
+| Not checked | The HIDEOUT screen's requirement rows by eye (the simulated click on the LAVATORY tab did not switch the module), the goods turning up in containers during a raid, a phone. |
+
 ## First-person reload and check poses (decision art-6a; 2026-11-08, about 16:40 SGT)
 
 Quay 7, R-17 carbine, studio capture mode. Poses were held at a set moment with the client bridge `poseHold` and measured in camera space (studs; negative z is in front of the camera).

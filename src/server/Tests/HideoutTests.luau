@@ -387,17 +387,21 @@ function T.run(ctx)
 		local r = H.act(nil, p, { op = "build", m = "generator" })
 		check("the generator needs security 1 first", type(r) == "table" and r.code == "REQUIREMENTS")
 		r = H.act(nil, p, { op = "build", m = "security" })
-		check("security 1 needs its item (a multitool here)", type(r) == "table" and r.code == "MISSING_ITEMS")
-		give(p, "MULTITOOL", 3)
+		check("security 1 needs its item (EFT's construction measuring tape)", type(r) == "table" and r.code == "MISSING_ITEMS")
+		give(p, "TAPE_MEASURE", 2)
 		local m0 = p.money
 		r = H.act(nil, p, { op = "build", m = "security" })
-		check("security 1: instant, 20,000 MK and the item taken", r == true and p.hideout.levels.security == 1 and p.money == m0 - 20000 and count(p, "MULTITOOL") == 2)
+		check("security 1: instant, 20,000 MK and the tape measure taken", r == true and p.hideout.levels.security == 1 and p.money == m0 - 20000 and count(p, "TAPE_MEASURE") == 1)
 		give(p, "SPARK_PLUG", 1)
 		r = H.act(nil, p, { op = "build", m = "generator" })
 		check("generator 1 built", r == true and p.hideout.levels.generator == 1)
-		give(p, "BOLTS", 4)
+		give(p, "NUTS", 2)
+		give(p, "BOLTS", 2)
+		give(p, "MULTITOOL", 2)
 		r = H.act(nil, p, { op = "build", m = "workbench" })
-		check("workbench 1 built (bolts and a multitool)", r == true and p.hideout.levels.workbench == 1 and count(p, "MULTITOOL") == 1)
+		check("workbench 1 built (EFT's screw nuts x2, bolts x2 and a multitool)", r == true and p.hideout.levels.workbench == 1 and count(p, "MULTITOOL") == 1
+			and count(p, "NUTS") == 0 and count(p, "BOLTS") == 0)
+		give(p, "AWL", 1)
 		give(p, "GUNPOWDER", 2)
 		r = H.act(nil, p, { op = "craft", r = "AMMO_PS" })
 		check("no power: the workbench cannot start a craft (EFT)", type(r) == "table" and r.code == "NO_POWER")
@@ -408,13 +412,14 @@ function T.run(ctx)
 		check("two fuel slots at level 1", H.act(nil, p, { op = "fuel" }) == true and (H.act(nil, p, { op = "fuel" })).code == "FULL")
 		r = H.act(nil, p, { op = "craft", r = "AMMO_PS" })
 		local c = p.hideout.crafts.workbench
-		check("the craft starts: powder used, the multitool goes in with it", r == true and c and count(p, "GUNPOWDER") == 1 and count(p, "MULTITOOL") == 0
+		check("the craft starts: powder used, the awl goes in with it (EFT's tool)", r == true and c and count(p, "GUNPOWDER") == 1 and count(p, "AWL") == 0
+			and count(p, "MULTITOOL") == 1
 			and near(c.need, HD.craftNeed(HD.byRecipe.AMMO_PS, p.skills)))
 		check("one craft at a time in a module", (H.act(nil, p, { op = "craft", r = "AMMO_PST" })).code == "BUSY")
 		check("not ready yet", (H.act(nil, p, { op = "collect", m = "workbench" })).code == "NOT_READY")
 		HD.tick(p.hideout, p.hideout.t + c.need + 1)
 		r = H.act(nil, p, { op = "collect", m = "workbench" })
-		check("collected: 200 rounds found in raid, the multitool back", r == true and count(p, "A76_PS") == 200 and firOf(p, "A76_PS") == true and count(p, "MULTITOOL") == 1
+		check("collected: 200 rounds found in raid, the awl back", r == true and count(p, "A76_PS") == 200 and firOf(p, "A76_PS") == true and count(p, "AWL") == 1
 			and p.hideout.crafts.workbench == nil)
 		check("the switch: off, and on again with fuel", H.act(nil, p, { op = "power", on = false }) == true and not HD.powered(p.hideout)
 			and H.act(nil, p, { op = "power", on = true }) == true and HD.powered(p.hideout))

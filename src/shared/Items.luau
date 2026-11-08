@@ -475,6 +475,96 @@ loot("GUNPOWDER", "Powder Tin", "POWDER", 1, 2, 0.6, 15000, "uncommon", "A seale
 loot("FABRIC", "Fabric Roll", "FABRIC", 1, 1, 0.3, 9000, "common", "A tight roll of heavy-duty technical fabric: aramid weave and ripstop offcuts. Good for mending vests and packs.", "#5C6B4E")
 loot("MOONSHINE", "Moonshine", "MOONSHINE", 1, 2, 1.1, 140000, "rare", "A corked bottle of home-distilled spirit, strong enough to strip paint. Scavs will do a lot for one.", "#B9A97A")
 add("DOGTAG", { name = "Dog Tag", short = "TAG", kind = "loot", w = 1, h = 1, mass = 0.02, value = 12000, rarity = "uncommon", desc = "An operator's identification tag. Worth more the more experienced its owner was.", color = c("#A7A9A0") })
+-- decision economy-1a, second slice (2026-11-08): the goods EFT's hideout is built from and its crafts use, which the
+-- hideout had covered with stand-ins. One of ours for each EFT item named beside it, with EFT's grid size (tarkovforge.com
+-- item pages) and EFT's handbook price as the value (SPT's handbook.json; 1 rouble = 1 MK, TraderData's rule). Weights
+-- are ours (no page read gave them). Pliers stand for EFT's Pliers Elite and cable cutter too, the sealing foam for its
+-- Shustrilo foam, the lighter for its Zibbo and Survl, the penetrating oil for both WD-40 sizes.
+-- building materials
+loot("SCREWS", "Screw Pack", "SCREWS", 1, 1, 0.15, 3140, "common", "A paper pack of wood and machine screws, mixed sizes.", "#8A8C86") -- pack of screws
+loot("NUTS", "Hex Nuts", "NUTS", 1, 1, 0.2, 8700, "common", "A bag of zinc-plated hex nuts.", "#9A9C96") -- screw nuts
+loot("NAILS", "Nail Pack", "NAILS", 1, 1, 0.2, 4105, "common", "A cardboard pack of building nails.", "#7E7466") -- pack of nails
+loot("SILICONE_TUBE", "Silicone Tube", "TUBE", 1, 1, 0.3, 18900, "uncommon", "A cartridge of clear silicone sealant. Seals pipes, tanks and window frames.", "#C8CCC4") -- silicone tube
+loot("CORR_HOSE", "Corrugated Hose", "HOSE", 2, 1, 0.5, 12201, "uncommon", "A coil of ribbed plastic hose with clamps on both ends.", "#3E4A52") -- corrugated hose
+loot("PRESSURE_GAUGE", "Pressure Gauge", "GAUGE", 2, 1, 0.6, 61200, "rare", "A brass pressure gauge on a short pipe stub. Water and fuel systems need one.", "#B08A3C") -- pressure gauge
+loot("SEAL_TAPE", "Sealing Tape", "SEAL", 1, 1, 0.2, 24000, "uncommon", "A heavy roll of waterproof sealing tape. Holds where duct tape lets go.", "#C8A43A") -- KEKTAPE duct tape
+loot("FOAM", "Sealing Foam", "FOAM", 1, 3, 0.9, 33778, "uncommon", "A tall can of expanding polyurethane foam with a straw nozzle.", "#5E7A3E") -- Xenomorph sealing foam
+loot("SPARE_PARTS", "Metal Spare Parts", "M.PARTS", 1, 1, 0.5, 5000, "common", "Brackets, springs and pins in a plastic bag. Someone always needs one of them.", "#7A7C76") -- metal spare parts
+-- electronics
+loot("RELAY", "Phase Relay", "RELAY", 1, 1, 0.3, 9500, "common", "A phase control relay off a switchboard rail.", "#3F4A5A") -- phase control relay
+loot("MOTOR", "Electric Motor", "MOTOR", 2, 2, 2.5, 43000, "uncommon", "A small industrial electric motor with its mounting foot.", "#4E5A4A") -- electric motor
+loot("PSU", "Power Supply", "PSU", 2, 2, 1.6, 7936, "common", "A desktop computer power supply with its cables cut short.", "#4A4E52") -- power supply unit
+loot("CPU_FAN", "Cooling Fan", "FAN", 1, 1, 0.25, 4670, "common", "A processor cooler: an aluminium heatsink under a plastic fan.", "#5A5E62") -- CPU fan
+loot("POWER_CORD", "Power Cord", "CORD", 2, 1, 0.4, 12623, "uncommon", "A coiled heavy power cord with a plug on one end.", "#2E3034") -- power cord
+loot("TPLUG", "T-Plug", "T-PLUG", 1, 1, 0.1, 2481, "common", "A three-way mains adapter.", "#D8D4C8") -- T-shaped plug
+loot("POWER_FILTER", "Power Filter", "PFILTER", 1, 1, 0.6, 55000, "rare", "A ruggedised power line filter in an olive case with military connectors.", "#4E5A3E") -- military power filter
+loot("MIL_CABLE", "Military Cable", "MCABLE", 2, 1, 0.8, 41200, "uncommon", "A shielded field cable with round locking connectors.", "#3E4632") -- military cable
+loot("ES_LAMP", "Energy-Saving Lamp", "ES LAMP", 1, 1, 0.15, 10822, "common", "A spiral fluorescent bulb, still in one piece.", "#E8E6DC") -- energy-saving lamp
+loot("POWER_DRILL", "Power Drill", "DRILL", 2, 2, 1.8, 32943, "uncommon", "A cordless drill with a worn battery. Builders and gunsmiths both want one.", "#C86A2A") -- electric drill
+-- info
+loot("SSD", "SSD", "SSD", 1, 1, 0.08, 80000, "rare", "A solid-state drive pulled from a laptop. The data may still be there.", "#2E3640") -- SSD drive
+loot("SURVEY_MAPS", "Survey Maps", "MAPS", 2, 1, 0.3, 72000, "rare", "A rolled set of topographic survey sheets with handwritten grid marks.", "#C8BC96") -- topographic survey maps
+loot("SECURE_FLASH", "Secure Flash Drive", "FLASH", 1, 1, 0.03, 40152, "uncommon", "An encrypted USB stick in a metal shell.", "#5A6E7A") -- secure flash drive
+-- energy elements
+loot("LI_BATTERY", "Lithium Battery", "LI BATT", 1, 1, 0.3, 26000, "uncommon", "A lithium battery pack for field radios.", "#3E7A4A") -- GreenBat lithium battery
+-- flammable materials
+loot("PEN_OIL", "Penetrating Oil", "OIL", 1, 1, 0.15, 6958, "common", "A small spray can of penetrating oil. Frees rusted bolts and keeps hinges quiet.", "#3A5A9A") -- WD-40 (100 ml)
+loot("TNT", "TNT Brick", "TNT", 1, 1, 0.25, 35000, "uncommon", "A 200-gram demolition charge in a paper wrapper.", "#8E8A6A") -- TP-200 TNT brick
+loot("THERMITE", "Thermite Can", "THERM", 1, 1, 0.6, 52000, "rare", "A sealed can of thermite mix. Burns through steel.", "#8A5A3A") -- can of thermite
+loot("LIGHTER", "Lighter", "LIGHTER", 1, 1, 0.05, 1320, "common", "A cheap disposable gas lighter.", "#C83A2A") -- Crickent lighter
+loot("GUN_LUBE", "Gun Lube", "LUBE", 1, 1, 0.2, 36428, "uncommon", "A bottle of weapon lubricant with a needle tip.", "#2E5A7A") -- #FireKlean gun lube
+-- household materials
+loot("TOILET_PAPER", "Toilet Paper", "TP", 1, 1, 0.15, 8800, "common", "A single roll. In short supply everywhere.", "#E8E8E2") -- toilet paper
+loot("SALT", "White Salt", "SALT", 1, 1, 0.6, 8000, "common", "A tin of coarse white salt.", "#D8DCE0") -- can of white salt
+loot("CHLORINE", "Chlorine Pack", "CHLOR", 2, 1, 0.5, 11000, "uncommon", "A sealed pack of chlorine powder for disinfecting water.", "#E0E4D8") -- pack of chlorine
+loot("ALKALI", "Alkaline Cleaner", "ALKALI", 1, 2, 1.1, 8457, "common", "A jug of alkaline descaler for heat exchangers.", "#4A7AA8") -- alkaline cleaner for heat exchangers
+-- medical supplies
+loot("SYRINGE", "Syringe", "SYRINGE", 1, 1, 0.02, 3000, "common", "A sterile disposable syringe in its blister.", "#E0E8EC") -- disposable syringe
+loot("MEDS_PILE", "Pile of Meds", "MEDS", 1, 1, 0.2, 6500, "common", "Loose blister packs of assorted tablets.", "#C8B8A8") -- pile of meds (multivitamins too)
+loot("SALINE", "Saline Bottle", "NACL", 1, 1, 0.5, 8508, "common", "A plastic bottle of sterile saline solution.", "#D8E4EC") -- bottle of saline solution (hydrogen peroxide too)
+loot("BLOODSET", "Blood Set", "BLOODSET", 1, 1, 0.1, 9765, "common", "A sealed transfusion set: bag, line and needle.", "#B83A3A") -- medical bloodset
+loot("LEDX", "Vein Transilluminator", "TRANSIL", 1, 1, 0.3, 970000, "epic", "A handheld transilluminator that shows veins under the skin. Hospitals would pay anything for one.", "#3A6E8A") -- LEDX skin transilluminator
+loot("OPHTHALMOSCOPE", "Ophthalmoscope", "OSCOPE", 1, 1, 0.4, 84912, "rare", "A doctor's eye-examination light in a hard case.", "#2E3238") -- ophthalmoscope
+-- others
+loot("WEAPON_PARTS", "Weapon Parts", "WPARTS", 2, 1, 0.6, 14240, "uncommon", "Springs, pins and a spare extractor in an oily rag.", "#5A5C58") -- weapon parts
+loot("WATER_FILTER", "Water Filter", "WFILTER", 1, 2, 0.9, 24500, "uncommon", "A replaceable carbon cartridge for a water purifier.", "#D8DCE0") -- water filter
+loot("FUZE", "Grenade Fuze", "FUZE", 1, 1, 0.05, 8100, "common", "A hand grenade fuze with its pin and lever. Grenade makers need them.", "#5E6650") -- UZRGM grenade fuze
+-- valuables
+loot("GOLD_ROOSTER", "Golden Rooster", "ROOSTER", 2, 2, 2.0, 90566, "rare", "A gilded rooster figurine on a wooden base.", "#C9A13C") -- golden rooster figurine
+loot("SKULL_RING", "Gold Skull Ring", "SKULL", 1, 1, 0.03, 55000, "rare", "A heavy gold ring cast as a grinning skull.", "#C9A13C") -- gold skull ring
+-- tools (EFT keeps them as barter goods and as the tools its crafts hold while they run)
+loot("SCREWDRIVER", "Screwdriver", "SCDR.", 1, 1, 0.15, 3500, "common", "A flat screwdriver with a worn handle.", "#C83A2A") -- screwdriver
+loot("PLIERS", "Pliers", "PLIERS", 1, 1, 0.3, 8000, "common", "Combination pliers with insulated grips.", "#3A5A9A") -- pliers (and Pliers Elite, cable cutter)
+loot("WRENCH", "Wrench", "WRENCH", 1, 1, 0.4, 3544, "common", "A double-ended open spanner.", "#8C8F8A") -- wrench
+loot("RATCHET", "Ratchet Wrench", "RATCHET", 1, 2, 0.6, 124000, "rare", "A long ratchet handle with a socket still on it.", "#9A9C96") -- ratchet wrench
+loot("PIPE_WRENCH", "Pipe Wrench", "PGW", 1, 2, 1.4, 132000, "rare", "A heavy adjustable pipe wrench in red enamel.", "#A83A2A") -- pipe grip wrench
+loot("HAND_DRILL", "Hand Drill", "H.DRILL", 3, 2, 1.5, 60000, "rare", "An old crank-handle hand drill with a chuck key.", "#6E5A3E") -- hand drill
+loot("TOOLSET", "Toolset", "TOOLSET", 2, 2, 2.4, 31000, "uncommon", "A plastic case of sockets, bits and a ratchet.", "#2E3238") -- toolset
+loot("FILE_SET", "File Set", "FILES", 2, 2, 0.8, 35000, "uncommon", "A roll of machinist's files: flat, round and half-round.", "#5A4632") -- set of files "Master"
+loot("TAPE_MEASURE", "Tape Measure", "MTAPE", 1, 1, 0.3, 3769, "common", "A five-metre tape measure in a yellow case.", "#D8B43A") -- construction measuring tape
+loot("AWL", "Awl", "AWL", 1, 1, 0.1, 33000, "uncommon", "A leatherworker's awl with a wooden handle.", "#8A6A42") -- awl
+loot("SEWING_KIT", "Sewing Kit", "SEWING", 1, 1, 0.2, 38000, "uncommon", "Heavy needles, waxed thread and a thimble in a tin.", "#7A5A8A") -- sewing kit
+-- EFT's handbook folders for every barter good (the HANDBOOK and flea market can group by it)
+local BARTER_CAT = {
+	building = { "BOLTS", "DUCT_TAPE", "SCREWS", "NUTS", "NAILS", "SILICONE_TUBE", "CORR_HOSE", "PRESSURE_GAUGE", "SEAL_TAPE", "FOAM", "SPARE_PARTS" },
+	electronics = { "WIRES", "SPARK_PLUG", "SIGNAL_COIL", "CERAMIC_FUSE", "CAPACITOR", "CRACKED_LENS", "LOGIC_BOARD", "DECK_TRANSCEIVER", "FLASH_MODULE",
+		"MIL_CIRCUIT", "GPU_CARD", "HDD", "RAM_STICK", "PHONE", "LIGHTBULB", "RELAY", "MOTOR", "PSU", "CPU_FAN", "POWER_CORD", "TPLUG", "POWER_FILTER",
+		"MIL_CABLE", "ES_LAMP", "POWER_DRILL" },
+	energy = { "BATTERY", "POWER_BANK", "LI_BATTERY" },
+	flammable = { "MATCHES", "FUEL_CAN", "GUNPOWDER", "PEN_OIL", "TNT", "THERMITE", "LIGHTER", "GUN_LUBE" },
+	household = { "TOOTHPASTE", "SOAP", "BLEACH", "TOILET_PAPER", "SALT", "CHLORINE", "ALKALI" },
+	medical = { "MED_TOOLS", "SYRINGE", "MEDS_PILE", "SALINE", "BLOODSET", "LEDX", "OPHTHALMOSCOPE" },
+	info = { "INTEL_FOLDER", "SSD", "SURVEY_MAPS", "SECURE_FLASH" },
+	valuables = { "OLD_COIN", "GOLD_CHAIN", "RITUAL_AMULET", "CAPT_WATCH", "COLD_WALLET", "BRASS_LION", "GOLD_ROOSTER", "SKULL_RING" },
+	tools = { "SCREWDRIVER", "PLIERS", "WRENCH", "RATCHET", "PIPE_WRENCH", "HAND_DRILL", "TOOLSET", "FILE_SET", "TAPE_MEASURE", "AWL", "SEWING_KIT" },
+	others = { "CIGARETTES", "FABRIC", "MOONSHINE", "DOGTAG", "WEAPON_PARTS", "WATER_FILTER", "FUZE" },
+}
+for cat, ids in BARTER_CAT do
+	for _, id in ids do
+		assert(defs[id], "BARTER_CAT: " .. id)
+		defs[id].cat = cat
+	end
+end
 
 -- ── M14 weapon parts (WeaponParts.luau): every part is an item of kind "mod" with its part record ──────────
 local WP = require(script.Parent.WeaponParts)

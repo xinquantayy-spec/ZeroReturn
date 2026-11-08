@@ -903,9 +903,13 @@ Q.REPLACE_REP = 0.01 -- and this much standing (karma for Fence's)
 -- what completion tasks ask for (common and uncommon barter goods, medicine and food)
 Q.OPS_ITEMS = {
 	common = { "BOLTS", "DUCT_TAPE", "WIRES", "CIGARETTES", "MATCHES", "SPARK_PLUG", "LIGHTBULB", "TOOTHPASTE", "SOAP", "BLEACH",
-		"POWER_BANK", "BANDAGE", "PAINKILLERS", "SPLINT", "MEDKIT_S", "WATER", "STEW", "HARDTACK" },
+		"POWER_BANK", "BANDAGE", "PAINKILLERS", "SPLINT", "MEDKIT_S", "WATER", "STEW", "HARDTACK",
+		-- economy-1a's second slice: EFT's dailies ask for its everyday hardware, household and medical goods too
+		"SCREWS", "NUTS", "NAILS", "SPARE_PARTS", "RELAY", "CPU_FAN", "TPLUG", "PEN_OIL", "LIGHTER", "TOILET_PAPER", "SALT",
+		"SYRINGE", "MEDS_PILE", "SALINE", "SCREWDRIVER", "PLIERS", "WRENCH", "TAPE_MEASURE" },
 	uncommon = { "CAPACITOR", "BATTERY", "LOGIC_BOARD", "HDD", "RAM_STICK", "PHONE", "MED_TOOLS", "OLD_COIN", "HEMOSTAT", "MEDKIT_L",
-		"SIGNAL_COIL", "CERAMIC_FUSE" },
+		"SIGNAL_COIL", "CERAMIC_FUSE", "SILICONE_TUBE", "CORR_HOSE", "SEAL_TAPE", "POWER_CORD", "ES_LAMP", "MOTOR", "LI_BATTERY",
+		"WEAPON_PARTS", "BLOODSET", "FUZE", "CHLORINE", "SECURE_FLASH", "TOOLSET" },
 }
 -- what a weekly may pay on top (ours)
 Q.OPS_REWARD_ITEMS = { "MEDKIT_L", "GREN_F7", "R17_MAG40", "KST_MAG40", "HELMET_C3", "SURGKIT", "WEAPON_KIT", "RIG_CHEST" }
