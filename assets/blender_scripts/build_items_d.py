@@ -165,7 +165,8 @@ PLATES = ["PLATE_PE3", "PLATE_PE4", "PLATE_PE5", "PLATE_PE6", "PLATE_CE4", "PLAT
 
 
 def pack_extra(ids, sheet_name):
-    """add the ids' icons to atlas.json on one new sheet, leaving the uploaded sheets as they are"""
+    """add the ids' icons to atlas.json on sheet `sheet_name`, leaving the other uploaded sheets as they are: a new
+    sheet, or that sheet packed again with the icons it already held (it must then be uploaded again)"""
     import os, json
     import numpy as np
     import bpy
@@ -175,9 +176,19 @@ def pack_extra(ids, sheet_name):
         atlas = json.load(f)
     cell, size, pad = atlas["cell"], atlas["size"], atlas.get("pad", 2)
     from zr_item_reg import REG
-    entries = sorted([(i, REG[i]["w"], REG[i]["h"]) for i in ids], key=lambda e: (-e[2], -e[1], e[0]))
+    fname = sheet_name + ".png"
+    sizes = {i: (REG[i]["w"], REG[i]["h"]) for i in ids}
+    if fname in atlas["sheets"]:
+        idx = atlas["sheets"].index(fname)
+        for k, e in list(atlas["items"].items()):
+            if e["sheet"] == idx:
+                sizes.setdefault(k, (e["w"] // cell, e["h"] // cell))
+                del atlas["items"][k]
+    else:
+        idx = len(atlas["sheets"])
+        atlas["sheets"].append(fname)
+    entries = sorted([(i, w, h) for i, (w, h) in sizes.items()], key=lambda e: (-e[2], -e[1], e[0]))
     sheet = np.zeros((size, size, 4), dtype=np.float32)
-    idx = len(atlas["sheets"])
     x, y, shelf = pad, pad, 0
     for iid, w, h in entries:
         pw, ph = w * cell, h * cell
@@ -197,7 +208,6 @@ def pack_extra(ids, sheet_name):
     img.file_format = "PNG"
     img.save()
     bpy.data.images.remove(img)
-    atlas["sheets"].append(sheet_name + ".png")
     with open(path, "w") as f:
         json.dump(atlas, f, indent=1, sort_keys=True)
     return out, idx

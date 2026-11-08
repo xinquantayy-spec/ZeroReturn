@@ -13,7 +13,7 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 | Test | Result |
 |---|---|
 | Icons | The 16 plates rendered in Blender (build_items_d.py), packed on a fifth sheet (ZR_ItemIcons_4) and uploaded; in the stash KITE III, BASALT V, PC-4 F, HP-5 S, BULWARK F and ALBATROSS VI show their pictures (screenshot). The sheet showed blank for about a minute after the upload, then loaded. |
-| Coverage | 297 item definitions: 8 still without a picture (AGL30_ROUND, ANTIDOTE, FLARE_GREEN, FLARE_RED, FORESTER_PACK, MASK_WELDER, RITUAL_AMULET, RITUAL_KNIFE). |
+| Coverage | 297 item definitions: 8 were without a picture. Seven now have one (build_items_e.py: the antidote, both flares, the ritual amulet and knife, the Forester's pack, the welding mask; sheet 5 packed again and uploaded, image 84071911896199), seen in the stash (screenshot; the amulet shows "?" until examined, as Tarkov does). The launcher round is never carried. New UiTests check: every carried item has a picture (UiTests 33/33, all suites 839). |
 
 ## Plates in the drag cue (2026-11-08, 11:15 SGT)
 

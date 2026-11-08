@@ -159,6 +159,20 @@ function T.run(_ctx)
 		check("fit cue: the checks ran without an error (" .. tostring(errDrop) .. ")", false)
 	end
 
+	-- every item a player can carry has an inventory picture (a rendered icon, or a weapon part's own picture)
+	do
+		local Icons = require(Shared.ItemIcons)
+		local WP = require(Shared.WeaponParts)
+		local none = {}
+		for id, d in Items.defs do
+			if not Icons.items[id] and not WP.parts[id] and d.kind ~= "hazard" then
+				table.insert(none, id)
+			end
+		end
+		table.sort(none)
+		check("every carried item has a picture" .. (#none > 0 and (" (none: " .. table.concat(none, ", ") .. ")") or ""), #none == 0)
+	end
+
 	local summary = string.format("%d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")
