@@ -354,6 +354,31 @@ add("KEY_MM_SUBSTATION", { name = "SUBSTATION Utility Room Key", short = "UTILIT
 add("KEY_MM_UNIT14", { name = "UNIT 14 Keycard", short = "UNIT 14", kind = "key", w = 1, h = 1, mass = 0.02, value = 175000, rarity = "rare", key = { door = "mm_unit14", uses = 10, card = true }, desc = "Meridian Mall, car park A: the keycard for the container room UNIT 14. The reader needs the mall power. 10 uses.", color = c("#4E5E8A") })
 add("SEALED_DRIVE", { name = "Sealed Drive", short = "DRIVE", kind = "quest", w = 1, h = 1, mass = 0.1, value = 120000, rarity = "rare", desc = "Evacuation office data drive in a sealed sleeve.", color = c("#C07946") })
 add("LEDGER", { name = "Harbormaster's Ledger", short = "LEDGER", kind = "quest", w = 1, h = 1, mass = 0.3, value = 450000, rarity = "legendary", desc = "Leather ledger of every shipment that left Quay 7.", color = c("#7A4A2E") })
+-- decision economy-6a: quest items a task sends you to find (EFT: they spawn only for players with the task, go to the
+-- quest-item pouch, cannot be sold or used, and are lost on a failed extraction; EFT wiki Quests). They never lie in the
+-- stash here: Quests keeps them in the profile's quest-item pouch (prof.qitems) until they are handed over.
+local function questItem(id: string, name: string, short: string, value: number, desc: string, col: string)
+	add(id, { name = name, short = short, kind = "quest", w = 1, h = 1, mass = 0.2, value = value, rarity = "rare", desc = desc, color = c(col) })
+end
+questItem("QI_WATCHLOG", "Watch Room Logbook", "WATCH LOG", 60000, "The watchhouse's log of every truck waved through the old checkpoint.", "#5E5A4A")
+questItem("QI_NOTEBOOK", "Foreman's Notebook", "NOTEBOOK", 90000, "A grease-stained notebook: buyers, prices and dates in the Foreman's hand.", "#4E3E2E")
+questItem("QI_LETTERS", "Bundle of Letters", "LETTERS", 30000, "Letters tied with string, never sent, never read.", "#C8BFA0")
+questItem("QI_SAMPLES", "Sealed Sample Case", "SAMPLES", 80000, "A small cold case of pharmacy samples, its seal unbroken.", "#B8C8D0")
+questItem("QI_REAGENT", "Reagent Case", "REAGENTS", 90000, "A padded case of lab reagents from the Smelter.", "#6A8A7A")
+questItem("QI_MANIFEST", "Transit Manifest", "MANIFEST", 40000, "Customs transit manifest with the Store 17 foreman's signatures.", "#A89A7A")
+questItem("QI_BOATLOG", "Boat Logbook", "BOAT LOG", 50000, "The smugglers' boat's logbook: every run, every crossing.", "#4A5A6A")
+questItem("QI_PARCEL", "Seized Parcel", "PARCEL", 70000, "A taped parcel with a customs seizure tag. Somebody wants it unopened.", "#8A7A5A")
+questItem("QI_SEAL", "Customs Seal Press", "SEAL", 80000, "The quay's customs seal press. Whoever holds it clears any crate.", "#7A6A4A")
+questItem("QI_TAPE", "Security Tape", "TAPE", 60000, "A recorder tape from the mall's security room, labelled with the day it fell.", "#2E2E32")
+questItem("QI_REGISTER", "Armoury Register", "REGISTER", 60000, "The army post's register of every rifle signed in and out.", "#5A6A4A")
+questItem("QI_UNIT14", "Unit 14 Inventory Sheet", "UNIT 14 LIST", 70000, "The list taped inside UNIT 14: what went into the crates.", "#D0D0C0")
+questItem("QI_FURNACE", "Furnace Log", "FURNACE LOG", 90000, "The Smelter manager's log of every furnace run.", "#6E4A3A")
+questItem("QI_PRICELIST", "Price Ledger", "PRICES", 50000, "BOLTWORKS' price ledger, every line marked up.", "#C27A2E")
+-- what tasks have you plant (EFT's MS2000 marker, WI-FI camera and signal jammer roles). Kind "loot" so traders sell and
+-- buy them (TraderData's task-locked offers) and the flea lists them
+add("MARKER", { name = "Spot Marker", short = "MARKER", kind = "loot", w = 1, h = 1, mass = 0.2, value = 9000, desc = "A small radio marker. Set it on something and the people who sent you can find it.", color = c("#C24A35") })
+add("CAMERA", { name = "Trail Camera", short = "CAMERA", kind = "loot", w = 1, h = 1, mass = 0.3, value = 14000, rarity = "uncommon", desc = "Battery wildlife camera with a radio link. Strap it somewhere with a view.", color = c("#4E5A3E") })
+add("BEACON", { name = "Signal Beacon", short = "BEACON", kind = "loot", w = 1, h = 1, mass = 0.4, value = 22000, rarity = "uncommon", desc = "A radio relay beacon. Planted high, it listens to everything nearby.", color = c("#3E5A6E") })
 
 -- ── barter / valuables ────────────────────────────────────────────────────────
 local function loot(id: string, name: string, short: string, w: number, h: number, mass: number, value: number, rarity: string, desc: string, col: string)

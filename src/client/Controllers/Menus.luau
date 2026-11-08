@@ -128,11 +128,16 @@ function Menus.messenger(f, x, y, w, h, d, refresh)
 			table.insert(list, m)
 		end
 	end
+	-- task mail (economy-6a, Quests tags it): EFT's trader sends the task's text when you take it, the reward when you turn
+	-- it in, and a note when an operational task's time runs out
+	local TASK_HEAD = { start = "NEW TASK", done = "TASK COMPLETE", fail = "TASK FAILED" }
+	local TASK_COLOR = { start = K.C.ochre, done = K.C.green, fail = K.C.red }
 	for i = #list, 1, -1 do
 		local m = list[i]
 		order += 1
 		local from = ui.dialog == "system" and "SYSTEM" or (TD.defs[ui.dialog] and TD.defs[ui.dialog].name or string.upper(ui.dialog))
-		message(right, order, from .. "  ·  " .. ago(m.t, now), m.x)
+		local tag = m.k and TASK_HEAD[m.k]
+		message(right, order, from .. "  ·  " .. (tag and (tag .. "  ·  ") or "") .. ago(m.t, now), m.x, m.k and TASK_COLOR[m.k] or nil)
 	end
 	if order == 0 then
 		message(right, 1, "", "No messages.", K.C.dim)

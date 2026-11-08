@@ -278,8 +278,27 @@ local function overall(f, w)
 	end
 end
 
+-- an objective's line: what it asks, with the item it names (decision economy-6a: quest items, plants, builds)
+function Character.objectiveText(o)
+	local what = QD.describe(o)
+	if o.kind == "handin" then
+		what ..= ": " .. Items.defs[o.item].name
+	end
+	return what
+end
+
+-- time left on an operational task (EFT shows the timer on dailies and weeklies)
+function Character.timeLeft(ends, now)
+	local s = math.max(0, (ends or now) - now)
+	if s >= 86400 then
+		return string.format("%dd %dh", s // 86400, (s % 86400) // 3600)
+	end
+	return string.format("%dh %02dm", s // 3600, (s % 3600) // 60)
+end
+
 -- the active tasks of every trader, pinned ones first (audit ui.14), each with its objectives and progress; PIN keeps
--- one at the top here and in its trader's list. Turning in stays at the trader, as in Tarkov.
+-- one at the top here and in its trader's list. Turning in stays at the trader, as in Tarkov. Below them: the active
+-- operational tasks with their timers and the quest items you carry or keep (EFT's quest-item pouch; economy-6a).
 local function tasks(f, w)
 	local d = ctx.State.data
 	local big = K.viewport().Y < 500 -- a phone: finger-sized PIN buttons (ui-3a)
@@ -324,18 +343,65 @@ local function tasks(f, w)
 		y += btnH + 4
 		for i, o in q.obj do
 			local p = (qs.p and qs.p[i]) or 0
-			local what = QD.describe(o)
-			if o.kind == "handin" then
-				what ..= ": " .. Items.defs[o.item].name
-			end
-			K.label(f, string.format("  •  %s   %d/%d", what, math.min(p, o.n), o.n), 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = p >= o.n and K.C.green or K.C.text })
+			local what = Character.objectiveText(o)
+			K.label(f, string.format("  •  %s   %d/%d", what, math.min(p, o.n), o.n), 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = p >= o.n and K.C.green or K.C.text, TextTruncate = Enum.TextTruncate.AtEnd })
 			y += 18
 		end
 		y += 10
 	end
-	if #list == 0 then
+	-- operational tasks taken (dailies, weeklies, Fence's scav task)
+	local now = (d and d.serverTime) or os.time()
+	local opsActive = 0
+	for _, inst in (d and d.quests and d.quests.ops) or {} do
+		if inst.s == "active" then
+			opsActive += 1
+			local done = true
+			for i, o in inst.obj do
+				if ((inst.p and inst.p[i]) or 0) < o.n then
+					done = false
+				end
+			end
+			local tr = TD.defs[inst.trader]
+			local head = string.format("%s   ·   %s   ·   %s LEFT%s", inst.name, tr and tr.name or string.upper(inst.trader), Character.timeLeft(inst.ends, now), done and "   ·   READY TO TURN IN" or "")
+			K.label(f, head, 13, { FontFace = K.bold, Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 18), TextTruncate = Enum.TextTruncate.AtEnd, TextColor3 = done and K.C.green or K.C.ochre })
+			y += 20
+			for i, o in inst.obj do
+				local p = (inst.p and inst.p[i]) or 0
+				K.label(f, string.format("  •  %s   %d/%d", Character.objectiveText(o), math.min(p, o.n), o.n), 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = p >= o.n and K.C.green or K.C.text, TextTruncate = Enum.TextTruncate.AtEnd })
+				y += 18
+			end
+			y += 10
+		end
+	end
+	if #list == 0 and opsActive == 0 then
 		K.label(f, "No active tasks. Take tasks from the traders in the bunker.", 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = K.C.dim })
 		y += 20
+	end
+	-- quest items (EFT: they ride in their own pouch, are kept only by extracting, and wait to be handed over)
+	local names = {}
+	for id, n in (d and d.quests and d.quests.qitems) or {} do
+		if n > 0 and Items.defs[id] then
+			table.insert(names, Items.defs[id].name .. (n > 1 and (" x" .. n) or ""))
+		end
+	end
+	local carried = {}
+	for id, n in (d and d.quests and d.quests.found) or {} do
+		if n > 0 and Items.defs[id] then
+			table.insert(carried, Items.defs[id].name .. (n > 1 and (" x" .. n) or ""))
+		end
+	end
+	if #names > 0 or #carried > 0 then
+		y += 4
+		K.label(f, "QUEST ITEMS", 13, { FontFace = K.bold, Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 18) })
+		y += 20
+		if #carried > 0 then
+			K.label(f, "  •  Found this raid (extract to keep): " .. table.concat(carried, ", "), 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = K.C.ochre, TextTruncate = Enum.TextTruncate.AtEnd })
+			y += 18
+		end
+		if #names > 0 then
+			K.label(f, "  •  Waiting to be handed over: " .. table.concat(names, ", "), 12, { Position = UDim2.fromOffset(10, y), Size = UDim2.fromOffset(w - 20, 16), TextColor3 = K.C.text, TextTruncate = Enum.TextTruncate.AtEnd })
+			y += 18
+		end
 	end
 	return y
 end

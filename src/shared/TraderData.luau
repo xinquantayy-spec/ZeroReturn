@@ -96,16 +96,21 @@ T.EFT_LL = {
 	tilda = { { 12, 0.5 }, { 27, 2.0 }, { 42, 6.5 } }, -- Ragman
 	bram = { { 9, 0.6 }, { 17, 2.1 }, { 33, 7.3 } }, -- Jaeger (in EFT locked until Mechanic's "Introduction"; open here)
 }
--- Standing comes from tasks, and EFT's standings assume 52 to 91 tasks a trader; we have a handful each. Until there are
--- enough tasks (decision economy-6a), each trader's standings are EFT's scaled so that LL4 needs exactly the standing all
--- that trader's tasks give (LL2 and LL3 keep EFT's share of LL4), rounded down to 0.01; once a trader's tasks give EFT's
--- LL4 standing or more, EFT's figures apply as they are. Player levels are EFT's, capped at our top level (EFT's Ragman
--- wants 42 for LL4; ours stops at 40). Money spent is still counted but asks nothing, as in EFT 1.1.0.
-T.TASK_REP = {} :: { [string]: number } -- [trader] = standing all of its tasks give (QuestData rewards)
+-- Standing comes from tasks (EFT 1.1.0). Decision economy-6a gave every trader enough tasks: each trader's tasks now give
+-- at least EFT's LL4 standing (QuestData: about four times EFT's standing a task, since we have about a quarter of EFT's
+-- tasks a trader), so the standings below are EFT's own, unscaled (before economy-6a they were scaled down so that LL4 needed
+-- all of a trader's few tasks: VOS's LL4 was 0.46, now 7.9). The scaling stays for a trader whose tasks give less than
+-- EFT's LL4 standing: then its standings are EFT's scaled so that LL4 needs exactly what its tasks give (LL2 and LL3 keep
+-- EFT's share of LL4), rounded down to 0.01. Player levels are EFT's, capped at our top level (EFT's Ragman wants 42 for
+-- LL4; ours stops at 40). Money spent is still counted but asks nothing, as in EFT 1.1.0.
+T.TASK_REP = {} :: { [string]: number } -- [trader] = net standing all tasks give it (QuestData rewards: rep, and reps from others)
 for _, q in QD.list do
 	local r = q.reward and q.reward.rep
 	if r and r > 0 then
 		T.TASK_REP[q.trader] = (T.TASK_REP[q.trader] or 0) + r
+	end
+	for tid, d in (q.reward and q.reward.reps) or {} do
+		T.TASK_REP[tid] = (T.TASK_REP[tid] or 0) + d
 	end
 end
 local function down2(x: number): number
@@ -175,10 +180,19 @@ end
 local function o(id: string, ll: number, limit: number, n: number?): any
 	return { id = id, ll = ll, limit = limit, n = n or 1 }
 end
+-- task-locked offers (decision economy-6a; EFT: a task reward "Unlocks purchase of X at Trader LLn", e.g. Gunsmith - Part 1
+-- opens a gas block at Mechanic LL1 and BP Depot a gun at Prapor LL1; EFT wiki). task = on sale once that task is turned
+-- in; start = on sale while one of those tasks is taken or done (EFT 1.1.0: in the few chains left, "the key reward appears
+-- when you accept the first task", allthings.how). They sit at the end of each list, so older offers keep their index.
+local function ot(id: string, ll: number, limit: number, n: number?, task: string?, start: { string }?): any
+	local x = o(id, ll, limit, n)
+	x.task, x.start = task, start
+	return x
+end
 -- M14: a gun sold as a build (Tarkov trader presets): the base item with the preset's parts and an empty magazine
-local function pre(preset: string, ll: number, limit: number): any
+local function pre(preset: string, ll: number, limit: number, task: string?): any
 	local pr = WP.META.presets[preset]
-	return { id = pr.base, ll = ll, limit = limit, n = 1, preset = preset }
+	return { id = pr.base, ll = ll, limit = limit, n = 1, preset = preset, task = task }
 end
 T.offers = {
 	-- Prapor: "AK platform rifles, Russian ammunition, grenades" (tarkovforge): the Grach and the MP-133 from LL1, the AKM
@@ -193,6 +207,9 @@ T.offers = {
 		o("A76_BP", 4, 3, 60), o("A76L_SNB", 4, 2, 40), pre("KST_QUIET", 4, 1),
 		-- plates (gameplay-2a): EFT sells the Korund-VM plates at Prapor LL4 (tarkovforge); the PC-4's at LL2 (ours)
 		o("PLATE_PC4F", 2, 2), o("PLATE_PC4B", 2, 2), o("PLATE_HP5F", 4, 1), o("PLATE_HP5B", 4, 1), o("PLATE_HP5S", 4, 2),
+		-- task-locked (economy-6a): Fuel Count opens the KS-7 at LL1 (EFT's BP Depot opens a gun at Prapor LL1); markers for
+		-- the marking tasks (EFT: "Additional ones can be bought from Prapor or Ragman", wiki BP_Depot; TILDA sells gear only)
+		ot("KST_RIFLE", 1, 1, 1, "V10"), ot("MARKER", 1, 4, 1, nil, { "V10", "R8" }), ot("KST_MAG40", 2, 2, 1, "V14"), ot("A76_BP", 3, 2, 60, "V17"),
 	},
 	-- the Therapist: dressings and painkillers first, bigger kits and stimulants of their kind higher up
 	hale = {
@@ -200,6 +217,8 @@ T.offers = {
 		o("TOURNIQUET", 2, 5), o("MEDKIT_M", 2, 4), o("STEW", 2, 5), o("VOLT_DRINK", 2, 3),
 		o("HEMOSTAT", 3, 3), o("MEDKIT_L", 3, 2), o("ANTIDOTE", 3, 1),
 		o("SURGKIT", 4, 1), o("MEDKIT_XL", 4, 1),
+		-- task-locked (economy-6a): a level earlier than the open offer
+		ot("MEDKIT_L", 2, 1, 1, "H9"), ot("SURGKIT", 3, 1, 1, "H11"), ot("MEDKIT_XL", 3, 1, 1, "H14"),
 	},
 	fence = {
 		o("RIG_BELT", 1, 2), o("BAG_SLING", 1, 2), o("BANDAGE", 1, 4), o("R17_MAG", 1, 4), o("A62_FMJ", 1, 4, 60), o("KEY_OFFICE", 1, 1),
@@ -215,6 +234,8 @@ T.offers = {
 		o("LASER_DOT", 2, 2), o("KST_MNT_SIDE", 2, 1), o("SPR_FH_3L", 2, 2),
 		o("NV_MONO", 3, 1), o("SPARROW_SMG", 3, 1), o("KST_STK_TUBE", 3, 1), o("HAR_STK_TACT", 3, 1), pre("KST_TAC", 3, 1), pre("HAR_TAC", 3, 1),
 		o("LASER_COMBO", 4, 1), pre("SPR_TAC", 4, 1),
+		-- task-locked (economy-6a)
+		ot("NV_BINO", 1, 1, 1, "R4"), ot("NV_MONO", 2, 1, 1, "R7"), ot("LASER_COMBO", 3, 1, 1, "R9"),
 	},
 	-- the Peacekeeper: "NATO platform weapons, including M4 platform rifles and HK builds", "western optics", "western
 	-- ammunition" (tarkovforge); the UN vest from LL1 (EFT's MF-UNTAR, which his Fishing Gear task asks for); the N-15 at LL3
@@ -226,6 +247,8 @@ T.offers = {
 		o("NV_QUAD", 4, 1), o("R17_MAG60", 4, 2),
 		-- western plates by loyalty (ours, gameplay-2a): class 3 polyethylene at LL1 up to class 5 side plates at LL3
 		o("PLATE_PE3", 1, 2), o("PLATE_CE4", 2, 2), o("PLATE_PE4", 3, 1), o("PLATE_CE5S", 3, 2),
+		-- task-locked (economy-6a)
+		ot("NV_GREEN", 2, 1, 1, "D5"), ot("A62_AP", 2, 3, 60, "D6"), ot("R17_MAG60", 3, 1, 1, "D10"),
 	},
 	-- the Mechanic: "high-end attachments, suppressors, and optics" gated by loyalty, "pre-built custom weapons, available at
 	-- higher loyalty levels" (tarkovforge): plain parts at LL1, rails, brakes and the first builds at LL2, free-float
@@ -239,6 +262,10 @@ T.offers = {
 		o("MNT_RINGS", 3, 1), o("LASER_COMBO", 3, 1), o("SPR_GRIP_NAVY", 3, 1), o("SPR_MAG50", 3, 2), o("A9_AP", 3, 4, 50),
 		pre("R17_CQB", 3, 1), pre("SPR_TAC", 3, 1),
 		o("SCOPE_8X", 4, 1), pre("R17_DMR", 4, 1),
+		-- task-locked (economy-6a): Bench Work - Part 1 opens the low-profile gas block at LL1 (EFT's Gunsmith - Part 1 opens a
+		-- gas block at Mechanic LL1, wiki); beacons and trail cameras for the planting tasks
+		ot("R17_GAS_LOW", 1, 2, 1, "K2"), ot("SPR_HG_TRI", 1, 1, 1, "K4"), ot("BEACON", 1, 3, 1, nil, { "K3", "D7" }),
+		ot("CAMERA", 1, 3, 1, nil, { "K5", "K14" }), ot("SUPP_62C", 2, 1, 1, "K7"), ot("SCOPE_8X", 3, 1, 1, "K13"), pre("R17_DMR", 3, 1, "K15"),
 	},
 	-- the Ragman: "body armor and armored rigs", "helmets and face protection", "backpacks and tactical clothing"
 	-- (tarkovforge); class 2 at LL1 up to class 5 at LL4, the bigger packs and the headsets as loyalty grows
@@ -251,6 +278,8 @@ T.offers = {
 		-- eyewear (Tarkov: the outfitter's plain glasses from LL1, the shooting glasses at LL3, ballistic glasses at LL3-4; gas masks
 		-- are not sold for cash)
 		o("GLASSES_SUN", 1, 3), o("GLASSES_RANGE", 3, 2), o("GLASSES_BG1", 3, 1), o("GLASSES_AF2", 4, 1),
+		-- task-locked (economy-6a), gear only as ever
+		ot("BAG_PATROL", 2, 1, 1, "L4"), ot("HELMET_C4", 2, 1, 1, "L7"), ot("ARMOR_C5", 3, 1, 1, "L11"),
 	},
 	-- Jaeger: "bolt-action rifles and hunting shotguns", "medical supplies", "food", "wilderness gear" (tarkovforge); the
 	-- shotgun, knife and basic supplies at LL1, the bolt rifle at LL2, its scope and rifle cartridges at LL3, its chassis,
@@ -263,6 +292,8 @@ T.offers = {
 		o("A76L_LPS", 3, 4, 40), o("TUN_MNT_SIDE", 3, 1), o("TUN_BRK", 3, 1), o("HAR_BRL_20", 3, 1), o("HAR_TUBE_8", 3, 1),
 		o("SCOPE_4X", 3, 1), o("MEDKIT_M", 3, 2), o("JUICE", 3, 3), pre("TUN_SCOUT", 3, 1),
 		o("SUPP_76L", 4, 1), o("TUN_STK_CHAS", 4, 1), pre("TUN_MARKSMAN", 4, 1),
+		-- task-locked (economy-6a)
+		ot("TUN_MNT_SIDE", 2, 1, 1, "B3"), ot("SUPP_76L", 3, 1, 1, "B6"), pre("TUN_MARKSMAN", 3, 1, "B11"),
 	},
 }
 
@@ -342,6 +373,47 @@ function T.price(traderId: string, offer: any, _ll: number?, karma: number?): nu
 	local value = WP.isBase(offer.id) and T.buildValue(offer.id, offer.preset) or Items.kitValue(offer.id)
 	local mul = traderId == "fence" and T.fencePriceMul(karma) or 1
 	return math.max(1, math.ceil(value * (offer.n or 1) * tr.markup * mul))
+end
+
+-- is an offer or barter closed to this player? ll: the player's loyalty level with that trader; quests: the profile's task
+-- states (server: prof.quests) or the snapshot's (client: d.quests), both { [task id] = { s = ... } }. Returns locked,
+-- why (for the buy refusal and the deal panel). The server (Economy buy and barter) and the client ask the same.
+function T.offerLock(offer: any, ll: number, quests: any?): (boolean, string?)
+	if (offer.ll or 1) > ll then
+		return true, "Requires loyalty level " .. offer.ll .. "."
+	end
+	local qs = type(quests) == "table" and quests or {}
+	if offer.task then
+		local st = qs[offer.task]
+		if not (type(st) == "table" and st.s == "claimed") then
+			local q = QD.byId[offer.task]
+			return true, "Complete the task " .. (q and q.name or offer.task) .. " to unlock."
+		end
+	end
+	if offer.start then
+		for _, id in offer.start do
+			local st = qs[id]
+			if type(st) == "table" and (st.s == "active" or st.s == "claimed") then
+				return false, nil
+			end
+		end
+		local q = QD.byId[offer.start[1]]
+		return true, "On sale once you take the task " .. (q and q.name or tostring(offer.start[1])) .. "."
+	end
+	return false, nil
+end
+
+-- the offers a task opens: { { trader, offer } } (the task screens list them under the reward)
+function T.unlocksOf(taskId: string): { any }
+	local out = {}
+	for _, tid in T.list do
+		for _, x in T.offers[tid] or {} do
+			if x.task == taskId then
+				table.insert(out, { trader = tid, offer = x })
+			end
+		end
+	end
+	return out
 end
 
 -- what a trader pays for an item instance (nil = not interested): a share by item id first (buyIds), then by kind. Fence
