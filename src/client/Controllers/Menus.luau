@@ -91,6 +91,9 @@ function Menus.messenger(f, x, y, w, h, d, refresh)
 	local right = scroller(f, x + listW + 12, y, w - listW - 12, h - 44, "Messages")
 	local order = 0
 	if ui.dialog == "insurance" then
+		-- insurance returns (decision gameplay-6b): each from its insurer, with its items, when it arrives and how long the
+		-- messenger holds it; RECEIVE ALL brings the ready ones to the stash; a return not collected in time is gone (EFT).
+		-- Task rewards that did not fit the stash wait here too.
 		local ready = 0
 		for _, c in d.claimList or {} do
 			order += 1
@@ -105,11 +108,24 @@ function Menus.messenger(f, x, y, w, h, d, refresh)
 			if isReady then
 				ready += c.n
 			end
-			message(right, order, isReady and "READY TO COLLECT" or ("ARRIVES IN " .. Util.clock(c.readyIn)),
-				"Your insured items were not found by anyone and came back: " .. table.concat(names, ", ") .. ".", isReady and K.C.green or K.C.text)
+			local who = c.k == "task" and "TASK REWARD" or ((c.isr and TD.defs[c.isr]) and TD.defs[c.isr].name or "INSURANCE")
+			local head = who .. "  ·  " .. (not isReady and ("ARRIVES IN " .. Util.clock(c.readyIn))
+				or (c.expIn and ("READY  ·  COLLECT WITHIN " .. Util.clock(c.expIn)) or "READY TO COLLECT"))
+			local body = c.k == "task" and ("Task reward items waiting for room in your stash: " .. table.concat(names, ", ") .. ".")
+				or ("Your insured items were not found by anyone and came back: " .. table.concat(names, ", ") .. ".")
+			message(right, order, head, body, isReady and ((c.expIn and c.expIn < 3600) and K.C.orange or K.C.green) or K.C.text)
+		end
+		-- the insurers' notices: returns nobody collected in time (newest first)
+		local msgs = d.msgs or {}
+		for i = #msgs, 1, -1 do
+			local m = msgs[i]
+			if m.f == "insurance" then
+				order += 1
+				message(right, order, "INSURANCE  ·  " .. ago(m.t, now), m.x, K.C.orange)
+			end
 		end
 		if order == 0 then
-			message(right, 1, "INSURANCE", "Nothing is on its way. Insured items lost in a raid come back here if nobody extracts with them.", K.C.dim)
+			message(right, 1, "INSURANCE", "Nothing is on its way. Insured items lost in a raid come back here from their insurer if nobody extracts with them; collect them before the storage time runs out.", K.C.dim)
 		end
 		local b = K.button(f, ready > 0 and ("RECEIVE ALL  (" .. ready .. ")") or "RECEIVE ALL", {
 			Name = "ReceiveAll", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromOffset(x + w, y + h), Size = UDim2.fromOffset(200, 36),

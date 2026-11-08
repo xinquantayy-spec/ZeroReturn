@@ -89,13 +89,42 @@ function Raid.raidInfo(s)
 	}
 end
 
--- insurance returns waiting for this profile (ready ones are delivered to the stash automatically)
+-- Insurance returns (decision gameplay-6b, Tarkov's rules with scaled times): new ones are filed with their insurer's
+-- window (Settle.fileClaims), and those left in the messenger past their storage time are lost, with a message saying so
+-- (Settle.expireClaims; EFT wiki, Insurance). Returns true when the profile changed.
+local function tendClaims(prof, t)
+	if not prof.claims or #prof.claims == 0 then
+		return false
+	end
+	local changed = Settle.fileClaims(prof, t) > 0
+	for _, c in Settle.expireClaims(prof, t) do
+		changed = true
+		local names, bundles = {}, c.bundles or {}
+		for i, b in bundles do
+			if i > 6 then
+				table.insert(names, "+" .. (#bundles - 6) .. " more")
+				break
+			end
+			local d = b.it and Items.defs[b.it.id]
+			table.insert(names, d and d.name or "?")
+		end
+		local who = c.isr and TD.defs[c.isr] and TD.defs[c.isr].name or "INSURANCE"
+		ctx.Economy.mail(prof, "insurance", string.format("%s: nobody collected your returned items in time, and they are gone: %s.", who, table.concat(names, ", ")))
+	end
+	return changed
+end
+Raid.tendClaims = tendClaims
+
+-- insurance returns and task rewards waiting for this profile: ready ones wait in the messenger for RECEIVE ALL (EFT);
+-- one past its storage time is gone (tendClaims drops it at the next tick)
 local function claimsInfo(prof)
 	local ready, waiting, nextAt = 0, 0, nil
 	local t = os.time()
 	for _, c in prof.claims or {} do
 		local n = #(c.bundles or {})
-		if (c.readyAt or 0) <= t then
+		if c.exp and c.exp <= t then
+			continue
+		elseif (c.readyAt or 0) <= t then
 			ready += n
 		else
 			waiting += n
@@ -105,10 +134,14 @@ local function claimsInfo(prof)
 	return { ready = ready, waiting = waiting, nextIn = nextAt and (nextAt - t) or nil }
 end
 
--- the messenger's insurance dialog: each return with its items and when it is ready
+-- the messenger's insurance dialog: each return with its insurer, its items, when it arrives and how long it is held
+-- (k "ins"), and task rewards waiting for stash room (k "task")
 local function claimList(prof)
 	local out, t = {}, os.time()
 	for _, c in prof.claims or {} do
+		if c.exp and c.exp <= t then
+			continue
+		end
 		local ids = {}
 		for i, b in c.bundles or {} do
 			if i > 12 then
@@ -116,7 +149,10 @@ local function claimList(prof)
 			end
 			table.insert(ids, b.it and b.it.id or "?")
 		end
-		table.insert(out, { readyIn = math.max(0, (c.readyAt or 0) - t), ids = ids, n = #(c.bundles or {}) })
+		table.insert(out, {
+			readyIn = math.max(0, (c.readyAt or 0) - t), ids = ids, n = #(c.bundles or {}), isr = c.isr, id = c.id,
+			expIn = c.exp and math.max(0, c.exp - t) or nil, k = Settle.isTaskClaim(c) and "task" or "ins",
+		})
 	end
 	return out
 end
@@ -128,6 +164,10 @@ function Raid.state(player)
 	end
 	local s = sessions[player]
 	local h = s and s.inv or prof
+	-- insurance returns filed and expired before the snapshot reads the profile (gameplay-6b)
+	if tendClaims(prof, os.time()) then
+		ctx.Profiles.markDirty(player)
+	end
 	return {
 		rev = prof.rev,
 		money = prof.money,
@@ -523,10 +563,14 @@ function Raid.finalize(player, outcome)
 			ctx.Loot.spawnBody(bodyModel, s.inv, "Body")
 		end
 	elseif outcome == "MIA" then
-		-- an MIA kit is gone for everyone: insured items go straight back to their owners
-		local returns = {}
-		if ctx.Match.collectInsured(s.inv, returns) > 0 then
-			ctx.Match.deliverInsured(returns)
+		-- an MIA kit is gone for everyone, and its insured part does not come back either (Settle.kitReturns; EFT wiki,
+		-- Insurance: "Ending a raid with the Missing in Action status will not bring back insured equipped items";
+		-- gameplay-6b). Insured gear left elsewhere in the raid still comes back at the raid's end (Match.settleInsurance).
+		if Settle.kitReturns(outcome) then
+			local returns = {}
+			if ctx.Match.collectInsured(s.inv, returns) > 0 then
+				ctx.Match.deliverInsured(returns)
+			end
 		end
 		if char and char.Parent then
 			char:SetAttribute("InRaid", false)
@@ -978,35 +1022,51 @@ function Raid.inv(player, p)
 		end
 		done = true
 	elseif op == "insure" then
-		-- Tarkov insurance: pay a share of the value; if the item is lost and nobody extracts with it, it comes back
+		-- Tarkov insurance with EFT's choice of insurer (gameplay-6b: isr "vos", "hale" or "bram", VOS when left out): pay
+		-- the insurer's price; if the item is lost and nobody extracts with it, it comes back after the insurer's window
 		if inRaid or sc then
 			return fail("NOT_AUTHORIZED")
 		end
+		if p.isr ~= nil and (type(p.isr) ~= "string" or not TD.INSURERS[p.isr]) then
+			return fail("BAD_INPUT")
+		end
 		local cost, e
 		if p.all == true then
-			cost, e = Settle.insureAll(me, player.UserId)
+			cost, e = Settle.insureAll(me, player.UserId, p.isr)
 		else
 			if not g then
 				return fail("BAD_INPUT")
 			end
-			cost, e = Settle.insure(me, g, player.UserId)
+			cost, e = Settle.insure(me, g, player.UserId, p.isr)
 		end
 		if not cost then
 			local msgs = { NOT_ENOUGH_MONEY = "Not enough money.", ALREADY_INSURED = "Already insured.", NOT_INSURABLE = "That can't be insured." }
 			return fail(e or "FAILED", msgs[e or ""])
 		end
 		done = true
-		ctx.Remotes.note(player, "toast", { text = string.format("INSURED  -%s %s", Util.commas(cost), Config.CURRENCY), tone = "good" })
+		ctx.Remotes.note(player, "toast", { text = string.format("INSURED WITH %s  -%s %s", TD.defs[TD.insurerOf(p.isr)].name, Util.commas(cost), Config.CURRENCY), tone = "good" })
 	elseif op == "claim" then
+		-- the messenger's RECEIVE ALL (c: one return's id, or every ready one)
 		if inRaid then
 			return fail("NOT_AUTHORIZED")
 		end
-		local n, waiting = Settle.claim(me, os.time())
+		if p.c ~= nil and (type(p.c) ~= "string" or #p.c > 40) then
+			return fail("BAD_INPUT")
+		end
+		local t = os.time()
+		tendClaims(me, t)
+		local n = Settle.claim(me, t, p.c)
 		if n == 0 then
-			return fail("NOTHING_READY", waiting > 0 and "Insurance returns are not ready yet." or "Nothing to collect.")
+			local ready = false
+			for _, c in me.claims do
+				if (p.c == nil or c.id == p.c) and (c.readyAt or 0) <= t then
+					ready = true
+				end
+			end
+			return fail("NOTHING_READY", ready and "No room in the stash." or "Nothing to collect yet.")
 		end
 		done = true
-		ctx.Remotes.note(player, "toast", { text = string.format("INSURANCE RETURN: %d ITEM(S) IN YOUR STASH", n), tone = "good" })
+		ctx.Remotes.note(player, "toast", { text = string.format("RECEIVED %d ITEM(S) INTO YOUR STASH", n), tone = "good" })
 	elseif op == "recovery" then
 		if inRaid then
 			return fail("NOT_AUTHORIZED")
@@ -1303,29 +1363,52 @@ function Raid.start()
 			task.wait(0.2)
 		end
 	end)
-	-- insurance returns land in the stash once they are ready (hideout only)
+	-- every 10 s (gameplay-6b): insurance returns are filed, announced when they reach the messenger and lost after their
+	-- storage time; they wait there for RECEIVE ALL (EFT). Task rewards that did not fit the stash (Quests) still land in
+	-- it by themselves once there is room (hideout only).
 	task.spawn(function()
 		while true do
 			task.wait(10)
 			local t = os.time()
 			for player in ctx.Profiles.all() do
 				local prof = ctx.Profiles.get(player)
-				if prof and player.Parent and not sessions[player] and not deploying[player] and prof.claims and #prof.claims > 0 then
-					local ready = false
+				if prof and player.Parent and prof.claims and #prof.claims > 0 then
+					local changed = tendClaims(prof, t)
+					local arrived, from = 0, {}
 					for _, c in prof.claims do
-						if (c.readyAt or 0) <= t then
-							ready = true
+						if c.isr and not c.told and (c.readyAt or 0) <= t then
+							c.told = true
+							changed = true
+							arrived += #(c.bundles or {})
+							if not table.find(from, TD.defs[c.isr].name) then
+								table.insert(from, TD.defs[c.isr].name)
+							end
+						end
+					end
+					if arrived > 0 then
+						ctx.Remotes.note(player, "toast", { text = string.format("INSURANCE: %s RETURNED %d ITEM(S)  ·  MESSENGER", table.concat(from, ", "), arrived), tone = "good" })
+					end
+					local taskReady = false
+					for _, c in prof.claims do
+						if Settle.isTaskClaim(c) and (c.readyAt or 0) <= t then
+							taskReady = true
 							break
 						end
 					end
-					if ready then
-						local n, waiting = Settle.claim(prof, t)
+					if taskReady and not sessions[player] and not deploying[player] then
+						local n, waiting = Settle.claim(prof, t, Settle.isTaskClaim)
 						if n > 0 then
-							ctx.Remotes.note(player, "toast", { text = string.format("INSURANCE RETURN: %d ITEM(S) IN YOUR STASH", n), tone = "good" })
+							changed = false
+							ctx.Remotes.note(player, "toast", { text = string.format("TASK REWARD: %d ITEM(S) IN YOUR STASH", n), tone = "good" })
+							ctx.Profiles.markDirty(player)
 							Raid.afterChange(player, false)
 						elseif waiting > 0 then
-							ctx.Remotes.note(player, "toast", { text = "INSURANCE RETURN WAITING - FREE UP STASH SPACE", tone = "warn" })
+							ctx.Remotes.note(player, "toast", { text = "TASK REWARD WAITING - FREE UP STASH SPACE", tone = "warn" })
 						end
+					end
+					if changed then
+						ctx.Profiles.markDirty(player)
+						Raid.push(player)
 					end
 				end
 			end

@@ -18,6 +18,7 @@ local Items = require(script.Parent.Items)
 local WP = require(script.Parent.WeaponParts)
 local P = require(script.Parent.Progress)
 local QD = require(script.Parent.QuestData)
+local Config = require(script.Parent.Config)
 
 local T = {}
 
@@ -491,6 +492,108 @@ function T.repairQuote(traderId: string, it: any, discount: number?, ll: number?
 	end
 	cost = math.ceil(cost) * (r.coef[math.clamp(math.floor(ll or 1), 1, #r.coef)] or 1)
 	return pts, math.max(1, math.ceil(cost * (1 - (discount or 0)))), math.max(1, max - pts * deg)
+end
+
+-- ── insurance (decision gameplay-6b, "Tarkov's rules, scaled times") ──────────────────────────────────────────────────
+-- EFT wiki, Insurance (escapefromtarkov.fandom.com/wiki/Insurance): Prapor returns insured items after 24-36 h and holds
+-- them 4 days (96 h); the Therapist returns them after 12-24 h, holds them 6 days (144 h) and is "~1.43x-1.23x more
+-- expensive depending on trader level". EFT 1.1.0 (neonsect.com/escape-from-tarkov/tarkov-patch-1-1-0-0/, insider-gaming.com
+-- 1.1.0 notes): insurance returns faster and costs a little more, and Jaeger insures too, "at significantly higher prices",
+-- returning "within a couple of hours"; his exact figures were not published, so BRAM's 2-4 h and 2.5x are ours (1.1.0's
+-- faster returns for Prapor and the Therapist were not published either: their pre-1.1 hours are used). eft = { fastest
+-- return, slowest return, storage } in EFT's hours; the game divides returns by Config.INSURANCE_RETURN_DIV (12) and
+-- storage by Config.INSURANCE_HOLD_DIV (4): VOS 2-3 h, held 24 h; HALE 1-2 h, held 36 h; BRAM 10-20 min, held 24 h. mul:
+-- the price as a multiple of VOS's (HALE takes the middle of EFT's 1.23x-1.43x). VOS = Prapor, HALE = Therapist, BRAM = Jaeger.
+T.INSURER_LIST = { "vos", "hale", "bram" }
+T.INSURERS = {
+	vos = { eft = { 24, 36, 96 }, mul = 1 },
+	hale = { eft = { 12, 24, 144 }, mul = 1.33 },
+	bram = { eft = { 2, 4, 96 }, mul = 2.5 },
+} :: { [string]: any }
+
+-- an insurer id, or VOS for anything else (an old save's insured item has no insurer: it was VOS's)
+function T.insurerOf(isr: any): string
+	return (type(isr) == "string" and T.INSURERS[isr]) and isr or "vos"
+end
+
+-- seconds: the fastest and slowest return and how long the messenger holds the items
+function T.insureWindow(isr: string): (number, number, number)
+	local e = T.INSURERS[T.insurerOf(isr)].eft
+	local r, hold = 3600 / Config.INSURANCE_RETURN_DIV, 3600 / Config.INSURANCE_HOLD_DIV
+	return e[1] * r, e[2] * r, e[3] * hold
+end
+
+-- the return window and the storage time as the screens show them: "2-3 H" and "24 H" (BRAM: "10-20 MIN")
+function T.insureSpan(isr: string): (string, string)
+	local lo, hi, hold = T.insureWindow(isr)
+	local span = hi < 3600 and string.format("%d-%d MIN", math.floor(lo / 60), math.floor(hi / 60))
+		or string.format("%d-%d H", math.floor(lo / 3600), math.floor(hi / 3600))
+	return span, string.format("%d H", math.floor(hold / 3600))
+end
+
+-- what one item costs to insure with an insurer. Rounds in a magazine (or a gun's internal magazine) are not insured and
+-- not paid for (EFT wiki: "If you insure a magazine with ammunition inside, you will only get the magazine back").
+function T.insurePrice(isr: string, it: any): number
+	local v = Items.valueOf(it)
+	local ad = it.a and it.at and Items.defs[it.at]
+	if ad then
+		v -= it.a * ad.value
+	end
+	local base = math.max(Config.INSURANCE_MIN, math.floor(v * Config.INSURANCE_RATE))
+	return math.floor(base * T.INSURERS[T.insurerOf(isr)].mul)
+end
+
+-- the bill for a list of items, Charisma's discount taken off the sum (Tarkov: 0.1 % a level; audit economy.6)
+function T.insureTotal(isr: string, items: { any }, discount: number?): number
+	local sum = 0
+	for _, it in items do
+		sum += T.insurePrice(isr, it)
+	end
+	return math.floor(sum * (1 - (discount or 0)))
+end
+
+-- ── HALE's treatment (EFT's Therapist, decision gameplay-6b) ───────────────────────────────────────────────────────
+-- EFT wiki, Health system: out of raid the Therapist heals for 30 / 33 / 36 / 40.5 roubles a missing HP at her loyalty
+-- levels 1-4, 750 a light bleed, 1,400 a heavy bleed and 1,350 a fracture, and for free for players at level 5 or below;
+-- MK are close to roubles 1:1. EFT does not publish the price of restoring a destroyed part: ours is the part's missing HP
+-- (all of it) at the per-HP price plus 2,500 MK.
+T.TREATMENT = { trader = "hale", perHp = { 30, 33, 36, 40.5 }, light = 750, heavy = 1400, fracture = 1350, destroyed = 2500, freeLevel = 5 }
+T.TREAT_PARTS = { "head", "thorax", "stomach", "larm", "rarm", "lleg", "rleg" }
+
+-- state: { [part] = { hp, max, bleed = 0 | 1 | 2, fract } } with the numbers as the health screen shows them (hp rounded
+-- up, max down; hp 0 = destroyed). Returns the bill, the lines ({ part, kind = "hp" | "destroyed" | "light" | "heavy" |
+-- "fracture", hp = HP restored, cost }, in body order) and whether it is free (the lines keep their prices then).
+function T.treatQuote(state: any, ll: number?, level: number?): (number, { any }, boolean)
+	local tr = T.TREATMENT
+	local per = tr.perHp[math.clamp(math.floor(ll or 1), 1, #tr.perHp)]
+	local lines, total = {}, 0
+	local function add(part: string, kind: string, hp: number, cost: number)
+		cost = math.ceil(cost)
+		table.insert(lines, { part = part, kind = kind, hp = hp, cost = cost })
+		total += cost
+	end
+	for _, k in T.TREAT_PARTS do
+		local s = state and state[k]
+		if s then
+			local max = math.floor(s.max or 0)
+			local hp = math.clamp(math.ceil(s.hp or 0), 0, max)
+			if max > 0 and hp <= 0 then
+				add(k, "destroyed", max, max * per + tr.destroyed)
+			elseif hp < max then
+				add(k, "hp", max - hp, (max - hp) * per)
+			end
+			if s.bleed == 2 then
+				add(k, "heavy", 0, tr.heavy)
+			elseif s.bleed == 1 then
+				add(k, "light", 0, tr.light)
+			end
+			if s.fract then
+				add(k, "fracture", 0, tr.fracture)
+			end
+		end
+	end
+	local free = (level or 1) <= tr.freeLevel
+	return free and 0 or total, lines, free
 end
 
 -- the trader paying the most for an item: id, price (the first in list order on a tie)

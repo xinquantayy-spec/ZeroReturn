@@ -252,6 +252,37 @@ local function repair(player, prof, p)
 	return true
 end
 
+-- SERVICES at HALE: EFT's Therapist treatment (decision gameplay-6b). HEAL ALL: every missing HP, destroyed part, bleed
+-- and fracture of the bunker body at TraderData.treatQuote's price (30 / 33 / 36 / 40.5 MK an HP by HALE's loyalty level,
+-- 750 a light bleed, 1,400 a heavy one, 1,350 a fracture; a destroyed part its missing HP plus 2,500), free for players at
+-- level 5 or below (EFT). Money paid counts as money spent with her.
+local function treat(player, prof, p)
+	if p.trader ~= TD.TREATMENT.trader then
+		return fail("BAD_INPUT")
+	end
+	local hs = ctx.Health and ctx.Health.of(player)
+	if not hs or hs.dead or hs.inRaid then
+		return fail("NOT_READY", "Come back to the bunker first.")
+	end
+	local cost, lines, free = TD.treatQuote(ctx.Health.treatState(hs), Economy.loyalty(prof, p.trader), Economy.level(prof))
+	if #lines == 0 then
+		return fail("NOTHING_TO_TREAT", "Nothing to treat.")
+	end
+	if prof.money < cost then
+		return fail("NOT_ENOUGH_MONEY", "Not enough money.")
+	end
+	prof.money -= cost
+	if cost > 0 then
+		standing(prof, p.trader).spent += cost
+	end
+	ctx.Health.treat(hs)
+	ctx.Health.push(hs) -- the healed body reaches the client with the trade's answer, not up to a tick later
+	prof.health = ctx.Health.save(hs)
+	local paid = free and string.format("FREE AT LEVEL %d OR BELOW", TD.TREATMENT.freeLevel) or string.format("-%s %s", Util.commas(cost), Config.CURRENCY)
+	ctx.Remotes.note(player, "toast", { text = "TREATED BY " .. TD.defs[p.trader].name .. "  ·  " .. paid, tone = "good" })
+	return true
+end
+
 local function barter(player, prof, p)
 	local tid = p.trader
 	local list = TD.barters[tid]
@@ -591,6 +622,8 @@ local function tradeReq(player, p)
 		res = barter(player, prof, p)
 	elseif p.op == "repair" then
 		res = repair(player, prof, p)
+	elseif p.op == "treat" then
+		res = treat(player, prof, p)
 	elseif p.op == "sell" then
 		if type(p.g) ~= "string" or #p.g > 40 then
 			return fail("BAD_INPUT")

@@ -866,10 +866,74 @@ local function tasksTab(f, x, y, w, h, d, tid)
 end
 
 
+-- a trader with a SERVICES tab: the repairers, and HALE's treatment (gameplay-6b)
+local function hasServices(tid)
+	return TD.REPAIRS[tid] ~= nil or (TD.TREATMENT and TD.TREATMENT.trader == tid)
+end
+
+-- TREATMENT at HALE (EFT's Therapist, decision gameplay-6b): what is wrong with the bunker body - missing HP per part,
+-- destroyed parts, bleeds, fractures - each with its price (TraderData.treatQuote: by HALE's loyalty level, free at level 5
+-- or below), and HEAL ALL. The server prices the same body the same way.
+local PART_NAME = { head = "HEAD", thorax = "THORAX", stomach = "STOMACH", larm = "LEFT ARM", rarm = "RIGHT ARM", lleg = "LEFT LEG", rleg = "RIGHT LEG" }
+local TREAT_WHAT = { light = "LIGHT BLEED", heavy = "HEAVY BLEED", fracture = "FRACTURE" }
+local function treatmentSection(sf, d, tid)
+	local tr = TD.TREATMENT
+	local econ = d.econ or {}
+	local st = econ.traders and econ.traders[tid]
+	local ll = (st and st.ll) or 1
+	local per = tr.perHp[math.clamp(ll, 1, #tr.perHp)]
+	section(sf, "TREATMENT")
+	text(sf, string.format("%s treats you between raids: missing health, destroyed parts, bleeding and fractures. %s %s a point of health at loyalty level %d; a destroyed part costs its health plus %s %s; free while you are level %d or below.",
+		TD.defs[tid].name, tostring(per), Config.CURRENCY, ll, Util.commas(tr.destroyed), Config.CURRENCY, tr.freeLevel), K.C.dim, 11)
+	local v = ctx.State.vitals
+	if not (v and v.parts) then
+		text(sf, "Your health is not known yet.", K.C.dim, 12)
+		return
+	end
+	local state = {}
+	for k, p in v.parts do
+		state[k] = { hp = p[1], max = p[2], bleed = p[3], fract = p[4] }
+	end
+	local total, lines, free = TD.treatQuote(state, ll, econ.level)
+	if #lines == 0 then
+		text(sf, "Nothing to treat: every part is at full health.", K.C.dim, 12)
+		return
+	end
+	for _, ln in lines do
+		local what
+		if ln.kind == "hp" then
+			local s = state[ln.part]
+			what = string.format("%d / %d  ·  %d HP", s.hp, s.max, ln.hp)
+		elseif ln.kind == "destroyed" then
+			what = string.format("DESTROYED  ·  %d HP", ln.hp)
+		else
+			what = TREAT_WHAT[ln.kind] or string.upper(ln.kind)
+		end
+		row(sf, PART_NAME[ln.part] or string.upper(ln.part), string.format("%s  ·  %s %s", what, Util.commas(ln.cost), Config.CURRENCY), nil, false, nil, (ln.kind ~= "hp") and K.C.orange or nil)
+	end
+	local can = free or (d.money or 0) >= total
+	local _, b = row(sf, "TOTAL", free and string.format("FREE (LEVEL %d OR BELOW)", tr.freeLevel) or string.format("%s %s", Util.commas(total), Config.CURRENCY),
+		"HEAL ALL", can, function()
+			local res = req("trade", { op = "treat", trader = tid })
+			if res and res.ok then
+				task.delay(0.3, Trade.refresh) -- redraw from the healed body's vitals
+			end
+		end, (not can) and K.C.red or K.C.green)
+	if b then
+		b.Name = "TreatAll"
+	end
+end
+
 -- SERVICES: repairs (EFT's repairers: VOS and KOVAC weapons, ROOK weapons and armour); each repair costs some maximum
--- durability (Tarkov), and the price follows the trader's loyalty level (the server charges the same)
+-- durability (Tarkov), and the price follows the trader's loyalty level (the server charges the same). HALE: TREATMENT.
 local function servicesTab(f, x, y, w, h, d, tid)
 	local sf = scroller(f, x, y, w, h, "Services_" .. tid)
+	if TD.TREATMENT and TD.TREATMENT.trader == tid then
+		treatmentSection(sf, d, tid)
+	end
+	if not TD.REPAIRS[tid] then
+		return
+	end
 	local kinds = TD.REPAIRS[tid].kinds
 	local st = d.econ and d.econ.traders and d.econ.traders[tid]
 	local ll = (st and st.ll) or 1
@@ -904,10 +968,10 @@ local function traderPanel(f, x, y, w, h, d, tid)
 	if compact then
 		-- the phone layout: a rail of the trade panels and the trader's other tabs, one panel beside it
 		local list = { { "GOODS", "trade" }, { "STASH", "trade" }, { "DEAL", "trade" }, { "TASKS", "tasks" } }
-		if TD.REPAIRS[tid] then
+		if hasServices(tid) then
 			table.insert(list, { "SERVICES", "services" })
 		end
-		if not (ui.sub == "trade" or ui.sub == "tasks" or (ui.sub == "services" and TD.REPAIRS[tid])) then
+		if not (ui.sub == "trade" or ui.sub == "tasks" or (ui.sub == "services" and hasServices(tid))) then
 			ui.sub = "trade"
 		end
 		local railW = 96
@@ -944,7 +1008,7 @@ local function traderPanel(f, x, y, w, h, d, tid)
 	K.label(f, loyaltyText(econ, tid), 11, { Position = UDim2.fromOffset(x, y + 17), Size = UDim2.fromOffset(w - 310, 15), TextTruncate = Enum.TextTruncate.AtEnd })
 	-- Tarkov's trader tabs: TRADE and TASKS
 	local list = { "trade", "tasks" }
-	if TD.REPAIRS[tid] then
+	if hasServices(tid) then
 		table.insert(list, "services")
 	end
 	if not table.find(list, ui.sub) then
