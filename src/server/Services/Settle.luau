@@ -11,6 +11,7 @@ local Inv = require(script.Parent.Inv)
 local Health = require(script.Parent.Health)
 local Progress = require(Shared.Progress)
 local TD = require(Shared.TraderData)
+local HD = require(Shared.HideoutData)
 
 local Settle = {}
 Settle.SCHEMA = 3 -- 3: M14 weapon builds (guns are part trees); older profiles are wiped like a Tarkov wipe
@@ -199,7 +200,9 @@ function Settle.deployScav(p: any, raidId: string, now: number, kit: any): (any?
 		return nil, "SCAV_COOLDOWN"
 	end
 	p.pendingRaid = { id = raidId, t = now, risked = {}, value = 0, scav = true }
-	p.scavReadyAt = now + Progress.scavCooldown(Config.SCAV_COOLDOWN, p.karma)
+	-- the intelligence center cuts the cooldown (EFT: -15 % at level 1, -35 % at level 3; economy-7b)
+	local cut = p.hideout and (1 - HD.bonus(p.hideout, "scavCooldown", HD.powered(p.hideout)) / 100) or 1
+	p.scavReadyAt = now + math.floor(Progress.scavCooldown(Config.SCAV_COOLDOWN, p.karma) * cut)
 	p.stats.scavRaids += 1
 	p.rev += 1
 	return kit, nil
@@ -362,7 +365,9 @@ function Settle.fileClaims(p: any, now: number, rng: (() -> number)?, legacy: bo
 				local list = by[isr]
 				if list then
 					local lo, hi, hold = TD.insureWindow(isr)
-					local ready = at + lo + math.floor((hi - lo) * roll())
+					-- the intelligence center's level 2 cuts return times 20 % (EFT; economy-7b)
+					local cut = p.hideout and (1 - HD.bonus(p.hideout, "insuranceTime", HD.powered(p.hideout)) / 100) or 1
+					local ready = at + math.floor((lo + (hi - lo) * roll()) * cut)
 					local exp = ready + hold
 					if legacy then
 						ready = at + OLD_DELAY

@@ -649,6 +649,12 @@ function T.run(ctx)
 			p.xp = P.xpFor(16)
 			p.money = 10000000
 			local monday = 4 * 86400 + 604800 * 2900 + 3600 -- a Monday, 01:00 UTC
+			local noIntel = Settle.newProfile()
+			noIntel.xp = P.xpFor(16)
+			Q.ensureOps(noIntel, monday)
+			check("Fence's scav task waits for the intelligence center (EFT; economy-7b); the dailies and the weekly do not",
+				noIntel.ops.scav == nil and noIntel.ops.daily ~= nil and noIntel.ops.weekly ~= nil)
+			p.hideout.levels.intel = 1
 			Q.ensureOps(p, monday)
 			local d = p.ops.daily and p.ops.daily.list or {}
 			local w = p.ops.weekly and p.ops.weekly.list or {}
@@ -688,6 +694,7 @@ function T.run(ctx)
 					and QD.byId.ops == nil and QD.byId.qitems == nil and QD.byId.found == nil)
 			local low = Settle.newProfile()
 			low.xp = P.xpFor(10)
+			low.hideout.levels.intel = 1
 			Q.ensureOps(low, monday)
 			check("below level 15 no weekly; dailies and Fence's task from level 5", low.ops.weekly == nil and low.ops.daily ~= nil and low.ops.scav ~= nil)
 		end

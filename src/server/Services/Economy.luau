@@ -455,7 +455,8 @@ local function skillUp(player, prof, id, pts, spilled)
 	end
 	local now = os.clock()
 	local mul, f = Economy.fatigueMul(ctx.Raid.session(player) or player, id, now)
-	local gain = pts * mul
+	-- the shooting range's level 3 trains combat skills 10 % faster (EFT's SkillGroupLevelingBoost; economy-7b)
+	local gain = pts * mul * ((ctx.Hideout and P.SKILLS[id].cat == "COMBAT") and (1 + ctx.Hideout.bonus(prof, "skillCombat") / 100) or 1)
 	f.n += gain
 	f.t = now
 	if f.n >= 1 then
@@ -540,6 +541,8 @@ function Economy.afterRaid(player, prof, s, outcome, runThrough)
 	local gained = s.xp or 0
 	if outcome == "SUCCESS" and not runThrough then
 		gained += P.XP.survive
+	elseif outcome == "KIA" or outcome == "MIA" then
+		gained = math.floor(gained * P.XP.lost) -- EFT keeps 75 % of a lost raid's experience (1.0.2.0; economy-4b)
 	end
 	-- a scav's raid moves the Fence standing; a PMC's only through a co-op exit (Extract, Progress.KARMA.coop)
 	local k = s.karmaDelta or 0

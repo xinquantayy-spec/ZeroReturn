@@ -188,7 +188,7 @@ function Interact.init(c)
 		elseif kind == "traders" or kind == "trader" or kind == "tasks" then
 			c.Trade.traders(arg, kind == "tasks" and "tasks" or "trade")
 		elseif kind == "hideout" then
-			c.Trade.hideout()
+			c.Trade.hideout(arg) -- the bay's module ("storage" maps to the stash)
 		elseif kind == "modding" then
 			local d = c.State.data
 			local g = d and d.slots and (d.slots.primary or d.slots.secondary or d.slots.holster)

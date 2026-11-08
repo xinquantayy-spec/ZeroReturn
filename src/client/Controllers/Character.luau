@@ -257,8 +257,10 @@ local function overall(f, w)
 	local xp = econ.xp or 0
 	local a, b = P.xpFor(lvl), P.xpFor(lvl + 1)
 	K.label(f, string.format("%s  ·  LEVEL %d", string.upper(game:GetService("Players").LocalPlayer.Name), lvl), 15, { FontFace = K.bold, Position = UDim2.fromOffset(10, 0), Size = UDim2.fromOffset(w - 20, 20) })
-	bar(f, 10, 26, math.min(500, w - 20), (xp - a) / math.max(1, b - a), K.C.ochre)
-	K.label(f, string.format("%s / %s XP TO LEVEL %d", Util.commas(xp), Util.commas(b), lvl + 1), 11, { Position = UDim2.fromOffset(10, 36), Size = UDim2.fromOffset(500, 14), TextColor3 = K.C.dim })
+	local top = lvl >= P.MAX_LEVEL -- EFT's level 79 (economy-4b)
+	bar(f, 10, 26, math.min(500, w - 20), top and 1 or math.clamp((xp - a) / math.max(1, b - a), 0, 1), K.C.ochre)
+	K.label(f, top and string.format("%s XP  ·  TOP LEVEL", Util.commas(xp)) or string.format("%s / %s XP TO LEVEL %d", Util.commas(xp), Util.commas(b), lvl + 1), 11,
+		{ Position = UDim2.fromOffset(10, 36), Size = UDim2.fromOffset(500, 14), TextColor3 = K.C.dim })
 	local raids = s.raids or 0
 	local rows = {
 		{ "RAIDS", raids }, { "SURVIVED", s.survived or 0 }, { "KILLED IN ACTION", s.kia or 0 }, { "MISSING IN ACTION", s.mia or 0 },

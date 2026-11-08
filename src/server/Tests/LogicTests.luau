@@ -1173,6 +1173,20 @@ function T.run(ctx)
 		local QD = require(Shared.QuestData)
 		local HD = require(Shared.HideoutData)
 		check("xp curve", P.levelOf(0) == 1 and P.levelOf(999) == 1 and P.levelOf(1000) == 2 and P.xpFor(3) > P.xpFor(2))
+		check("EFT's level table (economy-4b): 79 levels, level 15 at 177,337, the top at 172,016,256; nothing past it",
+			P.MAX_LEVEL == 79 and P.xpFor(15) == 177337 and P.xpFor(79) == 172016256 and P.xpFor(90) == 172016256 and P.levelOf(177336) == 14
+				and P.levelOf(177337) == 15 and P.levelOf(10 ^ 9) == 79 and math.abs(P.xpRatio(1) - 1) < 1e-9 and P.xpRatio(30) > 20)
+		do
+			-- a lost raid keeps 75 % of its experience (EFT 1.0.2.0); a survived one adds the extraction bonus; tasks keep the
+			-- share of a level they gave on the old curve (V1 at level 1: 500, as before; V2 at level 2: 1,200 x 1.65 -> 2,000)
+			local pk = { karma = 0, xp = 0, level = 1, skills = {} }
+			local ok1, gK = pcall(ctx.Economy.afterRaid, nil, pk, { scav = false, xp = 1000 }, "KIA", false)
+			local ok2, gM = pcall(ctx.Economy.afterRaid, nil, pk, { scav = false, xp = 1000 }, "MIA", false)
+			local ok3, gS = pcall(ctx.Economy.afterRaid, nil, pk, { scav = false, xp = 1000 }, "SUCCESS", false)
+			check("raid experience: 75 % kept after death or MIA, +300 for a survived raid; a head kill x1.2; task rewards on EFT's table",
+				ok1 and ok2 and ok3 and gK == 750 and gM == 750 and gS == 1300 and P.XP.headshot == 0.2 and QD.byId.V1.reward.xp == 500
+					and QD.byId.V2.reward.xp == 2000)
+		end
 		check("skill levels (Tarkov: level n costs min(10n, 100), elite at 51)", P.skillLevel(0) == 0 and P.skillLevel(10) == 1 and P.skillLevel(29) == 1 and P.skillLevel(30) == 2 and P.skillLevel(550) == 10 and P.skillLevel(4649) == 50 and P.skillLevel(4650) == 51 and P.skillLevel(99999) == 51 and math.abs(P.bonus({ endurance = 550 }, "endurance") - 0.06) < 1e-6)
 		local fk = {} -- a fresh key every run: the fatigue table lives for the whole server, so a fixed key failed on a second run
 		local m1 = ctx.Economy.fatigueMul(fk, "endurance", 0)
@@ -1278,7 +1292,7 @@ function T.run(ctx)
 			-- hideout build finishing offline
 			p2.hideout.build = { m = "storage", l = 1, at = 0 }
 			ctx.Hideout.settle(p2, nil)
-			check("storage racks add stash rows", p2.hideout.levels.storage == 1 and p2.stashH == 25 and Inv.dims(p2, "stash") == 10 and select(2, Inv.dims(p2, "stash")) == 25)
+			check("a build finishes offline: old storage racks 1 -> stash 2 (10x40, decision economy-7b)", p2.hideout.levels.stash == 2 and p2.stashH == 40 and Inv.dims(p2, "stash") == 10 and select(2, Inv.dims(p2, "stash")) == 40)
 		end
 	end
 

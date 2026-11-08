@@ -88,7 +88,11 @@ Relay7.HIDEOUT = {
 	{ id = "workbench", label = "Workbench", x0 = 35.5, z0 = 45, x1 = 44.5, z1 = 49, face = "S" },
 	{ id = "medstation", label = "Medstation", x0 = 46.5, z0 = 53, x1 = 51, z1 = 71, face = "W" },
 	{ id = "water", label = "Water collector", x0 = 1, z0 = 58.5, x1 = 6, z1 = 65.5, face = "E" },
-	{ id = "storage", label = "Storage racks", x0 = 9, z0 = 72, x1 = 37, z1 = 75.4, face = "N" },
+	{ id = "stash", label = "Stash", x0 = 9, z0 = 72, x1 = 37, z1 = 75.4, face = "N" },
+	-- the bays painted in the middle of the room (Relay7Dress); EFT's other modules open from the HIDEOUT screen (economy-7b)
+	{ id = "lavatory", label = "Lavatory", x0 = 10, z0 = 55, x1 = 18, z1 = 65, face = "S" },
+	{ id = "scavcase", label = "Scav case", x0 = 20, z0 = 55, x1 = 28, z1 = 65, face = "S" },
+	{ id = "intel", label = "Intelligence center", x0 = 30, z0 = 55, x1 = 38, z1 = 65, face = "S" },
 }
 Relay7.FIRING_LINE = 82 -- x of the booths' front edge; lanes run west
 Relay7.LANES = { { 82, 87.5 }, { 87.5, 93 }, { 93, 98.5 }, { 98.5, 104 } } -- z bands; lane 4 runs into the tunnel

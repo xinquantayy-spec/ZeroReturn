@@ -43,6 +43,7 @@ Loot.STOCK_CHANCE = { default = 0.5, safe = 1, weaponbox = 1, jacket = 0.6, regi
 -- weighted pools: n = stack range, a = rounds range (for mags: ammo type from `at`)
 local POOLS = {
 	crate = {
+		{ id = "GUNPOWDER", w = 2 }, -- economy-7b's barter goods (EFT: gunpowder in weapon and ammo boxes, toolboxes)
 		{ id = "BOLTS", w = 14 }, { id = "DUCT_TAPE", w = 12 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 10 },
 		{ id = "SIGNAL_COIL", w = 10 }, { id = "CERAMIC_FUSE", w = 10 }, { id = "A62_FMJ", w = 10, n = { 20, 45 } },
 		{ id = "A76_PS", w = 6, n = { 15, 40 } }, { id = "CAPACITOR", w = 6 }, { id = "BATTERY", w = 4 },
@@ -52,6 +53,7 @@ local POOLS = {
 		{ id = "FLARE_GREEN", w = 1.6 },
 	},
 	locker = {
+		{ id = "FABRIC", w = 3 }, -- EFT: fabrics in bags, lockers and toolboxes
 		{ id = "CIGARETTES", w = 12 }, { id = "MATCHES", w = 10 }, { id = "BANDAGE", w = 12 }, { id = "WATER", w = 8 },
 		{ id = "HARDTACK", w = 8 }, { id = "A9_PST", w = 10, n = { 10, 35 } }, { id = "P9_MAG", w = 5, a = { 0, 17 }, at = "A9_PST" },
 		{ id = "OLD_COIN", w = 5 }, { id = "KEY_OFFICE", w = 3 }, { id = "HELMET_C2", w = 3 }, { id = "RIG_BELT", w = 3 },
@@ -74,6 +76,7 @@ local POOLS = {
 		{ id = "STIM_ADREN", w = 3 }, { id = "STIM_REGEN", w = 1 }, { id = "STIM_HEMO", w = 1 }, { id = "STIM_STAMINA", w = 0.5 },
 	},
 	weaponbox = {
+		{ id = "GUNPOWDER", w = 4 },
 		{ id = "A62_FMJ", w = 14, n = { 30, 60 } }, { id = "A62_AP", w = 4, n = { 15, 40 } }, { id = "A76_PS", w = 10, n = { 30, 60 } },
 		{ id = "A76_BP", w = 2, n = { 10, 30 } }, { id = "A9_PST", w = 10, n = { 25, 50 } }, { id = "A12_BUCK", w = 8, n = { 8, 20 } },
 		{ id = "A12_SLUG", w = 4, n = { 5, 15 } }, { id = "A76L_LPS", w = 4, n = { 10, 30 } }, { id = "R17_MAG", w = 8, a = { 0, 25 }, at = "A62_FMJ" },
@@ -97,6 +100,7 @@ local POOLS = {
 		{ id = "FLARE_GREEN", w = 1.2 },
 	},
 	toolbox = {
+		{ id = "GUNPOWDER", w = 2 }, { id = "FABRIC", w = 4 },
 		{ id = "BOLTS", w = 16 }, { id = "DUCT_TAPE", w = 14 }, { id = "WIRES", w = 12 }, { id = "SPARK_PLUG", w = 12 },
 		{ id = "CAPACITOR", w = 6 }, { id = "LOGIC_BOARD", w = 4 }, { id = "MIL_CIRCUIT", w = 1 }, { id = "WEAPON_KIT", w = 2 },
 		{ id = "MULTITOOL", w = 3 }, { id = "AR_CH_EXT", w = 1 }, { id = "R17_GAS_LOW", w = 1 }, { id = "GAS_MASK", w = 1 },
@@ -120,6 +124,7 @@ local POOLS = {
 	},
 	-- loose loot (M10): what lies around in the open, in the dorm rooms, the office and the vault
 	junk = {
+		{ id = "FABRIC", w = 4 },
 		{ id = "BOLTS", w = 12 }, { id = "WIRES", w = 10 }, { id = "DUCT_TAPE", w = 10 }, { id = "SPARK_PLUG", w = 8 },
 		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 9 }, { id = "WATER", w = 5 }, { id = "HARDTACK", w = 6 },
 		{ id = "BANDAGE", w = 6 }, { id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "A9_PST", w = 6, n = { 5, 20 } },
@@ -127,6 +132,7 @@ local POOLS = {
 		{ id = "SIGNAL_COIL", w = 4 }, { id = "CERAMIC_FUSE", w = 4 },
 	},
 	dorm = {
+		{ id = "MOONSHINE", w = 1 }, -- rare: Relay 7 has no still, so loot is its only source (EFT makes it in the booze generator)
 		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 8 }, { id = "OLD_COIN", w = 8 }, { id = "PAINKILLERS", w = 6 },
 		{ id = "MEDKIT_S", w = 4 }, { id = "WATER", w = 6 }, { id = "STEW", w = 5 }, { id = "VOLT_DRINK", w = 2 },
 		{ id = "CAPT_WATCH", w = 2 }, { id = "GOLD_CHAIN", w = 2 }, { id = "FLASH_MODULE", w = 3 }, { id = "INTEL_FOLDER", w = 2 },
@@ -191,8 +197,9 @@ local POOLS = {
 		{ id = "HARDTACK", w = 8 }, { id = "VOLT_DRINK", w = 5 }, { id = "TOOTHPASTE", w = 6 }, { id = "SOAP", w = 6 },
 		{ id = "BLEACH", w = 4 }, { id = "CIGARETTES", w = 6 }, { id = "MATCHES", w = 6 }, { id = "LIGHTBULB", w = 4 },
 	},
-	drinks = { { id = "WATER", w = 14 }, { id = "JUICE", w = 12 }, { id = "VOLT_DRINK", w = 8 } },
+	drinks = { { id = "WATER", w = 14 }, { id = "JUICE", w = 12 }, { id = "VOLT_DRINK", w = 8 }, { id = "MOONSHINE", w = 1 } },
 	mall = {
+		{ id = "FABRIC", w = 3 },
 		{ id = "CHOC_BAR", w = 10 }, { id = "JUICE", w = 8 }, { id = "WATER", w = 6 }, { id = "CIGARETTES", w = 8 },
 		{ id = "MATCHES", w = 6 }, { id = "POWER_BANK", w = 6 }, { id = "LIGHTBULB", w = 6 }, { id = "TOOTHPASTE", w = 5 },
 		{ id = "SOAP", w = 5 }, { id = "PHONE", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "BATTERY", w = 2 },

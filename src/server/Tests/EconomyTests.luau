@@ -209,7 +209,14 @@ function T.run(ctx)
 		if ctx and ctx.Quests and ctx.Economy and kappa then
 			local qp = Settle.newProfile()
 			local before = ctx.Quests.status(qp, kappa)
-			qp.xp = P.xpFor(40)
+			-- level 40, or the highest level a trader's LL4 asks (EFT's Ragman wants 42 since our levels run to 79; economy-4b)
+			local need = 40
+			for _, tid in TD.list do
+				if tid ~= "fence" then
+					need = math.max(need, TD.loyaltyReq(tid, 4).level)
+				end
+			end
+			qp.xp = P.xpFor(need)
 			for _, id in { "F1", "V4", "H4", "T4", "T5" } do
 				qp.quests[id] = { s = "claimed", p = {} }
 			end

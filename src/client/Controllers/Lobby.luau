@@ -273,7 +273,7 @@ local function updateHideout(b)
 		return
 	end
 	local lv = h.levels or {}
-	local power = (lv.generator or 0) >= 1
+	local power = h.power == true -- the generator runs: fuel and the switch (economy-7b)
 	local t = serverNow()
 	for _, m in wing:GetChildren() do
 		if m:IsA("Model") then
@@ -282,7 +282,7 @@ local function updateHideout(b)
 			end
 			local rack = m:GetAttribute("Rack")
 			if rack then
-				local full = rack <= math.min(3, 1 + (lv.storage or 0))
+				local full = rack <= math.min(3, lv.stash or 1) -- old saves: storage L is stash L+1
 				showModel(m, (m:GetAttribute("Full") == true) == full)
 			end
 			local craft = m:GetAttribute("CraftReady")

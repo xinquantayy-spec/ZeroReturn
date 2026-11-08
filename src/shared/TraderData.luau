@@ -102,8 +102,8 @@ T.EFT_LL = {
 -- tasks a trader), so the standings below are EFT's own, unscaled (before economy-6a they were scaled down so that LL4 needed
 -- all of a trader's few tasks: VOS's LL4 was 0.46, now 7.9). The scaling stays for a trader whose tasks give less than
 -- EFT's LL4 standing: then its standings are EFT's scaled so that LL4 needs exactly what its tasks give (LL2 and LL3 keep
--- EFT's share of LL4), rounded down to 0.01. Player levels are EFT's, capped at our top level (EFT's Ragman wants 42 for
--- LL4; ours stops at 40). Money spent is still counted but asks nothing, as in EFT 1.1.0.
+-- EFT's share of LL4), rounded down to 0.01. Player levels are EFT's (since economy-4b our levels run to EFT's 79, so
+-- Ragman's LL4 at 42 is no longer capped). Money spent is still counted but asks nothing, as in EFT 1.1.0.
 T.TASK_REP = {} :: { [string]: number } -- [trader] = net standing all tasks give it (QuestData rewards: rep, and reps from others)
 for _, q in QD.list do
 	local r = q.reward and q.reward.rep
@@ -320,6 +320,9 @@ T.barters = {
 		b("MEDKIT_M", 1, 3, { { "CIGARETTES", 2 }, { "MATCHES", 1 } }),
 		b("HEMOSTAT", 2, 2, { { "MED_TOOLS", 1 } }),
 		b("SURGKIT", 3, 1, { { "MED_TOOLS", 1 }, { "CAPT_WATCH", 1 } }),
+		-- EFT's Therapist trades the expeditionary fuel tank at LL2 for four packs of buckwheat (xgamingserver item page,
+		-- 2026-11-04); stew stands in for the buckwheat, the limit is ours (economy-7b)
+		b("FUEL_CAN", 2, 2, { { "STEW", 4 } }),
 	},
 	fence = {},
 	-- Skier trades sights and night vision for household and electrical goods

@@ -9,6 +9,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Util = require(Shared.Util)
 local TD = require(Shared.TraderData)
+local HD = require(Shared.HideoutData)
 
 local Menus = {}
 local ctx, K
@@ -509,7 +510,9 @@ local function addOffer(f, x, y, w, h, d, fl, refresh)
 		local v = math.floor(tonumber(box.Text) or 0)
 		if v >= 1 then
 			flea.price = v
-			feeL.Text = "LISTING FEE  " .. Util.commas(FR.fee(def.value or 0, n, v)) .. " " .. Config.CURRENCY
+			local hd = d and d.hideout
+			local fee = math.floor(FR.fee(def.value or 0, n, v) * (1 - (hd and HD.bonus(hd, "fleaFee", hd.power) or 0) / 100))
+			feeL.Text = "LISTING FEE  " .. Util.commas(fee) .. " " .. Config.CURRENCY
 		else
 			feeL.Text = "LISTING FEE  -"
 		end

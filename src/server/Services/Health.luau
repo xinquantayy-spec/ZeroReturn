@@ -119,7 +119,11 @@ function Health.attach(model, opts)
 		local away = os.time() - saved.t
 		if away > 0 then
 			local prof = opts.player and ctx and ctx.Profiles and ctx.Profiles.get(opts.player)
-			Health.recoverFor(hs, away, (prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1)
+			local er, wr = 1, 1
+			if prof and ctx.Hideout and ctx.Hideout.vitalsRate then
+				er, wr = ctx.Hideout.vitalsRate(prof)
+			end
+			Health.recoverFor(hs, away, (prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1, er, wr)
 		end
 	end
 	hs.hum = model:FindFirstChildOfClass("Humanoid")
@@ -553,12 +557,13 @@ function Health.recover(parts, amount)
 end
 
 -- `seconds` of out-of-raid recovery on a body { parts, energy, water } (an hs or a plain table; pure). mul: the
--- medstation's multiplier on the HP. Returns the HP added.
-function Health.recoverFor(body, seconds, mul)
+-- hideout's multiplier on the HP (Hideout.healRate); emul, wmul: on energy and hydration (Hideout.vitalsRate: EFT's
+-- nutrition unit, water collector and rest space; economy-7b). Returns the HP added.
+function Health.recoverFor(body, seconds, mul, emul, wmul)
 	local used = Health.recover(body.parts, seconds * Health.OUT_HP_SEC * (mul or 1))
 	local v = seconds * Health.OUT_VITALS_SEC
-	body.energy = math.min(100, (body.energy or 100) + v)
-	body.water = math.min(100, (body.water or 100) + v)
+	body.energy = math.min(100, (body.energy or 100) + v * (emul or 1))
+	body.water = math.min(100, (body.water or 100) + v * (wmul or 1))
 	return used
 end
 
@@ -1077,7 +1082,11 @@ function Health.start()
 							-- out of raid: EFT's recovery x4, one pool over the damaged parts, the medstation on the HP
 							-- (Health.recoverFor; gameplay-6b). Pushed when the HP or a whole point of energy or water changes.
 							local e0, w0 = math.floor(hs.energy), math.floor(hs.water)
-							local used = Health.recoverFor(hs, 1, (prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1)
+							local er, wr = 1, 1
+							if prof and ctx.Hideout and ctx.Hideout.vitalsRate then
+								er, wr = ctx.Hideout.vitalsRate(prof)
+							end
+							local used = Health.recoverFor(hs, 1, (prof and ctx.Hideout) and ctx.Hideout.healRate(prof) or 1, er, wr)
 							if used > 0 or math.floor(hs.energy) ~= e0 or math.floor(hs.water) ~= w0 then
 								hs.dirty = true
 							end

@@ -181,7 +181,8 @@ local function req(player, p)
 			return fail("NO_SLOTS", "No free offer slots (flea rating " .. string.format("%.2f", f.rating or 0.2) .. ").")
 		end
 		local price = math.floor(p.price)
-		local fee = Flea.fee(Items.defs[it.id].value or 0, it.n or 1, price)
+		-- the intelligence center's level 3 cuts the fee 30 % (EFT wiki, Flea market; economy-7b)
+		local fee = math.floor(Flea.fee(Items.defs[it.id].value or 0, it.n or 1, price) * (ctx.Hideout and ctx.Hideout.cut(prof, "fleaFee") or 1))
 		if prof.money < fee then
 			return fail("NOT_ENOUGH_MONEY", "The listing fee is " .. Util.commas(fee) .. " " .. Config.CURRENCY .. ".")
 		end

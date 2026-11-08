@@ -8,6 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The hideout (decision economy-7b, merged from the hideout thread) and EFT's level table (economy-4b); 2026-11-08, about 15:20 SGT
+
+| Test | Result |
+|---|---|
+| Automated suites | All 14 pass, 1,079 checks. New: HideoutTests (86: modules, costs, prerequisites, summed bonuses, fuel and power, the farm, the scav case, migration of old saves); LogicTests: EFT's level table (79 levels, level 15 at 177,337, the top at 172,016,256), a lost raid keeps 75 % of its experience and a survived one adds 300, task experience on the new table (V1 500, V2 2,000), old storage racks 1 becoming stash 2 (10x40); TaskTests: Fence's scav task waits for the intelligence center; EconomyTests: the Pouch L task opens at the level LL4 really asks (42 for TILDA, no longer capped at 40). |
+| Hideout, live | On the player's profile through the hideout remote: SECURITY 1 (20,000 MK and a multitool), GENERATOR 1 (100,000 MK and a spark plug) and WORKBENCH 1 built at once; loading a fuel canister switched the generator on (POWER ON, FUEL 3:08:58 a minute later); the 7.6x39 PS x200 craft took the Powder Tin and held the multitool, 18:15 at Crafting 0; finished by the dev command, COLLECT gave 200 rounds found in raid and the multitool back. With the generator off a craft would not start ("Turn the generator on first."). |
+| HIDEOUT screen | Screenshots in the 1445x581 Studio window: the module strip with each module's level and state, the header's money, power and fuel clock, the next level's requirements as have / need with OK, MISSING and NOT BUILT, the craft list with item pictures, times and LEVEL 3 gates. |
+| Relay 7 | The stash, lavatory, scav case and intelligence center bays carry "Manage" prompts; the stencils read YOUR STASH · LV 1 and YOUR WATER COLLECTOR · NOT BUILT. |
+| Pictures | Powder Tin, Fabric Roll and Moonshine (`build_items_h.py`, review picture), packed on sheet 4 and uploaded. |
+| Not checked | An old save migrating on a real profile (HideoutTests covers it), the bitcoin farm and scav case live, running out of fuel mid-craft, two builds at once, the phone layout and gamepad LB / RB, the 5 s hideout tick in MicroProfiler, opening a module from a bay by hand, the XP bar at level 79, a phone. |
+
 ## MORTAR's grenade launcher (decision ai-5b, part 2; 2026-11-08, about 14:50 SGT)
 
 | Test | Result |

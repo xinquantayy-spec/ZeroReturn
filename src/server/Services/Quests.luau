@@ -296,7 +296,8 @@ function Quests.ensureOps(prof, now)
 			box = nil
 			changed = true
 		end
-		if box == nil and level >= cfg.level then
+		-- Fence's scav task opens with the intelligence center (EFT; economy-7b)
+		if box == nil and level >= cfg.level and (kind ~= "scav" or not ctx.Hideout or ctx.Hideout.levelOf(prof, "intel") >= 1) then
 			local list = {}
 			for slot = 1, cfg.n do
 				table.insert(list, rollInto(prof, kind, per, ends, slot, 0))
@@ -896,7 +897,8 @@ local function pay(player, prof, q)
 		table.insert(rew, "your standing")
 	end
 	mail(prof, q.trader, "Task complete: " .. q.name .. ". Your reward: " .. table.concat(rew, ", ") .. ".", "done", q.id)
-	prof.money += r.money or 0
+	-- the intelligence center adds 5 % (level 1) and 15 % (level 2) to task money (EFT; economy-7b)
+	prof.money += math.floor((r.money or 0) * (1 + ((ctx.Hideout and ctx.Hideout.bonus(prof, "questMoney")) or 0) / 100))
 	local up = ctx.Economy.addXp(prof, r.xp or 0)
 	if r.rep then
 		ctx.Economy.standing(prof, q.trader).rep += r.rep

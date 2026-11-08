@@ -1052,8 +1052,9 @@ local function profilePanel(f, x, y, w, h, d)
 	local a, b = P.xpFor(lvl), P.xpFor(lvl + 1)
 	section(sf, string.format("OPERATOR  ·  LEVEL %d", lvl))
 	local bar = K.frame(sf, { LayoutOrder = nextOrder(), BackgroundColor3 = K.C.panel2, Size = UDim2.new(1, 0, 0, 10) })
-	K.frame(bar, { BackgroundColor3 = K.C.ochre, Size = UDim2.fromScale(math.clamp((xp - a) / math.max(1, b - a), 0, 1), 1) })
-	text(sf, string.format("%s / %s XP to level %d", Util.commas(xp), Util.commas(b), lvl + 1), K.C.dim, 11)
+	local top = lvl >= P.MAX_LEVEL -- EFT's level 79 (economy-4b)
+	K.frame(bar, { BackgroundColor3 = K.C.ochre, Size = UDim2.fromScale(top and 1 or math.clamp((xp - a) / math.max(1, b - a), 0, 1), 1) })
+	text(sf, top and string.format("%s XP  ·  top level", Util.commas(xp)) or string.format("%s / %s XP to level %d", Util.commas(xp), Util.commas(b), lvl + 1), K.C.dim, 11)
 	section(sf, "SKILLS")
 	for _, id in P.SKILL_ORDER do
 		local def = P.SKILLS[id]

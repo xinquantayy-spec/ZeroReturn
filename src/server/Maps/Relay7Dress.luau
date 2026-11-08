@@ -658,12 +658,13 @@ local function hideout(g, R)
 	-- labels over the modules (the hideout screen shows their levels)
 	-- your client writes your own level on each module's label ("YOUR GENERATOR · LV 1")
 	for _, m in { { "generator", "GENERATOR", 9, 7.6, 44.6, "S" }, { "workbench", "WORKBENCH", 40, 8.4, 44.6, "S" },
-		{ "medstation", "MEDSTATION", 51.4, 8.2, 62.5, "W" }, { "nutrition", "WATER COLLECTOR", 0.6, 8.2, 62, "E" },
-		{ "storage", "STORAGE RACKS", 23, 8.4, 75.4, "N" } } do
+		{ "medstation", "MEDSTATION", 51.4, 8.2, 62.5, "W" }, { "water", "WATER COLLECTOR", 0.6, 8.2, 62, "E" },
+		{ "stash", "STASH", 23, 8.4, 75.4, "N" } } do
 		local st = stencil(g, m[2], m[3], m[4], m[5], m[6], 8.4, 0.8)
 		st:SetAttribute("Module", m[1])
 	end
-	-- the middle of the room: bays painted out for the modules still to come
+	-- the middle of the room: bays painted out for the lavatory, the scav case and the intelligence center (their prompts
+	-- open the module: Relay7.HIDEOUT; furniture still to come)
 	for k, name in { "LAVATORY", "SCAV CASE", "INTEL CENTRE" } do
 		local x0 = 10 + (k - 1) * 10
 		local x1, z0, z1 = x0 + 8, 55, 65

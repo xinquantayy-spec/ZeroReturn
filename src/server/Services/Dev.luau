@@ -773,12 +773,8 @@ end
 function C.hideoutNow(name)
 	local p = plr(name)
 	local prof = ctx.Profiles.get(p)
-	if prof.hideout.build then
-		prof.hideout.build.at = 0
-	end
-	for _, c in prof.hideout.crafts do
-		c.at = 0
-	end
+	-- builds are builds[m] and crafts count work done since economy-7b: Hideout.devFinish completes them
+	ctx.Hideout.devFinish(prof)
 	ctx.Hideout.settle(prof, p)
 	ctx.Raid.afterChange(p, false)
 	return HttpService:JSONEncode(ctx.Hideout.stateFor(prof))

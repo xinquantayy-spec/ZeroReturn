@@ -980,15 +980,21 @@ function Raid.inv(player, p)
 		if not (d.kind == "weapon" or d.kind == "pistol") then
 			return fail("NOT_REPAIRABLE", "The kit is for weapons.")
 		end
+		-- out of raid the holder is the profile (luau_lint found `prof` undefined here, 2026-11-07: every repair errored)
+		local prof = ctx.Profiles.get(player) or me
+		-- EFT: weapon repair kits need the workbench (level 1); its levels 2 and 3 spend 3 % and 6 % fewer kit points
+		-- for the same repair (economy-7b)
+		if ctx.Hideout and ctx.Hideout.levelOf(prof, "workbench") < 1 then
+			return fail("LOCKED", "Build the workbench to repair with a kit.")
+		end
+		local cut = ctx.Hideout and ctx.Hideout.cut(prof, "weaponKitCost") or 1
 		local cur, max = TD.condition(it)
 		local left = kit.pts or kd.repair.points
-		local pts = math.min(max - cur, left)
+		local pts = math.min(max - cur, left / cut)
 		if pts < 0.5 then
 			return fail("NOTHING_TO_REPAIR", "It is in full condition.")
 		end
-		kit.pts = left - pts
-		-- out of raid the holder is the profile (luau_lint found `prof` undefined here, 2026-11-07: every repair errored)
-		local prof = ctx.Profiles.get(player) or me
+		kit.pts = left - pts * cut
 		local newMax = max - pts * TD.KIT_DEGRADE * (1 - Progress.bonus(prof.skills, "intellect"))
 		ctx.Economy.skillUp(player, prof, "intellect", 3)
 		it.wear, it.wmax = math.min(newMax, cur + pts), newMax

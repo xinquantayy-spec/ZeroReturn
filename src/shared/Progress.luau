@@ -3,14 +3,33 @@
 -- Shared so the client applies the same skill bonuses it shows (movement stamina, weight limits).
 local P = {}
 
-P.MAX_LEVEL = 40
+-- EFT's experience table (decision economy-4b): the total experience each level needs, levels 1 to 79 (senseos.gg's
+-- "Tarkov XP Chart", checked against patch 1.3.0.0, read 2026-11-08; level 15, the flea market, at 177,337). It replaced
+-- our 1000 x (level - 1)^1.5 to level 40.
+P.LEVELS = {
+	0, 1000, 4017, 8432, 14256, 21477, 30023, 39936, 51204, 63723, 77563, 93279, 115302, 143253, 177337, 217885, 264432,
+	316851, 374400, 437465, 505161, 577978, 656347, 741150, 836066, 944133, 1066259, 1199423, 1343743, 1499338, 1666320,
+	1846664, 2043349, 2258436, 2492126, 2750217, 3032022, 3337766, 3663831, 4010401, 4377662, 4765799, 5182399, 5627732,
+	6102063, 6630287, 7189442, 7779792, 8401607, 9055144, 9740666, 10458431, 11219666, 12024744, 12874041, 13767918,
+	14706741, 15690872, 16720667, 17816442, 19041492, 20360945, 21792266, 23350443, 25098462, 27100775, 29581231,
+	33028574, 37953544, 44260543, 51901513, 60887711, 71228846, 82933459, 96009180, 110462910, 126300949, 144924572,
+	172016256,
+}
+P.MAX_LEVEL = #P.LEVELS
 
--- total experience needed to reach a level (level 1 = 0)
+-- total experience needed to reach a level (level 1 = 0; past the top level, the top level's)
 function P.xpFor(level: number): number
 	if level <= 1 then
 		return 0
 	end
-	return math.floor(1000 * (level - 1) ^ 1.5)
+	return P.LEVELS[math.min(math.floor(level), P.MAX_LEVEL)]
+end
+
+-- how many times more experience a level takes on EFT's table than on our old curve (1000 x (level - 1)^1.5), at a
+-- level: task rewards set against the old curve keep the share of a level they gave (economy-4b, QuestData)
+function P.xpRatio(level: number): number
+	local l = math.clamp(math.floor(level), 1, P.MAX_LEVEL - 1)
+	return (P.LEVELS[l + 1] - P.LEVELS[l]) / (1000 * (l ^ 1.5 - (l - 1) ^ 1.5))
 end
 
 function P.levelOf(xp: number): number
@@ -24,8 +43,9 @@ end
 -- raid experience
 P.XP = {
 	kill = { scav = 60, watch = 200, follower = 250, boss = 1200, pmc = 300, pscav = 100 },
-	headshot = 0.5, -- bonus share for head kills
+	headshot = 0.2, -- a head kill's bonus share: EFT's x1.2 (timesaver.gg, PMC kills; economy-4b)
 	survive = 300, -- extraction bonus
+	lost = 0.75, -- the raid's experience kept when killed or missing in action (EFT 1.0.2.0 raised it from 0.4; economy-4b)
 	search = 4, -- per item revealed in a container or body
 	examine = 20,
 	runThrough = { time = 420, xp = 200 }, -- extract sooner with less raid xp: "run through", loot is not found-in-raid
@@ -60,7 +80,7 @@ P.SKILLS = {
 	troubleshooting = { cat = "PRACTICAL", name = "TROUBLESHOOTING", desc = "Malfunctions are cleared faster.", per = 0.008 },
 	lightvests = { cat = "PRACTICAL", name = "LIGHT VESTS", desc = "Class 2-3 armour slows you less.", per = 0.008 },
 	heavyvests = { cat = "PRACTICAL", name = "HEAVY VESTS", desc = "Class 4-6 armour slows you less.", per = 0.008 },
-	crafting = { cat = "PRACTICAL", name = "CRAFTING", desc = "Hideout crafts finish sooner.", per = 0.006 },
+	crafting = { cat = "PRACTICAL", name = "CRAFTING", desc = "Hideout crafts finish sooner.", per = 0.0075 }, -- EFT: 0.75 % a level (SkillsSettings.Crafting, economy-7b)
 	-- combat
 	-- weapon skills and Recoil Control: 0.3 % less recoil a level each (SPT's copy of Tarkov's globals; the recoil
 	-- thread, gameplay-1a). Recoil Control trains on every shot with any gun
