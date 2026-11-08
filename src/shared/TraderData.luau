@@ -210,6 +210,12 @@ T.offers = {
 		-- T-46M at LL3 and PS gzh at LL4. PS stays at LL2 here: it stands in for EFT's 7.62x39 FMJ and SP, which we do not have
 		o("A76_US", 3, 4, 60), o("A76_TR", 3, 4, 60), o("A76L_TR", 3, 4, 40), o("A76_PP", 4, 3, 60), o("A9_PBP", 4, 3, 50),
 		o("A76L_PS", 4, 3, 40),
+		-- the third slice (tarkovforge.com round pages, 2026-11-08): Prapor sells 5.45 US gs at LL1, T gs and PS gs at LL2 and
+		-- BT gs at LL4 (BP gs and BS gs come from loot and crafts), and the 9x18 P, PPT, Pst, RG028 and PBM loads at LL1;
+		-- the 6L20 magazine at LL1 and the 6L26 at LL3
+		o("A54_US", 1, 6, 60), o("A54_T", 2, 6, 60), o("A54_PS", 2, 8, 60), o("A54_BT", 4, 3, 60),
+		o("A918_P", 1, 10, 50), o("A918_PPT", 1, 8, 50), o("A918_PST", 1, 8, 50), o("A918_RG", 1, 6, 50), o("A918_PBM", 1, 4, 50),
+		o("KS74_MAG", 1, 6), o("KS74_MAG45", 3, 3), o("PM_MAG", 1, 10),
 		-- plates (gameplay-2a): EFT sells the Korund-VM plates at Prapor LL4 (tarkovforge); the PC-4's at LL2 (ours)
 		o("PLATE_PC4F", 2, 2), o("PLATE_PC4B", 2, 2), o("PLATE_HP5F", 4, 1), o("PLATE_HP5B", 4, 1), o("PLATE_HP5S", 4, 2),
 		-- task-locked (economy-6a): Fuel Count opens the KS-7 at LL1 (EFT's BP Depot opens a gun at Prapor LL1); markers for
@@ -275,6 +281,8 @@ T.offers = {
 		o("WEAPON_KIT", 2, 1), pre("R17_PATROL", 2, 1), pre("P9_TAC", 2, 1),
 		o("R17_HG_MLOK", 3, 1), o("R17_GAS_LOW", 3, 2), o("R17_BRL_18", 3, 1), o("SUPP_62C", 3, 1), o("AR_STK_SKEL", 3, 1),
 		o("MNT_RINGS", 3, 1), o("LASER_COMBO", 3, 1), o("SPR_GRIP_NAVY", 3, 1), o("SPR_MAG50", 3, 2),
+		-- the KS-74 at LL2: EFT's Mechanic sells the AK-74N at LL2 (tarkovforge.com's AK-74N page)
+		o("KS74_RIFLE", 2, 1), o("BRAKE_74", 1, 2),
 		-- rounds (economy-1a; EFT's Mechanic): the green tracer at LL1, Pst gzh at LL2, RIP at LL4
 		o("A9_TR", 1, 10, 50), o("A9_PST", 2, 10, 50), o("A9_RIP", 4, 3, 50),
 		pre("R17_CQB", 3, 1), pre("SPR_TAC", 3, 1),
@@ -306,6 +314,7 @@ T.offers = {
 		-- rounds (economy-1a; EFT's Jaeger, the wiki's 12/70 page and round pages): the lead slug and the 5.56 and 7.62x39
 		-- hollow points at LL1, Poleva-6u at LL2, Magnum buckshot and flechettes at LL3
 		o("A12_SLUG", 1, 4, 20), o("A62_HP", 1, 6, 60), o("A76_HP", 1, 6, 60), o("A12_SABOT", 2, 4, 20), o("A12_MAG", 3, 4, 20),
+		o("A54_HP", 1, 6, 60), o("A918_PSV", 2, 6, 50), -- the third slice: Jaeger's 5.45 HP (LL1) and 9x18 PSV (LL2)
 		o("A12_FLECH", 3, 3, 20),
 		o("HAR_FE_POLY", 1, 2), o("HAR_STK_PG", 1, 1),
 		o("TUNDRA_BOLT", 2, 1), o("TUN_MNT_SCOUT", 2, 1), o("TUN_STK_SPORT", 2, 1), o("HAR_FE_RAIL", 2, 1),
@@ -325,6 +334,8 @@ end
 T.barters = {
 	vos = {
 		b("KST_RIFLE", 1, 1, { { "CAPACITOR", 1 }, { "LOGIC_BOARD", 1 } }),
+		-- EFT's PM is barter-only (tarkovforge.com: no trader sells it for money); ours at Prapor for small household goods
+		b("PM_PISTOL", 1, 2, { { "TOILET_PAPER", 1 }, { "SOAP", 1 } }),
 		-- EFT's RPK-16 comes by Prapor's barters at LL2 and LL3 (wiki): the KS-L and its drum at LL3 here
 		b("KSL_LMG", 3, 1, { { "LOGIC_BOARD", 2 }, { "CAPACITOR", 2 }, { "BOLTS", 4 } }),
 		b("KSL_DRUM95", 3, 1, { { "BOLTS", 3 }, { "DUCT_TAPE", 2 } }),

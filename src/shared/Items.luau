@@ -48,6 +48,12 @@ add("KSL_LMG", { name = "Kestrel KS-L", short = "KS-L", kind = "weapon", w = 6, 
 add("SPARROW_SMG", { name = "Sparrow SMG-9", short = "SMG-9", kind = "weapon", w = 3, h = 2, mass = 2.0, value = 11000, caliber = "9", weapon = "SPARROW", family = "SPARROW", desc = "Compact 9x19 submachine gun. Fast, controllable, weak against plates.", color = c("#4B5054") })
 add("HARROW12", { name = "Harrow-12 Pump", short = "H-12", kind = "weapon", w = 6, h = 1, mass = 1.4, value = 4800, caliber = "12", weapon = "HARROW", capacity = 6, desc = "12-gauge pump with a 6-shell tube. Load shells directly.", color = c("#5A4B3C") })
 add("TUNDRA_BOLT", { name = "Tundra Bolt Rifle", short = "TUNDRA", kind = "weapon", w = 6, h = 1, mass = 2.8, value = 40000, caliber = "7.6L", weapon = "TUNDRA", capacity = 5, rarity = "uncommon", desc = "Long bolt-action in 7.6x54. Five-round internal magazine.", color = c("#4F4A3B") })
+-- decision economy-1a, third slice (2026-11-08): EFT's two commonest scav guns. The KS-74 copies the AK-74N (5.45x39,
+-- our 5.4x39): every KS-7 dust cover, handguard, grip, stock and mount fits it, its magazines are its own. The Makar PM
+-- copies the PM (9x18): a fixed-barrel blowback pistol with an 8-round magazine. Values are EFT's handbook prices
+-- (SPT's handbook.json: AK-74N 23,147, PM 4,097); weights EFT's (3.1 and 0.73 kg)
+add("KS74_RIFLE", { name = "Kestrel KS-74", short = "KS-74", kind = "weapon", w = 5, h = 2, mass = 3.1, value = 23147, caliber = "5.4", weapon = "KS74", family = "KS74", rarity = "uncommon", desc = "The KS-7 action in 5.4x39: a slimmer barrel, a long two-port brake and a flatter shooting rifle. Takes the KS-7's furniture, not its magazines.", color = c("#4A4038") })
+add("PM_PISTOL", { name = "Makar PM", short = "PM", kind = "pistol", w = 2, h = 1, mass = 0.73, value = 4097, caliber = "9.18", weapon = "PM", family = "PM", desc = "Small 9x18 blowback pistol with a fixed barrel. Eight rounds, a stiff trigger, everywhere in the region.", color = c("#3E4244") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -67,6 +73,11 @@ add("KST_MAG40", { name = "KS-7 40-rd Magazine", short = "MAG 40", kind = "mag",
 add("KSL_DRUM95", { name = "KS-L 95-rd Drum", short = "DRUM 95", kind = "mag", w = 2, h = 2, mass = 0.68, value = 31000, capacity = 95, caliber = "7.6", family = "KST", rarity = "rare", desc = "95-round drum for the KS-L light machine gun. It fits any KS-7 too. Slow to load and prone to feed failures.", color = c("#2E3131") })
 add("SPR_MAG50", { name = "SMG-9 50-rd Drum", short = "DRUM 50", kind = "mag", w = 2, h = 2, mass = 0.6, value = 16000, capacity = 50, caliber = "9", family = "SPARROW", rarity = "rare", desc = "Twin-spring 50-round drum. Slow to load, heavy on the rig.", color = c("#34383A") })
 add("P9_MAG33", { name = "P-9 33-rd Extended Magazine", short = "MAG 33", kind = "mag", w = 1, h = 2, mass = 0.24, value = 7400, capacity = 33, caliber = "9", family = "P9", rarity = "uncommon", desc = "Extended stick magazine for the P-9.", color = c("#35383A") })
+-- economy-1a, third slice: EFT's 6L20 (30, plum polymer, 0.215 kg, 2,031), its 6L26 45-round magazine (3,765) and the PM's
+-- 8-round magazine (940); handbook prices
+add("KS74_MAG", { name = "KS-74 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.215, value = 2031, capacity = 30, caliber = "5.4", family = "KS74", desc = "Plum polymer 30-round 5.4x39 magazine. The KS-7's will not fit.", color = c("#4A3530") })
+add("KS74_MAG45", { name = "KS-74 45-rd Magazine", short = "MAG 45", kind = "mag", w = 1, h = 3, mass = 0.33, value = 3765, capacity = 45, caliber = "5.4", family = "KS74", rarity = "uncommon", desc = "Long 45-round magazine from the support-weapon variant.", color = c("#313537") })
+add("PM_MAG", { name = "PM 8-rd Magazine", short = "MAG 8", kind = "mag", w = 1, h = 1, mass = 0.093, value = 940, capacity = 8, caliber = "9.18", family = "PM", desc = "Single-stack 8-round magazine for the Makar PM.", color = c("#2F3233") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -100,6 +111,24 @@ ammo("A9_TR", "9x19 TR", "9 TR", "9", 50, 70, { dmg = 58, pen = 14, armorDmg = 0
 ammo("A9_AP", "9x19 AP", "9 AP", "9", 50, 210, { dmg = 52, pen = 30, armorDmg = 0.48, bleedL = 0.1, bleedH = 0.05, frag = 0.05, speed = 392 }, "uncommon", "Penetrator 9x19.") -- AP 6.3
 ammo("A9_PBP", "9x19 PBP", "9 PBP", "9", 50, 900, { dmg = 44, pen = 39, armorDmg = 0.55, bleedL = 0.1, bleedH = 0.05, frag = 0.05, speed = 560, recoil = 0.05, acc = 0.05 }, "rare", "Hot armour-piercing load with a hardened core.") -- PBP gzh; value ~
 ammo("A9_RIP", "9x19 FHP", "9 FHP", "9", 50, 422, { dmg = 102, pen = 2, armorDmg = 0.11, bleedL = 0.42, bleedH = 0.3, frag = 1, speed = 381, recoil = 0.2 }, "uncommon", "Fragmenting hollow point.") -- RIP (renamed: a maker's name)
+-- 5.4x39 (EFT's 5.45x39; economy-1a, third slice): HP, US gs, T gs, PS gs, BT gs, BP gs, BS gs. Damage, penetration,
+-- armour damage, fragmentation, speed and the recoil and accuracy modifiers from tarkovforge.com/ammo/545x39mm-<round>
+-- (read 2026-11-08); values are EFT's handbook prices (SPT's handbook.json); bleeding as for the 6.2
+ammo("A54_HP", "5.4x39 HP", "5.4 HP", "5.4", 60, 50, { dmg = 76, pen = 9, armorDmg = 0.15, bleedL = 0.27, bleedH = 0.21, frag = 0.35, speed = 884, recoil = -0.03, acc = 0.03 }, nil, "Hollow point. Tears flesh, stops at the first plate.")
+ammo("A54_US", "5.4x39 US", "5.4 US", "5.4", 60, 88, { dmg = 65, pen = 17, armorDmg = 0.33, bleedL = 0.12, bleedH = 0.06, frag = 0.1, speed = 303, recoil = -0.15, subsonic = true }, nil, "Subsonic heavy bullet. Quiet behind a suppressor, slow and loopy beyond 100 m.")
+ammo("A54_T", "5.4x39 T", "5.4 T", "5.4", 60, 90, { dmg = 59, pen = 20, armorDmg = 0.36, bleedL = 0.12, bleedH = 0.06, frag = 0.16, speed = 883, acc = -0.03, tracer = "red" }, nil, "Steel-core load with a red tracer.")
+ammo("A54_PS", "5.4x39 PS", "5.4 PS", "5.4", 60, 140, { dmg = 56, pen = 28, armorDmg = 0.4, bleedL = 0.12, bleedH = 0.06, frag = 0.4, speed = 890 }, nil, "Standard steel-core service load.")
+ammo("A54_BT", "5.4x39 BT", "5.4 BT", "5.4", 60, 540, { dmg = 54, pen = 37, armorDmg = 0.44, bleedL = 0.1, bleedH = 0.05, frag = 0.16, speed = 880, recoil = 0.05, acc = -0.04, tracer = "red" }, "uncommon", "Armour-piercing tracer.")
+ammo("A54_BP", "5.4x39 BP", "5.4 BP", "5.4", 60, 630, { dmg = 48, pen = 45, armorDmg = 0.46, bleedL = 0.1, bleedH = 0.05, frag = 0.16, speed = 890, recoil = 0.07, acc = -0.03 }, "rare", "Hardened steel-core armour piercer.")
+ammo("A54_BS", "5.4x39 BS", "5.4 BS", "5.4", 60, 780, { dmg = 45, pen = 54, armorDmg = 0.57, bleedL = 0.1, bleedH = 0.05, frag = 0.17, speed = 830, recoil = 0.1, acc = -0.04 }, "rare", "Tungsten-carbide core. Defeats class 5 plates.")
+-- 9x18 (EFT's 9x18 PM): P gzh, PSV, PPT gzh, Pst gzh, RG028 gzh, PBM gzh (tarkovforge.com/ammo/9x18mm-pm-<round>,
+-- read 2026-11-08; handbook prices)
+ammo("A918_P", "9x18 P", "9x18 P", "9.18", 50, 12, { dmg = 50, pen = 5, armorDmg = 0.16, bleedL = 0.22, bleedH = 0.05, frag = 0.25, speed = 302 }, nil, "Plain lead-core pistol round.")
+ammo("A918_PSV", "9x18 PSV", "9x18 PSV", "9.18", 50, 73, { dmg = 69, pen = 3, armorDmg = 0.05, bleedL = 0.22, bleedH = 0.05, frag = 0.4, speed = 280 }, nil, "Soft expanding bullet. Hurts badly, does nothing to armour.")
+ammo("A918_PPT", "9x18 PPT", "9x18 PPT", "9.18", 50, 43, { dmg = 59, pen = 8, armorDmg = 0.22, bleedL = 0.27, bleedH = 0.05, frag = 0.17, speed = 301, recoil = -0.07, acc = -0.05, tracer = "red" }, nil, "Light load with a red tracer.")
+ammo("A918_PST", "9x18 Pst", "9x18 PST", "9.18", 50, 45, { dmg = 50, pen = 12, armorDmg = 0.26, bleedL = 0.12, bleedH = 0.05, frag = 0.2, speed = 298 }, nil, "Steel-core 9x18.")
+ammo("A918_RG", "9x18 RG", "9x18 RG", "9.18", 50, 86, { dmg = 65, pen = 13, armorDmg = 0.26, bleedL = 0.12, bleedH = 0.05, frag = 0.02, speed = 330 }, nil, "Heavier hot load with a hardened core.") -- RG028 gzh
+ammo("A918_PBM", "9x18 PBM", "9x18 PBM", "9.18", 50, 121, { dmg = 40, pen = 28, armorDmg = 0.3, bleedL = 0.1, bleedH = 0.05, frag = 0.16, speed = 519, recoil = 0.04 }, "uncommon", "Armour-piercing bimetal load, very fast for a pistol round.")
 -- the GL-6's round (ai-5b), after EFT's 40x46 M406 (HE): 76 m/s, armed after 0.26 s of flight, an explosion of 1 to
 -- 7 m (the wiki's 40x46mm page); the fragments, blast and their reach are in our grenade model (Grenades.luau)
 add("A40_HE", { name = "40x46 HE Grenade", short = "40 HE", kind = "ammo", w = 1, h = 1, mass = 0.23, stack = 1, value = 9000, caliber = "40", rarity = "rare",

@@ -108,6 +108,14 @@ local POOLS = {
 		{ id = "KST_MAG", w = 6, a = { 0, 30 }, at = "A76_PS" }, { id = "SPARROW_MAG", w = 5, a = { 0, 30 }, at = "A9_PST" },
 		{ id = "P9_PISTOL", w = 4 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "KST_RIFLE", w = 1 },
 		{ id = "GREN_RK5", w = 6 }, { id = "GREN_F7", w = 2 }, { id = "GREN_STUN", w = 3 }, { id = "GREN_SMOKE", w = 4 },
+		-- economy-1a's third slice: the KS-74 and the PM with their magazines and rounds
+		{ id = "A54_PS", w = 10, n = { 30, 60 } }, { id = "A54_HP", w = 5, n = { 30, 60 } }, { id = "A54_US", w = 4, n = { 20, 40 } },
+		{ id = "A54_T", w = 5, n = { 30, 60 } }, { id = "A54_BT", w = 2, n = { 15, 30 } }, { id = "A54_BP", w = 1, n = { 10, 30 } },
+		{ id = "A54_BS", w = 0.3, n = { 5, 15 } }, { id = "A918_P", w = 6, n = { 20, 50 } }, { id = "A918_PST", w = 6, n = { 20, 50 } },
+		{ id = "A918_PPT", w = 4, n = { 20, 40 } }, { id = "A918_RG", w = 3, n = { 15, 30 } }, { id = "A918_PBM", w = 1, n = { 10, 25 } },
+		{ id = "A918_PSV", w = 2, n = { 10, 25 } }, { id = "KS74_MAG", w = 6, a = { 0, 30 }, at = "A54_PS" },
+		{ id = "KS74_MAG45", w = 1, a = { 0, 45 }, at = "A54_PS" }, { id = "PM_MAG", w = 5, a = { 0, 8 }, at = "A918_P" },
+		{ id = "KS74_RIFLE", w = 1.5 }, { id = "PM_PISTOL", w = 3 }, { id = "BRAKE_74", w = 2 },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -147,6 +155,7 @@ local POOLS = {
 		{ id = "CIGARETTES", w = 14 }, { id = "MATCHES", w = 12 }, { id = "KEY_OFFICE", w = 4 }, { id = "OLD_COIN", w = 4 },
 		{ id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "PAINKILLERS", w = 4 }, { id = "RUSTED_KEYCARD", w = 1 },
 		{ id = "KEY_DORM_104", w = 3 }, { id = "KEY_DORM_203", w = 1 }, { id = "GREN_RK5", w = 1 },
+		{ id = "A918_P", w = 5, n = { 5, 16 } }, { id = "A54_PS", w = 4, n = { 5, 20 } }, { id = "PM_MAG", w = 1, a = { 0, 8 }, at = "A918_P" },
 		{ id = "GLASSES_SUN", w = 2 }, { id = "GLASSES_RANGE", w = 1 },
 		{ id = "KEY_MALL_SECURITY", w = 1 }, { id = "KEY_MM_RESCUE", w = 1 }, { id = "KEY_MM_IRON_FRONT", w = 0.5 },
 		{ id = "FLARE_RED", w = 0.6 },
@@ -170,6 +179,7 @@ local POOLS = {
 		{ id = "CIGARETTES", w = 10 }, { id = "MATCHES", w = 9 }, { id = "WATER", w = 5 }, { id = "HARDTACK", w = 6 },
 		{ id = "BANDAGE", w = 6 }, { id = "A62_FMJ", w = 6, n = { 5, 20 } }, { id = "A9_PST", w = 6, n = { 5, 20 } },
 		{ id = "A12_BUCK", w = 4, n = { 3, 8 } }, { id = "BATTERY", w = 3 }, { id = "OLD_COIN", w = 3 }, { id = "CAPACITOR", w = 3 },
+		{ id = "A54_PS", w = 6, n = { 5, 20 } }, { id = "A54_HP", w = 3, n = { 5, 15 } }, { id = "A918_P", w = 5, n = { 5, 16 } },
 		{ id = "SIGNAL_COIL", w = 4 }, { id = "CERAMIC_FUSE", w = 4 },
 	},
 	dorm = {
@@ -182,6 +192,7 @@ local POOLS = {
 		{ id = "CAPT_WATCH", w = 2 }, { id = "GOLD_CHAIN", w = 2 }, { id = "FLASH_MODULE", w = 3 }, { id = "INTEL_FOLDER", w = 2 },
 		{ id = "LOGIC_BOARD", w = 2 }, { id = "P9_MAG", w = 3, a = { 0, 17 }, at = "A9_PST" }, { id = "A9_PST", w = 5, n = { 10, 30 } },
 		{ id = "BATTERY", w = 2 }, { id = "P9_PISTOL", w = 1 }, { id = "GREN_RK5", w = 2 }, { id = "GREN_STUN", w = 1 },
+		{ id = "PM_PISTOL", w = 1.5 }, { id = "PM_MAG", w = 2, a = { 0, 8 }, at = "A918_P" }, { id = "A918_P", w = 4, n = { 8, 24 } },
 	},
 	dorm_good = {
 		-- economy-1a's second slice (EFT's barter goods where EFT finds them)
@@ -332,6 +343,7 @@ local POOLS = {
 	},
 	airdrop_weapon = {
 		{ id = "A62_EP", w = 2, n = { 30, 60 } }, { id = "A76_PP", w = 2, n = { 30, 60 } }, { id = "A9_PBP", w = 1, n = { 25, 50 } },
+		{ id = "A54_BP", w = 2, n = { 30, 60 } }, { id = "A54_BS", w = 1, n = { 20, 40 } }, { id = "KS74_RIFLE", w = 1 }, { id = "KS74_MAG45", w = 1, a = { 0, 45 }, at = "A54_BP" },
 		{ id = "A76L_BT", w = 1, n = { 20, 40 } }, { id = "A12_APS", w = 1, n = { 10, 20 } },
 		{ id = "R17_RIFLE", w = 3 }, { id = "KST_RIFLE", w = 3 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "P9_PISTOL", w = 2 },
 		{ id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" }, { id = "R17_MAG40", w = 2, a = { 0, 40 }, at = "A62_FMJ" },
@@ -1541,6 +1553,8 @@ local SCAV_GUNS = {
 	{ "KST_RIFLE", 30, "KST_MAG", { "A76_PS", "A76_HP", "A76_US", "A76_TR" } }, { "SPARROW_SMG", 25, "SPARROW_MAG", { "A9_PST", "A9_FMJ", "A9_TR" } },
 	{ "HARROW12", 25, nil, { "A12_BUCK", "A12_BUCK", "A12_SLUG", "A12_MAG" } }, { "TUNDRA_BOLT", 8, nil, { "A76L_LPS", "A76L_TR" } },
 	{ "R17_RIFLE", 12, "R17_MAG", { "A62_FMJ", "A62_HP", "A62_SS" } },
+	-- economy-1a, third slice: EFT's scavs carry AK-74s more than anything (weights ours)
+	{ "KS74_RIFLE", 30, "KS74_MAG", { "A54_PS", "A54_HP", "A54_US", "A54_T" } },
 }
 local function pickWeighted(rand, list)
 	local total = 0
@@ -1604,10 +1618,13 @@ function Loot.scavLoadout(rand)
 		slot("ears", "HEADSET_GS1")
 	end
 	if rand:NextNumber() < 0.3 then
-		local pg = slot("holster", "P9_PISTOL")
+		-- the sidearm: mostly the PM, as EFT's scavs carry it (economy-1a's third slice), now and then a P-9
+		local pm = rand:NextNumber() < 0.7
+		local pg = slot("holster", pm and "PM_PISTOL" or "P9_PISTOL")
 		if pg then
 			h.items[pg].wear = math.floor(rand:NextNumber(40, 90) * 10) / 10
-			local mg, mag = Inv.newItem("P9_MAG", 1, { a = rand:NextInteger(5, 17), at = "A9_PST" })
+			local mg, mag = Inv.newItem(pm and "PM_MAG" or "P9_MAG", 1, pm and { a = rand:NextInteger(3, 8), at = rand:NextNumber() < 0.6 and "A918_P" or "A918_PST" }
+				or { a = rand:NextInteger(5, 17), at = "A9_PST" })
 			h.items[mg] = mag
 			h.items[pg].mag = mg
 			Inv.resize(h, pg)

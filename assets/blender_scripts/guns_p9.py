@@ -6,6 +6,7 @@ Frame: bore axis z = 0, slide rear y = 0, slide front y = -0.186, grip raked 20 
 import math
 from zr_items import col, shade, R
 from zr_guns import (gpart, preset, side, box, ybar, ring, ylathe, pica, screw, pin, grip_profile, box_mag, round_top, trigger,
+                     trigger_guard,
                      BLACK, BLACK2, PARK, STEEL, BRIGHT, POLY, POLY2, FDE, RUBBER, WHITE)
 
 FRAME = col("2C2F30")
@@ -132,3 +133,65 @@ def p9_mag33(P):
 preset("P9_PISTOL", "P9_PISTOL", {"slide": ("P9_SLIDE_STD", {}), "barrel": ("P9_BRL_STD", {}), "mag": ("P9_MAG", {})})
 preset("P9_TAC", "P9_PISTOL", {"slide": ("P9_SLIDE_CUT", {"optic": ("SIGHT_MICRO", {})}), "barrel": ("P9_BRL_THR", {"muzzle": ("SUPP_9", {})}),
                                "tactical": ("LIGHT_T", {}), "mag": ("P9_MAG33", {})})
+
+# ── the Makar PM (decision economy-1a, third slice): EFT's PM in 9x18 (our 9x18), the commonest sidearm of its scavs.
+# A small blowback pistol: the barrel is fixed in the frame, the slide runs over it, an 8-round single-stack magazine
+# and a rounded trigger guard. Frame: bore axis z = 0, slide rear y = 0, slide front y = -0.158, grip raked 12 degrees.
+PM_FRAME = col("2E3133")
+PM_SLIDE = col("383C3E")
+PM_GRIP = col("5E3A26")       # reddish-brown bakelite panels
+PSL = 0.024
+
+
+@gpart("PM_PISTOL", 2, 1, family="p9", cls="pistol", margin=0.05)
+def pm_frame(P):
+    s, g, p = P("metal"), P("gunmetal"), P("polymer")
+    W = 0.024
+    side(g, [(0.004, -0.007), (-0.15, -0.007), (-0.15, -0.02), (-0.1, -0.026), (-0.05, -0.026), (-0.012, -0.022), (0.004, -0.018)], W, PM_FRAME, bevel=0.002)
+    ybar(s, -0.004, -0.158, 0.0, 0.0058, shade(PM_FRAME, 1.2), seg=14)                   # the fixed barrel
+    side(g, grip_profile(-0.026, -0.016, 12, 0.08, 0.038, grooves=0, swell=0.0012), 0.0265, PM_FRAME, bevel=0.004)
+    t = math.tan(R(12))
+    for sx in (-1, 1):                                                                       # the wrap-around grip panels
+        side(p, [(-0.03 + t * 0.006, -0.022), (-0.06 + t * 0.006, -0.022), (-0.06 + t * 0.074, -0.09), (-0.03 + t * 0.074, -0.09)], 0.002,
+             PM_GRIP, x=sx * 0.0139, bevel=0.0006)
+        for k in range(6):
+            p.box((sx * 0.0151, -0.045 + t * (0.03 + k * 0.009), -0.03 - k * 0.009), (0.0006, 0.022, 0.0016), shade(PM_GRIP, 0.6))
+        p.cyl((sx * 0.0141, -0.045 + t * 0.04, -0.055), (sx * 0.0152, -0.045 + t * 0.04, -0.055), 0.004, shade(PM_GRIP, 1.3), seg=10)  # star medallion
+    trigger_guard(g, -0.044, -0.092, -0.026, color=PM_FRAME, r=0.0028)
+    trigger(s, -0.06, -0.026, color=col("4A4E50"))
+    s.cyl((0.0125, -0.022, -0.03), (0.0138, -0.022, -0.03), 0.0025, STEEL, seg=10)          # the slide stop pin
+    s.box((0.0, -0.002, -0.098), (0.012, 0.01, 0.005), STEEL, bevel=0.0012)                 # the lanyard loop's base
+    P.slot("slide", (0, 0.0, 0.0))
+    P.slot("mag", (0, -0.03, -0.018), rot=(12, 0, 0))
+    P.anchor("grip", (0, -0.018, -0.055))
+    P.anchor("hand", (-0.012, -0.012, -0.064))
+    P.anchor("eye", (0, -0.006, PSL))
+    P.anchor("muzzle", (0, -0.16, 0.0))
+
+
+@gpart("PM_SLIDE", 2, 1, family="p9", cls="pistol")
+def pm_slide(P):
+    g, s = P("gunmetal"), P("metal")
+    W = 0.024
+    prof = [(0.002, -0.006), (-0.15, -0.006), (-0.158, -0.002), (-0.158, 0.01), (-0.152, 0.017), (-0.004, 0.019), (0.002, 0.012)]
+    side(g, prof, W, PM_SLIDE, bevel=0.0035)
+    for k in range(10):                                                                       # rear serrations
+        g.box((W / 2 + 0.0004, -0.012 - k * 0.0034, 0.006), (0.0008, 0.0014, 0.018), shade(PM_SLIDE, 0.45))
+    g.box((-W / 2 - 0.0004, -0.052, 0.01), (0.0008, 0.034, 0.012), shade(PM_SLIDE, 0.3))     # ejection port (right)
+    s.box((W / 2 + 0.002, -0.014, 0.008), (0.004, 0.014, 0.006), STEEL, bevel=0.0015)       # the safety lever, left rear
+    s.cyl((W / 2 + 0.003, -0.012, 0.008), (W / 2 + 0.004, -0.012, 0.008), 0.0042, STEEL, seg=12)
+    side(s, [(-0.004, 0.019), (-0.012, 0.019), (-0.012, PSL + 0.001), (-0.006, PSL + 0.001)], 0.014, BLACK, bevel=0.001)   # rear sight
+    s.box((0, -0.007, PSL + 0.0008), (0.003, 0.008, 0.0035), shade(BLACK, 0.3))
+    side(s, [(-0.146, 0.018), (-0.154, 0.016), (-0.154, PSL - 0.001), (-0.148, PSL - 0.001)], 0.003, BLACK, bevel=0.0006)   # front blade
+    P.anchor("eye", (0, -0.006, PSL))
+
+
+@gpart("PM_MAG", 1, 1, family="p9", cls="pistol", margin=0.12)
+def pm_mag(P):
+    m = P("metal")
+    box_mag(m, 0.086, 0.0165, 0.03, 0, col("2F3233"), plate=col("232526"), ribs=(), witness=0)
+    m.box((0.0, 0.008, -0.088), (0.0175, 0.004, 0.004), col("3A3C3E"), bevel=0.001)          # the finger rest
+    round_top(P("brass"), -0.002, 0.003, r=0.0045, l=0.024)
+
+
+preset("PM_PISTOL", "PM_PISTOL", {"slide": ("PM_SLIDE", {}), "mag": ("PM_MAG", {})})

@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The KS-74 and the Makar PM with their rounds (decision economy-1a, third slice; 2026-11-08, about 18:20 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | Seven new parts were built in Blender and exported in the AK and pistol batches (24 and 11 parts; uploads 104159336478565 and 76631608159948): the KS-74 receiver, the 74 brake, the 6L20 and 6L26 magazines, and the PM frame, slide and magazine. The server log read "1030 meshes loaded, 0 batches failed" (1016 before). The sprite sheet was packed again with 139 sprites and uploaded (image 98724766105795). Icon sheet 3 was packed again with 128 items (image 81143156404321). |
+| In a raid (Quay 7, Studio) | The KS-74 was put on the back and the PM in the holster. The KS-74 reloaded from a 6L20 in the rig and fired 3 shots (30 to 27). The PM reloaded and fired 2 shots (8 to 6). In first person the KS-74 shows its wooden furniture and receiver. In the inventory the R-17, the KS-74 (74 brake, plum magazine) and the PM pictures appeared about half a minute after the new sprite sheet. Before that the gun slots showed only names, as with the icon sheet earlier. |
+| Tests | 14 suites, 1,083 checks, all passed. RecoilTests checks the KS-74 at 70 / 178 (AK-74N 96 / 244, -27 %) and the PM at 380 / 265. LogicTests checks 8 mastering groups. |
+| Not checked | AI scavs firing the new guns, the trader screens' new offers by eye, the hideout's 5.45 BP and 9x18 crafts run end to end, a phone. |
+
 ## The hideout's barter goods (decision economy-1a, second slice; 2026-11-08, about 17:15 SGT)
 
 | Test | Result |

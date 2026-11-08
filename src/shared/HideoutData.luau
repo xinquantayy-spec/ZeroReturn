@@ -358,13 +358,13 @@ R("MED_PROPITAL", "medstation", 3, 6900, "STIM_REGEN", 4, { { "PAINKILLERS", 2 }
 R("MED_GRIZZLY", "medstation", 3, 4500, "MEDKIT_XL", 2, { { "MEDS_PILE", 4 }, { "TOURNIQUET", 2 }, { "SPLINT", 1 } }, nil, "Grizzly medical kit x2") -- meds x4, CAT x2, aluminium splint
 
 -- workbench (EFT's gunpowders "Kite", "Hawk", "Eagle": GUNPOWDER;
--- calibres by role: 5.45 / 5.56 -> 6.2x40, 7.62x39 and .366 -> 7.6x39, 9x18 / 9x19 / 9x21 -> 9x19, 7.62x54R -> 7.6x54R)
+-- calibres: 5.56 -> 6.2x40, 5.45 -> 5.4x39, 7.62x39 and .366 -> 7.6x39, 9x18 -> 9x18, 9x19 and 9x21 -> 9x19, 7.62x54R -> 7.6x54R)
 R("NADE_RK5", "workbench", 1, 18300, "GREN_RK5", 6, { { "TNT", 2 }, { "FUZE", 3 } }, nil, "RGD-5 hand grenade x6") -- TP-200 x2, fuze x3
 R("NADE_STUN", "workbench", 1, 4680, "GREN_STUN", 5, { { "FUZE", 5 }, { "GUNPOWDER", 1 } }, nil, "Zarya stun grenade x5") -- fuze x5, gunpowder "Kite"
 R("WB_BULBS", "workbench", 1, 3600, "LIGHTBULB", 4, { { "WIRES", 2 }, { "NAILS", 1 }, { "SPARE_PARTS", 1 } }, nil, "Light bulb x4") -- wires x2, nails, metal spare parts
 R("AMMO_PS", "workbench", 1, 4380, "A76_PS", 200, { { "GUNPOWDER", 1 } }, T("AWL"), "7.62x39mm FMJ x200") -- gunpowder "Eagle", awl
-R("AMMO_PST", "workbench", 1, 6180, "A9_PST", 140, { { "GUNPOWDER", 1 } }, nil, "9x18mm PMM PstM gzh x140") -- gunpowder "Kite"
-R("AMMO_RIP", "workbench", 1, 3300, "A9_RIP", 150, { { "A9_PST", 150 }, { "WIRES", 1 } }, nil, "9x18mm PM SP8 gzh x150") -- RG028 x150, wires
+R("AMMO_PST", "workbench", 1, 6180, "A918_PST", 140, { { "GUNPOWDER", 1 } }, nil, "9x18mm PMM PstM gzh x140") -- gunpowder "Kite" (Pst gzh for PstM)
+R("AMMO_RIP", "workbench", 1, 3300, "A918_PSV", 150, { { "A918_RG", 150 }, { "WIRES", 1 } }, nil, "9x18mm PM SP8 gzh x150") -- RG028 x150, wires (PSV for SP8)
 R("AMMO_BP2", "workbench", 1, 8460, "A76_BP", 60, { { "GUNPOWDER", 2 }, { "A76_PS", 100 } }, T("PLIERS"), ".366 TKM AP-M x60") -- gunpowder "Hawk" x2, 7.62x39 PS x100, pliers
 R("AMMO_BUCK", "workbench", 1, 5280, "A12_BUCK", 120, { { "NAILS", 1 }, { "GUNPOWDER", 1 } }, TOOL, "12/70 Piranha x120") -- nails, gunpowder "Hawk", multitool
 R("WB_DRILL", "workbench", 1, 9000, "HAND_DRILL", 1, { { "NUTS", 1 }, { "BOLTS", 1 }, { "SPARE_PARTS", 2 } }, nil, "Hand drill") -- screw nuts, bolts, metal spare parts x2
@@ -378,7 +378,7 @@ R("AMMO_AP", "workbench", 3, 8400, "A62_AP", 90, { { "A62_FMJ", 180 }, { "GUNPOW
 R("AMMO_BP", "workbench", 3, 9420, "A76_BP", 60, { { "A76_PS", 90 }, { "GUNPOWDER", 1 }, { "VOLT_DRINK", 1 } }, { { "PIPE_WRENCH", 1 }, { "POWER_DRILL", 1 } }, "7.62x39mm BP gzh x60") -- PP x90, gunpowder "Eagle", Hot Rod, pipe grip wrench and drill
 R("AMMO_9AP", "workbench", 3, 7260, "A9_AP", 150, { { "A9_PST", 150 }, { "GUNPOWDER", 2 } }, T("TOOLSET"), "9x19mm AP 6.3 x150") -- M882 x150, gunpowder "Kite" x2, toolset
 R("AMMO_SNB", "workbench", 3, 9480, "A76L_SNB", 30, { { "A76L_LPS", 50 }, { "THERMITE", 1 }, { "GUNPOWDER", 2 } }, T("FILE_SET"), "7.62x54mm R BT gzh x30") -- PS x50, thermite, gunpowder "Eagle" x2, files
-R("AMMO_62BP", "workbench", 3, 13020, "A62_AP", 60, { { "A62_FMJ", 180 }, { "GUNPOWDER", 1 } }, T("TOOLSET"), "5.45x39mm BP gs x60") -- PS x180, gunpowder "Eagle", toolset
+R("AMMO_62BP", "workbench", 3, 13020, "A54_BP", 60, { { "A54_PS", 180 }, { "GUNPOWDER", 1 } }, T("TOOLSET"), "5.45x39mm BP gs x60") -- PS x180, gunpowder "Eagle", toolset
 R("GUN_KIT", "workbench", 3, 1500, "WEAPON_KIT", 1, { { "GUN_LUBE", 1 }, { "WEAPON_PARTS", 3 }, { "SPARE_PARTS", 2 } }, T("TOOLSET"), "Weapon repair kit") -- gun lube, weapon parts x3, metal spare parts x2, toolset (EFT also takes a used kit to refill; ours makes a new one)
 
 -- lavatory (EFT's fabrics: FABRIC; vodka used to clean: BLEACH; shampoo: SOAP)

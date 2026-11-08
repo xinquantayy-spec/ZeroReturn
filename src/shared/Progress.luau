@@ -162,8 +162,12 @@ P.MASTERING = {
 	HARROW = { name = "Harrow-12", class = "SHOTGUN", level2 = 150, level3 = 200, weapons = { "HARROW" } },
 	TUNDRA = { name = "Tundra", class = "SNIPER RIFLE", level2 = 200, level3 = 250, weapons = { "TUNDRA" } },
 	P9 = { name = "P-9", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "P9" } },
+	-- economy-1a's third slice: Tarkov keeps the AK-74 family and the PM in groups of their own; their thresholds were not
+	-- found, so the KS-74 uses the KS-7's and the PM the P-9's (ours)
+	KS74 = { name = "KS-74", class = "ASSAULT RIFLE", level2 = 500, level3 = 600, weapons = { "KS74" } },
+	PM = { name = "PM", class = "PISTOL", level2 = 75, level3 = 100, weapons = { "PM" } },
 }
-P.MASTERY_ORDER = { "R17", "KST", "SPARROW", "HARROW", "TUNDRA", "P9" }
+P.MASTERY_ORDER = { "R17", "KST", "KS74", "SPARROW", "HARROW", "TUNDRA", "P9", "PM" }
 -- what a level gives (Tarkov): 2 another reload animation (magazine-fed guns here), 3 reloading while aiming down sights
 P.MASTERY_PERKS = { [2] = "ANOTHER RELOAD ANIMATION", [3] = "RELOAD WHILE AIMING DOWN SIGHTS" }
 -- [weapon id] = group id (a group may hold several weapons later, as Tarkov's do)

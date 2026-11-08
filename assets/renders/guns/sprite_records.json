@@ -76,6 +76,13 @@
   "oy": 9.74,
   "w": 61
  },
+ "BRAKE_74@long": {
+  "file": "BRAKE_74@long",
+  "h": 13,
+  "ox": 31.39,
+  "oy": 6.26,
+  "w": 34
+ },
  "BRAKE_76@long": {
   "file": "BRAKE_76@long",
   "h": 14,
@@ -264,6 +271,27 @@
   "ox": 17.68,
   "oy": 28.54,
   "w": 36
+ },
+ "KS74_MAG45@long": {
+  "file": "KS74_MAG45@long",
+  "h": 107,
+  "ox": 35.04,
+  "oy": 5.17,
+  "w": 49
+ },
+ "KS74_MAG@long": {
+  "file": "KS74_MAG@long",
+  "h": 83,
+  "ox": 24.66,
+  "oy": 5.17,
+  "w": 38
+ },
+ "KS74_RIFLE@long": {
+  "file": "KS74_RIFLE@long",
+  "h": 43,
+  "ox": 214.96,
+  "oy": 16.43,
+  "w": 219
  },
  "KSL_DRUM95@long": {
   "file": "KSL_DRUM95@long",
@@ -551,6 +579,27 @@
   "ox": 85.33,
   "oy": 17.46,
   "w": 89
+ },
+ "PM_MAG@pistol": {
+  "file": "PM_MAG@pistol",
+  "h": 49,
+  "ox": 10.06,
+  "oy": 5.36,
+  "w": 21
+ },
+ "PM_PISTOL@pistol": {
+  "file": "PM_PISTOL@pistol",
+  "h": 52,
+  "ox": 72.78,
+  "oy": 4.6,
+  "w": 79
+ },
+ "PM_SLIDE@pistol": {
+  "file": "PM_SLIDE@pistol",
+  "h": 19,
+  "ox": 72.78,
+  "oy": 13.89,
+  "w": 76
  },
  "R17_BRK@long": {
   "file": "R17_BRK@long",

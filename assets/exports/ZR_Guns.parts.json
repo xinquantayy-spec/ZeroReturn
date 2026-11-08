@@ -468,6 +468,44 @@
    "tris": 284,
    "w": 2
   },
+  "BRAKE_74": {
+   "anchors": {
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.25937
+    ]
+   },
+   "batch": "ZR_GunsAK",
+   "cls": "long",
+   "ext": [
+    -0.26094,
+    0.0,
+    -0.03688,
+    0.03781
+   ],
+   "family": "kst",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_BRAKE_74__gunmetal": {
+     "center": [
+      -0.0,
+      0.0005,
+      -0.1305
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0825,
+      0.0747,
+      0.2609
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 420,
+   "w": 1
+  },
   "BRAKE_76": {
    "anchors": {
     "muzzle": [
@@ -1694,6 +1732,262 @@
    "slots": {},
    "tris": 912,
    "w": 1
+  },
+  "KS74_MAG": {
+   "anchors": {},
+   "batch": "ZR_GunsAK",
+   "cls": "long",
+   "ext": [
+    -0.20121,
+    0.0999,
+    -0.6659,
+    0.02813
+   ],
+   "family": "kst",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_KS74_MAG__brass": {
+     "center": [
+      -0.0,
+      0.0125,
+      -0.0038
+     ],
+     "mat": "brass",
+     "size": [
+      0.0297,
+      0.0313,
+      0.0636
+     ],
+     "sub": null
+    },
+    "ZR_WP_KS74_MAG__polymer": {
+     "center": [
+      -0.0,
+      -0.3267,
+      -0.0507
+     ],
+     "mat": "polymer",
+     "size": [
+      0.0938,
+      0.6784,
+      0.3011
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 452,
+   "w": 1
+  },
+  "KS74_MAG45": {
+   "anchors": {},
+   "batch": "ZR_GunsAK",
+   "cls": "long",
+   "ext": [
+    -0.29333,
+    0.09984,
+    -0.87924,
+    0.02813
+   ],
+   "family": "kst",
+   "h": 3,
+   "pieces": {
+    "ZR_WP_KS74_MAG45__brass": {
+     "center": [
+      -0.0,
+      0.0125,
+      -0.0038
+     ],
+     "mat": "brass",
+     "size": [
+      0.0297,
+      0.0313,
+      0.0636
+     ],
+     "sub": null
+    },
+    "ZR_WP_KS74_MAG45__polymer": {
+     "center": [
+      -0.0,
+      -0.4334,
+      -0.0967
+     ],
+     "mat": "polymer",
+     "size": [
+      0.0938,
+      0.8917,
+      0.3932
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 496,
+   "w": 1
+  },
+  "KS74_RIFLE": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.11875,
+     -0.84375
+    ],
+    "hand": [
+     -0.0,
+     -0.0625,
+     -1.125
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -1.9125
+    ],
+    "port": [
+     0.05,
+     0.0125,
+     -0.375
+    ]
+   },
+   "batch": "ZR_GunsAK",
+   "cls": "long",
+   "ext": [
+    -1.89062,
+    0.0125,
+    -0.2102,
+    0.12812
+   ],
+   "family": "kst",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_KS74_RIFLE__gunmetal": {
+     "center": [
+      -0.0059,
+      -0.041,
+      -0.9391
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.1225,
+      0.3383,
+      1.9031
+     ],
+     "sub": null
+    },
+    "ZR_WP_KS74_RIFLE__metal": {
+     "center": [
+      0.0461,
+      -0.0347,
+      -0.9796
+     ],
+     "mat": "metal",
+     "size": [
+      0.1297,
+      0.3069,
+      1.7408
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "dustcover": {
+     "pos": [
+      -0.0,
+      0.0375,
+      0.0
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "grip": {
+     "pos": [
+      -0.0,
+      -0.13125,
+      -0.08125
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "handguard": {
+     "pos": [
+      -0.0,
+      0.0,
+      -0.81875
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.08125,
+      -0.55
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "mount": {
+     "pos": [
+      -0.06719,
+      -0.03125,
+      -0.30625
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "muzzle": {
+     "pos": [
+      -0.0,
+      0.0,
+      -1.89063
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "rearsight": {
+     "pos": [
+      -0.0,
+      0.04375,
+      -0.81875
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "stock": {
+     "pos": [
+      -0.0,
+      -0.0375,
+      0.0
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 1432,
+   "w": 5
   },
   "KSL_DRUM95": {
    "anchors": {},
@@ -3515,6 +3809,210 @@
    },
    "slots": {},
    "tris": 432,
+   "w": 2
+  },
+  "PM_MAG": {
+   "anchors": {},
+   "batch": "ZR_GunsPistol",
+   "cls": "pistol",
+   "ext": [
+    -0.05625,
+    0.05625,
+    -0.28906,
+    0.02344
+   ],
+   "family": "p9",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_PM_MAG__brass": {
+     "center": [
+      -0.0,
+      0.0094,
+      -0.0006
+     ],
+     "mat": "brass",
+     "size": [
+      0.0267,
+      0.0281,
+      0.0412
+     ],
+     "sub": null
+    },
+    "ZR_WP_PM_MAG__metal": {
+     "center": [
+      -0.0,
+      -0.1383,
+      0.0
+     ],
+     "mat": "metal",
+     "size": [
+      0.0703,
+      0.3016,
+      0.1125
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 408,
+   "w": 1
+  },
+  "PM_PISTOL": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.075,
+     -0.01875
+    ],
+    "grip": [
+     -0.0,
+     -0.17187,
+     -0.05625
+    ],
+    "hand": [
+     0.0375,
+     -0.2,
+     -0.0375
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.5
+    ]
+   },
+   "batch": "ZR_GunsPistol",
+   "cls": "pistol",
+   "ext": [
+    -0.49375,
+    0.02864,
+    -0.31406,
+    0.01813
+   ],
+   "family": "p9",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_PM_PISTOL__gunmetal": {
+     "center": [
+      -0.0,
+      -0.1637,
+      -0.2201
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0828,
+      0.2836,
+      0.4974
+     ],
+     "sub": null
+    },
+    "ZR_WP_PM_PISTOL__metal": {
+     "center": [
+      -0.0122,
+      -0.148,
+      -0.2422
+     ],
+     "mat": "metal",
+     "size": [
+      0.0619,
+      0.3322,
+      0.5031
+     ],
+     "sub": null
+    },
+    "ZR_WP_PM_PISTOL__polymer": {
+     "center": [
+      -0.0,
+      -0.175,
+      -0.1141
+     ],
+     "mat": "polymer",
+     "size": [
+      0.0963,
+      0.2125,
+      0.1381
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.05625,
+      -0.09375
+     ],
+     "rot": [
+      12,
+      0,
+      0
+     ]
+    },
+    "slide": {
+     "pos": [
+      -0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 664,
+   "w": 2
+  },
+  "PM_SLIDE": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.075,
+     -0.01875
+    ]
+   },
+   "batch": "ZR_GunsPistol",
+   "cls": "pistol",
+   "ext": [
+    -0.49375,
+    0.00625,
+    -0.01875,
+    0.08297
+   ],
+   "family": "p9",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_PM_SLIDE__gunmetal": {
+     "center": [
+      -0.0,
+      0.0202,
+      -0.2438
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.08,
+      0.078,
+      0.5
+     ],
+     "sub": null
+    },
+    "ZR_WP_PM_SLIDE__metal": {
+     "center": [
+      -0.0141,
+      0.0474,
+      -0.2453
+     ],
+     "mat": "metal",
+     "size": [
+      0.0719,
+      0.0711,
+      0.4719
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 400,
    "w": 2
   },
   "R17_BRK": {
@@ -6388,6 +6886,42 @@
     }
    }
   },
+  "KS74_RIFLE": {
+   "base": "KS74_RIFLE",
+   "tree": {
+    "id": "KS74_RIFLE",
+    "mods": {
+     "dustcover": {
+      "id": "KST_DC_STD",
+      "mods": {}
+     },
+     "grip": {
+      "id": "AK_PG_STD",
+      "mods": {}
+     },
+     "handguard": {
+      "id": "KST_HG_WOOD",
+      "mods": {}
+     },
+     "mag": {
+      "id": "KS74_MAG",
+      "mods": {}
+     },
+     "muzzle": {
+      "id": "BRAKE_74",
+      "mods": {}
+     },
+     "rearsight": {
+      "id": "KST_RS_TAN",
+      "mods": {}
+     },
+     "stock": {
+      "id": "KST_STK_WOOD",
+      "mods": {}
+     }
+    }
+   }
+  },
   "KSL_BOSS": {
    "base": "KSL_LMG",
    "tree": {
@@ -6650,6 +7184,22 @@
      },
      "tactical": {
       "id": "LIGHT_T",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "PM_PISTOL": {
+   "base": "PM_PISTOL",
+   "tree": {
+    "id": "PM_PISTOL",
+    "mods": {
+     "mag": {
+      "id": "PM_MAG",
+      "mods": {}
+     },
+     "slide": {
+      "id": "PM_SLIDE",
       "mods": {}
      }
     }

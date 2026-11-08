@@ -55,6 +55,9 @@ W.SLOTS = {
 	-- Kestrel KS-7 (AK-type)
 	KST_RIFLE = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
 		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t76" }, rearsight = { fit = "ak_rear" }, mount = { fit = "dovetail" } },
+	-- Kestrel KS-74 (economy-1a, third slice): the KS-7's slots and furniture, its own 5.4 muzzle thread
+	KS74_RIFLE = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
+		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t54" }, rearsight = { fit = "ak_rear" }, mount = { fit = "dovetail" } },
 	-- Kestrel KS-L (the KS-7's light machine gun, ai-5b): the KS-7's slots and parts
 	KSL_LMG = { grip = { fit = "ak_grip", req = true }, stock = { fit = "ak_stock" }, dustcover = { fit = "ak_dc", req = true },
 		handguard = { fit = "ak_hg", req = true }, muzzle = { fit = "t76" }, rearsight = { fit = "ak_rear" }, mount = { fit = "dovetail" } },
@@ -86,6 +89,8 @@ W.SLOTS = {
 	P9_PISTOL = { slide = { fit = "p9_slide", req = true }, barrel = { fit = "p9_barrel", req = true }, tactical = { fit = "pica", cats = { tactical = true } } },
 	P9_SLIDE_CUT = { optic = { fit = "p9_optic", cats = { sight = true } } },
 	P9_BRL_THR = { muzzle = { fit = "t9" } },
+	-- Makar PM (economy-1a, third slice): EFT's PM has a slide, a magazine and grip panels; ours are on the frame
+	PM_PISTOL = { slide = { fit = "pm_slide", req = true } },
 	-- mounts
 	MNT_RISER = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	MNT_RINGS = { scope = { fit = "ring30", cats = { sight = true } } },
@@ -161,6 +166,9 @@ part("KST_RS_TAN", "KS-7 tangent rear sight", "REAR", "ironrear", "ak_rear", { w
 part("KST_MNT_SIDE", "Holt SM-2 side mount", "SM-2", "mount", "dovetail", { w = 1, h = 1, mass = 0.2, value = 11000, ergo = -2, desc = "Quick-detach dovetail mount with a rail over the cover." })
 part("KST_FH_SLANT", "KS-7 slant brake", "SLANT", "muzzle", "t76", { w = 1, h = 1, mass = 0.03, value = 1400, recoil = -4, desc = "Angled muzzle: pushes the muzzle down and right." })
 part("BRAKE_76", "7.6 Muzzle Brake", "BRAKE", "muzzle", "t76", { w = 1, h = 1, mass = 0.2, value = 12000, recoil = -14, loud = 1.15, ergo = -2, desc = "Muzzle brake for 7.6x39. Less recoil, more noise." })
+-- the KS-74's brake: EFT's AK-74 5.45x39 muzzle brake-compensator (recoil -5 %, ergonomics -0.5, 0.1 kg, 694; tarkovforge.com
+-- and SPT's handbook)
+part("BRAKE_74", "KS-74 muzzle brake", "74 BRAKE", "muzzle", "t54", { w = 1, h = 1, mass = 0.1, value = 694, recoil = -5, loud = 1.1, desc = "Two-port brake for the 5.4x39 rifles. Tames the climb a little." })
 part("SUPP_76", "Kaltan SR-7 suppressor", "SR-7", "muzzle", "t76", { w = 2, h = 1, mass = 0.55, value = 39000, rarity = "uncommon", recoil = -5.5, ergo = -12, loud = 0.36, acc = -3, desc = "Sound suppressor for 7.6x39 rifles." })
 
 -- ── SMG-9 ────────────────────────────────────────────────────────────────────
@@ -205,6 +213,7 @@ part("P9_SLIDE_STD", "P-9 slide", "SLIDE", "receiver", "p9_slide", { w = 2, h = 
 part("P9_SLIDE_CUT", "P-9 optic-cut slide", "MOS SLIDE", "receiver", "p9_slide", { w = 2, h = 1, mass = 0.21, value = 11000, rarity = "uncommon", ergo = 5, range = 50, desc = "Slide with a cut for a compact reflex sight." })
 part("P9_BRL_STD", "P-9 barrel", "BRL", "barrel", "p9_barrel", { w = 2, h = 1, mass = 0.1, value = 3000, desc = "Standard barrel." })
 part("P9_BRL_THR", "P-9 threaded barrel", "THR BRL", "barrel", "p9_barrel", { w = 2, h = 1, mass = 0.11, value = 7000, desc = "Threaded for a suppressor or a compensator." })
+part("PM_SLIDE", "PM slide", "SLIDE", "receiver", "pm_slide", { w = 2, h = 1, mass = 0.2, value = 1500, ergo = 3, range = 25, desc = "Blued slide with a safety-decocker and fixed sights." }) -- value ours
 part("P9_COMP", "Kaltan PC-1 pistol compensator", "PC-1", "muzzle", "t9", { w = 1, h = 1, mass = 0.05, value = 6400, recoil = -10, loud = 1.05, desc = "Top-ported compensator." })
 
 -- ── generic rail parts ───────────────────────────────────────────────────────

@@ -47,6 +47,17 @@ local W = {
 		moveSpread = 2.2, modes = { "AUTO", "SEMI" }, loudness = 1.15, viewmodel = "KST", draw = 1.0,
 		slots = { rail = true, muzzle = "7.6", under = true, side = true },
 	},
+	-- the KS-74 (economy-1a, third slice) in the place of EFT's AK-74N: 650 rounds a minute, single and full auto, 650 m
+	-- effective, recoil 96 / 244 (tarkovforge.com's AK-74N page, read 2026-11-08) with its default build's stock and brake
+	-- (-22 % for the stock, the AKM wooden stock's figure as the AK-74's page was out of reach, and the brake's -5 %): 70 /
+	-- 178; ergonomics near the KS-7's (EFT's list gives the AK-74N 31, ours runs higher for every gun); 900 m/s with PS
+	KS74 = {
+		id = "KS74", item = "KS74_RIFLE", name = "KS-74", class = "rifle", rpm = 650, range = 650, velocity = 900,
+		ergo = 38, recoilV = 0.7, recoilH = 1.78, reload = 2.5, reloadEmpty = 3.1, hipSpread = 2.8, aimSpread = 0.055,
+		recoilAngle = 90, recoilDisp = 22, recoilConv = 5, recoilCam = 0.45, recoilStable = 4,
+		moveSpread = 1.8, modes = { "AUTO", "SEMI" }, loudness = 1.05, viewmodel = "KST", draw = 0.8,
+		slots = { rail = true, muzzle = "5.4", under = true, side = true },
+	},
 	-- MORTAR's grenade launcher (ai-5b) in the place of EFT's M32A1: 76 m/s, single shots from a six-round cylinder
 	-- loaded one round at a time; the round flies as a grenade (Grenades.launchFrom). Rate 30, ergonomics 30, recoil
 	-- 238 / 560 and an effective distance of 70 m (219 studs) as tarkovforge's M32A1 page gives them
@@ -84,6 +95,15 @@ local W = {
 		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
 		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.85, viewmodel = "P9", draw = 0.45,
 		slots = { muzzle = "9", side = true },
+	},
+	-- the Makar PM (economy-1a, third slice) in the place of EFT's PM: single shots, ergonomics 85, recoil 380 / 265 (no
+	-- part changes it), 50 m effective (tarkovforge.com's PM page); 302 m/s with P gzh
+	PM = {
+		id = "PM", item = "PM_PISTOL", name = "PM", class = "pistol", rpm = 400, range = 50, velocity = 302,
+		ergo = 85, recoilV = 3.8, recoilH = 2.65, reload = 1.6, reloadEmpty = 2.0, hipSpread = 1.9, aimSpread = 0.25,
+		recoilAngle = 90, recoilDisp = 12, recoilConv = 7, recoilCam = 0.55, recoilStable = 0,
+		moveSpread = 1.0, modes = { "SEMI" }, loudness = 0.8, viewmodel = "P9", draw = 0.45,
+		slots = { side = true },
 	},
 	KNIFE = {
 		id = "KNIFE", item = "FIELD_KNIFE", name = "Knife", class = "melee", rpm = 90, range = 6, velocity = 0,
@@ -142,7 +162,8 @@ W.MALF = {
 -- (0.0164727, TRP spec). It is the only figure verified for Tarkov 1.0, so every gun has it for now; the curve's own
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
-W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771 }
+W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
+	PM = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

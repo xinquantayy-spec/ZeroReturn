@@ -15,10 +15,12 @@ AK_BLUE = col("2B2F31")
 SL = 0.038                      # sight line above the bore
 BAKELITE = col("7A4630")
 MAG_STEEL = col("3A3B38")
+MAG_PLUM = col("5C3328")         # the 6L20's plum polymer, more saturated than the furniture's PLUM
 
 
-@gpart("KST_RIFLE", 5, 2, family="kst", margin=0.03)
-def kst_receiver(P):
+def ak_receiver(P, barrel_r=0.0108):
+    """the stamped AK receiver with its barrel, gas block and front sight (the KS-7 and, with a slimmer 5.4 barrel,
+    the KS-74)"""
     g, s = P("gunmetal"), P("metal")
     W = 0.031
     # stamped receiver
@@ -40,7 +42,7 @@ def kst_receiver(P):
     s.box((-W / 2 - 0.009, -0.168, 0.006), (0.016, 0.012, 0.008), STEEL, bevel=0.002)
     s.cyl((-W / 2 - 0.017, -0.168, 0.006), (-W / 2 - 0.02, -0.168, 0.006), 0.006, STEEL, seg=12)
     # gas block, barrel, front sight block, cleaning rod
-    ybar(g, -0.262, -0.605, 0.0, 0.0108, AK_BLUE, seg=18)
+    ybar(g, -0.262, -0.605, 0.0, barrel_r, AK_BLUE, seg=18)
     side(g, [(-0.442, -0.012), (-0.474, -0.012), (-0.474, 0.03), (-0.452, 0.034), (-0.442, 0.03)], 0.02, AK_STEEL, bevel=0.002)
     ybar(g, -0.452, -0.476, 0.022, 0.0082, AK_STEEL, seg=14)
     for k in range(3):
@@ -64,6 +66,18 @@ def kst_receiver(P):
     P.anchor("port", (-0.016, -0.12, 0.004))
     P.anchor("eye", (0, -0.27, SL))
     P.anchor("hand", (0, -0.36, -0.02))
+
+
+@gpart("KST_RIFLE", 5, 2, family="kst", margin=0.03)
+def kst_receiver(P):
+    ak_receiver(P)
+
+
+# the KS-74 (decision economy-1a, third slice): EFT's AK-74N in 5.4x39 (our 5.45x39): the same stamped action with a
+# slimmer barrel threaded for the 74 brake; it takes every KS-7 dust cover, handguard, grip, stock and mount
+@gpart("KS74_RIFLE", 5, 2, family="kst", margin=0.03)
+def ks74_receiver(P):
+    ak_receiver(P, barrel_r=0.0096)
 
 
 # ── dust covers ──────────────────────────────────────────────────────────────
@@ -267,6 +281,21 @@ def brake_76(P):
     P.anchor("muzzle", (0, -0.072, 0.0))
 
 
+@gpart("BRAKE_74", 1, 1, family="kst", margin=0.14, view="left_hi")
+def brake_74(P):
+    """the 74 brake: a long body with a flat front chamber, two big side ports and a slanted cut at its lower left"""
+    g = P("gunmetal")
+    ybar(g, 0.0, -0.014, 0.0, 0.0102, AK_STEEL, seg=18)
+    ybar(g, -0.014, -0.083, 0.0, 0.0118, AK_STEEL, seg=20)
+    for sx in (-1, 1):
+        g.box((sx * 0.0112, -0.06, 0.0), (0.004, 0.014, 0.012), shade(AK_STEEL, 0.12), bevel=0.0018)   # the side ports
+    for k in range(3):
+        g.cyl((0, -0.022 - k * 0.006, 0.0105), (0, -0.022 - k * 0.006, 0.0121), 0.0016, shade(AK_STEEL, 0.15), seg=8)   # top vents
+    side(g, [(-0.07, -0.0118), (-0.083, -0.0118), (-0.083, -0.004), (-0.074, -0.004)], 0.0242, shade(AK_STEEL, 0.25), bevel=0.001)
+    ybar(g, -0.082, -0.0835, 0.0, 0.0062, shade(AK_STEEL, 0.3), seg=16)
+    P.anchor("muzzle", (0, -0.083, 0.0))
+
+
 @gpart("SUPP_76", 2, 1, family="kst", margin=0.07)
 def supp_76(P):
     suppressor(P, 0.19, 0.0215, col("2E302C"))
@@ -294,6 +323,22 @@ def kst_mag40(P):
     round_top(P("brass"), -0.004, 0.004, r=0.0055, l=0.04, color=col("8C8F86"))
 
 
+# the KS-74's magazines: EFT's 6L20 30-round (plum polymer, a shallower curve than the 7.6 magazines) and a 45-round
+# support-weapon magazine
+@gpart("KS74_MAG", 1, 2, family="kst", margin=0.1)
+def ks74_mag(P):
+    p = P("polymer")
+    box_mag(p, 0.2, 0.024, 0.064, 17, MAG_PLUM, plate=shade(MAG_PLUM, 0.7), ribs=(0.32, 0.62), rib_color=shade(MAG_PLUM, 0.85))
+    round_top(P("brass"), -0.004, 0.004, r=0.005, l=0.037, color=col("8E7650"))
+
+
+@gpart("KS74_MAG45", 1, 3, family="kst", margin=0.1)
+def ks74_mag45(P):
+    p = P("polymer")
+    box_mag(p, 0.27, 0.024, 0.064, 26, POLY, plate=shade(POLY, 0.7), ribs=(0.25, 0.5, 0.75))
+    round_top(P("brass"), -0.004, 0.004, r=0.005, l=0.037, color=col("8E7650"))
+
+
 # ── builds ───────────────────────────────────────────────────────────────────
 def _kst(dc="KST_DC_STD", hg="KST_HG_WOOD", grip="AK_PG_STD", stock="KST_STK_WOOD", muzzle="KST_FH_SLANT", rs="KST_RS_TAN",
          mag="KST_MAG", mount=None, dc_kids=None, hg_kids=None):
@@ -314,3 +359,5 @@ preset("KST_TAC", "KST_RIFLE", _kst(dc="KST_DC_RAIL", dc_kids={"scope": ("HOLO_E
                                     stock="KST_STK_TUBE", muzzle="BRAKE_76", mag="KST_MAG_POLY"))
 preset("KST_QUIET", "KST_RIFLE", _kst(hg="KST_HG_POLY", hg_kids={"foregrip": ("GRIP_STOP", {})}, grip="AK_PG_RUB",
                                       stock="KST_STK_FOLD", muzzle="SUPP_76", mount=("KST_MNT_SIDE", {"scope": ("SCOPE_4X", {})})))
+# the KS-74's default build: EFT's AK-74N comes with the 74 brake, the wooden furniture and the plum 6L20 magazine
+preset("KS74_RIFLE", "KS74_RIFLE", _kst(muzzle="BRAKE_74", mag="KS74_MAG"))
