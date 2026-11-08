@@ -260,7 +260,9 @@ return function(B)
 			if ch.Name == "KitCollider" then
 				bump(c, 0, 0, 1)
 			else
-				bump(c, 0, 1, 0)
+				-- a merged piece counts as the pieces it joins (Maps/Kit.luau, art-5b phase 2), so switching the merge on
+				-- never changes what fits in the budget
+				bump(c, 0, ch:GetAttribute("KitJoins") or 1, 0)
 			end
 		end
 		tot.props += 1

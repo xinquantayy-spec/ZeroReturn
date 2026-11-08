@@ -1033,15 +1033,22 @@ return function(B)
 		local fm = kit.model("Fences", map)
 		local FENCE = hex("6D716C")
 		local FH = 7.8
-		local function piece(x0, z0, x1, z1)
+		local function piece(x0, z0, x1, z1, opts)
 			local a, b = V(x0, groundAt(x0, z0), z0), V(x1, groundAt(x1, z1), z1)
 			local len = (Vector3.new(b.X, 0, b.Z) - Vector3.new(a.X, 0, a.Z)).Magnitude
-			local n = math.max(1, math.floor(len / 28 + 0.5))
-			for q = 0, n do
-				local p = a:Lerp(b, q / n)
-				local post = kit.boxCF(fm, 0.3, FH + 0.6, 0.3, CFrame.new(p + Vector3.new(0, (FH + 0.6) / 2 - 0.6, 0)), FENCE, M.Metal)
-				post.CanTouch = false
-				count.fence += 1
+			-- art-5b phase 2: Kit5 fence modules (posts every 8 studs or less and a top rail) when the batch is loaded; these
+			-- posts every 28 studs otherwise
+			local fk = H.k5Fence(fm, a, b, FH, FENCE, M.Metal, opts)
+			if fk then
+				count.fence += #fk:GetChildren()
+			else
+				local n = math.max(1, math.floor(len / 28 + 0.5))
+				for q = 0, n do
+					local p = a:Lerp(b, q / n)
+					local post = kit.boxCF(fm, 0.3, FH + 0.6, 0.3, CFrame.new(p + Vector3.new(0, (FH + 0.6) / 2 - 0.6, 0)), FENCE, M.Metal)
+					post.CanTouch = false
+					count.fence += 1
+				end
 			end
 			local mid = (a + b) / 2
 			local look = CFrame.lookAt(mid, Vector3.new(b.X, mid.Y, b.Z))
@@ -1064,13 +1071,20 @@ return function(B)
 		end
 		for _, f in L.fences do
 			local pts = f[2]
-			for s = 1, #pts / 2 - 1 do
+			local last = #pts / 2 - 1
+			for s = 1, last do
 				local ax, az, bx, bz = pts[2 * s - 1], pts[2 * s], pts[2 * s + 1], pts[2 * s + 2]
 				for _, rn in landRuns(ax, az, bx, bz, onLand) do
 					local x0, z0 = ax + (bx - ax) * rn[1], az + (bz - az) * rn[1]
 					local x1, z1 = ax + (bx - ax) * rn[2], az + (bz - az) * rn[2]
 					if (x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0) > 9 then
-						pieces(x0, z0, x1, z1, 96, 24, 0.6, piece)
+						pieces(x0, z0, x1, z1, 96, 24, 0.6, function(px0, pz0, px1, pz1)
+							-- art-5b phase 2: where the fence line ends (it may meet a building there) the kit's end bay
+							piece(px0, pz0, px1, pz1, {
+								bayStart = s == 1 and rn[1] == 0 and px0 == x0 and pz0 == z0,
+								bayEnd = s == last and rn[2] == 1 and px1 == x1 and pz1 == z1,
+							})
+						end)
 					end
 				end
 			end

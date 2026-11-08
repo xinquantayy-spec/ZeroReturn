@@ -37,6 +37,14 @@ local K5 = {
 	MOVE_GROUP = "ZR_Move", -- movement-only colliders: bodies and ordinary rays meet them, bullets (ZR_Shot) and sight (ZR_Sight) pass
 	RAMP_T = 0.6, -- an open flight's ramp slab, thickness across the slope
 	FILL = 1.0, -- a solid flight filled deeper than this below its foot gets a plain block under its mesh (else the skirt hides it)
+	-- phase 2: chain-link fence modules (posts and top rail; the builder keeps its see-through panel, the collider)
+	FENCE_H0 = 7.8, -- every fence module's height (build_kit5.py's FENCE_H0); runs from 5.5 to 9.4 studs scale to it
+	FENCE_SY = { 0.7, 1.2 },
+	FENCE_DY = 1.2, -- a run whose ends differ more in height keeps its parts (a level module would leave posts in the air)
+	FENCE_SPLIT = 64, -- longer stretches are cut into equal modules
+	FENCE_BAY = 8, -- a run's end the builder marks (opts.bayStart / bayEnd: where a fence line ends, so where it may meet a
+	-- building) is its own module this long (0: off), so the tidy pass trims a fence that runs into a building by a bay, as it
+	-- trims today's posts, not the whole run
 	enabled = true, -- KitTests turns it off to build the same map with the fallbacks
 }
 local moveReady = nil
@@ -243,12 +251,86 @@ local function k5Rail(parent, a, b, color, mat, opts)
 	return m
 end
 
+-- the module lengths of a fence run: the marked ends as bays (K5.FENCE_BAY), the rest in equal stretches of FENCE_SPLIT or
+-- less
+local function fenceSegments(len, bayStart, bayEnd)
+	local function split(L, out)
+		local k = math.max(1, math.ceil(L / K5.FENCE_SPLIT - 1e-6))
+		for _ = 1, k do
+			table.insert(out, L / k)
+		end
+		return out
+	end
+	local bay = K5.FENCE_BAY
+	local ends = (bayStart and 1 or 0) + (bayEnd and 1 or 0)
+	if bay <= 0 or ends == 0 or len <= bay * (ends + 0.5) then
+		return split(len, {})
+	end
+	local out = {}
+	if bayStart then
+		table.insert(out, bay)
+	end
+	split(len - ends * bay, out)
+	if bayEnd then
+		table.insert(out, bay)
+	end
+	return out
+end
+local function railIndex(piece)
+	local best, bestErr = nil, math.huge
+	for i, l0 in K5.RAIL_LENGTHS do
+		local err = math.abs(piece / l0 - 1)
+		if err < bestErr then
+			best, bestErr = i, err
+		end
+	end
+	return best, bestErr
+end
+
+-- a chain-link fence run from a to b (points on the ground at its ends), h tall: Kit5 modules of posts and a top rail
+-- along it, level at the middle height like the builder's panel (which stays: it is the collider and carries the
+-- see-through texture). opts.bayStart / bayEnd: that end is where the fence line ends (see K5.FENCE_BAY). Returns the
+-- model, or nil (steep runs, odd heights, the batch not loaded): the builder builds its posts and rail.
+local function k5Fence(parent, a, b, h, color, mat, opts)
+	opts = opts or {}
+	local flat = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+	local len = flat.Magnitude
+	local sy = h / K5.FENCE_H0
+	local ok = math.abs(b.Y - a.Y) <= K5.FENCE_DY and len >= 0.45 and within(sy, K5.FENCE_SY)
+	local segs, idx = fenceSegments(len, opts.bayStart, opts.bayEnd), {}
+	for i, sl in segs do
+		local best, err = railIndex(sl)
+		idx[i] = best
+		ok = ok and best ~= nil and err <= K5.STRETCH and k5Ready("K5Fence" .. best)
+	end
+	note("fence", { len = len, pieces = #segs, kit = ok, dy = b.Y - a.Y, h = h })
+	if not ok then
+		return nil
+	end
+	local m = Instance.new("Model")
+	m.Name = "FenceKit"
+	m:SetAttribute("NoDetail", true)
+	m:SetAttribute("Kit5", "fence")
+	local dir = flat.Unit
+	local p0 = Vector3.new(a.X, (a.Y + b.Y) / 2, a.Z)
+	for i, sl in segs do
+		local name = "K5Fence" .. idx[i]
+		structure(Kit.place(m, name, CFrame.lookAt(p0, p0 + dir), {
+			scale = Vector3.new(1, sy, sl / K5.RAIL_LENGTHS[idx[i]]), collide = {}, name = "FenceModule", tint = { metal = color }, mats = { metal = { mat } },
+		}), name)
+		p0 += dir * sl
+	end
+	m.Parent = parent
+	return m
+end
+
 local function mapKit(kit, O)
 	local C, M, hex = kit.C, kit.M, kit.hex
 	local H = {}
 	H.K5 = K5
 	H.k5Flight = k5Flight
 	H.k5Rail = k5Rail
+	H.k5Fence = k5Fence
 	H.k5Ready = k5Ready
 
 	function H.V(x, y, z)
@@ -536,19 +618,23 @@ local function mapKit(kit, O)
 	-- a chain-link fence run (posts, top rail, a see-through panel that blocks walking but not shots); y0 and y1
 	-- are the ground heights at the two ends
 	local FENCE = hex("6D716C")
-	function H.fence(parent, x0, z0, x1, z1, y0, h, y1)
+	-- opts (optional): { bayStart, bayEnd } the ends where the fence line ends (k5Fence)
+	function H.fence(parent, x0, z0, x1, z1, y0, h, y1, opts)
 		y1 = y1 or y0
 		local a, b = V(x0, y0, z0), V(x1, y1, z1)
 		local len = (Vector3.new(b.X, 0, b.Z) - Vector3.new(a.X, 0, a.Z)).Magnitude
-		local n = math.max(1, math.floor(len / 6 + 0.5))
-		for k = 0, n do
-			local p = a:Lerp(b, k / n)
-			kit.boxCF(parent, 0.3, h + 0.6, 0.3, CFrame.new(p + Vector3.new(0, (h + 0.6) / 2 - 0.6, 0)), FENCE, M.Metal)
-		end
 		local mid = (a + b) / 2
 		local flatB = Vector3.new(b.X, mid.Y, b.Z)
 		local look = CFrame.lookAt(mid, flatB)
-		kit.boxCF(parent, 0.15, 0.15, len, look * CFrame.new(0, h, 0), FENCE, M.Metal)
+		-- art-5b phase 2: the posts and top rail are Kit5 fence modules when the batch is loaded, these parts otherwise
+		if not k5Fence(parent, a, b, h, FENCE, M.Metal, opts) then
+			local n = math.max(1, math.floor(len / 6 + 0.5))
+			for k = 0, n do
+				local p = a:Lerp(b, k / n)
+				kit.boxCF(parent, 0.3, h + 0.6, 0.3, CFrame.new(p + Vector3.new(0, (h + 0.6) / 2 - 0.6, 0)), FENCE, M.Metal)
+			end
+			kit.boxCF(parent, 0.15, 0.15, len, look * CFrame.new(0, h, 0), FENCE, M.Metal)
+		end
 		local mesh = kit.boxCF(parent, 0.08, h - 0.2, len, look * CFrame.new(0, h / 2, 0), FENCE, M.SmoothPlastic)
 		mesh.Transparency = 1
 		mesh.CanQuery = false

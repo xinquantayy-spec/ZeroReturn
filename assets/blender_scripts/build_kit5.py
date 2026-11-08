@@ -3,8 +3,9 @@ meshes with baked shading, placed by the map builders (src/server/Maps/MapKit.lu
 parts. Run inside Blender:
    g = {}; exec(open(r"<project>/assets/blender_scripts/build_kit5.py").read(), g)
    g["build"]()          # builds what is not built yet, about 45 s a call: call again until it says remaining 0
-   g["export"]()         # -> assets/exports/ZR_Kit5A.fbx (flights) and ZR_Kit5B.fbx (handrails, railings), each with its
-                         #    .blend, .meta.json and .props.json
+   g["export"]()         # -> assets/exports/ZR_Kit5A.fbx (flights), ZR_Kit5B.fbx (handrails, railings) and, since phase 2,
+                         #    ZR_Kit5C.fbx (fence modules), each with its .blend, .meta.json and .props.json; g["export"]("C")
+                         #    exports the fences alone (A and B are uploaded already)
    g["sheet"]("A")       # a contact sheet of a batch for review (build/ZR_Kit5A_sheet.png)
 then upload both FBX (zr_upload.upload_model(fbx, "ZR_Kit5A") / "ZR_Kit5B"), add the ids to src/shared/AssetIds.luau and
 regenerate the metadata: python3 tools/kit_meta.py ZR_MallKitA ZR_MallKitB ZR_MallKitC ZR_BunkerKitA ZR_BunkerKitB
@@ -22,6 +23,9 @@ Variants (every name below is a kit prop ZR_MK_<name>__<mat>, one material piece
   K5HandB<n>    the same for 0.65-stud risers (n 4..24)                                                      piece "metal"
   K5Rail<i>     a level railing module RAILS[i - 1] studs long: posts (one inset at each end, more every RAIL_SPACING),
                 a top rail, a mid rail and a toe board                                                       piece "metal"
+  K5Fence<i>    (batch ZR_Kit5C, phase 2) a chain-link fence module RAILS[i - 1] studs long, FENCE_H0 tall: capped round
+                posts sunk into the ground every FENCE_SPACING or less, a top rail, a tension wire; the see-through
+                chain-link panel stays the game's own part (it is the collider and carries the texture)     piece "metal"
 Flights are modelled at FLIGHT's riser, tread and width and the game scales each one to its flight (the step count is
 never changed by scaling); the game tints every piece with the builder's colour, so the baked colours are near white
 (ambient occlusion, dust, worn nosings). The lists come from the measured flights and rails of Border Yard, Meridian Mall,
@@ -40,7 +44,7 @@ except ImportError:
     IN_BLENDER = False
 
 SCENE = "ZR_Kit5"
-BATCHES = {"A": "ZR_Kit5A", "B": "ZR_Kit5B"}
+BATCHES = {"A": "ZR_Kit5A", "B": "ZR_Kit5B", "C": "ZR_Kit5C"}
 
 # every flight variant's riser, tread and width, and the solid flight's skirt (studs): MapKit.luau's K5 has the same numbers
 FLIGHT = {"h0": 0.5, "t0": 0.8, "w0": 4.0, "skirt": 0.25, "open_depth": 1.5}
@@ -49,6 +53,9 @@ HAND = {"A": 0.5, "B": 0.65}  # handrail families by riser
 HAND_TOP, HAND_MID, HAND_POST, HAND_SPACING = 3.2, 1.6, 0.14, 8.0  # above the nosing line; post size; most between posts
 RAILS = [0.56, 0.67, 0.8, 0.96, 1.16, 1.39, 1.67, 2, 2.4, 2.9, 3.5, 4.1, 5, 6, 7.2, 8.6, 10.3, 12.4, 14.9, 17.8, 21.4, 25.7, 30.8, 37, 44.4, 53.3, 64]  # MapKit's K5.RAIL_LENGTHS
 RAIL_TOP, RAIL_MID, RAIL_POST, RAIL_INSET, RAIL_SPACING, RAIL_KICK = 3.3, 1.7, 0.14, 0.1, 6.0, 0.3
+# chain-link fence modules (phase 2): the lengths are RAILS; a post every FENCE_SPACING or less, sunk FENCE_BURY into the
+# ground; the game scales the height from FENCE_H0 (MapKit's K5.FENCE_H0) and keeps its own see-through mesh panel
+FENCE_H0, FENCE_POST_R, FENCE_RAIL_R, FENCE_SPACING, FENCE_INSET, FENCE_BURY = 7.8, 0.12, 0.07, 8.0, 0.0, 0.6
 
 # the counts the maps build (tools/kit_census.py, 2026-11-09): C 7 8 10 11 12 16 17 18 21 22 23 24 25 26 28 30 32 34 50;
 # O 11 20 22; S 9 10 11 12 14 20 32; E 50; hands A 12 16 20 24 25 26 32, B 10 18 20; rails 0.5 to 189 studs
@@ -76,6 +83,8 @@ def prop_names():
             out["K5Hand%s%d" % (fam, n)] = ("B", (lambda P, fam=fam, n=n: handrail(P, fam, n)))
     for i, l0 in enumerate(RAILS, 1):
         out["K5Rail%d" % i] = ("B", (lambda P, l0=l0: railing(P, l0)))
+    for i, l0 in enumerate(RAILS, 1):
+        out["K5Fence%d" % i] = ("C", (lambda P, l0=l0: fence(P, l0)))
     return out
 
 
@@ -178,6 +187,24 @@ def railing(P, l0):
     return P
 
 
+def fence(P, l0):
+    """a chain-link fence module l0 long, without its mesh panel (the game keeps that as its own part: the collider that
+    carries the see-through chain-link texture): round posts with caps sunk into the ground, a top rail, a tension wire
+    near the ground. EFT's chain-link fences are cutout-textured meshes on posts (`metall_fence_2`, texture `chain_fence`).
+    The end posts stand on the module's ends (FENCE_INSET 0, unlike the railing's), so where two modules or two runs meet,
+    in a line or at a polyline corner, their posts coincide and read as one post"""
+    b = P("metal")
+    y0, y1 = -FENCE_INSET, -(l0 - FENCE_INSET)
+    m = max(1, math.ceil((y0 - y1) / FENCE_SPACING - 1e-9))
+    for j in range(m + 1):
+        y = y0 + (y1 - y0) * j / m
+        b.cyl((0.0, y, -FENCE_BURY), (0.0, y, FENCE_H0 + 0.05), FENCE_POST_R, STEEL, seg=8, smooth=True)
+        b.cyl((0.0, y, FENCE_H0 + 0.05), (0.0, y, FENCE_H0 + 0.13), 0.14, STEEL_D, seg=8)  # the cap
+    b.cyl((0.0, 0.0, FENCE_H0 - 0.12), (0.0, -l0, FENCE_H0 - 0.12), FENCE_RAIL_R, STEEL, seg=8, smooth=True)
+    b.cyl((0.0, 0.0, 0.18), (0.0, -l0, 0.18), 0.025, STEEL_D, seg=4)  # the tension wire
+    return P
+
+
 # ── metadata without Blender ──────────────────────────────────────────────────────────────────────────────────
 class _Bounds:
     """stands in for zr_lib.Builder: records the extent (Blender space) and a triangle estimate"""
@@ -261,6 +288,7 @@ def expected_meta():
 BAKE_FLIGHT = dict(ao_dist=2.0, ao_strength=0.7, ground=True, floor_dirt=0.1, dust=0.06, noise=0.05)
 BAKE_RAIL = dict(ao_dist=1.2, ao_strength=0.5, ground=True, floor_dirt=0.12, dust=0.0, noise=0.04)
 BAKE_HAND = dict(ao_dist=1.2, ao_strength=0.5, ground=False, floor_dirt=0.0, dust=0.0, noise=0.04)
+BAKE_FENCE = dict(ao_dist=1.0, ao_strength=0.4, ground=True, floor_dirt=0.2, dust=0.0, noise=0.05)
 
 
 def _blender():
@@ -302,7 +330,7 @@ def build(names=None, budget=45.0, rebuild=False):
     for nm in todo:
         clear("ZR_MK_%s__" % nm)
         P = table[nm][1](zr_kit.Prop(nm))
-        kw = BAKE_FLIGHT if nm.startswith("K5Stair") else (BAKE_HAND if nm.startswith("K5Hand") else BAKE_RAIL)
+        kw = BAKE_FLIGHT if nm.startswith("K5Stair") else (BAKE_HAND if nm.startswith("K5Hand") else (BAKE_FENCE if nm.startswith("K5Fence") else BAKE_RAIL))
         P.finish(scn.collection, **kw)
         done.append(nm)
         if time.time() - t0 > budget:
@@ -318,10 +346,10 @@ def objects(batch=None):
 
 
 def export(batch=None):
-    """exports batch "A", "B" or both (None); refuses while a variant is missing"""
+    """exports batch "A", "B", "C" or all three (None); refuses while a variant is missing"""
     _, zr_kit = _blender()
     out = {}
-    for bk in ([batch] if batch else ["A", "B"]):
+    for bk in ([batch] if batch else ["A", "B", "C"]):
         want = [n for n, (b, _) in prop_names().items() if b == bk]
         missing = [n for n in want if not _built(n)]
         if missing:
@@ -347,7 +375,7 @@ def turn(nm, out_png=None, **kw):
 
 if __name__ == "__main__" and not IN_BLENDER:
     m = expected_meta()
-    print(len(m), "props;", sum(len(v["pieces"]) for v in m.values()), "pieces;", "batch A", sum(1 for v in m.values() if v["batch"] == "ZR_Kit5A"),
-          "batch B", sum(1 for v in m.values() if v["batch"] == "ZR_Kit5B"))
-    for k in ("K5StairC12", "K5StairO11", "K5StairS20", "K5StairE50", "K5HandA20", "K5Rail9"):
+    print(len(m), "props;", sum(len(v["pieces"]) for v in m.values()), "pieces;", ", ".join(
+        "%s %d" % (b, sum(1 for v in m.values() if v["batch"] == b)) for b in BATCHES.values()))
+    for k in ("K5StairC12", "K5StairO11", "K5StairS20", "K5StairE50", "K5HandA20", "K5Rail9", "K5Fence20"):
         print(k, m[k])
