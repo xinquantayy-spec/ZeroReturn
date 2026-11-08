@@ -304,7 +304,7 @@ local function update(dt)
 		local ergoK = 1.3 - math.clamp(W.ergo or 50, 0, 100) * 0.006
 		local drain = (Config.ADS_DRAIN + mass * 0.25) * ergoK + (Movement.breath and Config.BREATH_DRAIN or 0)
 		if W.mounted then
-			drain *= W.MOUNT.stamina -- a mounted gun rests on its support (gameplay-5b)
+			drain *= W.mountCut("stamina") -- a mounted gun rests on its support (gameplay-5b; less still on a bipod)
 		end
 		if Movement.stance == "p" then
 			drain *= 0.35 -- rested on the ground

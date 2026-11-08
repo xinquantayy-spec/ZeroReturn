@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Bipods: the KS-L mounts lying down (gameplay-5b part 3; 2026-11-08, about 23:40 SGT)
+
+| Test | Result |
+|---|---|
+| Mounting (Quay 7 at night, then a new raid, Studio) | With the KS-L aimed: standing on open ground nothing mounts (mountable nil); lying down it reads mountable bipod, and V mounts it (mounted bipod); the word right of the stamina bars read BIPOD (screen capture). |
+| Recoil | Single shots lying down, the camera's peak climb per shot: with the first figure (our 0.45) 0.18 degrees mounted against 0.44 unmounted (4 shots each, ratio 0.42); after switching to EFT's -80 % for a machine-gun bipod, 0.08 against 0.44 (4 shots each, ratio 0.19; every shot checked mounted before and after). One earlier mounted shot at 0.46 came from a mount that had not taken before the shot (not recorded that time). |
+| Tests | 16 suites, 1,192 checks, all passed; RecoilTests checks that every bipod carries EFT's -65 to -80 % and the KS-L's is -80. |
+| Not checked | A gamepad or touch player's hold-still mount lying down; bursts in full auto mounted; a phone. |
+
 ## Relay 7: a place for every hideout module (2026-11-08, about 22:55 SGT)
 
 | Test | Result |

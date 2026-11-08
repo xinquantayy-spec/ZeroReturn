@@ -631,9 +631,13 @@ local function slowUpdate()
 	local mk = nil
 	if inRaid and W.hasWeapon and not (St and St.mounted) then
 		if W.mounted then
-			mk = "MOUNTED"
-		elseif W.mountable and W.mountable() ~= nil then -- ten times a second (slowUpdate)
-			mk = (ctx.Input.device() == "KBM" and ctx.Input.hints()) and ("MOUNT  ·  " .. ctx.Input.label("Knife")) or "MOUNT"
+			mk = W.mounted.kind == "bipod" and "BIPOD" or "MOUNTED"
+		else
+			local can = W.mountable and W.mountable() -- ten times a second (slowUpdate)
+			if can ~= nil then
+				local word = can == "bipod" and "BIPOD" or "MOUNT"
+				mk = (ctx.Input.device() == "KBM" and ctx.Input.hints()) and (word .. "  ·  " .. ctx.Input.label("Knife")) or word
+			end
 		end
 	end
 	O.mount:show(mk ~= nil)

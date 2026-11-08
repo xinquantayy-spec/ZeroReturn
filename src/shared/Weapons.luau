@@ -46,6 +46,7 @@ local W = {
 		recoilAngle = 90, recoilDisp = 22, recoilConv = 4, recoilCam = 0.45, recoilStable = 6,
 		moveSpread = 2.2, modes = { "AUTO", "SEMI" }, loudness = 1.15, viewmodel = "KST", draw = 1.0,
 		slots = { rail = true, muzzle = "7.6", under = true, side = true },
+		bipod = -80, -- its folded legs, EFT's "Recoil % when mounted" for a machine-gun bipod (PK, RPD): mounts lying down and on ledges
 	},
 	-- the KS-74 (economy-1a, third slice) in the place of EFT's AK-74N: 650 rounds a minute, single and full auto, 650 m
 	-- effective, recoil 96 / 244 (tarkovforge.com's AK-74N page, read 2026-11-08) with its default build's stock and brake

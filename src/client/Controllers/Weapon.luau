@@ -897,7 +897,7 @@ local function fireOnce()
 	local vmods = ctx.State.vitals and ctx.State.vitals.mods
 	-- the round's recoil modifier (EFT: M995 +8 %, Magnum buckshot +115 %, US gzh -30 %; economy-1a)
 	local ammoRec = 1 + ((ammo and ammo.recoil) or 0)
-	local prof = Recoil.profile(def, o.ms.recoil * (Weapon.mounted and Weapon.MOUNT.recoil or 1) * ammoRec, Weapon.ergo, econ and econ.skills, recProf, vmods and vmods.sk)
+	local prof = Recoil.profile(def, o.ms.recoil * Weapon.mountCut("recoil") * ammoRec, Weapon.ergo, econ and econ.skills, recProf, vmods and vmods.sk)
 	local pv, ph, pb = Recoil.pose(M and M.stance, M and M.depth)
 	local jp, jy, jb = Recoil.kick(prof, burstN, pv, ph, pb, math.random(), math.random(), math.random())
 	ctx.Camera.recoilShot(prof, jp, jy, prof.thump * pb)
@@ -1227,8 +1227,27 @@ end
 -- while aiming mounts on a ledge under the handguard or a wall edge beside it (V not aiming is still the knife); a
 -- gamepad or touch player mounts by holding still while aiming at such a spot. Moving, turning past the limits,
 -- lowering the sights, a stance change or V again takes it off. The cuts are ours (EFT's figures are not published);
--- no bipods yet (they need their parts), and no mounting prone (EFT allows that only on a bipod).
-Weapon.MOUNT = { recoil = 0.65, sway = 0.25, stamina = 0.2, yaw = math.rad(30), pitch = math.rad(15), move = 0.6, still = 0.4, probes = { 1.1, 1.6, 2.1 } }
+-- Bipods (EFT 0.15: a deployed bipod mounts the gun lying down too, and cuts the recoil further): a gun with one
+-- (Weapons' `bipod`, EFT's "Recoil % when mounted": -80 for its machine-gun bipods, PK, RPD, M60 and G36; -75 Harris,
+-- -70 SV-98, -65 Atlas; the wiki's Weapon mods table, read 2026-11-08) mounts prone on the ground ahead and, standing
+-- or crouched, on a ledge with its legs out; the recoil is cut by the bipod's own figure, MOUNT.bipod's sway and
+-- stamina cuts are ours. Rail-mounted bipod parts are still to come.
+Weapon.MOUNT = { recoil = 0.65, sway = 0.25, stamina = 0.2, yaw = math.rad(30), pitch = math.rad(15), move = 0.6, still = 0.4, probes = { 1.1, 1.6, 2.1 },
+	bipod = { sway = 0.12, stamina = 0.1 } }
+-- the cut a mounted gun gets now (1 when it is not mounted): "recoil", "sway" or "stamina"
+function Weapon.mountCut(key)
+	local m = Weapon.mounted
+	if not m then
+		return 1
+	end
+	if m.kind == "bipod" then
+		if key == "recoil" then
+			return 1 + Weapon.bipodPct() / 100
+		end
+		return Weapon.MOUNT.bipod[key]
+	end
+	return Weapon.MOUNT[key]
+end
 Weapon.mounted = nil
 local mountParams = RaycastParams.new()
 mountParams.FilterType = Enum.RaycastFilterType.Include
@@ -1260,13 +1279,47 @@ local function mountSpot()
 end
 Weapon.mountSpot = mountSpot
 
--- what the gun would mount on now (nil: no support, or not while lying, sprinting or not aiming); the HUD shows it
+local function hasBipod()
+	return vm ~= nil and vm.def ~= nil and type(vm.def.bipod) == "number"
+end
+-- the bipod's "Recoil % when mounted" (EFT's figure, e.g. -80); 0 without one
+function Weapon.bipodPct()
+	return hasBipod() and vm.def.bipod or 0
+end
+Weapon.hasBipod = hasBipod
+-- lying down with a bipod: the ground just ahead and below the handguard takes its legs
+local function groundAhead()
+	local cam = workspace.CurrentCamera
+	local world = workspace:FindFirstChild("ZR_World")
+	if not (cam and world) then
+		return false
+	end
+	mountParams.FilterDescendantsInstances = { world, workspace.Terrain }
+	local cf = cam.CFrame
+	local flat = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+	if flat.Magnitude < 0.2 then
+		return false
+	end
+	local hand = cf.Position + flat.Unit * 1.6
+	local down = workspace:Raycast(hand, Vector3.new(0, -1.6, 0), mountParams)
+	return down ~= nil and down.Normal.Y > 0.7
+end
+
+-- what the gun would mount on now (nil: no support, sprinting or not aiming; lying down only on a bipod); the HUD
+-- shows it
 function Weapon.mountable()
 	local M = ctx.Movement
-	if not Weapon.aiming or Weapon.melee or not vm or (M and (M.stance == "p" or M.sprinting)) then
+	if not Weapon.aiming or Weapon.melee or not vm or (M and M.sprinting) then
 		return nil
 	end
-	return mountSpot()
+	if M and M.stance == "p" then
+		return (hasBipod() and groundAhead()) and "bipod" or nil
+	end
+	local spot = mountSpot()
+	if spot == "ledge" and hasBipod() then
+		return "bipod" -- the legs out on the ledge
+	end
+	return spot
 end
 
 function Weapon.setMount(on)

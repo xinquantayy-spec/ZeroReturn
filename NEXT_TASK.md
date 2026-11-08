@@ -36,7 +36,8 @@
   VPO-209, which needs magazines that take two calibres; more 9x19 guns, more parts, the other barter goods, keys; the items that bring in the most left-out crafts: printer paper, a cook book, a Geiger counter, a textbook, SJ1,
   a magnet, a sledgehammer, 7.62x54R FMJ, 7.62x39 FMJ); art-1a / 4b / 5b; bays and furniture in Relay 7 for the six
   hideout modules without one (done 22:55 SGT: stations and stencils; furniture by level waits on the owner's prop budget,
-  KNOWN_ISSUES 84); bipods; ai-4a voices.
+  KNOWN_ISSUES 84); bipods (done 23:40 SGT: the KS-L's, EFT's -80 %; rail bipod parts come with the parts slices); ai-4a
+  voices.
 - Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
   seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator
   check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft side-by-side in Edit mode, never a runtime

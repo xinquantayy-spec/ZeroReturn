@@ -306,6 +306,18 @@ function T.run(ctx)
 			and near(y1, -math.tan(math.rad(1)) / math.tan(math.rad(35)) * 500, 1e-6))
 	end)
 
+	-- ── bipods: EFT's "Recoil % when mounted" (the wiki's Weapon mods table: -65 to -80) ───────────────────────────
+	guard("bipods", function()
+		local ok, n = true, 0
+		for id, def in Weapons do
+			if type(def) == "table" and def.bipod ~= nil then
+				n += 1
+				ok = ok and type(def.bipod) == "number" and def.bipod >= -80 and def.bipod <= -65
+			end
+		end
+		check("every bipod carries EFT's mounted recoil cut, -65 to -80 % (the KS-L's -80, a machine-gun bipod)", ok and n >= 1 and Weapons.KSL.bipod == -80)
+	end)
+
 	local summary = string.format("RecoilTests: %d passed, %d failed", passed, failed)
 	if #notes > 0 then
 		summary ..= " :: " .. table.concat(notes, "; ")

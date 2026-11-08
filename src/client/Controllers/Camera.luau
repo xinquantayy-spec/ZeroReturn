@@ -256,7 +256,7 @@ local function update(dt)
 	local held = M and M.breath
 	local fatigue = M and M.armFatigue or 0
 	local mounted = ctx.Weapon and ctx.Weapon.mounted ~= nil -- a mounted gun sways much less (gameplay-5b)
-	local breathe = (aiming and (held and 0.12 or 0.5 + fatigue * 1.6) or 1) * motion * (mounted and ctx.Weapon.MOUNT.sway or 1)
+	local breathe = (aiming and (held and 0.12 or 0.5 + fatigue * 1.6) or 1) * motion * (mounted and ctx.Weapon.mountCut("sway") or 1)
 	local breathP = math.sin(t * 1.65) * 0.0026 * breathe
 	local breathY = math.sin(t * 0.83 + 1.3) * 0.0019 * breathe
 	local tr = ((Camera.tremor or 0) + (aiming and fatigue * 0.7 or 0)) * (aiming and 1 or 0.35) * (held and 0.3 or 1)

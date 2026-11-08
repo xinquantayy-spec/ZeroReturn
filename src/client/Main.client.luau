@@ -210,7 +210,7 @@ if RunService:IsStudio() then
 			elseif a == "off" then
 				W.setMount(false)
 			end
-			return tostring(W.mountSpot()) .. " | mounted " .. tostring(W.mounted and W.mounted.kind) .. " | aiming " .. tostring(W.aiming)
+			return tostring(W.mountSpot()) .. " | mountable " .. tostring(W.mountable()) .. " | mounted " .. tostring(W.mounted and W.mounted.kind) .. " | aiming " .. tostring(W.aiming)
 		elseif cmd == "inspectClose" then
 			ctx.Inspect.closeAll()
 			return "ok"
