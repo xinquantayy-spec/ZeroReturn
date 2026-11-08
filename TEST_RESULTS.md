@@ -8,13 +8,13 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## Sound through walls on Border Yard (decision gameplay-3a; 2026-11-08, about 13:20 SGT)
+## Sound through walls on Border Yard (decision gameplay-3a; 2026-11-08, about 12:40 SGT)
 
 | Test | Result |
 |---|---|
 | Automated suites | All 12 pass, 910 checks (no new checks: the audio runs on the client). |
 | Roblox's simulation, a test rig 900 studs up | A rain loop 30 studs from a listener with an AudioAnalyzer. A 40 x 40, 2-stud concrete wall between them took 24.5 dB off. With that wall's AudioCanCollide off, the level matched the open air again. A 0.5-stud wooden wall and a 6 x 6 concrete wall each took 0.1 dB off (thin wood; sound round a small wall). A closed concrete room took 17 dB off, and the same room with a doorway 1.1 dB. |
-| Border Yard, in raid | WorldAudio switched on: AcousticSimulationEnabled, one listener on the camera, one output. Of 8,148 streamed map parts, 2,223 without collision stopped blocking sound. Five Fx events fired at the player played through AudioEmitters (60 emitters in 8 s with the scavs' steps, at most 7 at once). |
+| Border Yard, in raid | WorldAudio switched on: AcousticSimulationEnabled, one listener on the camera, one output. Of 8,148 streamed map parts, 2,223 without collision stopped blocking sound. Five Fx events fired at the player played through AudioEmitters; 60 emitters appeared in those 8 s (the five and other world sounds), at most 7 at once. |
 | Our walls at Roblox's densities | From the watchhouse's watch room, a source 8.9 studs outside, through the plaster wall: -2.8 dB against the free field (every map part made transparent). With the acoustic density x2: -16.9 dB, x3: -17.1 dB, x4.5: -21.8 dB. We use x3, capped at 6. |
 | With x3, after a restart | Through the wall, 9.7 studs: -17.6 dB. Through the floor, 8 studs below: -13.8 dB. In the same room, 3 studs: +0.7 dB. No errors in the output. |
 | Not checked | Hearing it (levels by ear), the fallback wall count (POTATO and the other maps) live, phones, frame cost with many emitters. |
