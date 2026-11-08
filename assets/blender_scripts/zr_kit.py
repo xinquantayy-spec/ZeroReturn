@@ -400,16 +400,20 @@ def piece_area(o):
     return sum(p.area for p in o.data.polygons)
 
 
-def kit_export_merged(objs, batch_name, scene=None, absorb=MERGE_ABSORB):
+def kit_export_merged(objs, batch_name, scene=None, absorb=MERGE_ABSORB, expect=None):
     """Export <batch>M: the batch's props with their opaque pieces joined by merge_plan, one ZR_MK_<Prop>__<mat>_M mesh
     per prop (FBX + .blend + .meta.json, as export_batch), and <batch>M.props.json: per prop the material, the pieces
     joined, every piece's area and the look cost (the share of the prop's surface that renders differently). Props with
     fewer than two pieces to join, and MERGE_SKIP, are left out: they keep their pieces. objs: a built batch (its build
-    script's objects()); the joined meshes are made in their own scene and removed after the export."""
+    script's objects()); expect: the batch's prop names (its PROPS), so a half-built batch is refused rather than
+    exported without some props; the joined meshes are made in their own scene and removed after the export."""
     groups = {}
     for o in objs:
         prop, mat = o.name[len("ZR_MK_"):].split("__", 1)
         groups.setdefault(prop, {})[mat] = o
+    missing = [n for n in (expect or ()) if n not in groups]
+    if missing:
+        raise RuntimeError("%d props of %s are not built (first: %s): build them, then export again" % (len(missing), batch_name, missing[0]))
     scn = bpy.data.scenes.get("ZR_KitMerged") or bpy.data.scenes.new("ZR_KitMerged")
     for o in list(scn.collection.objects):
         bpy.data.objects.remove(o)

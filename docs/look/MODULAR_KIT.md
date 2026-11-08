@@ -270,12 +270,15 @@ fridges (50 to 57 %). Under absorb 0.1 the worst is the van (13 %: its plastic, 
    `g["sheet"]("C")` to look and `g["export"]("C")` -> `assets/exports/ZR_Kit5C.fbx` (it refuses while a fence variant is
    missing); upload it, add `ZR_Kit5C` to `AssetIds.luau`, run `kit_meta.py` with ZR_Kit5C added to the list. Studio: KitTests (K01 sizes, K02 fence, K05 fence runs); Border's and Meridian's fence
    lines at corners, on slopes and where they meet buildings; walking into a fence (the panel still stops you).
-5. Merged pieces (phase 2): in Blender, for each of the six kit scripts:
-   `g = {}; exec(open(r"<project>/assets/blender_scripts/build_mall_kit_a.py").read(), g)`, `g["build"]()` until it no
-   longer reports `_stopped_after`, then `import zr_kit; zr_kit.kit_export_merged(g["objects"](), "ZR_MallKitA",
-   g["scene"]())` (add `absorb=0.1` for the cheaper rule). Upload the six `ZR_*KitAM..CM.fbx`, add their keys to
-   `AssetIds.luau`, run `kit_meta.py` with the usual list (it finds the merged exports itself). Studio: KitTests K06; the
-   A/B of section 7 on Meridian (gondolas, wall shelves, fridges, ceiling holes), Border, the Smelter and Relay 7.
+5. Merged pieces (phase 2): in Blender, for each of the six kit scripts (build_mall_kit_a/b/c.py,
+   build_bunker_kit_a/b/c.py): `g = {}; exec(open(r"<project>/assets/blender_scripts/build_mall_kit_a.py").read(), g)`,
+   `names = list(g["PROPS"])`, `g["build"](names)`; these builds start again from the first prop on every call, so when
+   one reports `_stopped_after: X`, continue with `g["build"](names[names.index(X) + 1:])` until none does. Then
+   `import zr_kit; zr_kit.kit_export_merged(g["objects"](), "ZR_MallKitA", g["scene"](), expect=names)` (it refuses a
+   half-built batch; add `absorb=0.1` for the cheaper rule; it prints the batch's look cost). Upload the six
+   `ZR_*KitAM..CM.fbx`, add their keys to `AssetIds.luau`, run `kit_meta.py` with the usual list (it finds the merged
+   exports itself). Studio: KitTests K06; the A/B of section 7 on Meridian (gondolas, wall shelves, fridges, ceiling
+   holes), Border, the Smelter and Relay 7.
 6. K07 (a note in the KitTests line): whether the WallBreach and DoorFrame meshes, remade with each `CollisionFidelity`,
    keep their openings open; this decides whether wall panels (phase 3) could collide by their own mesh.
 
