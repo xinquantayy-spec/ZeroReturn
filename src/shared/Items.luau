@@ -54,6 +54,12 @@ add("TUNDRA_BOLT", { name = "Tundra Bolt Rifle", short = "TUNDRA", kind = "weapo
 -- (SPT's handbook.json: AK-74N 23,147, PM 4,097); weights EFT's (3.1 and 0.73 kg)
 add("KS74_RIFLE", { name = "Kestrel KS-74", short = "KS-74", kind = "weapon", w = 5, h = 2, mass = 3.1, value = 23147, caliber = "5.4", weapon = "KS74", family = "KS74", rarity = "uncommon", desc = "The KS-7 action in 5.4x39: a slimmer barrel, a long two-port brake and a flatter shooting rifle. Takes the KS-7's furniture, not its magazines.", color = c("#4A4038") })
 add("PM_PISTOL", { name = "Makar PM", short = "PM", kind = "pistol", w = 2, h = 1, mass = 0.73, value = 4097, caliber = "9.18", weapon = "PM", family = "PM", desc = "Small 9x18 blowback pistol with a fixed barrel. Eight rounds, a stiff trigger, everywhere in the region.", color = c("#3E4244") })
+-- economy-1a, fourth slice (2026-11-08): EFT's self-loaders. The Siskin SK-45 copies the TOZ Simonov SKS (7.62x39 = our
+-- 7.6x39): a fixed 10-round magazine loaded a round at a time. The Merlin MR-10 copies the SVD / SVDS (7.62x54R = our
+-- 7.6x54R): a 10-round detachable magazine, the side dovetail for a scope mount, the Tundra's muzzle devices. Values are
+-- EFT's handbook prices (SKS 19,331, SVDS 42,800); weights EFT's (3.9 and 4.3 kg)
+add("SKS_RIFLE", { name = "Siskin SK-45", short = "SK-45", kind = "weapon", w = 6, h = 1, mass = 3.9, value = 19331, caliber = "7.6", weapon = "SKS", capacity = 10, desc = "Old self-loading carbine in 7.6x39 with a wooden stock and a folding bayonet. Ten rounds, loaded one at a time.", color = c("#6A4A2E") })
+add("SVD_RIFLE", { name = "Merlin MR-10", short = "MR-10", kind = "weapon", w = 6, h = 2, mass = 4.3, value = 42800, caliber = "7.6L", weapon = "SVD", family = "SVD", rarity = "rare", desc = "Self-loading marksman rifle in 7.6x54R with a skeleton stock. Takes a scope on the side dovetail and the Tundra's muzzle devices.", color = c("#4E3A2A") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -77,6 +83,7 @@ add("P9_MAG33", { name = "P-9 33-rd Extended Magazine", short = "MAG 33", kind =
 -- 8-round magazine (940); handbook prices
 add("KS74_MAG", { name = "KS-74 30-rd Magazine", short = "MAG 30", kind = "mag", w = 1, h = 2, mass = 0.215, value = 2031, capacity = 30, caliber = "5.4", family = "KS74", desc = "Plum polymer 30-round 5.4x39 magazine. The KS-7's will not fit.", color = c("#4A3530") })
 add("KS74_MAG45", { name = "KS-74 45-rd Magazine", short = "MAG 45", kind = "mag", w = 1, h = 3, mass = 0.33, value = 3765, capacity = 45, caliber = "5.4", family = "KS74", rarity = "uncommon", desc = "Long 45-round magazine from the support-weapon variant.", color = c("#313537") })
+add("SVD_MAG", { name = "MR-10 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 1, mass = 0.22, value = 3750, capacity = 10, caliber = "7.6L", family = "SVD", desc = "Steel 10-round 7.6x54R magazine for the MR-10.", color = c("#2E3133") }) -- EFT's SVD 10-round magazine (3,750)
 add("PM_MAG", { name = "PM 8-rd Magazine", short = "MAG 8", kind = "mag", w = 1, h = 1, mass = 0.093, value = 940, capacity = 8, caliber = "9.18", family = "PM", desc = "Single-stack 8-round magazine for the Makar PM.", color = c("#2F3233") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────

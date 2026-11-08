@@ -2500,6 +2500,13 @@
    "x": 596,
    "y": 852
   },
+  "SKS_RIFLE": {
+   "h": 64,
+   "sheet": 5,
+   "w": 384,
+   "x": 388,
+   "y": 2
+  },
   "SKULL_RING": {
    "h": 64,
    "sheet": 3,
@@ -2710,6 +2717,27 @@
    "x": 522,
    "y": 456
   },
+  "SVD_FH": {
+   "h": 64,
+   "sheet": 5,
+   "w": 64,
+   "x": 774,
+   "y": 2
+  },
+  "SVD_MAG": {
+   "h": 64,
+   "sheet": 5,
+   "w": 64,
+   "x": 840,
+   "y": 2
+  },
+  "SVD_RIFLE": {
+   "h": 128,
+   "sheet": 5,
+   "w": 384,
+   "x": 2,
+   "y": 2
+  },
   "SYRINGE": {
    "h": 64,
    "sheet": 3,
@@ -2878,7 +2906,8 @@
   "ZR_ItemIcons_1.png",
   "ZR_ItemIcons_2.png",
   "ZR_ItemIcons_3.png",
-  "ZR_ItemIcons_4.png"
+  "ZR_ItemIcons_4.png",
+  "ZR_ItemIcons_5.png"
  ],
  "size": 1024
 }

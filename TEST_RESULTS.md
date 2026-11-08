@@ -8,6 +8,15 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The SK-45 carbine and the MR-10 marksman rifle (decision economy-1a, fourth slice; 2026-11-08, about 18:55 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_dmr.py added a new batch, ZR_GunsDMR (4 parts: the SK-45, the MR-10 receiver with its stock and handguard, the flash hider and the 10-round magazine). The first upload failed with Open Cloud's "Unknown Error"; a retry gave 110062670524120. The server log read "1039 meshes loaded, 0 batches failed". The sprite sheet was packed again with 143 sprites (image 110692127346497). Icon sheets 3 and 4 were full, so a sixth icon sheet holds the four new icons (image 109729791459336). |
+| In a raid (Quay 7, night, Studio) | The MR-10 on the back reloaded from a 10-round magazine in the rig and fired 2 (10 to 8). The SK-45 as the primary loaded loose 7.6 PS into its fixed magazine and fired 2 (10 to 8). In first person both show their wooden furniture; the MR-10 also shows its skeleton stock. |
+| Tests | 14 suites, 1,083 checks, all passed. RecoilTests check the SK-45 at 155 / 360 and the MR-10 at 220 / 647. LogicTests count 10 mastering groups. A first run failed TraderTests: every named preset must be sold, and the scoped MR-10 build was not. That build is now unnamed and unsold. |
+| Not checked | AI with the new guns, the barters by eye, a scope on the MR-10's side mount, a phone. |
+
 ## The KS-74 and the Makar PM with their rounds (decision economy-1a, third slice; 2026-11-08, about 18:20 SGT)
 
 | Test | Result |

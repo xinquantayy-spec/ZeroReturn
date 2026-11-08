@@ -116,6 +116,7 @@ local POOLS = {
 		{ id = "A918_PSV", w = 2, n = { 10, 25 } }, { id = "KS74_MAG", w = 6, a = { 0, 30 }, at = "A54_PS" },
 		{ id = "KS74_MAG45", w = 1, a = { 0, 45 }, at = "A54_PS" }, { id = "PM_MAG", w = 5, a = { 0, 8 }, at = "A918_P" },
 		{ id = "KS74_RIFLE", w = 1.5 }, { id = "PM_PISTOL", w = 3 }, { id = "BRAKE_74", w = 2 },
+		{ id = "SKS_RIFLE", w = 1 }, { id = "SVD_RIFLE", w = 0.4 }, { id = "SVD_MAG", w = 1.5, a = { 0, 10 }, at = "A76L_LPS" }, { id = "SVD_FH", w = 1 },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -344,6 +345,7 @@ local POOLS = {
 	airdrop_weapon = {
 		{ id = "A62_EP", w = 2, n = { 30, 60 } }, { id = "A76_PP", w = 2, n = { 30, 60 } }, { id = "A9_PBP", w = 1, n = { 25, 50 } },
 		{ id = "A54_BP", w = 2, n = { 30, 60 } }, { id = "A54_BS", w = 1, n = { 20, 40 } }, { id = "KS74_RIFLE", w = 1 }, { id = "KS74_MAG45", w = 1, a = { 0, 45 }, at = "A54_BP" },
+		{ id = "SVD_RIFLE", w = 0.6 }, { id = "SVD_MAG", w = 1, a = { 0, 10 }, at = "A76L_PS" },
 		{ id = "A76L_BT", w = 1, n = { 20, 40 } }, { id = "A12_APS", w = 1, n = { 10, 20 } },
 		{ id = "R17_RIFLE", w = 3 }, { id = "KST_RIFLE", w = 3 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "P9_PISTOL", w = 2 },
 		{ id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" }, { id = "R17_MAG40", w = 2, a = { 0, 40 }, at = "A62_FMJ" },
@@ -1555,6 +1557,8 @@ local SCAV_GUNS = {
 	{ "R17_RIFLE", 12, "R17_MAG", { "A62_FMJ", "A62_HP", "A62_SS" } },
 	-- economy-1a, third slice: EFT's scavs carry AK-74s more than anything (weights ours)
 	{ "KS74_RIFLE", 30, "KS74_MAG", { "A54_PS", "A54_HP", "A54_US", "A54_T" } },
+	-- the fourth slice: the SK-45 is the scavs' second rifle in EFT
+	{ "SKS_RIFLE", 18, nil, { "A76_PS", "A76_HP", "A76_US" } },
 }
 local function pickWeighted(rand, list)
 	local total = 0

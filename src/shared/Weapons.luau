@@ -58,6 +58,26 @@ local W = {
 		moveSpread = 1.8, modes = { "AUTO", "SEMI" }, loudness = 1.05, viewmodel = "KST", draw = 0.8,
 		slots = { rail = true, muzzle = "5.4", under = true, side = true },
 	},
+	-- the SK-45 (economy-1a, fourth slice) in the place of EFT's SKS: single shots, ergonomics 40, recoil 155 / 360, 400 m
+	-- (tarkovforge.com's SKS page; its figures are taken as the built gun's, which has no parts); a fixed 10-round magazine
+	-- loaded a round at a time (EFT also takes stripper clips: logged); 735 m/s with PS (its 520 mm barrel)
+	SKS = {
+		id = "SKS", item = "SKS_RIFLE", name = "SK-45", class = "rifle", rpm = 400, range = 400, velocity = 735,
+		ergo = 40, recoilV = 1.55, recoilH = 3.6, reload = 0.6, reloadEmpty = 0.6, hipSpread = 2.9, aimSpread = 0.057,
+		recoilAngle = 90, recoilDisp = 20, recoilConv = 5, recoilCam = 0.5, recoilStable = 0,
+		moveSpread = 1.9, modes = { "SEMI" }, loudness = 1.1, internal = true, viewmodel = "TUNDRA", draw = 0.85,
+		slots = {},
+	},
+	-- the MR-10 (economy-1a, fourth slice) in the place of EFT's SVDS: single shots, ergonomics 47, recoil 220 / 647 (its
+	-- flash hider changes nothing here), about 900 m (tarkovforge.com's SVDS page); 830 m/s with LPS (its 620 mm barrel).
+	-- EFT counts it a marksman rifle with a skill of its own; here it trains the rifle skill (logged)
+	SVD = {
+		id = "SVD", item = "SVD_RIFLE", name = "MR-10", class = "rifle", rpm = 400, range = 900, velocity = 830,
+		ergo = 47, recoilV = 2.2, recoilH = 6.47, reload = 3.0, reloadEmpty = 3.6, hipSpread = 3.4, aimSpread = 0.03,
+		recoilAngle = 90, recoilDisp = 14, recoilConv = 4, recoilCam = 0.5, recoilStable = 0,
+		moveSpread = 2.2, modes = { "SEMI" }, loudness = 1.35, viewmodel = "KST", draw = 0.9,
+		slots = { rail = true, muzzle = "7.6L" },
+	},
 	-- MORTAR's grenade launcher (ai-5b) in the place of EFT's M32A1: 76 m/s, single shots from a six-round cylinder
 	-- loaded one round at a time; the round flies as a grenade (Grenades.launchFrom). Rate 30, ergonomics 30, recoil
 	-- 238 / 560 and an effective distance of 70 m (219 studs) as tarkovforge's M32A1 page gives them
@@ -163,7 +183,7 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

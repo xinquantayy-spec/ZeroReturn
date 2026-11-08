@@ -5470,6 +5470,92 @@
    "tris": 316,
    "w": 1
   },
+  "SKS_RIFLE": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.09375,
+     -0.65625
+    ],
+    "grip": [
+     -0.0,
+     -0.15625,
+     0.15625
+    ],
+    "hand": [
+     -0.0,
+     -0.09375,
+     -0.9375
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -1.9375
+    ],
+    "port": [
+     0.05,
+     0.025,
+     -0.34375
+    ]
+   },
+   "batch": "ZR_GunsDMR",
+   "cls": "long",
+   "ext": [
+    -1.9375,
+    1.12812,
+    -0.37295,
+    0.11563
+   ],
+   "family": "dmr",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_SKS_RIFLE__gunmetal": {
+     "center": [
+      -0.0,
+      -0.0641,
+      -0.9625
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0938,
+      0.3594,
+      1.95
+     ],
+     "sub": null
+    },
+    "ZR_WP_SKS_RIFLE__metal": {
+     "center": [
+      0.0234,
+      -0.1359,
+      -0.3891
+     ],
+     "mat": "metal",
+     "size": [
+      0.1656,
+      0.4594,
+      3.0344
+     ],
+     "sub": null
+    },
+    "ZR_WP_SKS_RIFLE__wood": {
+     "center": [
+      -0.0,
+      -0.1365,
+      -0.0938
+     ],
+     "mat": "wood",
+     "size": [
+      0.1125,
+      0.4728,
+      2.4375
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 1032,
+   "w": 6
+  },
   "SPARROW_MAG": {
    "anchors": {},
    "batch": "ZR_GunsSMG",
@@ -6317,6 +6403,213 @@
    "slots": {},
    "tris": 1004,
    "w": 2
+  },
+  "SVD_FH": {
+   "anchors": {
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.26875
+    ]
+   },
+   "batch": "ZR_GunsDMR",
+   "cls": "long",
+   "ext": [
+    -0.26875,
+    0.0,
+    -0.04205,
+    0.04205
+   ],
+   "family": "dmr",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_SVD_FH__gunmetal": {
+     "center": [
+      0.0022,
+      0.0,
+      -0.1344
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.08,
+      0.0841,
+      0.2688
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 196,
+   "w": 1
+  },
+  "SVD_MAG": {
+   "anchors": {},
+   "batch": "ZR_GunsDMR",
+   "cls": "long",
+   "ext": [
+    -0.13981,
+    0.11455,
+    -0.42058,
+    0.03063
+   ],
+   "family": "dmr",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_SVD_MAG__brass": {
+     "center": [
+      -0.0,
+      0.0125,
+      -0.0008
+     ],
+     "mat": "brass",
+     "size": [
+      0.0345,
+      0.0363,
+      0.0859
+     ],
+     "sub": null
+    },
+    "ZR_WP_SVD_MAG__metal": {
+     "center": [
+      -0.0,
+      -0.204,
+      -0.0126
+     ],
+     "mat": "metal",
+     "size": [
+      0.1031,
+      0.4331,
+      0.2544
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 408,
+   "w": 1
+  },
+  "SVD_RIFLE": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.10625,
+     -0.90625
+    ],
+    "grip": [
+     -0.0,
+     -0.21875,
+     0.15625
+    ],
+    "hand": [
+     -0.0,
+     -0.08125,
+     -1.3125
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -2.4375
+    ],
+    "port": [
+     0.05,
+     0.0125,
+     -0.4375
+    ]
+   },
+   "batch": "ZR_GunsDMR",
+   "cls": "long",
+   "ext": [
+    -2.4375,
+    1.27188,
+    -0.47187,
+    0.12442
+   ],
+   "family": "dmr",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_SVD_RIFLE__gunmetal": {
+     "center": [
+      -0.0094,
+      -0.0444,
+      -1.2156
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.1188,
+      0.3262,
+      2.4438
+     ],
+     "sub": null
+    },
+    "ZR_WP_SVD_RIFLE__metal": {
+     "center": [
+      0.0234,
+      -0.1828,
+      -0.5533
+     ],
+     "mat": "metal",
+     "size": [
+      0.1594,
+      0.5781,
+      3.6503
+     ],
+     "sub": null
+    },
+    "ZR_WP_SVD_RIFLE__wood": {
+     "center": [
+      -0.0,
+      -0.1715,
+      -0.1875
+     ],
+     "mat": "wood",
+     "size": [
+      0.13,
+      0.5918,
+      2.875
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.09375,
+      -0.53125
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "mount": {
+     "pos": [
+      -0.06875,
+      -0.03437,
+      -0.32812
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "muzzle": {
+     "pos": [
+      -0.0,
+      0.0,
+      -2.4375
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 1236,
+   "w": 6
   },
   "TUNDRA_BOLT": {
    "anchors": {
@@ -7453,6 +7746,13 @@
     }
    }
   },
+  "SKS_RIFLE": {
+   "base": "SKS_RIFLE",
+   "tree": {
+    "id": "SKS_RIFLE",
+    "mods": {}
+   }
+  },
   "SPARROW_SMG": {
    "base": "SPARROW_SMG",
    "tree": {
@@ -7518,6 +7818,47 @@
      },
      "stock": {
       "id": "SPR_STK_FIXED",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "SVD_RIFLE": {
+   "base": "SVD_RIFLE",
+   "tree": {
+    "id": "SVD_RIFLE",
+    "mods": {
+     "mag": {
+      "id": "SVD_MAG",
+      "mods": {}
+     },
+     "muzzle": {
+      "id": "SVD_FH",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "SVD_SCOPED": {
+   "base": "SVD_RIFLE",
+   "tree": {
+    "id": "SVD_RIFLE",
+    "mods": {
+     "mag": {
+      "id": "SVD_MAG",
+      "mods": {}
+     },
+     "mount": {
+      "id": "KST_MNT_SIDE",
+      "mods": {
+       "scope": {
+        "id": "SCOPE_4X",
+        "mods": {}
+       }
+      }
+     },
+     "muzzle": {
+      "id": "SVD_FH",
       "mods": {}
      }
     }

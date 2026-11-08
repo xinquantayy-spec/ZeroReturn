@@ -334,6 +334,11 @@ end
 T.barters = {
 	vos = {
 		b("KST_RIFLE", 1, 1, { { "CAPACITOR", 1 }, { "LOGIC_BOARD", 1 } }),
+		-- EFT's SKS and SVDS are barter-only (tarkovforge.com: no trader sells them for money): the SK-45 at LL1 for hardware,
+		-- the MR-10 at LL3 for valuables (the goods ours)
+		b("SKS_RIFLE", 1, 2, { { "SCREWS", 2 }, { "NUTS", 1 } }),
+		b("SVD_RIFLE", 3, 1, { { "GOLD_CHAIN", 2 }, { "SKULL_RING", 1 } }),
+		b("SVD_MAG", 3, 4, { { "SPARE_PARTS", 1 } }),
 		-- EFT's PM is barter-only (tarkovforge.com: no trader sells it for money); ours at Prapor for small household goods
 		b("PM_PISTOL", 1, 2, { { "TOILET_PAPER", 1 }, { "SOAP", 1 } }),
 		-- EFT's RPK-16 comes by Prapor's barters at LL2 and LL3 (wiki): the KS-L and its drum at LL3 here

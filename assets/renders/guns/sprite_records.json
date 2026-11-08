@@ -797,6 +797,13 @@
   "oy": 15.89,
   "w": 22
  },
+ "SKS_RIFLE@long": {
+  "file": "SKS_RIFLE@long",
+  "h": 60,
+  "ox": 220.24,
+  "oy": 15.02,
+  "w": 350
+ },
  "SPARROW_MAG@long": {
   "file": "SPARROW_MAG@long",
   "h": 82,
@@ -922,6 +929,27 @@
   "ox": 72.96,
   "oy": 9.71,
   "w": 75
+ },
+ "SVD_FH@long": {
+  "file": "SVD_FH@long",
+  "h": 14,
+  "ox": 32.27,
+  "oy": 6.74,
+  "w": 35
+ },
+ "SVD_MAG@long": {
+  "file": "SVD_MAG@long",
+  "h": 55,
+  "ox": 17.75,
+  "oy": 5.45,
+  "w": 33
+ },
+ "SVD_RIFLE@long": {
+  "file": "SVD_RIFLE@long",
+  "h": 72,
+  "ox": 276.56,
+  "oy": 16.02,
+  "w": 422
  },
  "TUNDRA_BOLT@long": {
   "file": "TUNDRA_BOLT@long",

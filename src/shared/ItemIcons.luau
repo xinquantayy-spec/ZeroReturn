@@ -5,7 +5,7 @@
 -- w x h = the item's grid size times the cell).
 return {
 	cell = 64,
-	sheets = { "rbxassetid://87867732430143", "rbxassetid://113186498772250", "rbxassetid://89528084000387", "rbxassetid://81143156404321", "rbxassetid://82733714503125" },
+	sheets = { "rbxassetid://87867732430143", "rbxassetid://113186498772250", "rbxassetid://89528084000387", "rbxassetid://81143156404321", "rbxassetid://82733714503125", "rbxassetid://109729791459336" },
 	items = {
 		A12_APS = { 5, 660, 584, 64, 64 },
 		A12_BUCK = { 3, 522, 332, 64, 64 },
@@ -364,6 +364,7 @@ return {
 		SIGHT_MICRO = { 3, 200, 728, 64, 64 },
 		SIGNAL_COIL = { 3, 266, 728, 64, 64 },
 		SILICONE_TUBE = { 4, 596, 852, 64, 64 },
+		SKS_RIFLE = { 6, 388, 2, 384, 64 },
 		SKULL_RING = { 4, 662, 852, 64, 64 },
 		SOAP = { 3, 332, 728, 64, 64 },
 		SPARE_PARTS = { 4, 728, 852, 64, 64 },
@@ -394,6 +395,9 @@ return {
 		SUPP_9 = { 3, 782, 266, 128, 64 },
 		SURGKIT = { 3, 2, 332, 128, 64 },
 		SURVEY_MAPS = { 4, 522, 456, 128, 64 },
+		SVD_FH = { 6, 774, 2, 64, 64 },
+		SVD_MAG = { 6, 840, 2, 64, 64 },
+		SVD_RIFLE = { 6, 2, 2, 384, 128 },
 		SYRINGE = { 4, 860, 852, 64, 64 },
 		TAPE_MEASURE = { 4, 926, 852, 64, 64 },
 		THERMITE = { 4, 2, 918, 64, 64 },

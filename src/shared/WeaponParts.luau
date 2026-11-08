@@ -89,6 +89,8 @@ W.SLOTS = {
 	P9_PISTOL = { slide = { fit = "p9_slide", req = true }, barrel = { fit = "p9_barrel", req = true }, tactical = { fit = "pica", cats = { tactical = true } } },
 	P9_SLIDE_CUT = { optic = { fit = "p9_optic", cats = { sight = true } } },
 	P9_BRL_THR = { muzzle = { fit = "t9" } },
+	-- Merlin MR-10 (economy-1a, fourth slice): a muzzle thread that takes the Tundra's devices and the AK-type dovetail
+	SVD_RIFLE = { muzzle = { fit = "t76l" }, mount = { fit = "dovetail" } },
 	-- Makar PM (economy-1a, third slice): EFT's PM has a slide, a magazine and grip panels; ours are on the frame
 	PM_PISTOL = { slide = { fit = "pm_slide", req = true } },
 	-- mounts
@@ -205,6 +207,8 @@ part("TUN_STK_SPORT", "Tundra sporter stock", "SPORTER", "stock", "tun_stock", {
 part("TUN_STK_CHAS", "Vantor CH-54 chassis", "CH-54", "stock", "tun_stock", { w = 5, h = 1, mass = 1.4, value = 42000, rarity = "rare", ergo = 17, recoil = -25, acc = -8, desc = "Aluminium chassis with a pistol grip, an adjustable stock and a rail for a grip." })
 part("TUN_MNT_SIDE", "Tundra side mount", "SIDE MNT", "mount", "tun_side", { w = 2, h = 1, mass = 0.24, value = 9000, ergo = -2, desc = "Side mount with a rail over the receiver." })
 part("TUN_MNT_SCOUT", "Tundra scout rail", "SCOUT", "mount", "tun_scout", { w = 2, h = 1, mass = 0.16, value = 7200, ergo = -1, desc = "Rail on the rear sight base for long eye relief optics." })
+-- the MR-10's flash hider (EFT's SVD flash hider; ours changes no recoil, the gun's figures already hold it)
+part("SVD_FH", "MR-10 flash hider", "FH", "muzzle", "t76l", { w = 1, h = 1, mass = 0.07, value = 602, loud = 0.95, desc = "Long slotted flash hider. Hides the flash, does little else." })
 part("TUN_BRK", "Tundra muzzle brake", "BRAKE", "muzzle", "t76l", { w = 1, h = 1, mass = 0.12, value = 8000, recoil = -14, loud = 1.15, desc = "Ported brake for the full-power cartridge." })
 part("SUPP_76L", "Kaltan SR-54 suppressor", "SR-54", "muzzle", "t76l", { w = 2, h = 1, mass = 0.62, value = 46000, rarity = "rare", recoil = -3, ergo = -13, loud = 0.38, acc = -4, desc = "Sound suppressor for 7.6x54R." })
 
