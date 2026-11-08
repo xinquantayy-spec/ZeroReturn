@@ -268,7 +268,7 @@
       ORE GATE or TIMEKEEPER'S WINDOW (the office's third floor does not connect to the second), one reaches AID POST
       GATE, and four spawns (NORTH STAIR, WASHROOM, AID POST 2, SOUTH STAIR) are walled in. With the factory thread. The stairs, the high bridge, the pit, the sump drop and
       every exit have not been walked yet.
-86. **Gun texture sheets: 46 sheets of four 1024 px maps (art-4b, 2026-11-09).**
+86. **Gun texture sheets: 48 sheets of four 1024 px maps (art-4b, 2026-11-09).**
     - A gun build loads every sheet its parts sit on (two to four for most guns). The memory this takes on a low-end phone
       has not been measured; Roblox serves lower mips to weaker devices.
 

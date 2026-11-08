@@ -234,6 +234,9 @@ T.offers = {
 		o("KS74_MAG", 1, 6), o("KS74_MAG45", 3, 3), o("PM_MAG", 1, 10),
 		-- plates (gameplay-2a): EFT sells the Korund-VM plates at Prapor LL4 (tarkovforge); the PC-4's at LL2 (ours)
 		o("PLATE_PC4F", 2, 2), o("PLATE_PC4B", 2, 2), o("PLATE_HP5F", 4, 1), o("PLATE_HP5B", 4, 1), o("PLATE_HP5S", 4, 2),
+		-- the fourteenth slice: EFT's Prapor sells the AK-74 TGP-A suppressor (our TS-5) at LL3 (tarkovforge.com); placed before
+		-- the task-locked offers, which stay last
+		o("SUPP_54", 3, 1),
 		-- task-locked (economy-6a): Fuel Count opens the KS-7 at LL1 (EFT's BP Depot opens a gun at Prapor LL1); markers for
 		-- the marking tasks (EFT: "Additional ones can be bought from Prapor or Ragman", wiki BP_Depot; TILDA sells gear only)
 		ot("KST_RIFLE", 1, 1, 1, "V10"), ot("MARKER", 1, 4, 1, nil, { "V10", "R8" }), ot("KST_MAG40", 2, 2, 1, "V14"), ot("A76_BP", 3, 2, 60, "V17"),
@@ -268,6 +271,11 @@ T.offers = {
 		o("LASER_COMBO", 4, 1), pre("SPR_TAC", 4, 1),
 		-- task-locked (economy-6a)
 		ot("NV_BINO", 1, 1, 1, "R4"), ot("NV_MONO", 2, 1, 1, "R7"), ot("LASER_COMBO", 3, 1, 1, "R9"),
+		-- the fourteenth slice (appended, so older offers keep their index): EFT's Skier sells the VPO-209 as its default build,
+		-- the Rotor 43 .366 TKM suppressor, the AK aluminium 10-round magazine and the Molot grip and dust cover (the KS-7's
+		-- here: the same figures) at LL1 (SPT 3.10.1 traders/58330581ace78e27b8b10cee/assort.json; tarkov-market.com lists him
+		-- selling the VPO-209 at LL1 today); the limits are ours
+		o("T209_RIFLE", 1, 1), o("SUPP_96", 1, 1), o("KST_MAG10", 1, 6), o("AK_PG_STD", 1, 2), o("KST_DC_STD", 1, 2),
 	},
 	-- the Peacekeeper: "NATO platform weapons, including M4 platform rifles and HK builds", "western optics", "western
 	-- ammunition" (tarkovforge); the UN vest from LL1 (EFT's MF-UNTAR, which his Fishing Gear task asks for); the N-15 at LL3
@@ -366,6 +374,10 @@ T.offers = {
 		o("SUPP_76L", 4, 1), o("TUN_STK_CHAS", 4, 1), pre("TUN_MARKSMAN", 4, 1),
 		-- task-locked (economy-6a)
 		ot("TUN_MNT_SIDE", 2, 1, 1, "B3"), ot("SUPP_76L", 3, 1, 1, "B6"), pre("TUN_MARKSMAN", 3, 1, "B11"),
+		-- the fourteenth slice (appended): EFT's Jaeger sells the VPO-209 as its default build and its rear sight, wooden stock
+		-- and wooden handguard (the KS-7's here: the AKM handguard's figures) at LL1 (SPT 3.10.1
+		-- traders/5c0647fdd443bc2504c2d371/assort.json; tarkovforge.com's part pages); the limits are ours
+		o("T209_RIFLE", 1, 1), o("T209_RS", 1, 2), o("T209_STK", 1, 2), o("KST_HG_WOOD", 1, 2),
 	},
 }
 

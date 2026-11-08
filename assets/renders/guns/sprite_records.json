@@ -454,6 +454,13 @@
   "oy": 14.74,
   "w": 71
  },
+ "KST_MAG10@long": {
+  "file": "KST_MAG10@long",
+  "h": 53,
+  "ox": 18.74,
+  "oy": 5.34,
+  "w": 34
+ },
  "KST_MAG40@long": {
   "file": "KST_MAG40@long",
   "h": 107,
@@ -1140,6 +1147,13 @@
   "oy": 10.45,
   "w": 71
  },
+ "SUPP_54@long": {
+  "file": "SUPP_54@long",
+  "h": 20,
+  "ox": 72.54,
+  "oy": 9.64,
+  "w": 75
+ },
  "SUPP_62@long": {
   "file": "SUPP_62@long",
   "h": 19,
@@ -1167,6 +1181,13 @@
   "ox": 76.06,
   "oy": 10.06,
   "w": 79
+ },
+ "SUPP_96@long": {
+  "file": "SUPP_96@long",
+  "h": 21,
+  "ox": 77.82,
+  "oy": 10.06,
+  "w": 80
  },
  "SUPP_9@long": {
   "file": "SUPP_9@long",
@@ -1202,6 +1223,34 @@
   "ox": 276.56,
   "oy": 16.02,
   "w": 422
+ },
+ "T209_RIFLE@long": {
+  "file": "T209_RIFLE@long",
+  "h": 43,
+  "ox": 214.96,
+  "oy": 16.43,
+  "w": 219
+ },
+ "T209_RS@long": {
+  "file": "T209_RS@long",
+  "h": 15,
+  "ox": 15.55,
+  "oy": 11.93,
+  "w": 19
+ },
+ "T209_STK@long": {
+  "file": "T209_STK@long",
+  "h": 57,
+  "ox": 2.0,
+  "oy": 7.63,
+  "w": 98
+ },
+ "T209_TP@long": {
+  "file": "T209_TP@long",
+  "h": 12,
+  "ox": 8.86,
+  "oy": 5.56,
+  "w": 11
  },
  "T215_BOLT@long": {
   "file": "T215_BOLT@long",

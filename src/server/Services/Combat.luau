@@ -313,6 +313,12 @@ function Combat.shoot(player, seq, origin, dir)
 		ctx.Remotes.note(player, "ammo", { a = 0 })
 		return reject("empty", nil)
 	end
+	-- EFT's chamber filter (economy-1a's fourteenth slice): a magazine fits by its family, but a round the chamber does
+	-- not take is never chambered (9.6x39 in a KS-7, 7.6x39 in a T-209): the trigger clicks on an empty chamber
+	if not Items.fires(wd, mag.at) then
+		ctx.Remotes.note(player, "ammo", { a = 0 })
+		return reject("round does not fit the chamber", nil)
+	end
 	if wit and wit.mf then
 		if t - (w.malfNote or 0) > 1.5 then
 			w.malfNote = t

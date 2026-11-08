@@ -871,6 +871,15 @@ local function buildHarborStack(map)
 	World.patrols.HS = { Vector3.new(-96, 0, -140), Vector3.new(-40, 0, -140), Vector3.new(-40, 0, -76), Vector3.new(-96, 0, -76), Vector3.new(-150, 0, -108), Vector3.new(-96, 0, -108) }
 end
 
+-- art-5b: Quay 7's stairs try the Kit5 flight (Maps/MapKit's k5Flight: one mesh and a ramp) and keep their parts when
+-- the batch is not loaded or no variant fits (Quay 7 is at the origin, so MapKit's frame is the world's)
+local function k5Flight(parent, cf, n, h, t, w, style, color, mat, opts)
+	local okK, H = pcall(function()
+		return require(script.Parent.Parent:WaitForChild("Maps"):WaitForChild("MapKit"))(World.kit(), Vector3.zero)
+	end)
+	return okK and H.k5Flight(parent, cf, n, h, t, w, style, color, mat, opts) or nil
+end
+
 local function buildPumpAnnex(map)
 	local pa = model("PumpAnnex", map)
 	local x0, x1, z0, z1, H = 40, 120, 55, 115, 22
@@ -913,9 +922,12 @@ local function buildPumpAnnex(map)
 	local mzY = 10
 	box(pa, 78, 0.8, 14.5, 80, mzY - 0.4, 106.75, C.metal, M.DiamondPlate) -- x 41..119, z 99.5..114
 	box(pa, 68, 3, 0.3, 85, mzY + 1.5, 99.6, C.metalDark, M.Metal) -- rail leaves the stair landing open
-	-- open steel stairs, real-size steps (20 x 0.48 studs up to the mezzanine deck at 10)
-	for i = 1, 20 do
-		box(pa, 6, 0.5, 0.95, 46, 0.4 + i * 0.48 - 0.25, 80.525 + (i - 1) * 0.95, C.metal, M.DiamondPlate)
+	-- open steel stairs, real-size steps (20 x 0.48 studs up to the mezzanine deck at 10); art-5b: one Kit5 flight when the
+	-- batch is loaded
+	if not k5Flight(pa, CFrame.lookAt(Vector3.new(46, 0.4, 80.05), Vector3.new(46, 0.4, 81.05)), 20, 0.48, 0.95, 6, "S", C.metal, M.DiamondPlate) then
+		for i = 1, 20 do
+			box(pa, 6, 0.5, 0.95, 46, 0.4 + i * 0.48 - 0.25, 80.525 + (i - 1) * 0.95, C.metal, M.DiamondPlate)
+		end
 	end
 	box(pa, 6, mzY - 0.8, 1, 46, (mzY - 0.8) / 2, 100.2, C.metalDark, M.Metal)
 	local booth = box(pa, 10, 7, 8, 104, mzY + 3.5, 109, C.olive, M.Metal)
@@ -1078,15 +1090,19 @@ local function buildDormitory(map)
 	for px = X0 + 1, X1 + 1, 4 do
 		box(dm, 0.2, 3.4, 0.2, px, H + 0.3 + 1.7, Z1 + 4.35, C.metalDark, M.Metal)
 	end
-	-- stairs: east end, rising north from the ground to the balcony (real-size half-stud steps like the annex)
-	for i = 1, 20 do
-		box(dm, 4, 0.5, 0.95, -22, i * 0.5 - 0.25, 80.525 - (i - 1) * 0.95, C.concreteLight, M.Concrete)
-	end
-	for _, sx in { -24.15, -19.85 } do
-		local bottom, top = Vector3.new(sx, 4, 80.5), Vector3.new(sx, H + 3.6, 62.6)
-		local mid = (bottom + top) / 2
-		boxCF(dm, 0.2, 0.2, (top - bottom).Magnitude, CFrame.lookAt(mid, top), C.metalDark, M.Metal)
-		boxCF(dm, 0.3, 3, 0.3, CFrame.new(sx, 1.5, 80.5), C.metalDark, M.Metal)
+	-- stairs: east end, rising north from the ground to the balcony (real-size half-stud steps like the annex); art-5b: one
+	-- Kit5 flight with its handrails when the batch is loaded
+	local dormFoot = CFrame.lookAt(Vector3.new(-22, 0, 81), Vector3.new(-22, 0, 80))
+	if not k5Flight(dm, dormFoot, 20, 0.5, 0.95, 4, "O", C.concreteLight, M.Concrete, { hand = "both", handColor = C.metalDark, handMat = M.Metal }) then
+		for i = 1, 20 do
+			box(dm, 4, 0.5, 0.95, -22, i * 0.5 - 0.25, 80.525 - (i - 1) * 0.95, C.concreteLight, M.Concrete)
+		end
+		for _, sx in { -24.15, -19.85 } do
+			local bottom, top = Vector3.new(sx, 4, 80.5), Vector3.new(sx, H + 3.6, 62.6)
+			local mid = (bottom + top) / 2
+			boxCF(dm, 0.2, 0.2, (top - bottom).Magnitude, CFrame.lookAt(mid, top), C.metalDark, M.Metal)
+			boxCF(dm, 0.3, 3, 0.3, CFrame.new(sx, 1.5, 80.5), C.metalDark, M.Metal)
+		end
 	end
 	-- outer walls per storey: windows north, doors (+ a small window) south, a window at each end
 	for floor = 0, 1 do

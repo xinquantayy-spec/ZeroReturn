@@ -719,6 +719,9 @@ end
 
 local function roundsOf(u)
 	local m = magOf(u)
+	if m and u.w and not Items.fires(u.w.wd, m.at) then
+		return 0 -- a looted gun holding a magazine of a round its chamber does not take (EFT's chamber filter)
+	end
 	return m and (m.a or 0) or 0
 end
 
@@ -883,7 +886,7 @@ end
 local function shoot(u, t)
 	local w = u.w
 	local m = magOf(u)
-	if not w or not m or (m.a or 0) <= 0 then
+	if not w or not m or (m.a or 0) <= 0 or not Items.fires(w.wd, m.at) then
 		u.wantFire = false
 		return
 	end

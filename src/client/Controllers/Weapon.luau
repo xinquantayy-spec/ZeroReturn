@@ -203,6 +203,9 @@ local function computeAmmo(predicted)
 	end
 	local rounds = (idef.family and it.mag and d.items[it.mag]) or ((not idef.family) and it) or nil
 	local cur = rounds and rounds.a or 0
+	if rounds and cur > 0 and not Items.fires(idef, rounds.at) then
+		cur = 0 -- rounds this gun cannot chamber (EFT's chamber filter): the server refuses them
+	end
 	if predicted and rounds then
 		cur = math.min(cur, predicted)
 	end
@@ -218,7 +221,7 @@ local function computeAmmo(predicted)
 			for gg in (d.grids and d.grids[cid]) or {} do
 				local x = d.items[gg]
 				local xd = x and Items.defs[x.id]
-				if xd and xd.kind == "mag" and xd.family == idef.family and (x.a or 0) > floor then
+				if xd and xd.kind == "mag" and xd.family == idef.family and (x.a or 0) > floor and ((x.a or 0) <= 0 or Items.fires(idef, x.at)) then
 					better += 1
 				end
 			end

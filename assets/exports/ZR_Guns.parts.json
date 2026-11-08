@@ -3655,6 +3655,52 @@
    "tris": 452,
    "w": 1
   },
+  "KST_MAG10": {
+   "anchors": {},
+   "batch": "ZR_GunsVPO",
+   "cls": "long",
+   "ext": [
+    -0.14863,
+    0.10932,
+    -0.40514,
+    0.02969
+   ],
+   "family": "vpo",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_KST_MAG10__brass": {
+     "center": [
+      -0.0,
+      0.0125,
+      -0.0031
+     ],
+     "mat": "brass",
+     "size": [
+      0.0327,
+      0.0344,
+      0.0688
+     ],
+     "sub": null
+    },
+    "ZR_WP_KST_MAG10__metal": {
+     "center": [
+      -0.0,
+      -0.1963,
+      -0.0197
+     ],
+     "mat": "metal",
+     "size": [
+      0.1,
+      0.4176,
+      0.258
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 408,
+   "w": 1
+  },
   "KST_MAG40": {
    "anchors": {},
    "batch": "ZR_GunsAK",
@@ -8639,6 +8685,44 @@
    "tris": 260,
    "w": 2
   },
+  "SUPP_54": {
+   "anchors": {
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.625
+    ]
+   },
+   "batch": "ZR_GunsVPO",
+   "cls": "long",
+   "ext": [
+    -0.62625,
+    0.0,
+    -0.06781,
+    0.06781
+   ],
+   "family": "vpo",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_SUPP_54__gunmetal": {
+     "center": [
+      -0.0,
+      0.0,
+      -0.3131
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.1356,
+      0.1356,
+      0.6263
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 1280,
+   "w": 2
+  },
   "SUPP_62": {
    "anchors": {
     "muzzle": [
@@ -8827,6 +8911,44 @@
    },
    "slots": {},
    "tris": 1004,
+   "w": 2
+  },
+  "SUPP_96": {
+   "anchors": {
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.67188
+    ]
+   },
+   "batch": "ZR_GunsVPO",
+   "cls": "long",
+   "ext": [
+    -0.67312,
+    0.0,
+    -0.07156,
+    0.07156
+   ],
+   "family": "vpo",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_SUPP_96__gunmetal": {
+     "center": [
+      -0.0,
+      0.0,
+      -0.3366
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.1431,
+      0.1431,
+      0.6731
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 1052,
    "w": 2
   },
   "SVD_FH": {
@@ -9035,6 +9157,308 @@
    },
    "tris": 1236,
    "w": 6
+  },
+  "T209_RIFLE": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.11875,
+     -0.84375
+    ],
+    "hand": [
+     -0.0,
+     -0.0625,
+     -1.125
+    ],
+    "muzzle": [
+     -0.0,
+     0.0,
+     -1.9125
+    ],
+    "port": [
+     0.05,
+     0.0125,
+     -0.375
+    ]
+   },
+   "batch": "ZR_GunsVPO",
+   "cls": "long",
+   "ext": [
+    -1.89062,
+    0.0125,
+    -0.2102,
+    0.12812
+   ],
+   "family": "vpo",
+   "h": 2,
+   "pieces": {
+    "ZR_WP_T209_RIFLE__gunmetal": {
+     "center": [
+      -0.0,
+      -0.041,
+      -0.9391
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.1106,
+      0.3383,
+      1.9031
+     ],
+     "sub": null
+    },
+    "ZR_WP_T209_RIFLE__metal": {
+     "center": [
+      0.0461,
+      -0.0347,
+      -0.961
+     ],
+     "mat": "metal",
+     "size": [
+      0.1297,
+      0.3069,
+      1.7036
+     ],
+     "sub": null
+    }
+   },
+   "slots": {
+    "dustcover": {
+     "pos": [
+      -0.0,
+      0.0375,
+      0.0
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "grip": {
+     "pos": [
+      -0.0,
+      -0.13125,
+      -0.08125
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "handguard": {
+     "pos": [
+      -0.0,
+      0.0,
+      -0.81875
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "mag": {
+     "pos": [
+      -0.0,
+      -0.08125,
+      -0.55
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "muzzle": {
+     "pos": [
+      -0.0,
+      0.0,
+      -1.89063
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "rearsight": {
+     "pos": [
+      -0.0,
+      0.04375,
+      -0.81875
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "stock": {
+     "pos": [
+      -0.0,
+      -0.0375,
+      0.0
+     ],
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "tris": 1356,
+   "w": 5
+  },
+  "T209_RS": {
+   "anchors": {
+    "eye": [
+     -0.0,
+     0.075,
+     -0.10625
+    ]
+   },
+   "batch": "ZR_GunsVPO",
+   "cls": "long",
+   "ext": [
+    -0.12031,
+    0.00937,
+    -0.00312,
+    0.08813
+   ],
+   "family": "vpo",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_T209_RS__gunmetal": {
+     "center": [
+      -0.0,
+      0.0422,
+      -0.0547
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0875,
+      0.0906,
+      0.1281
+     ],
+     "sub": null
+    },
+    "ZR_WP_T209_RS__metal": {
+     "center": [
+      -0.0,
+      0.0859,
+      -0.1063
+     ],
+     "mat": "metal",
+     "size": [
+      0.0141,
+      0.0044,
+      0.0281
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 168,
+   "w": 1
+  },
+  "T209_STK": {
+   "anchors": {},
+   "batch": "ZR_GunsVPO",
+   "cls": "long",
+   "ext": [
+    0.0,
+    0.83,
+    -0.41907,
+    0.05
+   ],
+   "family": "vpo",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_T209_STK__metal": {
+     "center": [
+      -0.0,
+      -0.174,
+      0.327
+     ],
+     "mat": "metal",
+     "size": [
+      0.1063,
+      0.4292,
+      0.654
+     ],
+     "sub": null
+    },
+    "ZR_WP_T209_STK__rubber": {
+     "center": [
+      -0.0,
+      -0.2234,
+      0.8056
+     ],
+     "mat": "rubber",
+     "size": [
+      0.1312,
+      0.3844,
+      0.0488
+     ],
+     "sub": null
+    },
+    "ZR_WP_T209_STK__wood": {
+     "center": [
+      -0.0,
+      -0.1845,
+      0.3906
+     ],
+     "mat": "wood",
+     "size": [
+      0.1344,
+      0.4691,
+      0.7812
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 382,
+   "w": 2
+  },
+  "T209_TP": {
+   "anchors": {
+    "muzzle": [
+     -0.0,
+     0.0,
+     -0.06094
+    ]
+   },
+   "batch": "ZR_GunsVPO",
+   "cls": "long",
+   "ext": [
+    -0.06094,
+    0.0,
+    -0.03156,
+    0.03156
+   ],
+   "family": "vpo",
+   "h": 1,
+   "pieces": {
+    "ZR_WP_T209_TP__gunmetal": {
+     "center": [
+      -0.0,
+      0.0,
+      -0.0305
+     ],
+     "mat": "gunmetal",
+     "size": [
+      0.0631,
+      0.0631,
+      0.0609
+     ],
+     "sub": null
+    }
+   },
+   "slots": {},
+   "tris": 576,
+   "w": 1
   },
   "T215_BOLT": {
    "anchors": {
@@ -11462,6 +11886,42 @@
      },
      "muzzle": {
       "id": "SVD_FH",
+      "mods": {}
+     }
+    }
+   }
+  },
+  "T209_RIFLE": {
+   "base": "T209_RIFLE",
+   "tree": {
+    "id": "T209_RIFLE",
+    "mods": {
+     "dustcover": {
+      "id": "KST_DC_STD",
+      "mods": {}
+     },
+     "grip": {
+      "id": "AK_PG_STD",
+      "mods": {}
+     },
+     "handguard": {
+      "id": "KST_HG_WOOD",
+      "mods": {}
+     },
+     "mag": {
+      "id": "KST_MAG10",
+      "mods": {}
+     },
+     "muzzle": {
+      "id": "T209_TP",
+      "mods": {}
+     },
+     "rearsight": {
+      "id": "T209_RS",
+      "mods": {}
+     },
+     "stock": {
+      "id": "T209_STK",
       "mods": {}
      }
     }

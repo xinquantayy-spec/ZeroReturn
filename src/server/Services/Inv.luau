@@ -1338,12 +1338,15 @@ function Inv.loadAmmo(h: any, tg: string, ag: string, count: number?): (number, 
 	if not t or not am then
 		return 0, "NO_ITEM"
 	end
-	local cap, cal = Inv.loadable(t, h, tg)
+	local cap = Inv.loadable(t, h, tg)
 	local ad = defs[am.id]
 	if not cap or ad.kind ~= "ammo" then
 		return 0, "INCOMPATIBLE"
 	end
-	if ad.caliber ~= cal then
+	-- the rounds the magazine's feed lips (or the gun's internal magazine) take: its own calibre, and for the KS-7's
+	-- magazines 9.6x39 too (EFT's AK 7.62x39 magazines take .366 TKM; Items.takesRound, economy-1a's fourteenth slice).
+	-- Whether a gun fires them is the chamber's business (Items.fires), as in EFT
+	if not Items.takesRound(defs[t.id], ad) then
 		return 0, "WRONG_CALIBER"
 	end
 	t.a = t.a or 0
@@ -1388,7 +1391,10 @@ function Inv.unloadAmmo(h: any, tg: string, order: { string }): (number, string?
 	return moved, (moved == 0) and "NO_SPACE" or nil
 end
 
--- fullest compatible magazine in the rig, then pockets (Tarkov quick reload ignores the backpack)
+-- fullest compatible magazine in the rig, then pockets (Tarkov quick reload ignores the backpack). A magazine of the
+-- gun's family loaded with rounds its chamber does not take is passed over (economy-1a's fourteenth slice: a KS-7
+-- magazine of 9.6x39 in a KS-7's rig, of 7.6x39 in a T-209's), so a reload never puts in rounds the gun cannot fire
+-- (ours: which magazine EFT's quick reload picks then is not verified)
 function Inv.bestMag(h: any, wg: string): string?
 	local w = h.items[wg]
 	local wd = w and defs[w.id]
@@ -1397,6 +1403,9 @@ function Inv.bestMag(h: any, wg: string): string?
 	end
 	local cur = w.mag and h.items[w.mag]
 	local bestA = cur and (cur.a or 0) or -1
+	if cur and (cur.a or 0) > 0 and not Items.fires(wd, cur.at) then
+		bestA = 0 -- rounds the gun cannot fire count for nothing: any magazine with rounds it fires is better
+	end
 	local best = nil
 	local sources = {}
 	if h.slots.rig and h.grids[h.slots.rig] then
@@ -1407,7 +1416,7 @@ function Inv.bestMag(h: any, wg: string): string?
 		for g in h.grids[cid] or {} do
 			local m = h.items[g]
 			local md = m and defs[m.id]
-			if md and md.kind == "mag" and md.family == wd.family and (m.a or 0) > bestA then
+			if md and md.kind == "mag" and md.family == wd.family and (m.a or 0) > bestA and ((m.a or 0) <= 0 or Items.fires(wd, m.at)) then
 				best, bestA = g, m.a or 0
 			end
 		end

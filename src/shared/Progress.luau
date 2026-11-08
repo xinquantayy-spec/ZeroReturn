@@ -156,8 +156,10 @@ end
 P.MASTERY_MAX = 3
 P.MASTERING = {
 	R17 = { name = "R-17", class = "ASSAULT RIFLE", level2 = 1600, level3 = 2000, weapons = { "R17" } },
-	-- the KS-L shares the KS-7's group (ours: the RPK-16's own thresholds were not found)
-	KST = { name = "KS-7", class = "ASSAULT RIFLE", level2 = 500, level3 = 600, weapons = { "KST", "KSL" } },
+	-- the KS-L shares the KS-7's group (ours: the RPK-16's own thresholds were not found); so does the T-209, as EFT's AKM
+	-- group lists the VPO-209 beside the AKM, AKMN, AKMS, AKMSN and VPO-136 (EFT's globals, Mastering "AKM" 500 / 600, as
+	-- SPT copies them; economy-1a's fourteenth slice)
+	KST = { name = "KS-7", class = "ASSAULT RIFLE", level2 = 500, level3 = 600, weapons = { "KST", "KSL", "T209" } },
 	SPARROW = { name = "SMG-9", class = "SMG", level2 = 200, level3 = 250, weapons = { "SPARROW" } },
 	HARROW = { name = "Harrow-12", class = "SHOTGUN", level2 = 150, level3 = 200, weapons = { "HARROW" } },
 	TUNDRA = { name = "Tundra", class = "SNIPER RIFLE", level2 = 200, level3 = 250, weapons = { "TUNDRA" } },

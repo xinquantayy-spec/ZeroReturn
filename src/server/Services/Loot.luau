@@ -173,6 +173,11 @@ local POOLS = {
 		{ id = "AV9_MAG30", w = 1, a = { 0, 30 }, at = "A9_PST" }, { id = "B19_MAG", w = 1.2, a = { 0, 30 }, at = "A9_PST" },
 		-- the thirteenth slice: the 7.6x39 and 7.6x54R FMJ loads, as common as the other plain loads
 		{ id = "A76_FMJ", w = 8, n = { 30, 60 } }, { id = "A76L_FMJ", w = 4, n = { 10, 30 } },
+		-- the fourteenth slice: the T-209 (EFT's VPO-209, as common as the KS-74 here), the KS-7's 10-round magazine (loaded
+		-- with 9.6x39 as the T-209's default; a KS-7 cannot fire those), the T-209's parts and the SR-96 suppressor rarely
+		-- (weights ours)
+		{ id = "T209_RIFLE", w = 1.5 }, { id = "KST_MAG10", w = 2, a = { 0, 10 }, at = "A96_FMJ" }, { id = "T209_STK", w = 1 },
+		{ id = "T209_RS", w = 1 }, { id = "T209_TP", w = 1 }, { id = "SUPP_96", w = 0.3 }, { id = "SUPP_54", w = 0.3 },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -1669,6 +1674,10 @@ local SCAV_GUNS = {
 	{ "KS74_RIFLE", 30, "KS74_MAG", { "A54_PS", "A54_HP", "A54_US", "A54_T" } },
 	-- the fourth slice: the SK-45 is the scavs' second rifle in EFT
 	{ "SKS_RIFLE", 18, nil, { "A76_PS", "A76_HP", "A76_US", "A76_FMJ" } },
+	-- the fourteenth slice: EFT's scavs carry the VPO-209 in 6.4 % of their primaries, about six tenths as often as the two
+	-- SKSs together (SPT 3.10.1 bots/types/assault.json), with 10- and 30-round AK magazines (two of its five are 10-round
+	-- ones) of .366 TKM FMJ, EKO and Geksa (and AP-M, left out here as the scavs' other guns leave out their piercers)
+	{ "T209_RIFLE", 4, "KST_MAG10", { "A96_FMJ", "A96_CU", "A96_EXP" } }, { "T209_RIFLE", 6, "KST_MAG", { "A96_FMJ", "A96_CU", "A96_EXP" } },
 }
 local function pickWeighted(rand, list)
 	local total = 0

@@ -8,6 +8,31 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The modular stair and railing kit (art-5b phase 1; 2026-11-09, 02:40 SGT)
+
+| Test | Result |
+|---|---|
+| Blender and upload | build_kit5.py built the 170 variants; contact sheet and two turntables looked at (the steel flight's treads, stringers and nosings; the escalator block dark by design, its baked colour about 0.2 against near white for the others); ZR_Kit5A (89 flights) and ZR_Kit5B (81 handrails and railings) exported and uploaded; KitMeta 325 props. |
+| Build log | 1,338 library meshes loaded, 0 batches failed. The Smelter 4,363 parts to 3,497 (stair steps 1,103 to 50, railing parts 661 to 0); Border Yard 28,600 to 26,523; Meridian 20,554 to 20,090 (treads 490 to 0); the world 53,068 to 48,411. |
+| Walking | On the Smelter's steel stair tower, holding W from the foot: the character rose smoothly from 3.2 to 10.2 studs over 12 studs of run and walked on along the landing. On a concrete flight down into the tunnels: down 8.5 studs and back up, no fall, no snag at either end. |
+| Looks | One still of the steel stair tower from its landing: treads, nosings, handrails and the railing beside it in place, no gaps seen. |
+| Grenades | A grenade thrown at a deck railing bounced back off the railing's collider (REQUEST 3); after the fix (grenades fly and check blast cover in the sight group, which passes railing colliders as bullets do) the same throw went through and fell to the floor below. |
+| Tests | 18 suites, 1,293 checks, all passed (KitTests 60: Smelter 72 flights and 132 railings, Border 93 and 292, Meridian 13, Quay 7 2, all from the kit). |
+| Not checked | Sprinting, crouching and going prone on each flight kind; footstep sounds; an AI following a player over the ramps; the escalators and Border's flights by eye; a phone's frame rate. |
+
+## The Tern T-209 and EFT's two-calibre magazines (economy-1a's fourteenth slice; 2026-11-09, 01:50 SGT)
+
+| Test | Result |
+|---|---|
+| Models and pictures | guns_vpo.py built the seven parts in Blender; the review render looked at (the KS-7's furniture at the KS-7's places, the thread protector at the muzzle, the 10-round magazine in the well); icons and side sprites rendered; ZR_GunsVPO exported (7 parts, 5,222 triangles), baked on two texture sheets and uploaded; icon sheet 6 and sprite sheet 0 uploaded again. GunMeta 178 parts, 200 sprites, 47 presets; ItemIcons 540 items; GunTex 332 pieces on 48 sheets. |
+| A new T-209 | Given with its trader build: the KS-7's dust cover, wooden handguard and grip, the T-209 stock, thread protector and rear sight, and an empty 10-round magazine; recoil -21 % (the stock), range 300 m. |
+| Loading | A KS-7 10-round magazine took 10 rounds of 9.6x39 FMJ; a KS-7 30-round magazine took 30 of 7.6x39 FMJ. |
+| Firing | Three shots from the T-209 with 9.6x39: three accepted by the server, 7 rounds left on both sides. |
+| Foreign rounds | The 30-round 7.6x39 magazine went into the T-209 (it fits by type); the client showed 0 rounds and fired nothing; a shot sent to the server by hand with that magazine in was refused and the magazine kept its 30 rounds. |
+| Reload | With a 9.6x39 magazine in the rig, R swapped the 7.6x39 one out for it (spare count 1, then 0) and two more shots were accepted. A 9.6x39 magazine in the backpack was not counted (quick reload takes from the rig and pockets). |
+| Tests | 17 suites, 1,235 checks, all passed (RecoilTests 47). |
+| Not checked | Buying the T-209 through Skier's and Jaeger's screens; the LOAD menu by eye (it now lists both calibres for a KS-7 magazine); a scav carrying a T-209; a KS-7 holding a 9.6x39 magazine (the same server check). |
+
 ## The Smelter's code-word note and stores keycard (art-1a follow-up; 2026-11-09, 00:46 SGT)
 
 | Test | Result |

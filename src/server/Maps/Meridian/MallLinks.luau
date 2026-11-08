@@ -3,7 +3,8 @@
 -- at most, each as one box from the lower floor up to its tread; the last tread is level with the upper floor. The flight lies on
 -- the plan's grid so that the opening in the upper floor is exactly the flight; a landing of at least 4.5 studs of floor follows at
 -- both ends (MallPlan). The ramp in the south atrium is one wedge. The dock ramps outside are Ground's; their deck pieces are in
--- MallShell.
+-- MallShell. art-5b: a flight is one Kit5 mesh and a ramp when the batch is loaded (MapKit's k5Flight); the treads are the
+-- fallback.
 return function(ctx)
 	local plan, O = ctx.plan, ctx.O
 	local C, M, hex = ctx.C, ctx.M, ctx.hex
@@ -36,7 +37,7 @@ return function(ctx)
 		end
 	end
 
-	local nTreads = 0
+	local nTreads, nFlights = 0, 0
 	for _, ln in plan.links do
 		if ln.type == "ramp" then
 			local y0, y1 = YL[ln.lo], YL[ln.hi]
@@ -59,7 +60,20 @@ return function(ctx)
 			if ln.type == "escalator" then
 				color, mat = ESC, M.Metal
 			end
-			for k = 1, steps do
+			-- art-5b: the Kit5 flight (one mesh and a ramp) when the batch is loaded, these treads otherwise
+			local fx, fz = ln.x0, ln.z0
+			if ln.ux ~= 0 then
+				fz = ln.ax
+			else
+				fx = ln.ax
+			end
+			local foot = Vector3.new(O.X + fx, y0, O.Z + fz)
+			local kitFlight = ctx.H.k5Flight(par, CFrame.lookAt(foot, foot + Vector3.new(ln.ux, 0, ln.uz)), steps, rs, run, ln.w,
+				ln.type == "escalator" and "E" or "C", color, mat, { base = 0.2, name = ln.id })
+			if kitFlight then
+				nFlights += 1
+			end
+			for k = 1, kitFlight and 0 or steps do
 				local a0, a1 = (k - 1) * run, k * run
 				local xa, xb = ln.x0 + ln.ux * a0, ln.x0 + ln.ux * a1
 				local za, zb = ln.z0 + ln.uz * a0, ln.z0 + ln.uz * a1
@@ -79,4 +93,5 @@ return function(ctx)
 		end
 	end
 	ctx.stat.treads = nTreads
+	ctx.stat.kitFlights = nFlights
 end

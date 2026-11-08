@@ -1,7 +1,9 @@
 --!nonstrict
 -- Recoil checks for audit decision gameplay-1a (Tarkov's recoil model): the pure rules in Recoil.luau, the guns'
--- recoil fields in Weapons.luau and the parts' figures in WeaponParts.luau. Run via ZR_Dev "tests" (every module in
--- Tests). Pure functions only: nothing here touches the world or a player.
+-- recoil fields in Weapons.luau and the parts' figures in WeaponParts.luau; since economy-1a's fourteenth slice also
+-- EFT's calibre rule (the rounds a magazine takes, the rounds a gun fires: Items.takesRound / Items.fires, Inv's
+-- loading and reloading). Run via ZR_Dev "tests" (every module in Tests). Pure functions only (Inv is pure too):
+-- nothing here touches the world or a player.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZR")
 local Recoil = require(Shared.Recoil)
 local Weapons = require(Shared.Weapons)
@@ -255,7 +257,8 @@ function T.run(ctx)
 		end
 		check("every gun has its recoil fields in range (full-auto guns settle, the rest do not)", ok)
 		local want = { R17 = { 79, 228 }, KST = { 90, 221 }, KS74 = { 70, 178 }, KSL = { 106, 316 }, GL6 = { 238, 560 }, SPARROW = { 43, 212 }, HARROW = { 290, 381 }, TUNDRA = { 178, 541 },
-			P9 = { 425, 310 }, PM = { 380, 265 }, SKS = { 155, 360 }, SVD = { 220, 647 }, M1A = { 214, 405 }, M700 = { 199, 670 }, VSS = { 80, 270 }, VAL = { 80, 270 }, MP7 = { 50, 178 }, P90 = { 54, 243 }, UMP = { 72, 240 }, M1911 = { 451, 355 }, FN57 = { 281, 240 }, TT = { 553, 325 }, PPSH = { 89, 294 }, W21 = { 442, 325 }, J21 = { 54, 234 }, T215 = { 200, 486 }, CRK357 = { 383, 280 }, CRK9 = { 306, 200 }, BZ12 = { 493, 340 }, D17 = { 311, 260 }, AV9 = { 51, 269 }, B19 = { 58, 270 } }
+			P9 = { 425, 310 }, PM = { 380, 265 }, SKS = { 155, 360 }, SVD = { 220, 647 }, M1A = { 214, 405 }, M700 = { 199, 670 }, VSS = { 80, 270 }, VAL = { 80, 270 }, MP7 = { 50, 178 }, P90 = { 54, 243 }, UMP = { 72, 240 }, M1911 = { 451, 355 }, FN57 = { 281, 240 }, TT = { 553, 325 }, PPSH = { 89, 294 }, W21 = { 442, 325 }, J21 = { 54, 234 }, T215 = { 200, 486 }, CRK357 = { 383, 280 }, CRK9 = { 306, 200 }, BZ12 = { 493, 340 }, D17 = { 311, 260 }, AV9 = { 51, 269 }, B19 = { 58, 270 },
+			T209 = { 122, 305 } }
 		local okF = true
 		for id, f in want do
 			local def = Weapons[id]
@@ -264,7 +267,7 @@ function T.run(ctx)
 				table.insert(notes, string.format("%s shows %d / %d", id, math.floor(def.recoilV * 100 + 0.5), math.floor(def.recoilH * 100 + 0.5)))
 			end
 		end
-		check("the gunsmith figures are Tarkov's for each gun's counterpart (M4A1 79/228, AKM 90/221, AK-74N 70/178, RPK-16 106/316, M32A1 238/560, MP5 43/212, MP-133 290/381, Mosin 178/541, MP-443 425/310, PM 380/265, SKS 155/360, SVDS 220/647, M1A 214/405, M700 199/670, VSS and AS VAL 80/270, MP7A1 50/178, P90 54/243, UMP 45 72/240, M1911A1 451/355, Five-seveN MK2 281/240, TT-33 553/325, PPSh-41 89/294, SR-1MP 442/325, SR-2M 54/234, VPO-215 200/486, Rhino 50DS 383/280, Rhino 200DS 306/200, RSh-12 493/340, Glock 17 311/260, MPX 51/269, Vityaz 58/270)", okF)
+		check("the gunsmith figures are Tarkov's for each gun's counterpart (M4A1 79/228, AKM 90/221, AK-74N 70/178, RPK-16 106/316, M32A1 238/560, MP5 43/212, MP-133 290/381, Mosin 178/541, MP-443 425/310, PM 380/265, SKS 155/360, SVDS 220/647, M1A 214/405, M700 199/670, VSS and AS VAL 80/270, MP7A1 50/178, P90 54/243, UMP 45 72/240, M1911A1 451/355, Five-seveN MK2 281/240, TT-33 553/325, PPSh-41 89/294, SR-1MP 442/325, SR-2M 54/234, VPO-215 200/486, Rhino 50DS 383/280, Rhino 200DS 306/200, RSh-12 493/340, Glock 17 311/260, MPX 51/269, Vityaz 58/270, VPO-209 122/305)", okF)
 	end)
 
 	-- ── the parts: Tarkov 1.0.4.5 and the default builds ───────────────────────────────────────────────────────────
@@ -284,8 +287,10 @@ function T.run(ctx)
 				and P.HAR_BRL_20.ergo < P.HAR_BRL_18.ergo and P.HAR_BRL_18.ergo < P.HAR_BRL_14.ergo)
 		check("Tarkov 1.0.4.5: a suppressor costs far more ergonomics than the muzzle device it replaces and takes only a little more recoil off",
 			P.SUPP_62.recoil < P.R17_FH_A2.recoil and P.SUPP_62.ergo <= P.R17_FH_A2.ergo - 10 and P.SUPP_76.recoil < P.KST_FH_SLANT.recoil
-				and P.SUPP_76.ergo <= (P.KST_FH_SLANT.ergo or 0) - 10)
-		local sums = { R17_RIFLE = -33.4, KST_RIFLE = -26, KS74_RIFLE = -27, SPARROW_SMG = -23, HARROW12 = -27, TUNDRA_BOLT = -20, P9_PISTOL = 0, PM_PISTOL = 0, SKS_RIFLE = 0, SVD_RIFLE = 0, M1A_RIFLE = 0, M700_BOLT = 0, VSS_RIFLE = 0, VAL_RIFLE = 0, MP7_SMG = 0, P90_SMG = 0, UMP_SMG = 0, M1911_PISTOL = 0, FN57_PISTOL = 0, TT_PISTOL = 0, PPSH_SMG = 0, W21_PISTOL = 0, J21_SMG = 0, T215_BOLT = 0, CRK357_REV = 0, CRK9_REV = 0, BZ12_REV = 0, D17_PISTOL = 0, AV9_SMG = 0, B19_SMG = 0 }
+				and P.SUPP_76.ergo <= (P.KST_FH_SLANT.ergo or 0) - 10 and P.SUPP_96.recoil < (P.T209_TP.recoil or 0)
+				and P.SUPP_96.ergo <= (P.T209_TP.ergo or 0) - 10 and P.SUPP_54.recoil < P.BRAKE_74.recoil and P.SUPP_54.ergo <= (P.BRAKE_74.ergo or 0) - 10)
+		local sums = { R17_RIFLE = -33.4, KST_RIFLE = -26, KS74_RIFLE = -27, SPARROW_SMG = -23, HARROW12 = -27, TUNDRA_BOLT = -20, P9_PISTOL = 0, PM_PISTOL = 0, SKS_RIFLE = 0, SVD_RIFLE = 0, M1A_RIFLE = 0, M700_BOLT = 0, VSS_RIFLE = 0, VAL_RIFLE = 0, MP7_SMG = 0, P90_SMG = 0, UMP_SMG = 0, M1911_PISTOL = 0, FN57_PISTOL = 0, TT_PISTOL = 0, PPSH_SMG = 0, W21_PISTOL = 0, J21_SMG = 0, T215_BOLT = 0, CRK357_REV = 0, CRK9_REV = 0, BZ12_REV = 0, D17_PISTOL = 0, AV9_SMG = 0, B19_SMG = 0,
+			T209_RIFLE = -21 }
 		local okS = true
 		for base, sum in sums do
 			local got = WP.defaultSum(base).recoilPct
@@ -294,7 +299,87 @@ function T.run(ctx)
 				table.insert(notes, string.format("%s default build sums %.2f %%", base, got))
 			end
 		end
-		check("the default builds sum Tarkov's preset modifiers (M4A1 -33.4 %, AKM -26 %, MP-133 -27 %), so the figures hold", okS)
+		check("the default builds sum Tarkov's preset modifiers (M4A1 -33.4 %, AKM -26 %, MP-133 -27 %, VPO-209 -21 %), so the figures hold", okS)
+	end)
+
+	-- ── calibres: EFT's two filters (economy-1a, fourteenth slice) ─────────────────────────────────────────────────
+	-- EFT's AK 7.62x39 magazines take .366 TKM too and the VPO-209 takes those magazines, but a gun chambers only its own
+	-- calibre (SPT 3.10.1 items.json): a KS-7 magazine of 9.6x39 feeds the T-209, never the KS-7
+	guard("calibres", function()
+		local Items = require(Shared.Items)
+		local Inv = require(script.Parent.Parent:WaitForChild("Services").Inv)
+		local D = Items.defs
+		check("EFT's AK magazines take .366 TKM: every KS-7 magazine takes 7.6x39 and 9.6x39 and nothing else",
+			Items.takesRound(D.KST_MAG, D.A76_PS) and Items.takesRound(D.KST_MAG, D.A96_FMJ) and Items.takesRound(D.KST_MAG10, D.A96_AP)
+				and Items.takesRound(D.KST_MAG40, D.A96_CU) and Items.takesRound(D.KSL_DRUM95, D.A96_EXP) and not Items.takesRound(D.KST_MAG, D.A54_PS)
+				and not Items.takesRound(D.KST_MAG, D.A76L_LPS) and not Items.takesRound(D.KST_MAG, D.A939_SP5))
+		check("other magazines, internal magazines and tubes take their own calibre only (KS-74, SK-45 and T-215 as before)",
+			not Items.takesRound(D.KS74_MAG, D.A96_FMJ) and Items.takesRound(D.KS74_MAG, D.A54_PS) and not Items.takesRound(D.SKS_RIFLE, D.A96_FMJ)
+				and Items.takesRound(D.SKS_RIFLE, D.A76_PS) and not Items.takesRound(D.T215_MAG, D.A76_PS) and Items.takesRound(D.T215_MAG, D.A96_FMJ)
+				and Items.takesRound(D.HARROW12, D.A12_BUCK) and not Items.takesRound(D.KST_RIFLE, D.A76_PS) and not Items.takesRound(D.KST_MAG, D.KST_MAG))
+		check("a gun fires its own calibre only: the T-209 9.6x39, the KS-7 and KS-L 7.6x39; an empty magazine stops nothing",
+			Items.fires(D.T209_RIFLE, "A96_FMJ") and Items.fires(D.T209_RIFLE, D.A96_AP) and not Items.fires(D.T209_RIFLE, "A76_PS")
+				and Items.fires(D.KST_RIFLE, "A76_PS") and not Items.fires(D.KST_RIFLE, "A96_FMJ") and not Items.fires(D.KSL_LMG, D.A96_CU)
+				and Items.fires(D.KST_RIFLE, nil) and not Items.fires(D.KST_RIFLE, "NO_SUCH_ROUND"))
+		-- every older gun keeps its rule: a magazine outside MAG_CALIBERS takes exactly its calibre, every gun fires exactly its own
+		local okSame, okOwn = true, true
+		for id, d in D do
+			for aid, ad in D do
+				if ad.kind == "ammo" then
+					if d.kind == "mag" and not Items.MAG_CALIBERS[d.family or ""] and Items.takesRound(d, ad) ~= (ad.caliber == d.caliber) then
+						okSame = false
+						table.insert(notes, "magazine rule changed: " .. id .. " / " .. aid)
+					end
+					if d.kind == "mag" and ad.caliber == d.caliber and not Items.takesRound(d, ad) then
+						okOwn = false
+					end
+					if d.weapon and d.caliber and Items.fires(d, ad) ~= (ad.caliber == d.caliber) then
+						okSame = false
+						table.insert(notes, "chamber rule changed: " .. id .. " / " .. aid)
+					end
+				end
+			end
+		end
+		check("every other magazine takes exactly its own calibre and every gun fires exactly its own, as before", okSame)
+		check("no magazine refuses its own calibre", okOwn)
+		-- the inventory: load the KS-7's magazines with either round, and the reload picks what each gun can fire
+		local h = Inv.newHolder("profile")
+		local rg, rit = Inv.newItem("RIG_CHEST", 1)
+		Inv.placeSlot(h, rg, rit, "rig")
+		local function put(id, n, extra, where)
+			local g, it = Inv.newItem(id, n or 1, extra)
+			assert(Inv.place(h, g, it, { where or "stash" }), "no room for " .. id)
+			return g
+		end
+		local m96 = put("KST_MAG", 1, { a = 0 }, rg)
+		local m76 = put("KST_MAG10", 1, { a = 0 }, rg)
+		local s96 = put("A96_FMJ", 40)
+		local s76 = put("A76_PS", 60)
+		local n96, e96 = Inv.loadAmmo(h, m96, s96, 5)
+		local n76, e76 = Inv.loadAmmo(h, m76, s76)
+		check("a KS-7 magazine loads 9.6x39 (EFT: an AK 7.62x39 magazine takes .366 TKM), the 10-round one 7.6x39",
+			n96 == 5 and e96 == nil and h.items[m96].at == "A96_FMJ" and n76 == 10 and e76 == nil and h.items[m76].at == "A76_PS")
+		local _, eMix = Inv.loadAmmo(h, m96, s76)
+		local k74 = put("KS74_MAG", 1, { a = 0 })
+		local _, eCal = Inv.loadAmmo(h, k74, s96)
+		local sks = put("SKS_RIFLE", 1)
+		local _, eSks = Inv.loadAmmo(h, sks, s96)
+		check("the old rules hold: no mixing in one magazine, the KS-74's magazine and the SK-45 refuse 9.6x39",
+			eMix == "MIXED_AMMO" and eCal == "WRONG_CALIBER" and eSks == "WRONG_CALIBER")
+		local vpo = put("T209_RIFLE", 1, { bare = true })
+		local ks7 = put("KST_RIFLE", 1, { bare = true })
+		check("a reload picks what each gun fires: the T-209 the 9.6x39 magazine (5 rounds) over the fuller 7.6x39 one, the KS-7 the 7.6x39 one",
+			Inv.bestMag(h, vpo) == m96 and Inv.bestMag(h, ks7) == m76)
+		local okV = Inv.insertMag(h, m96, vpo)
+		check("the KS-7 magazine of 9.6x39 goes into the T-209 and feeds it",
+			okV == true and h.items[vpo].mag == m96 and Items.fires(D.T209_RIFLE, h.items[m96].at) and (h.items[m96].a or 0) == 5)
+		Inv.detach(h, m96)
+		Inv.autoPlace(h, m96, { rg })
+		local nTop = Inv.loadAmmo(h, m96, s96)
+		local okK = Inv.insertMag(h, m96, ks7)
+		check("in a KS-7 the same magazine fits (EFT: a magazine fits by type) but its 30 rounds of 9.6x39 are never chambered: a reload swaps in the 7.6x39 one with fewer",
+			nTop == 25 and okK == true and h.items[ks7].mag == m96 and (h.items[m96].a or 0) == 30 and not Items.fires(D.KST_RIFLE, h.items[m96].at)
+				and Inv.bestMag(h, ks7) == m76)
 	end)
 
 	-- ── the reflex dot ─────────────────────────────────────────────────────────────────────────────────────────────

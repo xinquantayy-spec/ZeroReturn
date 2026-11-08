@@ -284,6 +284,13 @@ return function(B)
 		else
 			sv = -1
 		end
+		-- art-5b: the Kit5 flight (one mesh, a ramp, handrails) when it is loaded; these steps, stringers and rails otherwise.
+		-- Open flights are the steel ones (every open flight here is STL2 / Metal); solid ones are concrete
+		local foot = F * CFrame.lookAt(Vector3.new(u, y0, v), Vector3.new(u + su, y0, v + sv))
+		local kitOpts = { base = solid and (y0 - solid) or nil, hand = rails and "both" or nil, handColor = STL, handMat = M.Metal }
+		if H.k5Flight(p, foot, n, dr, d, w, solid and "C" or "S", col, mat, kitOpts) then
+			return n * d
+		end
 		for k = 1, n do
 			local top = y0 + k * dr
 			local lo = solid or (top - 0.45)
@@ -327,6 +334,10 @@ return function(B)
 		local a, b = Vector3.new(u0, y0, v0), Vector3.new(u1, y1, v1)
 		local len = (b - a).Magnitude
 		if len < 0.5 then
+			return
+		end
+		-- art-5b: a level rail is a Kit5 railing when the batch is loaded (sloped ones go with their flight)
+		if H.k5Rail(p, F * a, F * b, col, M.Metal) then
 			return
 		end
 		local n = math.max(1, math.ceil(len / 10))
