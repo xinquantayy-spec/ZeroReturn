@@ -187,8 +187,12 @@ ammo("A62_SS", "6.2x40 SS", "6.2 SS", "6.2", 60, 240, { dmg = 54, pen = 31, armo
 ammo("A62_TR", "6.2x40 TR", "6.2 TR", "6.2", 60, 740, { dmg = 52, pen = 38, armorDmg = 0.44, bleedL = 0.12, bleedH = 0.06, frag = 0.43, speed = 940, recoil = 0.04, acc = -0.04, tracer = "red" }, "uncommon", "Penetrator with a red tracer.") -- M856A1; value ~
 ammo("A62_EP", "6.2x40 EP", "6.2 EP", "6.2", 60, 950, { dmg = 49, pen = 44, armorDmg = 0.47, bleedL = 0.1, bleedH = 0.05, frag = 0.44, speed = 945, recoil = 0.05, acc = -0.05 }, "rare", "Enhanced penetrator with a hardened steel tip.") -- M855A1; value ours
 ammo("A62_AP", "6.2x40 AP", "6.2 AP", "6.2", 60, 1200, { dmg = 42, pen = 53, armorDmg = 0.52, bleedL = 0.1, bleedH = 0.05, frag = 0.42, speed = 1013, recoil = 0.08, acc = -0.07 }, "rare", "Tungsten-core armour piercer. Defeats class 5 plates.") -- M995; value ours
--- 7.6x39 (EFT's 7.62x39): HP, US, T-45M1, PS, PP, BP
+-- 7.6x39 (EFT's 7.62x39): HP, FMJ, US, T-45M1, PS, PP, BP
 ammo("A76_HP", "7.6x39 HP", "7.6 HP", "7.6", 60, 70, { dmg = 80, pen = 15, armorDmg = 0.2, bleedL = 0.2, bleedH = 0.12, frag = 0.4, speed = 754 }, nil, "Hollow point. Hits hard, stops at the first plate.")
+-- FMJ (economy-1a's thirteenth slice): tarkovforge.com/ammo/762x39mm-fmj (read 2026-11-08: 63 damage, 26 penetration, 33 %
+-- armour damage, 30 % fragmentation, 775 m/s, recoil -2 %, accuracy +2 %, no bleeding change); the value is EFT's handbook
+-- price (SPT's handbook.json, 140)
+ammo("A76_FMJ", "7.6x39 FMJ", "7.6 FMJ", "7.6", 60, 140, { dmg = 63, pen = 26, armorDmg = 0.33, bleedL = 0.15, bleedH = 0.08, frag = 0.3, speed = 775, recoil = -0.02, acc = 0.02 }, nil, "Plain full metal jacket in a lacquered steel case. Cheap practice ammunition, still a rifle round.")
 ammo("A76_US", "7.6x39 US", "7.6 US", "7.6", 60, 220, { dmg = 56, pen = 29, armorDmg = 0.42, bleedL = 0.15, bleedH = 0.08, frag = 0.1, speed = 301, recoil = -0.3, acc = 0.05, subsonic = true }, "uncommon", "Subsonic heavy bullet. Quiet with a suppressor.") -- frag: ours
 ammo("A76_TR", "7.6x39 TR", "7.6 TR", "7.6", 60, 230, { dmg = 65, pen = 30, armorDmg = 0.46, bleedL = 0.15, bleedH = 0.08, frag = 0.17, speed = 720, recoil = -0.06, acc = -0.04, tracer = "red" }, nil, "Steel-core load with a red tracer.") -- T-45M1; frag ours, value ~
 ammo("A76_PS", "7.6x39 PS", "7.6 PS", "7.6", 60, 240, { dmg = 61, pen = 35, armorDmg = 0.52, bleedL = 0.15, bleedH = 0.08, frag = 0.2, speed = 717 }, nil, "Mild steel core 7.6x39.")
@@ -232,7 +236,10 @@ ammo("A12_FLECH", "12/70 Flechette", "12 FLE", "12", 20, 400, { dmg = 25, pen = 
 ammo("A12_SLUG", "12/70 Slug", "12 SLUG", "12", 20, 380, { dmg = 167, pen = 15, armorDmg = 0.55, bleedL = 0.3, bleedH = 0.2, frag = 0, speed = 370, recoil = 0.1 }, "uncommon", "Single heavy lead slug.")
 ammo("A12_SABOT", "12/70 Sabot Slug", "12 SAB", "12", 20, 300, { dmg = 150, pen = 20, armorDmg = 0.5, bleedL = 0.2, bleedH = 0.2, frag = 0, speed = 430, recoil = -0.1 }, "uncommon", "Finned slug in a plastic wad. Flies flatter than lead.") -- Poleva-6u; value ours
 ammo("A12_APS", "12/70 AP Slug", "12 APS", "12", 20, 1500, { dmg = 164, pen = 37, armorDmg = 0.65, bleedL = 0.25, bleedH = 0.2, frag = 0, speed = 510, recoil = 0.5 }, "rare", "Hardened armour-piercing slug.") -- AP-20; value ours
--- 7.6x54R (EFT's 7.62x54R): LPS gzh, T-46M gzh, PS gzh, BT gzh, SNB gzh, BS gs
+-- 7.6x54R (EFT's 7.62x54R): FMJ, LPS gzh, T-46M gzh, PS gzh, BT gzh, SNB gzh, BS gs
+-- FMJ (economy-1a's thirteenth slice): tarkovforge.com/ammo/762x54mm-r-fmj (read 2026-11-08: 84 damage, 36 penetration,
+-- 63 % armour damage, 20 % fragmentation, 760 m/s, no recoil, accuracy or bleeding change); value EFT's handbook price (270)
+ammo("A76L_FMJ", "7.6x54R FMJ", "7.6L FMJ", "7.6L", 40, 270, { dmg = 84, pen = 36, armorDmg = 0.63, bleedL = 0.2, bleedH = 0.15, frag = 0.2, speed = 760 }, nil, "Plain full metal jacket with a lead core. Training ammunition with the full-power cartridge's punch.")
 ammo("A76L_LPS", "7.6x54R LPS", "7.6L LPS", "7.6L", 40, 490, { dmg = 81, pen = 42, armorDmg = 0.78, bleedL = 0.2, bleedH = 0.15, frag = 0.18, speed = 865, acc = -0.05 }, "uncommon", "Full-power rifle cartridge.")
 ammo("A76L_TR", "7.6x54R TR", "7.6L TR", "7.6L", 40, 356, { dmg = 82, pen = 41, armorDmg = 0.83, bleedL = 0.2, bleedH = 0.15, frag = 0.18, speed = 800, tracer = "red" }, "uncommon", "Full-power load with a red tracer.") -- T-46M
 ammo("A76L_PS", "7.6x54R PS", "7.6L PS", "7.6L", 40, 920, { dmg = 84, pen = 45, armorDmg = 0.84, bleedL = 0.2, bleedH = 0.15, frag = 0.08, speed = 875 }, "uncommon", "Steel-core rifle cartridge.")
@@ -503,11 +510,14 @@ add("MEDKIT_L", { name = "Field Medkit", short = "FIELD 400", kind = "med", w = 
 add("MEDKIT_XL", { name = "Trauma Case", short = "TRAUMA", kind = "med", w = 2, h = 2, mass = 1.6, value = 75000, rarity = "rare", med = { hp = 1200, light = true, heavy = true, fracture = true, time = 4 }, desc = "Restores health (1200), stops bleeds, sets fractures.", color = MED })
 add("SURGKIT", { name = "Field Surgical Kit", short = "SURGERY", kind = "med", w = 2, h = 1, mass = 0.8, value = 52000, rarity = "rare", med = { surgery = true, uses = 2, time = 12 }, desc = "Restores a destroyed limb (reduced max health). 2 uses.", color = MED })
 -- Tarkov's stimulant injectors (gameplay-4b; their courses in Stims.luau): after Propital, SJ6, Zagustin and the
--- Adrenaline injector. EFT: 1x1, 0.05 kg, 2 s to inject, one use
+-- Adrenaline injector, and SJ1 since economy-1a's thirteenth slice. EFT: 1x1, 0.05 kg, 2 s to inject, one use
 add("STIM_REGEN", { name = "RG-5 Regenerative Injector", short = "RG-5", kind = "med", w = 1, h = 1, mass = 0.05, value = 36000, rarity = "rare", med = { stim = "STIM_REGEN", uses = 1, time = 2 }, desc = "A regenerative stimulant. Slowly restores health for 5 minutes and kills pain for about 4. Hand tremor and tunnel vision near the end.", color = MED })
 add("STIM_STAMINA", { name = "SV-3 Combat Stimulant", short = "SV-3", kind = "med", w = 1, h = 1, mass = 0.05, value = 85000, rarity = "rare", med = { stim = "STIM_STAMINA", uses = 1, time = 2 }, desc = "A combat stimulant. More stamina and faster recovery for 4 minutes. Hand tremor and tunnel vision near the end.", color = MED })
 add("STIM_HEMO", { name = "HM-2 Hemostatic Injector", short = "HM-2", kind = "med", w = 1, h = 1, mass = 0.05, value = 50000, rarity = "rare", med = { stim = "STIM_HEMO", uses = 1, time = 2 }, desc = "A hemostatic stimulant. Stops all bleeding, and no new bleed takes for 3 minutes. Hand tremor and heavy dehydration near the end.", color = MED })
 add("STIM_ADREN", { name = "Adrenaline Injector", short = "ADRENALINE", kind = "med", w = 1, h = 1, mass = 0.05, value = 16000, rarity = "uncommon", med = { stim = "STIM_ADREN", uses = 1, time = 2 }, desc = "Kills pain for about a minute, gives a short burst of health and a minute of endurance, strength and recoil control. Hunger and thirst follow.", color = MED })
+-- economy-1a's thirteenth slice: the SV-1 copies EFT's SJ1 TGLabs combat stimulant (1x1, 0.05 kg, 2 s to inject, one use:
+-- xgamingserver.com's item page, snapshot 2026-11-04; EFT's handbook price, 35,893); its course in Stims.luau
+add("STIM_COMBAT", { name = "SV-1 Combat Stimulant", short = "SV-1", kind = "med", w = 1, h = 1, mass = 0.05, value = 35893, rarity = "rare", med = { stim = "STIM_COMBAT", uses = 1, time = 2 }, desc = "A combat stimulant. Endurance, Strength and Stress Resistance up for 3 minutes. Hunger and thirst follow.", color = MED })
 add("WATER", { name = "Water Bottle", short = "WATER", kind = "food", w = 1, h = 2, mass = 0.6, value = 8000, food = { water = 60, time = 4 }, desc = "Hydration +60.", color = c("#7FA8B8") })
 add("STEW", { name = "Canned Stew", short = "STEW", kind = "food", w = 1, h = 1, mass = 0.4, value = 6500, food = { energy = 55, water = -5, time = 5 }, desc = "Energy +55.", color = c("#8F6A4A") })
 add("HARDTACK", { name = "Hardtack", short = "HARDTACK", kind = "food", w = 1, h = 1, mass = 0.15, value = 3000, food = { energy = 30, water = -12, time = 3 }, desc = "Energy +30, dries you out.", color = c("#A48C64") })
@@ -743,19 +753,29 @@ loot("FILE_SET", "File Set", "FILES", 2, 2, 0.8, 35000, "uncommon", "A roll of m
 loot("TAPE_MEASURE", "Tape Measure", "MTAPE", 1, 1, 0.3, 3769, "common", "A five-metre tape measure in a yellow case.", "#D8B43A") -- construction measuring tape
 loot("AWL", "Awl", "AWL", 1, 1, 0.1, 33000, "uncommon", "A leatherworker's awl with a wooden handle.", "#8A6A42") -- awl
 loot("SEWING_KIT", "Sewing Kit", "SEWING", 1, 1, 0.2, 38000, "uncommon", "Heavy needles, waxed thread and a thimble in a tin.", "#7A5A8A") -- sewing kit
+-- decision economy-1a, thirteenth slice (2026-11-08): the goods that let more of EFT's crafts in (the crafts thread's list).
+-- One of ours for each EFT item beside it, with EFT's grid size (tarkovforge.com/loot/<item>, read 2026-11-08) and weight
+-- (xgamingserver.com item pages, snapshot 2026-11-04), its handbook price as the value and its handbook folder (SPT's
+-- handbook.json). The textbook's grid size and weight are ours: no page that gave them could be read.
+loot("PRINTER_PAPER", "Printer Paper", "PAPER", 2, 1, 0.7, 2337, "common", "A ream of plain office paper in its wrapper. Printers, copiers and anyone with something to write down want it.", "#E8E8E2") -- printer paper
+loot("COOK_BOOK", "Home Baking Cookbook", "COOKBOOK", 1, 2, 0.25, 58000, "rare", "A hardback of breads, pies and party dishes, its margins full of somebody's notes. A field kitchen runs better with one on the shelf.", "#B8442E") -- BakeEzy cook book
+loot("GEIGER", "Geiger Counter", "GEIGER", 1, 2, 0.4, 16684, "uncommon", "A handheld radiation counter with a probe on a coiled lead. Still clicks when it should.", "#C8A43A") -- Geiger-Muller counter
+loot("SEMI_TEXTBOOK", "Semiconductor Materials Textbook", "SEMI BOOK", 1, 2, 0.6, 490000, "epic", "A thick university textbook on semiconductor and display materials. Rare, and the one guide anyone has for making circuit boards from scratch.", "#2E4A7A") -- Advanced Electronic Materials textbook
+loot("MAGNET", "Magnet", "MAGNET", 1, 1, 0.4, 12713, "uncommon", "A heavy ring magnet salvaged from a speaker or a drive. Motors and instruments cannot be built without one.", "#3A3C3E") -- magnet
+loot("SLEDGEHAMMER", "Sledgehammer", "SLEDGE", 2, 5, 5.5, 132000, "rare", "A long-handled sledgehammer with a heavy steel head, for knocking down walls and beating stuck metal into shape.", "#4A4E52") -- Fierce Blow sledgehammer
 -- EFT's handbook folders for every barter good (the HANDBOOK and flea market can group by it)
 local BARTER_CAT = {
 	building = { "BOLTS", "DUCT_TAPE", "SCREWS", "NUTS", "NAILS", "SILICONE_TUBE", "CORR_HOSE", "PRESSURE_GAUGE", "SEAL_TAPE", "FOAM", "SPARE_PARTS" },
 	electronics = { "WIRES", "SPARK_PLUG", "SIGNAL_COIL", "CERAMIC_FUSE", "CAPACITOR", "CRACKED_LENS", "LOGIC_BOARD", "DECK_TRANSCEIVER", "FLASH_MODULE",
 		"MIL_CIRCUIT", "GPU_CARD", "HDD", "RAM_STICK", "PHONE", "LIGHTBULB", "RELAY", "MOTOR", "PSU", "CPU_FAN", "POWER_CORD", "TPLUG", "POWER_FILTER",
-		"MIL_CABLE", "ES_LAMP", "POWER_DRILL" },
+		"MIL_CABLE", "ES_LAMP", "POWER_DRILL", "GEIGER", "MAGNET" },
 	energy = { "BATTERY", "POWER_BANK", "LI_BATTERY" },
 	flammable = { "MATCHES", "FUEL_CAN", "GUNPOWDER", "PEN_OIL", "TNT", "THERMITE", "LIGHTER", "GUN_LUBE" },
-	household = { "TOOTHPASTE", "SOAP", "BLEACH", "TOILET_PAPER", "SALT", "CHLORINE", "ALKALI" },
+	household = { "TOOTHPASTE", "SOAP", "BLEACH", "TOILET_PAPER", "SALT", "CHLORINE", "ALKALI", "PRINTER_PAPER" },
 	medical = { "MED_TOOLS", "SYRINGE", "MEDS_PILE", "SALINE", "BLOODSET", "LEDX", "OPHTHALMOSCOPE" },
-	info = { "INTEL_FOLDER", "SSD", "SURVEY_MAPS", "SECURE_FLASH" },
+	info = { "INTEL_FOLDER", "SSD", "SURVEY_MAPS", "SECURE_FLASH", "COOK_BOOK", "SEMI_TEXTBOOK" },
 	valuables = { "OLD_COIN", "GOLD_CHAIN", "RITUAL_AMULET", "CAPT_WATCH", "COLD_WALLET", "BRASS_LION", "GOLD_ROOSTER", "SKULL_RING" },
-	tools = { "SCREWDRIVER", "PLIERS", "WRENCH", "RATCHET", "PIPE_WRENCH", "HAND_DRILL", "TOOLSET", "FILE_SET", "TAPE_MEASURE", "AWL", "SEWING_KIT" },
+	tools = { "SCREWDRIVER", "PLIERS", "WRENCH", "RATCHET", "PIPE_WRENCH", "HAND_DRILL", "TOOLSET", "FILE_SET", "TAPE_MEASURE", "AWL", "SEWING_KIT", "SLEDGEHAMMER" },
 	others = { "CIGARETTES", "FABRIC", "MOONSHINE", "DOGTAG", "WEAPON_PARTS", "WATER_FILTER", "FUZE" },
 }
 for cat, ids in BARTER_CAT do

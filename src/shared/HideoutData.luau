@@ -128,7 +128,7 @@ M.rest = { -- EFT area 9; whether EFT's rest space needs power is not documented
 	desc = "Bunks, a lamp and a radio. Faster recovery between raids.",
 	levels = {
 		{ cost = 10000, items = { { "DUCT_TAPE", 1 }, { "MATCHES", 1 } }, gone = "VENTS 1", time = 0, bonus = { debuff = 10 } },
-		{ cost = 75000, items = { { "HDD", 1 }, { "SIGNAL_COIL", 1 }, { "ES_LAMP", 5 } }, -- DVD drive, magnet, energy-saving lamp x5
+		{ cost = 75000, items = { { "HDD", 1 }, { "MAGNET", 1 }, { "ES_LAMP", 5 } }, -- DVD drive, magnet (its own since economy-1a's thirteenth slice), energy-saving lamp x5
 			needs = { { "generator", 1 }, { "rest", 1 } }, time = 3600, bonus = { energyRegen = 5, hpRegen = 5 } },
 		{ cost = 0, items = { { "POWER_CORD", 5 }, { "WIRES", 10 }, { "CAPACITOR", 5 }, { "LI_BATTERY", 4 } }, -- power cord x5, wires x10, capacitors x5, GreenBat lithium battery x4
 			needs = { { "rest", 2 } }, time = 7200, bonus = { hpRegen = 10, maxEnergy = 10 } },
@@ -338,8 +338,10 @@ end
 -- refill of a used item: the same item goes in and a fresh one comes out) }
 --
 -- Decision economy-1a's crafts (2026-11-08): every craft of EFT's six crafting modules (212 on tarkovforge.com's pages
--- for the current patch) whose product and inputs have one of ours; 78 here, the rest listed after the crafts with why
--- (the tenth catalogue slice brought in .366 TKM AP-M and 9x21 P gzh, 2026-11-08).
+-- for the current patch) whose product and inputs have one of ours; 83 here, the rest listed after the crafts with why
+-- (the tenth catalogue slice brought in .366 TKM AP-M and 9x21 P gzh; the thirteenth the magnet, 12/70 flechette,
+-- 7.62x54R LPS, SJ1 and toilet paper crafts, the cook book, Geiger counter, textbook and printer paper that five kept
+-- crafts lacked, and the magnet itself where the motor craft and the rest space took a stand-in, 2026-11-08).
 -- Sources: which crafts, levels, counts, inputs and times from tarkovforge.com/hideout/<module> (read 2026-11-08; it
 -- shows minutes, so a time is its minutes x 60 unless SPT's copy of the same craft gives the seconds); which ingredients
 -- are tools ("tool, returned") from xgamingserver.com's item pages (snapshot 2026-11-04) or, for a craft that has not
@@ -351,11 +353,13 @@ end
 --    even where a near one of ours exists (no more 7.62x39 FMJ as PS, .366 AP-M as BP, SJ1 or PNB as SJ6, Module-3M as
 --    PACA);
 --  · an input or tool without a counterpart takes the nearest of ours by what it is (EFT's name in the comment); with
---    none the craft is left out (economy-7b's crafts that lost a book, a Geiger counter or printer paper keep a note);
+--    none the craft is left out (economy-7b's crafts that had lost a book, a Geiger counter or printer paper have them
+--    back since the thirteenth catalogue slice);
 --  · also left out: a craft that would take in mostly its own product (the rest worth less, at our values, than the units
 --    of the product it uses: it would only turn an item into more of itself), one that makes no more of it than it takes
 --    (EFT's refills and swaps; the weapon repair kit's refill is kept as EFT has it), and a new craft our values would make
---    more than twice as rich as EFT's handbook prices make it.
+--    more than twice as rich as EFT's handbook prices make it (value out / value used up, tools aside), when that is
+--    also over 1.5 (the crafts thread's test; the thirteenth slice kept to it).
 H.recipes = {}
 local function R(id: string, module: string, level: number, time: number, get: string, n: number, give: any, tools: any, eft: string, extra: any?)
 	local r: any = { id = id, module = module, level = level, time = time, get = { get, n }, give = give, tools = tools, eft = eft }
@@ -370,8 +374,9 @@ local function T(id: string): any
 end
 local TOOL = T("MULTITOOL") -- the Leatherman multitool
 
--- medstation (EFT's multivitamins: a pile of meds; its hydrogen peroxide: saline; its drugs and balms: PAINKILLERS; vodka
--- used to clean: BLEACH; the four stims ours copies are Propital, SJ6, Zagustin and the adrenaline injector, Stims.luau)
+-- medstation (EFT's multivitamins: a pile of meds; its hydrogen peroxide: saline; its drugs, balms and morphine:
+-- PAINKILLERS; vodka used to clean: BLEACH; the five stims ours copies are Propital, SJ6, Zagustin, the adrenaline injector
+-- and SJ1, Stims.luau)
 R("MED_SALEWA", "medstation", 1, 2350, "MEDKIT_L", 1, { { "MEDKIT_M", 2 }, { "TOURNIQUET", 2 } }, nil, "Salewa first aid kit") -- car first aid kit x2, Esmarch x2
 R("MED_SYRINGE", "medstation", 1, 5340, "SYRINGE", 4, { { "MEDKIT_S", 4 }, { "BLEACH", 1 }, { "SALINE", 1 } }, { { "LIGHTER", 1 }, { "MED_TOOLS", 1 } }, "Disposable syringe x4") -- AI-2 x4, Tarkovskaya vodka, hydrogen peroxide; tools: SurvL lighter (our lighter), medical tools
 R("MED_AI2", "medstation", 1, 1320, "MEDKIT_S", 3, { { "MEDS_PILE", 1 } }, nil, "AI-2 medkit x3") -- pile of meds
@@ -381,13 +386,15 @@ R("MED_IFAK", "medstation", 2, 3000, "MEDKIT_L", 2, { { "MEDS_PILE", 2 }, { "BAN
 R("MED_MEDS", "medstation", 2, 2880, "MEDS_PILE", 3, { { "MEDKIT_S", 1 }, { "BANDAGE", 1 }, { "PAINKILLERS", 1 } }, nil, "Pile of meds x3") -- AI-2, aseptic bandage, Augmentin antibiotic pills
 R("MED_BLOODSET", "medstation", 2, 1680, "BLOODSET", 2, { { "SILICONE_TUBE", 1 }, { "SYRINGE", 1 }, { "MED_TOOLS", 1 } }, nil, "Medical bloodset x2") -- silicone tube, syringe, medical tools, all used up
 R("MED_VASELINE", "medstation", 2, 3300, "PAINKILLERS", 2, { { "SOAP", 5 }, { "MEDS_PILE", 1 } }, nil, "Vaseline balm x2") -- soap x3, Schaman shampoo x2, pile of meds (EFT 0.16.9 had it at level 3)
+R("MED_SJ1", "medstation", 2, 4990, "STIM_COMBAT", 5, { { "MEDS_PILE", 7 }, { "SALINE", 2 }, { "STIM_REGEN", 3 }, { "PAINKILLERS", 1 } }, nil, "SJ1 TGLabs combat stimulant injector x5") -- meds x7, saline x2, Propital x3 (our RG-5), morphine (our analgesic tabs); SPT's 4,990 s (tarkovforge.com: 1 h 23 min)
 R("MED_PROPITAL", "medstation", 3, 6900, "STIM_REGEN", 4, { { "PAINKILLERS", 2 }, { "MEDS_PILE", 2 } }, nil, "Propital regenerative stimulant injector x4") -- ibuprofen, Golden Star balm, meds x2 (EFT 0.16.9 made 7)
 R("MED_GRIZZLY", "medstation", 3, 4500, "MEDKIT_XL", 2, { { "MEDS_PILE", 4 }, { "TOURNIQUET", 2 }, { "SPLINT", 1 } }, nil, "Grizzly medical kit x2") -- meds x4, CAT x2, aluminium splint
 R("MED_ZAGUSTIN", "medstation", 3, 6720, "STIM_HEMO", 1, { { "HEMOSTAT", 1 }, { "MEDKIT_XL", 1 }, { "MEDS_PILE", 2 } }, T("SILICONE_TUBE"), "Zagustin hemostatic drug injector") -- CALOK-B, Grizzly, meds x2; silicone tube
 
 -- workbench (EFT's gunpowders "Kite", "Hawk", "Eagle": GUNPOWDER; every round is the one ours copies, EFT_PARITY's
--- catalogue row; electronic components and capacitors: CAPACITOR; CPUs and circuit boards: LOGIC_BOARD; magnets and
--- radiator helixes: SIGNAL_COIL; flat screwdrivers: SCREWDRIVER; Pliers Elite and metal cutting scissors: PLIERS)
+-- catalogue row; electronic components and capacitors: CAPACITOR; CPUs and circuit boards: LOGIC_BOARD; radiator
+-- helixes: SIGNAL_COIL; flat screwdrivers: SCREWDRIVER; Pliers Elite and metal cutting scissors: PLIERS; the magnet is
+-- its own item since the thirteenth catalogue slice)
 R("WB_KITE", "workbench", 1, 900, "GUNPOWDER", 2, { { "A54_HP", 120 } }, T("PLIERS"), "Gunpowder \"Kite\" x2") -- 5.45x39 HP x120; pliers (EFT 0.16.9 took 5,350 s)
 R("WB_PARTS_AKM", "workbench", 1, 4680, "WEAPON_PARTS", 5, { { "KST_RIFLE", 1 } }, TOOL, "Weapon parts x5") -- an AKM (our KS-7); multitool
 R("WB_PLUG", "workbench", 1, 3420, "TPLUG", 3, { { "NAILS", 1 }, { "POWER_CORD", 1 } }, nil, "T-shaped plug x3") -- nails, power cord
@@ -401,9 +408,12 @@ R("WB_CORD", "workbench", 1, 2100, "POWER_CORD", 2, { { "TPLUG", 2 }, { "WIRES",
 R("WB_PHONE", "workbench", 1, 1500, "PHONE", 1, { { "LOGIC_BOARD", 2 }, { "CAPACITOR", 1 } }, nil, "Broken GPhone smartphone") -- PC CPU, printed circuit board, electronic components
 R("WB_PARTS_SKS", "workbench", 1, 3100, "WEAPON_PARTS", 1, { { "SKS_RIFLE", 1 } }, T("SCREWDRIVER"), "Weapon parts") -- an SKS (our SK-45); flat screwdriver
 R("NADE_STUN", "workbench", 1, 4680, "GREN_STUN", 5, { { "FUZE", 5 }, { "GUNPOWDER", 1 } }, nil, "Zarya stun grenade x5") -- fuze x5, gunpowder "Kite"
+R("WB_MAGNET", "workbench", 1, 2600, "MAGNET", 1, { { "HDD", 1 } }, T("SCREWDRIVER"), "Magnet") -- damaged hard drive; screwdriver (SPT's 2,600 s; tarkovforge.com: 43 min)
+R("AMMO_FLECH", "workbench", 1, 3000, "A12_FLECH", 40, { { "NAILS", 3 }, { "GUNPOWDER", 2 } }, T("SLEDGEHAMMER"), "12/70 flechette x40") -- nails x3, gunpowder "Eagle" x2; Fierce Blow sledgehammer (tarkovforge.com: level 1, 50 min; EFT 0.16.9 made 60 at level 3, after the task Silent Caliber)
 R("AMMO_PAB9", "workbench", 2, 7350, "A939_PAB", 100, { { "GUNPOWDER", 3 } }, T("LIGHTER"), "9x39mm PAB-9 gs x100") -- gunpowder "Eagle" x3; SurvL lighter (EFT 0.16.9 made 150, after the task Test Drive - Part 1)
-R("WB_MOTOR", "workbench", 2, 4800, "MOTOR", 1, { { "WIRES", 2 }, { "SIGNAL_COIL", 1 }, { "CAPACITOR", 3 } }, nil, "Electric motor") -- wires x2, magnet, electronic components, capacitors x2
+R("WB_MOTOR", "workbench", 2, 4800, "MOTOR", 1, { { "WIRES", 2 }, { "MAGNET", 1 }, { "CAPACITOR", 3 } }, nil, "Electric motor") -- wires x2, magnet, electronic components, capacitors x2
 R("AMMO_76FMJ", "workbench", 2, 5900, "A76N_FMJ", 60, { { "GUNPOWDER", 2 } }, nil, "7.62x51mm BCP FMJ x60") -- gunpowder "Kite" x2 (EFT 0.16.9 made 120)
+R("AMMO_LPS", "workbench", 2, 14400, "A76L_LPS", 50, { { "A76L_FMJ", 70 }, { "GUNPOWDER", 1 } }, TOOL, "7.62x54mm R LPS gzh x50") -- 7.62x54R FMJ x70, gunpowder "Hawk"; multitool (tarkovforge.com: 4 h; EFT 0.16.9 made 70)
 R("AMMO_366APM", "workbench", 1, 8460, "A96_AP", 60, { { "GUNPOWDER", 2 }, { "A76_PS", 100 } }, T("PLIERS"), ".366 TKM AP-M x60") -- gunpowder "Hawk" x2, 7.62x39 PS gzh x100; pliers (tarkovforge.com: 2 h 21 min)
 R("AMMO_921P", "workbench", 1, 5400, "A921_P", 150, { { "GUNPOWDER", 1 } }, nil, "9x21mm P gzh x150") -- gunpowder "Kite" (tarkovforge.com: 1 h 30 min)
 R("AMMO_L191", "workbench", 2, 3400, "A57_TR", 150, { { "GUNPOWDER", 2 } }, TOOL, "5.7x28mm L191 x150") -- gunpowder "Kite" and "Hawk"; multitool
@@ -434,6 +444,7 @@ R("LAV_SHAMPOO", "lavatory", 1, 2100, "SOAP", 2, { { "SOAP", 1 }, { "JUICE", 1 }
 R("LAV_6B23", "lavatory", 1, 7000, "ARMOR_C4", 1, { { "PLATE_PC4F", 1 }, { "FABRIC", 2 }, { "BLEACH", 1 } }, nil, "6B23-2 body armor") -- 6B33 front plate, Cordura, aramid, bleach (EFT 0.16.9: after the task Sew it Good - Part 1)
 R("LAV_RIPSTOP", "lavatory", 1, 2200, "FABRIC", 2, { { "RIG_CHEST", 1 } }, T("SEWING_KIT"), "Ripstop fabric x2") -- scav vest; sewing kit
 R("LAV_SCAVPACK", "lavatory", 1, 1200, "BAG_SLING", 1, { { "FABRIC", 1 }, { "DUCT_TAPE", 1 } }, nil, "Scav backpack") -- Cordura, insulating tape
+R("LAV_TOILET", "lavatory", 1, 1560, "TOILET_PAPER", 2, { { "PRINTER_PAPER", 1 } }, nil, "Toilet paper x2") -- printer paper (SPT's 1,560 s; tarkovforge.com: 26 min)
 R("LAV_BLACKROCK", "lavatory", 2, 3600, "RIG_CHEST", 1, { { "RIG_BELT", 1 }, { "FABRIC", 2 } }, T("SEWING_KIT"), "BlackRock chest rig") -- Tarzan M22 rig, ripstop, Cordura; sewing kit
 R("LAV_FUEL", "lavatory", 2, 3720, "FUEL_CAN", 1, { { "LIGHTER", 4 }, { "WATER", 1 } }, T("SILICONE_TUBE"), "Expeditionary fuel tank") -- Zibbo x2, Crickent x2, water; silicone tube
 R("LAV_SWITCHBLADE", "lavatory", 2, 2520, "BAG_PATROL", 1, { { "FABRIC", 4 }, { "BLEACH", 1 } }, T("SEWING_KIT"), "Eberlestock F5 Switchblade backpack") -- ripstop x2, Cordura x2, bleach; sewing kit
@@ -447,16 +458,16 @@ R("LAV_PILGRIM", "lavatory", 3, 2500, "BAG_RAID", 1, { { "TAPE_MEASURE", 1 }, { 
 -- HARDTACK, sodas, teas, milk, purees and beer -> JUICE, energy drinks and coffee -> VOLT_DRINK, sweets and sugar ->
 -- CHOC_BAR; a canister of purified water is ten bottles, as the water collector makes it and as EFT's own craft of ten
 -- bottles from one canister has it)
-R("NUT_SAUSAGE", "nutrition", 1, 1980, "STEW", 3, { { "SALT", 1 }, { "STEW", 1 }, { "TOILET_PAPER", 1 } }, nil, "Salty Dog beef sausage x3") -- white salt, Tushonka, toilet paper (EFT's tool, a Geiger-Muller counter, has no counterpart yet)
+R("NUT_SAUSAGE", "nutrition", 1, 1980, "STEW", 3, { { "SALT", 1 }, { "STEW", 1 }, { "TOILET_PAPER", 1 } }, T("GEIGER"), "Salty Dog beef sausage x3") -- white salt, Tushonka, toilet paper; Geiger-Muller counter (tool, returned: xgamingserver's Geiger counter page)
 R("NUT_MRE", "nutrition", 1, 2400, "STEW", 2, { { "STEW", 1 }, { "HARDTACK", 2 }, { "CHOC_BAR", 1 } }, nil, "MRE ration pack x2") -- Tushonka, crackers x2, Slickers
 R("NUT_WATER", "nutrition", 1, 4000, "WATER", 2, { { "WATER", 1 }, { "SEAL_TAPE", 1 } }, T("SILICONE_TUBE"), "Emergency Water Ration x2") -- water, KEKTAPE; silicone tube
-R("NUT_ENERGY", "nutrition", 1, 6500, "VOLT_DRINK", 4, { { "JUICE", 1 }, { "VOLT_DRINK", 1 }, { "WATER", 1 } }, nil, "Max Energy energy drink x4") -- TarCola, Majaica coffee, water (EFT's tool, the BakeEzy cook book, has no counterpart yet)
+R("NUT_ENERGY", "nutrition", 1, 6500, "VOLT_DRINK", 4, { { "JUICE", 1 }, { "VOLT_DRINK", 1 }, { "WATER", 1 } }, T("COOK_BOOK"), "Max Energy energy drink x4") -- TarCola, Majaica coffee, water; BakeEzy cook book (tool, returned: SPT and xgamingserver's cook book page)
 R("NUT_KVASS", "nutrition", 1, 3800, "JUICE", 2, { { "WATER", 2 }, { "HARDTACK", 2 } }, nil, "Norvinsky kvass x2") -- water x2, Emelya croutons x2
 R("NUT_ISKRA", "nutrition", 1, 2900, "STEW", 2, { { "HARDTACK", 2 }, { "STEW", 1 }, { "JUICE", 1 } }, nil, "Iskra ration pack x2") -- crackers x2, Tushonka, squash spread
 R("NUT_MAJAICA", "nutrition", 2, 2700, "VOLT_DRINK", 2, { { "VOLT_DRINK", 1 }, { "GUNPOWDER", 1 } }, nil, "Majaica coffee beans x2") -- Dr. Lupo's coffee, gunpowder "Kite"
 R("NUT_MILK", "nutrition", 2, 4900, "STEW", 3, { { "CHOC_BAR", 1 }, { "JUICE", 1 } }, nil, "Condensed milk x3") -- sugar, milk
 R("NUT_BEER", "nutrition", 3, 36000, "JUICE", 10, { { "HARDTACK", 5 }, { "JUICE", 3 }, { "WATER", 10 } }, nil, "Pevko Light beer x10") -- croutons x5, kvass x3, a canister of purified water
-R("NUT_HOTROD", "nutrition", 3, 43200, "VOLT_DRINK", 20, { { "WATER", 10 }, { "CHOC_BAR", 1 }, { "VOLT_DRINK", 1 }, { "JUICE", 1 } }, T("WATER_FILTER"), "Hot Rod energy drink x20") -- a canister of purified water, sugar, Majaica, tea; water filter (EFT's other tool, the BakeEzy cook book, has no counterpart yet)
+R("NUT_HOTROD", "nutrition", 3, 43200, "VOLT_DRINK", 20, { { "WATER", 10 }, { "CHOC_BAR", 1 }, { "VOLT_DRINK", 1 }, { "JUICE", 1 } }, { { "WATER_FILTER", 1 }, { "COOK_BOOK", 1 } }, "Hot Rod energy drink x20") -- a canister of purified water, sugar, Majaica, tea; water filter and BakeEzy cook book (tools, returned: SPT and xgamingserver's cook book page)
 
 -- water collector
 R("WC_RATION", "water", 2, 1800, "WATER", 2, { { "JUICE", 1 } }, T("SILICONE_TUBE"), "Emergency Water Ration x2") -- Grand juice; silicone tube
@@ -464,30 +475,32 @@ R("WC_PURIFIED", "water", 3, 19500, "WATER", 10, { { "WATER_FILTER", 1 } }, nil,
 
 -- intelligence center (electronic components: CAPACITOR; CPUs and circuit boards: LOGIC_BOARD; VPX: FLASH_MODULE)
 R("INT_FLASH", "intel", 1, 28800, "SECURE_FLASH", 3, { { "CAPACITOR", 1 }, { "PHONE", 1 }, { "SSD", 1 } }, nil, "Secure Flash drive x3") -- electronic components, broken GPhone X (our smartphone), SSD drive
-R("INT_FOLDER", "intel", 3, 114000, "INTEL_FOLDER", 1, { { "SECURE_FLASH", 2 } }, nil, "Intelligence folder") -- military flash drive x2 (our secure flash drive); 31 h 40 min (xgamingserver, SPT); EFT also uses up printer paper, which has no counterpart yet
-R("INT_GPU", "intel", 3, 54000, "GPU_CARD", 1, { { "LOGIC_BOARD", 4 }, { "CPU_FAN", 2 }, { "RAM_STICK", 1 }, { "FLASH_MODULE", 1 }, { "CAPACITOR", 4 } }, nil, "Graphics card") -- PCB x2, CPU x2, CPU fan x2, RAM, VPX, electronic components x4 (EFT's tool, the Advanced Electronic Materials textbook, has no counterpart yet)
+R("INT_FOLDER", "intel", 3, 114000, "INTEL_FOLDER", 1, { { "SECURE_FLASH", 2 }, { "PRINTER_PAPER", 1 } }, nil, "Intelligence folder") -- military flash drive x2 (our secure flash drive), printer paper (used up); 31 h 40 min (xgamingserver, SPT)
+R("INT_GPU", "intel", 3, 54000, "GPU_CARD", 1, { { "LOGIC_BOARD", 4 }, { "CPU_FAN", 2 }, { "RAM_STICK", 1 }, { "FLASH_MODULE", 1 }, { "CAPACITOR", 4 } }, T("SEMI_TEXTBOOK"), "Graphics card") -- PCB x2, CPU x2, CPU fan x2, RAM, VPX, electronic components x4; Advanced Electronic Materials textbook (our semiconductor textbook; tool, returned: xgamingserver's graphics card page)
 
--- Left out of EFT's current 212 (134), and why:
---  · no counterpart for the product: medstation morphine, 2A2, defibrillator, eTG-change, M.U.L.E., AHF1-M, PNB, SJ1,
---    Perfotoran; workbench 7.62x39 FMJ, 9x18 SP8 and PstM, 12/70 Piranha and makeshift .50 BMG
+-- Left out of EFT's current 212 (129), and why:
+--  · no counterpart for the product: medstation morphine, 2A2, defibrillator, eTG-change, M.U.L.E., AHF1-M, PNB,
+--    Perfotoran; workbench 9x18 SP8 and PstM, 12/70 Piranha and makeshift .50 BMG
 --    slug, 5.45 PP, 5.56 MK 318, 9x19 Luger CCI, .300 Blackout AP and M62, .338 FMJ, 23x75 Zvezda, 30x165 shells, VOG-17
---    and VOG-25 Khattabkas, magnet, SAS drive, round pliers, rechargeable battery, Bulbex cable cutter, AK-74M, PP-9 Klin,
---    AK-50, the PM drum, broken and working LCDs, plexiglass, gas analyzer, Geiger counter, radio repeater, NIXXOR lenses,
+--    and VOG-25 Khattabkas, SAS drive, round pliers, rechargeable battery, Bulbex cable cutter, AK-74M, PP-9 Klin,
+--    AK-50, the PM drum, broken and working LCDs, plexiglass, gas analyzer, radio repeater, NIXXOR lenses,
 --    microcontroller boards, the two thermal sights, nut can, Icebreaker, half a bitcoin, Gamma container and armored case
 --    upkeep, crate openings; lavatory 6L31 60-round magazine, gas mask filter, Module-3M, Zhuk, 6B47, MICH, Rys-T, 6B13
 --    plates, grenade and magazine cases, Lucky Scav box, paracord, Skanda, Bagariy, ANA M2, TacTec, FP-100 absorber;
 --    nutrition vodka and whiskey; intelligence center every keycard and pass, tape cassette, printout, Fence's laptop
 --    data, Blue Folders, RFID reader, Virtex, DSP transmitter, military flash drive, decrypted folder;
---  · no counterpart for an input or tool: 12/70 flechette (a sledgehammer), AKM from a Vepr-KM, circuit boards from a DVD
---    drive or a gas analyzer, thermite (the dorm room 308 key), Hawk from an OFZ shell, military circuit board (a COFDM
---    transmitter), 7.62x54R LPS (its FMJ), SJ6 (an SJ1), LEDX (RFID readers, a textbook), Aquamari bottles (gas mask
---    filters, Aquapeps), toilet paper and water filters (printer paper), survey maps (diaries);
+--  · no counterpart for an input or tool: AKM from a Vepr-KM, circuit boards from a DVD drive or a gas analyzer, the
+--    Geiger counter (a gas analyzer), thermite (the dorm room 308 key), Hawk from an OFZ shell, military circuit board (a
+--    COFDM transmitter), LEDX (RFID readers, the optoelectronics textbook), Aquamari bottles (gas mask filters, Aquapeps),
+--    water filters (gas mask filters), survey maps (diaries);
 --  · mostly its own product, or no more of it: Hawk x3 from Eagle and matches, army bandages from aseptic ones and vodka,
 --    Clin from vodka, WD-40 100 ml from 400 ml, car batteries from a tank battery, Slickers from Alyonka, sugar from
 --    Alyonka, small and large Tushonka, Wilston, CALOK-B, aluminium splints, AFAK, Surv12, bottled water (collector and
 --    nutrition unit);
 --  · far richer at our values than EFT's: capacitors x6 from a power supply (ours worth 18,000 each, EFT's handbook 2,500),
---    fleece from two beanies (a trader sells beanies).
+--    fleece from two beanies (a trader sells beanies), 7.62x39 FMJ x200 from one gunpowder "Eagle" (out 1.87 times what
+--    goes in at ours, a 15,000 powder tin for 28,000 of rounds; 0.88 at EFT's, Eagle 32,000), SJ6 x2 from an SJ1, two
+--    piles of meds, saline and multivitamins (2.66 at ours, our SV-3 85,000 a shot; 0.68 at EFT's, SJ6 27,950).
 
 H.byRecipe = {}
 for _, r in H.recipes do
@@ -549,7 +562,8 @@ H.VALUABLES = { OLD_COIN = true, GOLD_CHAIN = true, CAPT_WATCH = true, BRASS_LIO
 H.TECH = { INTEL_FOLDER = true, FLASH_MODULE = true, HDD = true, LOGIC_BOARD = true, CAPACITOR = true, GPU_CARD = true, MIL_CIRCUIT = true,
 	PHONE = true, RAM_STICK = true, POWER_BANK = true, BATTERY = true, SIGNAL_COIL = true, CERAMIC_FUSE = true, CRACKED_LENS = true, DECK_TRANSCEIVER = true,
 	RELAY = true, MOTOR = true, PSU = true, CPU_FAN = true, POWER_CORD = true, TPLUG = true, POWER_FILTER = true, MIL_CABLE = true, ES_LAMP = true, SSD = true,
-	SECURE_FLASH = true, SURVEY_MAPS = true, LI_BATTERY = true }
+	SECURE_FLASH = true, SURVEY_MAPS = true, LI_BATTERY = true,
+	MAGNET = true, GEIGER = true, COOK_BOOK = true } -- economy-1a's thirteenth slice: electronics and the cook book (the 490,000 textbook stays out)
 -- never in a run: boss and cult loot (EFT: no boss items), task goods sold only for tasks, tags, hazards, quest items, pouches
 H.SCAV_NEVER = { RITUAL_KNIFE = true, RITUAL_AMULET = true, FORESTER_PACK = true, MASK_WELDER = true, MARKER = true, CAMERA = true, BEACON = true, DOGTAG = true }
 -- EFT globals FenceSettings.Levels[standing].ScavCaseTimeModifier (SPT's copy): by whole points of Fence standing (karma)

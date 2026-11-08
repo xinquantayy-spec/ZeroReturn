@@ -1,5 +1,5 @@
 --!nonstrict
--- Tarkov's stimulant injectors (decision gameplay-4b): timed buffs and side effects. Four of EFT's, under our names,
+-- Tarkov's stimulant injectors (decision gameplay-4b): timed buffs and side effects. Five of EFT's, under our names,
 -- with EFT's figures (EFT wiki, Medical: the injector table with each effect's delay and duration; TarkovForge's item
 -- pages for the values; both read 2026-11-08):
 --   STIM_REGEN    after Propital: from 1 s for 300 s health +1 a second, Metabolism, Health and Vitality +20 levels;
@@ -11,6 +11,10 @@
 --   STIM_ADREN    after the Adrenaline injector: a painkiller for 65 s; from 1 s for 60 s Endurance, Strength and Recoil
 --                 Control +10 and Stress Resistance -10; for 15 s health +4 a second; from 50 s for 30 s energy -0.8
 --                 and hydration -1 a second
+--   STIM_COMBAT   after SJ1 (economy-1a's thirteenth slice): from 1 s for 180 s Endurance, Strength and Stress Resistance
+--                 +20; from 100 s for 200 s energy -0.25 and hydration -0.3 a second (EFT's globals, Health.Effects.
+--                 Stimulator.Buffs.BuffsSJ1TGLabs as SPT copies them for EFT 0.16.9; the wiki's table could not be read
+--                 here, so 1.x is unchecked; EFT's text says it dulls pain, but its buffs list no painkiller and ours has none)
 -- Ours: health regeneration is one pool a second spread over the damaged living parts (EFT's split is not published);
 -- the same injector again starts its course again; skill buffs add levels, between 0 and elite.
 local Progress = require(script.Parent.Progress)
@@ -59,6 +63,13 @@ S.DEFS = {
 			fx("regen", 4, 1, 15),
 			fx("energy", -0.8, 50, 30, true),
 			fx("water", -1, 50, 30, true),
+		},
+	},
+	STIM_COMBAT = {
+		fx = {
+			fx("skill", { endurance = 20, strength = 20, stress = 20 }, 1, 180),
+			fx("energy", -0.25, 100, 200, true),
+			fx("water", -0.3, 100, 200, true),
 		},
 	},
 }

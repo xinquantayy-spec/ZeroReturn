@@ -207,9 +207,13 @@ T.offers = {
 		o("A76L_LPS", 3, 4, 40), o("SCOPE_4X", 3, 1), o("SUPP_76", 3, 1), o("KST_MAG40", 3, 3),
 		o("A76_BP", 4, 3, 60), pre("KST_QUIET", 4, 1),
 		-- rounds (economy-1a; EFT's Prapor, wiki and xgamingserver item pages): US and T-45M1 at LL3, PP and PBP at LL4, the
-		-- T-46M at LL3 and PS gzh at LL4. PS stays at LL2 here: it stands in for EFT's 7.62x39 FMJ and SP, which we do not have
+		-- T-46M at LL3 and PS gzh at LL4. 7.62x39 PS stays at LL2 here (EFT's Prapor: LL3, tarkovforge.com): it stands in for
+		-- EFT's 7.62x39 SP (Skier LL1), which we do not have
 		o("A76_US", 3, 4, 60), o("A76_TR", 3, 4, 60), o("A76L_TR", 3, 4, 40), o("A76_PP", 4, 3, 60), o("A9_PBP", 4, 3, 50),
 		o("A76L_PS", 4, 3, 40),
+		-- the thirteenth slice: EFT's Prapor sells 7.62x39 FMJ at LL1 and 7.62x54R FMJ at LL2 (tarkovforge.com's round pages,
+		-- 2026-11-08); the limits ours
+		o("A76_FMJ", 1, 8, 60), o("A76L_FMJ", 2, 6, 40),
 		-- the sixth slice: EFT's Prapor sells 9x39 SP-5 at LL2 and SPP and SP-6 at LL4 (tarkovforge.com's round pages)
 		o("A939_SP5", 2, 6, 50), o("A939_SPP", 4, 4, 50), o("A939_SP6", 4, 3, 50),
 		-- the ninth slice: EFT's Prapor sells 7.62x25 FMJ43 and AKBS (LL1) and P gl, PT gzh and Pst gzh (LL2) (tarkovforge.com)
@@ -415,6 +419,11 @@ T.barters = {
 		-- EFT's Therapist trades the expeditionary fuel tank at LL2 for four packs of buckwheat (xgamingserver item page,
 		-- 2026-11-04); stew stands in for the buckwheat, the limit is ours (economy-7b)
 		b("FUEL_CAN", 2, 2, { { "STEW", 4 } }),
+		-- the thirteenth slice: EFT's Therapist trades the SJ1 (our SV-1) at LL3 for a disposable syringe, a bottle of hydrogen
+		-- peroxide and a pack of sodium bicarbonate, one each (xgamingserver's SJ1 and hydrogen peroxide pages, snapshot
+		-- 2026-11-04); saline stands in for the peroxide and the alkaline cleaner for the soda, as in the crafts; no trader
+		-- sells it for money (xgamingserver); the limit is ours
+		b("STIM_COMBAT", 3, 2, { { "SYRINGE", 1 }, { "SALINE", 1 }, { "ALKALI", 1 } }),
 	},
 	fence = {},
 	-- Skier trades sights and night vision for household and electrical goods
