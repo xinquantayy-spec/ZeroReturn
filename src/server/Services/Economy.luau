@@ -120,6 +120,14 @@ function Economy.giveStash(prof, id, n, extra)
 	if not d then
 		return false
 	end
+	-- a refused delivery leaves the stash as it was: the stacks of this id that new units merged into get their counts
+	-- back as well (the flea thread's finding, economy-3a: they used to keep the merged units)
+	local before = {}
+	for bg, bit in prof.items do
+		if bit.id == id then
+			before[bg] = bit.n
+		end
+	end
 	local left = n or 1
 	local placed = {}
 	while left > 0 do
@@ -127,7 +135,15 @@ function Economy.giveStash(prof, id, n, extra)
 		local g, it = Inv.newItem(id, take, extra and Util.copy(extra) or nil)
 		if not Inv.place(prof, g, it, { "stash" }) then
 			for _, pg in placed do
-				Inv.take(prof, pg)
+				if prof.items[pg] then
+					Inv.take(prof, pg)
+				end
+			end
+			for bg, n0 in before do
+				local bit = prof.items[bg]
+				if bit then
+					bit.n = n0
+				end
 			end
 			return false
 		end

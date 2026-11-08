@@ -1062,5 +1062,47 @@
   "ox": 229.04,
   "oy": 9.04,
   "w": 346
+ },
+ "VAL_RIFLE@long": {
+  "file": "VAL_RIFLE@long",
+  "h": 58,
+  "ox": 132.24,
+  "oy": 13.95,
+  "w": 223
+ },
+ "VAL_SUPP@long": {
+  "file": "VAL_SUPP@long",
+  "h": 22,
+  "ox": 132.94,
+  "oy": 12.91,
+  "w": 135
+ },
+ "VSS_MAG10@long": {
+  "file": "VSS_MAG10@long",
+  "h": 36,
+  "ox": 14.92,
+  "oy": 5.34,
+  "w": 29
+ },
+ "VSS_MAG20@long": {
+  "file": "VSS_MAG20@long",
+  "h": 54,
+  "ox": 17.75,
+  "oy": 5.34,
+  "w": 32
+ },
+ "VSS_RIFLE@long": {
+  "file": "VSS_RIFLE@long",
+  "h": 64,
+  "ox": 132.24,
+  "oy": 13.95,
+  "w": 233
+ },
+ "VSS_SUPP@long": {
+  "file": "VSS_SUPP@long",
+  "h": 22,
+  "ox": 136.46,
+  "oy": 12.91,
+  "w": 139
  }
 }

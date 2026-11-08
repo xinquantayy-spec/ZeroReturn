@@ -96,6 +96,10 @@ W.SLOTS = {
 	M1A_MNT = { scope = { fit = "pica", cats = RAIL_SIGHT } },
 	M700_BOLT = { mount = { fit = "m700_base" } },
 	M700_RAIL = { scope = { fit = "pica", cats = RAIL_SIGHT } },
+	-- Owl SV-9 and Nightjar AV-9 (economy-1a, sixth slice): the integral barrel-suppressor (required, as in EFT) and the side
+	-- dovetail, which takes the KS-7's side mount here
+	VSS_RIFLE = { barrel = { fit = "vss_brl", req = true }, mount = { fit = "dovetail" } },
+	VAL_RIFLE = { barrel = { fit = "val_brl", req = true }, mount = { fit = "dovetail" } },
 	-- Makar PM (economy-1a, third slice): EFT's PM has a slide, a magazine and grip panels; ours are on the frame
 	PM_PISTOL = { slide = { fit = "pm_slide", req = true } },
 	-- mounts
@@ -219,6 +223,10 @@ part("SVD_FH", "MR-10 flash hider", "FH", "muzzle", "t76l", { w = 1, h = 1, mass
 part("M1A_FH", "S-14 flash suppressor", "FS", "muzzle", "t76n", { w = 1, h = 1, mass = 0.1, value = 4759, loud = 0.95, desc = "Slotted flash suppressor with the front sight and a bayonet lug." })
 part("M1A_MNT", "S-14 bridge mount", "BRIDGE", "mount", "m14_mnt", { w = 2, h = 1, mass = 0.26, value = 3217, ergo = -2, desc = "Bridge over the receiver, clamped to its side, with a rail for a scope." })
 part("M700_RAIL", "OB-7 rail base", "RAIL", "mount", "m700_base", { w = 2, h = 1, mass = 0.1, value = 2640, desc = "Long rail base screwed to the receiver's top. The OB-7 has no other sights." })
+-- the sixth slice's integral barrel-suppressors (EFT's VSS 22,507 and AS VAL 23,346; handbook prices): each rifle's barrel
+-- inside its suppressor, the front sight on its end; nothing else fits either rifle
+part("VSS_SUPP", "SV-9 integral barrel-suppressor", "SV-9 BRL", "barrel", "vss_brl", { w = 2, h = 1, mass = 0.4, value = 22507, loud = 0.32, desc = "The SV-9's barrel inside its suppressor, with the front sight." })
+part("VAL_SUPP", "AV-9 integral barrel-suppressor", "AV-9 BRL", "barrel", "val_brl", { w = 2, h = 1, mass = 0.4, value = 23346, loud = 0.32, desc = "The AV-9's barrel inside its suppressor, with the front sight." })
 part("TUN_BRK", "Tundra muzzle brake", "BRAKE", "muzzle", "t76l", { w = 1, h = 1, mass = 0.12, value = 8000, recoil = -14, loud = 1.15, desc = "Ported brake for the full-power cartridge." })
 part("SUPP_76L", "Kaltan SR-54 suppressor", "SR-54", "muzzle", "t76l", { w = 2, h = 1, mass = 0.62, value = 46000, rarity = "rare", recoil = -3, ergo = -13, loud = 0.38, acc = -4, desc = "Sound suppressor for 7.6x54R." })
 

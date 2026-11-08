@@ -706,26 +706,24 @@ function C.scavReady(name)
 	return "scav ready"
 end
 
--- flea market (Tarkov): age the player's offers by some minutes and let the market resolve them
+-- flea market (Tarkov): age the player's offers by some minutes (their escrow book too) and collect them now
 function C.flea(name, minutes)
 	local p = plr(name)
 	local prof = ctx.Profiles.get(p)
-	local f = prof and prof.flea
-	if not f then
+	if not prof or not prof.flea then
 		return "no flea state"
 	end
-	local sec = (minutes or 10) * 60
-	for _, o in f.offers do
-		o.chk = (o.chk or o.t) - sec
-		o.t -= sec
-	end
-	ctx.Flea.resolve(p, prof, os.time(), ctx.Raid.session(p) ~= nil)
+	ctx.Flea.devAge(p, prof, minutes or 10)
 	ctx.Raid.afterChange(p, false)
-	local n = 0
+	local f = prof.flea
+	local n, back = 0, 0
 	for _ in f.offers do
 		n += 1
 	end
-	return string.format("rating %.4f offers %d money %d", f.rating or 0, n, prof.money)
+	for _ in f.back or {} do
+		back += 1
+	end
+	return string.format("rating %.4f offers %d waiting %d money %d", f.rating or 0, n, back, prof.money)
 end
 
 function C.money(name, n)

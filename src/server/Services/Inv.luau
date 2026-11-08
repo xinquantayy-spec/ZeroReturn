@@ -364,6 +364,11 @@ end
 local function mergeInto(h: any, g: string, target: string): (boolean, string?)
 	local it, t = h.items[g], h.items[target]
 	local d = defs[it.id]
+	-- found in raid and bought stacks stay apart (EFT), so a bought round cannot become found in raid by merging
+	-- (the flea thread's request, economy-3a)
+	if (it.fir == true) ~= (t.fir == true) then
+		return false, "FIR_MISMATCH"
+	end
 	local room = d.stack - t.n
 	if room <= 0 then
 		return false, "STACK_FULL"
@@ -864,7 +869,7 @@ function Inv.transfer(src: any, g: string, dst: any, dest: any?, order: { string
 	if dest and dest.c and d.stack > 1 and dst.grids[dest.c] and Grid.isInt(dest.x) and Grid.isInt(dest.y) then
 		local tg = Inv.itemAt(dst, dest.c, dest.x, dest.y)
 		local t = tg and dst.items[tg]
-		if t and t.id == it.id then
+		if t and t.id == it.id and (t.fir == true) == (it.fir == true) then
 			local room = d.stack - t.n
 			if room <= 0 then
 				return false, "STACK_FULL"

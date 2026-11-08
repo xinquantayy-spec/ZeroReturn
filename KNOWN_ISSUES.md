@@ -238,6 +238,11 @@
     - The kick when saves are down (Store OFFLINE) only happens on a live server; Studio always falls back to memory.
     - Per-device graphics levels (phones start at LOW, consoles at MEDIUM) have not been seen on a phone or a console.
 
+82. **The flea market of real players has only run on one Studio server (economy-3a, 2026-11-08).**
+    - Trades between servers, sales to offline sellers and the DataStore escrow book need a published place with two
+      servers and API access; FleaTests covers them with stand-in stores only. Publishing is the owner's call.
+    - The FLEA MARKET screens keep their fixed PC-width columns on phones (740x360 squeezes them).
+
 ## Tool limitations (not game bugs)
 
 - The Studio MCP `character_navigation` tool cannot drive this game's custom-controlled character. Test movement with keyboard input instead.

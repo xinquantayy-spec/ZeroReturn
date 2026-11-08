@@ -98,6 +98,23 @@ local W = {
 		moveSpread = 2.4, modes = { "BOLT" }, loudness = 1.35, viewmodel = "TUNDRA", draw = 0.9,
 		slots = { rail = true },
 	},
+	-- the SV-9 and AV-9 (economy-1a, sixth slice) in the place of EFT's VSS Vintorez and AS VAL: single shots or bursts at
+	-- 900 a minute, ergonomics 43, recoil 80 / 270, 400 m (tarkovforge.com's VSS and AS VAL pages give both the same
+	-- figures; taken as the built guns'); 290 m/s with SP-5. Their integral suppressors (barrel parts) make them quiet
+	VSS = {
+		id = "VSS", item = "VSS_RIFLE", name = "SV-9", class = "rifle", rpm = 900, range = 400, velocity = 290,
+		ergo = 43, recoilV = 0.8, recoilH = 2.7, reload = 2.6, reloadEmpty = 3.2, hipSpread = 2.8, aimSpread = 0.045,
+		recoilAngle = 90, recoilDisp = 18, recoilConv = 5, recoilCam = 0.45, recoilStable = 4,
+		moveSpread = 1.8, modes = { "SEMI", "AUTO" }, loudness = 0.4, viewmodel = "KST", draw = 0.8,
+		slots = { rail = true },
+	},
+	VAL = {
+		id = "VAL", item = "VAL_RIFLE", name = "AV-9", class = "rifle", rpm = 900, range = 400, velocity = 290,
+		ergo = 43, recoilV = 0.8, recoilH = 2.7, reload = 2.5, reloadEmpty = 3.1, hipSpread = 2.7, aimSpread = 0.05,
+		recoilAngle = 90, recoilDisp = 20, recoilConv = 5, recoilCam = 0.45, recoilStable = 4,
+		moveSpread = 1.8, modes = { "AUTO", "SEMI" }, loudness = 0.42, viewmodel = "KST", draw = 0.75,
+		slots = { rail = true },
+	},
 	-- MORTAR's grenade launcher (ai-5b) in the place of EFT's M32A1: 76 m/s, single shots from a six-round cylinder
 	-- loaded one round at a time; the round flies as a grenade (Grenades.launchFrom). Rate 30, ergonomics 30, recoil
 	-- 238 / 560 and an effective distance of 70 m (219 studs) as tarkovforge's M32A1 page gives them
@@ -203,7 +220,7 @@ W.MALF = {
 -- rate-of-fire term still makes the slow guns (pump, bolt) worse when worn. (An old copy of Tarkov's items shows one
 -- weapon of each class at 0.154 to 0.2475, unnamed; the curve is too steep at low rates of fire to guess with them.)
 W.BASE_MALF = { R17 = 0.1771, KST = 0.1771, KS74 = 0.1771, KSL = 0.1771, GL6 = 0.1771, SPARROW = 0.1771, HARROW = 0.1771, TUNDRA = 0.1771, P9 = 0.1771,
-	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771 }
+	PM = 0.1771, SKS = 0.1771, SVD = 0.1771, M1A = 0.1771, M700 = 0.1771, VSS = 0.1771, VAL = 0.1771 }
 -- a round's misfire and feed chances summed, per mille (AmmoMalfChanceMult 1). Tarkov's recorded 7.62x39 FMJ and PS
 -- have 0.174; other cartridges' own figures were not found, so every round has it until they are (by item id here).
 W.ROUND_MALF = {}

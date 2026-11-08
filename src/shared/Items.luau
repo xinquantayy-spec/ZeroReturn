@@ -66,6 +66,12 @@ add("SVD_RIFLE", { name = "Merlin MR-10", short = "MR-10", kind = "weapon", w = 
 -- base for a scope. Values are EFT's handbook prices (M1A 30,264, M700 17,500); the weights are ours (not found)
 add("M1A_RIFLE", { name = "Shrike S-14", short = "S-14", kind = "weapon", w = 6, h = 2, mass = 4.2, value = 30264, caliber = "7.6N", weapon = "M1A", family = "M1A", rarity = "uncommon", desc = "Self-loading battle rifle in 7.6x51 with a synthetic stock. Heavy, slow to handle, hits hard at range. Takes a scope on its bridge mount.", color = c("#2E302E") })
 add("M700_BOLT", { name = "Osprey OB-7", short = "OB-7", kind = "weapon", w = 6, h = 2, mass = 4.4, value = 17500, caliber = "7.6N", weapon = "M700", family = "M700", rarity = "uncommon", desc = "Bolt-action rifle in 7.6x51 with a heavy free-floated barrel and a detachable box magazine. No iron sights: it needs a scope on its rail base.", color = c("#4B5442") })
+-- economy-1a, sixth slice (2026-11-08): EFT's 9x39 rifles. The Owl SV-9 copies the VSS Vintorez (a marksman rifle in EFT's
+-- handbook) and the Nightjar AV-9 the AS VAL; both fire single shots or bursts, share the 10- and 20-round magazines and
+-- carry their suppressor as their barrel (EFT's integral barrel-suppressors, parts of their own). Values are EFT's
+-- handbook prices (VSS 65,203, AS VAL 66,869); the weights are ours (not found)
+add("VSS_RIFLE", { name = "Owl SV-9", short = "SV-9", kind = "weapon", w = 5, h = 2, mass = 2.6, value = 65203, caliber = "9.39", weapon = "VSS", family = "VSS", rarity = "rare", desc = "Silenced marksman rifle in 9x39 with a wooden skeleton stock. Its barrel is the suppressor. Whisper quiet; the heavy bullet drops hard past 200 m.", color = c("#6B4429") })
+add("VAL_RIFLE", { name = "Nightjar AV-9", short = "AV-9", kind = "weapon", w = 5, h = 2, mass = 2.5, value = 66869, caliber = "9.39", weapon = "VAL", family = "VSS", rarity = "rare", desc = "Silenced assault rifle in 9x39 with a folding skeleton stock. Takes the SV-9's magazines.", color = c("#5A3A34") })
 add("P9_PISTOL", { name = "P-9 Vesna", short = "P-9", kind = "pistol", w = 2, h = 1, mass = 0.5, value = 2400, caliber = "9", weapon = "P9", family = "P9", desc = "9x19 service pistol. Holster sidearm.", color = c("#45494B") })
 -- THE CULT's knife, looted from a warrior or the priest: in a player's hand it cuts like the field knife (logged gap)
 add("RITUAL_KNIFE", { name = "Ritual Knife", short = "RITUAL", kind = "melee", w = 1, h = 2, mass = 0.25, value = 42000, rarity = "rare", weapon = "KNIFE", desc = "A cultist's blackened knife with a carved bone grip. Its poison is spent; in your hand it cuts like any knife.", color = c("#2E2A27") })
@@ -97,6 +103,10 @@ add("M1A_MAG", { name = "S-14 10-rd Magazine", short = "MAG 10", kind = "mag", w
 add("M1A_MAG20", { name = "S-14 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 2, mass = 0.24, value = 2468, capacity = 20, caliber = "7.6N", family = "M1A", desc = "Steel 20-round 7.6x51 magazine for the S-14.", color = c("#2C2E2C") })
 add("M700_MAG", { name = "OB-7 5-rd Magazine", short = "MAG 5", kind = "mag", w = 1, h = 1, mass = 0.12, value = 1850, capacity = 5, caliber = "7.6N", family = "M700", desc = "Flush 5-round 7.6x51 box magazine for the OB-7.", color = c("#262829") })
 add("M700_MAG10", { name = "OB-7 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 1, mass = 0.18, value = 3500, capacity = 10, caliber = "7.6N", family = "M700", rarity = "uncommon", desc = "Extended 10-round 7.6x51 box magazine for the OB-7.", color = c("#262829") })
+-- economy-1a, sixth slice: EFT's VSS/VAL 6L24 10-round (4,637) and 6L25 20-round (5,999, plum) magazines; handbook prices,
+-- weights ours
+add("VSS_MAG10", { name = "SV-9 10-rd Magazine", short = "MAG 10", kind = "mag", w = 1, h = 1, mass = 0.12, value = 4637, capacity = 10, caliber = "9.39", family = "VSS", desc = "Steel 10-round 9x39 magazine for the SV-9 and the AV-9.", color = c("#2B2D2E") })
+add("VSS_MAG20", { name = "SV-9 20-rd Magazine", short = "MAG 20", kind = "mag", w = 1, h = 2, mass = 0.17, value = 5999, capacity = 20, caliber = "9.39", family = "VSS", rarity = "uncommon", desc = "Plum polymer 20-round 9x39 magazine for the SV-9 and the AV-9.", color = c("#5A3A34") })
 
 -- ── ammunition ────────────────────────────────────────────────────────────────
 local function ammo(id: string, name: string, short: string, caliber: string, stack: number, value: number, a: any, rarity: string?, desc: string?)
@@ -180,6 +190,15 @@ ammo("A76N_BALL", "7.6x51 Ball", "7.6N BALL", "7.6N", 40, 420, { dmg = 80, pen =
 ammo("A76N_EP", "7.6x51 EP", "7.6N EP", "7.6N", 40, 1200, { dmg = 75, pen = 55, armorDmg = 0.74, bleedL = 0.17, bleedH = 0.12, frag = 0.13, speed = 929, recoil = 0.04, acc = -0.05 }, "rare", "Enhanced service round with an exposed steel penetrator.") -- M80A1
 ammo("A76N_AP", "7.6x51 AP", "7.6N AP", "7.6N", 40, 1240, { dmg = 73, pen = 60, armorDmg = 0.79, bleedL = 0.16, bleedH = 0.11, frag = 0.14, speed = 833, recoil = 0.03, acc = 0.05 }, "rare", "Black-tipped armour piercer with a hardened steel core.") -- M61
 ammo("A76N_TC", "7.6x51 TC", "7.6N TC", "7.6N", 40, 1723, { dmg = 70, pen = 65, armorDmg = 0.85, bleedL = 0.15, bleedH = 0.1, frag = 0.13, speed = 930, recoil = 0.06, acc = 0.15 }, "rare", "Tungsten-carbide core. Goes through class 6 plates.") -- M993
+-- 9x39 (EFT's 9x39; economy-1a, sixth slice): FMJ, SP-5 gs, SPP gs, PAB-9 gs, SP-6 gs, BP gs, all subsonic. Damage,
+-- penetration, armour damage, fragmentation, speed and the recoil and accuracy modifiers from
+-- tarkovforge.com/ammo/9x39mm-<round> (read 2026-11-08); values are EFT's handbook prices; bleeding as for the 6.2
+ammo("A939_FMJ", "9x39 FMJ", "9x39 FMJ", "9.39", 50, 140, { dmg = 75, pen = 17, armorDmg = 0.28, bleedL = 0.12, bleedH = 0.06, frag = 0.3, speed = 330, recoil = -0.05, acc = 0.05, subsonic = true }, nil, "Plain full metal jacket. Heavy, slow and quiet.")
+ammo("A939_SP5", "9x39 SP-5", "9x39 SP-5", "9.39", 50, 220, { dmg = 71, pen = 28, armorDmg = 0.39, bleedL = 0.12, bleedH = 0.16, frag = 0.2, speed = 290, subsonic = true }, nil, "Subsonic sniper load.")
+ammo("A939_SPP", "9x39 SPP", "9x39 SPP", "9.39", 50, 440, { dmg = 68, pen = 35, armorDmg = 0.48, bleedL = 0.22, bleedH = 0.26, frag = 0.2, speed = 310, recoil = 0.07, acc = 0.1, subsonic = true }, "uncommon", "Improved sniper load with a steel core.")
+ammo("A939_PAB", "9x39 PAB-9", "9x39 PAB-9", "9.39", 50, 670, { dmg = 62, pen = 43, armorDmg = 0.57, bleedL = 0.22, bleedH = 0.18, frag = 0.1, speed = 320, recoil = 0.1, acc = -0.15, subsonic = true }, "uncommon", "Armour-piercing load made for export.")
+ammo("A939_SP6", "9x39 SP-6", "9x39 SP-6", "9.39", 50, 920, { dmg = 60, pen = 48, armorDmg = 0.64, bleedL = 0.22, bleedH = 0.16, frag = 0.1, speed = 305, recoil = 0.05, subsonic = true }, "rare", "Black-tipped armour piercer with a hardened core.")
+ammo("A939_BP", "9x39 BP", "9x39 BP", "9.39", 50, 1300, { dmg = 58, pen = 54, armorDmg = 0.69, bleedL = 0.12, bleedH = 0.06, frag = 0.1, speed = 295, recoil = 0.15, acc = 0.1, subsonic = true }, "rare", "Hardened steel-core piercer. Defeats class 5 plates.")
 
 -- ── armour, plates, helmets (Tarkov since 0.14, decision gameplay-2a; the rules in Plates.luau) ──────────────────────
 -- A vest or rig is built-in soft armour in parts (front, back, sides, collar, groin...), each with its own durability and

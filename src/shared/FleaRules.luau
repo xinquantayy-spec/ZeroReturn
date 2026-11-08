@@ -46,6 +46,9 @@ Flea.BANNED_ITEMS = {
 	-- 7.6x51 (economy-1a's fifth slice): EFT keeps M62, M80A1, M61 and M993 off its flea market (tarkovforge.com, the
 	-- coordinator's request of 18:06)
 	A76N_TR = true, A76N_EP = true, A76N_AP = true, A76N_TC = true,
+	-- 9x39 (economy-1a's sixth slice): EFT keeps PAB-9 and BP off its flea market, and the VSS ("Not on flea") though not
+	-- the AS VAL (tarkovforge.com, read 2026-11-08)
+	A939_PAB = true, A939_BP = true, VSS_RIFLE = true,
 	FLARE_RED = true, DOGTAG = true, RITUAL_AMULET = true, COLD_WALLET = true, -- the airdrop flare, tags, amulet, the "bitcoin"
 }
 

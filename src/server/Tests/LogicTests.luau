@@ -386,7 +386,7 @@ function T.run(ctx)
 	do
 		local FR = require(Shared.FleaRules)
 		local even, over, under = FR.fee(10000, 1, 10000), FR.fee(10000, 1, 20000), FR.fee(10000, 1, 5000)
-		check("flea fee: 6 % at the base value, steeper when overpriced", even == 600 and over == 1075 and under == 538)
+		check("flea fee (EFT 1.1.0: 5 %): 10 % at the base value, steeper when overpriced", even == 1000 and over == 1791 and under == 896)
 		check("flea offer slots by rating", FR.slots(0.19) == 1 and FR.slots(0.2) == 2 and FR.slots(7) == 3 and FR.slots(150) == 8 and FR.slots(1000) == 10)
 		check("flea bans secure containers", not FR.tradeable("SECURE_S") and FR.tradeable("R17_RIFLE"))
 		local o1, o2 = FR.offersFor("R17_RIFLE", 77), FR.offersFor("R17_RIFLE", 77)
@@ -396,21 +396,16 @@ function T.run(ctx)
 			sorted = sorted and (i == 1 or o.price >= o1[i - 1].price)
 		end
 		check("flea operator offers are the same on every server and cheapest first", same and sorted)
-		local now = os.time()
+		-- since decision economy-3a offers live in the sellers' escrow books (FleaTests: sales, expiry, the mailbox, races);
+		-- an offer kept in the profile from before is given back when there is no player to move it to the shared market
 		local fp = Inv.newHolder("profile")
-		fp.money, fp.known = 0, {}
-		local mp = FR.marketPrice("R17_RIFLE")
+		fp.money, fp.known, fp.msgs = 0, {}, {}
 		local sg, si = Inv.newItem("R17_RIFLE", 1, { fir = true })
-		local eg, ei = Inv.newItem("A62_FMJ", 30, { fir = true })
 		Inv.place(fp, sg, si, { "stash" })
-		Inv.place(fp, eg, ei, { "stash" })
-		fp.flea = { rating = 0.2, offers = {
-			cheap = { id = "R17_RIFLE", n = 1, price = math.floor(mp * 0.5), t = now - 3600, b = Inv.take(fp, sg) },
-			dear = { id = "A62_FMJ", n = 30, price = FR.marketPrice("A62_FMJ") * 30 * 100, t = now - FR.DURATION - 60, b = Inv.take(fp, eg) },
-		} }
-		ctx.Flea.resolve(nil, fp, now)
-		check("flea: a cheap offer sells (money, rating, mail), an overpriced one expires back to the stash",
-			fp.money == math.floor(mp * 0.5) and math.abs(fp.flea.rating - (0.18 + math.floor(mp * 0.5) / 50000 * 0.01)) < 1e-9 and next(fp.flea.offers) == nil and fp.items[eg] ~= nil and Inv.locate(fp, eg) == "grid" and #fp.msgs == 2)
+		fp.flea = { rating = 0.2, offers = { old = { id = "R17_RIFLE", n = 1, price = 9000, t = os.time() - 3600, b = Inv.take(fp, sg) } } }
+		ctx.Flea.resolve(nil, fp, os.time())
+		check("flea: an offer from before the shared market (economy-3a) comes back to the stash, still found in raid",
+			next(fp.flea.offers) == nil and fp.items[sg] ~= nil and fp.items[sg].fir == true and Inv.locate(fp, sg) == "grid" and fp.money == 0)
 	end
 	-- goggles (Tarkov): a gear component that goes on a helmet's or strap's mount, not on every helmet
 	do
@@ -1509,7 +1504,7 @@ function T.run(ctx)
 	-- into a known group, a level-up reported once, reloading while aiming from level 3, saved with the profile
 	do
 		local P = require(Shared.Progress)
-		check("mastering: every weapon group in the order, thresholds rising", #P.MASTERY_ORDER == 12 and (function()
+		check("mastering: every weapon group in the order, thresholds rising", #P.MASTERY_ORDER == 14 and (function()
 			for _, gid in P.MASTERY_ORDER do
 				local g = P.MASTERING[gid]
 				if not (g and g.level2 > 0 and g.level3 > g.level2 and P.MASTERY_OF[g.weapons[1]] == gid) then

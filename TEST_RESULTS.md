@@ -8,6 +8,17 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The flea market of real players (decision economy-3a, merged 18:19) and the 9x39 rifles (economy-1a, sixth slice); 2026-11-08, checked in Studio between about 18:20 and 20:00 SGT
+
+| Test | Result |
+|---|---|
+| The flea thread's work | Built in its own worktree and merged as 9b6a9df: a DataStore escrow book per seller, a MemoryStore index per item, exactly-once purchases, sales to offline sellers, EFT's 5 % fee, 12 h offers, REMOVE after 72 s, the rating rules, TILDA's messages, an operator floor shared by every server and AI buyers capped at the going rate. Offline, before the merge, it ran FleaTests 73/73 under Lua 5.4 with stand-ins and 19 deliberate breakages each failed them. |
+| Its requests, applied | LogicTests: the fee check now expects EFT's 5 % formula and the old "offers sell from the profile" check became "an offer from before the shared market comes back to the stash". Dev's flea command ages the escrow book through the market's own call. Found-in-raid and bought stacks no longer merge (in both of Inv's merge paths). A trader purchase refused for lack of room now gives back the units it had merged into other stacks. |
+| Tests in Studio | 15 suites, 1,156 checks, all passed, FleaTests 73/73 among them. The only flea lines in the output are the crashes FleaTests injects on purpose. |
+| The FLEA MARKET by eye | At level 20, the U key opened FLEA MARKET with BROWSE, WISH LIST, MY OFFERS 0/2, ADD OFFER and FLEA RATING 0.20. A category listed offers as "Name (rating)", cheapest first, with stock, price and PURCHASE. No client errors. |
+| The SV-9 and AV-9 | guns_vss.py added a new batch, ZR_GunsVSS (6 parts, 3,384 triangles), uploaded as 85841185372239. build_items_m.py drew the six rounds. Sprites were packed again (158; image 72227310776130), and so was the sixth icon sheet (image 137796421446931). In a raid on Quay 7, changing the barrel-suppressors needed a multitool, as EFT's vital parts do. With them on, the SV-9 loaded a 10-round magazine of SP-5 and fired 3 (10 to 7). The AV-9 reported itself suppressed, loaded a 10-round magazine of SP-6 from the pockets and fired 4 (10 to 6). The 20-round magazine had gone into the backpack, and reload rightly ignored it there. |
+| Not checked | The flea's other Studio checks need a second player, time or API access: listing and selling, two buyers at once, REMOVE, a full stash, AI buyers over minutes, a rejoin with DataStore, phone and gamepad. Cross-server trading needs a published place. Not checked either: aiming the 9x39 rifles, their sound by ear, AI with them. |
+
 ## The 7.6x51 calibre: the S-14 rifle and the OB-7 bolt-action (decision economy-1a, fifth slice; 2026-11-08, about 18:15 SGT)
 
 | Test | Result |

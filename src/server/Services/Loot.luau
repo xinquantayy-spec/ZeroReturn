@@ -124,6 +124,11 @@ local POOLS = {
 		{ id = "A76N_HP", w = 2, n = { 10, 30 } }, { id = "A76N_SP", w = 3, n = { 10, 30 } }, { id = "A76N_FMJ", w = 4, n = { 10, 30 } },
 		{ id = "A76N_TR", w = 2, n = { 10, 25 } }, { id = "A76N_BALL", w = 4, n = { 10, 30 } }, { id = "A76N_EP", w = 0.5, n = { 5, 15 } },
 		{ id = "A76N_AP", w = 0.5, n = { 5, 15 } }, { id = "A76N_TC", w = 0.3, n = { 5, 10 } },
+		-- the sixth slice: the SV-9 and AV-9 rarely, their magazines and the 9x39 rounds (the piercers rarely)
+		{ id = "VSS_RIFLE", w = 0.3 }, { id = "VAL_RIFLE", w = 0.3 }, { id = "VSS_MAG10", w = 1, a = { 0, 10 }, at = "A939_SP5" },
+		{ id = "VSS_MAG20", w = 0.6, a = { 0, 20 }, at = "A939_SP5" }, { id = "A939_FMJ", w = 2, n = { 10, 30 } },
+		{ id = "A939_SP5", w = 3, n = { 10, 30 } }, { id = "A939_SPP", w = 1.5, n = { 10, 25 } }, { id = "A939_PAB", w = 0.6, n = { 5, 15 } },
+		{ id = "A939_SP6", w = 0.5, n = { 5, 15 } }, { id = "A939_BP", w = 0.3, n = { 5, 10 } },
 		-- night vision (Tarkov: weapon boxes and tech crates hold goggles now and then) and ballistic eyewear
 		{ id = "NV_BINO", w = 1 }, { id = "NV_GREEN", w = 0.5 }, { id = "NV_STRAP", w = 1 },
 		{ id = "GLASSES_BG1", w = 1 }, { id = "GLASSES_AF2", w = 0.5 }, { id = "GAS_MASK", w = 0.5 },
@@ -355,6 +360,8 @@ local POOLS = {
 		{ id = "SVD_RIFLE", w = 0.6 }, { id = "SVD_MAG", w = 1, a = { 0, 10 }, at = "A76L_PS" },
 		{ id = "M1A_RIFLE", w = 0.8 }, { id = "M700_BOLT", w = 0.6 }, { id = "M1A_MAG20", w = 1, a = { 0, 20 }, at = "A76N_AP" },
 		{ id = "A76N_AP", w = 1, n = { 20, 40 } }, { id = "A76N_TC", w = 0.6, n = { 10, 30 } },
+		{ id = "VAL_RIFLE", w = 0.6 }, { id = "VSS_RIFLE", w = 0.5 }, { id = "VSS_MAG20", w = 1, a = { 0, 20 }, at = "A939_SP6" },
+		{ id = "A939_SP6", w = 1, n = { 20, 40 } }, { id = "A939_BP", w = 0.6, n = { 10, 30 } },
 		{ id = "A76L_BT", w = 1, n = { 20, 40 } }, { id = "A12_APS", w = 1, n = { 10, 20 } },
 		{ id = "R17_RIFLE", w = 3 }, { id = "KST_RIFLE", w = 3 }, { id = "SPARROW_SMG", w = 2 }, { id = "HARROW12", w = 2 }, { id = "P9_PISTOL", w = 2 },
 		{ id = "R17_MAG", w = 4, a = { 0, 25 }, at = "A62_FMJ" }, { id = "R17_MAG40", w = 2, a = { 0, 40 }, at = "A62_FMJ" },
