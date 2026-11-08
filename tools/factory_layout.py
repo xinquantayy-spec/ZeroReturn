@@ -45,6 +45,9 @@ SERVICE_PIT = 1.5 * S  # ours: depth of the two service pits
 # MIN_PASS wide and every stair, landing and floor keeps HEAD studs of head room (tools/smelter_preview.py paths checks)
 MIN_PASS = 1.4  # metres (4.4 studs)
 HEAD = 7.0  # studs
+# doors and doorways at floor level: EFT's are about 2.1 m; Roblox's pathfinding (agent 5.6 studs, the AI's and the exit
+# walk's) found no way through a 2.1 m (6.56-stud) doorway on the office's third floor and did at 2.18 m (Studio 2026-11-09)
+DOOR_H = 2.3  # metres
 
 
 def r1(v):
@@ -702,7 +705,7 @@ for lvname, rows in ref["walls"].items():
 
 # lintels over the two tunnel doors (the doorways run to the tunnel's ceiling; the leaves are 2.1 m)
 for lx0, lx1, lz0, lz1 in ((30.8 - MIN_PASS / 2, 30.8 + MIN_PASS / 2, -61.05, -60.85), (-42.39, -41.71, 26.04 - MIN_PASS / 2, 26.04 + MIN_PASS / 2)):
-    walls.append([r2(lx0 * S), r2(lx1 * S), r2(lz0 * S), r2(lz1 * S), r2(LV["basement"] + 2.1 * S), r2(-SLAB), "tunnelwall"])
+    walls.append([r2(lx0 * S), r2(lx1 * S), r2(lz0 * S), r2(lz1 * S), r2(LV["basement"] + DOOR_H * S), r2(-SLAB), "tunnelwall"])
 
 # ── openings: doors and windows cut out of the walls (metres; y from the floor of that level) ───────────────
 # re3mr reads (grade B): the third-floor room doors, the office windows, the jump windows from the courtyard, the
@@ -718,23 +721,23 @@ def opening(x0, x1, z0, z1, ylv, a, b):
 
 T3 = LV["third"]
 for zc in (-24.3, -19.6, -14.0, -8.0):  # manager's office, records room, shift office (two doors)
-    opening(-35.3, -34.7, zc - MIN_PASS / 2, zc + MIN_PASS / 2, T3, 0, 2.1)
+    opening(-35.3, -34.7, zc - MIN_PASS / 2, zc + MIN_PASS / 2, T3, 0, DOOR_H)
 for zc in (-24.0, -19.0, -14.8, -11.0, -7.6):  # west windows; -11.0 is the shift office window exit
     opening(-40.4, -39.8, zc - 0.6, zc + 0.6, T3, 0.9, 2.1)
 for zc in (-22.9, -16.7, -10.7, -3.7):  # east windows over the hall
     opening(-32.7, -32.1, zc - 0.6, zc + 0.6, T3, 0.9, 2.1)
-opening(-32.7, -32.1, -31.8, -29.4, T3, 0, 2.3)  # the high bridge door
+opening(-32.7, -32.1, -31.8, -29.4, T3, 0, DOOR_H)  # the high bridge door
 # second floor: west windows, the jump window over the courtyard stair
 S2Y = LV["second"]
 for zc in (-27.0, -24.0, -13.0, -10.0):
     opening(-47.9, -47.2, zc - 0.6, zc + 0.6, S2Y, 0.9, 2.1)
-opening(-47.9, -47.2, -6.1, -4.5, S2Y, 0, 2.2)  # broken out to the floor
+opening(-47.9, -47.2, -6.1, -4.5, S2Y, 0, DOOR_H)  # broken out to the floor
 # ground floor: the two jump windows from the courtyard into the office rooms
 WY = LV["west"]
-opening(-45.4, -44.3, -22.8 - MIN_PASS / 2, -22.8 + MIN_PASS / 2, WY, 0, 2.2)  # broken out to the floor
-opening(-43.3, -42.2, -8.3 - MIN_PASS / 2, -8.3 + MIN_PASS / 2, WY, 0, 2.2)
+opening(-45.4, -44.3, -22.8 - MIN_PASS / 2, -22.8 + MIN_PASS / 2, WY, 0, DOOR_H)  # broken out to the floor
+opening(-43.3, -42.2, -8.3 - MIN_PASS / 2, -8.3 + MIN_PASS / 2, WY, 0, DOOR_H)
 # the aid post gate passage door (re3mr lock at 51.1, 25.0; the SVG gap is 0.94 m, ours MIN_PASS)
-opening(50.4, 51.1, 24.83 - MIN_PASS / 2, 24.83 + MIN_PASS / 2, 0.0, 0, 2.1)
+opening(50.4, 51.1, 24.83 - MIN_PASS / 2, 24.83 + MIN_PASS / 2, 0.0, 0, DOOR_H)
 # the cable cellar door in the new cross wall, the sealed store's door (east wall of the room in the south-west tunnels)
 # (the cable cellar's door stands in the SVG's doorway at x 30.8, z -60.95: the re3mr lock is 0.7 m off it)
 # (the sealed store's doorway is in the reference already: x -42.39..-41.71, z 25.49..26.58; the floor takes it to
@@ -811,12 +814,12 @@ landings.append([r2(-50.7 * S), r2(-47.3 * S), r2(-6.2 * S), r2(-4.0 * S), r2(LV
 
 # doors (World makes the leaves): id, label, x, y (floor), z, width, height, axis the leaf spans, key
 DOORS = [
-    ("SM_GATEDOOR", "Aid post gate passage", 50.75, 0.0, 24.83, MIN_PASS, 2.1, "z", "KEY_SMELT_OFFICE"),
-    ("SM_CELLAR", "Cable cellar door", 30.8, LV["basement"], -60.95, MIN_PASS, 2.1, "x", "KEY_SMELT_OFFICE"),
-    ("SM_MGR", "Manager's office", -35.0, T3, -24.3, MIN_PASS, 2.1, "z", "KEY_SMELT_OFFICE"),
-    ("SM_RECORDS", "Records room", -35.0, T3, -19.6, MIN_PASS, 2.1, "z", None),
-    ("SM_SHIFT", "Shift office", -35.0, T3, -14.0, MIN_PASS, 2.1, "z", None),
-    ("SM_STORE", "Sealed store", -42.05, LV["basement"], 26.04, MIN_PASS, 2.1, "z", "CARD"),
+    ("SM_GATEDOOR", "Aid post gate passage", 50.75, 0.0, 24.83, MIN_PASS, DOOR_H, "z", "KEY_SMELT_OFFICE"),
+    ("SM_CELLAR", "Cable cellar door", 30.8, LV["basement"], -60.95, MIN_PASS, DOOR_H, "x", "KEY_SMELT_OFFICE"),
+    ("SM_MGR", "Manager's office", -35.0, T3, -24.3, MIN_PASS, DOOR_H, "z", "KEY_SMELT_OFFICE"),
+    ("SM_RECORDS", "Records room", -35.0, T3, -19.6, MIN_PASS, DOOR_H, "z", None),
+    ("SM_SHIFT", "Shift office", -35.0, T3, -14.0, MIN_PASS, DOOR_H, "z", None),
+    ("SM_STORE", "Sealed store", -42.05, LV["basement"], 26.04, MIN_PASS, DOOR_H, "z", "CARD"),
 ]
 doors = [[d[0], d[1], r2(d[2] * S), r2(d[3]), r2(d[4] * S), r2(d[5] * S), r2(d[6] * S), d[7], d[8] or ""] for d in DOORS]
 

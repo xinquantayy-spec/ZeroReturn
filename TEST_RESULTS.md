@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## The Smelter made walkable (art-1a follow-up; 2026-11-09, 03:25 SGT)
+
+| Test | Result |
+|---|---|
+| Exit walk | ZR_Dev exitcheck("smelter", 99, doors open), after the factory thread's walkability pass: 16 of 16 spawns reach each of eight exits (before: ORE GATE 0, AID POST GATE 1, TIMEKEEPER'S WINDOW 0, four spawns walled in). TIMEKEEPER'S WINDOW still had 0: its room's 2.1 m doorways (6.56 studs) let no 5.6-stud agent through in Roblox's pathfinding. Raising one lintel in Studio showed 6.96 studs passes, so every floor-level door and doorway became 2.3 m (tools/factory_layout.py DOOR_H); after that, 16 of 16 for all nine exits (28 to 1,134 studs). |
+| Tower | Holding W from the foot of the hall's steel switchback tower: up the first flight to the landing (3.2 to 10.2 studs), then stopped by the new rail at its far edge (before: walked off it to the floor). |
+| Build log | Smelter 3,823 parts (before the pass 3,497: +31 side panels, +77 landing rails, +6 landings, -2 boxes); 88 containers, 51 loose spots. |
+| Tests | 18 suites, 1,295 checks, all passed. KitTests' Smelter pins were updated for the new layout: 1,109 stair and 837 railing parts without the kit; 72 flights and 219 rails (468 parts) with it. |
+| Not checked | The door leaves in their openings, the broken-out courtyard windows and TR_BORDER's sign by eye; the pit, the sump drop and the high bridge by hand. |
+
 ## The modular stair and railing kit (art-5b phase 1; 2026-11-09, 02:40 SGT)
 
 | Test | Result |

@@ -9,8 +9,8 @@
 --       modules and its collider; a flight or railing no variant fits is left to its builder (nil)
 --   K03 ZR_Move: bodies and plain rays meet a railing's collider, bullets (ZR_Shot) and the AI's sight (ZR_Sight) pass it
 --   K04 the Smelter rebuilt in a sandbox (never in the world) with the kit and without: every flight and railing call took
---       the kit (when it is loaded) or its parts; without the kit it builds today's 1,103 stair and 661 railing parts, with
---       it at most 200 and 320 (tools/kit_census.py measured 194 and 316 offline) and every other group the same
+--       the kit (when it is loaded) or its parts; without the kit it builds today's 1,109 stair and 837 railing parts, with
+--       it at most 200 and 480 (Studio: the 219 rails of the walkability pass take 468) and every other group the same
 --   K05 the built maps: every Kit5 flight has its ramp, every Kit5 railing its body-only collider, no kit mesh collides and
 --       no Kit5 model is a "Kit" prop (the tidy pass would move it)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,8 +23,8 @@ local T = {}
 local FLIGHT_COUNTS = { C = { 4, 36, 50 }, O = { 4, 24 }, S = { 4, 36 }, E = { 50, 50 } }
 local HAND_COUNTS = { A = { 4, 36 }, B = { 4, 24 } }
 -- the offline census (tools/kit_census.py, 2026-11-09): the Smelter's two pilot groups before and after
-local SMELTER_BEFORE = { Stairs = 1103, Railings = 661 }
-local SMELTER_AFTER = { Stairs = 200, Railings = 320 } -- at most (194 and 316 offline)
+local SMELTER_BEFORE = { Stairs = 1109, Railings = 837 } -- after art-1a's walkability pass (tower landing rails, side panels)
+local SMELTER_AFTER = { Stairs = 200, Railings = 480 } -- at most (Studio 2026-11-09: 468 railing parts for 219 rails)
 
 local function names()
 	local list = {}
@@ -256,7 +256,7 @@ function T.run(ctx)
 		end
 		local before, logOff = build(false)
 		local after, logOn = build(true)
-		check("K04 without the kit the Smelter builds today's stairs and railings (1,103 and 661 parts, Studio 2026-11-09)",
+		check("K04 without the kit the Smelter builds today's stairs and railings (1,109 and 837 parts, Studio 2026-11-09)",
 			before.Stairs == SMELTER_BEFORE.Stairs and before.Railings == SMELTER_BEFORE.Railings, string.format("%s / %s", tostring(before.Stairs), tostring(before.Railings)))
 		local offOk = #logOff > 0
 		for _, e in logOff do
@@ -280,9 +280,9 @@ function T.run(ctx)
 					rails += 1
 				end
 			end
-			check("K04 with the kit every Smelter flight and railing is a Kit5 placement", allKit and flights == 72 and rails == 132, string.format("%d flights, %d rails", flights, rails))
-			check("K04 with the kit the stairs drop to 200 parts or fewer (from 1,103)", (after.Stairs or 0) <= SMELTER_AFTER.Stairs, after.Stairs)
-			check("K04 with the kit the railings drop to 320 parts or fewer (from 661)", (after.Railings or 0) <= SMELTER_AFTER.Railings, after.Railings)
+			check("K04 with the kit every Smelter flight and railing is a Kit5 placement", allKit and flights == 72 and rails == 219, string.format("%d flights, %d rails", flights, rails))
+			check("K04 with the kit the stairs drop to 200 parts or fewer (from 1,109)", (after.Stairs or 0) <= SMELTER_AFTER.Stairs, after.Stairs)
+			check("K04 with the kit the railings drop to 480 parts or fewer (from 837)", (after.Railings or 0) <= SMELTER_AFTER.Railings, after.Railings)
 		else
 			skipped += 3
 		end
