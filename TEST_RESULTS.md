@@ -8,6 +8,16 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
+## Trader portraits (2026-11-09, 07:11 SGT)
+
+| Test | Result |
+|---|---|
+| EFT | EFT's trading screen switches traders by their portraits, each with the trader's loyalty level. Ours had text tabs ("VOS · LL1") and no portrait anywhere. |
+| Built | Each trader tab shows a live head-and-shoulders portrait of the trader's own figure at his Relay 7 counter, with his outfit and gear, beside his name and loyalty level. It is copied once per appearance (AppearanceRev) and shows his initial if the figure has not streamed in. The key light comes from the camera's left whichever way he faces. PC tabs are 52 pt with 44 pt portraits; a phone's are 40 pt with 32 pt portraits, in the strip that scrolls. No image upload: the portraits are the game's own figures. |
+| In Studio | Trader screen in the phone layout (the Studio window is under 500 px tall): all eight portraits show their trader, Fence with his gaiter, DEKKER and KOVAC with their glasses, and the open tab is highlighted. The first try put the portrait over the text (a UIPadding moves children too); the name is now its own label. |
+| Tests | 18 suites, 1,321 checks, all passed. |
+| Not checked | The PC layout (52 pt tabs) on a taller window; eight viewports' cost on a phone. |
+
 ## Every item lies as its own model (art-4b follow-up; 2026-11-09, 03:50 SGT)
 
 | Test | Result |

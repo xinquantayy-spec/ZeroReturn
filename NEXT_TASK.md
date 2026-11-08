@@ -37,7 +37,7 @@
   hideout modules without one (done 22:19 SGT: stations and stencils; furniture by level waits on the owner's prop budget,
   KNOWN_ISSUES 84); bipods (done 22:31 SGT: the KS-L's, EFT's -80 %; rail bipod parts come with the parts slices); ai-4a
   voices (recorded packs cost money: the owner's call; the placeholder, Roblox's AudioTextToSpeech, speaks English only, is reported to fail in unpublished places such as ours and is free only during its beta, so it waits for the owner too).
-- Still open from those: trader portraits (no trader screen shows one yet); the TASKS tab, a plant, kills and a hand-over
+- Still open from those: the TASKS tab, a plant, kills and a hand-over
   seen live (economy-6a); the touch layout and the monochrome scheme of the health figure (ui-1a); the device-emulator
   check of shadow-casting lamps (art.1, the owner's click); a Realistic-vs-Soft side-by-side in Edit mode, never a runtime
   switch (that hung Studio); kit origins (art.9); ZR_SFX_Amb (the owner checks why it reads as 0.0 s before any

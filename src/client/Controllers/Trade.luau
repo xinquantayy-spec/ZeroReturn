@@ -139,6 +139,69 @@ local function have(n, need)
 	return string.format('<font color="#%s">%d/%d</font>', (n >= need) and "93A57C" or "C24A35", math.min(n, 99), need)
 end
 
+-- ── trader portraits (EFT's trading screen switches traders by their portraits) ──
+-- A live head-and-shoulders view of the trader's own figure at his Relay 7 counter (Lobby.spawnTraders), copied once
+-- per appearance (the figure's AppearanceRev) and cloned into each portrait; his initial while the figure has not
+-- streamed in. A phone's strip has 32 pt portraits in its 40 pt tabs, a PC's 44 pt in 52 pt tabs.
+local portraitSrc = {} -- tid -> { rig, rev, model, head (CFrame) }
+local STRIP = { Humanoid = true, Script = true, LocalScript = true, Sound = true, ParticleEmitter = true, BillboardGui = true, ProximityPrompt = true }
+local function portraitSource(tid)
+	local folder = workspace:FindFirstChild("ZR_Traders")
+	local rig = folder and folder:FindFirstChild("Trader_" .. tid)
+	local head = rig and rig:FindFirstChild("Head")
+	if not (head and head:IsA("BasePart")) then
+		return nil
+	end
+	local rev = rig:GetAttribute("AppearanceRev") or 0
+	local c = portraitSrc[tid]
+	if c and c.rig == rig and c.rev == rev then
+		return c
+	end
+	local was = rig.Archivable
+	rig.Archivable = true
+	local m = rig:Clone()
+	rig.Archivable = was
+	if not m then
+		return nil
+	end
+	for _, x in m:GetDescendants() do
+		if STRIP[x.ClassName] then
+			x:Destroy()
+		end
+	end
+	c = { rig = rig, rev = rev, model = m, head = head.CFrame }
+	portraitSrc[tid] = c
+	return c
+end
+Trade.portraitSource = portraitSource -- read by the dev bridge's checks
+
+local function portrait(parent, tid, px)
+	local vf = K.new("ViewportFrame", {
+		Name = "Portrait", BackgroundColor3 = Color3.fromHex("161814"), BorderSizePixel = 0, Size = UDim2.fromOffset(px, px), Position = UDim2.fromOffset(4, 4),
+		Ambient = Color3.fromRGB(96, 96, 92), LightColor = Color3.fromRGB(240, 232, 214),
+	}, parent)
+	local src = portraitSource(tid)
+	if not src then
+		local d = TD.defs[tid]
+		K.label(vf, string.sub(d and d.name or string.upper(tid), 1, 1), 18, { Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = K.C.dim })
+		return vf
+	end
+	src.model:Clone().Parent = vf
+	-- head and shoulders from a three-quarter angle, a long lens (about 1.7 studs of frame at 3.6 studs)
+	local h = src.head
+	local focus = h.Position - Vector3.new(0, 0.3, 0)
+	local eye = focus + h.LookVector * 3.3 + h.RightVector * 1.35 + Vector3.new(0, 0.3, 0)
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = 27
+	cam.CFrame = CFrame.lookAt(eye, focus)
+	cam.Parent = vf
+	vf.CurrentCamera = cam
+	-- the key light from the camera's left and above, whichever way the trader faces his counter
+	vf.LightDirection = (cam.CFrame.LookVector * 0.7 + cam.CFrame.RightVector * 0.45 - Vector3.yAxis * 0.55).Unit
+	return vf
+end
+Trade.portrait = portrait
+
 -- ── traders ──────────────────────────────────────────────────────────────────
 local function loyaltyText(econ, tid)
 	local st = econ.traders and econ.traders[tid] or { ll = 1, spent = 0, rep = 0 }
@@ -1118,7 +1181,7 @@ function Trade.traders(tab, sub)
 	table.insert(live, { label = restock, at = (d.serverTime or os.time()) + (econ.restockIn or 0), fmt = "RESTOCK IN %s", onDone = function()
 		ctx.State.req("sync", {})
 	end })
-	local tabH = compact and 40 or 32
+	local tabH = compact and 40 or 52
 	local tabs = K.new("ScrollingFrame", {
 		Name = "Tabs", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, compact and 40 or 48), Size = UDim2.new(1, 0, 0, tabH),
 		ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new(), ScrollBarThickness = 0, Selectable = false,
@@ -1145,6 +1208,16 @@ function Trade.traders(tab, sub)
 			BackgroundColor3 = sel and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = sel and K.C.ochre or K.C.dim,
 		})
 		b.Name = "Tab_" .. string.upper(id)
+		if TD.defs[id] then
+			-- the portrait at the left, the name and loyalty level beside it
+			local px = tabH - 8
+			portrait(b, id, px)
+			b.Text = ""
+			K.label(b, TD.defs[id].name .. "\nLL" .. (st and st.ll or 1), 12, {
+				Name = "Name", Position = UDim2.fromOffset(px + 10, 0), Size = UDim2.new(1, -(px + 12), 1, 0), FontFace = K.bold,
+				TextColor3 = b.TextColor3, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
+			})
+		end
 		b.Activated:Connect(function()
 			if ui.tab ~= id then
 				Trade.traders(id)
@@ -1162,7 +1235,7 @@ function Trade.traders(tab, sub)
 			end
 		end)
 	end
-	local top = compact and 86 or 88
+	local top = compact and 86 or 108
 	local bodyH = h - top - (compact and 0 or 42)
 	if ui.tab == "messenger" and ctx.Menus then
 		ctx.Menus.markRead(d)
