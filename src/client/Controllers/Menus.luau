@@ -178,6 +178,40 @@ local CAT = {
 }
 local CATS = { "ALL", "WEAPONS", "WEAPON PARTS", "MAGAZINES", "AMMUNITION", "GRENADES", "GEAR", "CONTAINERS", "MEDICATION", "PROVISIONS", "KEYS", "BARTER ITEMS", "SPECIAL EQUIPMENT", "INFO ITEMS", "WISH LIST" }
 Menus.CAT, Menus.CATS = CAT, CATS -- read by EconomyTests (every item kind has a category)
+-- EFT's handbook folders inside BARTER ITEMS (each barter good's def.cat, economy-1a's second slice): shown under it in
+-- the HANDBOOK and the flea market's BROWSE tree when BARTER ITEMS is open
+local SUBS = {
+	{ "building", "BUILDING MATERIALS" }, { "electronics", "ELECTRONICS" }, { "energy", "ENERGY ELEMENTS" }, { "flammable", "FLAMMABLE MATERIALS" },
+	{ "household", "HOUSEHOLD MATERIALS" }, { "info", "INFO ITEMS" }, { "medical", "MEDICAL SUPPLIES" }, { "others", "OTHERS" },
+	{ "tools", "TOOLS" }, { "valuables", "VALUABLES" },
+}
+Menus.SUBS = SUBS
+
+-- the category list down the left side: the categories, and EFT's folders under BARTER ITEMS when it is open.
+-- st = { cat, sub } (the handbook's or the flea market's choice); skip: categories left out; prefix: button names
+local function catList(left, st, skip, refresh, prefix)
+	for i, c in CATS do
+		if not (skip and skip[c]) then
+			sideButton(left, c, st.cat == c and st.sub == nil, i * 100, function()
+				st.cat, st.sub = c, nil
+				refresh()
+			end).Name = (prefix or "Cat_") .. c
+			if c == "BARTER ITEMS" and st.cat == c then
+				for k, s in SUBS do
+					sideButton(left, "   " .. s[2], st.sub == s[1], i * 100 + k, function()
+						st.sub = s[1]
+						refresh()
+					end).Name = "Sub_" .. s[1]
+				end
+			end
+		end
+	end
+end
+
+-- is an item in the chosen category (and folder)
+local function inCat(def, cat, sub)
+	return (cat == "ALL" or CAT[def.kind] == cat) and (sub == nil or def.cat == sub)
+end
 local sorted
 local function allItems()
 	if not sorted then
@@ -208,13 +242,7 @@ end
 function Menus.handbook(f, x, y, w, h, d, refresh)
 	local wish = ctx.Settings.data.wish or {}
 	local left = scroller(f, x, y + 36, 220, h - 36, "HandbookCats")
-	for i, c in CATS do
-		local b = sideButton(left, c, ui.cat == c, i, function()
-			ui.cat = c
-			refresh()
-		end)
-		b.Name = "Cat_" .. c
-	end
+	catList(left, ui, nil, refresh)
 	local box = K.new("TextBox", {
 		Name = "Search", Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(214, 28), Text = ui.search, PlaceholderText = "SEARCH",
 		ClearTextOnFocus = false, TextSize = 12, FontFace = K.font, TextColor3 = K.C.text, PlaceholderColor3 = K.C.dim, BackgroundColor3 = K.C.panel2,
@@ -233,9 +261,9 @@ function Menus.handbook(f, x, y, w, h, d, refresh)
 	for _, id in allItems() do
 		local def = Items.defs[id]
 		local known = (d.known and d.known[id]) or Items.knownByDefault(id)
-		local inCat = ui.cat == "ALL" or CAT[def.kind] == ui.cat or (ui.cat == "WISH LIST" and wish[id])
+		local shown = inCat(def, ui.cat, ui.sub) or (ui.cat == "WISH LIST" and wish[id])
 		local hit = q == "" or (known and (string.find(string.lower(def.name), q, 1, true) or string.find(string.lower(def.short or ""), q, 1, true)))
-		if inCat and hit then
+		if shown and hit then
 			order += 1
 			local r = K.new("TextButton", {
 				Name = "Item_" .. id, LayoutOrder = order, Text = "", AutoButtonColor = true, BorderSizePixel = 0, BackgroundColor3 = K.C.panel,
@@ -266,31 +294,82 @@ function Menus.handbook(f, x, y, w, h, d, refresh)
 end
 
 -- ── FLEA MARKET ──────────────────────────────────────────────────────────────
--- Tarkov's flea market: BROWSE (categories and search over the operators' offers, cheapest first, PURCHASE with a
--- quantity), WISH LIST, MY OFFERS (time left, REMOVE) and ADD OFFER (found-in-raid stash items, the asking price and
--- Tarkov's listing fee, worked out by the same rules as the server). It opens at level 15; EFT 1.0's gated categories
--- show greyed out with the level they need (FleaRules.levelFor, audit economy.3).
+-- Tarkov's flea market, shared by every server since decision economy-3a: BROWSE (categories and search over players'
+-- and operators' offers together, cheapest first by the price of one unit, each seller's name and rating, PURCHASE
+-- with a quantity, packs bought whole), WISH LIST, MY OFFERS (units left, time left, REMOVE, which ends an offer 72 s
+-- later as in EFT; returned items that found no room wait here with RECEIVE) and ADD OFFER (found-in-raid stash items,
+-- a price per item or for the whole pack, Tarkov's listing fee worked out by the same rules as the server, the cheapest
+-- offer now). It opens at level 15; EFT 1.0's gated categories show greyed out with the level they need
+-- (FleaRules.levelFor, audit economy.3). Someone buying an offer first is told by the server and the list refreshes.
 local FR = require(Shared.FleaRules)
-local flea = { view = "browse", cat = "ALL", search = "", qty = "1", at = 0 }
+local flea = { view = "browse", cat = "ALL", search = "", qty = "1", at = 0, pack = false }
 local ROW_MAX = 100
+local MAX_IDS = 160 -- the server's limit on items one market request may ask for (Flea.MAX_IDS)
 
-local function fetchMarket(refresh)
+local function fleaKnown(d, id)
+	return (d.known and d.known[id]) or Items.knownByDefault(id)
+end
+
+-- the items the current BROWSE or WISH LIST view can show (the server is asked only for these)
+local function viewIds(d)
+	local wish = ctx.Settings.data.wish or {}
+	local q = string.lower(flea.search)
+	local out = {}
+	for _, id in allItems() do
+		local def = Items.defs[id]
+		if #out < MAX_IDS and FR.tradeable(id) and fleaKnown(d, id) then
+			local show
+			if flea.view == "wish" then
+				show = wish[id] == true
+			else
+				show = inCat(def, flea.cat, flea.sub)
+					and (q == "" or string.find(string.lower(def.name), q, 1, true) ~= nil or string.find(string.lower(def.short or ""), q, 1, true) ~= nil)
+			end
+			if show then
+				table.insert(out, id)
+			end
+		end
+	end
+	return out
+end
+
+local function viewKey()
+	return flea.view .. "|" .. flea.cat .. "|" .. (flea.sub or "") .. "|" .. flea.search
+end
+
+local function fetchMarket(d, refresh)
 	if flea.loading then
 		return
 	end
 	flea.loading = true
+	local key, ids = viewKey(), viewIds(d)
 	task.spawn(function()
-		local res = ctx.State.req("flea", { op = "market" })
+		local res = ctx.State.req("flea", { op = "market", ids = ids })
 		flea.loading = false
 		if res.ok and res.data then
-			flea.market = res.data.offers
-			flea.at = os.clock() + (res.data.refreshIn or FR.WINDOW)
+			flea.market, flea.key = res.data.offers, key
+			-- players' offers come and go: the list is asked for again every half minute while it is open
+			flea.at = os.clock() + math.clamp(res.data.refreshIn or 30, 5, 30)
 		else
 			flea.market = flea.market or {}
 			flea.at = os.clock() + 5
 		end
 		refresh()
 	end)
+end
+
+-- EFT shows each seller's rating beside the name
+local function ratingText(r)
+	r = r or 0
+	return math.abs(r) >= 100 and string.format("%.0f", r) or string.format("%.2f", r)
+end
+
+local function timeLeft(sec)
+	sec = math.max(0, math.floor(sec or 0))
+	if sec >= 3600 then
+		return string.format("%d H %02d MIN", sec // 3600, (sec % 3600) // 60)
+	end
+	return string.format("%d:%02d", sec // 60, sec % 60)
 end
 
 local function itemRow(parent, order, id, name, known, h)
@@ -315,8 +394,9 @@ local function cell(r, text, x, w, color, right)
 end
 
 local function browse(f, x, y, w, h, d, refresh)
-	if not flea.market or os.clock() > flea.at then
-		fetchMarket(refresh)
+	local idle = flea.view == "browse" and flea.cat == "ALL" and flea.search == ""
+	if not idle and (not flea.market or flea.key ~= viewKey() or os.clock() > flea.at) then
+		fetchMarket(d, refresh)
 	end
 	local wish = ctx.Settings.data.wish or {}
 	local lx = x
@@ -334,14 +414,7 @@ local function browse(f, x, y, w, h, d, refresh)
 			end
 		end)
 		local left = scroller(f, x, y + 36, 220, h - 36, "FleaCats")
-		for i, c in CATS do
-			if c ~= "WISH LIST" and c ~= "CONTAINERS" and c ~= "INFO ITEMS" then
-				sideButton(left, c, flea.cat == c, i, function()
-					flea.cat = c
-					refresh()
-				end).Name = "FleaCat_" .. c
-			end
-		end
+		catList(left, flea, { ["WISH LIST"] = true, ["CONTAINERS"] = true, ["INFO ITEMS"] = true }, refresh, "FleaCat_")
 		lx = x + 232
 	end
 	local lw = x + w - lx
@@ -359,13 +432,13 @@ local function browse(f, x, y, w, h, d, refresh)
 		qty.Text = flea.qty
 	end)
 	local list = scroller(f, lx, y + 34, lw, h - 34, "FleaOffers")
-	if not flea.market then
-		K.label(list, "LOADING OFFERS...", 12, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), TextColor3 = K.C.dim })
+	local q = string.lower(flea.search)
+	if idle then
+		K.label(list, "Choose a category or search for an item.", 12, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), TextColor3 = K.C.dim })
 		return
 	end
-	local q = string.lower(flea.search)
-	if flea.view == "browse" and flea.cat == "ALL" and q == "" then
-		K.label(list, "Choose a category or search for an item.", 12, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), TextColor3 = K.C.dim })
+	if not flea.market or flea.key ~= viewKey() then
+		K.label(list, "LOADING OFFERS...", 12, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), TextColor3 = K.C.dim })
 		return
 	end
 	local myLevel = (d.econ and d.econ.level) or 1
@@ -380,7 +453,7 @@ local function browse(f, x, y, w, h, d, refresh)
 		if show and flea.view == "wish" then
 			show = wish[id] == true
 		elseif show then
-			show = (flea.cat == "ALL" or CAT[def.kind] == flea.cat)
+			show = inCat(def, flea.cat, flea.sub)
 				and (q == "" or string.find(string.lower(def.name), q, 1, true) ~= nil or string.find(string.lower(def.short or ""), q, 1, true) ~= nil)
 		end
 		if show then
@@ -390,28 +463,32 @@ local function browse(f, x, y, w, h, d, refresh)
 					break
 				end
 				local r, pw = itemRow(list, order, id, def.name, true)
-				r.Name = "Offer_" .. id .. "_" .. o.i
+				r.Name = "Offer_" .. id .. "_" .. tostring(o.k or o.i)
 				if gated then
 					r.BackgroundTransparency = 0.6
 				end
-				K.label(r, CAT[def.kind] .. "  ·  AVG " .. Util.commas(FR.marketPrice(id)), 11, { Position = UDim2.fromOffset(pw + 10, 22), Size = UDim2.fromOffset(340, 16), TextColor3 = K.C.dim })
-				cell(r, o.seller, 446, 150, gated and K.C.dim or K.C.text)
+				K.label(r, CAT[def.kind] .. "  ·  AVG " .. Util.commas(FR.marketPrice(id)) .. (o.mine and "  ·  YOUR OFFER" or ""), 11, { Position = UDim2.fromOffset(pw + 10, 22), Size = UDim2.fromOffset(340, 16), TextColor3 = o.mine and K.C.ochre or K.C.dim })
+				-- EFT's "Trader (rating)" column: the seller's name and flea rating
+				cell(r, string.format("%s (%s)", o.seller or "?", ratingText(o.r)), 446, 150, gated and K.C.dim or K.C.text)
 				cell(r, o.left > 0 and ("x" .. o.left) or "SOLD OUT", 606, 90, gated and K.C.dim or (o.left > 0 and K.C.text or K.C.red))
-				cell(r, Util.commas(o.price) .. " " .. Config.CURRENCY, 706, 130, gated and K.C.dim or K.C.ochre)
+				-- a price per item, or EFT's "per pack (N items)" for an offer sold whole
+				cell(r, Util.commas(o.price) .. " " .. Config.CURRENCY .. (o.pk and ("  PER PACK (" .. o.left .. ")") or ""), 706, 190, gated and K.C.dim or K.C.ochre)
 				if gated then
 					K.label(r, "REQUIRES LEVEL " .. need, 12, {
 						Name = "Locked", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(140, 30),
 						TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = K.C.orange,
 					})
-				elseif o.left > 0 then
+				elseif o.left > 0 and not o.mine then
 					local b = K.button(r, "PURCHASE", { Name = "Buy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(100, 30), TextSize = 12 })
 					b.Activated:Connect(function()
-						local n = math.clamp(math.floor(tonumber(flea.qty) or 1), 1, o.left)
+						local n = o.pk and o.left or math.clamp(math.floor(tonumber(flea.qty) or 1), 1, o.left)
 						task.spawn(function()
-							if ctx.State.req("flea", { op = "buy", id = id, i = o.i, n = n }).ok then
-								flea.at = 0
-								refresh()
-							end
+							-- a player's offer by its id, an operator's by its number; the price seen goes along so a changed
+							-- offer is refused rather than bought dearer. If someone bought it first the server says so and
+							-- the list is asked for again.
+							ctx.State.req("flea", { op = "buy", id = id, k = o.k, i = (not o.k) and o.i or nil, n = n, price = o.unit or o.price })
+							flea.at = 0
+							refresh()
 						end)
 					end)
 				end
@@ -428,26 +505,53 @@ local function browse(f, x, y, w, h, d, refresh)
 	end
 end
 
+local STATE_TEXT = { new = "GOING UP", ended = "ENDED  ·  COMES BACK AFTER THE RAID" }
 local function mine(f, x, y, w, h, d, fl)
 	local list = scroller(f, x, y, w, h - 30, "FleaMine")
-	for i, o in fl.offers or {} do
+	local order = 0
+	for _, o in fl.offers or {} do
 		local def = Items.defs[o.id]
 		if def then
-			local r = itemRow(list, i, o.id, def.name .. ((o.n or 1) > 1 and ("  x" .. o.n) or ""), true)
+			order += 1
+			local units = (o.n0 or 1) > 1 and string.format("  %d / %d", o.n or 0, o.n0) or ""
+			local r = itemRow(list, order, o.id, def.name .. units, true)
 			r.Name = "Mine_" .. o.k
-			cell(r, Util.commas(o.price) .. " " .. Config.CURRENCY, 446, 160, K.C.ochre)
-			cell(r, string.format("EXPIRES IN %d H %02d MIN", o.left // 3600, (o.left % 3600) // 60), 616, 220, K.C.dim)
-			local b = K.button(r, "REMOVE", { Name = "Remove", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(100, 30), TextSize = 12 })
-			b.Activated:Connect(function()
-				ctx.State.req("flea", { op = "remove", k = o.k })
+			cell(r, Util.commas(o.price) .. " " .. Config.CURRENCY .. (o.pk and "  PER PACK" or ((o.n0 or 1) > 1 and "  EACH" or "")), 446, 170, K.C.ochre)
+			local status = STATE_TEXT[o.st] or (o.st == "removing" and ("REMOVING  ·  ENDS IN " .. timeLeft(o.left)) or ("EXPIRES IN " .. timeLeft(o.left)))
+			cell(r, status, 626, 230, o.st == "removing" and K.C.orange or K.C.dim)
+			if o.st == "open" then
+				local b = K.button(r, "REMOVE", { Name = "Remove", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(100, 30), TextSize = 12 })
+				b.Activated:Connect(function()
+					task.spawn(function()
+						ctx.State.req("flea", { op = "remove", k = o.k })
+					end)
+				end)
+			end
+		end
+	end
+	-- returned items (and purchases) that found no room in the stash: they wait here 72 h (EFT keeps them on Ragman's
+	-- message that long)
+	for _, b in fl.back or {} do
+		local def = Items.defs[b.id]
+		if def then
+			order += 1
+			local r = itemRow(list, order, b.id, def.name .. ((b.n or 1) > 1 and ("  x" .. b.n) or ""), true)
+			r.Name = "Back_" .. b.k
+			cell(r, "WAITING FOR STASH ROOM", 446, 170, K.C.orange)
+			cell(r, "COLLECT WITHIN " .. timeLeft(b.left), 626, 230, b.left < 3600 and K.C.orange or K.C.dim)
+			local btn = K.button(r, "RECEIVE", { Name = "Receive", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(100, 30), TextSize = 12, TextColor3 = K.C.green })
+			btn.Activated:Connect(function()
+				task.spawn(function()
+					ctx.State.req("flea", { op = "receive", k = b.k })
+				end)
 			end)
 		end
 	end
-	if #(fl.offers or {}) == 0 then
+	if order == 0 then
 		K.label(list, "You have no offers. ADD OFFER puts a found-in-raid item from your stash on the market.", 12, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), TextColor3 = K.C.dim })
 	end
-	K.label(f, "Other operators buy your offers over time: the nearer the average price, the sooner. Unsold offers come back after 12 hours; pulling or losing an offer costs rating.", 11, {
-		Position = UDim2.fromOffset(x, y + h - 22), Size = UDim2.fromOffset(w - 160, 18), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd,
+	K.label(f, "Players on every server can buy your offers; operators buy only the cheapest at a fair price. Sales are paid by message from TILDA, even while you are away. Offers run 12 hours; REMOVE ends one 72 s later. An offer that ends unsold costs rating; the fee is not returned.", 11, {
+		Position = UDim2.fromOffset(x, y + h - 26), Size = UDim2.fromOffset(w - 20, 26), TextColor3 = K.C.dim, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd,
 	})
 end
 
@@ -467,7 +571,9 @@ local function addOffer(f, x, y, w, h, d, fl, refresh)
 	for i, g in rows do
 		local it = d.items[g]
 		local def = Items.defs[it.id]
-		local why = (not FR.tradeable(it.id)) and "CAN'T BE OFFERED"
+		local can, whyNot = FR.listable(it.id, it.n or 1)
+		local why = (not can and whyNot == "FULL_STACK") and ("ONLY FULL STACKS (" .. def.stack .. ")")
+			or (not can) and "CAN'T BE OFFERED"
 			or (not it.fir) and "NOT FOUND IN RAID"
 			or (d.grids[g] and next(d.grids[g])) and "NOT EMPTY"
 			or nil
@@ -478,7 +584,7 @@ local function addOffer(f, x, y, w, h, d, fl, refresh)
 		if not why then
 			local b = K.button(r, "SELECT", { Name = "Select", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(90, 30), TextSize = 12 })
 			b.Activated:Connect(function()
-				flea.sel, flea.price = g, nil
+				flea.sel, flea.price, flea.pack = g, nil, false
 				refresh()
 			end)
 		end
@@ -494,41 +600,98 @@ local function addOffer(f, x, y, w, h, d, fl, refresh)
 	end
 	local def = Items.defs[it.id]
 	local n = it.n or 1
-	local avg = FR.marketPrice(it.id) * n
-	local price = flea.price or avg
-	local panel = K.frame(f, { Name = "OfferPanel", BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.2, Position = UDim2.fromOffset(px, y), Size = UDim2.fromOffset(pw, 300) })
+	local pack = flea.pack and n > 1
+	-- the competition for this item now (the cheapest and the dearest offer of one unit, your own left out), asked for
+	-- once when the item is chosen
+	flea.peek = flea.peek or {}
+	local pk = flea.peek[it.id]
+	if not pk or os.clock() - pk.at > 30 then
+		flea.peek[it.id] = { at = os.clock() }
+		task.spawn(function()
+			local res = ctx.State.req("flea", { op = "market", ids = { it.id } })
+			local lo, hi = nil, nil
+			for _, o in (res.ok and res.data and res.data.offers[it.id]) or {} do
+				if not o.mine and (o.left or 0) > 0 then
+					lo = math.min(lo or math.huge, o.unit or o.price)
+					hi = math.max(hi or 0, o.unit or o.price)
+				end
+			end
+			flea.peek[it.id] = { at = os.clock(), lo = lo, hi = hi }
+			if flea.sel and d.items[flea.sel] and d.items[flea.sel].id == it.id then
+				refresh()
+			end
+		end)
+		pk = flea.peek[it.id]
+	end
+	local unitAvg = FR.marketPrice(it.id)
+	local price = flea.price or (pack and unitAvg * n or unitAvg)
+	local panel = K.frame(f, { Name = "OfferPanel", BackgroundColor3 = K.C.panel, BackgroundTransparency = 0.2, Position = UDim2.fromOffset(px, y), Size = UDim2.fromOffset(pw, 340) })
 	K.pad(panel, 12)
 	K.label(panel, def.name .. (n > 1 and ("  x" .. n) or ""), 16, { Size = UDim2.new(1, 0, 0, 22), FontFace = K.bold })
-	K.label(panel, "AVERAGE PRICE  " .. Util.commas(avg) .. " " .. Config.CURRENCY, 13, { Position = UDim2.fromOffset(0, 34), Size = UDim2.new(1, 0, 0, 18), TextColor3 = K.C.dim })
-	K.label(panel, "YOUR PRICE", 13, { Position = UDim2.fromOffset(0, 70), Size = UDim2.fromOffset(120, 28) })
+	local market = "AVERAGE PRICE  " .. Util.commas(unitAvg) .. " " .. Config.CURRENCY .. (n > 1 and " EACH" or "")
+	if pk.lo then
+		market ..= "  ·  CHEAPEST NOW  " .. Util.commas(math.floor(pk.lo)) .. (n > 1 and " EACH" or "")
+	end
+	K.label(panel, market, 13, { Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 18), TextColor3 = K.C.dim, TextTruncate = Enum.TextTruncate.AtEnd })
+	K.label(panel, pack and "PRICE PER PACK" or (n > 1 and "PRICE EACH" or "YOUR PRICE"), 13, { Position = UDim2.fromOffset(0, 60), Size = UDim2.fromOffset(120, 28) })
 	local box = K.new("TextBox", {
-		Name = "FleaPrice", Position = UDim2.fromOffset(120, 70), Size = UDim2.fromOffset(180, 28), Text = tostring(price), ClearTextOnFocus = false,
+		Name = "FleaPrice", Position = UDim2.fromOffset(120, 60), Size = UDim2.fromOffset(180, 28), Text = tostring(price), ClearTextOnFocus = false,
 		TextSize = 14, FontFace = K.font, TextColor3 = K.C.ochre, BackgroundColor3 = K.C.panel2, BorderSizePixel = 0,
 	}, panel)
-	local feeL = K.label(panel, "", 13, { Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 18) })
+	if n > 1 then
+		-- EFT's "List as a pack": one price for the whole stack, bought whole
+		local t = K.button(panel, pack and "LIST AS A PACK: ON" or "LIST AS A PACK: OFF", {
+			Name = "FleaPack", Position = UDim2.fromOffset(310, 60), Size = UDim2.fromOffset(170, 28), TextSize = 12,
+			BackgroundColor3 = pack and Color3.fromHex("3A3524") or K.C.panel2, TextColor3 = pack and K.C.ochre or K.C.dim,
+		})
+		t.Activated:Connect(function()
+			local v = math.floor(tonumber(box.Text) or 0)
+			flea.pack = not pack
+			if v >= 1 then
+				flea.price = flea.pack and v * n or math.max(1, math.floor(v / n))
+			end
+			refresh()
+		end)
+	end
+	local totalL = K.label(panel, "", 13, { Position = UDim2.fromOffset(0, 96), Size = UDim2.new(1, 0, 0, 18) })
+	local feeL = K.label(panel, "", 13, { Position = UDim2.fromOffset(0, 118), Size = UDim2.new(1, 0, 0, 18) })
+	local warnL = K.label(panel, "", 11, { Position = UDim2.fromOffset(0, 140), Size = UDim2.new(1, 0, 0, 30), TextWrapped = true, TextColor3 = K.C.orange })
 	local function update()
 		local v = math.floor(tonumber(box.Text) or 0)
 		if v >= 1 then
 			flea.price = v
+			local total = pack and v or v * n
+			local unit = total / n
 			local hd = d and d.hideout
-			local fee = math.floor(FR.fee(def.value or 0, n, v) * (1 - (hd and HD.bonus(hd, "fleaFee", hd.power) or 0) / 100))
+			local fee = math.floor(FR.fee(def.value or 0, n, total) * (1 - (hd and HD.bonus(hd, "fleaFee", hd.power) or 0) / 100))
+			totalL.Text = "TOTAL  " .. Util.commas(total) .. " " .. Config.CURRENCY
 			feeL.Text = "LISTING FEE  " .. Util.commas(fee) .. " " .. Config.CURRENCY
+			-- EFT's warnings (locale ragfair/TooLittleWarning, TooMuchWarning); the half and double are ours
+			if pk.lo and unit < pk.lo * 0.5 then
+				warnL.Text = "You are going to put the item at a cost much lower than the cheapest existing similar offer."
+			elseif pk.hi and unit > pk.hi * 2 then
+				warnL.Text = "You are going to place an item at a cost much higher than the most expensive existing similar offer."
+			else
+				warnL.Text = ""
+			end
 		else
-			feeL.Text = "LISTING FEE  -"
+			totalL.Text, feeL.Text, warnL.Text = "TOTAL  -", "LISTING FEE  -", ""
 		end
 	end
 	box:GetPropertyChangedSignal("Text"):Connect(update)
 	update()
 	local used = #(fl.offers or {})
-	K.label(panel, string.format("OFFERS  %d / %d  ·  RATING %.2f", used, fl.slots or 2, fl.rating or 0.2), 12, { Position = UDim2.fromOffset(0, 140), Size = UDim2.new(1, 0, 0, 18), TextColor3 = K.C.dim })
-	K.label(panel, "The fee is paid now and not returned. The offer runs 12 hours.", 11, { Position = UDim2.fromOffset(0, 166), Size = UDim2.new(1, 0, 0, 30), TextWrapped = true, TextColor3 = K.C.dim })
+	local limit = FR.LIST_LIMIT[it.id]
+	K.label(panel, string.format("OFFERS  %d / %d  ·  RATING %.2f", used, fl.slots or 2, fl.rating or 0.2) .. (limit and ("  ·  LISTING LIMIT " .. limit) or ""), 12, { Position = UDim2.fromOffset(0, 176), Size = UDim2.new(1, 0, 0, 18), TextColor3 = K.C.dim })
+	K.label(panel, "The fee is paid now and not returned. The offer runs 12 hours on every server; REMOVE ends it 72 s later. If it ends unsold, your rating falls with its value.", 11, { Position = UDim2.fromOffset(0, 200), Size = UDim2.new(1, 0, 0, 44), TextWrapped = true, TextColor3 = K.C.dim })
 	local place = K.button(panel, "PLACE OFFER", { Name = "PlaceOffer", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.fromOffset(180, 36), TextColor3 = K.C.green })
 	place.Activated:Connect(function()
 		update()
 		local g, v = flea.sel, flea.price
 		task.spawn(function()
-			if ctx.State.req("flea", { op = "list", g = g, price = v }).ok then
-				flea.view, flea.sel, flea.price = "mine", nil, nil
+			local res = ctx.State.req("flea", { op = "list", g = g, price = v, pk = pack or nil })
+			if res.ok or res.code == "PENDING" then
+				flea.view, flea.sel, flea.price, flea.pack = "mine", nil, nil, false
 				refresh()
 			end
 		end)

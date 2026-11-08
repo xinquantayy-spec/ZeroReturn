@@ -87,6 +87,12 @@ local Config = {
 
 	DATASTORE_LIVE = "ZR_Profiles_v1",
 	DATASTORE_DEV = "DEV_ZR_Profiles_v1",
+	-- the flea market (decision economy-3a, FleaStore.luau): sellers' escrow books (DataStore, key "b<userId>") and the
+	-- shared offer index (MemoryStore sorted map, one entry per item); Studio uses the DEV names, like the profiles
+	FLEA_BOOK_LIVE = "ZR_FleaBook_v1",
+	FLEA_BOOK_DEV = "DEV_ZR_FleaBook_v1",
+	FLEA_INDEX_LIVE = "ZR_FleaIndex_v1",
+	FLEA_INDEX_DEV = "DEV_ZR_FleaIndex_v1",
 	LOCK_TTL = 150,
 	AUTOSAVE = 60,
 	FINALIZED_LOG = 20,
