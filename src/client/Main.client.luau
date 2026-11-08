@@ -293,6 +293,13 @@ if RunService:IsStudio() then
 		elseif cmd == "cycle" then
 			ctx.Weapon.cycleWeapon()
 			return "ok"
+		elseif cmd == "poseHold" then
+			-- a = { kind = "reload" | "mag" | "chamber", p = 0..1, empty?, quick? } holds that moment; nil lets go (art-6a)
+			ctx.Weapon.poseHold = a
+			if not a then
+				ctx.Weapon.reloading, ctx.Weapon.checking = false, false
+			end
+			return "ok"
 		elseif cmd == "magcheck" then
 			ctx.Weapon.magCheck()
 			return "ok"

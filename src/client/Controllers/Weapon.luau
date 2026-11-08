@@ -99,6 +99,7 @@ local fireLatch, dryLatch = false, false
 local aimWanted = false
 local aimA, sprintA, reloadA, checkA, tubeA, raise = 0, 0, 0, 0, 0, 0
 local reloadT0, reloadDur, joltDone = nil, 2.2, false
+local reloadEmpty = false -- the reload started with nothing in the chamber: it ends on the charging handle (art-6a)
 local quickSent = false -- the second R of a double tap went to the server (quick reload)
 local tubeT0, tubePeriod = nil, 0.55
 local cycleT0, cycleDur, cycleKind = nil, 0, nil -- pump / bolt cycling after a shot
@@ -938,6 +939,7 @@ function Weapon.startReload()
 		reloadT0 = os.clock()
 		reloadDur = ((Weapon.ammo > 0) and o.def.reload or o.def.reloadEmpty) or 2.4
 		joltDone = false
+		reloadEmpty = Weapon.ammo <= 0
 		local token = reloadT0
 		for _, e in { { 0.14, "mag_out" }, { 0.45, "cloth_1" }, { 0.76, "mag_in" } } do
 			task.delay(reloadDur * e[1], function()
@@ -970,6 +972,7 @@ function Weapon.startReload()
 	reloadT0 = os.clock()
 	reloadDur = ((cur > 0) and o.def.reload or o.def.reloadEmpty) * slow
 	joltDone = false
+	reloadEmpty = cur <= 0
 	ctx.State.act("reload")
 	local token = reloadT0
 	local empty = cur <= 0
@@ -1460,6 +1463,19 @@ local function update(dt)
 	local pumpD, boltD = CFrame.identity, CFrame.identity
 	local shellOn = false
 	local hidden = false
+	-- Studio's test bridge (ZR_ClientDev "poseHold"): hold a reload or check at one moment, for pictures (art-6a)
+	local hold = Weapon.poseHold
+	if hold then
+		Weapon.poseHeld = true
+		if hold.kind == "reload" then
+			Weapon.reloading, reloadT0, reloadEmpty, quickSent = true, now - hold.p * reloadDur, hold.empty == true, hold.quick == true
+		else
+			Weapon.checking, checkT0, Weapon.lastCheck = true, now - hold.p * checkDur, hold.kind == "chamber" and "chamber" or "mag"
+		end
+	elseif Weapon.poseHeld then
+		Weapon.poseHeld = nil
+		Weapon.reloading, Weapon.checking, reloadT0, checkT0, quickSent = false, false, nil, nil, false
+	end
 	if reloadT0 and Weapon.reloading and not tubeT0 and o.magGrab then
 		local p = (now - reloadT0) / reloadDur
 		local grab = o.magGrab
@@ -1472,9 +1488,16 @@ local function update(dt)
 			lHand = magW * grab
 		elseif p < 0.42 then
 			local k = phase(p, 0.3, 0.42)
-			lHand = (grip * out * grab):Lerp(pouch, k)
-			magW = lHand * grab:Inverse()
-			hidden = k > 0.85
+			if quickSent then
+				-- the quick reload (gameplay-5b, art-6a): the old magazine is let go and falls; the empty hand goes on
+				magW = grip * out * CFrame.new(0, -1.6 * k * k, 0.15 * k) * CFrame.Angles(math.rad(-50) * k, 0, math.rad(25) * k)
+				lHand = (grip * out * grab):Lerp(pouch, k)
+				hidden = k > 0.6
+			else
+				lHand = (grip * out * grab):Lerp(pouch, k)
+				magW = lHand * grab:Inverse()
+				hidden = k > 0.85
+			end
 		elseif p < 0.6 then
 			lHand = pouch
 			hidden = true
@@ -1484,6 +1507,23 @@ local function update(dt)
 		elseif p < 0.8 then
 			magW = grip * out:Lerp(CFrame.identity, phase(p, 0.72, 0.8))
 			lHand = magW * grab
+		elseif reloadEmpty and o.port then
+			-- from empty (art-6a): the hand goes up to the charging handle by the port, pulls it back and lets it run home;
+			-- the jolt comes as the bolt slams forward
+			local handle = grip * o.port * (TUNE.handle or CFrame.new(0, 0.06, -0.12))
+			if p < 0.86 then
+				lHand = (grip * grab):Lerp(handle, phase(p, 0.8, 0.86))
+			elseif p < 0.93 then
+				local pullK = math.sin(math.pi * phase(p, 0.86, 0.93))
+				lHand = handle * CFrame.new(0, 0, (TUNE.handlePull or 0.09) * pullK)
+				if not joltDone and p >= 0.9 then
+					joltDone = true
+					kickRot += math.rad(1.2)
+					kickZ += 0.015
+				end
+			else
+				lHand = handle:Lerp(grip * o.lHand, phase(p, 0.93, 1))
+			end
 		else
 			-- the second motion (WEAPON MASTERING (02)) ends with a palm tap on the seated magazine: the hand drops
 			-- and strikes up, and the jolt comes with the strike
@@ -1496,17 +1536,33 @@ local function update(dt)
 			local tap = m2 and math.sin(math.pi * math.clamp((p - 0.8) / 0.1, 0, 1)) or 0
 			lHand = (grip * CFrame.new(0, -0.05 * tap, 0) * grab):Lerp(grip * o.lHand, phase(p, m2 and 0.9 or 0.8, 1))
 		end
+	elseif checkT0 and Weapon.checking and Weapon.lastCheck == "chamber" and o.port then
+		-- the chamber check (art-6a): a hand to the charging handle, a short pull to show the round, and back
+		local p = (now - checkT0) / checkDur
+		local handle = grip * o.port * (TUNE.chamberHandle or CFrame.new(0, 0.06, -0.12))
+		if p < 0.25 then
+			lHand = lHand:Lerp(handle, phase(p, 0, 0.25))
+		elseif p < 0.75 then
+			lHand = handle * CFrame.new(0, 0, 0.045 * (phase(p, 0.25, 0.4) - phase(p, 0.6, 0.75)))
+		else
+			lHand = handle:Lerp(grip * o.lHand, phase(p, 0.75, 1))
+		end
 	elseif checkT0 and Weapon.checking and o.magGrab then
 		local p = (now - checkT0) / checkDur
-		local grab = o.magGrab
-		local pulled = CFrame.new(0, -0.05, 0.012) * CFrame.Angles(math.rad(-6), 0, 0)
-		if p < 0.25 then
-			lHand = lHand:Lerp(grip * grab, phase(p, 0, 0.25))
-		elseif p < 0.75 then
-			magW = grip * CFrame.identity:Lerp(pulled, phase(p, 0.25, 0.45) - phase(p, 0.6, 0.75))
+		-- held low on its body, so the fist leaves the feed lips and the top round in sight
+		local grab = o.magGrab * (TUNE.magHold or CFrame.new(0, -0.1, 0))
+		-- the magazine check (art-6a): out of the well, turned up toward the eye so its side shows, and back in
+		-- out of the well (gun space), then carried toward the middle of the view and the eye (camera space)
+		local pulled = TUNE.magShow or CFrame.new(0, -0.06, 0) * CFrame.Angles(math.rad(-15), 0, math.rad(-20))
+		local toEye = TUNE.magShowCam or CFrame.new(-0.3, 0.3, 0.05)
+		if p < 0.2 then
+			lHand = lHand:Lerp(grip * grab, phase(p, 0, 0.2))
+		elseif p < 0.8 then
+			local k = phase(p, 0.2, 0.42) - phase(p, 0.62, 0.8)
+			magW = camCF * CFrame.identity:Lerp(toEye, k) * camCF:Inverse() * grip * CFrame.identity:Lerp(pulled, k)
 			lHand = magW * grab
 		else
-			lHand = (grip * grab):Lerp(lHand, phase(p, 0.75, 1))
+			lHand = (grip * grab):Lerp(lHand, phase(p, 0.8, 1))
 		end
 	elseif tubeT0 and o.port then
 		local p = ((now - tubeT0) % tubePeriod) / tubePeriod

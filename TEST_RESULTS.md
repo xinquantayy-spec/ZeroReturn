@@ -8,14 +8,27 @@ Unless noted otherwise, every test ran in a Roblox Studio playtest with:
 
 **NOT VERIFIED:** real DataStore, two or more clients, phone, tablet, console hardware, gamepad UI navigation, device emulator, and performance on devices (only indicative Studio frame rates on the T490 laptop, M12).
 
-## Slow lean on a gamepad and a touch screen (gameplay-5b follow-up; 2026-11-08, about 16:55 SGT)
+## First-person reload and check poses (decision art-6a; 2026-11-08, about 16:40 SGT)
+
+Quay 7, R-17 carbine, studio capture mode. Poses were held at a set moment with the client bridge `poseHold` and measured in camera space (studs; negative z is in front of the camera).
+
+| Test | Result |
+|---|---|
+| Magazine check, held at its middle | The magazine is out of the well and up in front of the eye, upright, 0.53 in front of the camera. The left fist holds it low, so its upper half and feed lips show above the fist. Before the change, the fist sat in the middle of the magazine and hid it. |
+| Chamber check and reload from empty, held at the pull | The left hand is on the charging handle by the ejection port, beside the receiver. Before the change, the arm lay across the middle of the view. Through the reload the hand moves to the handle (p 0.80-0.86), pulls it back 0.09 toward the camera (0.580 to 0.488, p 0.86-0.93) and returns to the handguard. |
+| Quick reload, held | At p 0.32 the old magazine is still in the hand. At p 0.36 it has dropped 0.35 while the hand goes on toward the pouch. At p 0.40 it is gone from view. |
+| Real checks and reload through the controller | A magazine check (`magcheck`) took the magazine from 0.81 to 0.53 in front of the camera and back in about 1.4 s. A chamber check (R3 held, the gamepad path) took the left hand from the handguard (1.06) to the port (0.55) and back in about 1.5 s. A reload after emptying the magazine (`fire`) had the magazine at the pouch by 1.3 s, the new one in by about 2.4 s, the hand at the handle and pulling by about 2.9 s, and the hand back on the handguard by 3.3 s. |
+| Tests | 14 suites, 1,083 checks, all passed. The console showed no new errors. |
+| Not checked | Other guns' anchors (only the R-17 was looked at), a pistol or a shotgun, a real keyboard press of Alt+T or Shift+T, a phone. |
+
+## Slow lean on a gamepad and a touch screen (gameplay-5b follow-up; 2026-11-08, about 16:20 SGT)
 
 | Test | Result |
 |---|---|
 | Gamepad (forced device, presses through the shared pad buttons) | From upright, a tap of LB leaned fully left (-1.00), a second tap stood upright (0.00); RB held 0.5 s leaned right to 0.62 and stayed there. With the device set to keyboard and mouse the same press toggled the full lean (-1.00), as before. |
 | Not checked | A real pad, the touch LEAN buttons held by a finger (they send the same press and release), a phone. |
 
-## Touch drag in the inventory (decision ui-4c; 2026-11-08, about 16:40 SGT)
+## Touch drag in the inventory (decision ui-4c; 2026-11-08, about 16:15 SGT)
 
 | Test | Result |
 |---|---|
